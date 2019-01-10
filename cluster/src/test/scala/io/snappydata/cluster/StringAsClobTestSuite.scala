@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,7 +25,7 @@ import org.scalatest.BeforeAndAfterAll
 
 class StringAsClobTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
-  val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
+  private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
   var serverHostPort = ""
   val tableName = "order_line_col"
 
@@ -48,7 +48,7 @@ class StringAsClobTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
   test("Test char") {
     snc
     val serverHostPort2 = TestUtil.startNetServer()
-    println("network server started")
+    logInfo("network server started")
     val conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
     val s = conn.createStatement()
     s.executeUpdate(s"create table $tableName (id int not null primary key, name String, address " +
@@ -60,7 +60,7 @@ class StringAsClobTestSuite extends SnappyFunSuite with BeforeAndAfterAll {
     s.executeUpdate(s"update $tableName set name='abc1' where id=111")
     val rs = s.executeQuery(s"select id, name, address from $tableName")
     while (rs.next()) {
-      println(s"${rs.getInt(1)} ${rs.getString(2)} ${rs.getString(3)}")
+      logInfo(s"${rs.getInt(1)} ${rs.getString(2)} ${rs.getString(3)}")
     }
     val rs2 = s.executeQuery(s"select id from $tableName where name='abc1'")
     if (rs2.next()) {

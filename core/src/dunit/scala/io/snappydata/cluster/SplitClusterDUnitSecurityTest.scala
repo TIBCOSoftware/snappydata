@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,7 +27,6 @@ import scala.sys.process._
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.db.FabricDatabase
 import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, SerializableRunnable, VM}
@@ -64,6 +63,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   var adminConn = null: Connection
   var user1Conn = null: Connection
   var user2Conn = null: Connection
+  var user4Conn = null: Connection
   var snc = null: SnappyContext
 
   private[this] var host: Host = _
@@ -75,7 +75,11 @@ class SplitClusterDUnitSecurityTest(s: String)
   val jdbcUser1 = "gemfire1"
   val jdbcUser2 = "gemfire2"
   val jdbcUser3 = "gemfire3"
-  val adminUser1 = "gemfire4"
+  val jdbcUser4 = "gemfire4"
+  val adminUser1 = "gemfire10"
+
+  val group1 = "gemGroup1"
+  val group2 = "gemGroup2"
 
   // Job config names
   val outputFile = "output.file"
@@ -92,6 +96,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     if (adminConn != null) adminConn.close()
     if (user1Conn != null) user1Conn.close()
     if (user2Conn != null) user2Conn.close()
+    if (user4Conn != null) user4Conn.close()
     if (snc != null) snc.sparkContext.stop()
     if (restartLdap) {
       restartLdap = false
@@ -117,8 +122,11 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   private val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
-  protected val productDir =
+  override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+
+  protected val currentProductDir: String =
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
 
   override def locatorClientPort: Int = { SplitClusterDUnitSecurityTest.locatorNetPort }
 
@@ -153,7 +161,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
-    SplitClusterDUnitSecurityTest.startSparkCluster(productDir)
+    SplitClusterDUnitSecurityTest.startSparkCluster(sparkProductDir)
   }
 
   def getLdapConf: String = {
@@ -169,7 +177,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    SplitClusterDUnitSecurityTest.stopSparkCluster(productDir)
+    SplitClusterDUnitSecurityTest.stopSparkCluster(sparkProductDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -206,7 +214,17 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, locatorClientPort, props)
+    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, sparkProductDir,
+      locatorClientPort, props)
+  }
+
+  // Test to make sure that stock spark-shell for latest Spark release works with JDBC pool jar
+  def testSparkShellCurrent(): Unit = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
+    SplitClusterDUnitTest.invokeSparkShellCurrent(snappyProductDir, sparkProductDir,
+      currentProductDir, locatorClientPort, props, vm = null /* SparkContext in current VM */)
   }
 
   def testPreparedStatements(): Unit = {
@@ -229,7 +247,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var stmt = user1Conn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"), false)
+      Map("COLUMN_BATCH_SIZE" -> "1k"), false)
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
       Map.empty, false)
 
@@ -257,7 +275,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     try {
       // Create row and column tables in embedded mode
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
-        Map("COLUMN_BATCH_SIZE" -> "50"), false)
+        Map("COLUMN_BATCH_SIZE" -> "1k"), false)
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
         Map.empty, false)
 
@@ -406,6 +424,15 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
   }
 
+  def executeSQL(stmt: Statement, s: String): Unit = {
+    stmt.execute(s)
+    val rs = stmt.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {}
+      rs.close()
+    }
+  }
+
   /**
     * Grant and revoke select, insert, update and delete operations and verify from smart and
     * embedded side.
@@ -424,38 +451,13 @@ class SplitClusterDUnitSecurityTest(s: String)
     var adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"))
+      Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, user1Stmt)
 
     // All DMLs from another user should fail
     def assertFailure(sql: () => Unit, s: String): Unit = {
-      try {
-        sql()
-        assert(false, s"Should have failed: $s")
-      } catch {
-        case sqle: SQLException =>
-          if ("42502".equals(sqle.getSQLState) || "42500".equals(sqle.getSQLState)) {
-            logInfo(s"Found expected error: $sqle")
-          } else {
-            logError(s"Found different SQLState: ${sqle.getSQLState}")
-            throw sqle
-          }
-        case t: Throwable => if (t.getMessage.contains("42502")) {
-          logInfo(s"Found expected error in: ${t.getClass.getName}, ${t.getMessage}")
-        } else {
-          logInfo(s"Found unexpected error in: ${t.getClass.getName}, ${t.getMessage}")
-          throw t
-        }
-      }
-    }
-
-    def executeSQL(stmt: Statement, s: String): Unit = {
-      stmt.execute(s)
-      val rs = stmt.getResultSet
-      if (rs ne null) {
-        while (rs.next()) {}
-        rs.close()
-      }
+      val states = Seq("42502", "42500")
+      assertFailures(sql, s, states)
     }
 
     val sqls = List(s"select * from $jdbcUser1.$embeddedColTab1",
@@ -517,6 +519,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   def restartCluster(): Unit = {
     user1Conn.close()
     user2Conn.close()
+    if (user4Conn != null) user4Conn.close()
     adminConn.close()
     snc.sparkContext.stop()
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
@@ -603,8 +606,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "5"), false)
-    sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "10k"))
+    sns.createTable(smartRowTab1, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
 
@@ -636,9 +639,172 @@ class SplitClusterDUnitSecurityTest(s: String)
     assertTableDeleted(() => {sns.catalog.refreshTable(smartRowTab1)}, smartRowTab1)
   }
 
+  /**
+   * Create a schema owned by group1, create table and index and execute DMLs on it by a user
+   * of that group.
+   * Repeat that by another member of the same group and ensure it succeeds.
+   * Repeat that by a member of a different group and verify it fails.
+   * Grant DML permissions on some tables to another group and ensure it works.
+   * Revoke those permissions on tables from that group and ensure it works too.
+   */
+  def testLDAPGroupOwnershipJDBC(): Unit = {
+    adminConn = getConn(adminUser1)
+    user1Conn = getConn(jdbcUser1)
+    user2Conn = getConn(jdbcUser2)
+    user4Conn = getConn(jdbcUser4)
+
+    var stmt = adminConn.createStatement()
+    var user1Stmt = user1Conn.createStatement()
+    var user2Stmt = user2Conn.createStatement()
+    var user4Stmt = user4Conn.createStatement()
+
+    val schema = "groupSchema"
+    val t1 = "gemone" // column table to be created by gemfire1
+    val t1r = "gemonerow" // row table to be created by gemfire1
+    val t2 = "gemtwo" // column table to be created by gemfire2
+    val t2r = "gemtworow" // row table to be created by gemfire2
+
+    // admin user
+    executeSQL(stmt, s"create schema $schema authorization ldapgroup:$group1")
+
+    // user gemfire1 of group gemGroup1
+    Seq(s"create table $schema.$t1 (id int, name string) using column",
+      s"select * from $schema.$t1",
+      s"insert into $schema.$t1 values (1, 'one'), (2, 'two'), (3, 'three')," +
+          s" (4, 'four'), (5, 'five')",
+      s"update $schema.$t1 set id = 10 where name like 'one'",
+      s"select * from $schema.$t1",
+      s"delete from $schema.$t1 where id = 10",
+      s"select * from $schema.$t1",
+      s"create table $schema.$t1r (id int, name string) using column",
+      s"CREATE VIEW $schema.${t1}view AS SELECT id, name FROM $schema.$t1",
+      s"CREATE TEMPORARY VIEW ${t1}viewtemp AS SELECT id, name FROM $schema.$t1",
+      s"CREATE GLOBAL TEMPORARY VIEW ${t1}viewtempg AS SELECT id, name FROM $schema.$t1",
+      s"CREATE TEMPORARY TABLE ${t1}temp AS SELECT id, name FROM $schema.$t1",
+      s"CREATE GLOBAL TEMPORARY TABLE ${t1}tempg AS SELECT id, name FROM $schema.$t1",
+      s"CREATE EXTERNAL TABLE $schema.${t1}ext USING csv OPTIONS(path " +
+          s"'../../quickstart/src/main/resources/customer.csv')")
+        .foreach(executeSQL(user1Stmt, _))
+
+    // user gemfire2 of same group gemGroup1
+    Seq(s"select * from $schema.$t1",
+      s"create table $schema.$t2 (id int, name string) using column",
+      s"create table $schema.$t2r (id int, name string)",
+      s"show tables in $schema",
+      s"select * from $schema.$t2",
+      s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1 REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id",
+      s"insert into $schema.$t2 values (1, '1'), (2, '2'), (3, '3')," +
+          s" (4, '4'), (5, '5'), (6, '6')",
+      s"select * from $schema.$t2",
+      s"delete from $schema.$t1 where name like 'two'",
+      s"drop table $schema.$t1r",
+      s"select * from $schema.$t2").foreach(executeSQL(user2Stmt, _))
+
+    // user gemfire1
+    Seq(s"alter table $schema.$t2r drop column name",
+      s"alter table $schema.$t2r add column personality varchar(10)")
+        .foreach(executeSQL(user1Stmt, _))
+
+    // user gemfire4 of different group
+    executeSQL(user4Stmt, s"show tables in $schema")
+    Seq(s"select * from $schema.$t1",
+      s"create table $schema.gemfour (id int, name string) using column",
+      s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1 REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id",
+      s"insert into $schema.$t2 values (1, '1'), (2, '2'), (3, '3')," +
+          s" (4, '4'), (5, '5'), (6, '6')",
+      s"update $schema.$t1 set id = 100 where name like 'four'",
+      s"delete from $schema.$t1 where name like 'two'",
+      s"alter table $schema.$t2r add column address string",
+      // Create view succeeds but select on it fails, which is comforting.
+//      s"CREATE VIEW $schema.${t1}view4 AS SELECT id, name FROM $schema.$t1",
+      s"CREATE EXTERNAL TABLE $schema.${t1}ext4 USING csv OPTIONS(path " +
+          s"'../../quickstart/src/main/resources/customer.csv')",
+      s"CREATE INDEX $schema.idx4 ON $schema.$t1 (id, name)")
+        .foreach(sql => assertFailures(() => {
+          executeSQL(user4Stmt, sql)
+        }, sql, Seq("42500", "42502", "42506", "42507", "38000")))
+
+    // Grant DML permissions to gemfire4 and ensure it works.
+    executeSQL(user1Stmt, s"grant select on $schema.$t1 to ldapgroup:$group2")
+    executeSQL(user1Stmt, s"grant select on $schema.$t2 to ldapgroup:$group2") // due to trigger
+    executeSQL(user4Stmt, s"select * from $schema.$t1")
+    executeSQL(user1Stmt, s"grant insert on $schema.$t1 to ldapgroup:$group2")
+    executeSQL(user4Stmt, s"insert into $schema.$t1 values (111, 'gemfire4 111')," +
+        s" (222, 'gemfire4 222')")
+    executeSQL(user2Stmt, s"grant update on $schema.$t1 to ldapgroup:$group2")
+    executeSQL(user4Stmt, s"update $schema.$t1 set name = 'gemfire4 111 updated' where id = 111")
+    executeSQL(user2Stmt, s"grant delete on $schema.$t1 to ldapgroup:$group2")
+    executeSQL(user2Stmt, s"grant delete on $schema.$t2 to ldapgroup:$group2") // due to trigger
+    executeSQL(user4Stmt, s"delete from $schema.$t1 where id = 111")
+    executeSQL(user2Stmt, s"grant trigger on $schema.$t1 to ldapgroup:$group2")
+    executeSQL(user2Stmt, s"grant trigger on $schema.$t2 to ldapgroup:$group2")
+    executeSQL(user4Stmt, s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1 REFERENCING " +
+        s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id")
+
+    // Revoke all and ensure it works too.
+    Seq(s"revoke select on $schema.$t1 from ldapgroup:$group2",
+      s"revoke insert on $schema.$t1 from ldapgroup:$group2",
+      s"revoke update on $schema.$t1 from ldapgroup:$group2",
+      s"revoke delete on $schema.$t1 from ldapgroup:$group2",
+      s"revoke delete on $schema.$t2 from ldapgroup:$group2",
+      s"revoke trigger on $schema.$t1 from ldapgroup:$group2",
+      s"revoke trigger on $schema.$t2 from ldapgroup:$group2")
+        .foreach(executeSQL(user1Stmt, _))
+    Seq(s"select * from $schema.$t1",
+      s"insert into $schema.$t1 values (111, 'gemfire4 111')," +
+          s" (222, 'gemfire4 222')",
+      s"update $schema.$t1 set name = 'gemfire4 111 updated' where id = 111",
+      s"delete from $schema.$t1 where id = 111",
+      s"CREATE TRIGGER trigfournew AFTER DELETE ON $schema.$t1 REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id")
+        .foreach(sql => assertFailures(() => {
+          executeSQL(user4Stmt, sql)
+        }, sql, Seq("42500", "42502", "42506", "42507")))
+  }
+
+  def assertFailures(f: () => Unit, s: String, states: Seq[String]): Unit = {
+    try {
+      f()
+      assert(false, s"Should have failed: $s")
+    } catch {
+      case sqle: SQLException =>
+        if (states.contains(sqle.getSQLState)) {
+          logInfo(s"Found expected error: $sqle")
+        } else {
+          logError(s"Found different SQLState: ${sqle.getSQLState}")
+          throw sqle
+        }
+      case t: Throwable =>
+        var okay = false
+        states.foreach(state => {
+          if (t.getMessage.contains(state)) {
+            logInfo(s"Found expected error in: ${t.getClass.getName}, ${t.getMessage}")
+            okay = true
+          }
+        })
+        if (!okay) {
+          logInfo(s"Found unexpected error in: ${t.getClass.getName}, ${t.getMessage}")
+          throw t
+        }
+    }
+  }
+
+  def _testLDAPGroupOwnershipSmartConnector(): Unit = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, adminUser1)
+    props.setProperty(Attribute.PASSWORD_ATTR, adminUser1)
+
+    snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
+    val sns = snc.snappySession
+
+    sns.sql("create schema groupSchema authorization gemGroup1");
+  }
+
   def getJobJar(className: String, packageStr: String = ""): String = {
     val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
-        + s"test/$packageStr")
+        + s"scala/test/$packageStr")
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
         s"not found: $dir")
     val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
@@ -670,7 +836,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     user2Conn = getConn(jdbcUser2, setSNC = true)
     val stmt = user2Conn.createStatement()
     SplitClusterDUnitTest.createTableUsingJDBC(colTab, "column", user2Conn, stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"))
+      Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(rowTab, "row", user2Conn, stmt)
 
     submitJob("nogrant") // tells job to verify DMLs without any explicit grant
@@ -783,7 +949,7 @@ object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
       override def run(): Unit = {
         val store = Misc.getMemStoreBootingNoThrow
         if (store ne null) {
-          val authModule = FabricDatabase.getAuthenticationServiceBase
+          val authModule = store.getDatabase.getAuthenticationService
           if (authModule ne null) {
             val propNamesIter = props.stringPropertyNames().iterator()
             while (propNamesIter.hasNext) {

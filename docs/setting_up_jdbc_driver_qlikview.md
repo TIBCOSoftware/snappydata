@@ -1,6 +1,6 @@
 # Setting Up SnappyData JDBC Client and QlikView
 
-!!! Note:
+!!! Note
 	Before using SnappyData JDBC Client, make sure [Java 8](http://www.oracle.com/technetwork/java/javase/downloads/index.html) is installed.
 
 The following topics are covered in this section:
@@ -18,7 +18,7 @@ The following topics are covered in this section:
 <a id= step-1> </a>
 ## Step 1: Download SnappyData JDBC Client
 
-Download the SnappyData JDBC Client JAR](https://www.snappydata.io/download).
+*	[Download the SnappyData JDBC Client JAR](https://www.snappydata.io/download).
 
 <a id= step-2> </a>
 ## Step 2: Download and Install QlikView
@@ -36,11 +36,11 @@ To connect to SnappyData using JDBC Client from QlikView application, install th
 2. Extract the contents of the compressed file, and double-clik on the installer to start the installation process. For installation instructions, refer to the documentation provided for the QlikView JDBC Connector. </br>You may need to activate the product.
 
 <a id= step-4> </a>
-## Step 4: Configure the JDBCConnector to connect to SnappyData
+## Step 4: Configure the JDBCConnector to Connect to SnappyData
 
 After installing the JDBCConnector application, add the SnappyData profile in the JDBCConnector. 
 
-!!! Tip:
+!!! Tip
 	You can also create a profile from the QlikView application.
 
 1. Open JDBCConnector Application.
@@ -89,7 +89,7 @@ After installing the JDBCConnector application, add the SnappyData profile in th
 
 9. Click the **Select** button to add the Data Source Table (SELECT sql script) OR you can manually add the *SELECT* sql script.
 
-10. The *SELECT* script is added to the list of scripts.
+10. The ***SELECT*** script is added to the list of scripts.
 
 11. Click **OK**.
 

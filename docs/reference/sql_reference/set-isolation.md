@@ -4,7 +4,7 @@ Change the transaction isolation level for the connection.
 
 ## Syntax
 
-```no-highlight
+```pre
 SET [ CURRENT ] ISOLATION [ = ]
 { 
 CS | READ COMMITTED
@@ -26,7 +26,7 @@ This statement behaves identically to the JDBC *java.sql.Connection.setTransacti
 Example
 -------
 
-```no-highlight
+```pre
 snappy> set ISOLATION READ COMMITTED;
 
 snappy> VALUES CURRENT ISOLATION;

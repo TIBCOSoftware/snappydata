@@ -8,7 +8,7 @@
 }
 
 a.icon.icon-home:before {
-  background:url('../Images/logo.png');
+  background:url('../../Images/logo.png');
   width: 208px;
   height: 59px;
   content: '';

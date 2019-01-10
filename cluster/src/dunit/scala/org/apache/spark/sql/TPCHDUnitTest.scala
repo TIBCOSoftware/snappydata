@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -349,14 +349,14 @@ object TPCHUtils extends Logging {
   def validateResult(snc: SQLContext, isSnappy: Boolean, isTokenization: Boolean = false): Unit = {
     val sc: SparkContext = snc.sparkContext
 
-    val fineName = if (!isTokenization) {
+    val fileName = if (!isTokenization) {
       if (isSnappy) "Result_Snappy.out" else "Result_Spark.out"
     } else {
       "Result_Snappy_Tokenization.out"
     }
 
-    val resultFileStream: FileOutputStream = new FileOutputStream(new File(fineName))
-    val resultOutputStream: PrintStream = new PrintStream(resultFileStream)
+    val resultsLogFileStream: FileOutputStream = new FileOutputStream(new File(fileName))
+    val resultsLogStream: PrintStream = new PrintStream(resultsLogFileStream)
 
     // scalastyle:off
     for (query <- queries) {
@@ -366,24 +366,25 @@ object TPCHUtils extends Logging {
         val expectedFile = sc.textFile(getClass.getResource(
           s"/TPCH/RESULT/Snappy_$query.out").getPath)
 
-        val queryFileName = if (isSnappy) s"1_Snappy_$query.out" else s"1_Spark_$query.out"
-        val actualFile = sc.textFile(queryFileName)
+        //val queryFileName = if (isSnappy) s"1_Snappy_$query.out" else s"1_Spark_$query.out"
+        val queryResultsFileName = if (isSnappy) s"1_Snappy_Q${query}_Results.out" else s"1_Spark_Q${query}_Results.out"
+        val actualFile = sc.textFile(queryResultsFileName)
 
         val expectedLineSet = expectedFile.collect().toList.sorted
         val actualLineSet = actualFile.collect().toList.sorted
 
         if (!actualLineSet.equals(expectedLineSet)) {
           if (!(expectedLineSet.size == actualLineSet.size)) {
-            resultOutputStream.println(s"For $query " +
+            resultsLogStream.println(s"For $query " +
                 s"result count mismatched observed with " +
                 s"expected ${expectedLineSet.size} and actual ${actualLineSet.size}")
           } else {
             for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
               if (!expectedLine.equals(actualLine)) {
-                resultOutputStream.println(s"For $query result mismatched observed")
-                resultOutputStream.println(s"Expected  : $expectedLine")
-                resultOutputStream.println(s"Found     : $actualLine")
-                resultOutputStream.println(s"-------------------------------------")
+                resultsLogStream.println(s"For $query result mismatched observed")
+                resultsLogStream.println(s"Expected  : $expectedLine")
+                resultsLogStream.println(s"Found     : $actualLine")
+                resultsLogStream.println(s"-------------------------------------")
               }
             }
           }
@@ -399,16 +400,16 @@ object TPCHUtils extends Logging {
         val actualLineSet = secondRunFile.collect().toList.sorted
 
         if (actualLineSet.equals(expectedLineSet)) {
-          resultOutputStream.println(s"For $query result matched observed")
-          resultOutputStream.println(s"-------------------------------------")
+          resultsLogStream.println(s"For $query result matched observed")
+          resultsLogStream.println(s"-------------------------------------")
         }
       }
     }
     // scalastyle:on
-    resultOutputStream.close()
-    resultFileStream.close()
+    resultsLogStream.close()
+    resultsLogFileStream.close()
 
-    val resultOutputFile = sc.textFile(fineName)
+    val resultOutputFile = sc.textFile(fileName)
 
     if(!isTokenization) {
       assert(resultOutputFile.count() == 0,
@@ -433,11 +434,8 @@ object TPCHUtils extends Logging {
       fileName: String = ""): Unit = {
     snc.sql(s"set spark.sql.crossJoin.enabled = true")
 
-//    queries.foreach(query => TPCH_Snappy.execute(query, snc,
-//      isResultCollection, isSnappy, warmup = warmup,
-//      runsForAverage = runsForAverage, avgPrintStream = System.out))
     queries.foreach(query => QueryExecutor.execute(query, snc, isResultCollection,
       isSnappy, isDynamic = isDynamic, warmup = warmup, runsForAverage = runsForAverage,
-      avgPrintStream = System.out))
+      avgTimePrintStream = System.out))
   }
 }

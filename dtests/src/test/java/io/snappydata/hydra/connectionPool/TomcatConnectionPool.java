@@ -1,6 +1,6 @@
 
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -24,6 +24,7 @@ import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.apache.tomcat.jdbc.pool.PoolProperties;
+import util.TestException;
 
 public class TomcatConnectionPool {
 
@@ -59,7 +60,8 @@ public class TomcatConnectionPool {
     }
     catch(Exception e) {
       Log.getLogWriter().info("Got exception while getting connection using tomcat connection " +
-          "pool");
+         "pool");
+      throw new TestException("Got exception while getting pool connection",e);
     }
     return conn;
   }

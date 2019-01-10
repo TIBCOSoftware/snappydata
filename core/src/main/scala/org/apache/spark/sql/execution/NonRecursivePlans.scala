@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,20 +31,20 @@ abstract class NonRecursivePlans extends SparkPlan {
    * Variable to disallow recursive generation so will mark the case of
    * non-codegenerated case and throw back exception to use CodegenSparkFallback.
    */
-  protected final var nonCodeGeneratedPlan: Boolean = _
+  protected final var nonCodeGeneratedPlanCalls: Int = _
 
   override protected def doExecute(): RDD[InternalRow] = {
-    if (nonCodeGeneratedPlan) {
+    if (nonCodeGeneratedPlanCalls > 4) {
       throw new CodeGenerationException(
         "Code generation failed for some of the child plans. See driver log for details.")
     }
-    nonCodeGeneratedPlan = true
+    nonCodeGeneratedPlanCalls += 1
     WholeStageCodegenExec(this).execute()
   }
 
   override def makeCopy(newArgs: Array[AnyRef]): NonRecursivePlans = {
     val plan = super.makeCopy(newArgs).asInstanceOf[NonRecursivePlans]
-    plan.nonCodeGeneratedPlan = nonCodeGeneratedPlan
+    plan.nonCodeGeneratedPlanCalls = nonCodeGeneratedPlanCalls
     plan
   }
 }

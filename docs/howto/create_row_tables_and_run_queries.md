@@ -15,7 +15,7 @@ The code snippet below shows how to create a replicated row table using API.
 
 **Get a SnappySession**
 
-```no-highlight
+```pre
 val spark: SparkSession = SparkSession
     .builder
     .appName("CreateReplicatedRowTable")
@@ -23,12 +23,13 @@ val spark: SparkSession = SparkSession
     .getOrCreate
 
 val snSession = new SnappySession(spark.sparkContext)
+import org.apache.spark.sql.types._
 ```
 
 **Create the Table using API**:
 First, define the table schema and then create the table using createTable API
 
-```no-highlight
+```pre
 val schema = StructType(Array(StructField("S_SUPPKEY", IntegerType, false),
   StructField("S_NAME", StringType, false),
   StructField("S_ADDRESS", StringType, false),
@@ -48,7 +49,7 @@ snSession.createTable("SUPPLIER", "row", schema, props1)
 
 **Creating a Row table using SQL**:
 The same table can be created using SQL as shown below:
-```no-highlight
+```pre
 // First drop the table if it exists
 snSession.sql("DROP TABLE IF EXISTS SUPPLIER")
 // Create a row table using SQL
@@ -71,7 +72,7 @@ For example:
 
 **To insert data in the SUPPLIER table:** 
 
-```no-highlight
+```pre
 snSession.sql("INSERT INTO SUPPLIER VALUES(1, 'SUPPLIER1', 'CHICAGO, IL', 0, '555-543-789', 10000, ' ')")
 snSession.sql("INSERT INTO SUPPLIER VALUES(2, 'SUPPLIER2', 'BOSTON, MA', 0, '555-234-489', 20000, ' ')")
 snSession.sql("INSERT INTO SUPPLIER VALUES(3, 'SUPPLIER3', 'NEWYORK, NY', 0, '555-743-785', 34000, ' ')")
@@ -80,34 +81,34 @@ snSession.sql("INSERT INTO SUPPLIER VALUES(4, 'SUPPLIER4', 'SANHOSE, CA', 0, '55
 
 **To print the contents of the SUPPLIER table:** 
 
-```no-highlight
+```pre
 var tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
 tableData.foreach(println)
 ```
 
 **To update the table account balance for SUPPLIER4:** 
 
-```no-highlight
+```pre
 snSession.sql("UPDATE SUPPLIER SET S_ACCTBAL = 50000 WHERE S_NAME = 'SUPPLIER4'")
 ```
 
 **To print contents of the SUPPLIER table after update** 
 
-```no-highlight
+```pre
 tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
 tableData.foreach(println)
 ```
 
 **To delete the records for SUPPLIER2 and SUPPLIER3** 
 
-```no-highlight
+```pre
 snSession.sql("DELETE FROM SUPPLIER WHERE S_NAME = 'SUPPLIER2' OR S_NAME = 'SUPPLIER3'")
 
 ```
 
 **To print the contents of the SUPPLIER table after delete**
 
-```no-highlight
+```pre
 tableData = snSession.sql("SELECT * FROM SUPPLIER").collect()
 tableData.foreach(println)
 ```

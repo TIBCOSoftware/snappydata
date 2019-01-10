@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,6 +22,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import io.snappydata.Property;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -44,6 +45,7 @@ public class JavaCreateIndexTestSuite implements Serializable {
   @Before
   public void setUp() {
 
+    snc.setConf(Property.EnableExperimentalFeatures().name(), "true");
     List<DummyBeanClass> dummyList = new ArrayList<DummyBeanClass>();
     for (int i = 0; i < 2; i++) {
       DummyBeanClass object = new DummyBeanClass();

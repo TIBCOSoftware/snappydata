@@ -66,12 +66,12 @@ This can be set using a `SET SQL` command or using the configuration properties 
 
 **Example**</br>
 
-``` no-highlight
+``` pre
 // To set auto broadcast
 snc.sql(s"set spark.sql.autoBroadcastJoinThreshold=<_SizeInBytes_>")
 ```
 
-``` no-highlight
+``` pre
 // To disable auto broadcast
 .set("spark.sql.autoBroadcastJoinThreshold", "-1")
 ```
@@ -93,7 +93,7 @@ localhost
 
 **Example**</br>
 
-``` no-highlight
+``` pre
 -client-bind-address=localhost
 ```
 <a id="classpath"></a>
@@ -111,7 +111,7 @@ Location of user classes required by the SnappyData Server/Lead nodes. </br> Thi
 
 **Example**</br>
 
-``` no-highlight
+``` pre
 -classpath=<path to user jar>
 ```
 
@@ -171,7 +171,7 @@ Defaults to the product's work directory.
 **Example**</br>
 
 This is the launcher property and needs to be specified in the respective conf files before starting the cluster.
-``` no-highlight
+``` pre
 -dir = <path to log directory>
 ```
 
@@ -197,7 +197,7 @@ This can be set as a launcher property or a boot property as below:
 -eviction-heap-percentage = “20”
 ```
 
-```no-highlight
+```pre
 props.setProperty("eviction-heap-percentage", "20") 
 ```
 <a id="eviction-off-heap-percentage"></a>
@@ -218,11 +218,11 @@ By default, the eviction threshold is 81% of whatever is set for `critical-off-h
 
 This can be set as a launcher property or a boot property as below:
 
-```no-highlight
+```pre
 -eviction-heap-percentage = “20”
 ```
 
-```no-highlight
+```pre
 props.setProperty("eviction-off-heap-percentage", "15")
 ```
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,12 +18,13 @@
 package io.snappydata.cluster
 
 import java.io.File
+import java.math.BigDecimal
 import java.sql.{Connection, DatabaseMetaData, DriverManager, ResultSet, SQLException, Statement}
 
 import com.gemstone.gemfire.distributed.DistributedMember
+
 import scala.collection.mutable
 import scala.collection.JavaConverters._
-
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -34,7 +35,6 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import junit.framework.TestCase
 import org.apache.commons.io.FileUtils
 import org.junit.Assert
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
@@ -494,7 +494,7 @@ class QueryRoutingDUnitTest(val s: String)
       val dbmd = conn.getMetaData
       val rSet = dbmd.getTables(null, "APP", null,
         Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-          "EXTERNAL TABLE", "STREAM TABLE"))
+          "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
       assert(rSet.next())
 
       s.execute(s"drop table $rowTable")
@@ -524,7 +524,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       val tableMd = dbmd.getTables(null, "APP%", null,
         Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-          "EXTERNAL TABLE", "STREAM TABLE"))
+          "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
       while (tableMd.next()) {
         results += tableMd.getString(2) + '.' + tableMd.getString(3)
       }
@@ -634,7 +634,7 @@ class QueryRoutingDUnitTest(val s: String)
     // Simulates 'SHOW TABLES' of ij
     var rSet = dbmd.getTables(null, "APP", null,
       Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-        "EXTERNAL TABLE", "STREAM TABLE"))
+        "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
 
     var foundTable = false
     while (rSet.next()) {
@@ -647,7 +647,7 @@ class QueryRoutingDUnitTest(val s: String)
 
     val rSet2 = dbmd.getTables(null, "APP", null,
       Array[String]("ROW TABLE", "SYSTEM TABLE", "COLUMN TABLE",
-        "EXTERNAL TABLE", "STREAM TABLE"))
+        "EXTERNAL TABLE", "STREAM TABLE", "VTI"))
 
     foundTable = false
     while (rSet2.next()) {
@@ -761,6 +761,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       TPCHUtils.createAndLoadTables(snc, true)
 
+      snc.setConf(Property.EnableExperimentalFeatures.name, "true")
       snc.sql(
         s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
              options (COLOCATE_WITH 'customer')
@@ -856,6 +857,44 @@ class QueryRoutingDUnitTest(val s: String)
     assertPrimaries(s"select * from $table")
 
     session.dropTable(table)
+  }
+
+  def testSNAP2247(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+    val st = conn.createStatement()
+    try {
+      val conn = DriverManager.getConnection(
+        "jdbc:snappydata://localhost:" + serverHostPort)
+
+      val st = conn.createStatement()
+      st.execute(s"create table trade.securities " +
+          s"(sec_id int not null, symbol varchar(10) not null, " +
+          s"price decimal (30, 20), exchange varchar(10) not null, " +
+          s"tid int, constraint sec_pk primary key (sec_id), " +
+          s"constraint sec_uq unique (symbol, exchange), constraint exc_ch check " +
+          s"(exchange in ('nasdaq', 'nye', 'amex', 'lse', 'fse', 'hkse', 'tse'))) " +
+          s"ENABLE CONCURRENCY CHECKS")
+
+      val ps = conn.prepareStatement(s"select price, symbol, exchange from trade.securities" +
+          s" where (price<? or price >=?) and tid =? order by CASE when exchange ='nasdaq'" +
+          s" then symbol END desc, CASE when exchange in('nye', 'amex') then sec_id END desc," +
+          s" CASE when exchange ='lse' then symbol END asc,  CASE when exchange ='fse' then" +
+          s" sec_id END desc,  CASE when exchange ='hkse' then symbol END asc," +
+          s"  CASE when exchange ='tse' then symbol END desc")
+
+      ps.setBigDecimal(1, new BigDecimal("0.02"))
+      ps.setBigDecimal(2, new BigDecimal("20.02"))
+      ps.setInt(3, 3)
+
+      ps.execute()
+      assert(!ps.getResultSet.next())
+    } finally {
+      st.execute(s"drop table trade.securities")
+      conn.close()
+    }
   }
 
   def limitInsertRows(numRows: Int, serverHostPort: Int, tableName: String): Unit = {
@@ -985,4 +1024,34 @@ class QueryRoutingDUnitTest(val s: String)
       conn.close()
     }
   }
+
+  def testAlterTableRowTable(): Unit = {
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    val conn = DriverManager.getConnection("jdbc:snappydata://localhost:" + serverHostPort)
+    println(s"Connected to $serverHostPort")
+
+    val stmt = conn.createStatement();
+    try {
+      val createParentTable: String =
+        "create table parentT (cid int not null, sid int not null, qty int not null, " +
+            " constraint parent_pk primary key (cid, sid)) " +
+            "USING ROW OPTIONS (  PERSISTENT 'SYNCHRONOUS');"
+      val createChildTable: String =
+        "create table childT (oid int not null constraint child_pk primary key, cid int, " +
+            "sid int, qty int, constraint parent_fk foreign key (cid, sid)" +
+            "references parentT (cid, sid) on delete restrict) " +
+            "USING ROW OPTIONS ( PERSISTENT 'SYNCHRONOUS');"
+      val alterTableStmt: String = "alter table childT drop FOREIGN KEY parent_fk"
+      stmt.execute(createParentTable)
+      stmt.execute(createChildTable)
+      stmt.execute(alterTableStmt)
+    } finally {
+      stmt.execute("drop table childT")
+      stmt.execute("drop table parentT")
+      stmt.close()
+      conn.close()
+    }
+  }
+
 }

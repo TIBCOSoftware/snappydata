@@ -2,16 +2,16 @@
 
 **To Create Stream Table:**
 
-```no-highlight
+```pre
 // DDL for creating a stream table
 CREATE STREAM TABLE [IF NOT EXISTS] table_name
     ( column-definition	[ , column-definition  ] * )
-    USING kafka_stream | file_stream | twitter_stream | socket_stream | directkafka_stream
+    USING kafka_stream | file_stream | twitter_stream | socket_stream
     OPTIONS (
     // multiple stream source specific options
       storagelevel 'cache-data-option',
       rowConverter 'rowconverter-class-name',
-      topics 'comma-seperated-topic-name',
+      subscribe 'comma-seperated-topic-name',
       kafkaParams 'kafka-related-params',
       consumerKey 'consumer-key',
       consumerSecret 'consumer-secret',
@@ -72,7 +72,7 @@ Access token secret for your Twitter account.
 
 ## Example
 
-```no-highlight
+```pre
 //create a connection
 snappy> connect client 'localhost:1527';
 

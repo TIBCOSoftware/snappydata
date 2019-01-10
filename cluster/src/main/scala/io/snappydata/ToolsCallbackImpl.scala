@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,31 +19,65 @@ package io.snappydata
 import java.io.File
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
-import java.util.UUID
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
-import org.apache.spark.executor.SnappyExecutor
-import org.apache.spark.{SparkContext, SparkFiles}
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning}
-import org.apache.spark.ui.SnappyDashboardTab
-import org.apache.spark.util.{SnappyUtils, Utils}
 
-object ToolsCallbackImpl extends ToolsCallback {
+import org.apache.spark.executor.SnappyExecutor
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
+import org.apache.spark.sql.execution.ui.SQLTab
+import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
+import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
+import org.apache.spark.util.SnappyUtils
+import org.apache.spark.{Logging, SparkCallbacks, SparkContext}
+
+object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def updateUI(sc: SparkContext): Unit = {
-    SnappyUtils.getSparkUI(sc).foreach(new SnappyDashboardTab(_))
+
+    SnappyUtils.getSparkUI(sc).foreach(ui => {
+      // Create Snappy Dashboard and SQL tabs.
+      // Set SnappyData authenticator SecurityHandler.
+      SparkCallbacks.getAuthenticatorForJettyServer() match {
+        case Some(_) =>
+          logInfo("Setting auth handler")
+          // Set JettyUtils.skipHandlerStart for adding dashboard and sql security handlers
+          JettyUtils.skipHandlerStart.set(true)
+          // Creating SQL and Dashboard UI tabs
+          if (!sc.isLocal) {
+            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          }
+          SnappyHiveThriftServer2.attachUI()
+          new SnappyDashboardTab(ui)
+          // Set security handlers
+          ui.getHandlers.foreach { h =>
+            if (!h.isStarted) {
+              h.setSecurityHandler(JettyUtils.basicAuthenticationHandler())
+              h.start()
+            }
+          }
+          // Unset JettyUtils.skipHandlerStart
+          JettyUtils.skipHandlerStart.set(false)
+        case None => logDebug("Not setting auth handler")
+          // Creating SQL and Dashboard UI tabs
+          if (!sc.isLocal) {
+            new SQLTab(ExternalStoreUtils.getSQLListener.get(), ui)
+          }
+          SnappyHiveThriftServer2.attachUI()
+          new SnappyDashboardTab(ui)
+      }
+    })
   }
 
   override def removeAddedJar(sc: SparkContext, jarName: String): Unit =
     sc.removeAddedJar(jarName)
 
   /**
-    * Callback to spark Utils to fetch file
-    */
+   * Callback to spark Utils to fetch file
+   */
   override def doFetchFile(
       url: String,
       targetDir: File,
@@ -57,7 +91,7 @@ object ToolsCallbackImpl extends ToolsCallback {
   }
 
   override def addURIs(alias: String, jars: Array[String],
-    deploySql: String, isPackage: Boolean = true): Unit = {
+      deploySql: String, isPackage: Boolean = true): Unit = {
     if (alias != null) {
       Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
     }
@@ -70,7 +104,7 @@ object ToolsCallbackImpl extends ToolsCallback {
     // Close and reopen interpreter
     if (alias != null) {
       try {
-        lead.closeAndReopenInterpreterServer();
+        lead.closeAndReopenInterpreterServer()
       } catch {
         case ite: InvocationTargetException => assert(ite.getCause.isInstanceOf[SecurityException])
       }
@@ -84,47 +118,48 @@ object ToolsCallbackImpl extends ToolsCallback {
     }
   }
 
-  override def getAllGlobalCmnds(): Array[String] = {
+  override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
   }
 
-  override def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]] = {
+  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.entrySet()
   }
 
   override def removePackage(alias: String): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
-    val packageRegion = Misc.getMemStore.getGlobalCmdRgn()
+    val packageRegion = Misc.getMemStore.getGlobalCmdRgn
     packageRegion.destroy(alias)
   }
 
   override def setLeadClassLoader(): Unit = {
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {
-      case li: LeadImpl => {
+      case li: LeadImpl =>
         val loader = li.urlclassloader
         if (loader != null) {
           Thread.currentThread().setContextClassLoader(loader)
         }
-      }
       case _ =>
     }
   }
 
-  override def getLeadClassLoader(): URLClassLoader = {
+  override def getLeadClassLoader: URLClassLoader = {
     var ret: URLClassLoader = null
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {
-      case li: LeadImpl => {
+      case li: LeadImpl =>
         val loader = li.urlclassloader
         if (loader != null) {
           ret = loader
         }
-      }
       case _ =>
     }
     ret
   }
+
+  override def checkSchemaPermission(schema: String, currentUser: String): String =
+    StoreCallbacksImpl.checkSchemaPermission(schema, currentUser)
 }

@@ -3,7 +3,7 @@ Connects to a SnappyData distributed system and executes the contents of a SQL c
 
 ## Syntax
 
-```no-highlight
+```pre
 ./bin/snappy run -file=<path or URL>
      [-auth-provider=<name>]
      [-client-bind-address=<address>]
@@ -33,7 +33,7 @@ This table describes options for the `snappy run` command. Default values are us
 |-J-D;property=value;|Sets Java system property to the specified value.|
 |-password|If the servers or locators have been configured to use authentication, this option specifies the password for the user (specified with the -user option) to use for booting the server and joining the distributed system.</br>The password value is optional. If you omit the password, you are prompted to enter a password from the console.|
 |-path|Configures the working directory for any other SQL command files executed from within the script. The `-path` entry is prepended to any SQL script file name executed that the script executes in a [run](../../reference/interactive_commands/store_command_reference.md) command.|
-|-user|If the servers or locators have been configured to use authentication, this option specifies the user name to use for booting the server and joining the distributed system.|
+|-user|If the servers or locators have been configured to use authentication, this option specifies the username to use for booting the server and joining the distributed system.|
 
 ## Description
 
@@ -47,12 +47,18 @@ The `-file` argument specifies the location of the SQL script file to execute. I
 
 This command connects to a SnappyData network server running on localhost:1527 and executes commands in the create_and_load_column_table.sql file:
 
-```no-highlight
+```pre
 ./bin/snappy run -file=/home/user1/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -client-bind-address=localhost -client-port=1527 
 ```
 
 If the script calls for dependent scripts (for example load_countries.sql, load_cities.sql) and if the command is executed outside the directory in which the dependent scripts are located, specify the working directory using the `-path` option.
 
-```no-highlight
+```pre
 ./bin/snappy run -file=/home/user1/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -path=/home/user1/snappydata/examples/quickstart -client-bind-address=localhost -client-port=1527
+```
+You can also run the command by providing the username and password.
+
+```
+./bin/snappy run -file=/home/supriya/snappy/snappydata/examples/quickstart/scripts/create_and_load_column_table.sql -client-bind-address=localhost -client-port=1527 -user=user1 -password=user123
+
 ```

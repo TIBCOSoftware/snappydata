@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -55,10 +55,12 @@ object SnappySessionFactory {
         }
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, username)
         snc.sqlContext.setConf(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR, password)
+        snc.sqlContext.setConf(Constant.STORE_PROPERTY_PREFIX
+            + com.pivotal.gemfirexd.Attribute.USERNAME_ATTR, "*****")
         // Clear admin user/password from jobConfig before passing it to user job.
         cleanJobConfig(jobConfig)
       } catch {
-        case m: ConfigException.Missing => jobConfig // Config not found
+        case _: ConfigException.Missing => jobConfig // Config not found
       }
     } else {
       jobConfig
@@ -66,12 +68,13 @@ object SnappySessionFactory {
   }
 
   def cleanJobConfig(c: Config): Config = {
-    // TODO Remove snappydata properties path when available
-    var sJobConfig = c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-        .Attribute.USERNAME_ATTR)
-    sJobConfig = sJobConfig.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal
-        .gemfirexd.Attribute.PASSWORD_ATTR)
-    sJobConfig
+    c.withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+        .withoutPath(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+        .withoutPath(com.pivotal.gemfirexd.Attribute.USERNAME_ATTR)
+        .withoutPath(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
+        .withoutPath("gemfire.sys.security-password")
+        .withoutPath("javax.jdo.option.ConnectionURL")
+    // Remove snappydata properties file path when available.
   }
 
   protected def newSession(): SnappySession with ContextLike =
@@ -79,8 +82,11 @@ object SnappySessionFactory {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
+      // Calling this method from JobKill.
       override def stop(): Unit = {
-        // not stopping anything here because SQLContext doesn't have one.
+        // Stopping all StreamingQueries started by the session.
+        // If it's a normal job there won't be any streaming query and it will be a no -op.
+        this.sessionState.streamingQueryManager.active.foreach(q => q.stop())
       }
 
       // Callback added to provide our classloader to load job classes.

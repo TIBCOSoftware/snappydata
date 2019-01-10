@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -52,7 +52,7 @@ abstract class SnappyStreamingJob extends SparkJobBase {
 
   def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation
 
-  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any;
+  def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
 
 }
 
@@ -72,9 +72,11 @@ class SnappyStreamingContextFactory extends SparkContextFactory {
       override def stop(): Unit = {
         try {
           val stopGracefully = config.getBoolean("streaming.stopGracefully")
-          stop(stopSparkContext = false, stopGracefully = stopGracefully)
+          SnappyStreamingContext.getActive
+              .foreach(c => c.stop(stopSparkContext = false, stopGracefully = stopGracefully))
         } catch {
-          case _: ConfigException.Missing => stop(stopSparkContext = false, stopGracefully = true)
+          case _: ConfigException.Missing => SnappyStreamingContext.getActive
+              .foreach(c => c.stop(stopSparkContext = false, stopGracefully = true))
         } finally {
           SnappyUtils.clearSessionDependencies(sparkContext)
         }

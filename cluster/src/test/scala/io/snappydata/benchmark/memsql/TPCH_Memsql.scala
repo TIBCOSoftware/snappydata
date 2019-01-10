@@ -24,13 +24,18 @@ import io.snappydata.benchmark.TPCH_Queries
 // scalastyle:off println
 object TPCH_Memsql {
 
-  var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.out"))
+  var avgFileStream: FileOutputStream = new FileOutputStream(new File(s"Average.csv"))
   var avgPrintStream: PrintStream = new PrintStream(avgFileStream)
+  avgPrintStream.println(s"Query,AverageResponseTime")
 
    def close(): Unit = {
      avgPrintStream.close()
      avgFileStream.close()
    }
+
+  def setRandomSeed(randomSeed : Integer): Unit ={
+    TPCH_Queries.setRandomSeed(randomSeed)
+  }
 
   def execute(queryNumber: String, isResultCollection: Boolean, stmt: Statement,
       warmup: Int, runsForAverage: Int, isDynamic: Boolean): Unit = {
@@ -59,7 +64,7 @@ object TPCH_Memsql {
            }
            queryPrintStream.println()
          }
-         println(s"NUmber of results : $count")
+         println(s"Number of results : $count")
          println(s"$queryNumber Result Collected in file $queryNumber.out")
          if (queryNumber.equals("15")) {
            stmt.execute("drop view revenue")
@@ -84,7 +89,7 @@ object TPCH_Memsql {
              stmt.execute("drop view revenue")
            }
          }
-         queryPrintStream.println(s"${totalTime / runsForAverage}")
+         queryPrintStream.println(s"Query $queryNumber average = ${totalTime / runsForAverage}")
          avgPrintStream.println(s"$queryNumber,${totalTime /runsForAverage}")
        }
        println(s"Finished executing $queryNumber")

@@ -1,4 +1,4 @@
-# snappydata.query-timeout
+# gemfirexd.query-timeout
 
 ## Description
 

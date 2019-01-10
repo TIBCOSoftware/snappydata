@@ -2,7 +2,7 @@
 
 Remove all content from a table and return it to its initial, empty state. TRUNCATE TABLE clears all in-memory data for the specified table as well as any data that was persisted to SnappyData disk stores. 
 
-```no-highlight
+```pre
 TRUNCATE TABLE table-name
 ```
 
@@ -14,7 +14,7 @@ To truncate a table, you must be the table's owner. You cannot use this command 
 
 To truncate the "flights" table in the current schema:
 
-```no-highlight
+```pre
 TRUNCATE TABLE flights;
 ```
 

@@ -7,7 +7,7 @@
 [Spark Session](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/sql/SparkSession.html) is the entry point to programming Spark with the Dataset and DataFrame API.
 SparkSession object can be created by using SparkSession.Builder used as below.
 
-```no-highlight
+```pre
 SparkSession.builder()
      .master("local")
      .appName("Word Count")
@@ -17,7 +17,7 @@ SparkSession.builder()
 
 In environments where SparkSession has been created up front (e.g. REPL, notebooks), use the builder to get an existing session:
 
-```no-highlight
+```pre
 SparkSession.builder().getOrCreate()
 ```
 
@@ -28,7 +28,7 @@ To create a SnappySession:
 
 **Scala**
 
-```no-highlight
+```pre
  val spark: SparkSession = SparkSession
          .builder
          .appName("SparkApp")
@@ -39,7 +39,7 @@ To create a SnappySession:
 ```
 **Java**
 
-```no-highlight
+```pre
  SparkSession spark = SparkSession
        .builder()
        .appName("SparkApp")
@@ -52,7 +52,7 @@ To create a SnappySession:
 
 **Python**
 
-```no-highlight
+```pre
  from pyspark.sql.snappy import SnappySession
  from pyspark import SparkContext, SparkConf
  
@@ -69,7 +69,7 @@ To create a SnappyStreamingContext:
 
 **Scala**
 
-```no-highlight
+```pre
  val spark: SparkSession = SparkSession
          .builder
          .appName("SparkApp")
@@ -79,7 +79,7 @@ To create a SnappyStreamingContext:
 ```
 **Java**
 
-```no-highlight
+```pre
  SparkSession spark = SparkSession
      .builder()
      .appName("SparkApp")
@@ -94,7 +94,7 @@ To create a SnappyStreamingContext:
 
 **Python**
 
-```no-highlight
+```pre
  from pyspark.streaming.snappy.context import SnappyStreamingContext
  from pyspark import SparkContext, SparkConf
  

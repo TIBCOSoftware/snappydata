@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -90,10 +90,7 @@ class StringAsVarcharDUnitTest(val s: String)
         logInfo(s"affix: '$affix'")
         stringType = hint match {
           case "*" => "CLOB"
-          case s: String => s.contains("col_string") match {
-            case true => "CLOB"
-            case false => "VARCHAR"
-          }
+          case s: String => if (s.contains("col_string")) "CLOB" else "VARCHAR"
         }
     }
 
@@ -113,12 +110,12 @@ class StringAsVarcharDUnitTest(val s: String)
     }
 
     eNv(s, colTab1, stringType)
-    // query on row table does not get routed, hence rs metadata shows CLOB
+    // row table metadata is from store so rs metadata shows CLOB
     eNv(s, rowTab1, "CLOB")
     eNv(s, extTab1, stringType, true, 0)
     if (!useDDL) {
       eNv(s, rowTab2, "CLOB")
-      eNv(s, extTab2, "CLOB", true, 5)
+      eNv(s, extTab2, stringType, true, 5)
     }
 
     def testCastOperator(s: Statement, t: String, expectedCount: Int): Unit = {
@@ -143,7 +140,8 @@ class StringAsVarcharDUnitTest(val s: String)
       stringType: String, tName: String, hint: String = "FALSE"): Unit = {
     val md = rs.getMetaData
     assert(md.getColumnCount == cols)
-    logInfo(s"$tName metadata column count = ${md.getColumnCount}, hint = $hint")
+    logInfo(s"$tName metadata column count = ${md.getColumnCount}, " +
+        s"hint = $hint expectedStringType = $stringType")
     for (i <- 1 to cols) {
       logInfo(s"col name = ${md.getColumnName(i)}, col type ${md.getColumnTypeName(i)}, table " +
           s"name = ${md.getTableName(i)}")
@@ -153,26 +151,26 @@ class StringAsVarcharDUnitTest(val s: String)
 
   private def assertMetaData(md: java.sql.ResultSetMetaData,
       stringType: String, tName: String): Unit = {
-    assert(md.getColumnName(1).equals("COL_INT"))
+    assert(md.getColumnName(1).equalsIgnoreCase("COL_INT"))
     assert(md.getColumnTypeName(1).equals("INTEGER"))
 
-    assert(md.getColumnName(2).equals("COL_STRING"))
+    assert(md.getColumnName(2).equalsIgnoreCase("COL_STRING"))
     assert(md.getColumnTypeName(2).equals(stringType),
       s"Expected type to be $stringType but got ${md.getColumnTypeName(2)}")
     if (stringType.equals("VARCHAR")) {
       assert(md.getPrecision(2) == Constant.MAX_VARCHAR_SIZE)
     }
 
-    assert(md.getColumnName(3).equals("COL_VARCHAR"))
+    assert(md.getColumnName(3).equalsIgnoreCase("COL_VARCHAR"))
     assert(md.getColumnTypeName(3).equals("VARCHAR"),
       s"Expected type to be VARCHAR but got ${md.getColumnTypeName(3)}")
     assert(md.getPrecision(3) == varcharSize)
 
-    assert(md.getColumnName(4).equals("COL_CLOB"))
+    assert(md.getColumnName(4).equalsIgnoreCase("COL_CLOB"))
     assert(md.getColumnTypeName(4).equals("CLOB"),
       s"Expected type to be CLOB but got ${md.getColumnTypeName(4)}")
 
-    assert(md.getColumnName(5).equals("COL_CHAR"))
+    assert(md.getColumnName(5).equalsIgnoreCase("COL_CHAR"))
     assert(md.getColumnTypeName(5).equals("CHAR"),
       s"Expected type to be CHAR but got ${md.getColumnTypeName(5)}")
     assert(md.getPrecision(5) == charSize)
@@ -197,7 +195,7 @@ class StringAsVarcharDUnitTest(val s: String)
 
     snc.sql(s"create external table $extTab1 (col_int int, col_string string, " +
         s"col_varchar varchar($varcharSize), col_clob clob, col_char char($charSize)) " +
-        s"USING parquet OPTIONS()")
+        s"USING csv OPTIONS(path '${getClass.getResource("/empty.csv").getPath}')")
 
     insertData(snc)
   }
@@ -227,8 +225,8 @@ class StringAsVarcharDUnitTest(val s: String)
 
     snc.createTable(colTab1, "column", schema, Map("buckets" -> "8"))
 
-    snc.createExternalTable(extTab1, "com.databricks.spark.csv", schema, Map.empty[String,
-        String])
+    snc.createExternalTable(extTab1, "csv", schema,
+      Map("path" -> getClass.getResource("/empty.csv").getPath))
 
     val df = snc.read
         .format("com.databricks.spark.csv")
@@ -236,13 +234,8 @@ class StringAsVarcharDUnitTest(val s: String)
         .option("maxCharsPerColumn", "4096")
         .schema(schema)
         .load(getClass.getResource("/allstringtypes.csv").getPath)
-        .cache
 
-    df.write
-        .format("column")
-        .mode("append")
-        .options(Map.empty[String, String])
-        .saveAsTable(extTab2)
+    df.write.format("column").saveAsTable(extTab2)
 
     insertData(snc)
   }

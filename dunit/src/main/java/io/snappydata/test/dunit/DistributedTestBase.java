@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -695,15 +695,21 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     logTestHistory();
     testName = getName();
 
+    Class<?> thisClass = getClass();
+    Logger logger = getLogWriter();
     if (!beforeClassDone) {
+      lastTest = null;
+      logger.info("[setup] Invoking beforeClass for " +
+          thisClass.getSimpleName() + "." + testName + "\n");
       beforeClass();
       beforeClassDone = true;
-      lastTest = null;
+      System.out.println("\n[setup] Invoked beforeClass for " +
+          thisClass.getSimpleName() + "." + testName + "\n");
     }
     if (lastTest == null) {
       // for class-level afterClass, list the test methods and do the
       // afterClass in the tearDown of last method
-      Class<?> scanClass = getClass();
+      Class<?> scanClass = thisClass;
       while (Test.class.isAssignableFrom(scanClass)) {
         for (Method m : MethodSorter.getDeclaredMethods(scanClass)) {
           String methodName = m.getName();
@@ -716,16 +722,15 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         scanClass = scanClass.getSuperclass();
       }
       if (lastTest == null) {
-        fail("Could not find any last test in " + getClass().getName());
+        fail("Could not find any last test in " + thisClass.getName());
       } else {
-        getLogWriter().info(
-            "Last test for " + getClass().getName() + ": " + lastTest);
+        logger.info("[setup] Last test for " + thisClass.getName() +
+            ": " + lastTest);
       }
     }
 
     if (testName != null) {
       String baseDefaultDiskStoreName = getTestClass().getCanonicalName() + "." + getTestName();
-      final String className = getClass().getName();
       for (int h = 0; h < Host.getHostCount(); h++) {
         Host host = Host.getHost(h);
         for (int v = 0; v < host.getVMCount(); v++) {
@@ -736,7 +741,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         }
       }
     }
-    System.out.println("\n\n[setup] START TEST " + getClass().getSimpleName() + "." + testName + "\n\n");
+    System.out.println("\n\n[setup] START TEST " + thisClass.getSimpleName() +
+        "." + testName + "\n\n");
   }
 
   /**
@@ -780,12 +786,21 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
         }
       }
     } finally {
-      tearDownAfter();
-
-      if (getName().equals(lastTest)) {
-        afterClass();
-        beforeClassDone = false;
-        lastTest = null;
+      final boolean isLastTest = getName().equals(lastTest);
+      try {
+        tearDownAfter();
+        if (isLastTest) {
+          System.out.println("\n[tearDown] Invoking afterClass post " +
+              getClass().getSimpleName() + "." + testName + "\n");
+          afterClass();
+          System.out.println("\n[tearDown] Invoked afterClass post " +
+              getClass().getSimpleName() + "." + testName + "\n");
+        }
+      } finally {
+        if (isLastTest) {
+          beforeClassDone = false;
+          lastTest = null;
+        }
       }
     }
   }

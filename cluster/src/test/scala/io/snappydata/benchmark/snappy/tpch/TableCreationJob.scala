@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -35,14 +35,17 @@ object TableCreationJob extends SnappySQLJob {
   var persistence_type: String = _
   var numberOfLoadStages : String = _
   var isParquet : Boolean = _
+  var createParquet : Boolean = _
+  var traceEvents : Boolean = _
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
     snc.sparkContext.hadoopConfiguration.set("fs.s3a.connection.maximum", "1000");
     val isSnappy = true
 
-    val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("Snappy_LoadPerf.out"))
+    val loadPerfFileStream: FileOutputStream = new FileOutputStream(new File("SnappyLoadTablesPerfStats.csv"))
     val loadPerfPrintStream: PrintStream = new PrintStream(loadPerfFileStream)
+    loadPerfPrintStream.println(s"Table, CreationTime")
 
     var usingOptionString = " USING row OPTIONS ()"
     if(persistence){
@@ -61,14 +64,14 @@ object TableCreationJob extends SnappySQLJob {
     snc.dropTable("ORDERS", ifExists = true)
 
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream)
+      loadPerfPrintStream, trace = false, cacheTables = false)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snc, tpchDataPath, isSnappy,
-      loadPerfPrintStream)
+      loadPerfPrintStream, trace = false, cacheTables = false)
 
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snc, tpchDataPath, isSnappy,
         buckets_Supplier, loadPerfPrintStream, redundancy, persistence, persistence_type,
-        numberOfLoadStages.toInt, isParquet)
+        numberOfLoadStages.toInt, isParquet, createParquet)
     } else {
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snc, tpchDataPath,
         isSnappy, loadPerfPrintStream, numberOfLoadStages.toInt)
@@ -76,19 +79,19 @@ object TableCreationJob extends SnappySQLJob {
 
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulateLineItemTable(snc, tpchDataPath, isSnappy,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulateCustomerTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulatePartTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snc, tpchDataPath, isSnappy,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_type,
-      numberOfLoadStages.toInt, isParquet)
+      numberOfLoadStages.toInt, isParquet, createParquet, trace = traceEvents, cacheTables = false)
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {
@@ -149,6 +152,18 @@ object TableCreationJob extends SnappySQLJob {
 
     isParquet = if (config.hasPath("isParquet")) {
       config.getBoolean("isParquet")
+    } else {
+      false
+    }
+
+    createParquet = if (config.hasPath("createParquet")) {
+      config.getBoolean("createParquet")
+    } else {
+      false
+    }
+
+    traceEvents = if (config.hasPath("traceEvents")) {
+      config.getBoolean("traceEvents")
     } else {
       false
     }

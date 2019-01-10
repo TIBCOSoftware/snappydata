@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,6 +47,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.types.{ArrayType, BinaryType, MapType, StringType, StructType}
 import org.apache.spark.util.Utils
 
 /**
@@ -266,9 +267,9 @@ case class SnappyHashAggregateExec(
   }
 
   // The variables used as aggregation buffer
-  @transient private var bufVars: Seq[ExprCode] = _
+  @transient protected var bufVars: Seq[ExprCode] = _
   // code to update buffer variables with current values
-  @transient private var bufVarUpdates: String = _
+  @transient protected var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
@@ -365,6 +366,21 @@ case class SnappyHashAggregateExec(
      """.stripMargin
   }
 
+  protected def genAssignCodeForWithoutKeys(ev: ExprCode, i: Int, doCopy: Boolean,
+      inputAttrs: Seq[Attribute]): String = {
+    if (doCopy) {
+      inputAttrs(i).dataType match {
+        case StringType =>
+          ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
+        case _: ArrayType | _: MapType | _: StructType =>
+          s"${bufVars(i).value} = ${ev.value} != null ? ${ev.value}.copy() : null;"
+        case _: BinaryType =>
+          s"${bufVars(i).value} = ${ev.value} != null ? ${ev.value}.clone() : null;"
+        case _ => s"${bufVars(i).value} = ${ev.value};"
+      }
+    } else s"${bufVars(i).value} = ${ev.value};"
+  }
+
   private def doConsumeWithoutKeys(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
     // only have DeclarativeAggregate
@@ -388,10 +404,12 @@ case class SnappyHashAggregateExec(
       boundUpdateExpr.map(_.genCode(ctx))
     }
     // aggregate buffer should be updated atomic
+    // make copy of results for types that can be wrappers and thus mutable
+    val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       if (bufVars(i).value != ev.value) {
         s"""${bufVars(i).isNull} = ${ev.isNull};
-            ${bufVars(i).value} = ${ev.value};"""
+            ${genAssignCodeForWithoutKeys(ev, i, doCopy, inputAttrs)}"""
       } else {
         // update the isNull variable in case its different (expression for AverageExp)
         bufVars(i).isNull = ev.isNull

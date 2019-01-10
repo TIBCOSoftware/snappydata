@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,7 +21,7 @@ import scala.collection.mutable.ArrayBuffer
 import com.gemstone.gemfire.internal.cache.LocalRegion
 
 import org.apache.spark.SparkContext
-import org.apache.spark.rdd.RDD
+import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
@@ -29,11 +29,11 @@ import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Dist
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, IndexColumnFormatRelation}
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
 import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
-import org.apache.spark.sql.execution.row.{RowFormatRelation, RowTableScan}
+import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
@@ -97,23 +97,53 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
   override lazy val outputPartitioning: Partitioning = {
-    if (numPartitions == 1 && numBuckets == 1) {
+    // when buckets are linked to partitions then actual buckets needs to be considered.
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
+    // The SinglePartition here is an optimization that can avoid an Exchange for the case
+    // of simple queries. This partitioning is compatible with all other required
+    // distributions though the table is still HashPartitioned. This helps for the
+    // case of aggregation with limit, for example, (SNAP-) which cannot be converted
+    // to use CollectAggregateExec. For cases where HashPartitioning of the table does
+    // require to be repartitioned due to a sub-query/join, "linkPart" will be true
+    // so it will fall into HashPartitioning.
+    if (numPartitions == 1 && (numBuckets == 1 || !linkPart)) {
       SinglePartition
     } else if (partitionColumns.nonEmpty) {
-      // when buckets are linked to partitions then numBuckets have
-      // to be sent as zero to skip considering buckets in partitioning
-      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val linkPart = session.hasLinkPartitionsToBuckets || session.preferPrimaries
       HashPartitioning(partitionColumns, if (linkPart) numBuckets else numPartitions)
-
     } else super.outputPartitioning
   }
 
-  override lazy val simpleString: String = "Partitioned Scan " + extraInformation +
-      " , Requested Columns = " + output.mkString("[", ",", "]") +
-      " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
-      " numBuckets= " + numBuckets +
-      " numPartitions= " + numPartitions)
+  override lazy val simpleString: String = {
+    val s = "Partitioned Scan " + extraInformation +
+        ", Requested Columns = " + output.mkString("[", ",", "]") +
+        " partitionColumns = " + partitionColumns.mkString("[", ",", "]" +
+        " numBuckets = " + numBuckets + " numPartitions = " + numPartitions)
+    /* TODO: doesn't work because this simpleString is not re-evaluated (even if made def)
+     * also will need to handle the possible case where numPartitions can change in future
+    if (numPartitions == 1 && numBuckets > 1) {
+      val partitionStr = dataRDD.partitions(0) match {
+        case z: ZippedPartitionsPartition => z.partitions(1).toString
+        case p => p.toString
+      }
+      s += " prunedPartition = " + partitionStr
+    } else {
+      s += " numPartitions = " + numPartitions
+    }
+    */
+    val rdd = dataRDD match {
+      // column scan will create zip of 2 partitions with second being the column one
+      case z: ZippedPartitionsBaseRDD[_] => z.rdds(1)
+      case r => r
+    }
+    val filters = rdd match {
+      case c: ColumnarStorePartitionedRDD => c.filters
+      case r: RowFormatScanRDD => r.filters
+      case s: SmartConnectorColumnRDD => s.filters
+      case _ => Array.empty[Expression]
+    }
+    if (filters != null && filters.length > 0) filters.mkString(s + " filters = ", ",", "") else s
+  }
 }
 
 private[sql] object PartitionedPhysicalScan {
@@ -147,7 +177,7 @@ private[sql] object PartitionedPhysicalScan {
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
-          output), baseTableRDD, numBuckets, Nil, Nil, table, caseSensitive)
+          output), baseTableRDD, numBuckets, Nil, Nil, table.table, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -175,14 +205,14 @@ private[sql] object PartitionedPhysicalScan {
         }
       case r: RowFormatRelation =>
         RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
-          partitionColumns, partitionColumnAliases, relation,
+          partitionColumns, partitionColumnAliases, relation.table, relation,
           r.sqlContext.conf.caseSensitiveAnalysis)
     }
 
   def getSparkPlanInfo(fullPlan: SparkPlan, paramLiterals: Array[ParamLiteral] = EMPTY_PARAMS,
       paramsId: Int = -1): SparkPlanInfo = {
     val plan = fullPlan match {
-      case CodegenSparkFallback(child) => child
+      case CodegenSparkFallback(child, _) => child
       case _ => fullPlan
     }
     val children = plan match {

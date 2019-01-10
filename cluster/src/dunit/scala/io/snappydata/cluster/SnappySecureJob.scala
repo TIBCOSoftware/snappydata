@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -60,7 +60,7 @@ class SnappySecureJob extends SnappySQLJob {
         accessAndModifyTablesOwnedByOthers(snSession, jobConfig)
       }
       // Confirm that our zeppelin interpreter is not initialized.
-      assert(ServiceManager.getLeadInstance.asInstanceOf[LeadImpl].getInterpreterServerClass() ==
+      assert(ServiceManager.getLeadInstance.asInstanceOf[LeadImpl].getInterpreterServerClass ==
           null, "Zeppelin interpreter must not be initialized in secure cluster")
       // Check SnappyData Pulse UI is secured by our custom authenticator.
       assert(SparkCallbacks.getAuthenticatorForJettyServer().get
@@ -245,20 +245,22 @@ object SnappyStreamingSecureJob extends SnappyStreamingJob {
   def verifySessionAndConfig(snSession: SnappySession, jobConfig: Config): Unit = {
     assert(snSession.conf.getOption(Attribute.USERNAME_ATTR).isDefined, "Username not set in conf")
     assert(snSession.conf.getOption(Attribute.PASSWORD_ATTR).isDefined, "Password not set in conf")
-    try {
-      jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-          .Attribute.USERNAME_ATTR)
-      assert(false, "Boot credentials set in job config")
-    } catch {
-      case _: ConfigException.Missing => // expected
+
+    def checkConfig(configKey: String): Unit = {
+      try {
+        jobConfig.getString(configKey)
+        assert(false, s"Sensitive config $configKey found in job config!")
+      } catch {
+        case _: ConfigException.Missing => // expected
+      }
     }
-    try {
-      jobConfig.getString(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd
-          .Attribute.PASSWORD_ATTR)
-      assert(false, "Boot credentials set in job config")
-    } catch {
-      case _: ConfigException.Missing => // expected
-    }
+
+    Seq(Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd.Attribute.USERNAME_ATTR,
+      Constant.STORE_PROPERTY_PREFIX + com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+      com.pivotal.gemfirexd.Attribute.USERNAME_ATTR,
+      com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR,
+      "gemfire.sys.security-password",
+      "javax.jdo.option.ConnectionURL").foreach(checkConfig(_))
   }
 
   override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = {

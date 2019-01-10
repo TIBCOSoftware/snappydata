@@ -11,7 +11,7 @@ The SYS.MEMBERS table provides information about all peers and servers that make
 
 To display a list of all members that participate in a given cluster, simply query all ID entries in sys.members. For example:
 
-``` no-highlight
+```pre
 snappy> select ID from SYS.MEMBERS;
 ID
 -----------------------------------
@@ -26,7 +26,7 @@ The number of rows returned corresponds to the total number of peers, servers, a
 
 To determine each member's role in the system, include the KIND column in the query:
 
-``` no-highlight
+```pre
 snappy> select ID, KIND from SYS.MEMBERS;
 ID 					                	 |KIND
 -----------------------------------------------------------------------
@@ -38,7 +38,7 @@ ID 					                	 |KIND
 ```
 To view the members of cluster, query:
 
-``` no-highlight
+```pre
 snappy> show members;
 ID                            |HOST     |KIND             |STATUS |THRIFTSERVERS            |SERVERGROUPS
 --------------------------------------------------------------------------------------------------------- 
@@ -49,7 +49,7 @@ ID                            |HOST     |KIND             |STATUS |THRIFTSERVERS
 3 rows selected
 ```
 
-Data store members host data in the cluster, while accessor members do not host data. This role is determined by the `host-data` boot property. If a cluster contains only a single data store, its KIND is listed as "datastore(loner)."
+Data store members host data in the cluster, while accessor members do not host data. This role is determined by the `host-data` boot property. If a cluster contains only a single data store, its KIND is listed as "loner".
 
 ## Table and Data Storage Information
 
@@ -66,7 +66,7 @@ The SYS.SYSTABLES table provides information about all tables that are created i
 
 To display a list of all tables in the cluster:
 
-``` no-highlight
+```pre
 snappy> select TABLESCHEMANAME, TABLENAME from SYS.SYSTABLES order by TABLESCHEMANAME;
 TABLESCHEMANAME                                    |TABLENAME 
 ------------------------------------------------------------------------------------------------------------------------
@@ -142,7 +142,7 @@ SYSSTAT                                            |SYSXPLAIN_STATEMENTS
 
 The DATAPOLICY column specifies whether a table is replicated or partitioned, and whether a table is persisted to a disk store. For example:
 
-``` no-highlight
+```pre
 snappy> select TABLENAME, DATAPOLICY from SYS.SYSTABLES where TABLESCHEMANAME = 'APP';
 TABLENAME                                          |DATAPOLICY
 --------------------------------------------------------------------------
@@ -161,7 +161,7 @@ EMPLOYEE                                           |PERSISTENT_PARTITION
 
 For persistent tables, you can also display the disk store that persists the table's data, and whether the table uses synchronous or asynchronous persistence:
 
-``` no-highlight
+```pre
 snappy> select TABLENAME, DISKATTRS from SYS.SYSTABLES where TABLESCHEMANAME = 'APP';
 TABLENAME                                          |DISKATTRS
 ------------------------------------------------------------------------------------------------------------------------
@@ -180,7 +180,7 @@ EMPLOYEE                                           |DiskStore is SNAPPY-INTERNAL
 
 Use the EVICTIONATTRS column to determine if a table uses eviction settings and whether a table is configured to overflow to disk. For example:
 
-``` no-highlight
+```pre
 snappy> select TABLENAME, EVICTIONATTRS  from SYS.SYSTABLES where TABLESCHEMANAME = 'APP';
 TABLENAME                                   |EVICTIONATTRS
 ---------------------------------------------------------------------------------------------------------------------------

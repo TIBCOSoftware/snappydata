@@ -4,13 +4,13 @@
 
 Start the interactive `snappy` command prompt by using the snappy script without supplying any other options:
 
-```no-highlight
+```pre
 snappy
 ```
 
 The system property `snappy.history` specifies a file in which to store all of the commands executed during an interactive `snappy` session. For example:
 
-```no-highlight
+```pre
 $ export JAVA_ARGS="-Dsnappy.history=/Users/user1/snappydata-history.sql"
 $ snappy
 ```

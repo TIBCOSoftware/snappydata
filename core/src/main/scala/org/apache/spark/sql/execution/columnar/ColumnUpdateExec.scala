@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,14 +17,14 @@
 
 package org.apache.spark.sql.execution.columnar
 
-import io.snappydata.collection.IntObjectHashMap
+import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, SortOrder}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDeltaEncoder, ColumnEncoder, ColumnStatsSchema}
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
+import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
 import org.apache.spark.sql.execution.row.RowExec
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
@@ -39,16 +39,16 @@ import org.apache.spark.sql.types.StructType
 case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
     partitionColumns: Seq[String], partitionExpressions: Seq[Expression], numBuckets: Int,
     isPartitioned: Boolean, tableSchema: StructType, externalStore: ExternalStore,
-    appendableRelation: JDBCAppendableRelation, updateColumns: Seq[Attribute],
+    columnRelation: BaseColumnFormatRelation, updateColumns: Seq[Attribute],
     updateExpressions: Seq[Expression], keyColumns: Seq[Attribute],
     connProps: ConnectionProperties, onExecutor: Boolean) extends ColumnExec {
 
   assert(updateColumns.length == updateExpressions.length)
 
-  override def relation: Option[DestroyRelation] = Some(appendableRelation)
+  override def relation: Option[DestroyRelation] = Some(columnRelation)
 
   val compressionCodec: CompressionCodecId.Type = CompressionCodecId.fromName(
-    appendableRelation.getCompressionCodec)
+    columnRelation.getCompressionCodec)
 
   private val schemaAttributes = tableSchema.toAttributes
 
@@ -72,9 +72,9 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
    */
   private def tableToUpdateIndex: IntObjectHashMap[Integer] = {
     if (_tableToUpdateIndex ne null) return _tableToUpdateIndex
-    val m = IntObjectHashMap.withExpectedSize[Integer](updateIndexes.length)
+    val m = new IntObjectHashMap[Integer](updateIndexes.length)
     for (i <- updateIndexes.indices) {
-      m.justPut(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
+      m.put(ColumnDelta.tableColumnIndex(updateIndexes(i)) - 1, i)
     }
     _tableToUpdateIndex = m
     _tableToUpdateIndex
@@ -83,14 +83,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   override protected def opType: String = "Update"
 
   override def nodeName: String = "ColumnUpdate"
-
-  // Require per-partition sort on batchId+ordinal because deltas are accumulated for
-  // consecutive batchIds+ordinals else it will  be very inefficient for bulk updates
-  // (e.g. for putInto). BatchId attribute is always third last in the keyColumns
-  // while ordinal (index of row in the batch) is the one before that.
-  override def requiredChildOrdering: Seq[Seq[SortOrder]] =
-  Seq(Seq(StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 3)),
-    StoreUtils.getColumnUpdateDeleteOrdering(keyColumns(keyColumns.length - 4))))
 
   override lazy val metrics: Map[String, SQLMetric] = {
     if (onExecutor) Map.empty
@@ -241,21 +233,38 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
       // code for invoking the function
       s"$function($batchOrdinal, (int)$ordinalIdVar, ${ev.isNull}, ${ev.value});"
     }.mkString("\n")
+    // Old code(Keeping the comment for better understanding)
     // Write the delta stats row for all table columns at the end of a batch.
     // Columns that have not been updated will write nulls for all three stats
     // columns so this costs 3 bits per non-updated column (worst case of say
     // 100 column table will be ~38 bytes).
+
+    // New Code : Stats rows are written as UnsafeRow. Unsafe row irrespective
+    // of nullability keeps nullbits.
+    // So if 100 columns are  there stats row will contain 100 * 3 and UnsafeRow will contain
+    // 300 nullbits plus bits required for 8 bytes word allignment. Hence setting unused columns
+    // as null does not really saves much.
+
+    // These nullbits are set based on platform endianness. SD ColumnFormatValue
+    // assumes LITTLE_ENDIAN bytes. However, Unsafe row itself does not force any endianness
+    // and picks up from the platform. Hence a lower byte of the bit set  can be represented as
+    // [11111110]. The 0th bit is for batch count which can never be null.
+    // This causes SD ColumnFormatValue to understand stats row as a compressed byte
+    // array( as first int is 1, hence -1 which after taking a negative
+    // equals to 1 i.e LZ4 compression codec id ).
+    // Hence setting each 3rd bit( null count stats) with not null flag. This will never cause
+    // the word to be read as negative number.
     val allNullsExprs = Seq(ExprCode("", "true", ""),
-      ExprCode("", "true", ""), ExprCode("", "true", ""))
+      ExprCode("", "true", ""), ExprCode("", "false", "-1"))
     val (statsSchema, stats) = tableSchema.indices.map { i =>
       val field = tableSchema(i)
       tableToUpdateIndex.get(i) match {
         case null =>
-          // write null for unchanged columns (by this update)
+          // write null for unchanged columns apart from null count field (by this update)
           (ColumnStatsSchema(field.name, field.dataType,
-            nullCountNullable = true).schema, allNullsExprs)
+            nullCountNullable = false).schema, allNullsExprs)
         case u => ColumnWriter.genCodeColumnStats(ctx, field,
-          s"$deltaEncoders[$u].getRealEncoder()", nullCountNullable = true)
+          s"$deltaEncoders[$u].getRealEncoder()")
       }
     }.unzip
     // GenerateUnsafeProjection will automatically split stats expressions into separate

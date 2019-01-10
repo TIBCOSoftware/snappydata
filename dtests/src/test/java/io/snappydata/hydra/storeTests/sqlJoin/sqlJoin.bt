@@ -1,0 +1,100 @@
+//join tests
+io/snappydata/hydra/storeTests/sqlJoin/concJoinTablesUniq.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/sqlJoin/concJoinCustSecPortfolioUniqHashPartitionOneRepl.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/sqlJoin/concJoinCustSecPortfolioUniqHashPartitionTwoRepl.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/sqlJoin/concJoinCustSecPortfSoUniqHashPartitionOneRepl.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+//no uniq indexed join tests
+io/snappydata/hydra/storeTests/sqlJoin/serialJoinCustSecPortfolioNonUniqHashPartitionOneRepl.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+//accessor store config for join tests
+io/snappydata/hydra/storeTests/sqlJoin/concJoinTablesUniqWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+/*
+io/snappydata/hydra/storeTests/sqlJoin/testJoinServerGroupsUniqWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    SGvms1=1 SGvms2=2 SGvms3=2 SGvms4=2 SGvms5=3 SGvms6=2
+    SGList1="random" SGList2="random" SGList3="random"
+    SGList4="random" SGList5="random" SGList6="random"
+    securities=trade.securities:0:default,trade.securities:replicate:random
+    customers=trade.customers:0:default,trade.customers:6:default,trade.customers:replicate:random
+    networth=trade.networth:random:random
+    portfolio=trade.portfolio:random:random
+    sellorders=trade.sellorders:random:random
+    buyorders=trade.buyorders:random:random
+    txhistory=trade.txhistory:random:random
+    schemaSG=random
+
+io/snappydata/hydra/storeTests/sqlJoin/testJoinServerGroupsUniqWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    SGvms1=1 SGvms2=2 SGvms3=2 SGvms4=2 SGvms5=3 SGvms6=2
+    SGList1="random" SGList2="random" SGList3="random"
+    SGList4="random" SGList5="random" SGList6="random"
+    securities=trade.securities:random:random
+    customers=trade.customers:random:random
+    networth=trade.networth:random:random
+    portfolio=trade.portfolio:random:random
+    sellorders=trade.sellorders:random:random
+    buyorders=trade.buyorders:random:random
+    txhistory=trade.txhistory:random:random
+    schemaSG=random
+*/
+//no uniq indexed join tests
+io/snappydata/hydra/storeTests/sqlJoin/concJoinIndexReplicateTables.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    dropIndex = false
+
+io/snappydata/hydra/storeTests/sqlJoin/concJoinReplicateTablesUniqWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    dropIndex = true
+
+io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinUniqWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+/*
+io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinUniqHAWithAccessors.conf
+    A=store storeHosts=1 storeVMsPerHost=4 storeThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=4 accessorThreadsPerVM=6
+    redundantCopies= 1, 2, 3
+*/
+io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinTwoRepUniqWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+/*
+io/snappydata/hydra/storeTests/sqlJoin/multiTablesJoinTwoRepUniqHAWithAccessors.conf
+    A=store storeHosts=1 storeVMsPerHost=7 storeThreadsPerVM=1
+    B=accessor accessorHosts=2 accessorVMsPerHost=4 accessorThreadsPerVM=6
+    redundantCopies= 2
+*/

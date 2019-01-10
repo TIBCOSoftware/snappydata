@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -44,7 +44,7 @@ object CreateAndLoadTablesSparkApp {
     NWQueries.dataFilesLocation = dataFilesLocation
     pw.println(s"dataFilesLocation : ${dataFilesLocation}")
     NWTestUtil.dropTables(snc)
-    SecurityTestUtil.createColRowTables(snc)
+   // SecurityTestUtil.createColRowTables(snc)
     println("Getting users arguments")
     val queryFile = args(1)
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")

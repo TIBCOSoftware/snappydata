@@ -1,0 +1,169 @@
+io/snappydata/hydra/storeTests/alterTable/addUniquenessConstraintsWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/addUniquenessConstraints.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterNullWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterNulls.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/addCheckWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/addCheck.conf
+     A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+     B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+     C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterDefaults.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/addColumns.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/addPK.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterDataTypes.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/bug42478.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/bugNPEOnInsert.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/bug42504.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+/*
+// Eviction and Expiration tests do not work yet, syntax not supported within alter table
+
+io/snappydata/hydra/storeTests/alterTable/alterExpiration.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterEviction.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+*/
+io/snappydata/hydra/storeTests/alterTable/addPKWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/addDropForeignKeyWithAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterTablesUniqWithDataAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+io/snappydata/hydra/storeTests/alterTable/alterTablesNonUniqWithDataAccessors.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+
+/* HA tests
+io/snappydata/hydra/storeTests/alterTablesUniqWithDataAccessorsHA.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    redundantCopies=1
+
+io/snappydata/hydra/storeTests/alterTablesNonUniqWithDataAccessorsHA.conf
+    A=locator locatorHosts=1 locatorVMsPerHost = 1 locatorThreadsPerVM = 1
+    B=store storeHosts=2 storeVMsPerHost=1 storeThreadsPerVM=3
+    C=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+    redundantCopies=1
+
+*/
+/* thin client tests
+io/snappydata/hydra/storeTests/sqlBridge/alterTableWithClient.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost= 5 serverThreadsPerVM=1
+    clientHosts = 2 clientVMsPerHost =3 clientThreadsPerVM = 10
+    redundantCopies=1
+    dropIndex = true
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+
+io/snappydata/hydra/storeTests/sqlBridge/alterTableNonUniqWithClient.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost= 5 serverThreadsPerVM=1
+    clientHosts = 2 clientVMsPerHost =3 clientThreadsPerVM = 20
+    redundantCopies=1
+    dropIndex = true
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+
+io/snappydata/hydra/storeTests/sqlBridge/alterTableWithClientHA.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost= 5 serverThreadsPerVM=1
+    clientHosts = 2 clientVMsPerHost =3 clientThreadsPerVM = 10
+    redundantCopies=1
+    dropIndex = true
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+
+io/snappydata/hydra/storeTests/sqlBridge/alterTableNonUniqWithClientHA.conf
+    locatorHosts = 1 locatorVMsPerHost =1 locatorThreadsPerVM = 1
+    serverHosts=1 serverVMsPerHost= 5 serverThreadsPerVM=1
+    clientHosts = 2 clientVMsPerHost =3 clientThreadsPerVM = 20
+    redundantCopies=1
+    dropIndex = true
+    securities=trade.securities:random
+    customers=trade.customers:random
+    networth=trade.networth:random
+    portfolio=trade.portfolio:random
+    sellorders=trade.sellorders:random
+    buyorders=trade.buyorders:random
+    txhistory=trade.txhistory:random
+*/

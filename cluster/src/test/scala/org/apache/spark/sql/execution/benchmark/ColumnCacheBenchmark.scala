@@ -161,12 +161,12 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
     var expectedResult: Array[Row] = null
     benchmark.addCase("smj", numIters,
-      () => snappy.sql(s"set ${Property.HashJoinSize.name}=-1")) { i =>
+      () => snappy.sql(s"set ${Property.HashJoinSize.name}=-1"), () => {}) { i =>
       if (i == 1) expectedResult = snappy.sql(sql).collect()
       else snappy.sql(sql).collect()
     }
     benchmark.addCase("hash", numIters,
-      () => snappy.sql(s"set ${Property.HashJoinSize.name}=1g")) { i =>
+      () => snappy.sql(s"set ${Property.HashJoinSize.name}=1g"), () => {}) { i =>
       if (i == 1) ColumnCacheBenchmark.collect(snappy.sql(sql), expectedResult)
       else snappy.sql(sql).collect()
     }
@@ -444,12 +444,12 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
     testDF.write.insertInto("wide_table1")
 
     val uniqDf = snappySession.table("wide_table").dropDuplicates(Array("C1"))
-    uniqDf.count()
+    logInfo("Number of unique rows in wide_table = " + uniqDf.count())
     // check fallback plans being invoked via API
-    uniqDf.show()
+    logInfo(uniqDf.collect().mkString("\n"))
     // and also via SQL
     val s = (2 to num_col).map(i => s"last(C$i)").mkString(",")
-    snappySession.sql(s"select C1, $s from wide_table group by C1").show()
+    snappySession.sql(s"select C1, $s from wide_table group by C1").collect()
 
     val df = snappySession.sql("select *" +
         " from wide_table a , wide_table1 b where a.c1 = b.c1 and a.c1 = '1'")
@@ -457,7 +457,6 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
 
     val df0 = snappySession.sql(s"select * from wide_table")
     df0.collect()
-    df0.show()
 
     val avgProjections = (1 to num_col).map(i => s"AVG(C$i)").mkString(",")
     val df1 = snappySession.sql(s"select $avgProjections from wide_table")

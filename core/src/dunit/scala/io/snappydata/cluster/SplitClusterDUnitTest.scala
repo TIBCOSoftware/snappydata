@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,8 +16,9 @@
  */
 package io.snappydata.cluster
 
+import java.net.InetAddress
 import java.nio.file.{Files, Paths}
-import java.sql.{Blob, Clob, Connection, DriverManager, ResultSet, SQLException, Statement, Timestamp}
+import java.sql.{Blob, Clob, Connection, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
 
 import scala.collection.JavaConverters._
@@ -75,8 +76,11 @@ class SplitClusterDUnitTest(s: String)
   private val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  override protected val productDir: String =
+  override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
+
+  protected val currentProductDir: String =
+    testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
 
@@ -104,12 +108,12 @@ class SplitClusterDUnitTest(s: String)
           |""".stripMargin, s"$confDir/servers")
     (snappyProductDir + "/sbin/snappy-start-all.sh").!!
 
-    vm3.invoke(getClass, "startSparkCluster", productDir)
+    vm3.invoke(getClass, "startSparkCluster", sparkProductDir)
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm3.invoke(getClass, "stopSparkCluster", productDir)
+    vm3.invoke(getClass, "stopSparkCluster", sparkProductDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
@@ -126,7 +130,13 @@ class SplitClusterDUnitTest(s: String)
 
   // test to make sure that stock spark-shell works with SnappyData core jar
   def testSparkShell(): Unit = {
-    testObject.invokeSparkShell(snappyProductDir, locatorClientPort)
+    testObject.invokeSparkShell(snappyProductDir, sparkProductDir, locatorClientPort, vm = vm3)
+  }
+
+  // test to make sure that stock spark-shell for latest Spark release works with JDBC pool jar
+  def testSparkShellCurrent(): Unit = {
+    testObject.invokeSparkShellCurrent(snappyProductDir, sparkProductDir, currentProductDir,
+      locatorClientPort, new Properties(), vm3)
   }
 }
 
@@ -134,9 +144,6 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   private val locatorPort = AvailablePortHelper.getRandomAvailableTCPPort
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
-
-  def getConnection(netPort: Int, props: Properties = new Properties()): Connection =
-    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort", props)
 
   override def assertTableNotCachedInHiveCatalog(tableName: String): Unit = {
   }
@@ -628,18 +635,58 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
   def startSparkCluster(productDir: String): Unit = {
     logInfo(s"Starting spark cluster in $productDir/work")
-    (productDir + "/sbin/start-all.sh") !!
+    logInfo((productDir + "/sbin/start-all.sh") !!)
   }
 
   def stopSparkCluster(productDir: String): Unit = {
-    val sparkContext = SnappyContext.globalSparkContext
+    stopSpark()
     logInfo(s"Stopping spark cluster in $productDir/work")
-    if (sparkContext != null) sparkContext.stop()
-    (productDir + "/sbin/stop-all.sh") !!
+    logInfo((productDir + "/sbin/stop-all.sh") !!)
   }
 
-  def invokeSparkShell(productDir: String, locatorClientPort: Integer, props: Properties = new
-          Properties()): Unit = {
+  def stopSpark(): Unit = {
+    logInfo(s" Stopping spark ")
+    val sparkContext = SnappyContext.globalSparkContext
+    if (sparkContext != null) sparkContext.stop()
+  }
+
+  private def runSparkShellSnappyPoolTest(stmt: Statement, sparkShellCommand: String): Unit = {
+    // create and populate the tables for the pool driver test
+    logInfo(s"About to invoke spark-shell with command: $sparkShellCommand")
+
+    val allOutput = new StringBuilder
+    val processLog = ProcessLogger(l => allOutput.append(l), l => allOutput.append(l))
+    sparkShellCommand ! processLog
+    var output = allOutput.toString()
+    logInfo(output)
+    output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
+    output = output.replaceAll("java.lang.ClassNotFoundException: " +
+        "org.apache.spark.sql.internal.SnappyAQPSessionState", "AQP missing")
+    assert(!output.contains("Exception"),
+      s"Some exception stacktrace seen on spark-shell console: $output")
+    assert(!output.contains("Error"), s"Some error seen on spark-shell console: $output")
+
+    // accessing tables created through spark-shell
+    val rs1 = stmt.executeQuery("select count(*) from testTable1")
+    rs1.next()
+    assert(rs1.getInt(1) == 2)
+
+    val rs2 = stmt.executeQuery("select count(*) from testTable2")
+    rs2.next()
+    assert(rs2.getInt(1) == 2)
+
+    // drop the tables
+    stmt.execute("drop table testTable2")
+    stmt.execute("drop table testTable1")
+  }
+
+  def invokeSparkShell(productDir: String, sparkProductDir: String, locatorClientPort: Int,
+      props: Properties = new Properties(), vm: VM = null): Unit = {
+
+    // stop any existing SparkContext, to make sure cpu core available for this test
+    if (vm eq null) stopSpark()
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark")
+
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
       "snappydata-core*.jar")
@@ -652,24 +699,22 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val snappyDataCoreJar = jars.iterator().next().toAbsolutePath.toString
     // SparkSqlTestCode.txt file contains the commands executed on spark-shell
     val scriptFile: String = getClass.getResource("/SparkSqlTestCode.txt").getPath
-    val sparkShellCommand = productDir + "/bin/spark-shell  --master local[3]" +
+    val scriptFile2: String = getClass.getResource("/SnappySqlPoolTestCode.txt").getPath
+    val hostName = InetAddress.getLocalHost.getHostName
+    val sparkShellCommand = s"$sparkProductDir/bin/spark-shell --master spark://$hostName:7077" +
         " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
+        " --conf spark.sql.catalogImplementation=in-memory" +
         s" --jars $snappyDataCoreJar" +
         securityConf +
-        s" -i $scriptFile"
+        s" -i $scriptFile -i $scriptFile2"
 
-    logInfo(s"About to invoke spark-shell with command: $sparkShellCommand")
-
-    var output = sparkShellCommand.!!
-    logInfo(output)
-    output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
-    assert(!output.contains("Exception"),
-      s"Some exception stacktrace seen on spark-shell console: $output")
-
+    logInfo(s"Invoking spark-shell: $sparkShellCommand")
     val conn = getConnection(locatorClientPort, props)
     val stmt = conn.createStatement()
 
-    // accessing tables created thru spark-shell
+    runSparkShellSnappyPoolTest(stmt, sparkShellCommand)
+
+    // accessing tables created through spark-shell
     val rs1 = stmt.executeQuery("select count(*) from coltable")
     rs1.next()
     assert(rs1.getInt(1) == 5)
@@ -677,6 +722,52 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val rs2 = stmt.executeQuery("select count(*) from rowtable")
     rs2.next()
     assert(rs2.getInt(1) == 5)
+
+    // drop the tables
+    stmt.execute("drop table rowtable")
+    stmt.execute("drop table coltable")
+
+    stmt.close()
+    conn.close()
+  }
+
+  def invokeSparkShellCurrent(productDir: String, sparkProductDir: String,
+      sparkCurrentProductDir: String, locatorClientPort: Int, props: Properties, vm: VM): Unit = {
+    // stop existing spark cluster and start with current Spark version; stop on vm3 to also close
+    // any existing SparkContext (subsequent tests will need to recreate the SparkContext)
+    if (vm eq null) stopSparkCluster(sparkProductDir)
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSparkCluster", sparkProductDir)
+    startSparkCluster(sparkCurrentProductDir)
+    try {
+      // perform some operations through spark-shell using JDBC pool driver API on current Spark
+      val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
+        "snappydata-jdbc_*.jar")
+      var securityConf = ""
+      if (props.containsKey(Attribute.USERNAME_ATTR)) {
+        securityConf = s" --conf spark.snappydata.user=" +
+            props.getProperty(Attribute.USERNAME_ATTR) +
+            s" --conf spark.snappydata.password=${props.getProperty(Attribute.PASSWORD_ATTR)}"
+      }
+      val snappyJdbcJar = jars.iterator().next().toAbsolutePath.toString
+      // SnappySqlPoolTestCode.txt file contains the commands executed on spark-shell
+      val scriptFile: String = getClass.getResource("/SnappySqlPoolTestCode.txt").getPath
+      val hostName = InetAddress.getLocalHost.getHostName
+      val sparkShellCommand = s"$sparkCurrentProductDir/bin/spark-shell " +
+          s"--master spark://$hostName:7077 --conf spark.snappydata.connection=localhost:" +
+          locatorClientPort + " --conf spark.sql.catalogImplementation=in-memory" +
+          s" --jars $snappyJdbcJar" + securityConf + s" -i $scriptFile"
+
+      val conn = getConnection(locatorClientPort, props)
+      val stmt = conn.createStatement()
+
+      runSparkShellSnappyPoolTest(stmt, sparkShellCommand)
+
+      stmt.close()
+      conn.close()
+    } finally {
+      stopSparkCluster(sparkCurrentProductDir)
+      startSparkCluster(sparkProductDir)
+    }
   }
 }
 

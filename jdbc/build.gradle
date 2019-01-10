@@ -1,0 +1,160 @@
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+
+dependencies {
+  compileOnly 'org.scala-lang:scala-library:' + scalaVersion
+  compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
+
+  compile 'org.slf4j:slf4j-api:' + slf4jVersion
+  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
+  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+  compile("org.apache.thrift:libthrift:${thriftVersion}") {
+    exclude(group: 'org.slf4j', module: 'slf4j-api')
+  }
+
+  // always use stock spark so that snappy extensions don't get accidently
+  // included here in snappy-jdbc code.
+  if (System.properties.containsKey('ideaBuild') && new File(rootDir, 'spark/build.gradle').exists()) {
+    compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+    compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+  } else {
+    compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
+    compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+  }
+
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:snappydata-store-client')
+  } else {
+    compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+  }
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+
+test.dependsOn ':cleanJUnit'
+check.dependsOn test, scalaTest, dunitTest
+
+archivesBaseName = 'snappydata-jdbc_' + scalaBinaryVersion
+jar.classifier = 'only'
+// shadowJar will act like the real jar for inclusion by applications
+shadowJar {
+  classifier = null
+
+  // avoid conflict with the 0.9.2 version in stock Spark
+  relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
+
+  mergeServiceFiles()
+  exclude 'log4j.properties'
+
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = 'SnappyData Build Team'
+  } else {
+    createdBy = System.getProperty('user.name')
+  }
+  manifest {
+    attributes(
+      'Manifest-Version'  : '1.0',
+      'Created-By'        : createdBy,
+      'Title'             : "snappydata-jdbc_${scalaBinaryVersion}",
+      'Version'           : version,
+      'Vendor'            : vendorName
+    )
+  }
+}
+
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources, shadowJar
+  }
+}
+
+// clear dependencies from shadowJar POM
+install {
+  repositories.mavenInstaller {
+    pom.whenConfigured { p -> p.dependencies.clear() }
+  }
+}
+if (rootProject.hasProperty('enablePublish')) {
+  uploadArchives {
+    repositories.mavenDeployer {
+      pom.whenConfigured { p -> p.dependencies.clear() }
+    }
+  }
+}
+
+// write the POM for spark-package
+String sparkPackageName = "snappydata-jdbc-${version}-s_${scalaBinaryVersion}"
+
+task sparkPackagePom(dependsOn: shadowJar) { doLast {
+  file("${rootProject.buildDir}/distributions").mkdirs()
+  pom {
+    project {
+      groupId 'SnappyDataInc'
+      artifactId 'snappydata-jdbc'
+      version "${version}-s_${scalaBinaryVersion}"
+      licenses {
+        license {
+          name 'The Apache Software License, Version 2.0'
+          url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          distribution 'repo'
+        }
+      }
+    }
+    whenConfigured { p -> p.dependencies.clear() }
+  }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
+  copy {
+    from "${buildDir}/libs"
+    into "${rootProject.buildDir}/distributions"
+    include "${shadowJar.archiveName}"
+    rename { filename -> "${sparkPackageName}.jar" }
+  }
+} }
+
+task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
+  archiveName "${sparkPackageName}.zip"
+  destinationDir = file("${rootProject.buildDir}/distributions")
+  outputs.upToDateWhen { false }
+
+  from ("${rootProject.buildDir}/distributions") {
+    include "${sparkPackageName}.jar"
+    include "${sparkPackageName}.pom"
+  }
+}

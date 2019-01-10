@@ -10,7 +10,7 @@ You can enable statistics collection per-member using the boot properties:
 
 -   [statistic-archive-file](../reference/configuration_parameters/statistic-archive-file.md)
 
-!!!Note:
+!!! Note
 	You must include the [statistic-archive-file](../reference/configuration_parameters/statistic-archive-file.md) and specify a valid file name in order to enable statistics collection.</p>
 These boot properties help you configure a member's statistic archive file location and size:
 
@@ -30,7 +30,7 @@ To collect statement-level statistics and time-based, statement-level statistics
 
 These properties can only be used with a peer client connect.
 
-!!! Note:  
+!!! Note
 	- Because of the overhead required for taking many timestamps, it is recommended that you enable time-based statistics only during testing and debugging. 
 
 	- Use statement-level statistics only when the number of individual statements is small, such as when using prepared statements. SnappyData creates a separate statistics instance for each individual statement. With a large number of these statements, it can be difficult to load archives into VSD and navigate to those statistics of interest. 
