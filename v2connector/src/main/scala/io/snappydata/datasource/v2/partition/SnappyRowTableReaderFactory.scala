@@ -14,7 +14,6 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 package io.snappydata.datasource.v2.partition
 
 import io.snappydata.datasource.v2.ConnectorUtils
