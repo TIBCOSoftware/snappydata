@@ -25,21 +25,26 @@ public class SnappyAlterTablesTest extends SnappyTest {
 
   public static void HydraTask_alterTables() throws SQLException {
     String query = null;
-    Connection conn = getLocatorConnection();
+    Connection conn = null;
+    boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+    if(isSecurityEnabled)
+      conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+    else
+      conn = getLocatorConnection();
     query = "ALTER TABLE orders ADD FirstName String";
     executeUpdate(conn, query);
     query = "SELECT count(*) FROM orders";
     executeQuery(conn, query);
-    query = "insert into app.orders values(10251,'AROUT',4,'1996-07-08 00:00:00.000'," +
+    query = "insert into orders values(10251,'AROUT',4,'1996-07-08 00:00:00.000'," +
         "'1996-08-05 00:00:00.000','1996-07-15 00:00:00.000',4,41.34," +
         "'Victuailles en stock 2','rue du Commerce','Lyon',NULL,'69004','France'," +
         "'empFirstName2')";
     executeUpdate(conn, query);
-    query = "insert into app.orders values(10260,'CENTC',13,'1996-07-19 00:00:00.000'," +
+    query = "insert into orders values(10260,'CENTC',13,'1996-07-19 00:00:00.000'," +
         "'1996-08-16 00:00:00.000','1996-07-29 00:00:00.000',13,55.09,'Ottilies Kaoseladen'," +
         "'Mehrheimerstr. 369','Kaqln',NULL,'50739','Germany','empFirstName4')";
     executeUpdate(conn, query);
-    query = "insert into app.orders values(10265,'DUMON',18,'1996-07-25 00:00:00.000'," +
+    query = "insert into orders values(10265,'DUMON',18,'1996-07-25 00:00:00.000'," +
         "'1996-08-22 00:00:00.000','1996-08-12 00:00:00.000',18,55.28," +
         "'Blondel pare et fils 24', 'place Klacber','Strasbourg',NULL," +
         "'67000','France','empFirstName5')";
@@ -62,11 +67,11 @@ public class SnappyAlterTablesTest extends SnappyTest {
     executeUpdate(conn, query);
     query = "SELECT count(*) FROM order_details";
     executeQuery(conn, query);
-    query = "insert into app.order_details values(10250,72,34.8,5,0,'custID4')";
+    query = "insert into order_details values(10250,72,34.8,5,0,'custID4')";
     executeUpdate(conn, query);
-    query = "insert into app.order_details values(10249,42,9.8,10,0,'custID14')";
+    query = "insert into order_details values(10249,42,9.8,10,0,'custID14')";
     executeUpdate(conn, query);
-    query = "insert into app.order_details values(10253,41,7.7,10,0,'custID7')";
+    query = "insert into order_details values(10253,41,7.7,10,0,'custID7')";
     executeUpdate(conn, query);
     query = "SELECT * FROM order_details where CustomerID='custID4'";
     executeQuery(conn, query);
