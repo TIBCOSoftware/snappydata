@@ -166,8 +166,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       if (eventTypeColumnAvailable) {
         processDataWithEventType(dataFrame)
       } else {
-        dataFrame.cache().count()  // this is done as a workaround for SNAP-2824
-        dataFrame.write.putInto(tableName)
+        if (dataFrame.cache().count() != 0) dataFrame.write.putInto(tableName)
       }
     }
     else {
