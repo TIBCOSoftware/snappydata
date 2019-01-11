@@ -232,6 +232,7 @@ class SnappyColumnTableReader(tableName: String, projection: StructType,
   }
 }
 
+// TODO [Pradeep] possibly this code can be reused from the SmartConnectorRDDHelper.prepareScan()
 final class ColumnBatchScanHelper {
 
   def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
