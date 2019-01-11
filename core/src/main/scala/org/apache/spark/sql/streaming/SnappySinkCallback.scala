@@ -171,7 +171,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       if (eventTypeColumnAvailable) {
         processDataWithEventType(dataFrame)
       } else {
-        if(persist(dataFrame).count() != 0) dataFrame.write.putInto(tableName)
+        if (persist(dataFrame).count() != 0) dataFrame.write.putInto(tableName)
       }
     }
     else {
