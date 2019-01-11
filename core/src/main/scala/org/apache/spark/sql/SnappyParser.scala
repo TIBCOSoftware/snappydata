@@ -1126,7 +1126,7 @@ class SnappyParser(session: SnappySession)
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     INSERT ~ INTO ~ tableIdentifier ~ ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
       UnresolvedRelation(r), input.sliceString(0, input.length))) |
-    PUT ~ INTO ~ tableIdentifier ~ VALUES ~ ANY.* ~>
+    PUT ~ INTO ~ tableIdentifier ~ ANY.* ~>
         ((r: TableIdentifier) => {
           checkTableType(r)
           DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length))
