@@ -37,7 +37,7 @@ final class SmartConnectorRDDHelper {
   def prepareScan(conn: Connection, txId: String, columnTable: String, projection: Array[Int],
       serializedFilters: Array[Byte], partition: SmartExecutorBucketPartition,
       catalogVersion: Long): (PreparedStatement, ResultSet) = {
-    val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?)")
+    val pstmt = conn.prepareStatement("call sys.COLUMN_TABLE_SCAN(?, ?, ?, 1)")
     pstmt.setString(1, columnTable)
     pstmt.setString(2, projection.mkString(","))
     // serialize the filters
