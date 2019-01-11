@@ -458,6 +458,7 @@ queryApproxTSTopK(topKName: String,
 snappySession.queryApproxTSTopK("topktable")
 ```
 
+<a id= dataframewriter> </a>
 ## DataFrameWriter APIs
 The following APIs are available for DataFrameWriter:
 
