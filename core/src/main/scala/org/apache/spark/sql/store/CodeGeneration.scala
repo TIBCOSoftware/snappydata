@@ -453,7 +453,7 @@ object CodeGeneration extends Logging {
   def executeUpdate(name: String, stmt: PreparedStatement, rows: Seq[Row],
       multipleRows: Boolean, batchSize: Int, schema: Array[StructField],
       dialect: JdbcDialect): Int = {
-    val iterator = new java.util.Iterator[InternalRow] {
+    val iterator: java.util.Iterator[InternalRow] = new java.util.Iterator[InternalRow] {
 
       private val baseIterator = rows.iterator
       private val encoder = RowEncoder(StructType(schema))

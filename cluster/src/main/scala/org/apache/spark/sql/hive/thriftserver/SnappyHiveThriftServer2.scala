@@ -24,9 +24,10 @@ import org.apache.hive.service.cli.thrift.ThriftCLIService
 import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.Logging
+import org.apache.spark.sql.hive.client.HiveClientImpl
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.HiveThriftServer2Listener
 import org.apache.spark.sql.hive.thriftserver.ui.ThriftServerTab
-import org.apache.spark.sql.hive.{HiveUtils, SnappySharedState}
+import org.apache.spark.sql.hive.{HiveUtils, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 /**
@@ -60,6 +61,7 @@ object SnappyHiveThriftServer2 extends Logging {
     val currentMetaLevel = metaLogger.getLevel
     rootLogger.setLevel(Level.ERROR)
     metaLogger.setLevel(Level.ERROR)
+    val externalCatalog = SnappyHiveExternalCatalog.getExistingInstance
     val hiveConf = try {
       val executionHive = HiveUtils.newClientForExecution(conf,
         sparkSession.sessionState.newHadoopConf())
@@ -74,7 +76,7 @@ object SnappyHiveThriftServer2 extends Logging {
       if (useHiveSession) serverConf
       else {
         // use internal hive conf adding hive.server2 configurations
-        val conf = sparkSession.sharedState.asInstanceOf[SnappySharedState].metadataHive().conf
+        val conf = externalCatalog.client().asInstanceOf[HiveClientImpl].conf
         val itr = serverConf.iterator()
         while (itr.hasNext) {
           val entry = itr.next()
@@ -90,15 +92,17 @@ object SnappyHiveThriftServer2 extends Logging {
     }
 
     val server = new HiveThriftServer2(SparkSQLEnv.sqlContext)
-    server.init(hiveConf)
-    server.start()
-    getHostPort(server) match {
-      case None => logInfo("Started HiveServer2")
-      case Some((host, port)) => logInfo(s"Started HiveServer2 on $host[$port]")
-    }
-    HiveThriftServer2.listener = new HiveThriftServer2Listener(
-      server, SparkSQLEnv.sqlContext.conf)
-    sc.addSparkListener(HiveThriftServer2.listener)
+    externalCatalog.withHiveExceptionHandling({
+      server.init(hiveConf)
+      server.start()
+      getHostPort(server) match {
+        case None => logInfo("Started HiveServer2")
+        case Some((host, port)) => logInfo(s"Started HiveServer2 on $host[$port]")
+      }
+      HiveThriftServer2.listener = new HiveThriftServer2Listener(
+        server, SparkSQLEnv.sqlContext.conf)
+      sc.addSparkListener(HiveThriftServer2.listener)
+    }, handleDisconnects = false)
     server
   }
 
