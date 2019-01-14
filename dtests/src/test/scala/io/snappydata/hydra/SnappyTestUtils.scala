@@ -115,7 +115,7 @@ object SnappyTestUtils {
               if (val1 > val2) diff = val1.-(val2).doubleValue
               else diff = val2.-(val1).doubleValue
               println("diff is " + diff)
-              if (diff <= 0.01) isIgnorable = true
+              if (diff <= 0.1) isIgnorable = true
             } catch {
               case nfe: NumberFormatException => return false
             }
