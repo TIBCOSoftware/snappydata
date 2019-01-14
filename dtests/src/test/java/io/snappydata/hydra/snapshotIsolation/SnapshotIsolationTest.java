@@ -43,6 +43,7 @@ import hydra.Prms;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
 import hydra.blackboard.AnyCyclicBarrier;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyTest;
 import sql.ClientDiscDBManager;
 import sql.SQLHelper;
@@ -147,7 +148,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   public static void HydraTask_initializeTablesMetaData() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       testInstance.saveTableMetaDataToBB(conn);
     } catch (SQLException se) {
       throw new TestException("Got exception while getting connection. Exception is : ", se);
@@ -189,7 +195,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   public void performDMLOp() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       //perform DML operation which can be insert, update, delete.
       String operation = SnapshotIsolationPrms.getDMLOperations();
       switch (DMLOp.getOperation(operation)) {
@@ -224,7 +235,12 @@ public class SnapshotIsolationTest extends SnappyTest {
   public void testMultipleSnapshot() {
     try {
       int iterations = 5;
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null;
       ResultSet[] snappyRS = new ResultSet[iterations];
       ResultSet derbyRS = null;
@@ -307,7 +323,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   public void executeQuery() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null;
       String query = SnapshotIsolationPrms.getSelectStmts();
       Log.getLogWriter().info("Blocking operations in snappy.");
@@ -580,7 +601,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   public void performBatchInsert() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null;
       int batchSize = 100;
       String[] dmlTable = SnapshotIsolationPrms.getDMLTables();
@@ -700,7 +726,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   public void multipleSelectQuery() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       String query = "";
       int myTid = RemoteTestModule.getCurrentThread().getThreadId();
       //total number of threads executing select query
@@ -801,7 +832,12 @@ public class SnapshotIsolationTest extends SnappyTest {
     try {
       String[] tables = SnapshotIsolationPrms.getTableNames();
       String stmt = "select * from ";
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = getDerbyConnection();
       for (String table : tables) {
         tableName = table;
@@ -963,7 +999,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   protected void createSnappySchemas() {
     try{
-    Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+     conn = getLocatorConnection();
     Log.getLogWriter().info("creating schemas in snappy.");
     createSchemas(conn,false);
     Log.getLogWriter().info("done creating schemas in snappy.");
@@ -1032,7 +1073,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   protected void createSnappyTables() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       Log.getLogWriter().info("dropping tables in snappy.");
       dropTables(conn); //drop table before creating it
       Log.getLogWriter().info("done dropping tables in snappy");
@@ -1113,7 +1159,12 @@ public class SnapshotIsolationTest extends SnappyTest {
 
   protected void populateTables() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean) SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       Connection dConn = null;
       if (hasDerbyServer)
         dConn = getDerbyConnection();
