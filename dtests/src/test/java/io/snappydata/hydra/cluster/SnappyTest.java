@@ -3821,12 +3821,19 @@ public class SnappyTest implements Serializable {
   protected void startSnappyLocator() {
     File log = null;
     ProcessBuilder pb = null;
+    String secureBootProperties = "";
+
     try {
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled) {
+        secureBootProperties = SnappySecurityTest.getSecureBootProp();
+        Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      }
       if (useRowStore) {
         Log.getLogWriter().info("Starting locator/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore",secureBootProperties);
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", secureBootProperties);
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -3841,12 +3848,18 @@ public class SnappyTest implements Serializable {
   protected void startSnappyServer() {
     File log = null;
     ProcessBuilder pb = null;
+    String secureBootProperties = "";
     try {
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled) {
+        secureBootProperties = SnappySecurityTest.getSecureBootProp();
+        Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      }
       if (useRowStore) {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore", secureBootProperties);
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", secureBootProperties);
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
@@ -3866,9 +3879,15 @@ public class SnappyTest implements Serializable {
 
   protected void startSnappyLead() {
     File log = null;
+    String secureBootProperties = "";
     try {
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled) {
+        secureBootProperties = SnappySecurityTest.getSecureBootProp();
+        Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      }
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
-          "start");
+          "start",secureBootProperties);
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
