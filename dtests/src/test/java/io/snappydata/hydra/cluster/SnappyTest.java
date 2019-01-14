@@ -393,7 +393,7 @@ public class SnappyTest implements Serializable {
         locatorsList = getLocatorsList("locators");
         String leadHost;
         int leadPort = PortHelper.getRandomPort();
-                /*do leadPort = PortHelper.getRandomPort();
+        /*do leadPort = PortHelper.getRandomPort();
                 while (leadPort < 8091 || leadPort > 8099);*/
         nodeLogDir = HostHelper.getLocalHost() + locators + locatorsList +
             SnappyPrms.getExecutorCores() + SnappyPrms.getDriverMaxResultSize() +
@@ -2258,7 +2258,7 @@ public class SnappyTest implements Serializable {
   }
 
   public String setCDCSparkAppCmds(String userAppArgs, String commonArgs, String snappyJobScript,
-                                   String userJob, String masterHost, String masterPort, File logFileName) {
+      String userJob, String masterHost, String masterPort, File logFileName) {
     String appName = SnappyCDCPrms.getAppName();
     if (appName.equals("CDCIngestionApp2")) {
       int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
@@ -3071,7 +3071,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-                                            boolean restart, boolean rebalance) {
+      boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -3147,7 +3147,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-                           boolean isDmlOp, boolean restart, boolean rebalance) {
+      boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {

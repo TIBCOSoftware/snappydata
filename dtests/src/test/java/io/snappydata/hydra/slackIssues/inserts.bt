@@ -1,3 +1,2 @@
 io/snappydata/hydra/slackIssues/insertOpsTestWithOverflow.conf
-  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=30
-  //A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=20
+  A=snappy snappyHosts=4 snappyVMsPerHost=1 snappyThreadsPerVM=25

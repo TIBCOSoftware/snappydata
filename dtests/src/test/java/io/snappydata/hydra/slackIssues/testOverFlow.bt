@@ -5,13 +5,21 @@
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   numRows="50000000"
   //numRows="40000"
-  performDMLOps=false*/
+  ingestData=true*/
 
 //test column table with overflow settings on OSS version
-io/snappydata/hydra/slackIssues/dmlOPsTestWithOverflow.conf
+/*io/snappydata/hydra/slackIssues/dmlOPsTestWithOverflow.conf
   A=snappyStore snappyStoreHosts=4 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=20
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  numRows="25000000"
-  //numRows="40000"
-  performDMLOps=true
+  numRows="10000000"
+  //numRows="1000"
+  ingestData=true*/
+
+io/snappydata/hydra/slackIssues/dataIngestionTestWithOverflow_LME.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=20
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  //numRows="10000000"
+  numRows="100000"
+  ingestData=true
