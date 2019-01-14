@@ -162,7 +162,6 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   // GET_ALL_HIVE_ENTRIES
   override def getAllHiveEntries: java.util.List[CatalogTableObject] = {
-    println(s"KN: getAllHiveEntries called")
     val q = new CatalogQuery[Seq[CatalogTableObject]](GET_ALL_HIVE_ENTRIES,
       tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).asJava
