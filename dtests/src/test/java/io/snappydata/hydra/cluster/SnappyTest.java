@@ -1328,14 +1328,20 @@ public class SnappyTest implements Serializable {
     List<String> endpoints = validateLocatorEndpointData();
     Properties props = new Properties();
     Vector connPropsList = SnappyPrms.getConnPropsList();
+    Connection conn = null;
     for (int i = 0; i < connPropsList.size(); i++) {
       String conProp = (String) connPropsList.elementAt(i);
       String conPropKey = conProp.substring(0, conProp.indexOf("="));
       String conPropValue = conProp.substring(conProp.indexOf("=") + 1);
       props.setProperty(conPropKey, conPropValue);
     }
-    Connection conn = null;
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     String url = "jdbc:snappydata://" + endpoints.get(0) + "/";
+    if(isSecurityEnabled)
+    {
+      props.setProperty("user","gemfire1");
+      props.setProperty("password","gemfire1");
+    }
     conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
     return conn;
   }
@@ -1343,13 +1349,23 @@ public class SnappyTest implements Serializable {
   public static Connection getServerConnection() throws SQLException {
     List<String> endpoints = validateServerEndpointData();
     Connection conn = null;
+    Properties props = new Properties();
+    props.setProperty("user","gemfire1");
+    props.setProperty("password","gemfire1");
+    boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     if (!runGemXDQuery) {
       String url = "jdbc:snappydata://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
-      conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
+      if(isSecurityEnabled)
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+      else
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
     } else {
       String url = "jdbc:gemfirexd://" + endpoints.get(0);
       Log.getLogWriter().info("url is " + url);
+      if(isSecurityEnabled)
+        conn = getConnection(url, "io.snappydata.jdbc.ClientDriver", props);
+      else
       conn = getConnection(url, "io.snappydata.jdbc.ClientDriver");
     }
     return conn;

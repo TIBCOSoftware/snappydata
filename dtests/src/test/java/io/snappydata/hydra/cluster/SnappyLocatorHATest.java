@@ -130,7 +130,12 @@ public class SnappyLocatorHATest extends SnappyTest {
 
   public static void HydraTask_validateTableDataOnClusterRestart() {
     try {
-      Connection conn = getLocatorConnection();
+      Connection conn = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if(isSecurityEnabled)
+        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        conn = getLocatorConnection();
       String query = "select count(*) from tab1";
       ResultSet rs = conn.createStatement().executeQuery(query);
       long numRows = 0;
