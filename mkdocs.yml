@@ -91,7 +91,7 @@ pages:
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
-#    - 'Using the SnappyData for any Spark Distribution': 'programming_guide/spark_jdbc_connector.md'
+    - 'Accessing SnappyData Tables from any Spark (2.1+) Cluster': 'programming_guide/spark_jdbc_connector.md'
     - 'Multiple Language Binding using Thrift Protocol': 'programming_guide/multiple_language_binding_using_thrift_protocol.md'
     - 'Building SnappyData Applications using Spark API': 'programming_guide/building_snappydata_applications_using_spark_api.md'
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
