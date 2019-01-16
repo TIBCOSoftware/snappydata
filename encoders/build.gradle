@@ -39,25 +39,11 @@ dependencies {
   compile "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
   compile "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
 
-  compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
-
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    // compile project(':snappy-store:snappydata-store-core')
-     compile (project(':snappy-store:snappydata-store-core')) {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-      exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-      exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-      exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    }
+    compile project(':snappy-store:snappydata-store-core')
   } else {
-    // compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
-    compile (group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion) {
-      exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-      exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-      exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-      exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    }
+    compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
   }
 
   compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
@@ -85,4 +71,3 @@ scalaTest {
 
 test.dependsOn ':cleanJUnit'
 
-// archivesBaseName = 'snappydata-encoders_' + scalaBinaryVersion

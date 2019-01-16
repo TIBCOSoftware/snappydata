@@ -59,7 +59,7 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
         executeGetJarsStmt(sc, stmt)
       } catch {
         case sqle: SQLException => logWarning(s"could not get jar and" +
-          s" package information from SnappyData cluster", sqle)
+            s" package information from SnappyData cluster", sqle)
       }
     }
   }
@@ -67,10 +67,10 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
   private def getSecurePart: String = {
     var securePart = ""
     val user = session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute
-      .USERNAME_ATTR, "")
+        .USERNAME_ATTR, "")
     if (!user.isEmpty) {
       val pass = session.conf.get(Constant.SPARK_STORE_PREFIX + Attribute
-        .PASSWORD_ATTR, "")
+          .PASSWORD_ATTR, "")
       securePart = s";user=$user;password=$pass"
       logInfo(s"Using $user credentials to securely connect to SnappyData cluster")
     }
@@ -110,7 +110,7 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
   }
 
   def getCatalogMetadata(operation: Int,
-                         request: CatalogMetadataRequest): CatalogMetadataDetails = {
+      request: CatalogMetadataRequest): CatalogMetadataDetails = {
     getCatalogMetaDataStmt.setInt(1, operation)
     val requestBytes = GemFireXDUtils.writeThriftObject(request)
     getCatalogMetaDataStmt.setBlob(2, new HarmonySerialBlob(requestBytes))
@@ -156,11 +156,11 @@ object SmartConnectorHelper {
   private[this] val urlPrefix: String = Constant.DEFAULT_THIN_CLIENT_URL
   // no query routing or load-balancing
   private[this] val urlSuffix: String = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-    ClientAttribute.LOAD_BALANCE + "=false"
+      ClientAttribute.LOAD_BALANCE + "=false"
 
   /**
-    * Get pair of TXId and (host, network server URL) pair.
-    */
+   * Get pair of TXId and (host, network server URL) pair.
+   */
   def getTxIdAndHostUrl(txIdAndHost: String, preferHost: Boolean): (String, (String, String)) = {
     val index = txIdAndHost.indexOf('@')
     if (index < 0) {
@@ -209,8 +209,7 @@ object SmartConnectorHelper {
   }
 
   private def getNetUrl(server: String, preferHost: Boolean, urlPrefix: String,
-                        urlSuffix: String,
-                        availableNetUrls: UnifiedMap[String, String]): (String, String) = {
+      urlSuffix: String, availableNetUrls: UnifiedMap[String, String]): (String, String) = {
     val hostAddressPort = returnHostPortFromServerString(server)
     val hostName = hostAddressPort._1
     val host = if (preferHost) hostName else hostAddressPort._2
@@ -222,8 +221,7 @@ object SmartConnectorHelper {
   }
 
   def setBucketToServerMappingInfo(numBuckets: Int, buckets: java.util.List[BucketOwners],
-                                   preferHost: Boolean, preferPrimaries: Boolean):
-  Array[ArrayBuffer[(String, String)]] = {
+      preferHost: Boolean, preferPrimaries: Boolean):  Array[ArrayBuffer[(String, String)]] = {
     if (!buckets.isEmpty) {
       var orphanBuckets: ArrayBuffer[Int] = null
       val allNetUrls = new Array[ArrayBuffer[(String, String)]](numBuckets)
@@ -270,19 +268,18 @@ object SmartConnectorHelper {
   }
 
   def setReplicasToServerMappingInfo(replicaNodes: java.util.List[String],
-                                     preferHost: Boolean):
-  Array[ArrayBuffer[(String, String)]] = {
+      preferHost: Boolean): Array[ArrayBuffer[(String, String)]] = {
      val urlPrefix = Constant.DEFAULT_THIN_CLIENT_URL
     // no query routing or load-balancing
     val urlSuffix = "/" + ClientAttribute.ROUTE_QUERY + "=false;" +
-      ClientAttribute.LOAD_BALANCE + "=false"
+        ClientAttribute.LOAD_BALANCE + "=false"
     val netUrls = ArrayBuffer.empty[(String, String)]
     for (host <- replicaNodes.asScala) {
       val hostAddressPort = returnHostPortFromServerString(host)
       val hostName = hostAddressPort._1
       val h = if (preferHost) hostName else hostAddressPort._2
       netUrls += h ->
-        (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
+          (urlPrefix + hostName + "[" + hostAddressPort._3 + "]" + urlSuffix)
     }
     Array(netUrls)
   }

@@ -345,7 +345,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
       }
 
       private def addColumnValue(value: AnyRef, columnPosition: Int, uuid: Long, bucketId: Int,
-                                 entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
+          entries: ArrayBuffer[ColumnTableEntry], throwIfMissing: Boolean): Unit = {
         if (value ne null) {
           val columnValue = value.asInstanceOf[ColumnFormatValue].getValueRetain(
             FetchRequest.ORIGINAL)
@@ -498,7 +498,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           if (interrupt ne null) Thread.currentThread().interrupt()
         }
       } while (MemoryManagerCallback.memoryManager.bootManager &&
-        System.currentTimeMillis() < endWait)
+          System.currentTimeMillis() < endWait)
     }
   }
 
