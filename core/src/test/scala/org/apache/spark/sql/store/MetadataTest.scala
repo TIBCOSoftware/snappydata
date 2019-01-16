@@ -658,9 +658,7 @@ object MetadataTest extends Assertions {
 
     var expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
         ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* > " + literalString("10") + ".*"
-    println("plan caching:"+ planCachingEnabled)
-    println("plan:" + plan)
-    println("expected pattern:" + expectedPattern)
+
     assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for row tables no routing -----
