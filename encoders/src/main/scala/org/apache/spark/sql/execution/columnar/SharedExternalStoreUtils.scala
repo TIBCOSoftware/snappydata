@@ -44,13 +44,13 @@ object SharedExternalStoreUtils {
   def getTableSchema(schemaAsJson: String): StructType = StructType.fromString(schemaAsJson)
 
   def getConnection(connectionProperties: ConnectionProperties,
-                    hostList: ArrayBuffer[(String, String)]): Connection = {
+      hostList: ArrayBuffer[(String, String)]): Connection = {
     useLocatorURL = useLocatorUrl(hostList)
     createConnection(connectionProperties, hostList)
   }
 
   private def createConnection(connProperties: ConnectionProperties,
-                               hostList: ArrayBuffer[(String, String)]): Connection = {
+      hostList: ArrayBuffer[(String, String)]): Connection = {
     val localhost = ClientSharedUtils.getLocalHost
     var index = -1
 
@@ -84,7 +84,7 @@ object SharedExternalStoreUtils {
   }
 
   private def addProperty(props: mutable.Map[String, String], key: String,
-                          default: String): Unit = {
+      default: String): Unit = {
     if (!props.contains(key)) props.put(key, default)
   }
 
@@ -95,8 +95,8 @@ object SharedExternalStoreUtils {
     String.valueOf(math.max(256, Runtime.getRuntime.availableProcessors() * 8))
 
   def getAllPoolProperties(url: String, driver: String,
-                           poolProps: Map[String, String], hikariCP: Boolean,
-                           isEmbedded: Boolean): Map[String, String] = {
+      poolProps: Map[String, String], hikariCP: Boolean,
+      isEmbedded: Boolean): Map[String, String] = {
     // setup default pool properties
     val props = new mutable.HashMap[String, String]()
     if (poolProps.nonEmpty) props ++= poolProps
@@ -124,7 +124,7 @@ object SharedExternalStoreUtils {
   }
 
   def setStatementParameters(stmt: PreparedStatement,
-                             row: mutable.ArrayBuffer[Any]): Unit = {
+      row: mutable.ArrayBuffer[Any]): Unit = {
     var col = 1
     val len = row.length
     while (col <= len) {
@@ -156,6 +156,6 @@ object SharedExternalStoreUtils {
 }
 
 class TableNotFoundException(schema: String, table: String, cause: Option[Throwable] = None)
-  extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
-    cause = cause)
+    extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
+      cause = cause)
 

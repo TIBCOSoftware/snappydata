@@ -1010,8 +1010,8 @@ object ColumnEncoding {
 }
 
 /**
-  * Full stats row has "nullCount" as non-nullable while delta stats row has it as nullable.
-  */
+ * Full stats row has "nullCount" as non-nullable while delta stats row has it as nullable.
+ */
 case class ColumnStatsSchema(fieldName: String,
                              dataType: DataType, nullCountNullable: Boolean) {
 

@@ -839,11 +839,6 @@ object Utils {
     TASKCONTEXT_FUNCTION
   }
 
-  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
-    case Some(ui) => Some(ui.executorsListener)
-    case _ => None
-  }
-
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
 }
 
