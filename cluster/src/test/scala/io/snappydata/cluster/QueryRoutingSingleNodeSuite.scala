@@ -733,7 +733,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }.getMessage
     assert(message.contains("PUT INTO table values (v1, v2,...,vn) syntax" +
         " is not supported for column table. Try using PUT INTO table" +
-        " select v1, v2, ....,vn syntax for performing putInto operation."))
+        " select v1, v2, ....,vn syntax for performing put into operation."))
   }
 
   test("Test Bug SNAP-2707 with snappy session") {
@@ -750,6 +750,6 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }.getMessage
     assert(message.contains("PUT INTO table values (v1, v2,...,vn) syntax" +
         " is not supported for column table. Try using PUT INTO table" +
-        " select v1, v2, ....,vn syntax for performing putInto operation."))
+        " select v1, v2, ....,vn syntax for performing put into operation."))
   }
 }
