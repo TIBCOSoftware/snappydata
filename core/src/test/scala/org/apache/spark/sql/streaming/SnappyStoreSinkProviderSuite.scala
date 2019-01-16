@@ -21,12 +21,12 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.{SnappyFunSuite, StreamingConstants}
 import org.apache.log4j.LogManager
-import org.apache.spark.sql.Row
+
+import org.apache.spark.sql.{AnalysisException, Row}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.types._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import scala.reflect.io.Path
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
@@ -273,6 +273,43 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     streamingQuery.processAllAvailable()
 
     assertData(Array(Row(1, "name999", 999, "lname1")))
+  }
+
+  test("conflation enabled, _eventType column: absent") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch2 = Seq(Seq(1, "name2", 30, "lname1"), Seq(1, "name3", 30, "lname1"))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true,
+      withEventTypeColumn = false)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name3", 30, "lname1")))
+  }
+
+  test("conflation enabled, key columns : undefined") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable(withKeyColumn = false)()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch2 = Seq(Seq(1, "name2", 30, "lname1"), Seq(1, "name3", 30, "lname1"))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    val thrown = intercept[StreamingQueryException] {
+      val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true,
+        withEventTypeColumn = false)
+      streamingQuery.processAllAvailable()
+    }
+    val errorMessage = "Key column(s) or primary key must be defined on table in order " +
+        "to perform conflation."
+    assert(thrown.getCause.isInstanceOf[IllegalStateException])
+    assert(thrown.getCause.getMessage == errorMessage)
   }
 
   test("[SNAP-2745]-conflation: delete,insert") {
