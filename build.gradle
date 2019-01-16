@@ -818,11 +818,11 @@ task product(type: Zip) {
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
-  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:jar"
+//  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:jar"
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
-  def v2connectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
+//  def v2connectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
   def targetProject = clusterProject
 
   if (isEnterpriseProduct) {
@@ -887,11 +887,12 @@ task product(type: Zip) {
       include launcherProject.jar.archiveName
     }
 
-    copy {
-      from v2connectorProject.jar.destinationDir
-      into "${snappyProductDir}/jars"
-      include v2connectorProject.jar.archiveName
-    }
+    //Copying the V2Connector jar
+//    copy {
+//      from v2connectorProject.jar.destinationDir
+//      into "${snappyProductDir}/jars"
+//      include v2connectorProject.jar.archiveName
+//    }
 
     // create the RELEASE file
     def releaseFile = file("${snappyProductDir}/RELEASE")
@@ -1170,25 +1171,26 @@ task jdbcJar {
   }
 }
 
-task v2ConnectorJar {
-  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:shadowJar"
-
-  doLast {
-    def v2ConnectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
-    String v2ConnectorName = "snappydata-v2connector_${scalaBinaryVersion}-${version}.jar"
-    // copy the snappy-v2connector shadow jar into distributions
-    copy {
-      from v2ConnectorProject.shadowJar.destinationDir
-      into "${rootProject.buildDir}/distributions"
-      include v2ConnectorProject.shadowJar.archiveName
-      rename { filename -> v2ConnectorName }
-    }
-  }
-}
+// Uncomment for v2Connector project build.
+//task v2ConnectorJar {
+//  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:shadowJar"
+//
+//  doLast {
+//    def v2ConnectorProject = project(":snappy-v2connector_${scalaBinaryVersion}")
+//    String v2ConnectorName = "snappydata-v2connector_${scalaBinaryVersion}-${version}.jar"
+//    // copy the snappy-v2connector shadow jar into distributions
+//    copy {
+//      from v2ConnectorProject.shadowJar.destinationDir
+//      into "${rootProject.buildDir}/distributions"
+//      include v2ConnectorProject.shadowJar.archiveName
+//      rename { filename -> v2ConnectorName }
+//    }
+//  }
+//}
 
 task copyShadowJars {
   dependsOn jdbcJar
-  dependsOn v2ConnectorJar
+//  dependsOn v2ConnectorJar
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
