@@ -42,9 +42,9 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Lead, LocalizedMessages,
-Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService, RecoveryService}
+import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
 import spark.jobserver.JobServer
 import spark.jobserver.auth.{AuthInfo, SnappyAuthenticator, User}
@@ -257,6 +257,12 @@ class LeadImpl extends ServerImpl with Lead
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
         Thread.sleep(100)
       }
+      ///// Just for testing //////
+      // If recovery mode then initialize the recovery service
+      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
+        RecoveryService.collectViewsAndRecoverDDLs();
+      }
+      ////// Remove this //////////
       // initialize global state
       password match {
         case Some(p) =>
