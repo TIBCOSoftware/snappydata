@@ -18,11 +18,11 @@ package org.apache.spark.sql.store
 
 import scala.collection.mutable.ArrayBuffer
 
-import io.snappydata.core.{Data, LocalSparkConf, TestData2}
+import io.snappydata.core.{Data, TestData2}
 import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.Logging
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{DynamicInSet, ParamLiteral}
 import org.apache.spark.sql.internal.SQLConf
@@ -45,11 +45,8 @@ class TokenizationTest
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
-
-    println("Plan caching beforeall:"+ Property.PlanCaching.get(snc.sessionState.conf))
     planCaching = Property.PlanCaching.get(snc.sessionState.conf)
     Property.PlanCaching.set(snc.sessionState.conf, true)
-    println("Plan caching beforeall after:"+ Property.PlanCaching.get(snc.sessionState.conf))
     super.beforeAll()
   }
 
