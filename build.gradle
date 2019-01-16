@@ -1416,7 +1416,7 @@ task deleteDocsDir(type: Delete) {
 task docs(type: ScalaDoc) {
   apply plugin: 'scala'
 
-  scalaDocOptions.additionalParameters = [ '-J-Xmx2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
+  scalaDocOptions.additionalParameters = [ '-J-Xmx7g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
 
   dependsOn deleteDocsDir
   Set<String> allSource = []
@@ -1434,6 +1434,7 @@ task docs(type: ScalaDoc) {
             !project.name.contains('gemfire-examples') &&
             !project.name.contains('trove') &&
             !project.name.contains('kafka') &&
+            !project.name.contains('encoders') &&
             // exclude tests
             !project.name.contains('tests')) {
       allSource.addAll(project.sourceSets.main.allJava.findAll {
@@ -1443,7 +1444,8 @@ task docs(type: ScalaDoc) {
       if (project.plugins.hasPlugin('scala')) {
         allSource.addAll(project.sourceSets.main.allScala.findAll {
           !it.getPath().matches('.*org/apache/spark/sql/execution/joins/HashedRelation.*') &&
-          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*')
+          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*') &&
+          !it.getPath().matches('.*org/apache/spark/sql/store/CodeGeneration.*')
         })
       }
       [ project ]

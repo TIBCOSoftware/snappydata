@@ -18,7 +18,7 @@ object SnappySampleJob extends SnappySQLJob {
 
 **Java**
 ```pre
-class SnappySampleJob extends SnappySQLJob {
+class SnappySampleJob extends JavaSnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(SnappySession snappy, Config jobConfig) {//Implementation}
 
