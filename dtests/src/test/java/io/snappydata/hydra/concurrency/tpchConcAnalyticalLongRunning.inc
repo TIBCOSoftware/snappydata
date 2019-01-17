@@ -1,5 +1,5 @@
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
-INCLUDE $JTESTS/hydraconfig/topology_3.inc;
+INCLUDE $JTESTS/hydraconfig/topology_2.inc;
 
 hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
@@ -19,10 +19,10 @@ THREADGROUP snappySingleThread
                                 ${${A}Hosts}, true)" ncf;
 
 THREADGROUP snappyClientAThreads
-            totalThreads = fcn "(${${C}Hosts} * ${${C}VMsPerHost} *  ${${C}ThreadsPerVM}) " ncf
-            totalVMs     = fcn "(${${C}Hosts} * ${${C}VMsPerHost})" ncf
-            clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${C}\",
-                                ${${C}Hosts}, true)" ncf;
+            totalThreads = fcn "(${${B}Hosts} * ${${B}VMsPerHost} *  ${${B}ThreadsPerVM}) " ncf
+            totalVMs     = fcn "(${${B}Hosts} * ${${B}VMsPerHost})" ncf
+            clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${B}\",
+                                ${${B}Hosts}, true)" ncf;
 
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = initSnappyArtifacts
             runMode = always

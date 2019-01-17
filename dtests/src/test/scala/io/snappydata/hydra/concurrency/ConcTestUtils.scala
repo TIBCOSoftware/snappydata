@@ -17,12 +17,181 @@
 package io.snappydata.hydra.concurrency
 
 import java.io.PrintWriter
+import java.sql.SQLException
+import java.util.Random
 
 import io.snappydata.hydra.SnappyTestUtils
 import io.snappydata.hydra.northwind.{NWPLQueries, NWQueries}
+import util.TestException
+
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object ConcTestUtils {
+
+  val Q1_tpch: String = "select l_returnflag, l_linestatus, sum(l_quantity) as sum_qty, " +
+      "sum(l_extendedprice) " +
+      "as sum_base_price, sum(l_extendedprice*(1-l_discount)) " +
+      "as sum_disc_price, sum(l_extendedprice*(1-l_discount)*(1+l_tax)) " +
+      "as sum_charge, avg(l_quantity) " +
+      "as avg_qty, avg(l_extendedprice) as avg_price, avg(l_discount) as avg_disc," +
+      " count(*) as count_order " +
+      "from LINEITEM where l_shipdate <= DATE_SUB('1997-12-31', 90 )" +
+      "group by l_returnflag, l_linestatus order by  l_returnflag, l_linestatus"
+  val Q2_tpch: String = "select S_ACCTBAL, S_NAME, N_NAME, P_PARTKEY, P_MFGR, " +
+      "S_ADDRESS, S_PHONE, S_COMMENT from SUPPLIER, NATION, REGION, PART, " +
+      "PARTSUPP where S_NATIONKEY = N_NATIONKEY and N_REGIONKEY = R_REGIONKEY " +
+      "and R_NAME = 'ASIA' and S_SUPPKEY = PS_SUPPKEY  and P_PARTKEY = PS_PARTKEY " +
+      "and P_SIZE = 24 and P_TYPE like '%STEEL' " +
+      "and PS_SUPPLYCOST = (select min(PS_SUPPLYCOST) " +
+      "from SUPPLIER, NATION, REGION, PARTSUPP " +
+      "where S_NATIONKEY = N_NATIONKEY and N_REGIONKEY = R_REGIONKEY " +
+      "and R_NAME = 'ASIA' and S_SUPPKEY = PS_SUPPKEY and P_PARTKEY = PS_PARTKEY) " +
+      "order by S_ACCTBAL desc, N_NAME, S_NAME, P_PARTKEY limit 100"
+  val Q3_tpch: String = "select l_orderkey, sum(l_extendedprice*(1-l_discount)) " +
+      "as revenue, o_orderdate, o_shippriority " +
+      "from ORDERS, LINEITEM, CUSTOMER where C_MKTSEGMENT = 'BUILDING' " +
+      "and C_CUSTKEY = o_custkey  and l_orderkey = o_orderkey and o_orderdate < '1995-03-15' " +
+      "and l_shipdate > '1995-03-15' group by l_orderkey, o_orderdate, o_shippriority " +
+      "order by l_orderkey limit 10"
+  val Q4_tpch: String = "select o_orderpriority, count(*) " +
+      "as order_count from  ORDERS " +
+      "where o_orderdate >= '1993-07-01' " +
+      "and o_orderdate < add_months('1993-07-01',3) " +
+      "and exists (select l_orderkey from LINEITEM  " +
+      "where l_orderkey = o_orderkey and l_commitdate < l_receiptdate) " +
+      "group by o_orderpriority order by o_orderpriority"
+  val Q5_tpch: String = "select n_name, sum(l_extendedprice * (1 - l_discount)) " +
+      "as revenue from SUPPLIER, NATION, REGION, ORDERS, LINEITEM, CUSTOMER " +
+      "where s_nationkey = n_nationkey and n_regionkey = r_regionkey " +
+      "and r_name = 'ASIA' and C_CUSTKEY = o_custkey and l_orderkey = o_orderkey " +
+      "and l_suppkey = s_suppkey and C_NATIONKEY = s_nationkey and o_orderdate >= '1994-01-01' " +
+      "and o_orderdate < add_months('1994-01-01', 12) group by n_name order by revenue desc"
+  val Q6_tpch: String = "select sum(l_extendedprice*l_discount) " +
+      "as revenue from LINEITEM where l_shipdate >= '1994-01-01' " +
+      "and l_shipdate < add_months('1994-01-01', 12) " +
+      "and l_discount between 0.06- 0.01 and 0.06 + 0.01 and l_quantity < 24"
+  val Q7_tpch: String = "select supp_nation, cust_nation, l_year, sum(volume) " +
+      "as revenue from (select n1.n_name as supp_nation, n2.n_name as cust_nation, year(l_shipdate) " +
+      "as l_year, l_extendedprice * (1 - l_discount) " +
+      "as volume from SUPPLIER, LINEITEM, ORDERS, CUSTOMER, NATION n1, NATION n2 " +
+      "where s_suppkey = l_suppkey and o_orderkey = l_orderkey and C_CUSTKEY = o_custkey " +
+      "and s_nationkey = n1.n_nationkey and C_NATIONKEY = n2.n_nationkey " +
+      "and ((n1.n_name = 'FRANCE' and n2.n_name = 'GERMANY') " +
+      "or (n1.n_name = 'GERMANY' and n2.n_name = 'FRANCE')) " +
+      "and l_shipdate between '1995-01-01' and '1996-12-31') " +
+      "as shipping group by supp_nation, cust_nation, l_year order by supp_nation, cust_nation, l_year"
+  val Q8_tpch: String = "select o_year, sum(case when nation = 'BRAZIL' then volume else 0 end) / sum(volume)" +
+      " as mkt_share from (select year(o_orderdate) as o_year, l_extendedprice * (1-l_discount) " +
+      "as volume, n2.n_name " +
+      "as nation from LINEITEM, PART, ORDERS, CUSTOMER, NATION n1, REGION, NATION n2, SUPPLIER " +
+      "where p_partkey = l_partkey and l_orderkey = o_orderkey " +
+      "and o_custkey = C_CUSTKEY and C_NATIONKEY = n1.n_nationkey and n1.n_regionkey = r_regionkey " +
+      "and r_name = 'AMERICA' and o_orderdate between '1995-01-01' and '1996-12-31' " +
+      "and p_type = 'ECONOMY ANODIZED STEEL' and s_suppkey = l_suppkey and s_nationkey = n2.n_nationkey)" +
+      " as all_nations group by o_year order by o_year"
+  val Q9_tpch: String = "select nation, o_year, sum(amount) as sum_profit " +
+      "from (select n_name as nation, year(o_orderdate) " +
+      "as o_year, l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity " +
+      "as amount from LINEITEM, PART, ORDERS, SUPPLIER, NATION, PARTSUPP " +
+      "where s_suppkey = l_suppkey and ps_suppkey = l_suppkey and ps_partkey = l_partkey " +
+      "and p_partkey = l_partkey and o_orderkey = l_orderkey and s_nationkey = n_nationkey and p_name like '%green%')" +
+      " as profit group by nation, o_year order by nation, o_year desc"
+  val Q10_tpch: String = "select C_CUSTKEY, C_NAME, sum(l_extendedprice * (1 - l_discount)) " +
+      "as revenue, C_ACCTBAL, n_name, C_ADDRESS, C_PHONE, C_COMMENT " +
+      "from ORDERS, LINEITEM, CUSTOMER, NATION where C_CUSTKEY = o_custkey " +
+      "and l_orderkey = o_orderkey and o_orderdate >= '1993-10-01' " +
+      "and o_orderdate < add_months('1993-10-01', 3) and l_returnflag = 'R' " +
+      "and C_NATIONKEY = n_nationkey " +
+      "group by C_CUSTKEY, C_NAME, C_ACCTBAL, C_PHONE, n_name, C_ADDRESS, C_COMMENT" +
+      " order by revenue desc limit 20"
+  val Q11_tpch: String = "select PS_PARTKEY, sum(PS_SUPPLYCOST * PS_AVAILQTY) " +
+      "as value from SUPPLIER,NATION,PARTSUPP " +
+      "where PS_SUPPKEY = S_SUPPKEY and S_NATIONKEY = N_NATIONKEY " +
+      "and N_NAME = 'GERMANY' group by PS_PARTKEY " +
+      "having sum(PS_SUPPLYCOST * PS_AVAILQTY) > (select sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0000001 " +
+      "from SUPPLIER, NATION, PARTSUPP " +
+      "where PS_SUPPKEY = S_SUPPKEY and S_NATIONKEY = N_NATIONKEY and N_NAME = 'GERMANY')" +
+      " order by value desc"
+  val Q12_tpch: String = "select l_shipmode," +
+      "sum(case when o_orderpriority ='1-URGENT' or o_orderpriority ='2-HIGH' then 1 else 0 end)" +
+      " as high_line_count," +
+      "sum(case when o_orderpriority <> '1-URGENT' and o_orderpriority <> '2-HIGH' then 1 else 0 end) " +
+      "as low_line_count " +
+      "from ORDERS, LINEITEM where o_orderkey = l_orderkey and l_shipmode in ('MAIL', 'SHIP') " +
+      "and l_commitdate < l_receiptdate and l_shipdate < l_commitdate and l_receiptdate >= '1994-01-01' " +
+      "and l_receiptdate < add_months('1994-01-01',12) group by l_shipmode order by l_shipmode"
+  val Q13_tpch: String = "select c_count, count(*) " +
+      "as custdist from (select C_CUSTKEY, count(o_orderkey) " +
+      "as c_count from CUSTOMER left outer join ORDERS " +
+      "on C_CUSTKEY = o_custkey and o_comment not like '%special%requests%' " +
+      "group by C_CUSTKEY ) as c_orders group by c_count order by custdist desc, c_count desc"
+  val Q14_tpch: String = "select 100.00 * sum(case when p_type like 'PROMO%' " +
+      "then l_extendedprice*(1-l_discount) else 0 end ) / sum(l_extendedprice * (1 - l_discount)) " +
+      "as promo_revenue from LINEITEM, PART where l_partkey = p_partkey and l_shipdate >= '?'" +
+      " and l_shipdate < add_months ('1995-09-01', 1)"
+  val Q15_tpch: String = "select s_suppkey, s_name, s_address, s_phone, total_revenue " +
+      "from SUPPLIER, revenue " +
+      "where s_suppkey = supplier_no and total_revenue = (select max(total_revenue) from  revenue )" +
+      " order by s_suppkey"
+  val Q16_tpch: String = "select p_brand, p_type, p_size, " +
+      "count(distinct ps_suppkey) as supplier_cnt " +
+      "from PARTSUPP, PART where p_partkey = ps_partkey and p_brand <> 'Brand#45' " +
+      "and p_type not like 'MEDIUM POLISHED%' and p_size in (49, 14, 23, 45, 19, 3, 36, 9)" +
+      " and not exists ( select s_suppkey from SUPPLIER" +
+      " where s_suppkey = ps_suppkey and s_comment like '%Customer%Complaints%' )" +
+      " group by p_brand, p_type, p_size order by supplier_cnt desc, p_brand, p_type, p_size"
+  val Q17_tpch: String = "select sum(l_extendedprice) / 7.0 as avg_yearly" +
+      " from LINEITEM, PART where P_PARTKEY = l_partkey and P_BRAND = 'Brand#23' " +
+      "and P_CONTAINER = 'MED BOX' and l_quantity < ( select 0.2 * avg(l_quantity)" +
+      " from LINEITEM where l_partkey = P_PARTKEY)"
+  val Q18_tpch: String = "select C_NAME, C_CUSTKEY, o_orderkey, o_orderdate, o_totalprice, " +
+      "sum(l_quantity) from CUSTOMER, ORDERS, LINEITEM where o_orderkey " +
+      "in (select l_orderkey from LINEITEM group by l_orderkey having sum(l_quantity) > 300 ) " +
+      "and C_CUSTKEY = o_custkey and o_orderkey = l_orderkey " +
+      "group by C_NAME, C_CUSTKEY, o_orderkey, o_orderdate, o_totalprice " +
+      "order by o_totalprice desc, o_orderdate limit 100"
+  val Q19_tpch: String = "select sum(l_extendedprice * (1 - l_discount) ) as revenue" +
+      " from LINEITEM, PART where ( p_partkey = l_partkey and p_brand = 'Brand#12'" +
+      " and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG') and l_quantity >= 1" +
+      " and l_quantity <= 1 + 10 and p_size between 1 and 5 and l_shipmode in ('AIR', 'AIR REG')" +
+      " and l_shipinstruct = 'DELIVER IN PERSON' ) or " +
+      "( p_partkey = l_partkey and p_brand = 'Brand#23' and p_container " +
+      "in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK') and l_quantity >= 10 " +
+      "and l_quantity <= 10 + 10 and p_size between 1 and 10 and l_shipmode " +
+      "in ('AIR', 'AIR REG') and l_shipinstruct = 'DELIVER IN PERSON' ) " +
+      "or ( p_partkey = l_partkey and p_brand = 'Brand#34' and p_container " +
+      "in ( 'LG CASE', 'LG BOX', 'LG PACK', 'LG PKG') and l_quantity >= 20 " +
+      "and l_quantity <= 20 + 10 and p_size between 1 and 15 and l_shipmode " +
+      "in ('AIR', 'AIR REG') and l_shipinstruct = 'DELIVER IN PERSON' )"
+  val Q20_tpch: String = "select S_NAME, S_ADDRESS from SUPPLIER, NATION " +
+      "where S_SUPPKEY in ( select PS_SUPPKEY from PARTSUPP where PS_PARTKEY " +
+      "in ( select P_PARTKEY from PART where P_NAME like 'forest%' ) " +
+      "and PS_AVAILQTY > ( select 0.5 * sum(l_quantity) from LINEITEM " +
+      "where l_partkey = PS_PARTKEY and l_suppkey = PS_SUPPKEY " +
+      "and l_shipdate >= '1994-01-01' and l_shipdate < add_months('1994-01-01', 12) ) ) " +
+      "and S_NATIONKEY = N_NATIONKEY and N_NAME = 'CANADA' order by S_NAME"
+  val Q21_tpch: String = "select s_name, count(*) as numwait " +
+      "from SUPPLIER, LINEITEM l1, ORDERS, NATION " +
+      "where s_suppkey = l1.l_suppkey and o_orderkey = l1.l_orderkey " +
+      "and o_orderstatus = 'F' and l1.l_receiptdate > l1.l_commitdate " +
+      "and not exists ( select l3.l_orderkey from LINEITEM l3 " +
+      "where l3.l_orderkey = l1.l_orderkey and l3.l_suppkey <> l1.l_suppkey " +
+      "and l3.l_receiptdate > l3.l_commitdate ) and exists ( select l2.l_orderkey " +
+      "from LINEITEM l2 where l2.l_orderkey = l1.l_orderkey and l2.l_suppkey <> l1.l_suppkey ) " +
+      "and s_nationkey = n_nationkey and n_name = 'SAUDI ARABIA' " +
+      "group by s_name order by numwait desc, s_name limit 100"
+  val Q22_tpch: String = "select cntrycode, count(*) as numcust, sum(C_ACCTBAL) as totacctbal " +
+      "from ( select SUBSTR(C_PHONE,1,2) as cntrycode, C_ACCTBAL from CUSTOMER " +
+      "where SUBSTR(C_PHONE,1,2) in  ('13','31','23','29','30','18','17') " +
+      "and C_ACCTBAL > ( select avg(C_ACCTBAL) from CUSTOMER where C_ACCTBAL > 0.00 " +
+      "and SUBSTR(C_PHONE,1,2) in ('13','31','23','29','30','18','17') ) and " +
+      "not exists ( select o_custkey from ORDERS where o_custkey = C_CUSTKEY ) ) as custsale" +
+      " group by cntrycode order by cntrycode"
+
+  def queryVect: scala.Vector[String] = Vector(Q1_tpch, Q2_tpch, Q3_tpch, Q4_tpch, Q5_tpch,
+    Q6_tpch, Q7_tpch, Q8_tpch, Q9_tpch, Q10_tpch, Q11_tpch, Q12_tpch, Q13_tpch, Q14_tpch,
+    Q15_tpch, Q16_tpch, Q17_tpch, Q18_tpch, Q19_tpch, Q20_tpch, Q21_tpch, Q22_tpch)
+
   def validateAnalyticalQueriesFullResultSet(snc: SnappyContext, tableType: String, pw:
   PrintWriter, sqlContext: SQLContext): Unit = {
     for (q <- NWQueries.queries) {
@@ -159,4 +328,42 @@ object ConcTestUtils {
     }
   }
 
+
+  def runAnalyticalQueries(snc: SnappyContext, pw: PrintWriter, warmUpTimeSec: Long,
+      totalTaskTime: Long): Unit = {
+    var query: String = null
+    var numAggregationQueriesExecuted = 0
+    query = "create or replace temporary view revenue as select  l_suppkey as supplier_no, " +
+        "sum(l_extendedprice * (1 - l_discount)) as total_revenue " +
+        "from LINEITEM where l_shipdate >= '1993-02-01'" +
+        " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey"
+    snc.sql(query)
+    var startTime: Long = System.currentTimeMillis
+    var endTime: Long = startTime + warmUpTimeSec * 1000
+    while (endTime > System.currentTimeMillis)
+      try {
+        val queryNum: Int = new Random().nextInt(queryVect.size)
+        query = queryVect(queryNum)
+        snc.sql(query)
+      } catch {
+        case se: SQLException =>
+          throw new TestException("Got exception while executing Analytical query:" + query, se)
+      }
+    startTime = System.currentTimeMillis
+    endTime = startTime + totalTaskTime * 1000
+    while (endTime > System.currentTimeMillis)
+      try {
+        val queryNum: Int = new Random().nextInt(queryVect.size)
+        query = queryVect(queryNum)
+        snc.sql(query)
+        numAggregationQueriesExecuted += 1
+        // val queryExecutionTime: Long = queryExecutionEndTime - startTime
+      }
+      catch {
+        case se: SQLException =>
+          throw new TestException("Got exception while executing Analytical query:" + query, se)
+      }
+    // scalastyle:off println
+    pw.println(s"Total number of analytical queries executed: ${numAggregationQueriesExecuted}")
+  }
 }

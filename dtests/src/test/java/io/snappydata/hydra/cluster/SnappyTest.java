@@ -2226,6 +2226,10 @@ public class SnappyTest implements Serializable {
           APP_PROPS = "\"" + APP_PROPS + "," + dmlProps + "\"";
           Log.getLogWriter().info("APP_PROPS : " + APP_PROPS);
         }
+        if (SnappyConcurrencyTest.isTPCHSchema) {
+          APP_PROPS = "\"" + APP_PROPS + ",runAnalyticalQueries=true,warmUpTimeSec=" + SnappyConcurrencyTest.warmUpTimeSec + ",totalTaskTime=" + SnappyConcurrencyTest.totalTaskTime + "\"";
+          Log.getLogWriter().info("SS - APP_PROPS for job server: " + APP_PROPS);
+        }
         String curlCommand1 = "curl --data-binary @" + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " + leadHost + ":" + leadPort + "/jars/" + appName;
         String curlCommand2 = "curl -d " + APP_PROPS + " '" + leadHost + ":" + leadPort + "/jobs?appName=" + appName + "&classPath=" + userJob + "'";
 
