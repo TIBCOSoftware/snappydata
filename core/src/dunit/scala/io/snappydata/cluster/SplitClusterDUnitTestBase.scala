@@ -373,6 +373,7 @@ trait SplitClusterDUnitTestObject extends Logging {
           .set("spark.executor.extraClassPath",
             getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
           .set("snappydata.connection", connectionURL)
+          .set("snappydata.sql.planCaching", "true")
 
     if (props != null) {
       val user = props.getProperty(Attribute.USERNAME_ATTR, "")

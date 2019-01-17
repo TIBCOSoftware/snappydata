@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql
 
-import java.sql.{SQLException, SQLWarning}
+import java.sql.{Connection, SQLException, SQLWarning}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -27,8 +27,8 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
+import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
@@ -39,7 +39,6 @@ import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatId
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
@@ -457,10 +456,34 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
       case (cachedTable: Option[_], lock) =>
-        if (lock != null) lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
+        if (lock != null) {
+          logInfo(s"SKSK Going to unlock the lock object putInto ${lock}", new Throwable("SKSK"))
+          lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
+        }
         if (cachedTable.isDefined) {
           dropPutIntoCacheTable(cachedTable.get.asInstanceOf[TableIdentifier])
         }
+    }
+    contextObjects.remove(SnappySession.BULKWRITE_PLAN) match {
+      case null =>
+      case lock: RegionLock => {
+        if (lock != null) {
+          logInfo(s"SKSK Going to unlock the lock object bulkOp ${lock} ", new Throwable("SKSK"))
+          lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
+        }
+      }
+      case (conn: Connection, id: TableIdentifier) => {
+        try {
+          logInfo(s"SKSK releasing lock on the server. ${id.table}")
+          val ps = conn.prepareStatement(s"call sys.RELEASE_REGION_LOCK(?)")
+          ps.setString(1, "BULKWRITE_" + id.table)
+          ps.executeUpdate()
+          ps.close()
+        }
+        finally {
+          conn.close()
+        }
+      }
     }
   }
 
