@@ -86,7 +86,6 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COMPRESSION_CODEC = "COMPRESSION"
-  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   // inbuilt basic table properties
   final val PARTITION_BY = "PARTITION_BY"
@@ -94,9 +93,10 @@ object ExternalStoreUtils {
   final val BUCKETS = "BUCKETS"
   final val KEY_COLUMNS = "KEY_COLUMNS"
 
-  // these two are obsolete column table properties only for backward compatibility
+  // these three are obsolete column table properties only for backward compatibility
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
+  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
