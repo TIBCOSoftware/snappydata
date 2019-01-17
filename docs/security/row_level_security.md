@@ -54,9 +54,10 @@ Initially all the users can view all the records in the table. You can restrict 
 $ SELECT * FROM clients;
  id | account_name | account_manager
 ----+--------------+-----------------
-  1 | ibm          | tom
-  2 | apple        | harris
-  3 | msft         | greg
+  1 | ABC          | tom
+  2 | PQR          | harris
+  3 | XYZ          | greg
+
 (3 rows)
 ```
 
@@ -114,7 +115,8 @@ Now the users are permitted to view the records of only those rows that are perm
 $ SELECT * FROM clients;
  id | account_name | account_manager 
 ----+--------------+-----------------
-  2 | ibm          | tom
+  2 | PQR          | tom
+
 (1 row)
 
 ```
@@ -144,7 +146,7 @@ Here in the following example, multiple policies are created for the table named
 ```
 CREATE POLICY mypolicy1 on mytable using user_col = current_user();
 CREATE POLICY mypolicy2 on mytable using id < 4;
-CREATE POLICY mypolicy3 on mytable using account_name = ‘msft’;
+CREATE POLICY mypolicy3 on mytable using account_name = ‘XYZ’;
 
 ALTER TABLE mytable ENABLE ROW LEVEL SECURITY;
 
@@ -155,12 +157,13 @@ These policies are combined as shown in this example:
 SELECT * FROM mytable
 WHERE user_col = current_user() # current_user is  <table owner>
 AND id<4
-AND account_name = ‘ibm’;
+AND account_name = ‘XYZ’;
+
 
 $ select * from mytable;
  id | account_name | account_manager 
 ----+--------------+-----------------
-  3 | ibm          | tom
+  3 | XYZ        | tom
 
 (1 row)
 
