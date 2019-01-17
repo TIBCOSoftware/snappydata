@@ -49,6 +49,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   public static String kafkaLogDir = null;
   public static int initialBrokerPort = 9092;
   public static int initialBrokerId = 0;
+  public static int retryCount = SnappyPrms.getRetryCountForJob();
 
   public SnappyAdAnalyticsTest() {
   }
@@ -271,40 +272,34 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     leadHost = getLeadHost();
     String brokerList = null;
     String leadPort = getLeadPort();
-    try {
-      for (int i = 0; i < jobClassNames.size(); i++) {
-        String userJob = (String)jobClassNames.elementAt(i);
-        if (SnappyPrms.getCommaSepAPPProps() != null) {
-          String[] appProps = SnappyPrms.getCommaSepAPPProps().split(",");
-          for (int j = 0; j < appProps.length; j++)
-            APP_PROPS = APP_PROPS + " --conf " + appProps[j];
-        }
-        brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
-        APP_PROPS = APP_PROPS + " --conf brokerList=" + brokerList + " --conf tid=" + getMyTid();
-        String appName = SnappyPrms.getUserAppName();
-        Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
-        String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-            " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
-            APP_PROPS + " --stream ";
-        String dest = getCurrentDirPath() + File.separator + logFileName;
-        Log.getLogWriter().info("Executing cmd:" + snappyJobCommand);
-        logFile = new File(dest);
-        pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
-        snappyTest.executeProcess(pb, logFile);
-        String line = null;
-        String jobID = null;
-        BufferedReader inputFile = new BufferedReader(new FileReader(logFile));
-        while ((line = inputFile.readLine()) != null) {
-          if (line.contains("jobId")) {
-            jobID = line.split(":")[1].trim();
-            jobID = jobID.substring(1, jobID.length() - 2);
-            break;
-          }
-        }
-        inputFile.close();
-        if(jobID == null){
+    for (int i = 0; i < jobClassNames.size(); i++) {
+      String userJob = (String)jobClassNames.elementAt(i);
+      if (SnappyPrms.getCommaSepAPPProps() != null) {
+        String[] appProps = SnappyPrms.getCommaSepAPPProps().split(",");
+        for (int j = 0; j < appProps.length; j++)
+          APP_PROPS = APP_PROPS + " --conf " + appProps[j];
+      }
+      brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
+      APP_PROPS = APP_PROPS + " --conf brokerList=" + brokerList + " --conf tid=" + getMyTid();
+      String appName = SnappyPrms.getUserAppName();
+      Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
+      String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
+          " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
+          APP_PROPS + " --stream ";
+      String dest = getCurrentDirPath() + File.separator + logFileName;
+      Log.getLogWriter().info("Executing cmd:" + snappyJobCommand);
+      logFile = new File(dest);
+      pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
+      snappyTest.executeProcess(pb, logFile);
+      String jobID = getJobID(logFile);
+      if (jobID == null) {
+        if (retryCount > 0) {
+          retryCount--;
+          retrievePrimaryLeadHost();
+          HydraTask_executeSnappyStreamingJob();
+        } else
           throw new TestException("Failed to start the streaming job. Please check the logs.");
-        }
+      } else {
         Log.getLogWriter().info("JobID is : " + jobID);
         for (int j = 0; j < 3; j++) {
           try {
@@ -318,9 +313,27 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
               "the job status output.");
         }
       }
-    } catch (IOException e) {
-      throw new TestException("IOException occurred while retriving destination logFile path " + log + "\nError Message:" + e.getMessage());
     }
+  }
+
+  public String getJobID(File logFile) {
+    String line = null;
+    String jobID = null;
+    try {
+      BufferedReader inputFile = new BufferedReader(new FileReader(logFile));
+      while ((line = inputFile.readLine()) != null) {
+        if (line.contains("jobId")) {
+          jobID = line.split(":")[1].trim();
+          jobID = jobID.substring(1, jobID.length() - 2);
+          break;
+        }
+      }
+      inputFile.close();
+    } catch (IOException e) {
+      throw new TestException("IOException occurred while retriving destination logFile path " +
+          logFile.getAbsolutePath() + "\nError Message:" + e.getMessage());
+    }
+    return jobID;
   }
 
   public void getJobStatus(String jobID) {
@@ -351,7 +364,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_restartLeadVMWithStreaming(){
     HydraTask_cycleLeadVM();
-    try { Thread.sleep(180000); } catch (InterruptedException ie) {}
+    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
     HydraTask_executeSnappyStreamingJob();
   }
 
