@@ -104,7 +104,8 @@ object HiveClientUtil extends Logging {
     skipFlags.skipHiveCatalogCalls = true
     try {
       // In case of data extractor - recovery mode, derby should be used as hive metastore
-      if (Misc.getGemFireCache.isSnappyRecoveryMode) {
+      if (Misc.getGemFireCache.isSnappyRecoveryMode &&
+          !(Misc.getMemStore.getMyVMKind.isLocator || Misc.getMemStore.getMyVMKind.isStore)) {
         logInfo("Using derby as hive metastore.")
         val extCatalog = SnappyHiveExternalCatalog.getInstance(sparkConf, new SnappyHiveConf)
         extCatalog
