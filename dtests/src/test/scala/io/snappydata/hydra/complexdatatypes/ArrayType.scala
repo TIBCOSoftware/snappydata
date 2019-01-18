@@ -23,7 +23,6 @@ import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
-import scala.util.Random
 
 class ArrayType extends SnappySQLJob {
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
@@ -44,9 +43,7 @@ class ArrayType extends SnappySQLJob {
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val sc = SparkContext.getOrCreate()
     val sqlContext = SQLContext.getOrCreate(sc)
-
-    snc.udf.register("Name", ComplexTypeUtils.generateString)
-    snc.udf.register("Double", ComplexTypeUtils.genrateDoubleNum)
+    val printContent : Boolean = false
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS Student")
@@ -54,9 +51,7 @@ class ArrayType extends SnappySQLJob {
     snc.sql("DROP TABLE IF EXISTS TempArray")
 
     snc.sql("CREATE EXTERNAL TABLE IF NOT EXISTS TempArray USING JSON " +
-        "OPTIONS(path  '/export/shared/QA_DATA/Complextypes_Data/ArrayType/')")
-//      snc.sql("CREATE EXTERNAL TABLE IF NOT EXISTS ST.TempArray USING JSON " +
-//        "OPTIONS(path  '" + dataLocation + "')")
+        "OPTIONS(path  '" + dataLocation + "')")
     snc.sql("CREATE TABLE Student USING COLUMN AS (SELECT * FROM TempArray)")
 
     snc.sql(ComplexTypeUtils.Array_Q1)
@@ -66,10 +61,13 @@ class ArrayType extends SnappySQLJob {
     snc.sql(ComplexTypeUtils.Array_Q4)
     snc.sql(ComplexTypeUtils.Array_Q5)
 
-    // To be removed
-    println(snc.sql(ComplexTypeUtils.Array_Q1).show())
-    println(snc.sql(ComplexTypeUtils.Array_Q2).show())
-    println(snc.sql(ComplexTypeUtils.Array_Q5).show())
+    if(printContent) {
+      println(snc.sql(ComplexTypeUtils.Array_Q1).show())
+      println(snc.sql(ComplexTypeUtils.Array_Q2).show())
+      println(snc.sql(ComplexTypeUtils.Array_Q3).show())
+      println(snc.sql(ComplexTypeUtils.Array_Q4).show())
+      println(snc.sql(ComplexTypeUtils.Array_Q5).show())
+    }
 
     /* --- Create the Spark Tables / Views for Verification  --- */
     val arrType = spark.read.json(dataLocation)

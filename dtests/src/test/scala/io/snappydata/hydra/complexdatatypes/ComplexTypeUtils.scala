@@ -47,4 +47,59 @@ object ComplexTypeUtils {
   val Array_Q5 : String =
     "SELECT name,MAX(Marks),MIN(Marks) FROM StudentMark GROUP BY name"
 
+
+  /* -----                     Map Type                   ----- */
+  /* -----         Snappy Map Type Queries         ----- */
+  val Map_Q1 : String = "SELECT * FROM StudentMarksRecord ORDER BY id"
+
+  val Map_Q2 : String = "SELECT id, name, " +
+    "Maths['maths'],Science['science'] AS SCI ,English['english'] AS ENG," +
+    "Computer['computer'],Music['music'],History['history'] " +
+    "FROM StudentMarksRecord " +
+    "WHERE name = 'JxVJBxYlNT'"
+
+  val Map_Q3 : String = "SELECT name, " +
+    "SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    "Computer['computer'] + Music['music'] + History['history']) AS Total " +
+    "FROM StudentMarksRecord " +
+    "GROUP BY name ORDER BY Total DESC"
+
+  val Map_Q4 : String = "SELECT name, " +
+    "SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    "Computer['computer'] + Music['music'] + History['history']) AS Total, " +
+    "CASE " +
+    "WHEN " +
+    "SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    "Computer['computer'] + Music['music'] + History['history']) >= 500 THEN 'A' " +
+    "WHEN " +
+    "SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    "Computer['computer'] + Music['music'] + History['history']) >=400 THEN 'B' " +
+    "WHEN " +
+    "SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    "Computer['computer'] + Music['music'] + History['history']) >= 300 THEN 'C' " +
+    "ELSE 'FAIL' " +
+    "END AS Grade " +
+    "FROM StudentMarksRecord " +
+    "GROUP BY name ORDER BY Total DESC"
+
+  val Map_Q5 : String = "SELECT name, " +
+    "(SUM(Maths['maths'] + Science['science'] + English['english'] + " +
+    "Computer['computer'] + Music['music'] + " +
+    "History['history'])*100.0/600.0) AS Percentage " +
+    "FROM StudentMarksRecord " +
+    "GROUP BY name ORDER BY Percentage DESC"
+
+  val Map_Q6 : String = "SELECT name, MAX(marks) AS Max, MIN(marks) AS Min FROM " +
+    "(SELECT name, Maths['maths'] AS marks FROM StudentMarksRecord " +
+    "UNION ALL " +
+    "SELECT name, Science['science'] AS marks FROM StudentMarksRecord " +
+    "UNION ALL " +
+    "SELECT name, English['english'] AS marks FROM StudentMarksRecord " +
+    "UNION ALL " +
+    "SELECT name, Computer['computer'] AS marks FROM StudentMarksRecord " +
+    "UNION ALL " +
+    "SELECT name,Music['music'] AS marks FROM StudentMarksRecord " +
+    "UNION ALL " +
+    "SELECT name,History['history'] AS marks FROM StudentMarksRecord) " +
+    "GROUP BY name"
 }
