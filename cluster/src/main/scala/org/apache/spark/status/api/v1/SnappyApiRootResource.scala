@@ -67,6 +67,11 @@ private[v1] class SnappyApiRootResource extends ApiRequestContext {
     new AllExternalTablesResource
   }
 
+  @Path("allglobaltempviews")
+  def getAllGlobalTempViews(): AllGlobalTemporaryViewsResource = {
+    new AllGlobalTemporaryViewsResource
+  }
+
 }
 
 private[spark] object SnappyApiRootResource {

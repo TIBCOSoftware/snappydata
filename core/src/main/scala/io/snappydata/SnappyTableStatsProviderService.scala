@@ -100,7 +100,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
               override def run2(): Unit = {
                 try {
                   if (doRun) {
-                    aggregateStats()
+                    aggregateStats(Some(sc))
                   }
                 } catch {
                   case _: CancelException => // ignore
@@ -182,7 +182,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   }
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats], Seq[SnappyGlobalTemporaryViewStats]) = {
     var result = new java.util.ArrayList[SnappyRegionStatsCollectorResult]().asScala
     val dataServers = GfxdMessage.getAllDataStores
     var resultObtained: Boolean = false
@@ -221,6 +221,32 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
 
+    val globalTempViews: mutable.Buffer[SnappyGlobalTemporaryViewStats] = {
+
+      val snc = SnappyContext.apply(this.sparkContext)
+      val snappySessionCatalog = snc.snappySession.sessionCatalog
+      val globalTempSchema: String = "global_temp"
+      val gblTempViewList = snappySessionCatalog.listTables(globalTempSchema)
+
+      if (gblTempViewList.isEmpty) {
+        mutable.Buffer.empty[SnappyGlobalTemporaryViewStats]
+      } else {
+        val gtv_buf = mutable.Buffer.empty[SnappyGlobalTemporaryViewStats]
+
+        gblTempViewList.foreach(tmpView => {
+          try {
+            val gt = snappySessionCatalog.getTempViewOrPermanentTableMetadata(tmpView)
+            gtv_buf += new SnappyGlobalTemporaryViewStats(tmpView.table, gt.qualifiedName,
+              gt.tableType.name, gt.comment.getOrElse(""), gt.schema, gt.properties.asJava)
+          } catch {
+            case e: Exception => log.debug("Exception while getting details of global " +
+                "temporary view [" + tmpView + "] : " + e.getMessage, e)
+          }
+        })
+        gtv_buf
+      }
+    }
+
     if (resultObtained) {
       // Return updated tableSizeInfo
       // Map to hold hive table type against table names as keys
@@ -245,12 +271,14 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       // Return updated details
       (regionStats,
           result.flatMap(_.getIndexStats.asScala),
-          externalTables)
+          externalTables,
+          globalTempViews)
     } else {
       // Return last successfully updated tableSizeInfo
       (tableSizeInfo.values.toSeq,
           result.flatMap(_.getIndexStats.asScala),
-          externalTables)
+          externalTables,
+          globalTempViews)
     }
   }
 

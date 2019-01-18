@@ -20,6 +20,8 @@ package org.apache.spark.status.api.v1
 
 import io.snappydata.SnappyTableStatsProviderService
 
+import org.apache.spark.sql.types.StructType
+
 object TableDetails {
 
   def getAllTablesInfo: Seq[TableSummary] = {
@@ -58,6 +60,18 @@ object TableDetails {
     externalTableBuff.mapValues(table => {
       new ExternalTableSummary(table.getTableFullyQualifiedName, table.getProvider,
         table.getDataSourcePath)
+    }).values.toList
+  }
+
+  def getAllGlobalTempViewsInfo: Seq[GlobalTemporaryViewSummary] = {
+
+    val gblTempViewBuff =
+      SnappyTableStatsProviderService.getService.getAllGlobalTempViewStatsFromService
+
+    gblTempViewBuff.mapValues(view => {
+      val colCount = view.getSchema.asInstanceOf[StructType].size
+      new GlobalTemporaryViewSummary(view.getFullyQualifiedName, view.getTableName,
+        view.getTableType, colCount)
     }).values.toList
   }
 }

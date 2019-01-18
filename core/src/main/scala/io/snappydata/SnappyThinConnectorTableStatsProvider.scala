@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyGlobalTemporaryViewStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
@@ -71,7 +71,7 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
               override def run(): Unit = {
                 try {
                   if (doRun) {
-                    aggregateStats()
+                    aggregateStats(Some(sc))
                   }
                 } catch {
                   case _: CancelException => // ignore
@@ -111,7 +111,8 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   }
 
   override def getStatsFromAllServers(sc: Option[SparkContext] = None): (Seq[SnappyRegionStats],
-      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = synchronized {
+      Seq[SnappyIndexStats], Seq[SnappyExternalTableStats],
+      Seq[SnappyGlobalTemporaryViewStats]) = synchronized {
     try {
       val resultSet = executeStatsStmt(sc)
       val regionStats = new ArrayBuffer[SnappyRegionStats]
@@ -126,14 +127,14 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
         regionStats += new SnappyRegionStats(tableName, totalSize, sizeInMemory, rowCount,
           isColumnTable, isReplicatedTable, bucketCount)
       }
-      (regionStats, Nil, Nil)
+      (regionStats, Nil, Nil, Nil)
     } catch {
       case NonFatal(e) =>
         logWarning("Warning: unable to retrieve table stats " +
             "from SnappyData cluster due to " + e.toString)
         logDebug("Exception stack trace: ", e)
         closeConnection()
-        (Nil, Nil, Nil)
+        (Nil, Nil, Nil, Nil)
     }
   }
 
