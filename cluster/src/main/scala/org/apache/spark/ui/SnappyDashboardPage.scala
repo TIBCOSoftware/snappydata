@@ -81,12 +81,22 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       extTablesStatsTitle ++ extTablesStatsTable
     }
 
+    val gblTempViewsStatsDetails = {
+      val gblTempViewsStatsTitle = createTitleNode(SnappyDashboardPage.gblTempViewsStatsTitle,
+                               SnappyDashboardPage.gblTempViewsStatsTitleTooltip,
+                               "gblViewsStatsTitle",
+                               false)
+      val gblTempViewsStatsTable = gblTempViewStats
+
+      gblTempViewsStatsTitle ++ gblTempViewsStatsTable
+    }
+
     val jsScripts = <script src={
                               UIUtils.prependBaseUri("/static/snappydata/snappy-dashboard.js")
                             }></script>
 
     val pageContent = jsScripts ++ pageTitleNode ++ clusterStatsDetails ++ membersStatsDetails ++
-                      tablesStatsDetails ++ extTablesStatsDetails
+                      tablesStatsDetails ++ extTablesStatsDetails ++ gblTempViewsStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
@@ -339,6 +349,42 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     </div>
   }
 
+  private def gblTempViewStats(): Seq[Node] = {
+
+    <div class="container-fluid" id="gblTempViewStatsGridContainer" style="display: none;">
+      <table id="gblTempViewStatsGrid" class="table table-bordered table-condensed table-striped">
+        <thead>
+          <tr>
+            <th class="table-th-col-heading">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.gblTempViewStatsColumn("nameTooltip")
+                    }>
+                {SnappyDashboardPage.gblTempViewStatsColumn("name")}
+              </span>
+            </th>
+            <th class="table-th-col-heading">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.gblTempViewStatsColumn("typeTooltip")
+                    }>
+                {SnappyDashboardPage.gblTempViewStatsColumn("type")}
+              </span>
+            </th>
+            <th class="table-th-col-heading">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.gblTempViewStatsColumn("columnsCountTooltip")
+                    }>
+                {SnappyDashboardPage.gblTempViewStatsColumn("columnsCount")}
+              </span>
+            </th>
+          </tr>
+        </thead>
+      </table>
+    </div>
+  }
+
 }
 
 object SnappyDashboardPage {
@@ -459,5 +505,15 @@ object SnappyDashboardPage {
   extTableStatsColumn += ("providerTooltip" -> "External Tables Provider")
   extTableStatsColumn += ("externalSource" -> "Source")
   extTableStatsColumn += ("externalSourceTooltip" -> "External Source of Tables ")
+
+  val gblTempViewsStatsTitle = "Global Temporary Views"
+  val gblTempViewsStatsTitleTooltip = "SnappyData Global Temporary Views Summary"
+  val gblTempViewStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
+  gblTempViewStatsColumn += ("name" -> "Name")
+  gblTempViewStatsColumn += ("nameTooltip" -> "Global Temporary Views Name")
+  gblTempViewStatsColumn += ("type" -> "Type")
+  gblTempViewStatsColumn += ("typeTooltip" -> "Type")
+  gblTempViewStatsColumn += ("columnsCount" -> "Columns Count")
+  gblTempViewStatsColumn += ("columnsCountTooltip" -> "Number of Columns in View")
 
 }
