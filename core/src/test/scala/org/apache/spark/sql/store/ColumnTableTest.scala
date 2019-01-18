@@ -489,7 +489,7 @@ class ColumnTableTest
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
     snc.registerDataFrameAsTable(dataDF, "tempTable")
-    snc.sql("select * from tempTable").show
+    snc.sql("select * from tempTable").collect()
     intercept[AnalysisException] {
       // not supported
       snc.sql("alter table tempTable add column age int")
@@ -1235,7 +1235,7 @@ class ColumnTableTest
 
     snc.sql("create table t1(a int,b int) using column options()")
     snc.sql("insert into t1 values(1,2)")
-    snc.sql("select * from t1").show
+    snc.sql("select * from t1").collect()
     snc.sql("create table t2(c int,d int) using column options() as (select * from t1)")
 
     snc.sql("create table t3 using column options() as (select * from t1)")
@@ -1262,21 +1262,19 @@ class ColumnTableTest
     }', header 'false', inferschema 'true')")
     snc.sql("create table test2 using column options() as (select * from test1)")
     val df2 = snc.sql("select * from test2")
-    df2.show()
+    df2.collect()
 
     snc.sql("drop table test2")
     snc.sql("create table test2(_col1 integer,__col2 integer) using column options()")
     snc.sql("insert into test2 values(1,2)")
     snc.sql("insert into test2 values(2,3)")
     val df3 = snc.sql("select _col1,__col2 from test2")
-    df3.show()
+    df3.collect()
     val struct = (new StructType())
         .add(StructField("_COL1", IntegerType, true))
         .add(StructField("__COL2", IntegerType, true))
 
-    df3.printSchema()
     assert(struct == df3.schema)
-
   }
 
   test("Test loading json data to column table") {
@@ -1305,7 +1303,7 @@ class ColumnTableTest
         "address.district, " +
         "address.lane " +
         "FROM people")
-    nameAndAddress.toJSON.show(truncate = false)
+    logInfo(nameAndAddress.toJSON.collect().mkString("\n"))
     assert(nameAndAddress.count() == 2)
     val rows: Array[String] = nameAndAddress.toJSON.collect()
 
@@ -1368,7 +1366,7 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(2,'test2')")
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
-    df.show
+    df.collect()
     val tempPath = "/tmp/" + System.currentTimeMillis()
 
     assert(df.count() == 3)
@@ -1377,7 +1375,7 @@ class ColumnTableTest
       Map("path" -> tempPath, "header" -> "true", "inferSchema" -> "true"))
     val dataDF = snc.sql("select * from TEST_EXTERNAL order by c1")
 
-    snc.sql("select * from TEST_EXTERNAL").show
+    snc.sql("select * from TEST_EXTERNAL").collect()
 
     assert(dataDF.count == 3)
 
@@ -1497,7 +1495,7 @@ class ColumnTableTest
     snc.sql(s"insert into t1 values(2,'test2')")
     snc.sql(s"insert into t1 values(3,'test3')")
     val df = snc.sql("select * from t1")
-    df.show
+    df.collect()
     val tempPath = System.getProperty("user.dir") + System.currentTimeMillis()
 
     assert(df.count() == 3)

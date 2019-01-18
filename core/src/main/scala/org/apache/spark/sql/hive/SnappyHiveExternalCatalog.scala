@@ -36,6 +36,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
+import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.http.annotation.GuardedBy
@@ -57,6 +58,7 @@ import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.toUpperCase
+import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{AnalysisException, _}
 import org.apache.spark.{SparkConf, SparkException}
 
@@ -140,7 +142,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     } catch {
       case he: Exception if isDisconnectException(he) =>
         // stale JDBC connection
-        closeHive()
+        closeHive(clearCache = false)
         suspendActiveSession {
           hiveClient = hiveClient.newSession()
         }
@@ -236,12 +238,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def listDatabases(): Seq[String] = {
-    withHiveExceptionHandling(super.listDatabases().map(toUpperCase)) :+ SYS_SCHEMA
+    (withHiveExceptionHandling(super.listDatabases().map(toUpperCase).toSet) + SYS_SCHEMA)
+        .toSeq.sorted
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
-    withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase)) ++
-        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)
+    (withHiveExceptionHandling(super.listDatabases(pattern).map(toUpperCase).toSet) ++
+        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)).toSeq.sorted
   }
 
   override def setCurrentDatabase(schema: String): Unit = {
@@ -453,7 +456,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       Some(toUpperCase(table.identifier.database.get)))
     // VIEW text is stored as split text for large view strings,
     // so restore its full text and schema from properties if present
-    if (table.tableType == CatalogTableType.VIEW) {
+    val newTable = if (table.tableType == CatalogTableType.VIEW) {
       val viewText = JdbcExtendedUtils.readSplitProperty(SPLIT_VIEW_TEXT_PROPERTY,
         table.properties).orElse(table.viewText)
       val viewOriginalText = JdbcExtendedUtils.readSplitProperty(SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY,
@@ -474,6 +477,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
             table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
       case _ => table.copy(identifier = tableIdent)
     }
+    // explicitly add weightage column to sample tables for old catalog data
+    if (CatalogObjectType.getTableType(newTable) == CatalogObjectType.Sample &&
+        newTable.schema(table.schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+      newTable.copy(schema = newTable.schema.add(Utils.WEIGHTAGE_COLUMN_NAME, LongType,
+        nullable = false))
+    } else newTable
   }
 
   override protected def getCachedCatalogTable(schema: String, table: String): CatalogTable = {
@@ -553,7 +562,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   def refreshPolicies(ldapGroup: String): Unit = {
     val qualifiedLdapGroup = Constants.LDAP_GROUP_PREFIX + ldapGroup
-    getAllTables().foreach { table =>
+    getAllTables().filter(_.provider.exists(_.equalsIgnoreCase("policy"))).foreach { table =>
       val applyToStr = table.properties(PolicyProperties.policyApplyTo)
       if (applyToStr.nonEmpty) {
         val applyTo = applyToStr.split(",")
@@ -729,7 +738,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   override def close(): Unit = {}
 
-  private[hive] def closeHive(): Unit = synchronized {
+  private[hive] def closeHive(clearCache: Boolean): Unit = synchronized {
+    if (clearCache) invalidateAll()
     // Non-isolated client can be closed here directly which is only present in cluster mode
     // using the new property HiveUtils.HIVE_METASTORE_ISOLATION not present in upstream.
     // Isolated loader would require reflection but that case is only in snappy-core
@@ -781,6 +791,8 @@ object SnappyHiveExternalCatalog {
       log4jLogger.setLevel(Level.ERROR)
     }
     try {
+      // delete the hive scratch directory if it exists
+      FileUtils.deleteDirectory(new java.io.File("./hive"))
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
     } finally {
       logger.setLevel(previousLevel)
@@ -799,7 +811,8 @@ object SnappyHiveExternalCatalog {
 
   def close(): Unit = synchronized {
     if (instance ne null) {
-      instance.withHiveExceptionHandling(instance.closeHive(), handleDisconnects = false)
+      instance.withHiveExceptionHandling(instance.closeHive(clearCache = true),
+        handleDisconnects = false)
       instance = null
     }
   }

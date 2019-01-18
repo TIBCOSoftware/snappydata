@@ -32,6 +32,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.deploy.SparkSubmitUtils
@@ -345,31 +346,17 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         df.createTempView(tableIdent.quotedString)
         df
     }
-    val isOffHeap = {
-      { // avoids indentation change
-        SnappyContext.getClusterMode(sparkSession.sparkContext) match {
-          case _: ThinClientConnectorMode =>
-            SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
-          case _ =>
-            try {
-              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.forall(member => !member.isDataServer ||
-                  (member.getOffHeapMemorySize > 0))
-            }
-            catch {
-              case _: Throwable => false
-            }
-        }
-      }
-    }
+
+    val isOffHeap = ServiceUtils.isOffHeapStorageAvailable(session)
 
     if (isLazy) {
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
       Nil
     } else {
+      val queryShortString = CachedDataFrame.queryStringShortForm(queryString)
       val localProperties = session.sparkContext.getLocalProperties
       val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
-      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryString)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortString)
       try {
         session.sessionState.enableExecutionCache = true
         // Get the actual QueryExecution used by InMemoryRelation so that
@@ -386,7 +373,7 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         }.get
         val planInfo = PartitionedPhysicalScan.getSparkPlanInfo(cachedExecution.executedPlan)
         Row(CachedDataFrame.withCallback(session, df = null, cachedExecution, "cache")(_ =>
-          CachedDataFrame.withNewExecutionId(session, queryString, queryString,
+          CachedDataFrame.withNewExecutionId(session, queryShortString, queryString,
             cachedExecution.toString(), planInfo)({
             val start = System.nanoTime()
             // Dummy op to materialize the cache. This does the minimal job of count on
