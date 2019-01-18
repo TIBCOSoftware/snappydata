@@ -18,7 +18,7 @@
 package org.apache.spark.memory
 
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.core.FileCleaner
+import io.snappydata.util.TestUtils
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.SparkFunSuite
@@ -35,19 +35,16 @@ class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAft
     if (SnappyContext.globalSparkContext != null) {
       SnappyContext.globalSparkContext.stop()
     }
-    FileCleaner.cleanStoreFiles()
     System.setProperty("snappydata.umm.memtrace", "true")
-    return
   }
 
   after {
     if (SnappyContext.globalSparkContext != null) {
       val snappySession = new SnappySession(SnappyContext.globalSparkContext)
-      snappySession.dropTable("t1", true)
+      TestUtils.dropAllSchemas(snappySession)
       SnappyContext.globalSparkContext.stop()
     }
     TestUtil.stopNetServer()
-    FileCleaner.cleanStoreFiles()
   }
 
   // Only use if sure of the problem
@@ -61,7 +58,7 @@ class MemoryFunSuite extends SparkFunSuite with BeforeAndAfter with BeforeAndAft
 
   private[memory] def createSparkSession(memoryFraction: Double,
                                          storageFraction: Double,
-                                         sparkMemory: Long = 1000,
+                                         sparkMemory: Long = 500000,
                                          cachedBatchSize: Int = 500): SparkSession = {
     SparkSession
       .builder

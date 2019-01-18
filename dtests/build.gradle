@@ -157,7 +157,7 @@ testClasses.doLast {
           include '**/*.inc'
           include '**/*.sql'
       }
-      into project(':snappy-store:snappydata-store-tests').sourceSets.main.output.classesDir
+      into project(':snappy-store:snappydata-store-tests').sourceSets.main.java.outputDir
     }
   }
 }
