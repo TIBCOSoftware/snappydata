@@ -112,7 +112,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
 
     val query = "insert into t3 values(?,?)"
     ps = conn.prepareStatement(query)
-    for (i <- 0 until 20) {
+    for (i <- 1 to 20) {
       ps.setInt(1, i)
       ps.setInt(2, i + 10)
       ps.addBatch()
@@ -127,7 +127,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     assertEquals(20, rscnt.getInt(1))
 
     val rs = stmt.executeQuery("select * from t3 order by id")
-    var i = 0
+    var i = 1
     while (rs.next()) {
       assertEquals(i, rs.getInt(1))
       assertEquals(i + 10, rs.getInt(2))
@@ -137,7 +137,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     val query1 = "update t3 set fs = ? where fs = ?"
     ps = conn.prepareStatement(query1)
     var fs1 = 0
-    for (i <- 0 until 20) {
+    for (i <- 1 to 20) {
       if (i % 2 == 0) {
         fs1 = i + 100
       } else {
@@ -157,7 +157,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     assertEquals(20, rscnt.getInt(1))
 
     val rs1 = stmt.executeQuery("select * from t3 order by id")
-    var i2 = 0
+    var i2 = 1
     var no = 0
     while (rs1.next()) {
       if (i2 % 2 == 0) {
@@ -172,10 +172,14 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
 
     val query2 = "delete from t3 where id = ?"
     ps = conn.prepareStatement(query2)
-    for (i2 <- 0 until 20) {
+    for (i2 <- 1 to 20) {
       ps.setInt(1, i2)
-      ps.executeUpdate()
+      ps.addBatch()
+      if (i2 % 10 == 0) {
+        ps.executeBatch()
+      }
     }
+    ps.executeBatch()
 
     rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
