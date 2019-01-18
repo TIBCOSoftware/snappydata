@@ -208,7 +208,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
+        rdd.sparkContext, rdd, Nil, preferredLocations)))
     }
   }
 
@@ -270,7 +270,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
+        rdd.sparkContext, rdd, Nil, preferredLocations)))
     }
   }
 

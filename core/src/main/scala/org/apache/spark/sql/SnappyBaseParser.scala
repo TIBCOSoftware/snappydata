@@ -20,7 +20,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import io.snappydata.QueryHint
-import io.snappydata.collection.{ObjectObjectHashMap, OpenHashSet}
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
+import org.eclipse.collections.impl.set.mutable.UnifiedSet
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -332,9 +333,9 @@ object SnappyParserConsts {
   final val numericSuffix: CharPredicate = CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
-  final val reservedKeywords: OpenHashSet[String] = new OpenHashSet[String]
+  final val reservedKeywords: UnifiedSet[String] = new UnifiedSet[String]
 
-  final val allKeywords: OpenHashSet[String] = new OpenHashSet[String]
+  final val allKeywords: UnifiedSet[String] = new UnifiedSet[String]
 
   final val optimizableLikePattern: java.util.regex.Pattern =
     java.util.regex.Pattern.compile("(%?[^_%]*[^_%\\\\]%?)|([^_%]*[^_%\\\\]%[^_%]*)")
@@ -348,7 +349,7 @@ object SnappyParserConsts {
   // -10 in sequence will mean all arguments, -1 will mean all odd argument and
   // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
   // Empty argument array means plan caching has to be disabled.
-  final val FOLDABLE_FUNCTIONS: ObjectObjectHashMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
+  final val FOLDABLE_FUNCTIONS: UnifiedMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
     "ROUND" -> Array(1), "BROUND" -> Array(1), "PERCENTILE" -> Array(1), "STACK" -> Array(0),
     "NTILE" -> Array(0), "STR_TO_MAP" -> Array(1, 2), "NAMED_STRUCT" -> Array(-1),
     "REFLECT" -> Array(0, 1), "JAVA_METHOD" -> Array(0, 1), "XPATH" -> Array(1),
@@ -527,6 +528,7 @@ object SnappyParserConsts {
   final val PUT: Keyword = nonReservedKeyword("put")
   final val REFRESH: Keyword = nonReservedKeyword("refresh")
   final val REGEXP: Keyword = nonReservedKeyword("regexp")
+  final val RENAME: Keyword = nonReservedKeyword("rename")
   final val REPLACE: Keyword = nonReservedKeyword("replace")
   final val REVOKE: Keyword = nonReservedKeyword("revoke")
   final val REPOS: Keyword = nonReservedKeyword("repos")
@@ -624,5 +626,8 @@ object SnappyParserConsts {
 
   // keywords that are neither reserved nor non-reserved and can be freely
   // used as named strictIdentifier
+  final val CASCADE: Keyword = new Keyword("cascade")
+  final val DATABASE: Keyword = new Keyword("database")
   final val RETURNS: Keyword = new Keyword("returns")
+  final val TEMP: Keyword = new Keyword("temp")
 }

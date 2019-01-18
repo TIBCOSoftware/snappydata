@@ -53,6 +53,8 @@ import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
 import util.*;
 
+import static hydra.Prms.maxResultWaitSec;
+
 public class SnappyTest implements Serializable {
 
   private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
@@ -94,6 +96,7 @@ public class SnappyTest implements Serializable {
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
+  public static long maxResultWaitSecs = TestConfig.tab().longAt(maxResultWaitSec);
   private static Boolean logDirExists = false;
   private static Boolean doneCopying = false;
   protected static Boolean doneRandomizing = false;
@@ -206,6 +209,7 @@ public class SnappyTest implements Serializable {
 
   protected String getStoreTestsJar() {
     String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
+        hd.getFileSep() + ".." +
         hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
         ProductVersionHelper.getInfo().getProperty(ProductVersionHelper.SNAPPYRELEASEVERSION) +
         "-all.jar";
@@ -378,8 +382,6 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getLogLevel() + SnappyPrms.getPersistIndexes() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
-            " -J-XX:+DisableExplicitGC" +
-            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
             SnappyPrms.getGCOptions(dirPath) + " " +
             SnappyPrms.getServerLauncherProps() +
             " -classpath=" + getStoreTestsJar();
@@ -405,8 +407,7 @@ public class SnappyTest implements Serializable {
                         + SnappyPrms.getCompressedInMemoryColumnarStorage() +*/
             SnappyPrms.getColumnBatchSize() + SnappyPrms.getConserveSockets() +
             " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() +
-            " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() +
-            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
+            SnappyPrms.getTimeStatistics() +
             SnappyPrms.getLogLevel() + SnappyPrms.getNumBootStrapTrials() +
             SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
             " -classpath=" + getStoreTestsJar() +
@@ -2213,6 +2214,9 @@ public class SnappyTest implements Serializable {
           String primaryLocatorPort = getPrimaryLocatorPort();
           APP_PROPS = "\"" + APP_PROPS + ",primaryLocatorHost=" + primaryLocatorHost + ",primaryLocatorPort=" + primaryLocatorPort + "\"";
         }
+        if (SnappyPrms.isLongRunningJob()) {
+          APP_PROPS = "\"" + APP_PROPS + ",maxResultWaitSec=" + maxResultWaitSecs + "\"";
+        }
         if (SnappyPrms.hasDynamicAppProps()) {
           String dmlProps = dynamicAppProps.get(getMyTid());
           if (dmlProps == null) {
@@ -2237,19 +2241,23 @@ public class SnappyTest implements Serializable {
         snappyTest.executeProcess(pb, logFile);
       }
       boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
-      if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
-        jobSubmissionCount++;
-        Thread.sleep(180000);
-        Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
-            " the job to new primary lead node.....");
-        retrievePrimaryLeadHost();
-        HydraTask_executeSnappyJob();
+      if (retry) {
+        if (jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
+          jobSubmissionCount++;
+          Thread.sleep(60000);
+          Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
+              " the job to new primary lead node.....");
+          retrievePrimaryLeadHost();
+          HydraTask_executeSnappyJob();
+        } else {
+          throw new TestException("Failed to start Snappy Job. Please check the logs.");
+        }
       }
     } catch (IOException e) {
       throw new TestException("IOException occurred while retriving destination logFile path " +
           log + "\nError Message:" + e.getMessage());
     } catch (InterruptedException e) {
-      throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
+      throw new TestException("Exception occurred while waiting for the snappy job  " +
           "process re-execution." + "\nError Message:" + e.getMessage());
     }
   }
@@ -2483,6 +2491,10 @@ public class SnappyTest implements Serializable {
           jobID = jobID.substring(1, jobID.length() - 2);
           jobIds.add(jobID);
         }
+      }
+      if(jobIds==null) {
+        Log.getLogWriter().info("Failed to start the snappy job.");
+        return true;
       }
       inputFile.close();
       for (String str : jobIds) {

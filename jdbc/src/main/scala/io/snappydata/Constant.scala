@@ -50,9 +50,6 @@ object Constant {
 
   val SPARK_STORE_PREFIX: String = SPARK_PREFIX + STORE_PROPERTY_PREFIX
 
-  val SPLIT_VIEW_TEXT_PROPERTY = "snappydata.view.text"
-  val SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY = "snappydata.view.originalText"
-
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
   val CONNECTION_PROPERTY: String = s"${PROPERTY_PREFIX}connection"
@@ -77,6 +74,9 @@ object Constant {
 
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 5000
+
+  /** Special property to trigger authentication by SnappyConf. */
+  val TRIGGER_AUTHENTICATION = "snappydata.auth.trigger"
 
   // Internal Column table store schema
   final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME

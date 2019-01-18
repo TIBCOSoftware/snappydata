@@ -1,4 +1,4 @@
-export JTESTS=$SNAPPY_HOME/store/tests/sql/build-artifacts/linux/classes/main
+export JTESTS=$SNAPPY_HOME/store/tests/sql/build-artifacts/linux/classes/java/main
 
 $SNAPPY_HOME/store/tests/core/src/main/java/bin/sample-runbt.sh $OUTPUT_DIR/masterLogs $SNAPPY_HOME -l $JTESTS/sql/snappy.local.conf sql/sqlTx/thinClient/thinClientTx.bt
 sleep 30;
