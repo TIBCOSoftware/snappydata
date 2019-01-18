@@ -20,7 +20,7 @@ import java.io.ObjectOutputStream
 import java.lang.reflect.Method
 import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
-import java.sql.DriverManager
+import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
 import scala.annotation.tailrec
@@ -41,6 +41,7 @@ import org.apache.commons.math3.distribution.NormalDistribution
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark._
+import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
@@ -56,7 +57,7 @@ import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.SQLExecution
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper, JdbcUtils}
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
@@ -164,25 +165,6 @@ object Utils {
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
       module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
-  }
-
-  // maximum power of 2 less than Integer.MAX_VALUE
-  private val MAX_HASH_CAPACITY = 1 << 30
-
-  def checkCapacity(capacity: Int): Int = {
-    if (capacity > 0 && capacity <= MAX_HASH_CAPACITY) {
-      capacity
-    } else if (capacity == 0) {
-      2
-    } else {
-      throw new IllegalStateException("Capacity (" + capacity +
-          ") can't be more than " + MAX_HASH_CAPACITY + " elements or negative")
-    }
-  }
-
-  def nextPowerOf2(n: Int): Int = {
-    val highBit = Integer.highestOneBit(if (n > 0) n else 2)
-    checkCapacity(if (highBit == n) n else highBit << 1)
   }
 
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,
@@ -678,6 +660,11 @@ object Utils {
   def createCatalystConverter(dataType: DataType): Any => Any =
     CatalystTypeConverters.createToCatalystConverter(dataType)
 
+  def resultSetToSparkInternalRows(resultSet: ResultSet, schema: StructType,
+      inputMetrics: InputMetrics = new InputMetrics): Iterator[InternalRow] = {
+    JdbcUtils.resultSetToSparkInternalRows(resultSet, schema, inputMetrics)
+  }
+
   // we should use the exact day as Int, for example, (year, month, day) -> day
   def millisToDays(millisUtc: Long, tz: TimeZone): Int = {
     // SPARK-6785: use Math.floor so negative number of days (dates before 1970)
@@ -716,10 +703,8 @@ object Utils {
     conf
   }
 
-  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader = {
-    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    new MutableURLClassLoader(urls, parentLoader)
-  }
+  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader =
+    SharedUtils.newMutableURLClassLoader(urls)
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
@@ -1071,42 +1056,6 @@ private[spark] class CoGroupExecutorLocalPartition(
     s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
-}
-
-final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: Seq[(String, String)])
-    extends Partition with KryoSerializable {
-
-  override def index: Int = _index
-
-  def bucketId: Int = _bucketId
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    output.writeVarInt(_index, true)
-    output.writeVarInt(_bucketId, true)
-    val numHosts = hostList.length
-    output.writeVarInt(numHosts, true)
-    for ((host, url) <- hostList) {
-      output.writeString(host)
-      output.writeString(url)
-    }
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    _index = input.readVarInt(true)
-    _bucketId = input.readVarInt(true)
-    val numHosts = input.readVarInt(true)
-    val hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
-    for (_ <- 0 until numHosts) {
-      val host = input.readString()
-      val url = input.readString()
-      hostList += host -> url
-    }
-    this.hostList = hostList
-  }
-
-  override def toString: String =
-    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {

@@ -107,6 +107,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private[sql] var currentLiterals: Array[ParamLiteral] = _
 
   @transient
+  private[sql] var queryShortString: String = _
+
+  @transient
   private[sql] var queryString: String = _
 
   @transient
@@ -288,7 +291,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     try {
       didPrepare = prepareForCollect()
       val (result, elapsedMillis) = CachedDataFrame.withNewExecutionId(snappySession,
-        queryString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
+        queryShortString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
         currentExecutionId, planStartTime, planEndTime)(body)
       (result, elapsedMillis * 1000000L)
     } finally {
@@ -354,7 +357,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     val (executedPlan, withFallback) = SnappySession.getExecutedPlan(queryExecution.executedPlan)
 
     def execute(): (Iterator[R], Long) = withNewExecutionIdTiming {
-      snappySession.addContextObject(SnappySession.ExecutionKey, () => queryExecution)
 
       def executeCollect(): Array[InternalRow] = {
         if (withFallback ne null) withFallback.executeCollect()
@@ -412,7 +414,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     try {
       withCallback("collect")(_ => execute())
     } finally {
-      snappySession.removeContextObject(SnappySession.ExecutionKey)
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
@@ -615,7 +616,7 @@ object CachedDataFrame
       else Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
       val executionIdStr = java.lang.Long.toString(executionId)
       localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryLongForm)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
       localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
 
       val startTime = System.currentTimeMillis()
