@@ -1124,13 +1124,16 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    INSERT ~ INTO ~ tableIdentifier ~ ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
-      UnresolvedRelation(r), input.sliceString(0, input.length))) |
-    PUT ~ INTO ~ tableIdentifier ~ ANY.* ~>
-        ((r: TableIdentifier) => {
-          checkTableType(r)
-          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length))
-        })
+    (INSERT ~ INTO ~ push(false) | PUT ~ INTO ~ push(true)) ~ tableIdentifier ~
+        ANY.* ~> ((putInto: Any, r: TableIdentifier) =>
+      if (putInto.asInstanceOf[Boolean]) {
+        checkTableType(r)
+        DMLExternalTable(r,
+          UnresolvedRelation(r), input.sliceString(0, input.length))
+      } else {
+        DMLExternalTable(r,
+          UnresolvedRelation(r), input.sliceString(0, input.length))
+      })
   }
 
   // It can be the following patterns:
@@ -1261,7 +1264,7 @@ class SnappyParser(session: SnappySession)
     val snc = session.asInstanceOf[SnappySession]
     val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
       snc.getCurrentSchema, identifier.identifier)).toString
-    if (tableType == "COLUMN") {
+    if (tableType == CatalogObjectType.Column.toString) {
       throw StandardException.newException(SQLState.PUTINTO_OP_DISALLOWED_ON_COLUMN_TABLES)
     }
   }
