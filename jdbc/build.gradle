@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,10 +14,6 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
-plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
-}
 
 apply plugin: 'scala'
 
@@ -60,15 +56,6 @@ task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
   classifier = 'javadoc'
   from scaladoc
 }
-if (rootProject.hasProperty('enablePublish')) {
-  artifacts {
-    archives packageScalaDocs, packageSources
-  }
-}
-
-testClasses.doLast {
-  copyTestsCommonResources(buildDir)
-}
 
 scalaTest {
   dependsOn ':cleanScalaTest'
@@ -86,7 +73,11 @@ test.dependsOn ':cleanJUnit'
 check.dependsOn test, scalaTest, dunitTest
 
 archivesBaseName = 'snappydata-jdbc_' + scalaBinaryVersion
+jar.classifier = 'only'
+// shadowJar will act like the real jar for inclusion by applications
 shadowJar {
+  classifier = null
+
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
 
@@ -106,6 +97,26 @@ shadowJar {
       'Version'           : version,
       'Vendor'            : vendorName
     )
+  }
+}
+
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources, shadowJar
+  }
+}
+
+// clear dependencies from shadowJar POM
+install {
+  repositories.mavenInstaller {
+    pom.whenConfigured { p -> p.dependencies.clear() }
+  }
+}
+if (rootProject.hasProperty('enablePublish')) {
+  uploadArchives {
+    repositories.mavenDeployer {
+      pom.whenConfigured { p -> p.dependencies.clear() }
+    }
   }
 }
 

@@ -23,7 +23,7 @@ import org.scalatest.{Tag}
 
 import org.apache.spark.SparkFunSuite
 
-trait SnappySparkTestUtil extends SparkFunSuite{
+trait SnappySparkTestUtil extends SparkFunSuite {
 
   InitializeRun.setUp()
 
@@ -32,10 +32,15 @@ trait SnappySparkTestUtil extends SparkFunSuite{
   }
 
   def excluded: Seq[String] = Seq.empty[String]
+  def ignored: Seq[String] = Seq.empty[String]
 
   override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
     if (!excluded.contains(testName)) {
-      super.test(testName, testTags: _*)(testFun)
+      if (ignored.contains(testName)) {
+        super.ignore(testName, testTags: _*)(testFun)
+      } else {
+        super.test(testName, testTags: _*)(testFun)
+      }
     }
   }
 }

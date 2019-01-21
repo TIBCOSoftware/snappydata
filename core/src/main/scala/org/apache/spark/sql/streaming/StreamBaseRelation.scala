@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,12 +18,13 @@ package org.apache.spark.sql.streaming
 
 import scala.collection.mutable
 
+import io.snappydata.sql.catalog.SnappyExternalCatalog
+
 import org.apache.spark.rdd.{EmptyRDD, RDD}
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
 import org.apache.spark.sql.sources._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.dstream.{DStream, InputDStream, ReceiverInputDStream}
@@ -31,8 +32,7 @@ import org.apache.spark.streaming.{SnappyStreamingContext, StreamUtils, Streamin
 import org.apache.spark.{Logging, util}
 
 abstract class StreamBaseRelation(opts: Map[String, String])
-    extends ParentRelation with StreamPlan with TableScan
-        with DestroyRelation with Serializable with Logging {
+    extends DestroyRelation with StreamPlan with TableScan with Serializable with Logging {
 
   final def context: SnappyStreamingContext =
     SnappyStreamingContext.getInstance().getOrElse(
@@ -40,33 +40,13 @@ abstract class StreamBaseRelation(opts: Map[String, String])
 
   protected val options = new CaseInsensitiveMap(opts)
 
-  @transient val tableName = options(JdbcExtendedUtils.DBTABLE_PROPERTY)
+  @transient val tableName = options(SnappyExternalCatalog.DBTABLE_PROPERTY)
 
-  var tableExists: Boolean = _
-
-  override def tableCreated: Boolean = !tableExists
-
-  override def addDependent(dependent: DependentRelation,
-      catalog: SnappyStoreHiveCatalog): Boolean =
-    DependencyCatalog.addDependent(tableName, dependent.name)
-
-  override def removeDependent(dependent: DependentRelation,
-      catalog: SnappyStoreHiveCatalog): Boolean =
-    DependencyCatalog.removeDependent(tableName, dependent.name)
-
-  override def getDependents(catalog: SnappyStoreHiveCatalog): Seq[String] =
-    DependencyCatalog.getDependents(tableName)
-
-  override def recoverDependentRelations(properties: Map[String, String]): Unit = {
-    throw new UnsupportedOperationException(
-      "Recovery of dependents' relation not possible")
-  }
-
-  val storageLevel = options.get("storageLevel")
+  val storageLevel: StorageLevel = options.get("storageLevel")
       .map(StorageLevel.fromString)
       .getOrElse(StorageLevel.MEMORY_AND_DISK_SER_2)
 
-  val rowConverter = {
+  val rowConverter: StreamToRowsConverter = {
     try {
       val clz = util.Utils.getContextOrSparkClassLoader.loadClass(
         options("rowConverter"))
@@ -79,15 +59,7 @@ abstract class StreamBaseRelation(opts: Map[String, String])
   protected def createRowStream(): DStream[InternalRow]
 
   @transient override final lazy val rowStream: DStream[InternalRow] =
-    StreamBaseRelation.getOrCreateRowStream(tableName, { () =>
-      val stream = createRowStream()
-      // search for existing dependents in the catalog (these may still not
-      //   have been initialized e.g. after recovery, so add explicitly)
-      val catalog = context.snappySession.sessionState.catalog
-      val initDependents = catalog.getDataSourceTables(Nil,
-        Some(tableName)).map(_.toString())
-      (stream, initDependents)
-    })
+    StreamBaseRelation.getOrCreateRowStream(tableName, createRowStream)
 
   override val needConversion: Boolean = false
 
@@ -112,7 +84,6 @@ abstract class StreamBaseRelation(opts: Map[String, String])
   override def destroy(ifExists: Boolean): Unit = {
     StreamBaseRelation.removeStream(tableName).foreach(
       StreamBaseRelation.stopStream)
-    DependencyCatalog.removeAllDependents(tableName)
   }
 
   def truncate(): Unit = {
@@ -138,14 +109,13 @@ private object StreamBaseRelation extends Logging {
     }
   }
 
-  private def getOrCreateRowStream(tableName: String, createStream: () =>
-      (DStream[InternalRow], Seq[String])): DStream[InternalRow] =
+  private def getOrCreateRowStream(tableName: String,
+      createStream: () => DStream[InternalRow]): DStream[InternalRow] =
     LOCK.synchronized {
       tableToStream.get(tableName) match {
         case None =>
-          val (stream, dependents) = createStream()
+          val stream = createStream()
           tableToStream += (tableName -> stream)
-          DependencyCatalog.addDependents(tableName, dependents)
           stream
         case Some(stream) => stream
       }

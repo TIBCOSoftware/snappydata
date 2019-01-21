@@ -7,6 +7,198 @@
 # ADD THE JIRA TICKET ID, IF APPLICABLE.                                                           #
 ####################################################################################################
 
+Release 1.0.2.1
+
+- New Features/Fixed Issues
+
+  [SNAP-2646] Make a copy for non-primitive aggregations. (#1195)
+
+  (81f3cbf) Changed scripts to work with old bash 3.x versions, for cases like MacOSX that ships
+  with bash 3.x by default.
+
+  [SNAP-2659] Reset the pool at the end of collect to avoid spillover of lowlatency pool setting
+  to latter operations that may not use the CachedDataFrame execution paths. (#1191)
+
+  [SNAP-2503] Kill the VM on OutOfMemoryError by adding command line argument. (#1192, #1187)
+
+  [SNAP-2657] Added caching for hive catalog lookups.
+  Meta-data queries with large number of tables take quite long because of nested loop joins between
+  SYSTABLES and HIVETABLES for most meta-data queries. Additionally each row in SYSTABLES looks up
+  hive-metastore separately to determine if the table is a column table or not. Overall this
+  results in close to a million hive-metastore lookups for each meta-data query when there are
+  tables in the range of hundreds. (#1190)
+
+  [SNAP-2656] Check for underlying Attribute with joins on aggregate columns. (#1189)
+
+  (0354e8b) Fix GUI plans for CACHE QUERY SQL.
+
+  [SNAP-2630][SNAP-2625] Allow deleteFrom to work as far as the dataframe contains matching column
+  to key columns. Make deleteFrom API behaviour consistent for row and columns tables. (#1184)
+
+  [SNAP-2645] Making startingOffsets property optional as Spark's Streaming API takes care of that
+  by using committed offset or Kafka param "auto.offset.reset" if no explicit value is specified for
+  startingOffsets. (#1186)
+
+  (4390d58) Fixes to joinType to apply to a JOIN result.
+
+  (707c55b) Fix build and run with newer IDEA releases.
+
+  (f2bcf4f) SortMergeJoinExec extension to avoid shuffle when join key columns are a superset of
+  child partitioning.
+
+  (0f7a01a) Fix plan-level query hints like joinType on RHS of join to be applied on the relations
+  rather than Join operator. Fix catalog inconsistency in row tables with CREATE TABLE .. SELECT ...
+  when the insert fails for some reason.
+
+  (829534a) Fix for occasional failures due to hive client disconnect.
+
+  [SNAP-2569] Support Spark's HiveServer2 in SnappyData cluster. Enable starting an embedded Spark
+  HiveServer2 on leads in embedded mode. The default session type has been switched to be
+  SnappySession though user can force Spark's hive session using a property. (#1161)
+
+  (9ad806d) Use JNA Platform support to skip agent on non-linux platforms. Also use the same to
+  determine 64-bit support instead of custom code. Update snappy script to include JNA jar with
+  launcher and gemfire-shared.
+
+  (128ad7b) Created new class for Snappy sink example instead of replacing existing structured
+  streaming example. (#1183)
+
+  [SNAP-2508] Make condition for replicatedTableJoin stricter while creating HashJoinExec. (#1173)
+
+  (736b029) Create a separate module for pooled JDBC driver. (#1170)
+  Example usage:
+    import io.snappydata.implicits._
+    spark.snappyQuery("select count(*) from table1").show()
+    spark.snappyExecute("create table table2 (id int, data string) using column").show()
+    df.write.snappy("table3")
+  Above examples assume that spark.snappydata.connection property is already set at conf level or
+  can be passed explicitly to first two methods too).
+
+  (01f800b) Disabling conflation by default in default snappy streaming callback. (#1181)
+
+  [SNAP-2575] Default Sink Callback - Support multiple events with same key column in same streaming
+  batch. Conflating events with same key columns while processing streaming batch in default sink
+  callback. (#1176)
+
+  [SNAP-2491] Fixed: Column added using 'ALTER TABLE ... ADD COLUMN ...' through snappy shell does
+  not reflect in spark-shell. (#1175)
+
+  [SNAP-2568] Allow access to store-side system tables/virtual tables from Spark SQL. Also, expanded
+  the "SHOW" statements to include SCHEMAS, COLUMN, MEMBERS as well as expanded "DESCRIBE"
+  statements. (#1160)
+
+  (83a4253) Structured streaming - Added default sink callback. (#1157)
+
+  [SNAP-2582] Allow NONE as a valid policy for server-auth-provider. (#1167)
+
+  (c1cf502) Fixing occasional failures in serialization using CachedDataFrame if node is just
+  starting/stopping. Also, fix a hang in shutdown for cases where hive client close is trying to
+  boot up the node again, waiting on the locks taken during shutdown.
+
+  (db7d568) Fixed issue of snappy-env.sh not being loaded.
+
+  [SNAP-2576] Update, delete on table should not get policy filter applied. Fixed. (#1163)
+
+  [SNAP-2577] Simple column table creation using jdbc API fails in single VM tests. Fixed. (#1165)
+
+  (47a8608) Fixing buffer handling in compression.
+
+  [SNAP-2571] Add support for query hints to force a join type for cases where result is known to be
+  small, for example, but plan rules cannot determine so. (#1159)
+
+  [SNAP-2566] Offset argument to Lead and Lag window functions were not being marked as foldable
+  causing analysis error. Added them in Foldable functions list. (#1162)
+
+  (56420fb) Fixing some issues in startup scripts.
+  1. Moved snippet to get AWS public host name inside "snappy" script since it must be done on the
+  actual server rather than where "snappy-start-all.sh" has been invoked.
+  2. Use hostname-for-clients to set the SPARK_PUBLIC_DNS so that both JDBC/ODBC and WebUI point to
+  the same address if required; any explicit SPARK_PUBLIC_DNS is ignored because it will be common
+  for the cluster and will not work with multiple leads.
+  3. Likewise, use bind-address to set SPARK_LOCAL_IP on every node instead of reading the global
+  environment variable.
+
+  (f870cd7) SnappyData specific GfxdDataSerializable types were not getting registered when validate
+  tool was getting launched through SnapyUtilLauncher. Fixed. (#1144)
+
+  (858436a) Mark numLeadsOnNode as negative if heap-size or memory-size has been configured
+  explicitly.
+
+  (b84254d) Enable default off-heap memory-size when possible.
+
+  [SNAP-2555] Clear non-default configs for internal hive meta-store client. (#1154)
+
+  [SNAP-2511] Enable lazy initialization in SortMergeJoin and SnappyHashJoin. (#1146)
+
+  [SNAP-2487] Properly fetching the current active snappy streaming context and closing it when
+  "streaming.batch_interval" is not passed as part of configuration. (#1143)
+
+  (484ecab) Add CACHE, UNCACHE, RECACHE and RESET for routing.
+
+  (9fd2e01) Checking if the entry causing constraint violation is destroyed or removed in a separate
+  thread with synch taken on region entry, to avoid dead lock. (#441)
+
+  (b704ce2) Catch and throw any errors like OutOfMemoryError during region initialization.
+
+  (ada81d3) Fix schema in ResultSet metadata.
+
+  (a97b40e) Conditional listing of regions in a diskstore only when the validate disk store tool has
+  been invoked.
+
+  (ece2329) Temporary workaround for SNAP-2627. If the unique constraint violation is due to removed
+  or destroyed AbstractRegionEntry, attempt is made to remove it from index and another try is made
+  to put the new value against the index key. (#438)
+
+  (16532da) Handle CancelException in ClientTracker cleanup.
+
+  [SNAP-2562] Fix validate-disk-store tool for co-location check. (#436)
+
+  (33508bf) JDBC Client Pool Driver, stores the pool of connections internally.  For pooling purpose
+  internally we have used Tomcat connection pooling library. Also, configured the jdbcInterceptor to
+  reset the autocommit, readOnly and isoloationlevel to default values whenever a connection
+  borrowed from the pool. Also, for the cleanup purpose we have run eviction thread to remove idle
+  connection from the pool. (#433)
+
+  (a689c80) Adding jvmkill.c and also merged it into libgemfirexd64.so and libgemfirexd.so (#435)
+
+  (1a0ec43) Fixing connection property handling in TomcatConnectionPool.
+
+  (5eba064) JDBC Client with In-built Pool Driver. With support of connection pool in the driver
+  itself. (#428)
+
+  (f34c8b3) Fixed an occasional hang due to connection pool exhaustion when reconnects happen too
+  quickly in the retry loop before membership VIEW can be updated; in such cases connections were
+  being released at the end after failure but this got stuck in the retry itself due to pool being
+  exhausted. Correct a rare case of method to get colocated regions going into an infinite loop; now
+  explicitly skip over regions already seen in the colocation chain.
+
+  (5587195) Update bucket stats for SerializedDiskBuffer in sync block.
+
+  (fc79f5a) Enable default off-heap size on machines having large amount of RAM (> 14G) in
+  enterprise product.
+  1. Adjust the default heap-size for lead/server to range from 2GB-8GB depending on the amount of
+  available RAM and number of cores.
+  2. Check if configured memory-size is available (no swap) at startup and fail if not. System can
+  still fail at runtime due to lazy allocation by modern OSes.
+
+  [SNAPPYDATA] (ab71801) Corrected the URL paths for RDDs to use /Spark Cache/ instead of /storage/.
+
+  [SNAPPYDATA] (67596fc) Increase hive-thrift shell history file size to 50000 lines.
+
+  [SNAPPYDATA] (12dc507) Generate spark-version-info.properties in source path
+  src/main/extra-resources.
+
+  [SNAPPYDATA] (336c021) Fix default bind-address of ThriftCLIService. ThriftCLIService uses
+  InetAddress.getLocalHost() as default address to be shown but hive thrift server actually uses
+  InetAddress.anyLocalAddress(). Honour bind host property in ThriftHttpCLIService too.
+
+  [SPARK-24950][SQL] (205c133) DateTimeUtilsSuite daysToMillis and millisToDays fails w/java 8 181-b13
+    Author: Chris Martin <chris@cmartinit.co.uk>
+    Closes #21901 from d80tb7/SPARK-24950_datetimeUtilsSuite_failures.
+    (cherry picked from commit c5b8d54c61780af6e9e157e6c855718df972efad)
+    Signed-off-by: Sean Owen <srowen@gmail.com>
+
+
 Release 1.0.2
 
 - New Features/Fixed Issues

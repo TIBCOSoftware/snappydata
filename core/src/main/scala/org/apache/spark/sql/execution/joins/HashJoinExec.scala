@@ -61,7 +61,8 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     leftSizeInBytes: BigInt,
     rightSizeInBytes: BigInt,
     replicatedTableJoin: Boolean)
-    extends NonRecursivePlans with BinaryExecNode with HashJoin with BatchConsumer {
+    extends NonRecursivePlans with BinaryExecNode with HashJoin
+        with SnappyJoinLike with BatchConsumer {
 
   override def nodeName: String = "SnappyHashJoin"
 
@@ -112,64 +113,10 @@ case class HashJoinExec(leftKeys: Seq[Expression],
     if (replicatedTableJoin) {
       UnspecifiedDistribution :: UnspecifiedDistribution :: Nil
     } else {
-      // if left or right side is already distributed on a subset of keys
-      // then use the same partitioning (for the larger side to reduce exchange)
-      val leftClustered = ClusteredDistribution(leftKeys)
-      val rightClustered = ClusteredDistribution(rightKeys)
-      val leftPartitioning = left.outputPartitioning
-      val rightPartitioning = right.outputPartitioning
-      // if either side is broadcast then return defaults
-      if (leftPartitioning.isInstanceOf[BroadcastDistribution] ||
-          rightPartitioning.isInstanceOf[BroadcastDistribution] ||
-          // if both sides are unknown then return defaults too
-          (leftPartitioning.isInstanceOf[UnknownPartitioning] &&
-              rightPartitioning.isInstanceOf[UnknownPartitioning])) {
-        leftClustered :: rightClustered :: Nil
-      } else {
-        // try subsets of the keys on each side
-        val leftSubset = getSubsetAndIndices(leftPartitioning, leftKeys)
-        val rightSubset = getSubsetAndIndices(rightPartitioning, rightKeys)
-        leftSubset match {
-          case Some((l, li)) => rightSubset match {
-            case Some((r, ri)) =>
-            // check if key indices of both sides match
-            if (li == ri) {
-              ClusteredDistribution(l) :: ClusteredDistribution(r) :: Nil
-            } else {
-              // choose the bigger plan
-              if (leftSizeInBytes > rightSizeInBytes) {
-                ClusteredDistribution(l) ::
-                    ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
-              } else {
-                ClusteredDistribution(ri.map(leftKeys.apply)) ::
-                    ClusteredDistribution(r) :: Nil
-              }
-            }
-            case None => ClusteredDistribution(l) ::
-                ClusteredDistribution(li.map(rightKeys.apply)) :: Nil
-          }
-          case None => rightSubset match {
-            case Some((r, ri)) => ClusteredDistribution(ri.map(leftKeys.apply)) ::
-                ClusteredDistribution(r) :: Nil
-            case None => leftClustered :: rightClustered :: Nil
-          }
-        }
-      }
+      // SnappyJoinLike.requiredChildDistribution has the required logic to deal with
+      // join keys a subset of existing child partitioning
+      super.requiredChildDistribution
     }
-
-  /**
-   * Optionally return result if partitioning is a subset of given join keys,
-   * and if so then return the subset as well as the indices of subset keys
-   * in the join keys (in order).
-   */
-  private def getSubsetAndIndices(partitioning: Partitioning,
-      keys: Seq[Expression]): Option[(Seq[Expression], Seq[Int])] = {
-    val numColumns = Utils.getNumColumns(partitioning)
-    if (keys.length > numColumns) {
-      keys.indices.combinations(numColumns).map(s => s.map(keys.apply) -> s)
-          .find(p => partitioning.satisfies(ClusteredDistribution(p._1)))
-    } else None
-  }
 
   protected lazy val (buildSideKeys, streamSideKeys) = {
     require(leftKeys.map(_.dataType) == rightKeys.map(_.dataType),
@@ -261,7 +208,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
+        rdd.sparkContext, rdd, Nil, preferredLocations)))
     }
   }
 
@@ -323,7 +270,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
       }
 
       (streamPlanRDDs, buildRDDs.map(rdd => new DelegateRDD[InternalRow](
-        rdd.sparkContext, rdd, Seq.empty[RDD[InternalRow]], preferredLocations)))
+        rdd.sparkContext, rdd, Nil, preferredLocations)))
     }
   }
 

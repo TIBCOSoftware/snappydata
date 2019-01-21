@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -214,6 +214,7 @@ object SnappyTableStatsProviderDUnitTest {
     entryOverhead *= entryCount
     stats.setSizeInMemory(stats.getSizeInMemory + memSize + entryOverhead)
     stats.setTotalSize(stats.getTotalSize + totalSize + entryOverhead)
+    stats.setSizeSpillToDisk(stats.getTotalSize - stats.getSizeInMemory)
     stats
   }
 
@@ -249,6 +250,7 @@ object SnappyTableStatsProviderDUnitTest {
     totalSize += overhead * result.getRowCount
     result.setSizeInMemory(totalSize)
     result.setTotalSize(totalSize)
+    result.setSizeSpillToDisk(0)
     result
   }
 

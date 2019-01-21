@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,15 +23,14 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.BeforeAndAfterAll
 
-import org.apache.spark.SparkConf
-import org.apache.spark.sql.{ParseException, SnappyContext, SnappySession}
+import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.{Logging, SparkConf}
 
 class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll {
 
-  // Logger.getLogger("org").setLevel(Level.DEBUG)
+  private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
-  val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
-  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+  protected override def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     /**
       * Setting local[n] here actually supposed to affect number of reservoir created
       * while sampling.
@@ -228,7 +227,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   test("test Prepared Statement via JDBC") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     val tableName = "order_line_col"
     try {
       snc.sql(s"create table $tableName (ol_int_id  integer," +
@@ -237,19 +236,19 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
 
       val serverHostPort = TestUtil.startNetServer()
-      // println("network server started")
+      // logInfo("network server started")
       PreparedQueryRoutingSingleNodeSuite.insertRows(tableName, 1000, serverHostPort)
       query0(tableName, serverHostPort)
     } finally {
       snc.sql(s"drop table $tableName")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
   test("test Metadata for Prepared Statement via JDBC") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     val tableName = "order_line_col"
     try {
       snc.sql(s"create table $tableName (ol_int_id  integer," +
@@ -257,7 +256,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
           "options( partition_by 'ol_int_id, ol_int2_id', buckets '2')")
 
       val serverHostPort = TestUtil.startNetServer()
-      // println("network server started")
+      // logInfo("network server started")
       PreparedQueryRoutingSingleNodeSuite.insertRows(tableName, 100, serverHostPort)
       query6(tableName, serverHostPort)
       query7(tableName, serverHostPort)
@@ -268,7 +267,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query12(tableName, serverHostPort)
     } finally {
       snc.sql(s"drop table $tableName")
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -482,16 +481,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 20)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -525,16 +520,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 100)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -565,16 +556,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 100)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -606,16 +593,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 20)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -649,16 +632,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 20)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -690,16 +669,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 100)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -731,16 +706,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         val i = rs.getInt(1)
         // val j = rs.getInt(2)
         // val s = rs.getString(3)
-        // scalastyle:off println
-        // println(s"row($index) $i $j $s ")
-        // scalastyle:on println
+        // logInfo(s"row($index) $i $j $s ")
         index += 1
       }
       assert(index == 20)
 
-      // scalastyle:off println
-      // println(s"$qryName Number of rows read " + index)
-      // scalastyle:on println
+      // logInfo(s"$qryName Number of rows read " + index)
       rs.close()
       // Thread.sleep(1000000)
     } finally {
@@ -752,7 +723,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   test("test Join, SubQuery and Aggragtes") {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col"
       val tableName2 = "order_line_2_col"
@@ -766,7 +737,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
 
 
       val serverHostPort = TestUtil.startNetServer()
-      // println("network server started")
+      // logInfo("network server started")
       PreparedQueryRoutingSingleNodeSuite.insertRows(tableName1, 1000, serverHostPort)
       PreparedQueryRoutingSingleNodeSuite.insertRows(tableName2, 1000, serverHostPort)
       query1(tableName1, tableName2, serverHostPort)
@@ -775,25 +746,34 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       query4(tableName1, tableName2, serverHostPort)
       query5(tableName1, tableName2, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
   test("update delete on column table") {
     val snc = this.snc
     val serverHostPort = TestUtil.startNetServer()
-    // println("network server started")
+    // logInfo("network server started")
     PreparedQueryRoutingSingleNodeSuite.updateDeleteOnColumnTable(snc, serverHostPort)
   }
 
   test("SNAP-1981: Equality on string columns") {
     val snc = this.snc
     val serverHostPort = TestUtil.startNetServer()
-    // println("network server started")
+    // logInfo("network server started")
     PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, serverHostPort)
   }
 
   test("SNAP-1994 Test functions and expressions") {
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
+    try {
+      testSNAP1994()
+    } finally {
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
+    }
+  }
+
+  private def testSNAP1994(): Unit = {
     snc.sql(s"Drop Table if exists double_tab")
     snc.sql(s"Create Table double_tab (a INT, d Double, s String) " +
         "using column options()")
@@ -821,15 +801,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getBigDecimal(2)
-        // scalastyle:off println
-        println(s"1-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"1-row($index) $i $j")
         index += 1
         assert(i == 1 || i == 2)
       }
-      // scalastyle:off println
-      println(s"1-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"1-Number of rows read " + index)
       assert(index == 2)
       assert(cacheMap.size() == 1)
 
@@ -839,15 +815,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getBigDecimal(2)
-        // scalastyle:off println
-        println(s"2-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"2-row($index) $i $j")
         index += 1
         assert(i == 1 || i == 2 || i == 3)
       }
-      // scalastyle:off println
-      println(s"2-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"2-Number of rows read " + index)
       assert(index == 3)
       assert(cacheMap.size() == 1)
       close(prepStatement0)
@@ -860,15 +832,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getBigDecimal(2)
-        // scalastyle:off println
-        println(s"3-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"3-row($index) $i $j")
         index += 1
         assert(i > 2 && i < 6)
       }
-      // scalastyle:off println
-      println(s"3-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"3-Number of rows read " + index)
       assert(index == 3)
       assert(cacheMap.size() == 2)
 
@@ -878,15 +846,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getBigDecimal(2)
-        // scalastyle:off println
-        println(s"4-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"4-row($index) $i $j")
         index += 1
         assert(i > 3 && i < 7)
       }
-      // scalastyle:off println
-      println(s"4-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"4-Number of rows read " + index)
       assert(index == 3)
       assert(cacheMap.size() == 2)
       close(prepStatement1)
@@ -900,15 +864,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getString(2)
-        // scalastyle:off println
-        println(s"5-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"5-row($index) $i $j")
         index += 1
         assert(i == 1)
       }
-      // scalastyle:off println
-      println(s"5-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"5-Number of rows read " + index)
       assert(index == 1)
       assert(cacheMap.size() == 3)
 
@@ -918,15 +878,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getString(2)
-        // scalastyle:off println
-        println(s"6-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"6-row($index) $i $j")
         index += 1
         assert(i == 2)
       }
-      // scalastyle:off println
-      println(s"6-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"6-Number of rows read " + index)
       assert(index == 1)
       assert(cacheMap.size() == 3)
       close(prepStatement2)
@@ -944,15 +900,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       index = 0
       while (update.next()) {
         val i = update.getInt(1)
-        // scalastyle:off println
-        println(s"7-row($index) $i")
-        // scalastyle:on println
+        logInfo(s"7-row($index) $i")
         index += 1
         assert(i == 1 || i == 2)
       }
-      // scalastyle:off println
-      println(s"7-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"7-Number of rows read " + index)
       assert(index == 2)
       assert(cacheMap.size() == 0)
 
@@ -962,15 +914,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       index = 0
       while (update.next()) {
         val i = update.getInt(1)
-        // scalastyle:off println
-        println(s"8-row($index) $i")
-        // scalastyle:on println
+        logInfo(s"8-row($index) $i")
         index += 1
         assert(i == 2 || i == 3)
       }
-      // scalastyle:off println
-      println(s"8-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"8-Number of rows read " + index)
       assert(index == 2)
       assert(cacheMap.size() == 0)
       close(prepStatement3)
@@ -984,15 +932,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getBigDecimal(2)
-        // scalastyle:off println
-        println(s"9-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"9-row($index) $i $j")
         index += 1
         assert(i == 1 || i == 2)
       }
-      // scalastyle:off println
-      println(s"9-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"9-Number of rows read " + index)
       assert(index == 2)
       assert(cacheMap.size() == 1)
       close(prepStatement4)
@@ -1007,15 +951,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       while (update.next()) {
         val i = update.getInt(1)
         val j = update.getBigDecimal(2)
-        // scalastyle:off println
-        println(s"10-row($index) $i $j")
-        // scalastyle:on println
+        logInfo(s"10-row($index) $i $j")
         index += 1
         assert(i == 1)
       }
-      // scalastyle:off println
-      println(s"10-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"10-Number of rows read " + index)
       assert(index == 1)
       assert(cacheMap.size() == 2)
       close(prepStatement5)
@@ -1056,7 +996,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 
   test("Test broadcast hash joins and scalar sub-queries") {
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     var conn: Connection = null
     try {
       val ddlStr = "(YearI INT," + // NOT NULL
@@ -1130,15 +1070,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         "MCI", "STL", "MSY", "SAT", "SNA", "DAL", "PDX", "SMF", "HOU", "SAN", "OAK", "SJC")
       while (update.next()) {
         val s = update.getString(3)
-        // scalastyle:off println
-        // println(s"1-row($index) $s ")
-        // scalastyle:on println
-        result1.contains(s)
+        // logInfo(s"1-row($index) $s ")
+        assert(result1.contains(s))
         index += 1
       }
-      // scalastyle:off println
-      println(s"1-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"1-Number of rows read " + index)
       assert(index == 46)
       assert(cacheMap.size() == 0)
 
@@ -1155,15 +1091,11 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
         "SMF", "ONT", "SJC", "OAK", "HOU", "DAL", "BUR")
       while (update.next()) {
         val s = update.getString(3)
-        // scalastyle:off println
-        // println(s"2-row($index) $s ")
-        // scalastyle:on println
-        result2.contains(s)
+        // logInfo(s"2-row($index) $s ")
+        assert(result2.contains(s))
         index += 1
       }
-      // scalastyle:off println
-      println(s"2-Number of rows read " + index)
-      // scalastyle:on println
+      logInfo(s"2-Number of rows read " + index)
       assert(index == 65)
       assert(cacheMap.size() == 0)
       close(prepStatement1)
@@ -1172,12 +1104,12 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       if (conn != null) {
         conn.close()
       }
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 }
 
-object PreparedQueryRoutingSingleNodeSuite{
+object PreparedQueryRoutingSingleNodeSuite extends Logging {
 
   def insertRows(tableName: String, numRows: Int, serverHostPort: String): Unit = {
 
@@ -1202,9 +1134,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       })
       val ret = prepareStatement.executeBatch()
       ret.foreach(r => assert(r == 1))
-      // scalastyle:off println
-      println(s"committed $numRows rows")
-      // scalastyle:on println
+      logInfo(s"committed $numRows rows")
     } finally {
       prepareStatement.close()
       conn.close()
@@ -1220,22 +1150,16 @@ object PreparedQueryRoutingSingleNodeSuite{
       val i = rs.getInt(1)
       val j = rs.getInt(2)
       val s = rs.getString(3)
-      // scalastyle:off println
-      println(s"$qry row($index) $i $j $s ")
-      // scalastyle:on println
+      logInfo(s"$qry row($index) $i $j $s ")
       index += 1
       assert(results.contains(i))
     }
 
-    // scalastyle:off println
-    println(s"$qry Number of rows read " + index)
-    // scalastyle:on println
+    logInfo(s"$qry Number of rows read " + index)
     assert(index == results.length)
     rs.close()
 
-    // scalastyle:off println
-    println(s"cachemapsize = ${cacheMapSize} and .size = ${cacheMap.size()}")
-    // scalastyle:on println
+    logInfo(s"cachemapsize = $cacheMapSize and .size = ${cacheMap.size()}")
     assert( cacheMap.size() == cacheMapSize || -1 == cacheMapSize)
   }
 
@@ -1365,7 +1289,7 @@ object PreparedQueryRoutingSingleNodeSuite{
   def updateDeleteOnColumnTable(snc: SnappyContext, serverHostPort: String): Unit = {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col_ud"
       val tableName2 = "order_line_2_row_ud"
@@ -1386,7 +1310,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       update_delete_query2(tableName1, 5, serverHostPort)
       update_delete_query2(tableName2, 6, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 
@@ -1455,7 +1379,7 @@ object PreparedQueryRoutingSingleNodeSuite{
   def equalityOnStringColumn(snc: SnappyContext, serverHostPort: String): Unit = {
     SnappySession.getPlanCache.invalidateAll()
     assert(SnappySession.getPlanCache.asMap().size() == 0)
-    SnappyTableStatsProviderService.suspendCacheInvalidation = true
+    SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = true
     try {
       val tableName1 = "order_line_1_col_eq"
       val tableName2 = "order_line_2_row_eq"
@@ -1473,7 +1397,7 @@ object PreparedQueryRoutingSingleNodeSuite{
       equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
       equalityOnStringColumn_query1(tableName2, 4, serverHostPort)
     } finally {
-      SnappyTableStatsProviderService.suspendCacheInvalidation = false
+      SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
   }
 }

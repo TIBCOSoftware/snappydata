@@ -40,13 +40,14 @@ dependencies {
   compileOnly project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-  compileOnly project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
 
   testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
+      configuration: 'testOutput')
+  testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion,
       configuration: 'testOutput')
   testCompile project(':dunit')
 
@@ -57,7 +58,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }

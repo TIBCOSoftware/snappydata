@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -170,6 +170,7 @@ object TPCHColumnPartitionedTable {
           val snappyContext = sqlContext.asInstanceOf[SnappyContext]
 
           val startCreateTableTime = System.currentTimeMillis()
+          snappyContext.dropTable("ORDERS", ifExists = true)
           snappyContext.createTable("ORDERS", "column", newSchema, p1)
           val endCreateTableTime = System.currentTimeMillis()
           if (trace && loadPerfPrintStream != null) {
@@ -289,6 +290,7 @@ object TPCHColumnPartitionedTable {
           }
           val snappyContext = sqlContext.asInstanceOf[SnappyContext]
           val startCreateTableTime = System.currentTimeMillis()
+          snappyContext.dropTable("LINEITEM", ifExists = true)
           snappyContext.createTable("LINEITEM", "column", newSchema, p1)
           val endCreateTableTime = System.currentTimeMillis()
           if (trace && loadPerfPrintStream != null) {
@@ -395,6 +397,7 @@ object TPCHColumnPartitionedTable {
           }
 
           val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+          snappyContext.dropTable("CUSTOMER", ifExists = true)
           snappyContext.createTable("CUSTOMER", "column", newSchema, p1)
         }
         customerDF.write.insertInto("CUSTOMER")
@@ -465,6 +468,7 @@ object TPCHColumnPartitionedTable {
             p1 += "PERSISTENCE" -> s"$persistence_type"
           }
           val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+          snappyContext.dropTable("PART", ifExists = true)
           snappyContext.createTable("PART", "column", newSchema, p1)
         }
         partDF.write.insertInto("PART")
@@ -534,6 +538,7 @@ object TPCHColumnPartitionedTable {
             p1 += "PERSISTENCE" -> s"$persistence_type"
           }
           val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+          snappyContext.dropTable("PARTSUPP", ifExists = true)
           snappyContext.createTable("PARTSUPP", "column", newSchema, p1)
         }
         partSuppDF.write.insertInto("PARTSUPP")
@@ -604,6 +609,7 @@ object TPCHColumnPartitionedTable {
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY" -> "N_NATIONKEY"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("NATION", ifExists = true)
       snappyContext.createTable("NATION", "column", newSchema, p1)
       nationdf.write.insertInto("NATION")
     } else {
@@ -631,6 +637,7 @@ object TPCHColumnPartitionedTable {
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY" -> "R_REGIONKEY"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("REGION", ifExists = true)
       snappyContext.createTable("REGION", "column", newSchema, p1)
       regionDF.write.insertInto("REGION")
     } else {
@@ -687,6 +694,7 @@ object TPCHColumnPartitionedTable {
             p1 += "PERSISTENCE" -> s"$persistence_type"
           }
           val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+          snappyContext.dropTable("SUPPLIER", ifExists = true)
           snappyContext.createTable("SUPPLIER", "column", newSchema, p1)
         }
         suppDF.write.insertInto("SUPPLIER")
@@ -729,6 +737,7 @@ object TPCHColumnPartitionedTable {
     if (isSnappy) {
       val p1 = Map(("PARTITION_BY" -> "o_orderkey"), ("BUCKETS" -> buckets))
       val snappyContext = sqlContext.asInstanceOf[SnappyContext]
+      snappyContext.dropTable("ORDERS", ifExists = true)
       snappyContext.createTable("ORDERS", "column", newSchema, p1)
       orderDF.write.insertInto("ORDERS")
     } else {

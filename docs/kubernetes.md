@@ -5,7 +5,11 @@ The following sections are included in this topic:
 
 *	[Prerequisites](#prerequisites)
 
+*	[Getting Access to Kubernetes cluster](#pksaccess)
+
 *	[Deploying SnappyData Chart on Kubernetes](#deploykubernetes)
+
+*	[Setting up PKS Environment for Kubernetes](#pkskubernetes)
 
 *	[Interacting with SnappyData Cluster on Kubernetes](#interactkubernetes)
 
@@ -21,10 +25,28 @@ The following sections are included in this topic:
 
 The following prerequisites must be met to deploy SnappyData on Kubernetes:
 
-*	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS).
+*	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned [here](#pksaccess).
 
-*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-0/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
+*	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
 
+<a id= pksaccess> </a>
+## Getting Access to Kubernetes Cluster
+
+If you would like to deploy Kubernetes on-premises, you can use any of the following options:
+
+### Option 1 - PKS
+- PKS on vSphere: Follow these [instructions](https://docs.pivotal.io/runtimes/pks/1-0/vsphere.html) 
+- PKS on GCP: Follow these [instructions](https://docs.pivotal.io/runtimes/pks/1-0/gcp.html)
+- Create a Kubernetes cluster using PKS CLI : After PKS is setup you will need to create a Kubernetes cluster as described [here](https://docs.pivotal.io/runtimes/pks/1-0/using.html)
+
+### Option 2 - Google Cloud Platform (GCP)
+- Login to your Google account and go to the [Cloud console](https://console.cloud.google.com/) to launch a GKE cluster.
+
+**Steps to perform after Kubernetes cluster is available: **
+
+- If using PKS, you must install the PKS command line tool. See instructions [here](https://docs.pivotal.io/runtimes/pks/1-0/installing-pks-cli.html).
+- Install `kubectl` on your local development machine and configure access to the kubernetes/PKS cluster. See instructions for `kubectl` [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/). 
+- If you are using Google cloud, you will find instructions for setting up Google Cloud SDK ('gcloud') along with `kubectl` [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 <a id= deploykubernetes> </a>
 ## Deploying SnappyData on Kubernetes 
@@ -48,7 +70,6 @@ The following prerequisites must be met to deploy SnappyData on Kubernetes:
 You can monitor the Kubernetes UI dashboard to check the status of the components as it takes few minutes for all the servers to be online. To access the Kubernetes UI refer to the instructions [here](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui). 
 
 SnappyData chart dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
-
 
 <a id= interactkubernetes> </a>
 ## Interacting with SnappyData Cluster on Kubernetes
@@ -113,10 +134,7 @@ You  can use SnappyData shell to connect to SnappyData and execute your queries.
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address of the **snappydata-locator-public** services  and the port number for external connections as shown in the following image:![Snappy-Leader-Service](./Images/services_Locator_Public.png)
 
-2.	Connect to the SnappyData leader pod using .. </br>
-`kubectl exec --namespace=snappy -it snappydata-leader-0 -- bash`
-
-3.	Launch SnappyData shell and then create tables and execute queries. </br>Following is an example of executing queries using SnappyData shell.
+2.	Launch SnappyData shell and then create tables and execute queries. </br>Following is an example of executing queries using SnappyData shell.
 
 ```
 # Connect to snappy-shell

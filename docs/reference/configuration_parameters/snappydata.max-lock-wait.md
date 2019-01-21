@@ -1,4 +1,4 @@
-# snappydata.max-lock-wait
+# gemfirexd.max-lock-wait
 
 ## Description
 

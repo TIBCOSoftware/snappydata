@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,15 +23,12 @@ import java.net.URLClassLoader
 import com.gemstone.gemfire.cache.EntryExistsException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.iapi.error.StandardException
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.ui.SQLTab
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
@@ -127,12 +124,12 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
   }
 
-  override def getAllGlobalCmnds(): Array[String] = {
+  override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
   }
 
-  override def getGlobalCmndsSet(): java.util.Set[java.util.Map.Entry[String, String]] = {
+  override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.entrySet()
   }
@@ -155,7 +152,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
   }
 
-  override def getLeadClassLoader(): URLClassLoader = {
+  override def getLeadClassLoader: URLClassLoader = {
     var ret: URLClassLoader = null
     val instance = ServiceManager.currentFabricServiceInstance
     instance match {
@@ -169,36 +166,6 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     ret
   }
 
-  override def checkSchemaPermission(schema: String, currentUser: String): String = {
-    val ms = Misc.getMemStoreBootingNoThrow
-    if (ms != null) {
-      var conn: EmbedConnection = null
-      if (ms.isSnappyStore && Misc.isSecurityEnabled) {
-        var contextSet = false
-        try {
-          val dd = ms.getDatabase.getDataDictionary
-          conn = GemFireXDUtils.getTSSConnection(false, true, false)
-          conn.getTR.setupContextStack()
-          contextSet = true
-          val sd = dd.getSchemaDescriptor(
-            schema, conn.getLanguageConnection.getTransactionExecute, false)
-          if (sd == null) {
-            if (schema.equals(currentUser)) {
-              if (ms.tableCreationAllowed()) return currentUser
-              throw StandardException.newException(SQLState.AUTH_NO_ACCESS_NOT_OWNER,
-                schema, schema)
-            } else {
-              throw StandardException.newException(SQLState.LANG_SCHEMA_DOES_NOT_EXIST, schema)
-            }
-          }
-          PrivilegeInfo.checkOwnership(currentUser, sd, sd, dd)
-          sd.getAuthorizationId
-        } finally {
-          if (contextSet) conn.getTR.restoreContextStack()
-        }
-      } else {
-        currentUser
-      }
-    } else currentUser
-  }
+  override def checkSchemaPermission(schema: String, currentUser: String): String =
+    StoreCallbacksImpl.checkSchemaPermission(schema, currentUser)
 }

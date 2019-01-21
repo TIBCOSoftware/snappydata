@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -111,7 +111,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    snc.sql("create schema my_schema")
+    dataDF.write.format("row").saveAsTable("MY_SCHEMA.MY_TABLE")
 
     val conf = new ConnectionConfBuilder(snc.snappySession).build()
 
@@ -129,6 +130,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     result.collect().foreach(v => assert(v(0) == 9))
 
     snc.sql("drop table MY_SCHEMA.MY_TABLE")
+    snc.sql("drop schema my_schema")
 
     logInfo("Successful")
   }
@@ -138,7 +140,8 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
-    dataDF.write.format("row").mode(SaveMode.Append).saveAsTable("MY_SCHEMA.MY_TABLE")
+    snc.sql("create schema my_schema")
+    dataDF.write.format("row").saveAsTable("MY_SCHEMA.MY_TABLE")
 
     val conf = new ConnectionConfBuilder(snc.snappySession).build
 
@@ -156,6 +159,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
     result.collect().foreach(v => assert(v(0) == 9))
 
     snc.sql("drop table MY_SCHEMA.MY_TABLE")
+    snc.sql("drop schema my_schema")
 
     logInfo("Successful")
   }
@@ -173,13 +177,13 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
 
     // Start the database
     val conn = DriverManager.getConnection(s"jdbc:derby:$path;create=true")
-    conn.createStatement().execute("create table TEST_JDBC_TABLE_1(COL1 INTEGER,COL2 INTEGER,COL3 INTEGER)")
+    conn.createStatement().execute(
+      "create table TEST_JDBC_TABLE_1(COL1 INTEGER,COL2 INTEGER,COL3 INTEGER)")
 
     snc.sql("DROP TABLE IF EXISTS TEST_JDBC_TABLE_1")
-    snc.sql(s"CREATE external TABLE TEST_JDBC_TABLE_1  " +
-      s"USING jdbc " +
-      s"options(url 'jdbc:derby:$path',driver 'org.apache.derby.jdbc.EmbeddedDriver',poolImpl " +
-      s"'tomcat',user 'app',password 'app')")
+    snc.sql(s"CREATE external TABLE TEST_JDBC_TABLE_1 USING jdbc " +
+      s"options(url 'jdbc:derby:$path',driver 'org.apache.derby.jdbc.EmbeddedDriver'," +
+        "dbtable 'TEST_JDBC_TABLE_1', poolImpl 'tomcat',user 'app',password 'app')")
 
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => Data(s.head, s(1), s(2)))
@@ -202,7 +206,7 @@ class ConnectionConfTest extends SnappyFunSuite with Logging with BeforeAndAfter
       })
 
       val result = snc.sql("SELECT col1 from TEST_JDBC_TABLE_1")
-      result.show()
+      result.collect()
       // result.collect().foreach(v => assert(v(0) == 9))
 
       snc.sql("drop table TEST_JDBC_TABLE_1")

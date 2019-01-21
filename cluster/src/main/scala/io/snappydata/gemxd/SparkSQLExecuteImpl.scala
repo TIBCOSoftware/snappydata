@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,7 @@
 package io.snappydata.gemxd
 
 import java.io.{CharArrayWriter, DataOutput}
+import java.sql.SQLWarning
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -73,7 +74,7 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  session.setCurrentSchema(schema)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
@@ -82,7 +83,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
   private[this] val hdos = new GfxdHeapDataOutputStream(
-    thresholdListener, sql, true, senderVersion)
+    thresholdListener, sql, false, senderVersion)
 
   private[this] val querySchema = df.schema
 
@@ -115,7 +116,7 @@ class SparkSQLExecuteImpl(val sql: String,
         CachedDataFrame.localBlockStoreDecoder(querySchema.length, bm))
       hdos.clearForReuse()
       SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, getColumnNames,
-        colTypes, getColumnDataTypes)
+        colTypes, getColumnDataTypes, session.getWarnings)
 
       var id = 0
       for (block <- partitionBlocks) {
@@ -186,7 +187,7 @@ class SparkSQLExecuteImpl(val sql: String,
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
   private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
-      getTableNamesAndNullability(df.queryExecution.analyzed.output)
+      getTableNamesAndNullability(session, df.queryExecution.analyzed.output)
 
   def getColumnNames: Array[String] = {
     querySchema.fieldNames
@@ -195,7 +196,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private def getColumnTypes: Array[(Int, Int, Int)] =
     querySchema.map(f => {
       SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, f.name, allAsClob, columnsAsClob)
+        f.metadata, Utils.toUpperCase(f.name), allAsClob, columnsAsClob)
     }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
@@ -213,7 +214,7 @@ object SparkSQLExecuteImpl {
   def getClobProperties(session: SnappySession): (Boolean, Set[String]) =
     session.getPreviousQueryHints.get(QueryHint.ColumnsAsClob.toString) match {
     case null => (false, Set.empty[String])
-    case v => Utils.parseColumnsAsClob(v)
+    case v => Utils.parseColumnsAsClob(v, session)
   }
 
   def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,
@@ -278,13 +279,16 @@ object SparkSQLExecuteImpl {
     }
   }
 
-  def getTableNamesAndNullability(output: Seq[expressions.Attribute]):
-  (Seq[String], Seq[Boolean]) = {
+  def getTableNamesAndNullability(session: SnappySession,
+      output: Seq[expressions.Attribute]): (Seq[String], Seq[Boolean]) = {
     output.map { a =>
       val fn = a.qualifiedName
       val dotIdx = fn.lastIndexOf('.')
       if (dotIdx > 0) {
-        (fn.substring(0, dotIdx), a.nullable)
+        val tableName = fn.substring(0, dotIdx)
+        val fullTableName = if (tableName.indexOf('.') > 0) tableName
+        else session.getCurrentSchema + '.' + tableName
+        (fullTableName, a.nullable)
       } else {
         ("", a.nullable)
       }
@@ -292,14 +296,16 @@ object SparkSQLExecuteImpl {
   }
 
   def writeMetaData(srh: SnappyResultHolder, hdos: GfxdHeapDataOutputStream,
-      tableNames: Seq[String], nullability: Seq[Boolean], columnNames: Seq[String],
-      colTypes: Seq[(Int, Int, Int)], dataTypes: Seq[DataType]): Unit = {
+      tableNames: Seq[String], nullability: Seq[Boolean], columnNames: Array[String],
+      colTypes: Array[(Int, Int, Int)], dataTypes: Array[DataType],
+      warnings: SQLWarning): Unit = {
     // indicates that the metadata is being packed too
     srh.setHasMetadata()
     DataSerializer.writeStringArray(tableNames.toArray, hdos)
-    DataSerializer.writeStringArray(columnNames.toArray, hdos)
+    DataSerializer.writeStringArray(columnNames, hdos)
     DataSerializer.writeBooleanArray(nullability.toArray, hdos)
-    for (i <- colTypes.indices) {
+    var i = 0
+    while (i < colTypes.length) {
       val (tp, precision, scale) = colTypes(i)
       InternalDataSerializer.writeSignedVL(tp, hdos)
       tp match {
@@ -316,7 +322,9 @@ object SparkSQLExecuteImpl {
             StructTypeSerializer.writeType(kryo, out, dataTypes(i))))
         case _ => // ignore for others
       }
+      i += 1
     }
+    DataSerializer.writeObject(warnings, hdos)
   }
 
   def getContextOrCurrentClassLoader: ClassLoader =
@@ -478,6 +486,8 @@ object SnappySessionPerConnection {
       if (oldSession == null) session else oldSession
     }
   }
+
+  def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
 
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
     connectionIdMap.remove(connectionID)

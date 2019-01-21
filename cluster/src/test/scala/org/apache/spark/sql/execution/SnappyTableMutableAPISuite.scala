@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,6 +16,9 @@
  */
 package org.apache.spark.sql.execution
 
+import java.sql.DriverManager
+
+import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -25,7 +28,12 @@ import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession}
 
+case class DataWithMultipleKeys(pk1: Int, col1: Int, pk2: String, col2: Long)
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
+
+case class DataDiffColMultipleKeys(pk1: Int, col1: Int, pk2: String, col2: Long)
+
+case class DataWithMatchingKeyColumns(column1: Int, column2: Int, column3: Int)
 
 case class DataStrCol(column1: Int, column2: String, column3: Int)
 
@@ -50,9 +58,29 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
   val data4 = Seq(Seq(1, "22", 3), Seq(7, "81", 9), Seq(9, "23", 3), Seq(4, null, 3),
     Seq(5, "6", 7), Seq(8, "8", 8), Seq(88, "88", 90))
 
+  val data5 = Seq(Seq(1, 22, "str1", 3L), Seq(7, 81, "str7", 9L), Seq(9, 23, "str9", 3L),
+    Seq(4, 24, "str4", 3L), Seq(5, 6, "str5", 7L), Seq(8, 8, "str8", 8L), Seq(88, 88, "str88", 88L))
+
+  val data6 = Seq(Seq(1, 22, "str1", 3L), Seq(7, 81, "str7", 9L), Seq(9, 23, "str9", 3L),
+    Seq(4, 24, "str4", 3L), Seq(5, 6, "str5", 7L), Seq(88, 88, "str88", 88L))
+
+  private var netPort = 0
+
   after {
     snc.dropTable("col_table", ifExists = true)
     snc.dropTable("row_table", ifExists = true)
+  }
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    assert(this.snc !== null)
+    // start a local network server
+    netPort = TestUtil.startNetserverAndReturnPort()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    TestUtil.stopNetServer()
   }
 
   test("PutInto with sql") {
@@ -280,7 +308,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     snc.insert("row_table", Row(4, "4", "3", 3))
 
     val df = snc.sql("update row_table set col3 = '5' where col2 in (select col2 from col_table)")
-    df.show
+    df.collect()
 
     val resultdf = snc.table("row_table").collect()
     assert(resultdf.length == 4)
@@ -406,8 +434,6 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.length == 16)
     assert(resultdf.contains(Row(100, 100, 100)))
   }
-
-
 
   test("PutInto with different column names") {
     val snc = new SnappySession(sc)
@@ -702,29 +728,33 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(resultdf.contains(Row(2, "2", "2", 2)))
   }
 
-  test("DeleteFrom dataframe API") {
+  test("DeleteFrom dataframe API: column tables") {
     val snc = new SnappySession(sc)
-    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df2 = snc.createDataFrame(rdd2)
 
     snc.createTable("col_table", "column",
-      df1.schema, Map("key_columns" -> "col2"))
+      df1.schema, Map("key_columns" -> "pk2,pk1"))
 
     df1.write.insertInto("col_table")
     df2.write.deleteFrom("col_table")
 
     val resultdf = snc.table("col_table").collect()
     assert(resultdf.length == 1)
-    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
   }
 
-  test("DeleteFrom Key columns validation") {
+  test("DeleteFrom empty Key columns validation: column tables") {
     val snc = new SnappySession(sc)
-    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => DataDiffCol(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df2 = snc.createDataFrame(rdd2)
 
     snc.createTable("col_table", "column",
@@ -732,9 +762,31 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
 
     df1.write.insertInto("col_table")
 
-    intercept[AnalysisException]{
+    val message = intercept[AnalysisException] {
       df2.write.deleteFrom("col_table")
-    }
+    }.getMessage
+    assert(message.contains("DeleteFrom operation requires key " +
+        "columns(s) or primary key defined on table."))
+  }
+
+  test("DeleteFrom missing Key columns validation: column tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table col_table(pk1 int, col1 int, pk3 varchar(50), col2 int)" +
+        " using column options(key_columns 'PK3,PK1')")
+
+    df1.write.insertInto("col_table")
+
+    val message = intercept[AnalysisException] {
+      df2.write.deleteFrom("col_table")
+    }.getMessage
+    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
   }
 
   test("Bug - SNAP-2157") {
@@ -761,45 +813,51 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(df0.count() == 0)
   }
 
-  test("DeleteFrom dataframe API Row tables") {
+  test("DeleteFrom dataframe API: row tables") {
     val snc = new SnappySession(sc)
-    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df2 = snc.createDataFrame(rdd2)
 
-    snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
-        " using row options(partition_by 'col1')")
+    snc.sql("create table row_table(pk1 int , col1 int, pk2 varchar(50), col2 int," +
+        " primary key (pk2,pk1)) using row options(partition_by 'pk2,col1')")
     df1.write.insertInto("row_table")
     df2.write.deleteFrom("row_table")
 
     val resultdf = snc.table("row_table").collect()
     assert(resultdf.length == 1)
-    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
   }
 
   test("DeleteFrom dataframe API Row replicated tables") {
     val snc = new SnappySession(sc)
-    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df2 = snc.createDataFrame(rdd2)
 
-    snc.sql("create table row_table(col1 int primary key, col2 int, col3 int)" +
-        " using row ")
+    snc.sql("create table row_table(pk1 int, col1 int, pk2 varchar(50), col2 int," +
+        " primary key(pk2,pk1))  using row")
     df1.write.insertInto("row_table")
     df2.write.deleteFrom("row_table")
 
     val resultdf = snc.table("row_table").collect()
     assert(resultdf.length == 1)
-    assert(resultdf.contains(Row(8, 8, 8)))
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
   }
 
-  test("DeleteFrom Row tables : Key columns validation") {
+  test("DeleteFrom empty Key columns validation: row tables") {
     val snc = new SnappySession(sc)
-    val rdd = sc.parallelize(data2, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df1 = snc.createDataFrame(rdd)
-    val rdd2 = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
     val df2 = snc.createDataFrame(rdd2)
 
     snc.createTable("row_table", "row",
@@ -810,7 +868,116 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val message = intercept[AnalysisException]{
       df2.write.deleteFrom("row_table")
     }.getMessage
-    assert(message.contains("DeleteFrom in a table requires key column(s) but got empty string"))
+
+    assert(message.contains("DeleteFrom operation requires " +
+        "key columns(s) or primary key defined on table."))
+  }
+
+
+  test("DeleteFrom missing Key columns validation: row tables") {
+    val snc = new SnappySession(sc)
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(pk1 int, col1 int, pk3 varchar(50), col2 int" +
+        ", primary key(PK1, PK3)) using row")
+
+    df1.write.insertInto("row_table")
+
+    val message = intercept[AnalysisException]{
+      df2.write.deleteFrom("row_table")
+    }.getMessage
+
+    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
+  }
+
+  test("Delete From SQL using JDBC: row tables") {
+    val snc = this.snc
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table row_table(pk1 int, col1 int, pk2 varchar(50), col2 int," +
+        " primary key(pk2,pk1))  using row")
+    df1.write.insertInto("row_table")
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
+    try {
+      df2.createGlobalTempView("delete_df")
+      val stmt = conn.createStatement()
+      stmt.execute("DELETE FROM row_table SELECT pk1, pk2 from delete_df")
+      stmt.close()
+    } finally {
+      snc.dropTable("delete_df")
+      conn.close()
+    }
+    val resultdf = snc.table("row_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
+  }
+
+  test("Delete From SQL using JDBC: column tables") {
+    val snc = this.snc
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table col_table(pk1 int, col1 int, pk2 varchar(50), col2 int) " +
+        "using column options(key_columns 'pk2,pk1')")
+
+    df1.write.insertInto("col_table")
+
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
+    try {
+      df2.createGlobalTempView("delete_df")
+      val stmt = conn.createStatement()
+      stmt.execute("DELETE FROM col_table SELECT pk1, pk2 from delete_df")
+      stmt.close()
+    } finally {
+      conn.close()
+      snc.dropTable("delete_df")
+    }
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
+  }
+
+  test("Delete From SQL with key column aliasing") {
+    val snc = this.snc
+    val rdd = sc.parallelize(data5, 2).map(s => DataWithMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df1 = snc.createDataFrame(rdd)
+    val rdd2 = sc.parallelize(data6, 2).map(s => DataDiffColMultipleKeys(s(0).asInstanceOf[Int],
+      s(1).asInstanceOf[Int], s(2).asInstanceOf[String], s(3).asInstanceOf[Long]))
+    val df2 = snc.createDataFrame(rdd2)
+
+    snc.sql("create table col_table(pk1 int, col1 int, pk3 varchar(50), col2 int) " +
+        "using column options(key_columns 'pk3,pk1')")
+
+    df1.write.insertInto("col_table")
+
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
+    try {
+      df2.createGlobalTempView("delete_df")
+      val stmt = conn.createStatement()
+      stmt.execute("DELETE FROM col_table SELECT pk1, pk2 as pk3 from delete_df")
+      stmt.close()
+    } finally {
+      conn.close()
+      snc.dropTable("delete_df")
+    }
+    val resultdf = snc.table("col_table").collect()
+    assert(resultdf.length == 1)
+    assert(resultdf.contains(Row(8, 8, "str8", 8)))
   }
 
   private def bug2348Test(): Unit = {
@@ -984,7 +1151,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     SnappyContext.globalSparkContext.stop()
 
     snc = new SnappySession(sc)
-    snc.sql("select count(1) from t1").show
+    snc.sql("select count(1) from t1").collect()
   }
 
   test("Bug-2348 : Invalid stats bitmap") {
@@ -1042,6 +1209,4 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     assert(df2.length == 1)
     assert(df2.contains(Row(3, 3, 3, 3)))
   }
-
-
 }

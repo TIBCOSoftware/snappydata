@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,6 +26,7 @@ include ':snappy-examples_' + scalaBinaryVersion
 include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
+include ':snappy-encoders_' + scalaBinaryVersion
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
@@ -34,6 +35,7 @@ project(':snappy-launcher').projectDir = "$rootDir/launcher" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
 project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
 project(':snappy-compatibility-tests_' + scalaBinaryVersion).projectDir = "$rootDir/compatibilityTests" as File
+project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoders" as File
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
@@ -59,7 +61,6 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion
-  include ':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion
   include ':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion
@@ -96,7 +97,6 @@ if (new File(rootDir, 'spark/build.gradle').exists()) {
   project(':snappy-spark:snappy-spark-assembly_' + scalaBinaryVersion).projectDir = "$rootDir/spark/assembly" as File
   project(':snappy-spark:snappy-spark-streaming-flume_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume" as File
   project(':snappy-spark:snappy-spark-streaming-flume-sink_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/flume-sink" as File
-  project(':snappy-spark:snappy-spark-streaming-kafka-0.8_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-8" as File
   project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10" as File
   project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion).projectDir = "$rootDir/spark/external/kafka-0-10-sql" as File
   project(':snappy-spark:snappy-spark-examples_' + scalaBinaryVersion).projectDir = "$rootDir/spark/examples" as File
@@ -124,9 +124,7 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   include ':snappy-store:gemfire-junit'
   include ':snappy-store:gemfire-shared'
   include ':snappy-store:gemfire-core'
-  // include ':snappy-store:gemfire-web'
   include ':snappy-store:gemfire-examples'
-  include ':snappy-store:snappydata-util'
   include ':snappy-store:snappydata-store-shared'
   include ':snappy-store:snappydata-store-prebuild'
   include ':snappy-store:snappydata-store-core'
@@ -144,9 +142,7 @@ if (new File(rootDir, 'store/build.gradle').exists()) {
   project(':snappy-store:gemfire-junit').projectDir = "$rootDir/store/gemfire-junit" as File
   project(':snappy-store:gemfire-shared').projectDir = "$rootDir/store/gemfire-shared" as File
   project(':snappy-store:gemfire-core').projectDir = "$rootDir/store/gemfire-core" as File
-  // project(':snappy-store:gemfire-web').projectDir = "$rootDir/store/gemfire-web" as File
   project(':snappy-store:gemfire-examples').projectDir = "$rootDir/store/gemfire-examples" as File
-  project(':snappy-store:snappydata-util').projectDir = "$rootDir/store/snappy-util" as File
   project(':snappy-store:snappydata-store-shared').projectDir = "$rootDir/store/gemfirexd/shared" as File
   project(':snappy-store:snappydata-store-prebuild').projectDir = "$rootDir/store/gemfirexd/prebuild" as File
   project(':snappy-store:snappydata-store-core').projectDir = "$rootDir/store/gemfirexd/core" as File
@@ -179,7 +175,7 @@ if (new File(rootDir, 'snappy-connectors/gemfire-connector/build.gradle').exists
   include ':gemfire-connector:connector_' + scalaBinaryVersion
   include ':gemfire-connector:gfeFunctions'
 
-  project(':gemfire-connector').projectDir ="$rootDir/snappy-connectors/gemfire-connector" as File
+  project(':gemfire-connector').projectDir = "$rootDir/snappy-connectors/gemfire-connector" as File
   project(':gemfire-connector:connector_' + scalaBinaryVersion).projectDir ="$rootDir/snappy-connectors/gemfire-connector/connector" as File
   project(':gemfire-connector:gfeFunctions').projectDir ="$rootDir/snappy-connectors/gemfire-connector/gfeFunctions" as File
 }

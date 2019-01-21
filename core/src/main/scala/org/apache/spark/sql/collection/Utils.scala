@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,10 +17,13 @@
 package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
+import java.lang.reflect.Method
+import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
-import java.sql.DriverManager
+import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
+import scala.annotation.tailrec
 import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
@@ -33,11 +36,12 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
-import io.snappydata.collection.ObjectObjectHashMap
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark._
+import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
 import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
@@ -45,26 +49,29 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
-import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper}
+import org.apache.spark.sql.execution.SQLExecution
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
+import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWrapper, JdbcUtils}
 import org.apache.spark.sql.execution.metric.SQLMetric
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
-import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
+import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
 
 object Utils {
 
+  final val EMPTY_STRING_ARRAY = Array.empty[String]
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
@@ -96,10 +103,6 @@ object Utils {
         s"""$module: Cannot resolve column name "$col" among
             (${cols.mkString(", ")})""")
     }
-  }
-
-  def fieldName(f: StructField): String = {
-    if (f.metadata.contains("name")) f.metadata.getString("name") else f.name
   }
 
   def fieldIndex(relationOutput: Seq[Attribute], columnName: String,
@@ -289,7 +292,7 @@ object Utils {
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
       f: () => Iterator[T], maxTries: Int = 30,
-      blockManagerIds: Seq[BlockManagerId] = Seq.empty): Array[T] = {
+      blockManagerIds: Seq[BlockManagerId] = Nil): Array[T] = {
     val cleanedF = sc.clean(f)
     mapExecutorsWithRetries(sc, (_: TaskContext, _: ExecutorLocalPartition) => cleanedF(),
       blockManagerIds, maxTries)
@@ -298,7 +301,7 @@ object Utils {
   def mapExecutors[T: ClassTag](sc: SparkContext,
       f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
     val cleanedF = sc.clean(f)
-    mapExecutorsWithRetries(sc, cleanedF, Seq.empty[BlockManagerId], maxTries)
+    mapExecutorsWithRetries(sc, cleanedF, Nil, maxTries)
   }
 
   private def mapExecutorsWithRetries[T: ClassTag](sc: SparkContext,
@@ -349,6 +352,12 @@ object Utils {
     }
   }
 
+  @tailrec
+  def unAlias(e: Expression, childClass: Class[_] = null): Expression = e match {
+    case a: Alias if (childClass eq null) || childClass.isInstance(a.child) => unAlias(a.child)
+    case _ => e
+  }
+
   def getInternalType(dataType: DataType): Class[_] = {
     dataType match {
       case ByteType => classOf[Byte]
@@ -385,11 +394,13 @@ object Utils {
   final def isLoner(sc: SparkContext): Boolean =
     (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
-  def parseColumnsAsClob(s: String): (Boolean, Set[String]) = {
+  def parseColumnsAsClob(s: String, session: SnappySession): (Boolean, Set[String]) = {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      (false, s.toUpperCase.split(',').toSet)
+      val parser = session.snappyParser
+      (false, s.split(',').map(c => Utils.toUpperCase(parser.parseSQLOnly(
+        c, parser.parseIdentifier.run()))).toSet)
     }
   }
 
@@ -493,21 +504,17 @@ object Utils {
    * @return the result Metadata object to use for StructField
    */
   def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
-    // Put BASE as 'CLOB' so that SnappyStoreHiveCatalog.normalizeSchema() removes these
+    // Put BASE as 'CLOB' so that SnappySessionCatalog.normalizeSchema() removes these
     // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
     // render this field as CLOB.
-    // If we don't add this property here, SnappyStoreHiveCatalog.normalizeSchema() will add one
+    // If we don't add this property here, SnappySessionCatalog.normalizeSchema() will add one
     // on its own and this field would be rendered as VARCHAR.
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
         .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
   }
 
-  def schemaFields(schema: StructType): Map[String, StructField] = {
-    Map(schema.fields.flatMap { f =>
-      val name = if (f.metadata.contains("name")) f.metadata.getString("name")
-      else f.name
-      Iterator((name, f))
-    }: _*)
+  def schemaFields(schema: StructType): SMap[String, StructField] = {
+    new CaseInsensitiveMutableHashMap[StructField](schema.fields.map(f => f.name -> f).toMap)
   }
 
   def getFields(o: Any): Map[String, Any] = {
@@ -523,7 +530,7 @@ object Utils {
     * In case both are specified, then check compatibility between the two.
     */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
-      baseTableOpt: Option[String], catalog: SnappyStoreHiveCatalog,
+      baseTableOpt: Option[String], catalog: SnappySessionCatalog,
       asSelect: Boolean, table: String,
       tableType: String): (StructType, Option[LogicalPlan]) = {
     schemaOpt match {
@@ -533,7 +540,7 @@ object Utils {
           // should have matching schema
           try {
             val tablePlan = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTableName))
+              catalog.snappySession.tableIdentifier(baseTableName))
             val tableSchema = tablePlan.schema
             if (catalog.compatibleSchema(tableSchema, s)) {
               (s, Some(tablePlan))
@@ -560,7 +567,7 @@ object Utils {
             // parquet and other such external tables may have different
             // schema representation so normalize the schema
             val tablePlan = catalog.lookupRelation(
-              catalog.newQualifiedTableName(baseTable))
+              catalog.snappySession.tableIdentifier(baseTable))
             (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
           } catch {
             case ae: AnalysisException =>
@@ -641,8 +648,8 @@ object Utils {
     override def get(key: A): Option[B] = map.get(key)
   }
 
-  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): ObjectObjectHashMap[K, V] = {
-    val m = ObjectObjectHashMap.withExpectedSize[K, V](map.size)
+  def toOpenHashMap[K, V](map: scala.collection.Map[K, V]): UnifiedMap[K, V] = {
+    val m = new UnifiedMap[K, V](map.size)
     map.foreach(p => m.put(p._1, p._2))
     m
   }
@@ -652,6 +659,11 @@ object Utils {
 
   def createCatalystConverter(dataType: DataType): Any => Any =
     CatalystTypeConverters.createToCatalystConverter(dataType)
+
+  def resultSetToSparkInternalRows(resultSet: ResultSet, schema: StructType,
+      inputMetrics: InputMetrics = new InputMetrics): Iterator[InternalRow] = {
+    JdbcUtils.resultSetToSparkInternalRows(resultSet, schema, inputMetrics)
+  }
 
   // we should use the exact day as Int, for example, (year, month, day) -> day
   def millisToDays(millisUtc: Long, tz: TimeZone): Int = {
@@ -690,6 +702,9 @@ object Utils {
     }
     conf
   }
+
+  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader =
+    SharedUtils.newMutableURLClassLoader(urls)
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
@@ -738,6 +753,24 @@ object Utils {
           // explicit cast for value to Object is for janino bug
           v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
     }
+  }
+
+  /**
+   * Minimum size of block beyond which data will be stored in BlockManager
+   * before being consumed to store data from multiple partitions safely.
+   */
+  private[sql] val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
+
+  private[sql] val nextExecutionIdMethod: Method = {
+    val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
+    m.setAccessible(true)
+    m
+  }
+
+  private[sql] val rddPartitionsOffset: Long = {
+    val f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
+    f.setAccessible(true)
+    UnsafeHolder.getUnsafe.objectFieldOffset(f)
   }
 
   def getJsonGenerator(dataType: DataType, columnName: String,
@@ -918,7 +951,7 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
       case _ => false
     }
 
-    override def iterator() = new java.util.Iterator[Integer] {
+    override def iterator(): java.util.Iterator[Integer] = new java.util.Iterator[Integer] {
       private[this] var bucket = bucketSet.nextSetBit(0)
 
       override def hasNext: Boolean = bucket >= 0
@@ -1023,41 +1056,6 @@ private[spark] class CoGroupExecutorLocalPartition(
     s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
-}
-
-final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: mutable.ArrayBuffer[(String, String)])
-    extends Partition with KryoSerializable {
-
-  override def index: Int = _index
-
-  def bucketId: Int = _bucketId
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    output.writeVarInt(_index, true)
-    output.writeVarInt(_bucketId, true)
-    val numHosts = hostList.length
-    output.writeVarInt(numHosts, true)
-    for ((host, url) <- hostList) {
-      output.writeString(host)
-      output.writeString(url)
-    }
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    _index = input.readVarInt(true)
-    _bucketId = input.readVarInt(true)
-    val numHosts = input.readVarInt(true)
-    hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
-    for (_ <- 0 until numHosts) {
-      val host = input.readString()
-      val url = input.readString()
-      hostList += host -> url
-    }
-  }
-
-  override def toString: String =
-    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,17 +19,18 @@ package io.snappydata.impl
 import java.sql.SQLException
 import java.util.Properties
 
-import com.pivotal.gemfirexd.internal.engine.GfxdConstants
+import com.gemstone.gemfire.cache.execute.FunctionService
 import com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{ProtocolOverrides, Server}
 
+import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.row.SnappyStoreDialect
 
 /**
-  * This class ties up few things that is Snappy specific.
-  * for e.g. Connection url & ClusterCallback
-  */
+ * This class ties up few things that is Snappy specific.
+ * for e.g. Connection url & ClusterCallback
+ */
 class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
 
   @throws(classOf[SQLException])
@@ -38,8 +39,10 @@ class ServerImpl extends FabricServerImpl with Server with ProtocolOverrides {
     start(bootProperties, ignoreIfStarted = false)
   }
 
-  @throws[SQLException]
+  @throws(classOf[SQLException])
   override def start(bootProps: Properties, ignoreIfStarted: Boolean): Unit = {
+    // all SnappyData distributed GemFire Functions should be registered below
+    FunctionService.registerFunction(RefreshMetadata)
     super.start(ServiceUtils.setCommonBootDefaults(bootProps, forLocator = false),
       ignoreIfStarted)
   }

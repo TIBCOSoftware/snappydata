@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -59,7 +59,7 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  session.setCurrentSchema(schema)
 
   session.setPreparedQuery(preparePhase = true, None)
 
@@ -70,10 +70,10 @@ class SparkSQLPrepareImpl(val sql: String,
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
   protected[this] val hdos = new GfxdHeapDataOutputStream(
-    thresholdListener, sql, true, senderVersion)
+    thresholdListener, sql, false, senderVersion)
 
   private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
-      getTableNamesAndNullability(analyzedPlan.output)
+      getTableNamesAndNullability(session, analyzedPlan.output)
 
   private lazy val (columnNames, columnDataTypes) = SparkSQLPrepareImpl.
       getTableNamesAndDatatype(analyzedPlan.output)
@@ -81,14 +81,14 @@ class SparkSQLPrepareImpl(val sql: String,
   // check for query hint to serialize complex types as JSON strings
   private[this] val complexTypeAsJson = SparkSQLExecuteImpl.getJsonProperties(session)
 
-  private def getColumnTypes: Seq[(Int, Int, Int)] =
+  private def getColumnTypes: Array[(Int, Int, Int)] =
     columnDataTypes.map(d => SparkSQLExecuteImpl.getSQLType(d, complexTypeAsJson))
 
   override def packRows(msg: LeadNodeExecutorMsg,
       srh: SnappyResultHolder): Unit = {
     hdos.clearForReuse()
     SparkSQLExecuteImpl.writeMetaData(srh, hdos, tableNames, nullability, columnNames,
-      getColumnTypes, columnDataTypes)
+      getColumnTypes, columnDataTypes, session.getWarnings)
 
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
@@ -242,9 +242,9 @@ class SparkSQLPrepareImpl(val sql: String,
 }
 
 object SparkSQLPrepareImpl{
-
-  def getTableNamesAndDatatype(output: Seq[expressions.Attribute]):
-  (Seq[String], Seq[DataType]) = output.map(o => (o.name, o.dataType)).unzip
+  def getTableNamesAndDatatype(
+      output: Seq[expressions.Attribute]): (Array[String], Array[DataType]) =
+    output.toArray.map(o => o.name -> o.dataType).unzip
 }
 
 object QuestionMark {

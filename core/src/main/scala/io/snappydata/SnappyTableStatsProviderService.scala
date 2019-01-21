@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,7 @@
 
 package io.snappydata
 
-import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import java.util.concurrent.TimeUnit
 import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
@@ -31,7 +31,7 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, ExternalTableMetaData, LocalRegion, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion, RegionEntry}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
@@ -39,9 +39,11 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
-import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.sql.catalog.CatalogObjectType
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
@@ -78,7 +80,8 @@ object SnappyTableStatsProviderService {
     service
   }
 
-  var suspendCacheInvalidation = false
+  // only for testing
+  var TEST_SUSPEND_CACHE_INVALIDATION = false
 }
 
 object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService {
@@ -87,7 +90,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (!doRun) {
       this.synchronized {
         if (!doRun) {
-          val delay = sc.getConf.getLong(SPARK_SNAPPY_PREFIX +
+          val delay = sc.getConf.getLong(PROPERTY_PREFIX +
               "calcTableSizeInterval", DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL)
           doRun = true
           Misc.getGemFireCache.getCCPTimer.schedule(
@@ -133,8 +136,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = ObjectObjectHashMap.withExpectedSize[String,
-          MemberStatistics](8)
+      val members = new UnifiedMap[String, MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
@@ -166,7 +168,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
         memberStats.setStatus("Running")
       }
-      membersInfo ++= members.asScala
+      membersInfo ++= mapAsScalaMapConverter(members).asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).setStatus("Stopped"))
@@ -195,30 +197,27 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case NonFatal(e) => {
+      case NonFatal(e) =>
         log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
         log.debug(e.getMessage, e)
-      }
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
 
     val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
       try {
         // External Tables
         hiveTables.collect {
-          case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
-            new SnappyExternalTableStats(table.entityName, table.tableType, table.shortProvider,
-              table.externalStore, table.dataSourcePath, table.driverClass)
-          }
+          case table if table.tableType == CatalogObjectType.External.toString =>
+            new SnappyExternalTableStats(table.entityName, table.tableType, table.schema,
+              table.shortProvider, table.externalStore, table.dataSourcePath, table.driverClass)
         }
       }
       catch {
-        case NonFatal(e) => {
+        case NonFatal(e) =>
           log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
           log.debug(e.getMessage, e)
           mutable.Buffer.empty[SnappyExternalTableStats]
-        }
       }
     }
 
@@ -227,17 +226,18 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       // Map to hold hive table type against table names as keys
       val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
       hiveTables.foreach(ht => {
-        val key = ht.schema.toString.concat("." + ht.entityName)
-        tableTypesMap.put(key.toUpperCase, ht.tableType)
+        val key = ht.schema.toString + "." + ht.entityName
+        tableTypesMap.put(key, ht.tableType)
       })
 
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
         val tableName = rs.getTableName
-        if (tableTypesMap.contains(tableName.toUpperCase)
-            && tableTypesMap.get(tableName.toUpperCase).get.equalsIgnoreCase("COLUMN")) {
-          rs.setColumnTable(true)
-        } else {
-          rs.setColumnTable(false)
+        try tableTypesMap.get(tableName) match {
+          case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
+            Utils.toUpperCase(t))) => rs.setColumnTable(true)
+          case _ => rs.setColumnTable(false)
+        } catch {
+          case _: Exception => rs.setColumnTable(false)
         }
         rs
       })

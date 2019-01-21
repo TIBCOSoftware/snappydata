@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,16 +19,15 @@ package org.apache.spark.sql.streaming
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.reflect.io.Path
-
 import io.snappydata.{SnappyFunSuite, StreamingConstants}
 import org.apache.log4j.LogManager
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import scala.reflect.io.Path
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -45,11 +44,13 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   private def getTopic(id: Int) = s"topic-$id"
 
   override def beforeAll() {
+    super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
   }
 
   override def afterAll() {
+    super.afterAll()
     if (kafkaTestUtils != null) {
       kafkaTestUtils.teardown()
       kafkaTestUtils = null
@@ -117,7 +118,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 10, "lname2", 2),
+    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 13, "lname2", 2),
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
@@ -197,7 +198,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId)
     waitTillTheBatchIsPickedForProcessing(0, testId)
 
-    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 10, "lname2", 2),
+    val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 13, "lname2", 2),
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
     streamingQuery.processAllAvailable()
@@ -274,6 +275,24 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData(Array(Row(1, "name999", 999, "lname1")))
   }
 
+  test("[SNAP-2745]-conflation: delete,insert") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch1 = Seq(Seq(1, "name1", 30, "lname1", 0))
+    kafkaTestUtils.sendMessages(topic, batch1.map(r => r.mkString(",")).toArray)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true)
+
+    waitTillTheBatchIsPickedForProcessing(0, testId)
+    val batch2 = Seq(Seq(1, "name1", 30, "lname1", 2), Seq(1, "name1", 30, "lname1", 0))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name1", 30, "lname1")))
+  }
 
   test("test conflation disabled") {
     val testId = testIdGenerator.getAndIncrement()
@@ -319,7 +338,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
 
-    def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id, last_name)" else ""
+    def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id,last_name)" else ""
 
     val s = s"create table users (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
@@ -340,7 +359,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def structFields() = {
       StructField("id", LongType, nullable = false) ::
-          StructField("first_name", StringType, nullable = true) ::
+          StructField("firstName", StringType, nullable = true) ::
           StructField("age", IntegerType, nullable = true) ::
           StructField("last_name", StringType, nullable = true) ::
           (if (withEventTypeColumn) {
