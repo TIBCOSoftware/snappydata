@@ -33,7 +33,7 @@ import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.util.ServiceUtils
-import io.snappydata.Property
+import io.snappydata.{Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
@@ -48,11 +48,11 @@ import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
-import org.apache.spark.sql.sources.{DestroyRelation}
+import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
-import org.apache.spark.{SparkContext}
+import org.apache.spark.{SparkContext, SparkEnv}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
