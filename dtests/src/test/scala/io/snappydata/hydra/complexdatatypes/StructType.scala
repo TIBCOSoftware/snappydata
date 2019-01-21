@@ -44,6 +44,8 @@ class StructType extends SnappySQLJob{
     val printContent : Boolean = false
 
     /* --- Snappy Job --- */
+    snc.sql("DROP TABLE IF EXISTS CricketRecord")
+    snc.sql("DROP TABLE IF EXISTS TempCRRecord")
 
     snc.sql("CREATE EXTERNAL TABLE IF NOT EXISTS TempCRRecord  USING JSON " +
       "OPTIONS(path '" + dataLocation + "')")
@@ -78,5 +80,6 @@ class StructType extends SnappySQLJob{
 
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS CricketRecord")
+    snc.sql("DROP TABLE IF EXISTS TempCRRecord")
   }
 }

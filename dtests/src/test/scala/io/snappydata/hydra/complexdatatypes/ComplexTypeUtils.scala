@@ -127,4 +127,21 @@ object ComplexTypeUtils {
   val ArraysOfStruct_Q5 = "SELECT brand, BikeInfo[0].type AS Style, " +
     "BikeInfo[0].instock AS Available " +
     "FROM TwoWheeler"
+
+  /* -----                     AllMixed Type                   ----- */
+  /* -----         Snappy AllMixed Type Queries         ----- */
+  val Mixed_Q1 = "SELECT * FROM TwentyTwenty ORDER BY name"
+  val Mixed_Q2 = "SELECT name, " +
+    "SUM(LastThreeMatchPerformance[0] + LastThreeMatchPerformance[1] + " +
+    "LastThreeMatchPerformance[2]) AS RunsScored " +
+    "FROM TwentyTwenty GROUP BY name"
+  val Mixed_Q3 = "SELECT name, LastThreeMatchPerformance[2] AS RunsScoredinLastMatch, " +
+    "Profile.Matches,Profile.SR,Profile.Runs " +
+    "FROM TwentyTwenty WHERE Profile.Runs >= 1000 ORDER BY Profile.Runs DESC"
+  val Mixed_Q4 = "SELECT COUNT(*) AS AllRounder FROM " +
+    "TwentyTwenty WHERE Roll['2'] = 'AllRounder'"
+  val Mixed_Q5 = "SELECT name, Profile.SR,Profile.Runs " +
+    "FROM TwentyTwenty ORDER BY Profile.SR DESC"
+
+
 }
