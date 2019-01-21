@@ -115,4 +115,16 @@ object ComplexTypeUtils {
     "ORDER BY TestRecord.Matches DESC"
 
 
+  /* -----                     ArrayOfStruct Type                   ----- */
+  /* -----         Snappy ArrayOfStruct Type Queries         ----- */
+  val ArraysOfStruct_Q1 = "SELECT * FROM TwoWheeler"
+  val ArraysOfStruct_Q2 = "SELECT brand FROM TwoWheeler " +
+    "WHERE BikeInfo[0].type = 'Scooter'"
+  val ArraysOfStruct_Q3 = "SELECT brand,BikeInfo[0].cc FROM TwoWheeler " +
+    "WHERE BikeInfo[0].cc >= 149.0 ORDER BY BikeInfo[0].cc DESC"
+  val ArraysOfStruct_Q4 = "SELECT brand,COUNT(BikeInfo[0].type) FROM TwoWheeler " +
+    "WHERE BikeInfo[0].type = 'Cruiser' GROUP BY brand"
+  val ArraysOfStruct_Q5 = "SELECT brand, BikeInfo[0].type AS Style, " +
+    "BikeInfo[0].instock AS Available " +
+    "FROM TwoWheeler"
 }

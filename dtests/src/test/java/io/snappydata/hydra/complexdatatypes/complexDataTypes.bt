@@ -18,7 +18,6 @@ io/snappydata/hydra/complexdatatypes/mapTypes.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
-*/
 
 io/snappydata/hydra/complexdatatypes/structTypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
@@ -29,17 +28,19 @@ io/snappydata/hydra/complexdatatypes/structTypes.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
+*/
 
-/*
 io/snappydata/hydra/complexdatatypes/arrayOfStructTypes.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+  dataFilesLocation="/export/shared/QA_DATA/Complextypes_Data/ArrayOfStruct/"
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
 
+/*
 io/snappydata/hydra/complexdatatypes/allMixedTypes.conf
     A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
     B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2

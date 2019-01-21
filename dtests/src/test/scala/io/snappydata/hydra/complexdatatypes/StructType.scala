@@ -44,10 +44,6 @@ class StructType extends SnappySQLJob{
     val printContent : Boolean = false
 
     /* --- Snappy Job --- */
-//    snc.sql("CREATE SCHEMA CR")
-
-//    snc.sql("CREATE TABLE IF NOT EXISTS CR.CricketRecord(name String, " +
-//      "TestRecord STRUCT<batStyle:String,Matches:Long,Runs:Int,Avg:Double>) USING column")
 
     snc.sql("CREATE EXTERNAL TABLE IF NOT EXISTS TempCRRecord  USING JSON " +
       "OPTIONS(path '" + dataLocation + "')")
