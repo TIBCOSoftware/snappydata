@@ -102,4 +102,17 @@ object ComplexTypeUtils {
     "UNION ALL " +
     "SELECT name,History['history'] AS marks FROM StudentMarksRecord) " +
     "GROUP BY name"
+
+  /* -----                     Struct Type                   ----- */
+  /* -----         Snappy Struct Type Queries         ----- */
+  val Struct_Q1 : String = "SELECT name, TestRecord.Runs, TestRecord.Avg FROM CricketRecord " +
+    "ORDER BY TestRecord.Runs DESC"
+  val Struct_Q2 : String = "SELECT SUM(TestRecord.Runs) AS TotalRuns FROM CricketRecord"
+  val Struct_Q3 : String = "SELECT name FROM CricketRecord WHERE TestRecord.batStyle = 'LeftHand'"
+  val Struct_Q4 : String = "SELECT name, TestRecord.batStyle,TestRecord.Matches," +
+    "TestRecord.Runs,TestRecord.Avg " +
+    "FROM CricketRecord " +
+    "ORDER BY TestRecord.Matches DESC"
+
+
 }
