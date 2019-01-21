@@ -510,10 +510,10 @@ object SnappyDashboardPage {
   val gblTempViewsStatsTitleTooltip = "SnappyData Global Temporary Views Summary"
   val gblTempViewStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   gblTempViewStatsColumn += ("name" -> "Name")
-  gblTempViewStatsColumn += ("nameTooltip" -> "Global Temporary Views Name")
+  gblTempViewStatsColumn += ("nameTooltip" -> "Global Temporary View's Name")
   gblTempViewStatsColumn += ("type" -> "Type")
   gblTempViewStatsColumn += ("typeTooltip" -> "Type")
-  gblTempViewStatsColumn += ("columnsCount" -> "Columns Count")
-  gblTempViewStatsColumn += ("columnsCountTooltip" -> "Number of Columns in View")
+  gblTempViewStatsColumn += ("columnsCount" -> "Fields")
+  gblTempViewStatsColumn += ("columnsCountTooltip" -> "Number of Fields/Columns in the View")
 
 }

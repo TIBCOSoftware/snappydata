@@ -104,5 +104,5 @@ class GlobalTemporaryViewSummary private[spark](
     val tableFQName: String,
     val tableName: String,
     val tableType: String,
-    val numColumns: Int
+    val columnsInfo: mutable.HashMap[String, Any]
 )
