@@ -36,6 +36,7 @@ import io.snappydata.util.ServiceUtils
 import io.snappydata.{Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType

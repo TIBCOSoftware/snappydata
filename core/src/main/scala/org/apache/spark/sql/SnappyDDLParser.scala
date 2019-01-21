@@ -800,6 +800,7 @@ case class DMLExternalTable(
     query: LogicalPlan,
     command: String)
     extends LeafNode with Command {
+  
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
 
   override lazy val resolved: Boolean = query.resolved
