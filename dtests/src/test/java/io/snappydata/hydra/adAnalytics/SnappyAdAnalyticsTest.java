@@ -18,7 +18,13 @@
 package io.snappydata.hydra.adAnalytics;
 
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,7 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
-import hydra.HostHelper;
+import hydra.HostPrms;
 import hydra.Log;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
@@ -50,7 +56,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   public static int initialBrokerPort = 9092;
   public static int initialBrokerId = 0;
   public static int retryCount = SnappyPrms.getRetryCountForJob();
-
+  public static String[] hostnames;
   public SnappyAdAnalyticsTest() {
   }
 
@@ -63,6 +69,36 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       throw new TestException(s, e);
     }
     return currentDir;
+  }
+
+  public static String[] getNames(Long key) {
+    Vector vec = TestConfig.tab().vecAt(key, null);
+    String[] strArr = new String[vec.size()];
+    for (int i = 0; i < vec.size(); i++) {
+      strArr[i] = (String)vec.elementAt(i); //get what tables are in the tests
+    }
+    return strArr;
+  }
+
+  public static String[] getHostNames() {
+
+    String[] vmNames = getNames(HostPrms.names);
+    String[] vmHostNames = getNames(HostPrms.hostNames);
+    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    hostnames = new String[numServers];
+    if(vmHostNames==null) {
+      for (int j = 0; j<numServers ;  j++)
+        hostnames[j] = "localhost";
+    } else {
+      int j = 0;
+      for (int i = 0; i < vmNames.length; i++) {
+        if (vmNames[i].startsWith("snappyStore")) {
+          hostnames[j] = vmHostNames[i];
+          j++;
+        }
+      }
+    }
+    return hostnames;
   }
 
   public static synchronized void HydraTask_initializeSnappyAdAnalyticsTest() {
@@ -89,6 +125,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
    * Start kafka zookeeper.
    */
   public static synchronized void HydraTask_StartKafkaZookeeper() {
+    getHostNames();
     snappyAdAnalyticsTest.startZookeeper();
   }
 
@@ -109,9 +146,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       //create copy of properties file to modify
       FileUtils.copyFile(orgPropFile, myPropFile);
       // change log dir in properperty file
-      modifyPropFile(myPropFile, "dataDir", zookeeperLogDirPath);
-
-      String command = "nohup " + script + " " + myPropFilePath + " > " + logFile + " &";
+      zookeeperHost = hostnames[0];
+      modifyPropFile(myPropFile, "dataDir=", zookeeperLogDirPath);
+      modifyPropFile(myPropFile,"host.name=", zookeeperHost);
+      String command = "";
+      if(!zookeeperHost.equals("localhost"))
+        command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + zookeeperHost;
+      command = "nohup " + command + script + " " + myPropFilePath + " > " + logFile + " &";
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun("QuorumPeerMain");
@@ -129,7 +170,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   // save zookeeper host and port details on blackboard
   protected void updateBlackboard(File file, String searchString) {
     try {
-      zookeeperHost = HostHelper.getIPAddress().getLocalHost().getHostName();
       SnappyBB.getBB().getSharedMap().put("zookeeperHost", zookeeperHost);
       FileInputStream fis = new FileInputStream(file);
       BufferedReader br = new BufferedReader(new InputStreamReader(fis));
@@ -160,7 +200,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   protected void startKafkaBroker() {
-    String command;
+    String command = "";
     int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
@@ -179,20 +219,23 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         File myPropFile = new File(myPropFilePath);
         //create copy of properties file to modify
         FileUtils.copyFile(orgPropFile, myPropFile);
-
+        String hostname = hostnames[i-1];
         //change port and logdir for servers
-        modifyPropFile(myPropFile,"log.dir", brokerLogDirPath);
+        modifyPropFile(myPropFile,"log.dirs=", brokerLogDirPath);
+        modifyPropFile(myPropFile,"zookeeper.connect=",zookeeperHost+":"+ zookeeperPort);
+        modifyPropFile(myPropFile,"host.name=",hostname);
         modifyPropFile(myPropFile,"port=",Integer.toString(initialBrokerPort));
-        modifyPropFile(myPropFile,"broker.id",Integer.toString(initialBrokerId++));
+        modifyPropFile(myPropFile,"broker.id=",Integer.toString(initialBrokerId++));
         Log.getLogWriter().info(broker + " properties files is  " + myPropFile);
-
-        command = "nohup " + script + " " + myPropFilePath + " > " + logFile + " &";
+        if(!hostname.equals("localhost"))
+          command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
+        command = "nohup " + command + script + " " + myPropFilePath + " > " + logFile + " &";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
 
         Log.getLogWriter().info("Started kafka " + broker);
         if (i == 1)
-          SnappyBB.getBB().getSharedMap().put("brokerList", "localhost--" + initialBrokerPort);
+          SnappyBB.getBB().getSharedMap().put("brokerList", hostname + "--" + initialBrokerPort);
         initialBrokerPort = initialBrokerPort + 2;
       }
     }  catch (IOException e) {
@@ -205,6 +248,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   //change log directory and port for property file
   protected void modifyPropFile(File file, String searchString, String replaceString) {
     String str = null;
+    boolean isReplaced = false;
     ArrayList<String> lines = new ArrayList<String>();
     try {
       FileInputStream fis = new FileInputStream(file);
@@ -212,10 +256,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       while ((str = br.readLine()) != null) {
         if (str.trim().startsWith(searchString)) {
           str = str.replace(str.split("=")[1], replaceString);
+          isReplaced = true;
           Log.getLogWriter().info("File str is ::" + str);
         }
         lines.add(str + "\n");
       }
+      if(!isReplaced)
+        lines.add(searchString + replaceString);
       br.close();
       fis.close();
       FileWriter fw = new FileWriter(file);
