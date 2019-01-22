@@ -101,12 +101,14 @@ The default build directory is _build-artifacts/scala-2.11_ for projects. An exc
 The usual Gradle test run targets (_test_, _check_) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (_scalaTest_) while the _check_ target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with _singleSuite_ option while running a single test within some suite works with the `--tests` option:
 
 ```pre
-> ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
-> ./gradlew core:scalaTest \
+> ./gradlew snappy-core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
+> ./gradlew snappy-core:scalaTest ;
 >    --tests "Test the creation/dropping of table using SQL"  # run a single test (use full name)
 ```
 Running individual tests within some suite works using the `--tests` argument.
 
+All ScalaTest build targets can be found by running the following command (case sensitive):
+`./gradlew tasks --all | grep scalaTest`
 
 ## Setting up IntelliJ IDEA with Gradle
 
