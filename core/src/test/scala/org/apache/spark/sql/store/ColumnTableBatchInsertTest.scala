@@ -21,6 +21,7 @@ import java.sql.DriverManager
 import scala.collection.mutable
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerJobEnd, SparkListenerJobStart}
 import org.scalatest.{Assertions, BeforeAndAfter}
 import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
@@ -148,6 +149,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       assert(r2.length == 200000)
     }
 
+    snc.sparkContext.addSparkListener(new BasicJobCounter)
+
     val putTasks = Array.fill(10)(doPut())
     putTasks.foreach(Await.result(_, Duration.Inf))
 
@@ -161,6 +164,18 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     logInfo("Successful")
   }
 
+  private class BasicJobCounter extends SparkListener {
+    var count = 0
+
+    override def onJobStart(job: SparkListenerJobStart): Unit = {
+      assert(count == 0)
+      count += 1
+    }
+
+    override def onJobEnd(job: SparkListenerJobEnd): Unit = {
+      count -= 1
+    }
+  }
 
   test("test the concurrent update") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
@@ -192,6 +207,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       val dataDF = snc.createDataFrame(rdd)
       snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
     }
+
+    sc.addSparkListener(new BasicJobCounter)
 
     val putTasks = Array.fill(10)(doUpdate())
     putTasks.foreach(Await.result(_, Duration.Inf))
@@ -230,6 +247,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       val r2 = result.collect
       assert(r2.length == 0)
     }
+    sc.addSparkListener(new BasicJobCounter)
 
     val putTasks = Array.fill(10)(doDelete())
     putTasks.foreach(Await.result(_, Duration.Inf))
@@ -275,7 +293,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
     }
 
-
+    sc.addSparkListener(new BasicJobCounter)
     val putTasks = Array.fill(5)(doPut())
     val putTasks2 = Array.fill(5)(doUpdate())
     putTasks.foreach(Await.result(_, Duration.Inf))
