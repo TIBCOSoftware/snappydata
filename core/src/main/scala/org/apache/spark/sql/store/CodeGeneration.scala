@@ -281,7 +281,7 @@ object CodeGeneration extends Logging {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(defaultImports: _*)
+    evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -329,7 +329,7 @@ object CodeGeneration extends Logging {
     val evaluator = new CompilerFactory().newScriptEvaluator()
     evaluator.setClassName("io.snappydata.execute.GeneratedIndexEvaluation")
     evaluator.setParentClassLoader(getClass.getClassLoader)
-    evaluator.setDefaultImports(defaultImports: _*)
+    evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
@@ -428,7 +428,7 @@ object CodeGeneration extends Logging {
       classOf[CalendarInterval].getName,
       classOf[ArrayData].getName,
       classOf[MapData].getName,
-      classOf[InternalDataSerializer].getName): _*)
+      classOf[InternalDataSerializer].getName))
     val separator = "\n      "
     val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
       s"$javaType $name;$separator${init.replace("this.", "")}"
