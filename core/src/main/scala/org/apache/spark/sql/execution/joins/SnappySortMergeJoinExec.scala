@@ -24,10 +24,10 @@ import org.apache.spark.sql.execution.SparkPlan
  * Extension to Spark's SortMergeJoinExec to avoid exchange for cases when join keys are
  * a subset of child plan partitioning.
  */
-class SnappySortMergeJoinExec(leftKeys: Seq[Expression], rightKeys: Seq[Expression],
-    joinType: JoinType, condition: Option[Expression], left: SparkPlan, right: SparkPlan,
+class SnappySortMergeJoinExec(_leftKeys: Seq[Expression], _rightKeys: Seq[Expression],
+    _joinType: JoinType, _condition: Option[Expression], _left: SparkPlan, _right: SparkPlan,
     override val leftSizeInBytes: BigInt, override val rightSizeInBytes: BigInt)
-    extends SortMergeJoinExec(leftKeys, rightKeys, joinType, condition, left, right)
+    extends SortMergeJoinExec(_leftKeys, _rightKeys, _joinType, _condition, _left, _right)
         with SnappyJoinLike {
 
   override def productArity: Int = 8

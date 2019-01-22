@@ -45,7 +45,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
     try {
       val stmt = conn.createStatement()
-      MetadataTest.testSYSTablesAndVTIs(MetadataTest.resultSetToDataset(session, stmt),
+      MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
         netServers = Seq(s"localhost/127.0.0.1[$netPort]"))
       stmt.close()
     } finally {
@@ -58,7 +58,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
     try {
       val stmt = conn.createStatement()
-      MetadataTest.testDescribeShowAndExplain(MetadataTest.resultSetToDataset(session, stmt),
+      MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
         usingJDBC = true)
       stmt.close()
     } finally {
@@ -71,7 +71,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$netPort")
     try {
       val stmt = conn.createStatement()
-      MetadataTest.testDSIDWithSYSTables(MetadataTest.resultSetToDataset(session, stmt),
+      MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
         Seq(s"localhost/127.0.0.1[$netPort]"))
       stmt.close()
     } finally {

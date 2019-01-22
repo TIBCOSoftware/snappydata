@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,7 +23,7 @@ version = '1.0.3.6'
 compileJava.options.encoding = 'UTF-8'
 
 dependencies {
-  compile 'commons-io:commons-io:2.5'
+  compile "commons-io:commons-io:${commonsIoVersion}"
   compile "junit:junit:${junitVersion}"
   if (new File(rootDir, 'store/build.gradle').exists()) {
     compile project(':snappy-store:snappydata-store-core')

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -761,6 +761,7 @@ class QueryRoutingDUnitTest(val s: String)
 
       TPCHUtils.createAndLoadTables(snc, true)
 
+      snc.setConf(Property.EnableExperimentalFeatures.name, "true")
       snc.sql(
         s"""CREATE INDEX idx_orders_cust ON orders(o_custkey)
              options (COLOCATE_WITH 'customer')

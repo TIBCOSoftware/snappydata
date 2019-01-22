@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -30,7 +30,7 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
-import com.gemstone.gemfire.internal.shared.unsafe.{DirectBufferAllocator, UnsafeHolder}
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
 import io.snappydata.Constant
 
@@ -83,8 +83,10 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     }
   }
 
-  private def isLowLatencyQuery: Boolean =
-    isCached && cachedRDD.getNumPartitions <= 2 /* some small number */
+  private def isLowLatencyQuery: Boolean = {
+    // use a small value for number of RDD partitions
+    isCached && shuffleDependencies.length == 0 && cachedRDD.getNumPartitions <= 2
+  }
 
   @transient
   private var _rowConverter: UnsafeProjection = _
@@ -103,6 +105,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
   @transient
   private[sql] var currentLiterals: Array[ParamLiteral] = _
+
+  @transient
+  private[sql] var queryShortString: String = _
 
   @transient
   private[sql] var queryString: String = _
@@ -180,9 +185,9 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def clearPartitions(rdds: Seq[RDD[_]]): Unit = {
     val children = rdds.flatMap {
       case null => Nil
-      case r =>
+    case r =>
         // f.set(r, null)
-        UnsafeHolder.getUnsafe.putObject(r, CachedDataFrame.rdd_partitions_, null)
+        Platform.putObjectVolatile(r, Utils.rddPartitionsOffset, null)
         getChildren(r)
     }
     if (children.nonEmpty) {
@@ -210,7 +215,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def setPoolForExecution(): Unit = {
     var pool = snappySession.sessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
-    if (isLowLatencyQuery && shuffleDependencies.length == 0 && pool == "default") {
+    if (isLowLatencyQuery && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
         pool = Constant.LOW_LATENCY_POOL
       }
@@ -251,6 +256,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   private def endCollect(didPrepare: Boolean): Unit = {
     if (didPrepare) {
       prepared = false
+      // reset the pool
+      if (isLowLatencyQuery) {
+        val pool = snappySession.sessionState.conf.activeSchedulerPool
+        snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
+      }
       // clear the shuffle dependencies asynchronously after the execution.
       startShuffleCleanups(snappySession.sparkContext)
     }
@@ -264,7 +274,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     var didPrepare = false
     try {
       didPrepare = prepareForCollect()
-      CachedDataFrame.withCallback(snappySession, this, name)(action)
+      CachedDataFrame.withCallback(snappySession, this, queryExecution, name)(action)
     } finally {
       endCollect(didPrepare)
     }
@@ -281,7 +291,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     try {
       didPrepare = prepareForCollect()
       val (result, elapsedMillis) = CachedDataFrame.withNewExecutionId(snappySession,
-        queryString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
+        queryShortString, queryString, currentQueryExecutionString, currentQueryPlanInfo,
         currentExecutionId, planStartTime, planEndTime)(body)
       (result, elapsedMillis * 1000000L)
     } finally {
@@ -347,7 +357,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     val (executedPlan, withFallback) = SnappySession.getExecutedPlan(queryExecution.executedPlan)
 
     def execute(): (Iterator[R], Long) = withNewExecutionIdTiming {
-      snappySession.addContextObject(SnappySession.ExecutionKey, () => queryExecution)
 
       def executeCollect(): Array[InternalRow] = {
         if (withFallback ne null) withFallback.executeCollect()
@@ -405,7 +414,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     try {
       withCallback("collect")(_ => execute())
     } finally {
-      snappySession.removeContextObject(SnappySession.ExecutionKey)
       if (!hasLocalCallSite) {
         sc.clearCallSite()
       }
@@ -557,16 +565,10 @@ object CachedDataFrame
     }
   }
 
-  /**
-   * Minimum size of block beyond which data will be stored in BlockManager
-   * before being consumed to store data from multiple partitions safely.
-   */
-  @transient val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
-
   def localBlockStoreResultHandler(rddId: Int, bm: BlockManager)(
       partitionId: Int, data: Array[Byte]): Any = {
     // put in block manager only if result is large
-    if (data.length <= MIN_LOCAL_BLOCK_SIZE) data
+    if (data.length <= Utils.MIN_LOCAL_BLOCK_SIZE) data
     else {
       val blockId = RDDBlockId(rddId, partitionId)
       bm.putBytes(blockId, Utils.newChunkedByteBuffer(Array(ByteBuffer.wrap(
@@ -587,18 +589,6 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  @transient private[sql] val nextExecutionIdMethod = {
-    val m = SQLExecution.getClass.getDeclaredMethod("nextExecutionId")
-    m.setAccessible(true)
-    m
-  }
-
-  @transient private val rdd_partitions_ = {
-    val _f = classOf[RDD[_]].getDeclaredField("org$apache$spark$rdd$RDD$$partitions_")
-    _f.setAccessible(true)
-    UnsafeHolder.getUnsafe.objectFieldOffset(_f)
-  }
-
   private[sql] def queryStringShortForm(queryString: String): String = {
     val trimSize = 100
     if (queryString.length > trimSize) {
@@ -612,24 +602,28 @@ object CachedDataFrame
    *
    * Custom method to allow passing in cached SparkPlanInfo and queryExecution string.
    */
-  def withNewExecutionId[T](snappySession: SnappySession,
-      queryShortForm: String, queryLongForm: String, queryExecutionStr: String,
-      queryPlanInfo: SparkPlanInfo, currentExecutionId: Long = -1L,
-      planStartTime: Long = -1L, planEndTime: Long = -1L)(body: => T): (T, Long) = {
+  def withNewExecutionId[T](snappySession: SnappySession, queryShortForm: String,
+      queryLongForm: String, queryExecutionStr: String, queryPlanInfo: SparkPlanInfo,
+      currentExecutionId: Long = -1L, planStartTime: Long = -1L, planEndTime: Long = -1L,
+      postGUIPlans: Boolean = true)(body: => T): (T, Long) = {
     val sc = snappySession.sparkContext
-    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+    val localProperties = sc.getLocalProperties
+    val oldExecutionId = localProperties.getProperty(SQLExecution.EXECUTION_ID_KEY)
     if (oldExecutionId eq null) {
       // If the execution ID is set in the CDF that means the plan execution has already
       // been done. Use the same execution ID to link this execution to the previous one.
       val executionId = if (currentExecutionId >= 0) currentExecutionId
-      else nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
-      sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, executionId.toString)
+      else Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
+      val executionIdStr = java.lang.Long.toString(executionId)
+      localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
+      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
+      localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+
       val startTime = System.currentTimeMillis()
       var endTime = -1L
       try {
-        snappySession.sparkContext.listenerBus.post(SparkListenerSQLExecutionStart(
-          executionId, queryShortForm, queryLongForm, queryExecutionStr,
-          queryPlanInfo, startTime))
+        if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionStart(executionId,
+          queryShortForm, queryLongForm, queryExecutionStr, queryPlanInfo, startTime))
         val result = body
         endTime = System.currentTimeMillis()
         (result, endTime - startTime)
@@ -642,10 +636,11 @@ object CachedDataFrame
           endTime -= (startTime - planEndTime)
         }
         // add the time of plan execution to the end time.
-        snappySession.sparkContext.listenerBus.post(SparkListenerSQLExecutionEnd(
-          executionId, endTime))
+        if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
 
-        sc.setLocalProperty(SQLExecution.EXECUTION_ID_KEY, null)
+        localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
+        localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
+        localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
       }
     } else {
       // Don't support nested `withNewExecutionId`.
@@ -789,15 +784,15 @@ object CachedDataFrame
    * Wrap a Dataset action to track the QueryExecution and time cost,
    * then report to the user-registered callback functions.
    */
-  def withCallback[U](session: SparkSession, df: DataFrame, name: String)
-      (action: DataFrame => (U, Long)): U = {
+  def withCallback[U](session: SparkSession, df: DataFrame, queryExecution: QueryExecution,
+      name: String)(action: DataFrame => (U, Long)): U = {
     try {
       val (result, elapsed) = action(df)
-      session.listenerManager.onSuccess(name, df.queryExecution, elapsed)
+      session.listenerManager.onSuccess(name, queryExecution, elapsed)
       result
     } catch {
       case e: Exception =>
-        session.listenerManager.onFailure(name, df.queryExecution, e)
+        session.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
   }

@@ -2,7 +2,7 @@
 
 usage="Usage: replace-txt.sh < -d|--dir srcfolder > < -t|--text text > < -r|--replace replacement text > [ -e|--extension file_extension ]"
 
-file_extensions=(.scala .java .sh .gradle .h .cpp .py .xml .thrift .tmpl)
+file_extensions=(.scala .java .sh .gradle .h .cpp .py .xml .thrift .tmpl .properties)
 
 while [[ $# > 1 ]]
 do

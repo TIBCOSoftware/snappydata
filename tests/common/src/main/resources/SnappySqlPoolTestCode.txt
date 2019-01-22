@@ -23,7 +23,7 @@ io.snappydata.cluster.SplitClusterDUnitTest.testSparkShell and testSparkShellCur
 import java.math.BigDecimal
 import org.apache.spark.sql.Row
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils.toHexString
-import io.snappydata.implicits._
+import io.snappydata.sql.implicits._
 
 println("Querying row and column tables")
 
@@ -34,15 +34,16 @@ var password = "app"
 val hostPort = sparkConf.get("spark.snappydata.connection").split(":")
 val host = hostPort(0)
 val port = hostPort(1).toInt
-sparkConf.getOption("spark.snappydata.store.user") match {
+val PREFIXES = Array("spark.snappydata.store.", "spark.snappydata.")
+PREFIXES.find(p => sparkConf.contains(p + "user")) match {
   case None =>
-  case Some(user) =>
-    userName = user
-    password = sparkConf.get("spark.snappydata.store.password")
-    if (spark.sql(s"show databases like '$user'").collect().length == 0) {
-      spark.sql(s"create database if not exists $user")
+  case Some(prefix) =>
+    userName = sparkConf.get(prefix + "user")
+    password = sparkConf.get(prefix + "password")
+    if (spark.sql(s"show databases like '$userName'").collect().length == 0) {
+      spark.sql(s"create database if not exists $userName")
     }
-    spark.sql(s"use $user").collect()
+    spark.sql(s"use $userName").collect()
 }
 
 // test a mix of explicit user/password/host/port and nothing (where all are auto-resolved from SparkConf)

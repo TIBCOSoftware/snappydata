@@ -16,7 +16,7 @@
  */
 
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -69,20 +69,6 @@ class SnappyCatalogSuite extends SnappyFunSuite
     } finally {
       // super.afterEach()
     }
-  }
-
-  after {
-    try {
-      snappySession.catalog.listDatabases().filter("name != 'SYS'").collect().foreach(db =>
-        snappySession.catalog.listTables(db.name).collect().foreach(
-          table => dropTable(table.name, Option(table.database))
-        )
-      )
-    } finally {
-    }
-  }
-
-  override def afterAll(): Unit = {
   }
 
   private val utils = new CatalogTestUtils {
@@ -226,14 +212,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
     createFunction("my_func2")
     createTempFunction("my_temp_func")
     val funcNames1 = snappySession.catalog.listFunctions().collect().map(_.name).toSet
-    assert(funcNames1.contains("APP.my_func1"))
-    assert(funcNames1.contains("APP.my_func2"))
+    assert(funcNames1.contains("my_func1"))
+    assert(funcNames1.contains("my_func2"))
     assert(funcNames1.contains("my_temp_func"))
     dropFunction("my_func1")
     dropTempFunction("my_temp_func")
     val funcNames2 = snappySession.catalog.listFunctions().collect().map(_.name).toSet
-    assert(!funcNames2.contains("APP.my_func1"))
-    assert(funcNames2.contains("APP.my_func2"))
+    assert(!funcNames2.contains("my_func1"))
+    assert(funcNames2.contains("my_func2"))
     assert(!funcNames2.contains("my_temp_func"))
   }
 
@@ -247,29 +233,29 @@ class SnappyCatalogSuite extends SnappyFunSuite
     createTempFunction("my_temp_func")
     val funcNames1 = snappySession.catalog.listFunctions("my_db1").collect().map(_.name).toSet
     val funcNames2 = snappySession.catalog.listFunctions("my_db2").collect().map(_.name).toSet
-    assert(funcNames1.contains("MY_DB1.my_func1"))
-    assert(!funcNames1.contains("MY_DB2.my_func2"))
+    assert(funcNames1.contains("my_func1"))
+    assert(!funcNames1.contains("my_func2"))
     assert(funcNames1.contains("my_temp_func"))
-    assert(!funcNames2.contains("MY_DB1.my_func1"))
-    assert(funcNames2.contains("MY_DB2.my_func2"))
+    assert(!funcNames2.contains("my_func1"))
+    assert(funcNames2.contains("my_func2"))
     assert(funcNames2.contains("my_temp_func"))
 
     // Make sure database is set properly.
     assert(
       snappySession.catalog.listFunctions("my_db1").collect()
-          .map(_.database).toSet == Set(null))
+          .map(_.database).toSet == Set("MY_DB1", null))
     assert(
       snappySession.catalog.listFunctions("my_db2").collect()
-          .map(_.database).toSet == Set(null))
+          .map(_.database).toSet == Set("MY_DB2", null))
 
     // Remove the function and make sure they no longer appear.
     dropFunction("my_func1", Some("my_db1"))
     dropTempFunction("my_temp_func")
     val funcNames1b = snappySession.catalog.listFunctions("my_db1").collect().map(_.name).toSet
     val funcNames2b = snappySession.catalog.listFunctions("my_db2").collect().map(_.name).toSet
-    assert(!funcNames1b.contains("MY_DB1.my_func1"))
+    assert(!funcNames1b.contains("my_func1"))
     assert(!funcNames1b.contains("my_temp_func"))
-    assert(funcNames2b.contains("MY_DB2.my_func2"))
+    assert(funcNames2b.contains("my_func2"))
     assert(!funcNames2b.contains("my_temp_func"))
     val e = intercept[AnalysisException] {
       snappySession.catalog.listFunctions("unknown_db")
@@ -429,15 +415,13 @@ abstract class CatalogTestUtils {
           StructField("col2", StringType),
           StructField("a", IntegerType),
           StructField("b", StringType))),
+      provider = Some("column"),
       partitionColumnNames = Seq("a", "b"),
-      bucketSpec = Some(BucketSpec(8, Seq("col1"), Nil)),
-      // Pass the properties so that the hack applied in SnappyExternalCatalog.createTable
-      // takes affect
-      properties = Map("spark.sql.sources.provider" -> "column"))
+      bucketSpec = Some(BucketSpec(8, Seq("col1"), Nil)))
   }
 
   def newFunc(name: String, database: Option[String] = None): CatalogFunction = {
-    CatalogFunction(FunctionIdentifier(name, database), funcClass, Seq.empty[FunctionResource])
+    CatalogFunction(FunctionIdentifier(name, database), funcClass, Nil)
   }
 
   /**

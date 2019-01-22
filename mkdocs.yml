@@ -1,4 +1,4 @@
-site_name: SnappyData Documentation<br/><sub>v.1.0.2</sub>
+site_name: SnappyData Documentation<br/><sub>v.1.0.2.1</sub>
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -13,7 +13,6 @@ pages:
 # - Introduction: snappyIntroduction.md
 - 'Getting Started in 5 minutes or Less': 'quickstart.md'
 - 'Getting Started in 5 minutes or Less': 
-#    - 'SnappyData Quick Start': 'quickstart/snappydataquick_start.md'
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'Getting Started with SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
@@ -21,6 +20,7 @@ pages:
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
+    - 'SnappyData Cluster SQL Tutorials': 'quickstart/snappydataquick_start.md'
 - 'Provisioning SnappyData': 'install.md'
 - 'Provisioning SnappyData':
     - 'System Requirements': 'install/system_requirements.md'
@@ -54,6 +54,8 @@ pages:
     - 'How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)': 'howto/load_data_from_external_data_stores.md'
     - 'How to Perform a Colocated Join': 'howto/perform_a_colocated_join.md'
     - 'How to Connect using JDBC Driver': 'howto/connect_using_jdbc_driver.md'
+    - 'How to use SnappyData for any Spark Distribution': 'howto/using_snappydata_for_any_spark_dist.md'
+    - 'How to Store and Retrieve Complex Data Types in JDBC Programs': 'howto/store_retrieve_complex_datatypes_JDBC.md'
     - 'How to Store and Query JSON Objects': 'howto/store_and_query_json_objects.md'
     - 'How to Store and Query Objects': 'howto/store_and_query_objects.md'
     - 'How to use Stream Processing with SnappyData': 'howto/use_stream_processing_with_snappydata.md'
@@ -63,7 +65,8 @@ pages:
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
     - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
-    - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'    
+    - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'   
+    - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
 - 'Architecture': 'architecture.md'
@@ -88,6 +91,7 @@ pages:
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
+    - 'Accessing SnappyData Tables from any Spark (2.1+) Cluster': 'programming_guide/spark_jdbc_connector.md'
     - 'Multiple Language Binding using Thrift Protocol': 'programming_guide/multiple_language_binding_using_thrift_protocol.md'
     - 'Building SnappyData Applications using Spark API': 'programming_guide/building_snappydata_applications_using_spark_api.md'
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
@@ -268,16 +272,16 @@ pages:
 #        - 'shutdown': 'reference/configuration_parameters/shutdown.md'
         - 'skip-constraint-checks': 'reference/configuration_parameters/skip-constraint-checks.md'
 #        - 'skip-listeners': 'reference/configuration_parameters/skip-listeners.md'
-#        - 'skip-locks': 'reference/configuration_parameters/skip-locks.md'
-#        - 'socket-buffer-size': 'reference/configuration_parameters/socket-buffer-size.md'
-#        - 'socket-lease-time': 'reference/configuration_parameters/socket-lease-time.md'
-#        - 'snappydata.datadictionary.allow-startup-errors': 'reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md'
-#        - 'snappydata.default-startup-recovery-delay': 'reference/configuration_parameters/snappydata.default-startup-recovery-delay.md'
-#        - 'snappy.history': 'reference/configuration_parameters/snappy.history.md'
-#        - 'snappydata.max-lock-wait': 'reference/configuration_parameters/snappydata.max-lock-wait.md'
+        - 'skip-locks': 'reference/configuration_parameters/skip-locks.md'
+        - 'socket-buffer-size': 'reference/configuration_parameters/socket-buffer-size.md'
+        - 'socket-lease-time': 'reference/configuration_parameters/socket-lease-time.md'
+        - 'gemfirexd.datadictionary.allow-startup-errors': 'reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md'
+        - 'gemfirexd.default-startup-recovery-delay': 'reference/configuration_parameters/snappydata.default-startup-recovery-delay.md'
+        - 'snappy.history': 'reference/configuration_parameters/snappy.history.md'
+        - 'gemfirexd.max-lock-wait': 'reference/configuration_parameters/snappydata.max-lock-wait.md'
 #        - 'gemfirexd.properties': 'reference/configuration_parameters/gemfirexd.properties.md'
-#        - 'snappydata.query-cancellation-interval': 'reference/configuration_parameters/snappydata.query-cancellation-interval.md'
-#        - 'snappydata.query-timeout': 'reference/configuration_parameters/snappydata.query-timeout.md'
+        - 'gemfirexd.query-cancellation-interval': 'reference/configuration_parameters/snappydata.query-cancellation-interval.md'
+        - 'gemfirexd.query-timeout': 'reference/configuration_parameters/snappydata.query-timeout.md'
 #        - 'snappydata.storage.tempDirectory': 'reference/configuration_parameters/snappydata.storage.tempDirectory.md'
 #        - 'snappydata.system.home': 'reference/configuration_parameters/snappydata.system.home.md'
         - 'ssl': 'reference/configuration_parameters/ssl.md'
@@ -289,10 +293,11 @@ pages:
         - 'sys-disk-dir': 'reference/configuration_parameters/sys-disk-dir.md'
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
-    - 'API Documentation': 'apidocsintro.md'
+    - 'API Reference': 'apidocsintro.md'
+    - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
 #    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
-    - 'Setting Up SnappyData ODBC Driver and Tableau Desktop': 'setting_up_odbc_driver-tableau_desktop.md'
+    - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
@@ -311,6 +316,7 @@ pages:
 - 'Release Notes': 'release_notes/release_notes.md'
 - 'Release Notes': 
     - 'Known Issues': 'release_notes/known_issues.md'
+- Doc Archives: prev_doc_ver.md
 - Contact and Support: techsupport.md
 - License: LICENSE.md
 

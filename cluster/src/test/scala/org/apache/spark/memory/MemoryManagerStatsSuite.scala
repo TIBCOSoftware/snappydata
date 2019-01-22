@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2016 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -28,28 +28,28 @@ class MemoryManagerStatsSuite extends MemoryFunSuite {
 
   test("Test heap stats") {
     val offHeap = false
-    val sparkSession = createSparkSession(1, 0.5, 2000)
+    val sparkSession = createSparkSession(1, 0.5)
     new SnappySession(sparkSession.sparkContext)
 
     val memoryManager = SparkEnv.get.memoryManager
         .asInstanceOf[SnappyUnifiedMemoryManager]
     val stats = memoryManager.wrapperStats
-    assert(stats.getMaxStorageSize(offHeap) == 1800)
-    assert(stats.getStoragePoolSize(offHeap) >= 1000)
+    assert(stats.getMaxStorageSize(offHeap) == 450000)
+    assert(stats.getStoragePoolSize(offHeap) >= 200000)
     val blockId = MemoryManagerCallback.storageBlockId
-    assert(!SparkEnv.get.memoryManager.acquireStorageMemory(blockId, 1000L, MemoryMode.ON_HEAP))
+    assert(!SparkEnv.get.memoryManager.acquireStorageMemory(blockId, 500000L, MemoryMode.ON_HEAP))
     // Some other heap allocation from Snappy layer might have failed
     assert(stats.getNumFailedStorageRequest(offHeap) >= 1)
-    assert(stats.getExecutionPoolSize(offHeap) == (2000 - stats.getStoragePoolSize(offHeap)))
+    assert(stats.getExecutionPoolSize(offHeap) == (500000 - stats.getStoragePoolSize(offHeap)))
     memoryManager.dropAllObjects(MemoryMode.ON_HEAP)
     assert(stats.getStorageMemoryUsed(offHeap) == 0)
 
 
     val taskAttemptId = 0L
-    // artificially acquire memory
+    // artificially acquire memory more memory than available
     val numBytes =
-      SparkEnv.get.memoryManager.acquireExecutionMemory(1000L, taskAttemptId, MemoryMode.ON_HEAP)
-    assert(stats.getStoragePoolSize(offHeap) == 1000)
+      SparkEnv.get.memoryManager.acquireExecutionMemory(500000L, taskAttemptId, MemoryMode.ON_HEAP)
+    assert(stats.getStoragePoolSize(offHeap) == 250000)
     // Only can evict till original storage fraction
     assert(stats.getExecutionPoolSize(offHeap) == numBytes)
   }
@@ -63,12 +63,12 @@ class MemoryManagerStatsSuite extends MemoryFunSuite {
         .config(io.snappydata.Property.ColumnBatchSize.name, 500)
         .config("spark.memory.fraction", 1)
         .config("spark.memory.storageFraction", 0.5)
-        .config("spark.testing.memory", 2000)
+        .config("spark.testing.memory", 500000)
         .config("spark.testing.reservedMemory", "0")
         .config("snappydata.store.critical-heap-percentage", "90")
         .config("spark.testing.maxStorageFraction", "0.9")
         .config("spark.memory.manager", "org.apache.spark.memory.SnappyUnifiedMemoryManager")
-        .config("spark.storage.unrollMemoryThreshold", 500)
+        .config("spark.storage.unrollMemoryThreshold", 50000)
         .config("snappydata.store.memory-size", 200000)
         .getOrCreate
 
@@ -80,8 +80,8 @@ class MemoryManagerStatsSuite extends MemoryFunSuite {
     assert(stats.getMaxStorageSize(offHeap) == 190000) // 95%
     assert(stats.getStoragePoolSize(offHeap) >= 100000)
     val blockId = MemoryManagerCallback.storageBlockId
-    assert(!SparkEnv.get.memoryManager.acquireStorageMemory(blockId, 1000L, MemoryMode.ON_HEAP))
-    assert(stats.getNumFailedStorageRequest(offHeap) == 1)
+    assert(!SparkEnv.get.memoryManager.acquireStorageMemory(blockId, 500000L, MemoryMode.ON_HEAP))
+    assert(stats.getNumFailedStorageRequest(offHeap) >= 1)
     assert(stats.getExecutionPoolSize(offHeap) == (200000 - stats.getStoragePoolSize(offHeap)))
     memoryManager.dropAllObjects(MemoryMode.OFF_HEAP)
     assert(stats.getStorageMemoryUsed(offHeap) == 0)

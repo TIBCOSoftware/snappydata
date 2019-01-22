@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -94,6 +94,40 @@ object SnappyTestUtils {
     return tempDir.getAbsolutePath
   }
 
+  /*
+ In case of round-off, there is a difference of .1 in snappy and spark results. We can ignore
+ such differences
+ */
+  def isIgnorable(actualRow: String, expectedRow: String): Boolean = {
+    var isIgnorable = false
+    if (actualRow != null && actualRow.size > 0 && expectedRow != null && expectedRow.size > 0) {
+      val actualArray = actualRow.split(",")
+      val expectedArray = expectedRow.split(",")
+      var diff: Double = 0.0
+      if (actualArray.length == expectedArray.length) {
+        for (i <- 0 until actualArray.length) {
+          val value1: String = actualArray(i)
+          val value2: String = expectedArray(i)
+          if (!value1.equals(value2)) {
+            try {
+              val val1: Double = value1.toDouble
+              val val2: Double = value2.toDouble
+              if (val1 > val2) diff = val1.-(val2).doubleValue
+              else diff = val2.-(val1).doubleValue
+              diff = "%18.2f".format(diff).trim().toDouble
+              // scalastyle:off println
+              println("diff is " + diff)
+              if (diff <= 0.1) isIgnorable = true
+            } catch {
+              case nfe: NumberFormatException => return false
+            }
+          }
+        }
+      }
+    }
+    isIgnorable
+  }
+
   def assertQueryFullResultSet(snc: SnappyContext, sqlString: String, queryNum: String,
       tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
     assertQueryFullResultSet(snc, sqlString, queryNum, tableType, pw, sqlContext, true)
@@ -140,10 +174,12 @@ object SnappyTestUtils {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
-        pw.println(s"\n** For ${queryNum} result mismatch observed**")
-        pw.println(s"\nExpected Result:\n $expectedLine")
-        pw.println(s"\nActual Result:\n $actualLine")
-        pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
+        if (!isIgnorable(actualLine, expectedLine)) {
+          pw.println(s"\n** For ${queryNum} result mismatch observed**")
+          pw.println(s"\nExpected Result:\n $expectedLine")
+          pw.println(s"\nActual Result:\n $actualLine")
+          pw.println(s"\nQuery =" + sqlString + " Table Type : " + tableType)
+        }
         /* assert(assertion = false, s"\n** For $queryNum result mismatch observed** \n" +
             s"Expected Result \n: $expectedLine \n" +
             s"Actual Result   \n: $actualLine \n" +

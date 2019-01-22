@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -652,7 +652,10 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     // create and populate the tables for the pool driver test
     logInfo(s"About to invoke spark-shell with command: $sparkShellCommand")
 
-    var output = sparkShellCommand.!!
+    val allOutput = new StringBuilder
+    val processLog = ProcessLogger(l => allOutput.append(l), l => allOutput.append(l))
+    sparkShellCommand ! processLog
+    var output = allOutput.toString()
     logInfo(output)
     output = output.replaceAll("NoSuchObjectException", "NoSuchObject")
     output = output.replaceAll("java.lang.ClassNotFoundException: " +
@@ -698,6 +701,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     val hostName = InetAddress.getLocalHost.getHostName
     val sparkShellCommand = s"$sparkProductDir/bin/spark-shell --master spark://$hostName:7077" +
         " --conf spark.snappydata.connection=localhost:" + locatorClientPort +
+        " --conf spark.sql.catalogImplementation=in-memory" +
         s" --jars $snappyDataCoreJar" +
         securityConf +
         s" -i $scriptFile -i $scriptFile2"
@@ -738,9 +742,9 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
         "snappydata-jdbc_*.jar")
       var securityConf = ""
       if (props.containsKey(Attribute.USERNAME_ATTR)) {
-        securityConf = s" --conf spark.snappydata.store.user=" +
+        securityConf = s" --conf spark.snappydata.user=" +
             props.getProperty(Attribute.USERNAME_ATTR) +
-            s" --conf spark.snappydata.store.password=${props.getProperty(Attribute.PASSWORD_ATTR)}"
+            s" --conf spark.snappydata.password=${props.getProperty(Attribute.PASSWORD_ATTR)}"
       }
       val snappyJdbcJar = jars.iterator().next().toAbsolutePath.toString
       // SnappySqlPoolTestCode.txt file contains the commands executed on spark-shell
@@ -748,8 +752,8 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
       val hostName = InetAddress.getLocalHost.getHostName
       val sparkShellCommand = s"$sparkCurrentProductDir/bin/spark-shell " +
           s"--master spark://$hostName:7077 --conf spark.snappydata.connection=localhost:" +
-          locatorClientPort + s" --jars $snappyJdbcJar" + securityConf +
-          s" -i $scriptFile"
+          locatorClientPort + " --conf spark.sql.catalogImplementation=in-memory" +
+          s" --jars $snappyJdbcJar" + securityConf + s" -i $scriptFile"
 
       val conn = getConnection(locatorClientPort, props)
       val stmt = conn.createStatement()

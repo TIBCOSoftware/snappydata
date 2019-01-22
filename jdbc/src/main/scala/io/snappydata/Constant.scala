@@ -34,8 +34,6 @@ object Constant {
 
   val SNAPPY_URL_PREFIX = "snappydata://"
 
-  val JDBC_URL_PREFIX = "snappydata://"
-
   val JDBC_EMBEDDED_DRIVER = "io.snappydata.jdbc.EmbeddedDriver"
 
   val JDBC_CLIENT_DRIVER = "io.snappydata.jdbc.ClientDriver"
@@ -44,16 +42,13 @@ object Constant {
 
   val PROPERTY_PREFIX = "snappydata."
 
-  val STORE_PROPERTY_PREFIX = SystemProperties.SNAPPY_PREFIX
+  val STORE_PROPERTY_PREFIX: String = SystemProperties.SNAPPY_PREFIX
 
   val SPARK_PREFIX = "spark."
 
   val SPARK_SNAPPY_PREFIX: String = SPARK_PREFIX + PROPERTY_PREFIX
 
   val SPARK_STORE_PREFIX: String = SPARK_PREFIX + STORE_PROPERTY_PREFIX
-
-  val SPLIT_VIEW_TEXT_PROPERTY = "snappydata.view.text"
-  val SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY = "snappydata.view.originalText"
 
   val JOBSERVER_PROPERTY_PREFIX = "jobserver."
 
@@ -79,6 +74,9 @@ object Constant {
 
   // Interval in ms  to run the SnappyAnalyticsService
   val DEFAULT_CALC_TABLE_SIZE_SERVICE_INTERVAL: Long = 5000
+
+  /** Special property to trigger authentication by SnappyConf. */
+  val TRIGGER_AUTHENTICATION = "snappydata.auth.trigger"
 
   // Internal Column table store schema
   final val SHADOW_SCHEMA_NAME = SystemProperties.SHADOW_SCHEMA_NAME
@@ -135,7 +133,7 @@ object Constant {
   // speed and compression ratio having higher compression ration than LZ4.
   // But the JNI version means no warmup time which helps for short jobs.
   // Also LZF has no direct ByteBuffer API so is quite a bit slower for off-heap.
-  val DEFAULT_CODEC = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
+  val DEFAULT_CODEC: String = SystemProperties.SNAPPY_DEFAULT_COMPRESSION_CODEC
 
   // System property to tell the system whether the String type columns
   // should be considered as clob or not in JDBC/ODBC SQL queries

@@ -9,7 +9,7 @@ An online backup saves the following:
 - A restore script (restore.sh) copies the files back to their original locations.
 
 !!! Note
-	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
+	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of the live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
 	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
 - [Guidelines](#guidelines)
@@ -124,8 +124,19 @@ The following disk stores were backed up:
 Backup successful.
 ```
 
-If the operation does not succeed, a message is displayed indicating that the backup was incomplete, and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. </br>
+If the operation does not succeed, a message is displayed indicating that the backup was incomplete and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. 
 Offline members leave nothing, so you only have this message from the backup operation itself. Although offline members cannot back up their disk stores, a complete backup can be obtained if at least one copy of the data is available in a running member.
+
+If the cluster is secure, you also need to specify all the security properties as command-line arguments to the backup command. The security properties you need to provide are the same as those mentioned in the configuration files in the **conf** directory (locators, servers or leads) when the cluster is launched.
+The only difference is that any valid user can run this command. That is, the user does not have to be a snappydata cluster administrator to run the backup command.
+
+For example:
+
+```
+./bin/snappy backup   /snappydata_backup_location/   -locators=locatorhostname:10334  -auth-provider=LDAP  -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:389/  -user=<username>  -password=<password>  -gemfirexd.auth-ldap-search-base=<search-base-values>  -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
+
+```
+Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is [how you can encrypt the password](https://snappydatainc.github.io/snappydata/security/specify_encrypt_passwords_conf_client/#using-encrypted-password-in-client-connections)
 
 <a id="incremental-backup"></a>
 ## Performing an Incremental backup
@@ -187,7 +198,7 @@ You can also do this manually:
 
 1.  Restore your disk stores when your members are offline and the system is down.
 
-2.  Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
+2.  Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts do not copy over files with the same names.
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 

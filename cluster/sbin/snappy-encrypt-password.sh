@@ -6,6 +6,8 @@ function absPath() {
 
 sbin="$(dirname "$(absPath "$0")")"
 
+. "$sbin/common.funcs"
+
 if [ -z "$1" ]; then
   echo "At least one user name must be provided"
   echo "Usage: `basename $0` <user1> <user2> ..."
@@ -15,7 +17,8 @@ fi
 trap "stty echo; exit $?" EXIT
 
 # get the plain-text passwords for all specified users
-declare -A userPasswords
+declare -a users
+declare -a passwords
 for user in "$@"; do
   while /bin/true; do
     echo -n "Enter password for $user: "
@@ -35,7 +38,9 @@ for user in "$@"; do
       break
     fi
   done
-  userPasswords["${user}"]="${passwd1}"
+  userIndex=$(keyPutIndex "$user" "${users[@]}")
+  users[$userIndex]="$user"
+  passwords[$userIndex]="$passwd1"
 done
 
 # get locator host:port
@@ -58,9 +63,10 @@ rm -f "${tmpOut}"
 user=
 passwd=
 callStr=
-for u in ${!userPasswords[@]}; do
-  user="$u"
-  passwd="${userPasswords[$u]}"
+
+for index in ${!users[@]}; do
+  user="${users[$index]}"
+  passwd="${passwords[$index]}"
   callStr="${callStr} call sys.encrypt_password('$user', '$passwd', 'AES', 0);"
 done
 

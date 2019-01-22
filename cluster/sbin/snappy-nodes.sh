@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -38,6 +38,7 @@ function absPath() {
 }
 sbin="$(dirname "$(absPath "$0")")"
 
+. "$sbin/common.funcs"
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
@@ -290,7 +291,8 @@ function execute() {
 
 index=1
 isServerStart=
-declare -A leadCountArr
+declare -a leadHosts
+declare -a leadCounts
 if [ "$componentType" = "server" -a -n "$(echo $"${@// /\\ }" | grep -w start)" ]; then
   isServerStart=1
 fi
@@ -301,56 +303,68 @@ if [ -n "$LEADHOSTLIST" -a -n "$isServerStart" ]; then
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
     args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
-    leadCount=${leadCountArr["$host"]}
+    leadIndex=$(keyIndex "$host" "${leadHosts[@]}")
+    leadPutIndex="$leadIndex"
+    if [ -z "$leadPutIndex" ]; then
+      leadPutIndex=${#leadCounts[@]}
+    fi
+    leadHosts[$leadPutIndex]="$host"
     # marker for the case when lead heap/memory has been configured explicitly
     # in which case server side auto-configuration will also be skipped
     if echo $args $"${@// /\\ }" | grep -q "heap-size=\|memory-size="; then
-      leadCountArr["$host"]=-1
-    elif [ -z "$leadCount" ]; then
-      leadCountArr["$host"]=1
-    elif [ $leadCount -ge 0 ]; then
-      ((leadCountArr["$host"]++))
+      leadCounts[$leadPutIndex]=-1
+    elif [ -z "$leadIndex" ]; then
+      leadCounts[$leadPutIndex]=1
+    else
+      ((leadCounts[$leadPutIndex]++))
     fi
   done < "$LEADHOSTLIST"
 fi
 
-function getNumLeadsOnNode() {
+function getNumLeadsOnHost() {
   host="$1"
-  numLeadsOnNode=
-  if [ ${#leadCountArr[@]} -gt 0 ]; then
-    numLeadsOnNode=${leadCountArr["$host"]}
+  numLeadsOnHost=
+  if [ ${#leadCounts[@]} -gt 0 ]; then
+    leadIndex=$(keyIndex "$host" "${leadHosts[@]}")
+    if [ -n "$leadIndex" ]; then
+      numLeadsOnHost="${leadCounts[$leadIndex]}"
+    fi
   elif [ "$host" = "localhost" ]; then
-    numLeadsOnNode=1
+    numLeadsOnHost=1
   fi
-  if [ -z "$numLeadsOnNode" ]; then
-    numLeadsOnNode=0
+  if [ -z "$numLeadsOnHost" ]; then
+    numLeadsOnHost=0
   fi
-  echo $numLeadsOnNode
+  echo $numLeadsOnHost
 }
 
 if [ -n "${HOSTLIST}" ]; then
   declare -a arr
-  declare -A countArr
+  declare -a hosts
+  declare -a counts
   isStartOrStatus=
 
   while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
-    arr+=("${slave}")
+    arr[${#arr[@]}]="$slave"
     if [ -n "$isServerStart" ]; then
       host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
-      if [ -z "${countArr["$host"]}" ]; then
-        countArr["$host"]=1
+      hostIndex=$(keyIndex "$host" "${hosts[@]}")
+      if [ -z "$hostIndex" ]; then
+        hostIndex=${#hosts[@]}
+        counts[$hostIndex]=1
       else
-        ((countArr["$host"]++))
+        ((counts[$hostIndex]++))
       fi
+      hosts[$hostIndex]="$host"
     fi
   done < "$HOSTLIST"
 
-
   numSlaves=${#arr[@]}
   if [ $numSlaves -eq 0 ]; then
-    arr+=(localhost)
-    countArr[localhost]=1
+    arr[0]=localhost
+    hosts[0]=localhost
+    counts[0]=1
     numSlaves=1
   fi
 
@@ -363,11 +377,12 @@ if [ -n "${HOSTLIST}" ]; then
       args="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f2-)"
       # disable implicit off-heap for nodes having multiple servers configured
       if [ -n "$isServerStart" ]; then
-        if [ ${countArr["$host"]} -gt 1 -a -z "$(echo $args $"${@// /\\ }" | grep 'memory-size=')" ]; then
+        hostIndex=$(keyIndex "$host" "${hosts[@]}")
+        if [ -n "$hostIndex" -a ${counts[$hostIndex]} -gt 1 -a -z "$(echo $args $"${@// /\\ }" | grep 'memory-size=')" ]; then
           args="$args -memory-size=0"
         fi
         # check number of leads on the same node
-        args="$args -J-Dsnappydata.numLeadsOnNode=$(getNumLeadsOnNode "$host")"
+        args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
       fi
       execute "$@"
     fi
@@ -391,7 +406,7 @@ else
   host="localhost"
   args=""
   if [ -n "$isServerStart" ]; then
-    args="$args -J-Dsnappydata.numLeadsOnNode=$(getNumLeadsOnNode "$host")"
+    args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
   fi
   execute "$@"
 fi

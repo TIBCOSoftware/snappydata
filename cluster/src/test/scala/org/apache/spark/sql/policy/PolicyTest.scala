@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -475,7 +475,7 @@ class PolicyTest extends PolicyTestBase {
 
   // return true if a policy exists for a table else false
   private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
-    val policies = Misc.getMemStore.getExternalCatalog.getPolicies(true)
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies()
     val it = policies.listIterator()
     while (it.hasNext) {
       val p = it.next()

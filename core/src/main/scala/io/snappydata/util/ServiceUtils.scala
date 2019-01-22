@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,9 +27,11 @@ import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig.ENABL
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.{Constant, Property, ServerManager}
+import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProviderService}
 
-import org.apache.spark.SparkContext
+import org.apache.spark.memory.MemoryMode
+import org.apache.spark.sql.{SnappyContext, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.sql.collection.Utils
 
 /**
@@ -138,12 +140,28 @@ object ServiceUtils {
           org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
         }).mkString(",")
 
-    "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
+    Constant.DEFAULT_THIN_CLIENT_URL + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")
   }
 
   def clearStaticArtifacts(): Unit = {
+  }
+
+  def isOffHeapStorageAvailable(sparkSession: SparkSession): Boolean = {
+    SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+      case _: ThinClientConnectorMode =>
+        SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
+      case _ =>
+        try {
+          SnappyTableStatsProviderService.getService.getMembersStatsFromService.
+              values.forall(member => !member.isDataServer ||
+              (member.getOffHeapMemorySize > 0))
+        }
+        catch {
+          case _: Throwable => false
+        }
+    }
   }
 }

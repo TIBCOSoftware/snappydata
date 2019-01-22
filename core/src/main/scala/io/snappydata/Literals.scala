@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -29,6 +29,7 @@ object StreamingConstants {
   val STREAM_QUERY_ID = "streamqueryid"
   val SINK_CALLBACK = "sinkcallback"
   val CONFLATION = "conflation"
+  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
 
   object EventType {
     val INSERT = 0
@@ -108,6 +109,11 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
         "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
 
+  val HiveCompatible: SQLValue[Boolean] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
+        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
+    Some(false), prefix = null)
+
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +
         "created in embedded HiveServer2 will be a hive session else a SnappySession",
@@ -123,6 +129,10 @@ object Property extends Enumeration {
 
   val PlanCacheSize: SparkValue[Int] = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
     s"Number of query plans that will be cached.", Some(3000))
+
+  val CatalogCacheSize: SparkValue[Int] = Val[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.catalogCacheSize",
+    s"Number of catalog tables whose meta-data will be cached.", Some(2000))
 
   val ColumnBatchSize: SQLValue[String] = SQLVal[String](
     s"${Constant.PROPERTY_PREFIX}column.batchSize",

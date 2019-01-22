@@ -23,6 +23,7 @@ val spark: SparkSession = SparkSession
     .getOrCreate
 
 val snSession = new SnappySession(spark.sparkContext)
+import org.apache.spark.sql.types._
 ```
 
 **Create the Table using API**:

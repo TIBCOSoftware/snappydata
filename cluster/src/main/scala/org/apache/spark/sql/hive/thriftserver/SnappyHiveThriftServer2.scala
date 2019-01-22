@@ -17,10 +17,17 @@
 
 package org.apache.spark.sql.hive.thriftserver
 
+import java.net.InetAddress
+
+import org.apache.hadoop.hive.ql.metadata.Hive
+import org.apache.hive.service.cli.thrift.ThriftCLIService
+import org.apache.log4j.{Level, LogManager}
+
 import org.apache.spark.Logging
-import org.apache.spark.sql.hive.HiveUtils
+import org.apache.spark.sql.hive.client.HiveClientImpl
 import org.apache.spark.sql.hive.thriftserver.HiveThriftServer2.HiveThriftServer2Listener
 import org.apache.spark.sql.hive.thriftserver.ui.ThriftServerTab
+import org.apache.spark.sql.hive.{HiveUtils, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
 
 /**
@@ -43,20 +50,74 @@ object SnappyHiveThriftServer2 extends Logging {
     SparkSQLEnv.sparkContext = sc
     sparkSession.conf.set("spark.sql.hive.version", HiveUtils.hiveExecutionVersion)
 
-    // executionHive is used only to get the Hive configuration. If it is to be used
-    // for actual querying in future, then SnappySharedState.metadataHive() should be used.
-    // Latter is not used here because it ignores any hive settings required for HiveServer2.
-    val executionHive = HiveUtils.newClientForExecution(conf,
-      sparkSession.sessionState.newHadoopConf())
+    // New executionHive is used to get the HiveServer2 configuration. When SnappySession
+    // is being used then only the hive server2 settings are copied from it while the
+    // full conf used is from the internal hive client from SnappySharedState.
+
+    // avoid meta-store init warnings
+    val rootLogger = LogManager.getRootLogger
+    val metaLogger = LogManager.getLogger("org.apache.hadoop.hive.metastore.MetaStoreDirectSql")
+    val currentRootLevel = rootLogger.getLevel
+    val currentMetaLevel = metaLogger.getLevel
+    rootLogger.setLevel(Level.ERROR)
+    metaLogger.setLevel(Level.ERROR)
+    val externalCatalog = SnappyHiveExternalCatalog.getExistingInstance
+    val hiveConf = try {
+      val executionHive = HiveUtils.newClientForExecution(conf,
+        sparkSession.sessionState.newHadoopConf())
+      val serverConf = executionHive.conf
+      // close the temporary hive client if present
+      val hiveClient = executionHive.clientLoader.cachedHive
+      if (hiveClient != null) {
+        Hive.set(hiveClient.asInstanceOf[Hive])
+        Hive.closeCurrent()
+        executionHive.clientLoader.cachedHive = null
+      }
+      if (useHiveSession) serverConf
+      else {
+        // use internal hive conf adding hive.server2 configurations
+        val conf = externalCatalog.client().asInstanceOf[HiveClientImpl].conf
+        val itr = serverConf.iterator()
+        while (itr.hasNext) {
+          val entry = itr.next()
+          if (entry.getKey.startsWith("hive.server2")) {
+            conf.set(entry.getKey, entry.getValue)
+          }
+        }
+        conf
+      }
+    } finally {
+      rootLogger.setLevel(currentRootLevel)
+      metaLogger.setLevel(currentMetaLevel)
+    }
 
     val server = new HiveThriftServer2(SparkSQLEnv.sqlContext)
-    server.init(executionHive.conf)
-    server.start()
-    logInfo("Started HiveServer2")
-    HiveThriftServer2.listener = new HiveThriftServer2Listener(
-      server, SparkSQLEnv.sqlContext.conf)
-    sc.addSparkListener(HiveThriftServer2.listener)
+    externalCatalog.withHiveExceptionHandling({
+      server.init(hiveConf)
+      server.start()
+      getHostPort(server) match {
+        case None => logInfo("Started HiveServer2")
+        case Some((host, port)) => logInfo(s"Started HiveServer2 on $host[$port]")
+      }
+      HiveThriftServer2.listener = new HiveThriftServer2Listener(
+        server, SparkSQLEnv.sqlContext.conf)
+      sc.addSparkListener(HiveThriftServer2.listener)
+    }, handleDisconnects = false)
     server
+  }
+
+  def getHostPort(server: HiveThriftServer2): Option[(InetAddress, Int)] = {
+    val itr = server.getServices.iterator()
+    while (itr.hasNext) {
+      itr.next() match {
+        case service: ThriftCLIService =>
+          val address = service.getServerIPAddress
+          val port = service.getPortNumber
+          return Some(address -> port)
+        case _ =>
+      }
+    }
+    None
   }
 
   def attachUI(): Unit = {

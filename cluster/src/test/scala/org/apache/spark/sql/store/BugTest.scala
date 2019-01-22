@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,7 +17,7 @@
 package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
-import java.sql.DriverManager
+import java.sql.{DriverManager, SQLException}
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
@@ -336,10 +336,9 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("big view") {
-    snc
-    var serverHostPort2 = TestUtil.startNetServer()
-    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
-    var stmt = conn.createStatement()
+    val snc = this.snc
+    val serverHostPort2 = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
     val session = this.snc.snappySession
 
     // check temporary view with USING and its meta-data
@@ -363,8 +362,28 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
     val viewname = "AIRLINEBOGUSVIEW"
+
+    // check catalog cache is cleared for VIEWs
+    val cstmt = conn.prepareCall(s"call SYS.GET_COLUMN_TABLE_SCHEMA(?, ?, ?)")
+    cstmt.setString(1, "APP")
+    cstmt.setString(2, viewname)
+    cstmt.registerOutParameter(3, java.sql.Types.CLOB)
+    try {
+      cstmt.execute()
+      assert(cstmt.getString(3) === "")
+      fail("expected to fail")
+    } catch {
+      case se: SQLException if se.getSQLState == "XIE0M" =>
+    }
+
     // create view
     session.sql(viewSql)
+
+    // meta-data lookup should not fail now
+    cstmt.execute()
+    assert(cstmt.getString(3).contains(
+      "CASE WHEN (YEARI > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+
     // query on view
     session.sql(s"select count(*) from $viewname").collect()
     // check column names
@@ -403,4 +422,58 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     conn.close()
     TestUtil.stopNetServer()
   }
+
+  test("Bug SNAP-2758 . view containing aggregate function & join throws error") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    snappy.sql("drop table if exists test1")
+    snappy.sql("create table test1 (col1_1 int, col1_2 int, col1_3 int, col1_4 string) " +
+        "using column ")
+
+    snappy.sql("create table test2 (col2_1 int, col2_2 int,  col2_3 int, col2_5 string) " +
+        "using column ")
+
+    snappy.sql(" CREATE OR REPLACE VIEW v1 as select col2_1, col2_2, " +
+        "col2_5 as longtext from test2 where col2_3 > 10")
+
+    val q1 = "select a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4 = '' THEN '#' ELSE a.col1_4 END functionalAreaCode," +
+        "b.longtext as name, " +
+        " sum(a.col1_3)" +
+        "from test1 a left outer join v1 as b on a.col1_1 = b.col2_1" +
+        " group by a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4  = '' THEN '#' ELSE a.col1_4  END," +
+        " b.longtext "
+    snappy.sql(q1)
+    snappy.sql(s" CREATE OR REPLACE VIEW v3 as $q1")
+
+    val q = "select a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4 = '' THEN '#' ELSE a.col1_4 END functionalAreaCode," +
+        "'#' as fsid,  " +
+        "b.longtext as name, " +
+        " sum(a.col1_3)" +
+        "from test1 a left outer join v1 as b on a.col1_1 = b.col2_1" +
+        " group by a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4  = '' THEN '#' ELSE a.col1_4  END," +
+        " '#'," +
+        " b.longtext "
+    snappy.sql(q)
+    snappy.sql(s" CREATE OR REPLACE VIEW v2 as $q")
+    snappy.sql("select count(*) from v2").collect()
+
+    stmt.execute("drop view v3")
+    stmt.execute("drop view v2")
+    stmt.execute("drop view v1")
+    snc.sql("drop table if exists test1")
+    snc.sql("drop table if exists test2")
+
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+
 }
