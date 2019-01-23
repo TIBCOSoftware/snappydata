@@ -117,31 +117,43 @@ object ComplexTypeUtils {
 
   /* -----                     ArrayOfStruct Type                   ----- */
   /* -----         Snappy ArrayOfStruct Type Queries         ----- */
-  val ArraysOfStruct_Q1 = "SELECT * FROM TwoWheeler"
-  val ArraysOfStruct_Q2 = "SELECT brand FROM TwoWheeler " +
+  val ArraysOfStruct_Q1 : String = "SELECT * FROM TwoWheeler"
+  val ArraysOfStruct_Q2 : String = "SELECT brand FROM TwoWheeler " +
     "WHERE BikeInfo[0].type = 'Scooter'"
-  val ArraysOfStruct_Q3 = "SELECT brand,BikeInfo[0].cc FROM TwoWheeler " +
+  val ArraysOfStruct_Q3 : String = "SELECT brand,BikeInfo[0].cc FROM TwoWheeler " +
     "WHERE BikeInfo[0].cc >= 149.0 ORDER BY BikeInfo[0].cc DESC"
-  val ArraysOfStruct_Q4 = "SELECT brand,COUNT(BikeInfo[0].type) FROM TwoWheeler " +
+  val ArraysOfStruct_Q4 : String = "SELECT brand,COUNT(BikeInfo[0].type) FROM TwoWheeler " +
     "WHERE BikeInfo[0].type = 'Cruiser' GROUP BY brand"
-  val ArraysOfStruct_Q5 = "SELECT brand, BikeInfo[0].type AS Style, " +
+  val ArraysOfStruct_Q5 : String = "SELECT brand, BikeInfo[0].type AS Style, " +
     "BikeInfo[0].instock AS Available " +
     "FROM TwoWheeler"
 
   /* -----                     AllMixed Type                   ----- */
   /* -----         Snappy AllMixed Type Queries         ----- */
-  val Mixed_Q1 = "SELECT * FROM TwentyTwenty ORDER BY name"
-  val Mixed_Q2 = "SELECT name, " +
+  val Mixed_Q1 : String = "SELECT * FROM TwentyTwenty ORDER BY name"
+  val Mixed_Q2 : String = "SELECT name, " +
     "SUM(LastThreeMatchPerformance[0] + LastThreeMatchPerformance[1] + " +
     "LastThreeMatchPerformance[2]) AS RunsScored " +
     "FROM TwentyTwenty GROUP BY name"
-  val Mixed_Q3 = "SELECT name, LastThreeMatchPerformance[2] AS RunsScoredinLastMatch, " +
+  val Mixed_Q3 : String = "SELECT name, LastThreeMatchPerformance[2] AS RunsScoredinLastMatch, " +
     "Profile.Matches,Profile.SR,Profile.Runs " +
     "FROM TwentyTwenty WHERE Profile.Runs >= 1000 ORDER BY Profile.Runs DESC"
-  val Mixed_Q4 = "SELECT COUNT(*) AS AllRounder FROM " +
+  val Mixed_Q4 : String = "SELECT COUNT(*) AS AllRounder FROM " +
     "TwentyTwenty WHERE Roll['2'] = 'AllRounder'"
-  val Mixed_Q5 = "SELECT name, Profile.SR,Profile.Runs " +
+  val Mixed_Q5 : String = "SELECT name, Profile.SR,Profile.Runs " +
     "FROM TwentyTwenty ORDER BY Profile.SR DESC"
+
+  /* -----                     ArraysOfStringInMapAsValue                   ----- */
+  /* -----         Snappy ArraysOfStringInMapAsValue Type Queries         ----- */
+  val Array_Map_TempView : String = "CREATE TEMPORARY VIEW FamousPeopleView AS " +
+  "SELECT country, explode(celebrities) FROM FamousPeople"
+  val Array_Map_Q1 : String = "SELECT * FROM FamousPeopleView"
+  val Array_Map_Q2 : String = "SELECT country, value[0],value[1],value[2],value[3],value[4]," +
+    " value[5],value[6],value[7],value[8],value[9],value[10],value[11]," +
+    "value[12],value[13],value[14],value[15] "  +
+    "FROM FamousPeopleView WHERE key = 'Prime Ministers'"
+  val Array_Map_Q3 : String = "SELECT country, value FROM FamousPeopleView WHERE key = 'Authors'"
+
 
 
 }
