@@ -97,10 +97,10 @@ It is recommended to set swap space on your system using the following commands:
 sudo sh -c "fallocate -l 32G /var/swapfile && chmod 0600 /var/swapfile && mkswap /var/swapfile && swapon /var/swapfile"
 ## fallocate is recommended since it is much faster, although not supported by some filesystems such as ext3 and zfs.
 ## In case fallocate is not available, use dd:
-sudo dd if=/dev/zero of=/var/swapfile.1 bs=1M count=32768
+sudo dd if=/dev/zero of=/var/swapfile bs=1M count=32768
 sudo chmod 600 /var/swapfile.1
-sudo mkswap /var/swapfile.1
-sudo swapon /var/swapfile.1
+sudo mkswap /var/swapfile
+sudo swapon /var/swapfile
 ```
 
 <a id="smartconnector-local-settings"></a>

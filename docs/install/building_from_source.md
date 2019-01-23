@@ -102,7 +102,7 @@ The usual Gradle test run targets (_test_, _check_) work as expected for JUnit t
 
 ```pre
 > ./gradlew snappy-core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
-> ./gradlew snappy-core:scalaTest ;
+> ./gradlew snappy-core:scalaTest \
 >    --tests "Test the creation/dropping of table using SQL"  # run a single test (use full name)
 ```
 Running individual tests within some suite works using the `--tests` argument.
