@@ -106,6 +106,8 @@ object Constant {
 
   val LOW_LATENCY_POOL: String = "lowlatency"
 
+  val STREAMING_POOL: String = "streaming"
+
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"

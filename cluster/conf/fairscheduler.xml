@@ -27,4 +27,8 @@
     <weight>2</weight>
     <minShare>2</minShare>
   </pool>
+  <pool name="streaming">
+    <schedulingMode>FAIR</schedulingMode>
+    <weight>1</weight>
+  </pool>
 </allocations>
