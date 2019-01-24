@@ -155,6 +155,7 @@ class SnappySinkProviderDUnitTest(s: String)
 object SnappySinkProviderDUnitTest extends Logging {
 
   private val tableName = "APP.USERS"
+  private val stateTable = "APP.SINK_STATE_TABLE"
   private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderDUnitTest"
   private val streamQueryId = s"USERS"
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
@@ -204,7 +205,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       kafkaTestUtils.sendMessages(testId, dataBatch1.map(r => r.mkString(",")).toArray)
 
       val streamingQuery: StreamingQuery = createAndStartStreamingQuery(testId)
-      snc.sql(s"select * from ${StreamingConstants.SINK_STATE_TABLE}").show()
+      snc.sql(s"select * from $stateTable").show()
       waitTillTheBatchIsPickedForProcessing(0, testId)
 
       val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
@@ -315,6 +316,7 @@ object SnappySinkProviderDUnitTest extends Logging {
         .queryName(testId)
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", tableName)
+        .option("stateTable", stateTable)
         .option("streamQueryId", testId)
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
@@ -345,7 +347,7 @@ object SnappySinkProviderDUnitTest extends Logging {
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sql = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
+    val sql = s"select batch_id from $stateTable " +
         s"where stream_query_id = '$testId'"
     val batchIdFromTable = snc.sql(sql).collect()
 
@@ -388,5 +390,4 @@ object SnappySinkProviderDUnitTest extends Logging {
       df.write.insertInto(tableName)
     }
   }
-
 }

@@ -23,11 +23,11 @@ import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
 object StreamingConstants {
   val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = s"SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
   val SNAPPY_SINK_NAME = "snappysink"
   val TABLE_NAME = "tablename"
   val STREAM_QUERY_ID = "streamqueryid"
   val SINK_CALLBACK = "sinkcallback"
+  val STATE_TABLE = "stateTable"
   val CONFLATION = "conflation"
   val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
 

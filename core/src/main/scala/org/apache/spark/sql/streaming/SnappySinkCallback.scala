@@ -66,7 +66,9 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       parameters: Map[String, String],
       partitionColumns: Seq[String],
       outputMode: OutputMode): Sink = {
-    createSinkStateTableIfNotExist(sqlContext)
+    val stateTable = parameters.getOrElse(STATE_TABLE,
+      throw new IllegalStateException("'stateTable' is a mandatory option."))
+    createSinkStateTableIfNotExist(sqlContext, stateTable)
     val cc = try {
       Utils.classForName(parameters(SINK_CALLBACK)).newInstance()
     } catch {
@@ -77,9 +79,9 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       cc.asInstanceOf[SnappySinkCallback])
   }
 
-  private def createSinkStateTableIfNotExist(sqlContext: SQLContext) = {
+  private def createSinkStateTableIfNotExist(sqlContext: SQLContext, stateTable: String) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
-        s" $SINK_STATE_TABLE (" +
+        s" $stateTable (" +
         " stream_query_id varchar(200)," +
         " batch_id long, " +
         " PRIMARY KEY (stream_query_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
@@ -96,7 +98,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
 
-    val updated = snappySession.sql(s"update $SINK_STATE_TABLE " +
+    val updated = snappySession.sql(s"update ${parameters(STATE_TABLE)} " +
         s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
         .collect()(0).getAs("count").asInstanceOf[Long]
 
@@ -105,7 +107,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
 
     if (updated == 0) {
       try {
-        snappySession.insert(SINK_STATE_TABLE, Row(streamQueryId, batchId))
+        snappySession.insert(parameters(STATE_TABLE), Row(streamQueryId, batchId))
         posDup = false
       }
       catch {

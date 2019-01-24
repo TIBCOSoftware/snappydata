@@ -40,6 +40,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
   private val testIdGenerator = new AtomicInteger(0)
   private val tableName = "APP.USERS"
+  private val sinkTable = "APP.SINK_STATE_TABLE"
   private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderSuite"
 
   private def getTopic(id: Int) = s"topic-$id"
@@ -354,7 +355,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sqlString = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
+    val sqlString = s"select batch_id from $sinkTable " +
         s"where stream_query_id = '${streamQueryId(testId)}'"
     val batchIdFromTable = snc.sql(sqlString).collect()
 
@@ -412,6 +413,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     implicit val encoder = RowEncoder(schema)
 
+
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
         .map(_.split(","))
@@ -428,6 +430,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", tableName)
         .option("streamQueryId", streamQueryId(testId))
+        .option("stateTable", sinkTable)
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()
