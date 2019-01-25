@@ -22,7 +22,7 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 The example below demonstrates how you can read CSV files from HDFS using an API:
 
 ```pre
-val dataDF=snc.read.option("header","true").csv ("../../quickstart/src/main/resources/customer_with_headers.csv")
+val dataDF=snc.read.option("header","true").csv ("hdfs://namenode-uri:port/path/to/customer_with_headers.csv")
 
 // Drop table if it exists
 snc.sql("drop table if exists CUSTOMER")
@@ -36,7 +36,7 @@ dataDF.write.format("column").saveAsTable("CUSTOMER")
 The example below demonstrates how you can load and enrich CSV Data from HDFS:
 ```pre
 val dataDF = snappy.read.option("header", "true")
-    .csv("../examples/src/main/resources/customer_with_headers.csv")
+    .csv("hdfs://namenode-uri:port/path/to/customers.csv")
 
 // Drop table if it exists and create it with only required fields
 snappy.sql("drop table if exists CUSTOMER")
