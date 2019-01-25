@@ -501,7 +501,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     val params = Array.fill(numCols)('?').mkString(",")
     val insertStr = s"insert into test1 values (${params})"
     val ps = conn.prepareStatement(insertStr)
-    for (i <- 0 until 5000) {
+    for (i <- 0 until 1000) {
       for (j <- 1 until numCols + 1) {
         ps.setString(j, j.toString)
       }
@@ -522,6 +522,19 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
           assert(r.getString(1).toInt == numCols -i + 1)
         } )
     }
+
+    for(i <- 1 until numCols + 1) {
+      val projSeq = for (j <- 1 until i + 1) yield {
+        s"col${j}"
+      }
+      val projectionStr = projSeq.mkString(",")
+
+      snappy.sql(s"select $projectionStr from test1 limit 10").collect().foreach(r =>
+        for (j <- 1 until i + 1 ) {
+          assert(r.getString(j -1).toInt == j)
+        })
+    }
+
 
     snappy.sql("select col126 from test2").collect()
     snappy.sql("select col128 from test2").collect()
