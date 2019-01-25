@@ -19,9 +19,14 @@ package org.apache.spark.sql.store
 import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
 
+import scala.tools.nsc.interpreter
+import scala.tools.nsc.interpreter.session
+
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.sql.SnappySession
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -467,6 +472,64 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     stmt.execute("drop view v3")
     stmt.execute("drop view v2")
     stmt.execute("drop view v1")
+    snc.sql("drop table if exists test1")
+    snc.sql("drop table if exists test2")
+
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+  test("Bug SNAP-2890") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    val numCols = 132
+    snappy.conf.set(Property.ColumnBatchSize.name, "256")
+    snappy.sql("drop table if exists test1")
+    val sb = new StringBuilder
+    for(i <- 1 until numCols + 1) {
+      sb.append(s"col$i string,")
+    }
+    sb.deleteCharAt(sb.length -1)
+
+    snappy.sql(s"create table test1 (${sb.toString()}) " +
+      "using column ")
+
+    val params = Array.fill(numCols)('?').mkString(",")
+    val insertStr = s"insert into test1 values (${params})"
+    val ps = conn.prepareStatement(insertStr)
+    for (i <- 0 until 5000) {
+      for (j <- 1 until numCols + 1) {
+        ps.setString(j, j.toString)
+      }
+      ps.executeUpdate()
+    }
+
+    snappy.sql(s"create table test2 using column as ( select * from test1)")
+
+    for(i <- 1 until numCols + 1) {
+      snappy.sql(s"select col${i} from test1").collect().foreach(r =>
+        assert(r.getString(0).toInt == i) )
+    }
+
+    for(i <- 1 until (numCols + 1)/2) {
+      snappy.sql(s"select col${i}, col${numCols - i + 1} from test1").collect().foreach(r =>
+        {
+          assert(r.getString(0).toInt == i)
+          assert(r.getString(1).toInt == numCols -i + 1)
+        } )
+    }
+
+    snappy.sql("select col126 from test2").collect()
+    snappy.sql("select col128 from test2").collect()
+    snappy.sql("select col127 from test2").collect()
+    snappy.sql("select col130 from test2").collect()
+    snappy.sql("select col129 from test2").collect()
+
+
     snc.sql("drop table if exists test1")
     snc.sql("drop table if exists test2")
 
