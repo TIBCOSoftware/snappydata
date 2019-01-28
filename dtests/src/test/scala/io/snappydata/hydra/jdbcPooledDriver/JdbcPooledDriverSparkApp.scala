@@ -25,9 +25,11 @@ object JdbcPooledDriverSparkApp {
 
   def main(args: Array[String]) {
     // scalastyle:off println
-    System.out.println("SP:Inside JdbcPooledDriverSparkApp");
+    System.out.println("SP:Inside JdbcPooledDriverSparkApp")
+    val connectionURL = args(args.length - 1)
+    System.out.println("The connection url is " + connectionURL)
     Thread.sleep(60000L)
-    val conf = new SparkConf()// .setAppName("JdbcPooledDriverSparkApp").setMaster("local[2]")
+    val conf = new SparkConf()
     val sc = new SparkContext(conf)
     val sparkSession = SparkSession.builder.config(sc.getConf).getOrCreate()
     val pw = new PrintWriter(new FileOutputStream(new File("JdbcPooledDriverSparkApp.out"),
@@ -36,10 +38,9 @@ object JdbcPooledDriverSparkApp {
     val props = new java.util.Properties
     props.setProperty("pool-driverClassName", DRIVER_NAME)
     props.setProperty("driver", DRIVER_NAME)
-    val url = "jdbc:snappydata:pool://localhost:1527"
+    val url = "jdbc:snappydata:pool://" + connectionURL
     val tableDF = sparkSession.sqlContext.read.jdbc(url, "employees", props)
     tableDF.show()
     pw.close()
   }
-
 }

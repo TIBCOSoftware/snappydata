@@ -278,7 +278,8 @@ public class SnappyTest implements Serializable {
   public String getScriptLocation(String scriptName) {
     String scriptPath = null;
     boolean isStackSpark = SnappyPooledConnectionPrms.getIsStackSpark();
-    if (isStackSpark && (scriptName.equals("start-all.sh") || scriptName.equals("spark-submit.sh") )) {
+    if (isStackSpark && (scriptName.equals("start-all.sh") || scriptName.equals("spark-submit") )) {
+      Log.getLogWriter().info("SP; StockSpark parameter is set to true");
       if (scriptName.equals("start-all.sh")) {
         Log.getLogWriter().info("SP: Inside isStackSPark true start-all.sh");
         String stackSparkDir = SnappySecurityPrms.getDataLocation();
@@ -286,7 +287,7 @@ public class SnappyTest implements Serializable {
         scriptPath = stackSparkDir + sep + "sbin" + sep + scriptName;
         Log.getLogWriter().info("SP:stockSpark script name is " + scriptPath);
       }
-      if (scriptName.equals("spark-submit.sh")) {
+      if (scriptName.equals("spark-submit")) {
         Log.getLogWriter().info("SP: Inside isStackSPark true with spark-submit.sh");
         String stackSparkDir = SnappySecurityPrms.getDataLocation();
         if (new File(scriptName).exists()) return scriptName;
@@ -2333,6 +2334,7 @@ public class SnappyTest implements Serializable {
 
   public void executeSparkJob(Vector jobClassNames, String logFileName) {
     String snappyJobScript = getScriptLocation("spark-submit");
+    Log.getLogWriter().info("SP:The sparkJobScript is " + snappyJobScript);
     boolean isCDCStream = SnappyCDCPrms.getIsCDCStream();
     ProcessBuilder pb = null;
     File log = null, logFile = null;
