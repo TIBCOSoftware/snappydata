@@ -24,12 +24,12 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.thrift._
 import javax.annotation.concurrent.GuardedBy
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, Statistics}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.SharedUtils
-import org.apache.spark.sql.execution.columnar.{SharedExternalStoreUtils, TableNotFoundException}
+import org.apache.spark.sql.execution.columnar.SharedExternalStoreUtils
+import org.apache.spark.sql.{SparkSession, TableNotFoundException}
 import org.apache.spark.{Logging, Partition, SparkEnv}
 
 import scala.collection.JavaConverters._
@@ -286,6 +286,7 @@ object ConnectorExternalCatalog extends Logging {
 
   private def loadFromCache(name: (String, String),
       catalog: ConnectorExternalCatalog): (CatalogTable, Option[RelationInfo]) = {
+    Thread.dumpStack()
     cachedCatalogTables.getIfPresent(name) match {
       case null => synchronized {
         cachedCatalogTables.getIfPresent(name) match {

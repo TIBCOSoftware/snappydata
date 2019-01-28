@@ -16,7 +16,9 @@
  */
 package org.apache.spark.examples.snappydata
 
-import org.apache.spark.sql.{SnappySession, SparkSession}
+import java.util.{Properties, Random}
+
+import org.apache.spark.sql.{SaveMode, SnappySession, SparkSession}
 
 /**
  * This example shows how an application can interact with SnappyStore in Split cluster mode.
@@ -70,10 +72,40 @@ object SmartConnectorExample {
       builder.config(params(0), params(1))
     })
 
-    val spark: SparkSession = builder
-        .getOrCreate
+    builder.config("spark.snappydata.connection", "localhost:1527" )
+
+    val spark: SparkSession = builder.getOrCreate
+
+    val random = Math.abs(new Random().nextInt())
+
+    // scalastyle:off
+    println("Random Name "+random)
+
+    val prop = Map("user"->"debian-sys-maint", "password"->"8hQgx9JeFX7lfqAk",
+      "url"-> "jdbc:mysql://localhost:3306/inventory", "dbtable" -> "STAGING_AIRLINEREF")
+
+    val properties = new Properties()
+    properties.put("user", "debian-sys-maint")
+    properties.put("password", "8hQgx9JeFX7lfqAk")
+    properties.put( "url", "jdbc:mysql://localhost:3306/inventory")
+    properties.put("dbtable", "STAGING_AIRLINEREF")
+
     val snSession = new SnappySession(spark.sparkContext)
 
+    // val dataset = snSession.sql("select * from AIRLINEREF" )
+
+    val dataset = snSession.read.parquet("/home/pradeep/trunk/snappydata/examples/quickstart/data/airportcodeParquetData")
+
+    //    val dataset = spark.read.parquet("/home/pradeep/" +
+//      "trunk/snappydata/examples/quickstart/data/airlineParquetData")
+
+    dataset.write.format("jdbc").options(prop).saveAsTable("STAGING_AIRLINEREF" )
+
+    // dataset.write.jdbc("jdbc:mysql://localhost:3306/inventory", "AIRLINEREF", properties)
+
+    /* val snSession = new SnappySession(spark.sparkContext)
+
+    // scalastyle:off
     println("\n\n ####  Reading from the SnappyStore table SNAPPY_COL_TABLE  ####  \n")
     val colTable = snSession.table("SNAPPY_COL_TABLE")
     colTable.show(10)
@@ -88,7 +120,9 @@ object SmartConnectorExample {
 
     snSession.sql("create table TestColumnTable (id bigint not null, k bigint not null) using column")
 
-    dataFrame.write.insertInto("TestColumnTable")
+    dataFrame.write.insertInto("TestColumnTable") */
+
+    // scalastyle:off
 
     println(" ####  Write to table completed. ### \n\n" +
         "Now you can query table TestColumnTable using $SNAPPY_HOME/bin/snappy-shell")
