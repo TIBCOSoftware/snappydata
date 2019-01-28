@@ -1,6 +1,6 @@
 # CREATE TABLE
 
-**To Create Row/Column Table:**
+Following is the syntax used to create a Row/Column table:
 
 ```pre
 CREATE TABLE [IF NOT EXISTS] table_name 
@@ -9,8 +9,9 @@ CREATE TABLE [IF NOT EXISTS] table_name
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     PARTITION_BY 'column-name', // If not specified, replicated table for row tables, and partitioned internally for column tables.
-    BUCKETS  'num-partitions', // Default 8. Must be an integer.
-    REDUNDANCY        'num-of-copies' , // Must be an integer
+    BUCKETS  'num-partitions', // Default 128. Must be an integer.
+    COMPRESSION 'NONE', //By default COMPRESSION is 'ON'.The default compression scheme is 'lz4' 
+    REDUNDANCY       'num-of-copies' , // Must be an integer. '1' is recommended value. Maximum limit is '3'
     EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
@@ -23,7 +24,15 @@ CREATE TABLE [IF NOT EXISTS] table_name
 	[AS select_statement];
 ```
 
-Refer to these sections for more information on [Creating Sample Table](create-sample-table.md), [Creating External Table](create-external-table.md), [Creating Temporary Table](create-temporary-table.md), [Creating Stream Table](create-stream-table.md).
+Refer to the following sections for:
+
+*	[Creating Sample Table](create-sample-table.md)
+*	[Creating External Table](create-external-table.md)
+*	[Creating Temporary Table](create-temporary-table.md)
+*	[Creating Stream Table](create-stream-table.md).
+
+
+## Column Definition
 
 The column definition defines the name of a column and its data type.
 
@@ -49,10 +58,11 @@ column-definition-for-row-table: column-name column-data-type [ column-constrain
     [ column-constraint ] *
 ```
 
-Refer to the [identity](#id-columns) section for more information on GENERATED.</br>
-Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
+*	Refer to the [identity](#id-columns) section for more information on GENERATED.</br>
+*	Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
 
 `column-data-type`
+The following data types are supported for column tables:
 
 ```pre
 column-data-type: 
@@ -80,11 +90,33 @@ column-data-type:
 	VARCHAR |
 ```
 
-Column tables can also use ARRAY, MAP and STRUCT types.</br>
-Decimal and numeric has default precision of 38 and scale of 18.</br>
-In this release, LONG is supported only for column tables. It is recommended to use BIGINT for row tables instead.
+Column tables can also use **ARRAY**, **MAP** and **STRUCT** types.
 
-If no option is specified, default values are provided. 
+Decimal and numeric has default precision of 38 and scale of 18.
+
+## Using
+
+You can specify, if you want to create a row table or a column table. If this is not specified, a row table is created by default. 
+
+## Options
+
+You can specify the following options when you create a table:
+
++	[COLOCATE_WITH](#colocate-with)
++	[PARTITION_BY](#partition-by)
++	[BUCKETS](#buckets)
++	[COMPRESSION](#compress)
++	[REDUNDANCY](#redundancy)
++	[EVICTION_BY](#eviction-by)
++	[PERSISTENCE](#persistence)
++	[DISKSTORE](#diskstore)
++	[OVERFLOW](#overflow)
++	[EXPIRE](#expire)
++	[COLUMN_BATCH_SIZE](#column-batch-size)
++	[COLUMN_MAX_DELTA_ROWS](#column-max-delta-rows)
+
+!!!Note
+	If options are not specified, then the default values are used to create the table.
 
 <a id="ddl"></a>
 <a id="colocate-with"></a>
@@ -102,9 +134,17 @@ Column and row tables support hash partitioning on one or more columns. These ar
 The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of 5 nodes and bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers hosts all the data for this table. If not specified, the number of buckets defaults to 128. See [best practices](../../best_practices/optimizing_query_latency.md#partition-scheme) for more information. 
 For row tables, `BUCKETS` must be created with the `PARTITION_BY` clause, else an error is reported.
 
+<a id="compress"></a>
+`COMPRESSION`</br>
+Column tables use compression of data by default. This reduces the total storage footprint for large tables. SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. By default COMPRESSION is on for column tables. The default compression scheme is **lz4**. To disable data compression, you can set the COMPRESSION option to `none` when you create a table. For example:
+```
+CREATE TABLE AIRLINE USING column OPTIONS(compression 'none')  AS (select * from STAGING_AIRLINE);
+```
+See [best practices](../../best_practicesmemory_management/#estimating-memory-size-for-column-and-row-tables) for more information.
+
 <a id="redundancy"></a>
 `REDUNDANCY`</br>
-Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero). See [best practices](../../best_practices/optimizing_query_latency.md#redundancy) for more information.
+Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero). A REDUNDANCY value of '1' is recommended. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage. A maximum limit of '3' can be set for REDUNDANCY. See [best practices](../../best_practices/optimizing_query_latency.md#redundancy) for more information.
 
 <a id="eviction-by"></a>
 `EVICTION_BY`</br>
