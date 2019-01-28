@@ -286,7 +286,6 @@ object ConnectorExternalCatalog extends Logging {
 
   private def loadFromCache(name: (String, String),
       catalog: ConnectorExternalCatalog): (CatalogTable, Option[RelationInfo]) = {
-    Thread.dumpStack()
     cachedCatalogTables.getIfPresent(name) match {
       case null => synchronized {
         cachedCatalogTables.getIfPresent(name) match {
