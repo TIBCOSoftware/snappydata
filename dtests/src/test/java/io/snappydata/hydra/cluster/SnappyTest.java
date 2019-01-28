@@ -39,6 +39,8 @@ import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.connectionPool.HikariConnectionPool;
 import io.snappydata.hydra.connectionPool.SnappyConnectionPoolPrms;
 import io.snappydata.hydra.connectionPool.TomcatConnectionPool;
+import io.snappydata.hydra.jdbcPooledDriver.SnappyPooledConnectionPrms;
+import io.snappydata.hydra.security.SnappySecurityPrms;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -275,20 +277,38 @@ public class SnappyTest implements Serializable {
 
   public String getScriptLocation(String scriptName) {
     String scriptPath = null;
-    if (new File(scriptName).exists()) return scriptName;
-    scriptPath = productSbinDir + scriptName;
-    if (!new File(scriptPath).exists()) {
-      scriptPath = productBinDir + scriptName;
-      if (new File(scriptPath).exists()) return scriptPath;
-      else
-        scriptPath = getUserAppJarLocation(scriptName, dtestsScriptLocation);
-      if (new File(scriptPath).exists()) return scriptPath;
-      else
-        scriptPath = quickstartScriptLocation + scriptName;
-      if (new File(scriptPath).exists()) return scriptPath;
-      else {
-        String s = "Unable to find the script at any expected location.";
-        throw new TestException(s);
+    boolean isStackSpark = SnappyPooledConnectionPrms.getIsStackSpark();
+    if (isStackSpark && (scriptName.equals("start-all.sh") || scriptName.equals("spark-submit.sh") )) {
+      if (scriptName.equals("start-all.sh")) {
+        Log.getLogWriter().info("SP: Inside isStackSPark true start-all.sh");
+        String stackSparkDir = SnappySecurityPrms.getDataLocation();
+        if (new File(scriptName).exists()) return scriptName;
+        scriptPath = stackSparkDir + sep + "sbin" + sep + scriptName;
+        Log.getLogWriter().info("SP:stockSpark script name is " + scriptPath);
+      }
+      if (scriptName.equals("spark-submit.sh")) {
+        Log.getLogWriter().info("SP: Inside isStackSPark true with spark-submit.sh");
+        String stackSparkDir = SnappySecurityPrms.getDataLocation();
+        if (new File(scriptName).exists()) return scriptName;
+        scriptPath = stackSparkDir + sep + "bin" + sep + scriptName;
+        Log.getLogWriter().info("SP:stockSpark script name is " + scriptPath);
+      }
+    } else {
+      if (new File(scriptName).exists()) return scriptName;
+      scriptPath = productSbinDir + scriptName;
+      if (!new File(scriptPath).exists()) {
+        scriptPath = productBinDir + scriptName;
+        if (new File(scriptPath).exists()) return scriptPath;
+        else
+          scriptPath = getUserAppJarLocation(scriptName, dtestsScriptLocation);
+        if (new File(scriptPath).exists()) return scriptPath;
+        else
+          scriptPath = quickstartScriptLocation + scriptName;
+        if (new File(scriptPath).exists()) return scriptPath;
+        else {
+          String s = "Unable to find the script at any expected location.";
+          throw new TestException(s);
+        }
       }
     }
     return scriptPath;
@@ -640,7 +660,15 @@ public class SnappyTest implements Serializable {
   }
 
   protected void writeConfigData(String fileName, String logDir) {
-    String filePath = productConfDirPath + fileName;
+    boolean isStockSpark=SnappyPooledConnectionPrms.getIsStackSpark();
+    String filePath = null;
+    if(isStockSpark && fileName.equals("spark-env.sh")) {
+      Log.getLogWriter().info("SP:Inside isStockSpark writeConfigData");
+      String stockSparkDir = SnappySecurityPrms.getDataLocation();
+      filePath = stockSparkDir + "conf" + sep + fileName;
+    }
+    else
+      filePath = productConfDirPath + fileName;
     File file = new File(filePath);
     if (fileName.equalsIgnoreCase("spark-env.sh")) file.setExecutable(true);
     Set<String> fileContent = new LinkedHashSet<String>();
@@ -694,7 +722,16 @@ public class SnappyTest implements Serializable {
   }
 
   protected void writeWorkerConfigData(String fileName, String logDir) {
-    String filePath = productConfDirPath + fileName;
+    boolean isStockSpark=SnappyPooledConnectionPrms.getIsStackSpark();
+    String filePath = null;
+    if(isStockSpark) {
+      Log.getLogWriter().info("SP:Inside isStockSpark writeWorkerConfigData");
+      String stockSparkDir = SnappySecurityPrms.getDataLocation();
+      filePath = stockSparkDir + "conf" + sep + fileName;
+      Log.getLogWriter().info("SP: The filePath is " + filePath);
+    }
+    else
+      filePath = productConfDirPath + fileName;
     File file = new File(filePath);
     ArrayList<String> fileContent = new ArrayList<>();
     fileContent = snappyTest.getWorkerFileContents(logDir, fileContent);
@@ -2300,6 +2337,7 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb = null;
     File log = null, logFile = null;
     userAppJar = SnappyPrms.getUserAppJar();
+    boolean isStockSpark=SnappyPooledConnectionPrms.getIsStackSpark();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
@@ -2310,9 +2348,14 @@ public class SnappyTest implements Serializable {
         String primaryLocatorHost = getPrimaryLocatorHost();
         String primaryLocatorPort = getPrimaryLocatorPort();
         String userAppArgs = SnappyPrms.getUserAppArgs();
-        String commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
-            " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " +
-            " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort;
+        String commonArgs = null;
+        if(isStockSpark)
+           commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+               " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
+        else
+           commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+             " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " +
+             " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort;
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + logFileName;
         logFile = new File(dest);

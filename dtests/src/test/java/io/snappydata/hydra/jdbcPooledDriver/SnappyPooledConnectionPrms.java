@@ -26,13 +26,20 @@ public class SnappyPooledConnectionPrms extends SnappyPrms {
 
   public static Long isPooledConnection;
 
+  public static Long isStockSpark;
+
   public static boolean getIsPooledConnection() {
     Long key = isPooledConnection;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
 
+  public static boolean getIsStackSpark() {
+    Long key = isStockSpark;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
   static {
-    SnappyPrms.setValues(io.snappydata.hydra.security.SnappySecurityPrms.class);
+    SnappyPrms.setValues(io.snappydata.hydra.jdbcPooledDriver.SnappyPooledConnectionPrms.class);
   }
 
   public static void main(String args[]) {
