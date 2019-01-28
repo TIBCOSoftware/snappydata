@@ -1124,16 +1124,21 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    (INSERT ~ INTO ~ push(false) | PUT ~ INTO ~ push(true)) ~ tableIdentifier ~
-        ANY.* ~> ((putInto: Any, r: TableIdentifier) =>
-      if (putInto.asInstanceOf[Boolean]) {
-        checkTableType(r)
-        DMLExternalTable(r,
-          UnresolvedRelation(r), input.sliceString(0, input.length))
-      } else {
-        DMLExternalTable(r,
-          UnresolvedRelation(r), input.sliceString(0, input.length))
-      })
+    INSERT ~ INTO ~ tableIdentifier ~ ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
+      UnresolvedRelation(r), input.sliceString(0, input.length)))
+  }
+
+  protected def putValuesOperation: Rule1[LogicalPlan] = rule {
+    PUT ~ INTO ~ tableIdentifier ~ ('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
+        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws ~>
+        ((r: TableIdentifier, identifiers: Any, valueExpr: Any)
+        => {
+          val colNames = identifiers.asInstanceOf[Option[String]]
+          val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
+          checkTableType(r, colNames, valueExpr1.head)
+          DMLExternalTable(r,
+            UnresolvedRelation(r), input.sliceString(0, input.length))
+        })
   }
 
   // It can be the following patterns:
@@ -1225,8 +1230,8 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
-            deployPackages | explain))
+        (DISABLE_TOKENIZE ~ (dmlOperation | putValuesOperation | ddl | show | set | reset | cache |
+            uncache | deployPackages | explain))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],
@@ -1260,12 +1265,39 @@ class SnappyParser(session: SnappySession)
 
   def newInstance(): SnappyParser = new SnappyParser(session)
 
-  def checkTableType(identifier: TableIdentifier) {
-    val snc = session.asInstanceOf[SnappySession]
+  def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
+    case BinaryType => value.toCharArray().map(ch => ch.toByte)
+    case ByteType => value.toByte
+    case BooleanType => value.toBoolean
+    case DoubleType => value.toDouble
+    case FloatType => value.toFloat
+    case ShortType => value.toShort
+    case DateType => value
+    case IntegerType => value.toInt
+    case LongType => value.toLong
+    case _ => value
+  }
+
+  def checkTableType(identifier: TableIdentifier, colNames: Option[String],
+      values: Seq[Expression]) {
+    val snc = new SnappySession(session.sparkContext)
+    val sc = session.sparkContext
     val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
       snc.getCurrentSchema, identifier.identifier)).toString
     if (tableType == CatalogObjectType.Column.toString) {
-      throw StandardException.newException(SQLState.PUTINTO_OP_DISALLOWED_ON_COLUMN_TABLES)
+      val stats = session.sharedState
+          .externalCatalog.getTable(snc.getCurrentSchema, identifier.identifier).schema
+      var v1 = values.zipWithIndex.map { case (e, ci) =>
+        val targetType = StringType
+        Cast(e, targetType).eval()
+      }
+      val valuesList = v1.toList
+      val rowRdd = valuesList.zip(stats)
+          .map { case (value, struct) => convertTypes(value.toString, struct) }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      import snappy._
+      val someDF = snc.createDataFrame(rdd1, stats)
+      someDF.write.putInto(identifier.identifier)
     }
   }
 }
