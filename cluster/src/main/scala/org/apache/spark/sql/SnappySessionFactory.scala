@@ -17,6 +17,8 @@
 package org.apache.spark.sql
 
 
+import scala.ref.WeakReference
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.typesafe.config.{Config, ConfigException}
 import io.snappydata.{Constant, ServiceManager}
@@ -24,6 +26,7 @@ import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
+
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.util.SnappyUtils
 
@@ -77,8 +80,9 @@ object SnappySessionFactory {
     // Remove snappydata properties file path when available.
   }
 
-  protected def newSession(): SnappySession with ContextLike =
-    new SnappySession(SparkContext.getActive.get) with ContextLike {
+  protected def newSession(): SnappySession with ContextLike = {
+
+    val session = new SnappySession(SparkContext.getActive.get) with ContextLike {
 
       override def isValidJob(job: SparkJobBase): Boolean = job.isInstanceOf[SnappySQLJob]
 
@@ -104,6 +108,9 @@ object SnappySessionFactory {
         cl
       }
     }
+    SparkSession.activeSessions.add(new WeakReference(session))
+    session
+  }
 }
 
 
