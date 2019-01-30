@@ -716,40 +716,44 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
-
-  test("Test Bug SNAP-2707 with jdbc connection") {
+  test("Test Bug SNAP-2879 with jdbc connection") {
 
     val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
     val stmt = conn.createStatement()
     snc.sql("drop table if exists t")
     snc.sql("create table t(id integer, str string) using row")
     stmt.execute("put into t values(100, 'aa')")
-    assertEquals(1, snc.sql("select * from t").count())
+    stmt.execute("put into t   (id, str) values    (101, 'bb')      ")
+    stmt.execute("put into t values       (1000, 'aa')      ")
+    stmt.execute("insert into t values (101   ,    'ab'   )      ")
+    stmt.execute("put into t values(102, 'cc')")
+    assertEquals(5, snc.sql("select * from t").count())
 
     snc.sql("drop table if exists t1")
-    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
-    val message = intercept[Exception] {
-      stmt.execute("put into t1 values(100, 'aa')")
-    }.getMessage
-    assert(message.contains("PUT INTO table values (v1, v2,...,vn) syntax" +
-        " is not supported for column table. Try using PUT INTO table" +
-        " select v1, v2, ....,vn syntax for performing put into operation."))
+    snc.sql("create table t1(id integer, id2 string) using column options(key_columns 'id')")
+    stmt.execute("put into t1 values(10, 'aa')      ")
+    stmt.execute("put into t1   (id, id2) values(101, 'sb')      ")
+    stmt.execute("put into t1 values(102, 'cc')")
+    assertEquals(3, snc.sql("select * from t1").count())
   }
 
-  test("Test Bug SNAP-2707 with snappy session") {
+  test("Test Bug SNAP-2879 with snappy session") {
 
     snc.sql("drop table if exists t")
-    snc.sql("create table t(id integer, str string) using row")
+    snc.sql("create table t(id integer, str string) using row           ")
     snc.sql("put into t values(100, 'aa')")
-    assertEquals(1, snc.sql("select * from t").count())
+    snc.sql("put into t   (id, str) values    (101, 'bb')      ")
+    snc.sql("put into t values       (1000, 'aa')      ")
+    snc.sql("insert into t values (101   ,    'ab'   )      ")
+    snc.sql("put into t values(102, 'cc')")
+    assertEquals(5, snc.sql("select * from t").count())
 
     snc.sql("drop table if exists t1")
-    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
-    val message = intercept[Exception] {
-      snc.sql("put into t1 values(100, 'aa')")
-    }.getMessage
-    assert(message.contains("PUT INTO table values (v1, v2,...,vn) syntax" +
-        " is not supported for column table. Try using PUT INTO table" +
-        " select v1, v2, ....,vn syntax for performing put into operation."))
+    snc.sql("create table t1(id integer, id2 string) using column options(key_columns 'id')")
+    snc.sql("put into t1   (id, id2) values    (101, 'bb')      ")
+    snc.sql("put into t1 values       (100, 'aa')      ")
+    snc.sql("insert into t1 values (101   ,    'ab'   )      ")
+    snc.sql("put into t1 values(102, 'cc')")
+    assertEquals(4, snc.sql("select * from t1").count())
   }
 }

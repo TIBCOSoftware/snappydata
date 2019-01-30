@@ -41,7 +41,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Cast, Expression, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -50,7 +50,7 @@ import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCo
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
-import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 import org.apache.spark.{SparkContext, SparkEnv}
@@ -613,6 +613,44 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     ToolsCallbackInit.toolsCallback.removePackage(alias)
+    Nil
+  }
+}
+
+case class PutIntoValuesColumnTable(identifier: TableIdentifier,
+    colNames: Option[String],
+    values: Seq[Expression])
+    extends RunnableCommand {
+
+  def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
+    case BinaryType => value.toCharArray().map(ch => ch.toByte)
+    case ByteType => value.toByte
+    case BooleanType => value.toBoolean
+    case DoubleType => value.toDouble
+    case FloatType => value.toFloat
+    case ShortType => value.toShort
+    case DateType => value
+    case IntegerType => value.toInt
+    case LongType => value.toLong
+    case _ => value
+  }
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val snc = new SnappySession(sparkSession.sparkContext)
+    val sc = sparkSession.sparkContext
+    val stats = sparkSession.sharedState
+        .externalCatalog.getTable(snc.getCurrentSchema, identifier.identifier).schema
+    var v1 = values.zipWithIndex.map { case (e, ci) =>
+      val targetType = StringType
+      Cast(e, targetType).eval()
+    }
+    val valuesList = v1.toList
+    val rowRdd = valuesList.zip(stats)
+        .map { case (value, struct) => convertTypes(value.toString, struct) }
+    val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+    import snappy._
+    val someDF = snc.createDataFrame(rdd1, stats)
+    someDF.write.putInto(identifier.identifier)
     Nil
   }
 }
