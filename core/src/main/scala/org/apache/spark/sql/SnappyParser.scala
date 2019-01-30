@@ -38,7 +38,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
+import org.apache.spark.sql.execution.{PutIntoValuesColumnTable, ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
@@ -1135,9 +1135,16 @@ class SnappyParser(session: SnappySession)
         => {
           val colNames = identifiers.asInstanceOf[Option[String]]
           val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
-          checkTableType(r, colNames, valueExpr1.head)
-          DMLExternalTable(r,
-            UnresolvedRelation(r), input.sliceString(0, input.length))
+          val snc = new SnappySession(session.sparkContext)
+          val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
+            snc.getCurrentSchema, r.identifier)).toString
+          if (tableType == CatalogObjectType.Column.toString) {
+            PutIntoValuesColumnTable(r, colNames, valueExpr1.head)
+          }
+          else {
+            DMLExternalTable(r,
+              UnresolvedRelation(r), input.sliceString(0, input.length))
+          }
         })
   }
 
@@ -1264,40 +1271,4 @@ class SnappyParser(session: SnappySession)
   }
 
   def newInstance(): SnappyParser = new SnappyParser(session)
-
-  def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
-    case BinaryType => value.toCharArray().map(ch => ch.toByte)
-    case ByteType => value.toByte
-    case BooleanType => value.toBoolean
-    case DoubleType => value.toDouble
-    case FloatType => value.toFloat
-    case ShortType => value.toShort
-    case DateType => value
-    case IntegerType => value.toInt
-    case LongType => value.toLong
-    case _ => value
-  }
-
-  def checkTableType(identifier: TableIdentifier, colNames: Option[String],
-      values: Seq[Expression]) {
-    val snc = new SnappySession(session.sparkContext)
-    val sc = session.sparkContext
-    val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
-      snc.getCurrentSchema, identifier.identifier)).toString
-    if (tableType == CatalogObjectType.Column.toString) {
-      val stats = session.sharedState
-          .externalCatalog.getTable(snc.getCurrentSchema, identifier.identifier).schema
-      var v1 = values.zipWithIndex.map { case (e, ci) =>
-        val targetType = StringType
-        Cast(e, targetType).eval()
-      }
-      val valuesList = v1.toList
-      val rowRdd = valuesList.zip(stats)
-          .map { case (value, struct) => convertTypes(value.toString, struct) }
-      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      import snappy._
-      val someDF = snc.createDataFrame(rdd1, stats)
-      someDF.write.putInto(identifier.identifier)
-    }
-  }
 }
