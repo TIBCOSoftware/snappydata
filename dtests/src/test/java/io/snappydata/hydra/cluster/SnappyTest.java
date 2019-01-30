@@ -142,7 +142,7 @@ public class SnappyTest implements Serializable {
   public static Map<Integer, String> dynamicAppProps = new ConcurrentHashMap<>();
 
   public enum SnappyNode {
-    LOCATOR, SERVER, LEAD, WORKER
+    LOCATOR, SERVER, LEAD, WORKER, MASTER
   }
 
   SnappyNode snappyNode;
@@ -348,6 +348,14 @@ public class SnappyTest implements Serializable {
     worker.generateNodeConfig("workerLogDir", false);
   }
 
+  /**
+   * Generates the configuration data required to start the spark master.
+   */
+  public static synchronized void HydraTask_generateSparkMasterConfig() {
+    SnappyTest master = new SnappyTest(SnappyNode.MASTER);
+    master.generateNodeConfig("masterHostName", false);
+  }
+
   protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
     if (logDirExists) return;
     String addr = HostHelper.getHostAddress();
@@ -469,6 +477,14 @@ public class SnappyTest implements Serializable {
         SnappyBB.getBB().getSharedMap().put("sparkLogDir" + "_" + snappyTest.getMyTid(), sparkLogDir);
         SnappyBB.getBB().getSharedMap().put("sparkWorkerDir" + "_" + snappyTest.getMyTid(), sparkWorkerDir);
         break;
+      case MASTER:
+        Log.getLogWriter().info("SP:Inside generateNodeConfig case:MASTER");
+        nodeLogDir = HostHelper.getLocalHost();
+        Vector hostList = SnappyCDCPrms.getNodeName();
+        String hostName = String.valueOf(hostList.get(0));
+        Log.getLogWriter().info("SP: The master hostname is " + hostName);
+        String sparkMasterHost = "SPARK_MASTER_HOST=" + hostName;
+        SnappyBB.getBB().getSharedMap().put("sparkMasterHost" + "_" + snappyTest.getMyTid(), sparkMasterHost);
     }
     SnappyBB.getBB().getSharedMap().put(logDir + "_" + RemoteTestModule.getMyVmid() + "_" +
         snappyTest.getMyTid(), nodeLogDir);
@@ -658,7 +674,7 @@ public class SnappyTest implements Serializable {
     snappyTest.writeWorkerConfigData("slaves", "workerLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkLogDir");
     snappyTest.writeConfigData("spark-env.sh", "sparkWorkerDir");
-    //snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
+    snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
   }
 
   protected void writeConfigData(String fileName, String logDir) {
