@@ -2856,14 +2856,14 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       int num = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.sparkClusterStarted);
-      if (num == 1) {
+     // if (num == 1) {
         // modifyJobServerConfig();
         ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("start-all.sh"));
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "sparkSystem.log";
         File logFile = new File(dest);
         snappyTest.executeProcess(pb, logFile);
-      }
+      //}
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
       throw new TestException(s, e);
