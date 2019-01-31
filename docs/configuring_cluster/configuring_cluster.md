@@ -83,7 +83,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
 |-log-file|Path of the file to which this member writes log messages. The default **snappyleader.log** in the working directory. In case logging is set via log4j, the default log file is **snappydata.log**.|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
-|-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)|
+|-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The size of the off-heap memory is auto-configured in [specific scenarios](../configuring_cluster/configuring_cluster.md#autoconfigur_offheap).|
 |-snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store. The default value is 24M.|
 |spark.context-settings.num-cpu-cores| The number of cores that can be allocated. The default is 4. |
 |spark.context-settings.memory-per-node| The executor memory per node (-Xmx style. For example: 512m, 1G). The default is 512m. |
@@ -144,7 +144,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85.5% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
 |-eviction-off-heap-percentage|Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 85.5% of the value that is set for `-critical-off-heap-percentage`. </br>Use this switch to override the default.|
 |-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them. |
-|-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)|
+|-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The size of the off-heap memory is auto-configured in [specific scenarios](../configuring_cluster/configuring_cluster.md#autoconfigur_offheap).|
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use **-J-XX:+PrintGCDetails** to print the GC details in JVM logs.|
 |-J-Dgemfirexd.hostname-for-clients|The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the `client-bind-address` to be given to clients. </br> This value can be different from `client-bind-address` for cases where the servers/locators are behind a NAT firewall (AWS for example) where `client-bind-address` needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in `client-bind-address` resolves to the internal IP address from inside and to the public IP address from outside, but for other cases, this property is required|
 |-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|
@@ -233,3 +233,19 @@ log4j.logger.org.apache.spark.scheduler.TaskSetManager=DEBUG
 ```
 !!! Note
 	For a set of applicable class names and default values see the file **conf/log4j.properties.template**, which can be used as a starting point. Consult the [log4j 1.2.x documentation](http://logging.apache.org/log4j/) for more details on the configuration file.
+
+<a id="autoconfigur_offheap"></a>
+## Auto-Configuring Off-Heap Memory Size
+
+Off-Heap memory size is auto-configured by default in the following scenarios:
+
+*	**When the lead, locator, and server are setup on different host machines:**</br>
+	In this case, off-heap memory size is configured by default for the host machines with the server setup. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. For example, if the RAM is greater than 8GB, the heap memory is between 4-8 GB and the remaining becomes the off-heap memory.
+    
+
+* **When leads and servers are on the same host machines:**</br>
+In this case,  off-heap memory size is configured by default and is adjusted based on the number of leads that are present. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. However, here the heap memory is the total heap size of the server as well as that of the lead. 
+
+!!! Note
+	The off-heap memory size is not auto-configured when the heap memory and the off-heap memory are explicitly configured through properties or when multiple servers are on the same host machine. 
+

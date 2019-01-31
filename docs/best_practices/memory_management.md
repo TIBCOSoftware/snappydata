@@ -102,7 +102,7 @@ In addition to heap memory, SnappyData can also be configured with off-heap memo
 
 | Parameter Name | Default Value | Description	 |
 |--------|--------|--------|
-|memory-size|0 ( OFF_HEAP not used by default)	|Total off-heap memory size|
+|memory-size|The default value of the off-heap memory is auto-configured for [specific scenarios](../configuring_cluster/configuring_cluster.md#autoconfigur_offheap).|Total off-heap memory size|
 
 Similar to heap pools, off-heap pools are also divided between off-heap storage pool and off-heap execution pool. The rules of borrowing memory from each other also remains same.
 
