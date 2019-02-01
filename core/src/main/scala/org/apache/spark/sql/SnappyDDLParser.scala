@@ -481,11 +481,17 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
-        ADD ~ COLUMN.? ~ column ~ EOI ~> AlterTableAddColumnCommand |
-        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
+        ADD ~ alterTableAddColumn ~> ((ident: TableIdentifier,
+            f: TableIdentifier => LogicalPlan) => f(ident)) |
+        DROP ~ COLUMN.? ~ identifier ~ capture(ANY.*) ~ EOI ~> AlterTableDropColumnCommand |
         ANY. + ~ EOI ~> ((r: TableIdentifier) =>
           DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
     )
+  }
+
+  protected def alterTableAddColumn: Rule1[TableIdentifier => LogicalPlan] = rule {
+    COLUMN.? ~ column ~ capture(ANY.*) ~ EOI ~> ((col: StructField, extraClause: String) =>
+      (ident: TableIdentifier) => AlterTableAddColumnCommand(ident, col, extraClause))
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {

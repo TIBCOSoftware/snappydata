@@ -397,13 +397,13 @@ abstract case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField): Unit = {
+      isAddColumn: Boolean, column: StructField, extraClause: String): Unit = {
     val conn = connFactory()
     try {
       val sql = if (isAddColumn) {
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
-            add column "${column.name}" ${getDataType(column)}$nullable"""
+            add column "${column.name}" ${getDataType(column)}$nullable $extraClause"""
       } else {
         s"""alter table ${quotedName(table)} drop column "${column.name}""""
       }

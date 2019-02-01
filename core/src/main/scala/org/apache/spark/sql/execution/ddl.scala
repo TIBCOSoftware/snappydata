@@ -196,11 +196,11 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
 }
 
 case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
-    addColumn: StructField) extends RunnableCommand {
+    addColumn: StructField, extraClause: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
-    snc.alterTable(tableIdent, isAddColumn = true, addColumn)
+    snc.alterTable(tableIdent, isAddColumn = true, addColumn, extraClause)
     Nil
   }
 }
@@ -216,12 +216,12 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
 }
 
 case class AlterTableDropColumnCommand(
-    tableIdent: TableIdentifier, column: String) extends RunnableCommand {
+    tableIdent: TableIdentifier, column: String, extraClause: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     // drop column doesn't need anything apart from name so fill dummy values
-    snc.alterTable(tableIdent, isAddColumn = false, StructField(column, NullType))
+    snc.alterTable(tableIdent, isAddColumn = false, StructField(column, NullType), extraClause)
     Nil
   }
 }

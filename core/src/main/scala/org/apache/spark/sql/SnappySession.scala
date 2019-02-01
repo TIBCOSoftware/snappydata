@@ -1262,25 +1262,40 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  def alterTable(tableName: String, isAddColumn: Boolean, column: StructField): Unit = {
+  /**
+   * Alter table adds/drops provided column. Only supported for row tables.
+   * For adding a column isAddColumn should be true, else it will be drop column.
+   * The "extraClause" allows for passing additional clauses like default values.
+   *
+   * @param tableName   name of the table
+   * @param isAddColumn if true then column will be added, else it will be dropped
+   * @param column      column definition
+   * @param extraClause extra column directives like default value
+   */
+  def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
+      extraClause: String = ""): Unit = {
     val tableIdent = tableIdentifier(tableName)
     if (sessionCatalog.caseSensitiveAnalysis) {
-      alterTable(tableIdent, isAddColumn, column)
+      alterTable(tableIdent, isAddColumn, column, extraClause)
     } else {
-      alterTable(tableIdent, isAddColumn, sessionCatalog.normalizeField(column))
+      alterTable(tableIdent, isAddColumn, sessionCatalog.normalizeField(column), extraClause)
     }
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField): Unit = {
+      column: StructField, extraClause: String): Unit = {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
-        ar.alterTable(tableIdent, isAddColumn, column)
+        ar.alterTable(tableIdent, isAddColumn, column, extraClause)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        val newSchema = if (isAddColumn) {
+          // copy over the metadata for new column from incoming column
+          StructType(ar.schema.map(f => if (f.name.equalsIgnoreCase(column.name)) column else f))
+        } else ar.schema
+        sessionCatalog.alterTable(metadata.copy(schema = newSchema))
       case _ =>
         throw new AnalysisException(s"ALTER TABLE not supported for ${tableIdent.unquotedString}")
     }

@@ -429,6 +429,16 @@ class RowTableTest
     assert (snc.sql("select * from employee").schema.fields.length == 2)
     snc.sql("insert into employee values ('b', 2)")
     assert (snc.sql("select * from employee").count == 2)
+    //covers SNAP-2269
+    snc.sql("alter table employee add column eID int not null default -9999")
+    assert (snc.sql("select * from employee").count == 2)
+    assert (snc.sql("select * from employee").schema.fields.length == 3)
+    snc.sql("insert into employee values ('c', 2, 111)")
+    assert (snc.sql("select * from employee").count == 3)
+    assert (snc.sql("select * from employee").schema.fields.length == 3)
+    snc.sql("alter table employee add column deptID int default -999")
+    assert (snc.sql("select * from employee").count == 3)
+    assert (snc.sql("select * from employee").schema.fields.length == 4)
   }
 
   test("Test alter table API SnappySession") {

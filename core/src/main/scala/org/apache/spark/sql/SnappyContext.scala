@@ -42,7 +42,6 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
-import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -137,27 +136,18 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   }
 
   /**
-    * alter table adds/drops provided column, only supprted for row tables.
-    * For adding a column isAddColumn should be true, else it will be drop column
-    * @param tableName
-    * @param isAddColumn
-    * @param column
-    */
+   * Alter table adds/drops provided column. Only supported for row tables.
+   * For adding a column isAddColumn should be true, else it will be drop column.
+   * The "extraClause" allows for passing additional clauses like default values.
+   *
+   * @param tableName   name of the table
+   * @param isAddColumn if true then column will be added, else it will be dropped
+   * @param column      column definition
+   * @param extraClause extra column directives like default value
+   */
   def alterTable(tableName: String, isAddColumn: Boolean,
-                 column: StructField): Unit = {
-    snappySession.alterTable(tableName, isAddColumn, column)
-  }
-
-  /**
-    * alter table adds/drops provided column, only supprted for row tables.
-    * For adding a column isAddColumn should be true, else it will be drop column
-    * @param tableIdent
-    * @param isAddColumn
-    * @param column
-    */
-  private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-                              column: StructField): Unit = {
-    snappySession.alterTable(tableIdent, isAddColumn, column)
+      column: StructField, extraClause: String = ""): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column, extraClause)
   }
 
   /**

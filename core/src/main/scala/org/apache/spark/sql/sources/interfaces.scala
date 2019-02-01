@@ -289,9 +289,11 @@ trait AlterableRelation {
    * @param tableIdent  Table identifier
    * @param isAddColumn True if column is to be added else it is to be dropped
    * @param column      Column to be added or dropped
+   * @param extraClause any extra clauses not directly supported by Spark parser
+   *                    but only on the store side like default value
    */
   def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField): Unit
+      isAddColumn: Boolean, column: StructField, extraClause: String): Unit
 }
 
 trait RowLevelSecurityRelation {
