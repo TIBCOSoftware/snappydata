@@ -191,17 +191,6 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-//  protected final def booleanLiteral: Rule1[Boolean] = rule {
-//    TRUE ~> (() => true)
-//    FALSE ~> (() => false)
-//  }
-//
-//  protected final def numericLiteral: Rule1[String] = rule {
-//    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
-//        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
-//        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => s)
-//  }
-
   protected final def literal: Rule1[Expression] = rule {
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral ~> ((s: String) => toNumericLiteral(s)) |

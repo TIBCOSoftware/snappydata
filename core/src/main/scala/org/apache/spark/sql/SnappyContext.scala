@@ -145,7 +145,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param defaultValue
     */
   def alterTable(tableName: String, isAddColumn: Boolean,
-                 column: StructField, defaultValue: Option[String] = None): Unit = {
+      column: StructField, defaultValue: Option[String] = None): Unit = {
     snappySession.alterTable(tableName, isAddColumn, column, defaultValue)
   }
 
@@ -158,7 +158,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param defaultValue
     */
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-                              column: StructField, defaultValue: Option[String]): Unit = {
+      column: StructField, defaultValue: Option[String]): Unit = {
     snappySession.alterTable(tableIdent, isAddColumn, column, defaultValue)
   }
 
