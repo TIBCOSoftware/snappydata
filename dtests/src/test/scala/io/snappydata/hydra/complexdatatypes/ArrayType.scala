@@ -89,9 +89,10 @@ class ArrayType extends SnappySQLJob {
       "Array_Q5", "column", pw, sqlContext)
 
     /* --- Clean up --- */
-
-    snc.sql("DROP TABLE IF EXISTS Student")
+    spark.sql("DROP VIEW IF EXISTS Student")
+    spark.sql("DROP VIEW IF EXISTS StudentMark")
     snc.sql("DROP VIEW IF EXISTS StudentMark")
+    snc.sql("DROP TABLE IF EXISTS Student")
     snc.sql(("DROP TABLE IF EXISTS TempArray"))
 
     println("ArrayType SnappyJob completed...")
