@@ -475,5 +475,68 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
+  test("Bug SNAP-2887") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+
+
+    snappy.sql("drop table if exists portfolio")
+
+
+    snappy.sql(s"create table portfolio (cid int not null, sid int not null, " +
+      s"qty int not null,availQty int not null, subTotal int, tid int, " +
+      s"constraint portf_pk primary key (cid, sid))")
+
+   // snappy.sql(s"create index portfolio_sid  on portfolio (sId )")
+
+    val insertStr = s"insert into portfolio values (?, ?, ?, ?, ? , ?)"
+    val ps = conn.prepareStatement(insertStr)
+    for (i <- 1 until 101) {
+      ps.setInt(1, i % 10)
+      ps.setInt(2, i*10)
+      ps.setInt(3, i)
+      ps.setInt(4, i)
+      ps.setInt(5, i)
+      ps.setInt(6, 10)
+      ps.executeUpdate()
+    }
+
+    val query = s"select * from portfolio where cid = ? and Sid = ? and tid = ?"
+    val qps = conn.prepareStatement(query)
+    for (i <- 0 until 11) {
+      qps.setInt(1, 8)
+      qps.setInt(2, 20)
+      qps.setInt(3, 10)
+      val rs = qps.executeQuery()
+      var count = 0
+      while(rs.next()) {
+
+        count +=1
+      }
+      assert(count == 0)
+    }
+    snappy.sql(s"create index portfolio_sid  on portfolio (sId )")
+
+   for (i <- 0 until 11) {
+      qps.setInt(1, 8)
+      qps.setInt(2, 20)
+      qps.setInt(3, 10)
+      val rs = qps.executeQuery()
+      var count = 0
+      while(rs.next()) {
+
+        count +=1
+      }
+      assert(count == 0)
+    }
+    stmt.execute("drop index  if exists portfolio_sid")
+
+    stmt.execute("drop table if exists portfolio")
+
+  }
+
 
 }
