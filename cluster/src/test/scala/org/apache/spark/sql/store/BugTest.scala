@@ -18,10 +18,14 @@ package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
+import java.util.Properties
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -503,6 +507,32 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTempTable("careplans")
     snc.sql("drop view patients_v")
     snc.sql("drop view careplans_v")
+  }
+
+  test("SNAP-2368") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", new Properties())
+      val stmt = conn.createStatement()
+      stmt.execute("drop table if exists names")
+    } finally {
+      TestUtil.stopNetServer
+    }
+
   }
 
 
