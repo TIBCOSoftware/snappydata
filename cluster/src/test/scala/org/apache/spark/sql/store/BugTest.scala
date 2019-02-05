@@ -488,7 +488,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
       "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
       "from careplans )c group by patient having sum(coverage) = 0)q " +
-      "join patients p on id = patient ").show
+      "join patients p on id = patient ").collect
 
     df1.createOrReplaceTempView("patients_v")
     df2.createOrReplaceTempView("careplans_v")
@@ -497,7 +497,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
       "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
       "from careplans_v )c group by patient having sum(coverage) = 0)q " +
-      "join patients_v p on id = patient ").show
+      "join patients_v p on id = patient ").collect
 
     snc.dropTempTable("patients")
     snc.dropTempTable("careplans")
