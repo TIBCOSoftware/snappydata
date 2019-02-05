@@ -132,6 +132,10 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
     adminStmt.execute("drop schema test_schema3")
     adminStmt.execute("create schema test_schema4 authorization ldapgroup:gemGroup1")
     adminStmt.execute("drop schema test_schema4")
+    adminStmt.execute("create schema test_schema5 authorization ldapgroup:gemGroup1")
+    adminSnc.sql("drop schema test_schema5")
+    adminSnc.sql("create schema test_schema6 authorization ldapgroup:gemGroup1")
+    adminStmt.execute("drop schema test_schema6")
   }
 
   private def getConnection(user: Option[String] = None): Connection = {
