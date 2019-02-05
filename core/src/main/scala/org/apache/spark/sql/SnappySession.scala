@@ -118,6 +118,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+  sc.setLocalProperty(Property.FailFastTypeCasting.name,
+    Property.FailFastTypeCasting.get(sessionState.conf).toString)
+
   def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 
   def externalCatalog: SnappyExternalCatalog = sessionState.catalog.externalCatalog

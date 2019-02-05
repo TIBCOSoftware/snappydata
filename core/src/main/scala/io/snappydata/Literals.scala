@@ -227,6 +227,13 @@ object Property extends Enumeration {
         " on baset table of size more than flushReservoirThreshold." +
         " Default value is 10,000.", Some(10000))
 
+  val FailFastTypeCasting: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}failFastTypeCasting",
+    "By default exceptions while type casting is swallowed by spark and NULL values are" +
+        " returned on casting failures. Setting this property to true will change this behavior" +
+        " to fail the job when some error is encountered while type casting. Default value is " +
+        "false.", Some(false))
+
   val NumBootStrapTrials: SQLValue[Int] = SQLVal[Int](
     s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
     "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
