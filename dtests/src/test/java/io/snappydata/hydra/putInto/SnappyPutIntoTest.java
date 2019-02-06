@@ -61,11 +61,11 @@ public class SnappyPutIntoTest extends SnappyTest {
         ResultSet rs = conn.createStatement().executeQuery(selectQ);
         while (rs.next())
           count = rs.getInt(1);
-        if (count > 10000) {
+        if (count > 5000000) {
           ResultSet rs1 = conn.createStatement().executeQuery(minQ);
           while (rs1.next())
             minID = rs1.getInt(1);
-          deleteID = minID + 1000;
+          deleteID = minID + 10000;
           Log.getLogWriter().info("The min id is  " + minID + " the delete id is " + deleteID);
           conn.createStatement().execute("DELETE FROM " + tableNames.elementAt(i) + " WHERE ID < " + deleteID);
         }
