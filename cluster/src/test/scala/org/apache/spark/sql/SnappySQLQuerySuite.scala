@@ -35,6 +35,7 @@
 
 package org.apache.spark.sql
 
+import io.snappydata.Property.PlanCaching
 import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.Matchers._
 
@@ -433,6 +434,9 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
 
   test("Push down TPCH Q19") {
     session.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
+    session.sql("set snappydata.sql.planCaching=true").collect()
+    val planCaching = PlanCaching.get(snc.sessionState.conf)
+    PlanCaching.set(snc.sessionState.conf, true)
     try {
       // this loop exists because initial implementation had a problem
       // in RefParamLiteral.hashCode() that caused it to fail once in 2-3 runs
@@ -441,6 +445,7 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
       }
     } finally {
       session.sql(s"set spark.sql.autoBroadcastJoinThreshold=${10L * 1024 * 1024}")
+      PlanCaching.set(snc.sessionState.conf, planCaching)
     }
   }
 
@@ -469,7 +474,6 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
          |      +- SubqueryAlias CT2
          |         +- Relation[ID#0,DATA#0] ColumnFormatRelation[APP.CT2]
          |""".stripMargin
-
     assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))
 
