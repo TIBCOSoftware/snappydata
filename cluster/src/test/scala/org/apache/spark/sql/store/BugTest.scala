@@ -23,6 +23,8 @@ import java.util.Properties
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
+import org.junit.Assert._
+
 
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
@@ -529,6 +531,17 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         s"jdbc:snappydata://$serverHostPort2/", "names", new Properties())
       val stmt = conn.createStatement()
       stmt.execute("drop table if exists names")
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      val rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      val tableType = rs.getString(1)
+      assertEquals("C", tableType)
+
     } finally {
       TestUtil.stopNetServer
     }
