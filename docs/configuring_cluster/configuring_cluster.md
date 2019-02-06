@@ -243,7 +243,7 @@ Off-Heap memory size is auto-configured by default in the following scenarios:
 	In this case, off-heap memory size is configured by default for the host machines with the server setup. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. For example, if the RAM is greater than 8GB, the heap memory is between 4-8 GB and the remaining becomes the off-heap memory.
     
 
-* **When leads and servers are on the same host machines:**</br>
+* **When leads and one of the server node are on the same host:**</br>
 In this case,  off-heap memory size is configured by default and is adjusted based on the number of leads that are present. The total size of heap and off-heap memory does not exceed more than 75% of the total RAM. However, here the heap memory is the total heap size of the server as well as that of the lead. 
 
 !!! Note
