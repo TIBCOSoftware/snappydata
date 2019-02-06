@@ -29,6 +29,7 @@ import scala.language.implicitConversions
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ui.{MemberStatistics, SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 
 import org.apache.spark.sql.SnappySession
@@ -56,7 +57,9 @@ trait TableStatsProviderService extends Logging {
 
   protected def aggregateStats(): Unit = synchronized {
     try {
-      if (doRun) {
+      // TODO: Need to be addressed - Disabling aggregateStats as a temporary fix.
+      val cache = Misc.getGemFireCacheNoThrow
+      if (doRun && cache != null && !cache.isSnappyRecoveryMode) {
         val prevTableSizeInfo = tableSizeInfo
         running = true
         try {

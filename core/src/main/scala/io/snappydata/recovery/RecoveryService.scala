@@ -28,13 +28,21 @@ import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode.RecoveryModePersistentView
 import com.pivotal.gemfirexd.internal.engine.sql.execute.RecoveredMetadataRequestMessage
-import io.snappydata.sql.catalog.CatalogObjectType
-import io.snappydata.thrift.CatalogTableObject
-
+import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
+import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject, CatalogTableObject}
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
 
-object RecoveryService {
+import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Constant
+import org.apache.hadoop.hive.ql.exec.spark.session.SparkSession
+
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable}
+import org.apache.spark.sql.hive.HiveClientUtil
+
+object RecoveryService extends Logging {
 
   def getHiveDDLs: Array[String] = {
     null
@@ -62,10 +70,19 @@ object RecoveryService {
     val parts = fqtn.split(".")
     val schema = parts(0)
     val table = parts(1)
-    val cObj = mostRecentMemberObject.getCatalogObjects.asScala.find(c => {
-      c.schemaName == schema && c.tableName == table
-    })
-    cObj.get.provider
+    val cObject = mostRecentMemberObject.getCatalogObjects.asInstanceOf[Array[AnyRef]]
+// most effective way ??
+    val cObjArr: Array[AnyRef] = cObject.filter {
+      case a: CatalogTableObject => {
+        if (a.schemaName == schema && a.tableName == table) {
+          true
+        } else {
+          false
+        }
+      }
+      case _ => false
+    }
+    val cObj = cObjArr(0).asInstanceOf[CatalogTableObject]
     val tablePath = fqtn.replace(".", "/")
     val numBuckets = mostRecentMemberObject.getPrToNumBuckets.get(tablePath)
     val robj = mostRecentMemberObject.getAllRegionViews.asScala.find(r => {
@@ -77,7 +94,7 @@ object RecoveryService {
         tablePath == regionPath
       }
     })
-    (cObj.get.provider, numBuckets != null, robj.get.getDiskStoreName, numBuckets)
+    (cObj.provider, numBuckets != null, robj.get.getDiskStoreName, numBuckets)
   }
 
   val regionViewSortedSet: mutable.Map[String,
@@ -98,10 +115,15 @@ object RecoveryService {
     val persistentData = collector.getResult
     val itr = persistentData.iterator()
 
+    val snapCon = SnappyContext()
+    val snappyHiveExternalCatalog = HiveClientUtil
+        .getOrCreateExternalCatalog(snapCon.sparkContext, snapCon.sparkContext.getConf)
+
     while (itr.hasNext) {
       val persistentViewObj = itr.next().asInstanceOf[
           ListResultCollectorValue].resultOfSingleExecution.asInstanceOf[
           PersistentStateInRecoveryMode]
+//      TODO: need to handle null pointer exception here - at following line??
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while(regionItr.hasNext) {
@@ -144,8 +166,59 @@ object RecoveryService {
 
     val catalogObjects = mostRecentMemberObject.getCatalogObjects
 
-    println(s"Catalog objects = $catalogObjects")
+    import scala.collection.JavaConverters._
 
+    val catalogArr = catalogObjects.asScala.map(catObj => {
+    val catalogMetadataDetails = new CatalogMetadataDetails()
+    catObj match {
+      case catFunObj: CatalogFunctionObject => {
+        ConnectorExternalCatalog.convertToCatalogFunction(catFunObj)
+      }
+      case catDBObj: CatalogSchemaObject => {
+        ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
+      }
+      case catTabObj: CatalogTableObject => {
+        ConnectorExternalCatalog.convertToCatalogTable(
+          catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession )._1
+      }
+    }
+    })
+
+    RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
+    logInfo(" Populated catalog")
+
+    val dbList = snappyHiveExternalCatalog.listDatabases("*")
+    val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
+        .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
+    val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
+
+    logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
+        + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
+        + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
+  }
+
+
+  /**
+   * Populates the external catalog, in recovery mode. Currently table,function and
+   * database type of catalog objects is supported.
+   * @param catalogObjSeq   Sequence of catalog objects to be inserted in the catalog
+   * @param sc              Spark Context
+   */
+
+  def populateCatalog(catalogObjSeq: Seq[Any], sc: SparkContext): Unit = {
+    val extCatalog = HiveClientUtil.getOrCreateExternalCatalog(sc, sc.getConf)
+    catalogObjSeq.foreach {
+      case catDB: CatalogDatabase =>
+        extCatalog.createDatabase(catDB, ignoreIfExists = false)
+        logInfo(s"Inserting catalog database: ${catDB.name} in the catalog.")
+      case catFunc: CatalogFunction =>
+        extCatalog.createFunction(catFunc.identifier.database
+            .getOrElse(Constant.DEFAULT_SCHEMA), catFunc)
+        logInfo(s"Inserting catalog function: ${catFunc.identifier.funcName} in the catalog.")
+      case catTab: CatalogTable =>
+        extCatalog.createTable(catTab, ignoreIfExists = false)
+        logInfo(s"Inserting catalog table: ${catTab.identifier.table} in the catalog.")
+    }
   }
 }
 
