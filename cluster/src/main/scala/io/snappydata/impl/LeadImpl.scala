@@ -257,12 +257,6 @@ class LeadImpl extends ServerImpl with Lead
       while (!SnappyContext.hasServerBlockIds && System.currentTimeMillis() <= endWait) {
         Thread.sleep(100)
       }
-      ///// Just for testing //////
-      // If recovery mode then initialize the recovery service
-      if(Misc.getGemFireCache.isSnappyRecoveryMode) {
-        RecoveryService.collectViewsAndRecoverDDLs();
-      }
-      ////// Remove this //////////
       // initialize global state
       password match {
         case Some(p) =>
