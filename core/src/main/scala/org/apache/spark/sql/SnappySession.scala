@@ -173,8 +173,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
-  override def sql(sqlText: String): CachedDataFrame =
+  override def sql(sqlText: String): DataFrame = {
+    try {
+      sqInternal(sqlText)
+    } catch {
+      // fallback to uncached flow for streaming queries
+      case ae: AnalysisException
+        if ae.message.contains(
+          "Queries with streaming sources must be executed with writeStream.start()"
+        ) => sqlUncached(sqlText)
+    }
+  }
+
+   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+  }
 
   @DeveloperApi
   def sqlUncached(sqlText: String): DataFrame = {
@@ -2208,11 +2221,7 @@ object CachedKey {
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
       case a: Alias =>
-        val name = if (a.name == Utils.WEIGHTAGE_COLUMN_NAME ||
-            a.name.startsWith(Utils.SKIP_ANALYSIS_PREFIX)) {
-          a.name
-        } else "none"
-        Alias(a.child, name)(exprId = ExprId(-1))
+        Alias(a.child, a.name)(exprId = ExprId(-1))
       case ae: AggregateExpression => ae.copy(resultId = ExprId(-1))
       case _: ScalarSubquery =>
         throw new IllegalStateException("scalar subquery should not have been present")
