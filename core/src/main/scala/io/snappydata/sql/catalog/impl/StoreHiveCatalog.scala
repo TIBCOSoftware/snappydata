@@ -42,7 +42,7 @@ import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.sql.AnalysisException
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -161,8 +161,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   }
 
   // GET_ALL_HIVE_ENTRIES
-  override def getAllHiveEntries: java.util.List[CatalogTableObject] = {
-    val q = new CatalogQuery[Seq[CatalogTableObject]](GET_ALL_HIVE_ENTRIES,
+  override def getAllHiveEntries: java.util.List[java.lang.Object] = {
+    val q = new CatalogQuery[Seq[java.lang.Object]](GET_ALL_HIVE_ENTRIES,
       tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).asJava
   }
@@ -322,12 +322,27 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         case table if CatalogObjectType.isTableBackedByRegion(
           CatalogObjectType.getTableType(table)) => table.database -> table.identifier.table
       }.asInstanceOf[R]
-
+// here instead of sending only tables, we need to get all the hive entries not just catalogtables
+        // how ??
       case GET_ALL_HIVE_ENTRIES => {
-        println(s"KN: this is $this and case is GET_ALL_HIVE_ENTRIES and externalCatalog = $externalCatalog")
-        println(s"KN: Get all tables size = ${externalCatalog.getAllTables().size}")
-        externalCatalog.getAllTables().collect {
-          case table => ConnectorExternalCatalog.convertFromCatalogTable(table)
+        println(s"KN: this is $this and case is GET_ALL_HIVE_ENTRIES and" +
+            s" externalCatalog = $externalCatalog")
+
+        val dbList = externalCatalog.listDatabases("*").filter(dbName =>
+          !(dbName.equals("SYS") || dbName.equals("DEFAULT")))
+        val allSchemas = dbList.map(externalCatalog.getDatabase(_))
+        var allHiveEntries: Seq[java.lang.Object] = allSchemas
+        val allFunctions = dbList.flatMap(dbName => { externalCatalog.listFunctions(dbName, "*")
+              .map(externalCatalog.getFunction(dbName, _))
+        })
+        allHiveEntries = allHiveEntries ++ allFunctions
+        val allTables = externalCatalog.getAllTables()
+        allHiveEntries = allHiveEntries ++ allTables
+
+        allHiveEntries.collect {
+          case table: CatalogTable => ConnectorExternalCatalog.convertFromCatalogTable(table)
+          case db: CatalogDatabase => ConnectorExternalCatalog.convertFromCatalogDatabase(db)
+          case func: CatalogFunction => ConnectorExternalCatalog.convertFromCatalogFunction(func)
         }.asInstanceOf[R]
       }
 
