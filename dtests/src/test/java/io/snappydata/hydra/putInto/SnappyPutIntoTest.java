@@ -16,7 +16,15 @@
  */
 package io.snappydata.hydra.putInto;
 
+import java.sql.SQLException;
+
+import java.sql.Connection;
+import java.sql.ResultSet;
+import java.util.Vector;
+
+import hydra.Log;
 import hydra.TestConfig;
+import io.snappydata.hydra.cdcConnector.SnappyCDCPrms;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 
@@ -37,6 +45,35 @@ public class SnappyPutIntoTest extends SnappyTest {
     String primaryLocatorHost = getPrimaryLocatorHost();
     String primaryLocatorPort = getPrimaryLocatorPort();
     ConcPutIntoTest.conSelect(primaryLocatorHost, primaryLocatorPort, numThreads);
+  }
+
+  public static void HydraTask_bulkDelete(){
+    try {
+      Log.getLogWriter().info("Inside bulkDelete");
+      Connection conn = SnappyTest.getLocatorConnection();
+      Vector tableNames = SnappyCDCPrms.getNodeName();
+      int deleteID = 0;
+      int minID = 0;
+      for(int i = 0 ;i < tableNames.size();i++) {
+        String minQ = "SELECT min(ID) FROM " + tableNames.elementAt(i);
+        String selectQ = "SELECT count(*) FROM " + tableNames.elementAt(i);
+        int count = 0;
+        ResultSet rs = conn.createStatement().executeQuery(selectQ);
+        while (rs.next())
+          count = rs.getInt(1);
+        if (count > 10000) {
+          ResultSet rs1 = conn.createStatement().executeQuery(minQ);
+          while (rs1.next())
+            minID = rs1.getInt(1);
+          deleteID = minID + 1000;
+          Log.getLogWriter().info("The min id is  " + minID + " the delete id is " + deleteID);
+          conn.createStatement().execute("DELETE FROM " + tableNames.elementAt(i) + " WHERE ID < " + deleteID);
+        }
+      }
+    }
+    catch (SQLException ex) {
+      throw new util.TestException("Caught exception in HydraTask_bulkDelete() " + ex.getMessage());
+    }
   }
 
 }
