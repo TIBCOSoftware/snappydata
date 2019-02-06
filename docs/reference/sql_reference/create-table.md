@@ -140,7 +140,7 @@ Column tables use compression of data by default. This reduces the total storage
 ```
 CREATE TABLE AIRLINE USING column OPTIONS(compression 'none')  AS (select * from STAGING_AIRLINE);
 ```
-See [best practices](../../best_practicesmemory_management/#estimating-memory-size-for-column-and-row-tables) for more information.
+See [best practices](../../best_practices/memory_management.md#estimating-memory-size-for-column-and-row-tables) for more information.
 
 <a id="redundancy"></a>
 `REDUNDANCY`</br>
