@@ -475,5 +475,35 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
+  test("SNAP-2718") {
+    snc
+    val path1 = getClass.getResource("/patients1000.csv").getPath
+    val df1 = snc.read.format("csv").option("header", "true").load(path1)
+    df1.registerTempTable("patients")
+    val path2 = getClass.getResource("/careplans1000.csv").getPath
+    val df2 = snc.read.format("csv").option("header", "true").load(path2)
+    df2.registerTempTable("careplans")
+
+    snc.sql("select p.first, p.last from (select patient from ( select *, " +
+      "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+      "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
+      "from careplans )c group by patient having sum(coverage) = 0)q " +
+      "join patients p on id = patient ").collect
+
+    df1.createOrReplaceTempView("patients_v")
+    df2.createOrReplaceTempView("careplans_v")
+
+    snc.sql("select p.first, p.last from (select patient from ( select *, " +
+      "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+      "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
+      "from careplans_v )c group by patient having sum(coverage) = 0)q " +
+      "join patients_v p on id = patient ").collect
+
+    snc.dropTempTable("patients")
+    snc.dropTempTable("careplans")
+    snc.sql("drop view patients_v")
+    snc.sql("drop view careplans_v")
+  }
+
 
 }
