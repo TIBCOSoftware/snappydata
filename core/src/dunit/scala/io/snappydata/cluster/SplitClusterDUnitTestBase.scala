@@ -29,6 +29,7 @@ import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.Property.PlanCaching
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
@@ -226,6 +227,8 @@ trait SplitClusterDUnitTestBase extends Logging {
 
 trait SplitClusterDUnitTestObject extends Logging {
 
+  protected val random = new Random()
+
   val props = Map.empty[String, String]
 
   def getConnection(netPort: Int, props: Properties = new Properties()): Connection =
@@ -291,7 +294,8 @@ trait SplitClusterDUnitTestObject extends Logging {
     // first test metadata using session
     MetadataTest.testSYSTablesAndVTIs(session.sql,
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
-    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false)
+    val planCaching = PlanCaching.get(session.sessionState.conf)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false, planCaching)
     MetadataTest.testDSIDWithSYSTables(session.sql,
       netServers, locatorId, locatorNetServer, servers, leadId)
     // next test metadata using JDBC connection
@@ -299,7 +303,7 @@ trait SplitClusterDUnitTestObject extends Logging {
     MetadataTest.testSYSTablesAndVTIs(SnappyFunSuite.resultSetToDataset(session, stmt),
       hostName = "localhost", netServers, locatorId, locatorNetServer, servers, leadId)
     MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
-      usingJDBC = true)
+      usingJDBC = true , planCaching)
     MetadataTest.testDSIDWithSYSTables(SnappyFunSuite.resultSetToDataset(session, stmt),
       netServers, locatorId, locatorNetServer, servers, leadId)
 
@@ -366,13 +370,14 @@ trait SplitClusterDUnitTestObject extends Logging {
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
       logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
-      val conf = new SparkConf()
-          .setAppName("test Application")
-          .setMaster(s"spark://$hostName:7077")
-          .set("spark.executor.cores", TestUtils.defaultCores.toString)
-          .set("spark.executor.extraClassPath",
-            getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
-          .set("snappydata.connection", connectionURL)
+    val conf = new SparkConf()
+        .setAppName("test Application")
+        .setMaster(s"spark://$hostName:7077")
+        .set("spark.executor.cores", TestUtils.defaultCores.toString)
+        .set("spark.executor.extraClassPath",
+          getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
+        .set("snappydata.connection", connectionURL)
+        .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
 
     if (props != null) {
       val user = props.getProperty(Attribute.USERNAME_ATTR, "")
