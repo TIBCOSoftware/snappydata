@@ -225,15 +225,20 @@ trait SnappyExternalCatalog extends ExternalCatalog {
    * Check for baseTable in both properties and storage.properties (older releases used a mix).
    */
   def getBaseTable(tableDefinition: CatalogTable): Option[String] = {
-    tableDefinition.properties.get(BASETABLE_PROPERTY) match {
+    (tableDefinition.properties.get(BASETABLE_PROPERTY) match {
       case None =>
         val params = new CaseInsensitiveMap(tableDefinition.storage.properties)
         params.get(BASETABLE_PROPERTY) match {
-          // older released didn't have base table entry for indexes
-          case None => params.get(INDEXED_TABLE).map(Utils.toUpperCase)
-          case Some(t) => Some(Utils.toUpperCase(t))
+          // older releases didn't have base table entry for indexes
+          case None => params.get(INDEXED_TABLE)
+          case t => t
         }
-      case Some(t) => Some(Utils.toUpperCase(t))
+      case t => t
+    }) match {
+      case None => None
+      case Some(t) =>
+        if (t.indexOf('.') != -1) Some(Utils.toUpperCase(t))
+        else Some(tableDefinition.database + '.' + Utils.toUpperCase(t))
     }
   }
 
