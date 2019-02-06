@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>SnappyData Cluster SQL Tutorials - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>SnappyData Cluster SQL Tutorials - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2078,7 +2078,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2238,7 +2238,7 @@ QUICKTABLE                                                                      
 <p>SnappyData contains various quickstart scripts that can be used to run some basic functionalities. </br>For example, you can run the <strong>create_and_load_column_table.sql</strong> script. This script first drops the table if it exists and then  creates an external table named STAGING AIRLINE to load the formatted data from a parquet file. Then a column table is created with only the specified columns from this external table. </br>Connect to SnappyData shell before running these scripts. These script files must be run from within the <strong>quickstart</strong> directory if you are providing the relative path as shown:</p>
 <pre><code>        ./bin/snappy
         connect client '127.0.0.1:1527';
-        run quickstart/scripts/create_and_load_column_table.sql;
+        RUN 'quickstart/scripts/create_and_load_column_table.sql';
 
         # Use the following command to view the details of the external table. 
         describe staging_airline;
@@ -2290,20 +2290,19 @@ QUICKTABLE                                                                      
 <ul>
 <li>
 <p><strong>Create and load a row table:</strong></p>
-<pre><code>run ./quickstart/scripts/create_and_load_row_table.sql;
+<pre><code>RUN './quickstart/scripts/create_and_load_row_table.sql';
 </code></pre>
 </li>
 <li>
 <p><strong>View the status of the system:</strong></p>
-<pre><code>run ./quickstart/scripts/status_queries.sql;
+<pre><code>RUN './quickstart/scripts/status_queries.sql';
 </code></pre>
 </li>
 </ul>
 <p><a id= createcoltabwithext> </a></p>
 <h2 id="create-a-column-table-using-an-external-table">Create a Column Table Using an External Table</h2>
 <p>Similarly as the quickstart scripts, you can try to create an external table named staging_airline to load the formatted data from a airlineParquetData file with inferSchema option as true. Later, you can create a column table named airline and pull data from the external table into this table. After pulling in the data, you can check the number of records in the table.</p>
-<pre><code>            CREATE EXTERNAL TABLE STAGING_AIRLINE
-USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData', inferSchema 'true');
+<pre><code>    CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData', inferSchema 'true');
 
         CREATE TABLE AIRLINE2 USING column AS (SELECT * FROM STAGING_AIRLINE);
 

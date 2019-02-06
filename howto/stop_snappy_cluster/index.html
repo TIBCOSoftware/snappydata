@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>How to Stop a SnappyData Cluster - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>How to Stop a SnappyData Cluster - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2062,7 +2062,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2108,7 +2108,6 @@ The SnappyData Locator has stopped.
 <p class="admonition-title">Note</p>
 <p>Ensure that all write operations on column table have finished execution when you stop a cluster, else it can lead to a partial write.</p>
 </div>
-<p><a id="stop-components"></a></p>
 <h2 id="stopping-individual-components">Stopping Individual Components</h2>
 <p>Instead of stopping the SnappyData cluster using the <code>snappy-stop-all.sh</code> script, individual components can be stopped on a system locally using the following commands:</p>
 <div class="admonition tip">
@@ -2119,6 +2118,52 @@ The SnappyData Locator has stopped.
 $ ./bin/snappy server stop -dir=/node-b/server1
 $ ./bin/snappy leader stop -dir=/node-c/lead1
 </code></pre>
+
+<!---## Stopping Individual Components in a Cluster
+
+SnappyData recommends to stop the cluster using the `./sbin/snappy-stop-all.sh` command. However, you can stop individual components in a cluster. 
+
+To stop individual components, do the following:
+
+1.  Back up the original **conf/servers**, **conf/leads**, **conf/locators** files.
+2.  Stop any of the cluster components.
+
+    To stop the **server**, modify the **conf/servers** file to include only those node configurations which needs to be stopped and then execute `./snappy-servers.sh stop`. In the following example, the configuration for **host2** is commented in the **conf/servers **file and then the `./snappy-servers.sh stop` is executed. This will stop the server process on **host1**, running in the **server1** directory.
+
+        original conf/servers file:
+        host1 -dir=/home/snappy/server1 -heap-size=1G
+        host2 -dir=/home/snappy/server2 -heap-size=1G
+
+        Modified conf/servers file:
+        host1 -dir=/home/snappy/server1 -heap-size=1G
+        #host2 -dir=/home/snappy/server2 -heap-size=1G
+
+         ./snappy-servers.sh stop
+
+
+    To stop the **lead**, modify the **conf/leads** file to include only those node configurations which needs to be stopped and then execute `./snappy-leads.sh stop`. In the following example **host1** is commented in the **conf/leads** file and then the `./snappy-leads.sh stop` is executed. This will stop the lead process on host4, running in the **lead2** directory.
+
+        original conf/leads:
+        host1 -dir=/home/snappy/lead1
+        host4 -dir=/home/snappy/lead2
+
+        Modified conf/leads:
+        #host1 -dir=/home/snappy/lead1
+        host4 -dir=/home/snappy/lead2
+
+        ./snappy-leads.sh stop
+
+    To stop the **locator**, modify the **conf/locators** file to include only those node configuration which needs to be stopped and then execute `./snappy-locators.sh stop`. In the following example **host1** is commented in the **conf/locators** file and then the `./snappy-locators.sh stop` is executed. This will stop the locator process on host6, running in the **lcoator2** directory.
+
+        original conf/locators:
+        host1 -dir=/home/snappy/locator1
+        host6 -dir=/home/snappy/locator2
+
+        Modified conf/locators:
+        #host1 -dir=/home/snappy/locator1
+        host6 -dir=/home/snappy/locator2
+
+         ./snappy-locators.sh stop--->
               
             </div>
           </div>

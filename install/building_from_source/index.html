@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Building from Source - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>Building from Source - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2070,7 +2070,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2191,12 +2191,14 @@
 
 <p>The default build directory is <em>build-artifacts/scala-2.11</em> for projects. An exception is <em>store</em> project, where the default build directory is <em><em>build-artifacts/<os></em></em>; where; <em>os</em> is <em>linux</em> on Linux systems, <em>osx</em> on Mac, <em>windows</em> on Windows.</p>
 <p>The usual Gradle test run targets (<em>test</em>, <em>check</em>) work as expected for JUnit tests. Separate targets have been provided for running Scala tests (<em>scalaTest</em>) while the <em>check</em> target runs both the JUnit and ScalaTests. One can run a single Scala test suite class with <em>singleSuite</em> option while running a single test within some suite works with the <code>--tests</code> option:</p>
-<pre><code class="pre">&gt; ./gradlew core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
-&gt; ./gradlew core:scalaTest \
+<pre><code class="pre">&gt; ./gradlew snappy-core:scalaTest -PsingleSuite=**.ColumnTableTest  # run all tests in the class
+&gt; ./gradlew snappy-core:scalaTest \
 &gt;    --tests &quot;Test the creation/dropping of table using SQL&quot;  # run a single test (use full name)
 </code></pre>
 
 <p>Running individual tests within some suite works using the <code>--tests</code> argument.</p>
+<p>All ScalaTest build targets can be found by running the following command (case sensitive):
+<code>./gradlew tasks --all | grep scalaTest</code></p>
 <h2 id="setting-up-intellij-idea-with-gradle">Setting up IntelliJ IDEA with Gradle</h2>
 <p>IntelliJ IDEA is the IDE commonly used by developers at SnappyData. Users who prefer to use Eclipse can try the Scala-IDE and Gradle support, however, it is recommended to use IntelliJ IDEA. </br>
 Steps required for setting up SnappyData with all its components in IDEA are listed below.</p>

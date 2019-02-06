@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>System Requirements - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>System Requirements - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2070,7 +2070,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2183,8 +2183,8 @@
 <ul>
 <li>
 <p>Install 32-bit libraries on 64-bit Linux:</br>
-    "yum install glibc.i686 libX11.i686" on RHEL/CentOS</br>
-    "apt-get install libc6:i386 libx11-6:i386" on Ubuntu/Debian like systems</br></p>
+    <code>yum install glibc.i686 libX11.i686</code> on RHEL/CentOS</br>
+    <code>apt-get install libc6:i386 libx11-6:i386</code> on Ubuntu/Debian like systems</br></p>
 </li>
 <li>
 <p>Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.</p>
@@ -2196,7 +2196,7 @@
 <p>The Python pyspark module has the same requirements as in Apache Spark. The numpy package is required by many modules of pyspark including the examples shipped with SnappyData. On recent Red Hat based systems, it can be installed using <code>sudo yum install numpy</code> or <code>sudo yum install python2-numpy</code> commands. Whereas, on Debian/Ubuntu based systems, you can install using the <code>sudo apt-get install python-numpy</code> command.</p>
 </li>
 <li>
-<p>Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using <code>sudo yum install scipy</code> command. Whereas,  on Debian/Ubuntu based systems you can install using the <code>sudo apt-get install python-scipy</code> command.. Likewise, Pandas on recent Red Hat based systems can be installed using <code>sudo yum installed python-pandas</code> command, while on Debian/Ubuntu based systems it can be installed using the <code>sudo apt-get install python-pandas</code> command.</p>
+<p>Some of the python APIs can use SciPy to optimize some algorithms (in linalg package), and some others need Pandas. On recent Red Hat based systems SciPy can be installed using <code>sudo yum install scipy</code> command. Whereas,  on Debian/Ubuntu based systems you can install using the <code>sudo apt-get install python-scipy</code> command. Likewise, Pandas on recent Red Hat based systems can be installed using <code>sudo yum installed python-pandas</code> command, while on Debian/Ubuntu based systems it can be installed using the <code>sudo apt-get install python-pandas</code> command.</p>
 </li>
 <li>
 <p>On Red Hat based systems, some of the above Python packages may be available only after enabling the <strong>EPEL</strong> repository. If these are not available in the repositories for your OS version or if using <strong>EPEL</strong> is not an option, then you can use <strong>pip</strong>. Refer to the respective project documentation for details and alternative options such as Anaconda.</p>

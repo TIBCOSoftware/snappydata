@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<!-- saved from url=(0058)http://localhost:4567/snappydata/using.html#stopkubernetes -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <script type="text/javascript" async="" src="./Using SnappyData Service for PCF __files/munchkin.js"></script><script src="./Using SnappyData Service for PCF __files/8294.js" async="" type="text/javascript"></script><script type="text/javascript" async="" src="./Using SnappyData Service for PCF __files/cse.js"></script><script type="text/javascript">
+    WEB_SOCKET_SWF_LOCATION = "/__rack/WebSocketMain.swf";
+    
+  </script>
+  <script type="text/javascript" src="./Using SnappyData Service for PCF __files/swfobject.js"></script>
+  <script type="text/javascript" src="./Using SnappyData Service for PCF __files/web_socket.js"></script>
+
+<script type="text/javascript">
+  RACK_LIVERELOAD_PORT = 35729;
+</script>
+<script type="text/javascript" src="./Using SnappyData Service for PCF __files/livereload.js"></script>
+
+
+  
+  <!-- Always force latest IE rendering engine or request Chrome Frame -->
+  <meta content="IE=edge,chrome=1" http-equiv="X-UA-Compatible">
+
+  <link href="./Using SnappyData Service for PCF __files/css" rel="stylesheet" type="text/css">
+  <!-- Use title if it's in the page YAML frontmatter -->
+  <title>
+      Using SnappyData Service for PCF |
+    
+  </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="./Using SnappyData Service for PCF __files/all.css" rel="stylesheet" media="screen, print">
+  <link href="./Using SnappyData Service for PCF __files/print.css" rel="stylesheet" media="print">
+  <link href="http://localhost:4567/images/favicon.ico" rel="shortcut icon">
+
+  <script src="./Using SnappyData Service for PCF __files/all.js"></script>
+  <script>
+//Global Google Search
+(function() {
+    var gcse = document.createElement('script');
+    gcse.type = 'text/javascript';
+    gcse.async = true;
+    gcse.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') +
+        '//www.google.com/cse/cse.js?cx=' + '';
+    var s = document.getElementsByTagName('script')[0];
+    s.parentNode.insertBefore(gcse, s);
+})();
+</script>
+
+<script type="text/javascript">
+  if (window.location.host === 'hello') {
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', '']);
+    _gaq.push(['_setDomainName', '']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script');
+      ga.type = 'text/javascript';
+      ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0];
+      s.parentNode.insertBefore(ga, s);
+    })();
+  }
+</script>
+
+<script type="text/javascript">
+  var blackList = ['acceptance'];
+
+  blackList.forEach(function(blackListedEnv) {
+    if (document.URL.indexOf(blackListedEnv) > -1 && blackListedEnv != "") {
+      $('head').append('<meta name="hashtag" content="PivotalMoment">');
+    }
+  });
+</script>
+
+<!-- CrazyEgg Tracking Script -->
+<script type="text/javascript">
+  setTimeout(function() {
+    var a = document.createElement("script");
+    var b = document.getElementsByTagName("script")[0];
+    a.src = document.location.protocol + "//script.crazyegg.com/pages/scripts/0020/8294.js?" + Math.floor(new Date().getTime() / 3600000);
+    a.async = true;
+    a.type = "text/javascript";
+    b.parentNode.insertBefore(a, b)
+  }, 1);
+</script>
+
+<script type="text/javascript">
+  (function() {
+    var didInit = false;
+
+    function initMunchkin() {
+      if (didInit === false) {
+        didInit = true;
+        Munchkin.init('625-IUJ-009');
+      }
+    }
+
+    var s = document.createElement('script');
+    s.type = 'text/javascript';
+    s.async = true;
+    s.src = document.location.protocol + '//munchkin.marketo.net/munchkin.js';
+    s.onreadystatechange = function() {
+      if (this.readyState == 'complete' || this.readyState == 'loaded') {
+        initMunchkin();
+      }
+    };
+    s.onload = initMunchkin;
+    document.getElementsByTagName('head')[0].appendChild(s);
+  })();
+</script><script type="text/javascript" async="" src="./Using SnappyData Service for PCF __files/munchkin(1).js"></script>
+
+</head>
+
+<body class="snappydata snappydata_using has-subnav">
+
+<div class="viewport">
+  <div class="wrap">
+    <script type="text/javascript">
+      document.domain = "";
+    </script>
+
+       
+    <header class="header header-layout">
+      <h1 class="logo">
+        <a href="http://localhost:4567/">Default Book Title</a>
+      </h1>
+      
+      <div class="header-links js-bar-links">
+        <div class="btn-menu" data-behavior="MenuMobile"></div>
+        
+        <div class="header-item">
+          
+        </div>
+        <!--Default search-->
+<!--If book needs something different, add a book-search partial to the book's layouts folder-->
+<div class="header-item searchbar js-searchbar">
+  <a class="search-icon" data-behavior="Search"></a>
+  <div class="search-input">
+    <div class="search-input-inner" id="docs-search">
+        <gcse:searchbox></gcse:searchbox>
+    </div>
+  </div>
+</div>
+
+      </div>
+    </header>
+
+
+
+    <div class="container">
+
+      <!--googleoff: index-->
+      <div id="sub-nav" class="js-sidenav nav-container" role="navigation">
+  <a class="sidenav-title" data-behavior="SubMenuMobile">
+    Doc Index
+  </a>
+  <div class="nav-content">
+    <ul>
+
+      <li>
+        <a id="home-nav-link" href="http://localhost:4567/snappydata/index.html">YOUR-PRODUCT-NAME (Beta)</a>
+      </li>
+
+      <li>
+        <a href="http://localhost:4567/snappydata/release-notes.html">Release Notes</a>
+      </li>
+
+      <li>
+        <a href="http://localhost:4567/snappydata/installing.html">Installing and Configuring YOUR-PRODUCT-NAME</a>
+      </li>
+
+      <li>
+        <a href="http://localhost:4567/snappydata/using.html" class=" active">Using YOUR-PRODUCT-NAME</a>
+      </li>
+
+    </ul>
+  </div>
+</div><!--end of sub-nav-->
+
+      <!--googleon: index-->
+
+      <main class="content content-layout" id="js-content" role="main">
+        <a id="top"></a>
+        
+          <h1 class="title-container">
+    Using SnappyData Service for PCF
+  </h1>
+
+          <div id="js-quick-links">
+            <div class="quick-links"><ul>
+<li><a href="http://localhost:4567/snappydata/using.html#using">Using SnappyData Service for PCF</a></li>
+<li><a href="http://localhost:4567/snappydata/using.html#interacting">Interacting with SnappyData Cluster on Kubernetes</a></li>
+<li><a href="http://localhost:4567/snappydata/using.html#chartparameters">List of Configuration Parameters for SnappyData Chart</a></li>
+<li><a href="http://localhost:4567/snappydata/using.html#accesslogs">Accessing Logs</a></li>
+<li><a href="http://localhost:4567/snappydata/using.html#loglevel">Configuring Log Level</a></li>
+</ul></div>
+          </div>
+        <div class="sticky-wrapper" style="height: 0px;"><div class="to-top sticky" id="js-to-top">
+          <a href="http://localhost:4567/snappydata/using.html#top" title="back to top"></a>
+        </div></div>
+        <p><strong></strong></p>
+
+<p>This topic describes how to use SnappyData Service for PCF.</p>
+
+<h2><a id="using"></a> Using SnappyData Service for PCF</h2>
+
+<p>This topic describes how developers can interact with a SnappyData cluster on Kubernetes, access the SnappyData Pulse UI dashboard, run queries, and submit SnappyData jobs.</p>
+
+<h2><a id="interacting"></a> Interacting with SnappyData Cluster on Kubernetes</h2>
+
+<p>You can interact with the SnappyData cluster on Kuberenetes in the same manner as you interact with a SnappyData cluster that runs locally or on-premise. All you require is the host IP address of the locator and the lead with their respective ports numbers.</p>
+
+<p>To find the IP addresses and port numbers of the SnappyData processes, use command:
+<code>kubectl get svc --namespace=snappy</code>. </p>
+
+<p>In the <a href="http://localhost:4567/snappydata/using.html#output">output</a>, the following three services of type <strong>LoadBalancer</strong> are shown:</p>
+
+<ul>
+<li>  <strong>snappydata-leader-public</strong></li>
+<li>  <strong>snappydata-locator-public</strong> </li>
+<li>  <strong>snappydata-server-public</strong><br></li>
+</ul>
+
+<p>These services expose the endpoints for locator, lead, and server respectively. The services have an external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.</p>
+
+<ul>
+<li>  <strong>snappydata-leader-public</strong> service exposes port <strong>5050</strong> for SnappyData Pulse and port <strong>8090</strong> to accept <a href="http://localhost:4567/snappydata/using.html#jobkubernetes">SnappyData jobs</a>.<br></li>
+<li>  <strong>snappydata-locator-public</strong> service exposes port <strong>1527</strong> to accept <a href="http://localhost:4567/snappydata/using.html#jdbckubernetes">JDBC/ODBC connections</a>.</li>
+</ul>
+
+<p>You can do the following on the SnappyData cluster that is deployed on Kubernetes:</p>
+
+<ul>
+<li><p><a href="http://localhost:4567/snappydata/using.html#accesskubernetes">Access SnappyData Pulse UI Dashboard</a></p></li>
+<li><p><a href="http://localhost:4567/snappydata/using.html#jdbckubernetes">Connect SnappyData using JDBC Driver</a></p></li>
+<li><p><a href="http://localhost:4567/snappydata/using.html#querykubernetes">Execute Queries</a></p></li>
+<li><p><a href="http://localhost:4567/snappydata/using.html#jobkubernetes">Submit a SnappyData Job</a></p></li>
+<li><p><a href="http://localhost:4567/snappydata/using.html#stopkubernetes">Stop SnappyData Cluster on Kubernetes</a></p></li>
+</ul>
+
+<p><a id="accesskubernetes"> </a> </p>
+
+<h3>Access SnappyData Pulse UI Dashboard</h3>
+
+<p>SnappyData Pulse is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data. This simple widget based view allows you to navigage easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster. </p>
+
+<p>The dashboards on the SnappyData Pulse can be accessed using <strong>snappydata-leader-public</strong> service. To access SnappyData Pulse in Kubernetes, do the following:</p>
+
+<ol>
+<li><p>Check the SnappyData services running in the Kubernetes cluster.<br><code>kubectl get svc --namespace=snappy</code><br> </p>
+<pre class="highlight plaintext"><code>```
+# check the SnappyData services running in K8S cluster
+kubectl get svc --namespace=snappy
+
+# This displays an output as follows:
+
+NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                                        AGE
+snappydata-leader           ClusterIP      None            &lt;none&gt;           5050/TCP                                       5m
+snappydata-leader-public    LoadBalancer   10.51.255.175   35.232.102.51    5050:31964/TCP,8090:32700/TCP,3768:32575/TCP   5m
+snappydata-locator          ClusterIP      None            &lt;none&gt;           10334/TCP,1527/TCP                             5m
+snappydata-locator-public   LoadBalancer   10.51.241.224   104.198.47.162   1527:31957/TCP                                 5m
+snappydata-server           ClusterIP      None            &lt;none&gt;           1527/TCP                                       5m
+snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527:31853/TCP                                 5m
+
+```
+</code></pre>
+
+<p>The output displays the external IP address of the <strong>snappydata-leader-public</strong> service. </p></li>
+<li><p>Type <em>externalIp:5050</em> in the browser. Here you must replace <code>externalip</code> with the external IP address of the <strong>leader-public</strong> service.<br> For example, use the external IP address displayed in the above output for <strong>leader-public</strong> service as follows:<br><code>35.232.102.51:5050</code><br></p></li>
+</ol>
+
+<p><a id="jdbckubernetes"> </a></p>
+
+<h3>Connect SnappyData Using JDBC Driver</h3>
+
+<p>For Kubernetes deployments, JDBC clients can connect to SnappyData cluster using the JDBC URL that is derived from the <strong>snappydata-locator-public</strong> service.</p>
+
+<p>To connect to SnappyData using JDBC driver in Kubernetes, do the following:</p>
+
+<ol>
+<li><p>Check the SnappyData services running in Kubernetes cluster.<br><code>kubectl get svc --namespace=snappy</code><br></p>
+<pre class="highlight plaintext"><code>```
+# check the SnappyData services running in K8S cluster
+kubectl get svc --namespace=snappy
+# This will show output like following
+
+NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                                        AGE
+snappydata-leader           ClusterIP      None            &lt;none&gt;           5050/TCP                                       5m
+snappydata-leader-public    LoadBalancer   10.51.255.175   35.232.102.51    5050:31964/TCP,8090:32700/TCP,3768:32575/TCP   5m
+snappydata-locator          ClusterIP      None            &lt;none&gt;           10334/TCP,1527/TCP                             5m
+snappydata-locator-public   LoadBalancer   10.51.241.224   104.198.47.162   1527:31957/TCP                                 5m
+snappydata-server           ClusterIP      None            &lt;none&gt;           1527/TCP                                       5m
+snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527:31853/TCP                                 5m
+
+```
+</code></pre>
+
+<p>The output displays the external IP address  of the <strong>snappydata-locator-public</strong> service and the port number for external connections.</p></li>
+<li><p>Use the external IP address and port of the <strong>snappydata-locator-public</strong> services to connect to SnappyData cluster using JDBC connections. For example, based on the above output, the JDBC URL to be used is <a href="http://localhost:4567/snappydata/using.html#">jdbc:snappydata://104.198.47.162:1527/</a></p></li>
+</ol>
+
+<p>You can refer to <a href="http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/">SnappyData documentation</a> for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.</p>
+
+<p><a id="querykubernetes"> </a></p>
+
+<h3>Execute Queries Using SnappyData Shell</h3>
+
+<p>You  can use SnappyData shell to connect to SnappyData and execute your queries. Connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from <a href="https://github.com/SnappyDataInc/snappydata/releases">SnappyData github releases</a>. SnappyData shell need not run within the Kubernetes cluster.</p>
+
+<p><strong>To execute queries in Kubernetes deployment:</strong></p>
+
+<ol>
+<li><p>Check the SnappyData services running in the Kubernetes cluster.<br><code>kubectl get svc --namespace=snappy</code><br></p>
+<pre class="highlight plaintext"><code>```
+# check the SnappyData services running in K8S cluster
+kubectl get svc --namespace=snappy
+# This will show output like following
+
+NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                                        AGE
+snappydata-leader           ClusterIP      None            &lt;none&gt;           5050/TCP                                       5m
+snappydata-leader-public    LoadBalancer   10.51.255.175   35.232.102.51    5050:31964/TCP,8090:32700/TCP,3768:32575/TCP   5m
+snappydata-locator          ClusterIP      None            &lt;none&gt;           10334/TCP,1527/TCP                             5m
+snappydata-locator-public   LoadBalancer   10.51.241.224   104.198.47.162   1527:31957/TCP                                 5m
+snappydata-server           ClusterIP      None            &lt;none&gt;           1527/TCP                                       5m
+snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527:31853/TCP                                 5m
+
+```
+</code></pre>
+
+<p>The output displays the external IP address of the <strong>snappydata-locator-public</strong> services and the port number for external connections. </p></li>
+<li><p>Launch SnappyData shell using the the external IP address of the <strong>snappydata-locator-public</strong> services and the port number for external connections and then create tables and execute queries. <br>Following is an example of executing queries using SnappyData shell.</p>
+<pre class="highlight plaintext"><code>```
+# Connect to snappy-shell
+ bin/snappy
+ snappy&gt; connect client '104.198.47.162:1527';
+
+# Create tables and execute queries
+ snappy&gt; create table t1(col1 int, col2 int) using column;
+ snappy&gt; insert into t1 values(1, 1);
+ 1 row inserted/updated/deleted 
+```
+</code></pre></li>
+</ol>
+
+<p><a id="jobkubernetes"> </a></p>
+
+<h3>Submit a SnappyData Job</h3>
+
+<p>Refer to the <a href="http://snappydatainc.github.io/snappydata/howto/run_spark_job_inside_cluster/">How Tos section</a> in SnappyData documentation to understand how to submit SnappyData jobs.
+However, for submitting a SnappyData job in Kubernetes deployment, you need to use the <strong>snappydata-leader-public</strong> service that exposes port <strong>8090</strong> to run the jobs.</p>
+
+<p><strong>To submit a SnappyData job in Kubernetes deployment:</strong></p>
+
+<ol>
+<li><p>Check the SnappyData services running in Kubernetes cluster.<br><code>kubectl get svc --namespace=snappy</code><br></p>
+<pre class="highlight plaintext"><code>```
+# check the SnappyData services running in K8S cluster
+kubectl get svc --namespace=snappy
+# This will show output like following
+
+NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                                        AGE
+snappydata-leader           ClusterIP      None            &lt;none&gt;           5050/TCP                                       5m
+snappydata-leader-public    LoadBalancer   10.51.255.175   35.232.102.51    5050:31964/TCP,8090:32700/TCP,3768:32575/TCP   5m
+snappydata-locator          ClusterIP      None            &lt;none&gt;           10334/TCP,1527/TCP                             5m
+snappydata-locator-public   LoadBalancer   10.51.241.224   104.198.47.162   1527:31957/TCP                                 5m
+snappydata-server           ClusterIP      None            &lt;none&gt;           1527/TCP                                       5m
+snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527:31853/TCP                                 5m
+```
+</code></pre>
+
+<p>The output displays the external IP address of <strong>snappydata-leader-public</strong> service which must be noted. </p></li>
+<li><p>Change to SnappyData product directory.<br><code>cd $SNAPPY_HOME</code><br></p></li>
+<li><p>Submit the job using the external IP of the <strong>snappydata-leader-public</strong> service and the port number <strong>8090</strong> in the <strong>–lead</strong> option.<br> Following is an example of submitting a SnappyData Job:</p>
+<pre class="highlight plaintext"><code>```
+bin/snappy-job.sh submit
+--app-name CreatePartitionedRowTable
+  --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
+  --app-jar examples/jars/quickstart.jar
+  --lead 35.232.102.51:8090
+</code></pre>
+<pre class="highlight plaintext"><code></code></pre></li>
+</ol>
+
+<p><a id="stopkubernetes"> </a></p>
+
+<h3>Stop SnappyData Cluster on Kubernetes</h3>
+
+<p>To stop the SnappyData cluster on Kubernetes, you must delete the *<em>SnappyData Helm *</em>chart using the <code>helm delete</code> command.</p>
+<pre class="highlight plaintext"><code>$ helm delete --purge snappydata
+</code></pre>
+
+<p>The dynamically provisioned volumes and the data in it is retained, even if the chart deployment is deleted.</p>
+
+<p class="note"><strong>Note: </strong> If the chart is deployed again with the same chart name and if the volume exists, then the existing volume is used instead of provisioning a new volume.</p>
+
+<h2><a id="chartparameters"></a> List of Configuration Parameters for SnappyData Chart</h2>
+
+<p>You can modify the <strong>values.yaml</strong>  file to configure the SnappyData chart. The following table lists the configuration parameters available for this chart:</p>
+
+<table><thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead><tbody>
+<tr>
+<td><code>image</code></td>
+<td>Docker repo from which the SnappyData Docker image is pulled.</td>
+<td><code>snappydatainc/snappydata</code></td>
+</tr>
+<tr>
+<td><code>imageTag</code></td>
+<td>Tag of the SnappyData Docker image that is pulled.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>imagePullPolicy</code></td>
+<td>Pull policy for the image.</td>
+<td><code>IfNotPresent</code></td>
+</tr>
+<tr>
+<td><code>locators.conf</code></td>
+<td>List of the configuration options that is passed to the locators.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>locators.resources</code></td>
+<td>Resource configuration for the locator Pods. User can configure CPU/memory requests and limit the usage.</td>
+<td><code>locators.requests.memory</code> is set to <code>1024Mi</code>.</td>
+</tr>
+<tr>
+<td><code>locators.persistence.storageClass</code></td>
+<td>Storage class that is used while dynamically provisioning a volume.</td>
+<td>Default value is not defined so <code>default</code> storage class for the cluster is chosen.</td>
+</tr>
+<tr>
+<td><code>locators.persistence.accessMode</code></td>
+<td><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes">Access mode</a> that is used for the dynamically provisioned volume.</td>
+<td><code>ReadWriteOnce</code></td>
+</tr>
+<tr>
+<td><code>locators.persistence.size</code></td>
+<td>Size of the dynamically provisioned volume.</td>
+<td><code>10Gi</code></td>
+</tr>
+<tr>
+<td><code>servers.replicaCount</code></td>
+<td>Number of servers that are started in a SnappyData cluster.</td>
+<td><code>2</code></td>
+</tr>
+<tr>
+<td><code>servers.conf</code></td>
+<td>List of the configuration options that are passed to the servers.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>servers.resources</code></td>
+<td>Resource configuration for the server Pods. You can configure CPU/memory requests and limit the usage.</td>
+<td><code>servers.requests.memory</code> is set to <code>4096Mi</code></td>
+</tr>
+<tr>
+<td><code>servers.persistence.storageClass</code></td>
+<td>Storage class that is used while dynamically provisioning a volume.</td>
+<td>Default value is not defined so <code>default</code> storage class for the cluster will be chosen.</td>
+</tr>
+<tr>
+<td><code>servers.persistence.accessMode</code></td>
+<td><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes">Access mode</a> for the dynamically provisioned volume.</td>
+<td><code>ReadWriteOnce</code></td>
+</tr>
+<tr>
+<td><code>servers.persistence.size</code></td>
+<td>Size of the dynamically provisioned volume.</td>
+<td><code>10Gi</code></td>
+</tr>
+<tr>
+<td><code>leaders.conf</code></td>
+<td>List of configuration options that can be passed to the leaders.</td>
+<td></td>
+</tr>
+<tr>
+<td><code>leaders.resources</code></td>
+<td>Resource configuration for the server pods. You can configure CPU/memory requests and limits the usage.</td>
+<td><code>leaders.requests.memory</code> is set to <code>4096Mi</code></td>
+</tr>
+<tr>
+<td><code>leaders.persistence.storageClass</code></td>
+<td>Storage class that is used while dynamically provisioning a volume.</td>
+<td>Default value is not defined so <code>default</code> storage class for the cluster will be chosen.</td>
+</tr>
+<tr>
+<td><code>leaders.persistence.accessMode</code></td>
+<td><a href="https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes">Access mode</a> for the dynamically provisioned volume.</td>
+<td><code>ReadWriteOnce</code></td>
+</tr>
+<tr>
+<td><code>leaders.persistence.size</code></td>
+<td>Size of the dynamically provisioned volume.</td>
+<td><code>10Gi</code></td>
+</tr>
+</tbody></table>
+
+<p>The following sample shows the configuration used to start four servers each with a heap size of 2048 MB:</p>
+<pre class="highlight plaintext"><code>servers:
+  replicaCount: 4
+  ## config options for servers
+  conf: "-heap-size=2048m"
+</code></pre>
+
+<p>You can specify the SnappyData <a href="https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files">configuration parameters</a> in the <strong>servers.conf</strong>, <strong>locators.conf</strong>, and <strong>leaders.conf</strong> files for servers, locators, and leaders respectively.</p>
+
+<p><a id="kubernetesobjects"> </a></p>
+
+<h3>Kubernetes Obects Used in SnappyData Chart</h3>
+
+<p>This section provides details about the following Kubernetes objects that are used in SnappyData Chart:</p>
+
+<ul>
+<li><p><a href="http://localhost:4567/snappydata/using.html#statefulsets">Statefulsets for Servers, Leaders, and Locators</a></p></li>
+<li><p><a href="http://localhost:4567/snappydata/using.html#services">Services that Expose External Endpoints</a></p></li>
+<li><p><a href="http://localhost:4567/snappydata/using.html#persistentvolumes">Persistent Volumes</a></p></li>
+</ul>
+
+<p><a id="statefulsets"> </a></p>
+
+<h4>Statefulsets for Servers, Leaders, and Locators</h4>
+
+<p><a href="https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/">Kubernetes statefulsets</a> are used to manage stateful applications. Statefulsets provide many benefits such as stable and unique network identifiers, stable persistent storage, ordered deployment and scaling, graceful deletion, and rolling updates.
+SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. By default the chart deploys two data servers, one locator, and one leader. Upon deletion of the Helm deployment, each pod gracefully terminates the SnappyData process that is running on it.</p>
+
+<p><a id="services"> </a></p>
+
+<h4>Services that Expose External Endpoints</h4>
+
+<p>SnappyData Helm chart creates services to allow you to make JDBC connections, execute Spark jobs, and access
+SnappyData Pulse etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
+<a id="output"> </a>To check the service created for SnappyData deployment, use command <code>kubectl get svc --namespace=snappy</code>. The following output is displayed:</p>
+<pre class="highlight plaintext"><code>NAME                        TYPE           CLUSTER-IP      EXTERNAL-IP      PORT(S)                                        AGE
+snappydata-leader           ClusterIP      None            &lt;none&gt;           5050/TCP                                       5m
+snappydata-leader-public    LoadBalancer   10.51.255.175   35.232.102.51    5050:31964/TCP,8090:32700/TCP,3768:32575/TCP   5m
+snappydata-locator          ClusterIP      None            &lt;none&gt;           10334/TCP,1527/TCP                             5m
+snappydata-locator-public   LoadBalancer   10.51.241.224   104.198.47.162   1527:31957/TCP                                 5m
+snappydata-server           ClusterIP      None            &lt;none&gt;           1527/TCP                                       5m
+snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527:31853/TCP                                 5m
+
+</code></pre>
+
+<p>In the above output, three services namely <strong>snappydata-leader-public</strong>, <strong>snappydata-locator-public</strong> and <strong>snappydata-server-public</strong> of type <strong>LoadBalancer</strong> are created. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.</p>
+
+<ul>
+<li>  <strong>snappydata-leader-public</strong> service exposes port <strong>5050</strong> for SnappyData Pulse and port <strong>8090</strong> to accept SnappyData jobs.</li>
+<li>  <strong>snappydata-locator-public</strong> service exposes port <strong>1527</strong> to accept JDBC connections.</li>
+</ul>
+
+<p><a id="persistentvolumes"> </a></p>
+
+<h4>Persistent Volumes</h4>
+
+<p>A pod in a SnappyData deployment has a persistent volume mounted on it. This volume is dynamically provisioned and is used
+to store data directory for SnappyData. On each pod, the persistent volume is mounted on path <code>/opt/snappydata/work</code>. These volumes and the data in it is retained even if the chart deployment is deleted.</p>
+
+<h2><a id="accesslogs"></a> Accessing Logs</h2>
+
+<p>You can access the logs when the <a href="http://localhost:4567/snappydata/using.html#running">SnappyData cluster is running</a> as well as when the <a href="http://localhost:4567/snappydata/using.html#notrunning">SnappyData cluster is not running</a>. </p>
+
+<p><a id="running"> </a></p>
+
+<h3>Access Logs when SnappyData Cluster is Running</h3>
+
+<p>When a SnappyData cluster is running, you can open a session for a pod using <code>kubectl</code> command and then view the logs.
+The following example shows how to access logs of <strong>snappydata-server-0</strong>:</p>
+<pre class="highlight plaintext"><code># Connect to snappydata-server-0 pod and open a shell.
+$ kubectl exec -it snappydata-server-0 --namespace snappy -- /bin/bash
+
+# Switch to Snappydata work directory and view the logs.
+$ cd /opt/snappydata/work
+$ ls 
+</code></pre>
+
+<p><a id="notrunning"> </a></p>
+
+<h3>Access Logs when SnappyData Cluster is not Running</h3>
+
+<p>When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script <code>snappy-debug-pod.sh</code> located in the <strong>utils</strong> directory of <a href="https://github.com/SnappyDataInc/spark-on-k8s/tree/master/utils">Spark on k8s</a> repository.
+This script launches a pod in the Kubernetes cluster with persistent volumes, specified via <code>--pvc</code> option, mounted on it and then returns a shell prompt. Volumes are mounted on the path starting with <strong>/data0 (volume1 on /data0 and so on)</strong>.</p>
+
+<!-- The following example shows, how to access the logs when the SnappyData Cluster is not running: -->
+
+<p>In the following example, the names of the persistent volume claims used by the cluster are retrieved and passed to the <code>snappy-debug-pod.sh</code> script to be mounted on the pod.</p>
+<pre class="highlight plaintext"><code># Get the names of persistent volume claims used by SnappyData cluster installed in a namespace
+# called *snappy*. The PVCs used by SnappyData are prefixed with 'snappy-disk-claim-'.
+
+$ kubectl get  pvc --namespace snappy
+NAME                                     STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE
+snappy-disk-claim-snappydata-leader-0    Bound     pvc-17cf9834-68c3-11e8-ab38-42010a8001a3   10Gi       RWO            standard       50d
+snappy-disk-claim-snappydata-locator-0   Bound     pvc-17d75411-68c3-11e8-ab38-42010a8001a3   10Gi       RWO            standard       50d
+snappy-disk-claim-snappydata-server-0    Bound     pvc-17de4f1a-68c3-11e8-ab38-42010a8001a3   10Gi       RWO            standard       50d
+snappy-disk-claim-snappydata-server-1    Bound     pvc-226d778d-68c3-11e8-ab38-42010a8001a3   10Gi       RWO            standard       50d
+
+# To view logs for server-0 and server-1, use PVCs 'snappy-disk-claim-snappydata-server-0' and snappy-disk-claim-snappydata-server-1'
+
+$ ./utils/snappy-debug-pod.sh --pvc snappy-disk-claim-snappydata-server-0,snappy-disk-claim-snappydata-server-1 --namespace snappy
+Volume for snappy-disk-claim-snappydata-server-0 will be mounted on /data0
+Volume for snappy-disk-claim-snappydata-server-1 will be mounted on /data1
+Launching the POD
+If you don't see a command prompt, try pressing enter.
+bash-4.1# 
+</code></pre>
+
+<p>In the above example, the second command opens a session with bash prompt for the pod on which the volumes corresponding to the mentioned PVCs are mounted on paths such as <strong>/data0</strong>, <strong>/data1</strong> and so on.</p>
+
+<p>You can then examine the logs in these mounted paths. For example:</p>
+<pre class="highlight plaintext"><code>bash-4.1# ls /data1
+lost+found  members.txt  snappydata-server-1
+bash-4.1# ls /data0
+lost+found  members.txt  snappydata-server-0
+bash-4.1# ls /data0/snappydata-server-0/
+bash-4.1# ls /data0/snappydata-server-0/*.*log
+</code></pre>
+
+<h2><a id="loglevel"></a> Configuring Log Level</h2>
+
+<p>You can provide a <strong>log4j.properties</strong> file while installing the SnappyData Helm chart. A template file <strong>log4j.properties.template</strong> is provided in the <code>charts/snappydata/conf/</code> directory. This template file can be renamed and used to configure log level as shown in the following example:</p>
+<pre class="highlight plaintext"><code>$ cd charts/snappydata/conf/
+# copy the template file and edit it to configure log level
+$ cp log4j.properties.template log4j.properties
+</code></pre>
+
+<p>When SnappyData chart is installed, the <strong>log4.properties</strong> file  will be used to configure the log level.</p>
+
+<p><a id="deletehelm"> </a></p>
+
+          <gcse:searchresults></gcse:searchresults>
+<a id="repo-link" href="http://github.com/docs-content/tree/master/using.html.md.erb">View the source for this page in GitHub</a>
+
+      </main>
+    </div>
+  </div>
+</div>
+
+<div id="scrim"></div>
+
+<div class="container">
+  <footer class="site-footer-links">
+    <div class="copyright">
+  <a href="http://pivotal.io/privacy-policy">Privacy Policy</a> | 
+  <a href="http://pivotal.io/terms-of-use">Terms of Use</a><br>
+  <a href="http://localhost:4567/">Pivotal Documentation</a>
+  © 2019 <a href="http://pivotal.io/">Pivotal Software</a>, Inc. All Rights Reserved.
+</div>
+<div class="support">
+  Need help? <a href="http://localhost:4567/snappydata/using.html" target="_blank">Visit Support</a>
+</div>
+
+  </footer>
+</div><!--end of container-->
+
+
+
+</body></html>

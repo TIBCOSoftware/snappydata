@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Important Settings - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>Important Settings - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2070,7 +2070,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2177,12 +2177,17 @@ vm.dirty_writeback_centisecs=300
 <p>These settings lower the OS cache buffer sizes which reduce the long GC pauses during disk flush but can decrease overall disk write throughput. This is especially true for slower magnetic disks where the bulk insert throughput can see a noticeable drop (such as 20%), while the duration of GC pauses should reduce significantly (such as 50% or more). If long GC pauses, for example in the range of 10s of seconds, during bulk inserts, updates, or deletes is not a problem then these settings can be skipped.</p>
 <p><strong>Swap File</strong> </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting <code>-Xmx</code> and <code>-Xms</code> settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
-It is recommended to set swap space on your system using the following commands.</p>
+It is recommended to set swap space on your system using the following commands:</p>
 <pre><code># sets a swap space of 32 GB
-sudo dd if=/dev/zero of=/var/swapfile.1 bs=1M count=32768
+
+## If fallocate is available, run the following command: 
+sudo sh -c &quot;fallocate -l 32G /var/swapfile &amp;&amp; chmod 0600 /var/swapfile &amp;&amp; mkswap /var/swapfile &amp;&amp; swapon /var/swapfile&quot;
+## fallocate is recommended since it is much faster, although not supported by some filesystems such as ext3 and zfs.
+## In case fallocate is not available, use dd:
+sudo dd if=/dev/zero of=/var/swapfile bs=1M count=32768
 sudo chmod 600 /var/swapfile.1
-sudo mkswap /var/swapfile.1
-sudo swapon /var/swapfile.1
+sudo mkswap /var/swapfile
+sudo swapon /var/swapfile
 </code></pre>
 
 <p><a id="smartconnector-local-settings"></a></p>

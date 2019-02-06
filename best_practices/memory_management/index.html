@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Memory Management - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>Memory Management - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2068,7 +2068,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2202,13 +2202,13 @@ If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <c
 </tr>
 <tr>
 <td><code>critical-heap-percentage</code></td>
-<td>90</td>
+<td>95</td>
 <td>The heap percent beyond which the system considers itself in a critical state. This is to safeguard the system from crashing due to an OutOfMemoryException. Beyond this point, SnappyData starts canceling all jobs and queries and a LowMemoryException is reported.</br> This means (100 minus <code>critical-heap-percent</code>) memory is not allocated to any pool and is unused.</td>
 </tr>
 <tr>
 <td><code>eviction-heap-percentage</code></td>
-<td>81</td>
-<td>Initially, the amount of memory that is available for storage pool is 50% of the total workable memory. This can however grow up to <code>eviction-heap-percentage</code> (default 81%). On reaching this threshold it starts evicting table data as per the eviction clause that was specified when creating the table.</td>
+<td>85.5</td>
+<td>Initially, the amount of memory that is available for storage pool is 50% of the total workable memory. This can however grow up to <code>eviction-heap-percentage</code> (default 85.5%). On reaching this threshold it starts evicting table data as per the eviction clause that was specified when creating the table.</td>
 </tr>
 <tr>
 <td><code>spark.memory.fraction</code></td>
@@ -2234,15 +2234,15 @@ If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <c
 </ul>
 <p><img alt="Heap-Size" src="../../Images/heap_size.png" /></p>
 <p><strong>Example</strong>: Configuration for memory (typically configured in <strong>conf/leads</strong> or <strong>conf/servers</strong>) </p>
-<pre><code class="scala">-heap-size=20g -critical-heap-percentage=90 -eviction-heap-percentage=81
+<pre><code class="scala">-heap-size=20g -critical-heap-percentage=95 -eviction-heap-percentage=85.5
 </code></pre>
 
 <p><strong>Example</strong>: Depicts how SnappyData derives different memory region sizes</p>
-<pre><code class="scala">Reserved_Heap_Memory =&gt; 20g * (1 - 0.9) = 2g ( 0.9 being derived from critical_heap_percentage)
+<pre><code class="scala">Reserved_Heap_Memory =&gt; 20g * (1 - 0.95) = 1g ( 0.9 being derived from critical_heap_percentage)
 Heap_Memory_Fraction =&gt; (20g - Reserved_Memory) *(0.97) = 17.4 ( 0.97 being derived from spark.memory.fraction)
 Heap_Storage_Pool_Size =&gt; 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFraction)
 Heap_Execution_Pool_Size =&gt; 17.4 * (0.5) = 8.73
-Heap_Max_Storage_pool_Size =&gt; 17.4 * 0.81 = 14.1 ( 0.81 derived from eviction_heap_percentage)
+Heap_Max_Storage_pool_Size =&gt; 17.4 * 0.85 = 14.7 ( 0.85 derived from eviction_heap_percentage)
 </code></pre>
 
 <p><a id="off-heap"></a></p>
@@ -2260,7 +2260,7 @@ Heap_Max_Storage_pool_Size =&gt; 17.4 * 0.81 = 14.1 ( 0.81 derived from eviction
 <tbody>
 <tr>
 <td>memory-size</td>
-<td>0 ( OFF_HEAP not used by default)</td>
+<td>The default value is either 0 or it gets auto-configured in <a href="../../configuring_cluster/configuring_cluster/#autoconfigur_offheap">specific scenarios</a>.</td>
 <td>Total off-heap memory size</td>
 </tr>
 </tbody>
@@ -2268,15 +2268,15 @@ Heap_Max_Storage_pool_Size =&gt; 17.4 * 0.81 = 14.1 ( 0.81 derived from eviction
 <p>Similar to heap pools, off-heap pools are also divided between off-heap storage pool and off-heap execution pool. The rules of borrowing memory from each other also remains same.</p>
 <p><img alt="Off-Heap" src="../../Images/off_heap_size.png" /></p>
 <p><strong>Example</strong>: Off-heap configuration: </p>
-<pre><code class="scala">-heap-size = 4g -memory-size=16g -critical-heap-percentage=90 -eviction-heap-percentage=81
+<pre><code class="scala">-heap-size = 4g -memory-size=16g -critical-heap-percentage=95 -eviction-heap-percentage=85.5
 </code></pre>
 
 <p><strong>Example</strong>: How SnappyData derives different memory region sizes.</p>
-<pre><code class="scala">Reserved_Memory ( Heap Memory) =&gt; 4g * (1 - 0.9) = 400m ( 0.9 being derived from critical_heap_percentage)
+<pre><code class="scala">Reserved_Memory ( Heap Memory) =&gt; 4g * (1 - 0.95) = 200m ( 0.95 being derived from critical_heap_percentage)
 Memory_Fraction ( Heap Memory) =&gt; (4g - Reserved_Memory) *(0.97) = 3.5g
 Heap Storage_Pool_Size =&gt; 3.5 * (0.5) = 1.75
 Heap Execution_Pool_Size =&gt; 3.5 * (0.5) = 1.75
-Max_Heap_Storage_pool_Size =&gt; 3.5g * 0.81 = 2.8 ( 0.81 derived from eviction_heap_percentage)
+Max_Heap_Storage_pool_Size =&gt; 3.5g * 0.85 = 2.9 ( 0.85 derived from eviction_heap_percentage)
 
 
 Off-Heap Storage_Pool_Size =&gt; 16g * (0.5) = 8g

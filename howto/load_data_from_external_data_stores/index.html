@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2070,7 +2070,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2119,7 +2119,7 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 </div>
 <h2 id="example-loading-csv-files-from-hdfs-using-api">Example - Loading CSV Files from HDFS using API</h2>
 <p>The example below demonstrates how you can read CSV files from HDFS using an API:</p>
-<pre><code class="pre">val dataDF=snc.read.option(&quot;header&quot;,&quot;true&quot;).csv (&quot;../../quickstart/src/main/resources/customer_with_headers.csv&quot;)
+<pre><code class="pre">val dataDF=snc.read.option(&quot;header&quot;,&quot;true&quot;).csv (&quot;hdfs://namenode-uri:port/path/to/customer_with_headers.csv&quot;)
 
 // Drop table if it exists
 snc.sql(&quot;drop table if exists CUSTOMER&quot;)
@@ -2131,7 +2131,7 @@ dataDF.write.format(&quot;column&quot;).saveAsTable(&quot;CUSTOMER&quot;)
 <h2 id="example-loading-and-enriching-csv-data-from-hdfs">Example - Loading and Enriching CSV Data from HDFS</h2>
 <p>The example below demonstrates how you can load and enrich CSV Data from HDFS:</p>
 <pre><code class="pre">val dataDF = snappy.read.option(&quot;header&quot;, &quot;true&quot;)
-    .csv(&quot;../examples/src/main/resources/customer_with_headers.csv&quot;)
+    .csv(&quot;hdfs://namenode-uri:port/path/to/customers.csv&quot;)
 
 // Drop table if it exists and create it with only required fields
 snappy.sql(&quot;drop table if exists CUSTOMER&quot;)

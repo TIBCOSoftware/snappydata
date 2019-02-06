@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>List of Properties - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>List of Properties - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2062,7 +2062,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2116,6 +2116,11 @@
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
+<td>-client-port</td>
+<td>The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.</td>
+<td>Locator</br>Server</td>
+</tr>
+<tr>
 <td>-critical-heap-percentage<a id="critical-heap-percentage"></a></td>
 <td>Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set <code>-heap-size</code>, the default value for <code>critical-heap-percentage</code> is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.</td>
 <td>Server</br>Lead</td>
@@ -2158,21 +2163,21 @@
 <tr>
 <td>-J-Dsnappydata.enable-rls</td>
 <td>Enables the system for row level security when set to true.  By default this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.</td>
-<td></td>
+<td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
 <td>-J-Dsnappydata.RESTRICT_TABLE_CREATION</td>
-<td>Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. Default is false.</td>
+<td>Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
 <td>jobserver.waitForInitialization</td>
-<td>When this property is set to <strong>true</strong>, the cluster startup waits for the Spark jobserver to be fully initialized before marking the lead node as <strong>RUNNING</strong>. The default is <strong>false</strong>.</td>
-<td></td>
+<td>When this property is set to true, the cluster startup waits for the Spark jobserver to be fully initialized before marking the lead node as <strong>RUNNING</strong>. The default is false.</td>
+<td>Lead</td>
 </tr>
 <tr>
 <td>-locators</td>
-<td>List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.</td>
+<td>List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.</td>
 <td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
@@ -2182,13 +2187,13 @@
 </tr>
 <tr>
 <td>-memory-size</td>
-<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is 0 (OFF_HEAP is not used by default)</td>
+<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is either 0 or it gets auto-configured in <a href="../configuring_cluster/#autoconfigur_offheap">specific scenarios</a>.</td>
 <td>Server</br>Lead</td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
 <td>Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000-600000 milliseconds.</td>
-<td>Server</br>Locator</br>Lead</td>
+<td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
 <td>-peer-discovery-address</td>
@@ -2206,31 +2211,6 @@
 <td>Server</td>
 </tr>
 <tr>
-<td>-spark.sql.codegen.cacheSize<a id="codegencache"></a></td>
-<td>Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. Default is 2000.</td>
-<td>Lead</td>
-</tr>
-<tr>
-<td>-spark.jobserver.port</td>
-<td>The port on which to run the jobserver. Default port is 8090.</td>
-<td></td>
-</tr>
-<tr>
-<td>-spark.jobserver.bind-address</td>
-<td>The address on which the jobserver listens. Default address is 0.0.0.</td>
-<td></td>
-</tr>
-<tr>
-<td>-spark.jobserver.job-result-cache-size</td>
-<td>The number of job results to keep per JobResultActor/context. The default is 5000.</td>
-<td></td>
-</tr>
-<tr>
-<td>-spark.jobserver.max-jobs-per-context</td>
-<td>The number of jobs that can be run simultaneously in the context. The Default is 8.</td>
-<td></td>
-</tr>
-<tr>
 <td><a id="sparkdrivermaxresult"></a>-spark.driver.maxResultSize</td>
 <td>Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1MB or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1GB.</td>
 <td>Lead</td>
@@ -2241,14 +2221,74 @@
 <td>Lead</td>
 </tr>
 <tr>
+<td>spark.context-settings.num-cpu-cores</td>
+<td>The number of cores that can be allocated. The default is 4.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.context-settings.memory-per-node</td>
+<td>The executor memory per node (-Xmx style. For example: 512m, 1G). The default is 512m.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.context-settings.streaming.batch_interval</td>
+<td>The batch interval for Spark Streaming contexts in milliseconds. The default is 1000.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.context-settings.streaming.stopGracefully</td>
+<td>If set to true, the streaming stops gracefully by waiting for the completion of processing of all the received data. The default is true.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>spark.context-settings.streaming.stopSparkContext</td>
+<td>if set to true, the SparkContext is stopped along with the StreamingContext. The default is true.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>-spark.jobserver.bind-address</td>
+<td>The address on which the jobserver listens. Default address is 0.0.0.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>-spark.jobserver.job-result-cache-size</td>
+<td>The number of job results to keep per JobResultActor/context. The default is 5000.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>-spark.jobserver.max-jobs-per-context</td>
+<td>The number of jobs that can be run simultaneously in the context. The default is 8.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>-spark.jobserver.port</td>
+<td>The port on which to run the jobserver. Default port is 8090.</td>
+<td>Lead</td>
+</tr>
+<tr>
 <td>-spark.local.dir</td>
 <td>Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.</td>
-<td>Lead</td>
+<td>Lead</br>Server</td>
 </tr>
 <tr>
 <td>-spark.network.timeout</td>
 <td>The default timeout for all network interactions while running queries.</td>
 <td>Lead</td>
+</tr>
+<tr>
+<td>-spark.sql.codegen.cacheSize<a id="codegencache"></a></td>
+<td>Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. The default is 2000.</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>-spark.ui.port</td>
+<td>Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050</td>
+<td>Lead</td>
+</tr>
+<tr>
+<td>-thrift-ssl<a id="thrift-properties"></a></td>
+<td>Specifies if you want to enable or disable SSL. Values are true or false.</td>
+<td></td>
 </tr>
 <tr>
 <td>-thrift-ssl-properties</td>
@@ -2282,11 +2322,11 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <tbody>
 <tr>
 <td>-snappydata.column.batchSize</td>
-<td>The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the <code>create table</code> DDL. Maximum allowed size is 2GB. Default is 24m.</td>
+<td>The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the <code>create table</code> DDL. Maximum allowed size is 2GB. The default is 24m.</td>
 </tr>
 <tr>
 <td>-snappydata.column.maxDeltaRows</td>
-<td>The maximum number of rows that can be in the delta buffer of a column table. The size of delta buffer is already limited by <code>ColumnBatchSize</code> property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of <code>ColumnBatchSize</code> and this property is hit first. It can also be set for each table in the <code>create table</code> DDL, else this setting is used for the <code>create table</code></td>
+<td>The maximum number of rows that can be in the delta buffer of a column table. The size of the delta buffer is already limited by <code>ColumnBatchSize</code> property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of <code>ColumnBatchSize</code> and this property is hit first. It can also be set for each table in the <code>create table</code> DDL, else this setting is used for the <code>create table</code></td>
 </tr>
 <tr>
 <td>-snappydata.sql.hashJoinSize</td>
@@ -2294,7 +2334,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 </tr>
 <tr>
 <td>-snappydata.sql.hashAggregateSize</td>
-<td>Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.</td>
+<td>Aggregation uses optimized hash aggregation plan but one that does not overflow to disk and can cause OOME if the result of aggregation is large. The limit specifies the input data size (in bytes or k/m/g/t suffixes for unit) and not the output size. Set this only if there are queries that can return a large number of rows in aggregation results. The default value is set to 0 which means, no limit is set on the size, so the optimized hash aggregation is always used.</td>
 </tr>
 <tr>
 <td>-snappydata.sql.planCacheSize</td>
@@ -2305,16 +2345,12 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <td>Configures the maximum size in bytes for a table that is broadcast to all server nodes when performing a join.  By setting this value to <strong>-1</strong> broadcasting can be disabled.</td>
 </tr>
 <tr>
-<td>-snappydata.sql.hashJoinSize</td>
-<td>The join would be converted into a hash join if the table is of a size that is less than the <strong>hashJoinSize</strong>. The limit specifies an estimate on the input data size (in bytes or k/m/g/t suffixes for a unit). The default value is 100MB.</td>
-</tr>
-<tr>
 <td>-snappydata.linkPartitionsToBuckets</td>
-<td>When this property is set to <strong>true</strong>, each bucket is always treated as a separate partition in column/row table scans. When this is set to <strong>false</strong>, SnappyData creates only as many partitions as executor cores by clubbing multiple buckets into each partition when possible. The default is <strong>false</strong>.</td>
+<td>When this property is set to true, each bucket is always treated as a separate partition in column/row table scans. When this is set to false, SnappyData creates only as many partitions as executor cores by clubbing multiple buckets into each partition when possible. The default is false.</td>
 </tr>
 <tr>
 <td>-snappydata.preferPrimaries</td>
-<td>Use this property to configure your preference to use primary buckets in queries. This reduces the scalability of queries in the interest of reduced memory usage for secondary buckets. The default is <strong>false</strong>.</td>
+<td>Use this property to configure your preference to use primary buckets in queries. This reduces the scalability of queries in the interest of reduced memory usage for secondary buckets. The default is false.</td>
 </tr>
 <tr>
 <td>-snappydata.sql.partitionPruning</td>

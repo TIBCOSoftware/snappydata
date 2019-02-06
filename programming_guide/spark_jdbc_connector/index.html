@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../favicon.ico">
   
-  <title>Accessing SnappyData Tables from any Spark (2.1+) Cluster - SnappyData Documentation<br/><sub>v.1.0.2.1</sub></title>
+  <title>Accessing SnappyData Tables from any Spark (2.1+) Cluster - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -42,7 +42,7 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href="../.." class="icon icon-home"> SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../.." class="icon icon-home"> SnappyData Documentation v.1.0.2.1</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search..." />
@@ -2064,7 +2064,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="../..">SnappyData Documentation<br/><sub>v.1.0.2.1</sub></a>
+        <a href="../..">SnappyData Documentation v.1.0.2.1</a>
       </nav>
 
       
@@ -2104,8 +2104,8 @@ If you are using a Spark version or distribution that is based on a version high
 All you need is a JDBC driver from the database vendor. Likewise, applications can use the Spark <a href="../../reference/API_Reference/apireference_guide/#dataframewriter">DataFrameWriter</a> to insert, append, or replace a dataset in the database.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-</div>
 <p>The usage model for the Spark JDBC data source is described <a href="https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases">here</a>. We strongly recommend you to go through this section in case you are not familiar with how Spark works with data sources.</p>
+</div>
 <h3 id="pushing-entire-query-into-the-database">Pushing Entire Query into the Database</h3>
 <p>When Spark queries are executed against external data sources, the current Spark model can only push down filters and projections in the query down to the database. If you are running an expensive aggregation on a large data set, then the entire data set is fetched into the Spark partitions, and the query is executed inside your Spark cluster. 
 However, when you use a JDBC data source, you can pass entire queries or portions of the query entirely to the database such as shown in the following sample:</p>
