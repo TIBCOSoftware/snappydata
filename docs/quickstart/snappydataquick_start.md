@@ -133,7 +133,7 @@ SnappyData contains various quickstart scripts that can be used to run some basi
 			
             ./bin/snappy
 			connect client '127.0.0.1:1527';
-    		run quickstart/scripts/create_and_load_column_table.sql;
+    		RUN 'quickstart/scripts/create_and_load_column_table.sql';
             
             # Use the following command to view the details of the external table. 
 			describe staging_airline;
@@ -185,18 +185,17 @@ You can also try the following:
 
 *	**Create and load a row table:**
 
-		run ./quickstart/scripts/create_and_load_row_table.sql;
+		RUN './quickstart/scripts/create_and_load_row_table.sql';
 
 *	**View the status of the system:**
 
-		run ./quickstart/scripts/status_queries.sql;
+		RUN './quickstart/scripts/status_queries.sql';
 
 <a id= createcoltabwithext> </a>
 ## Create a Column Table Using an External Table 
 Similarly as the quickstart scripts, you can try to create an external table named staging_airline to load the formatted data from a airlineParquetData file with inferSchema option as true. Later, you can create a column table named airline and pull data from the external table into this table. After pulling in the data, you can check the number of records in the table.
 
-				CREATE EXTERNAL TABLE STAGING_AIRLINE
-   	USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData', inferSchema 'true');
+		CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData', inferSchema 'true');
     
     		CREATE TABLE AIRLINE2 USING column AS (SELECT * FROM STAGING_AIRLINE);
             

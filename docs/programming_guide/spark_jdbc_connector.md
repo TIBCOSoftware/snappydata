@@ -9,7 +9,8 @@ Spark SQL supports reading and writing to databases using a built-in **JDBC data
 All you need is a JDBC driver from the database vendor. Likewise, applications can use the Spark [DataFrameWriter](/reference/API_Reference/apireference_guide.md#dataframewriter) to insert, append, or replace a dataset in the database.
 
 !!!Note
-The usage model for the Spark JDBC data source is described [here](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases). We strongly recommend you to go through this section in case you are not familiar with how Spark works with data sources.
+	The usage model for the Spark JDBC data source is described [here](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases). We strongly recommend you to go through this section in case you are not familiar with how Spark works with data sources.
+
 
 ### Pushing Entire Query into the Database
 When Spark queries are executed against external data sources, the current Spark model can only push down filters and projections in the query down to the database. If you are running an expensive aggregation on a large data set, then the entire data set is fetched into the Spark partitions, and the query is executed inside your Spark cluster. 
