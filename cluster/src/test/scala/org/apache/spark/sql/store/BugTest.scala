@@ -575,7 +575,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         Row("abc"),
         Row("def")
       )
-
+      val stmt = conn.createStatement()
       val sparkSession = SparkSession.builder.appName("test").
         sparkContext(snc.sparkContext).getOrCreate()
       val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
@@ -583,8 +583,48 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       sparkSession.table("names").
         write.mode(SaveMode.Overwrite).jdbc(
         s"jdbc:snappydata://$serverHostPort2/", "names", new Properties())
+      var rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      var tableType = rs.getString(1)
+      assertEquals("T", tableType)
+      stmt.execute("drop table names")
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      assertFalse(rs.next())
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      props.put("isolationLevel", "NONE")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
+  ignore("SNAP-2910") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+
       val stmt = conn.createStatement()
-      stmt.execute("drop table if exists names")
+
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+
       val props = new Properties()
       props.put("createTableOptions", " using column options( buckets '13')")
       sparkSession.table("names").
@@ -595,7 +635,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       rs.next()
       val tableType = rs.getString(1)
       assertEquals("C", tableType)
-
+      stmt.execute("drop table if exists test")
     } finally {
       TestUtil.stopNetServer
     }
