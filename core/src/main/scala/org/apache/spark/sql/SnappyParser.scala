@@ -1135,9 +1135,8 @@ class SnappyParser(session: SnappySession)
         => {
           val colNames = identifiers.asInstanceOf[Option[String]]
           val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
-          val snc = new SnappySession(session.sparkContext)
-          val tableType = CatalogObjectType.getTableType(snc.externalCatalog.getTable(
-            snc.getCurrentSchema, r.identifier)).toString
+          val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
+            session.getCurrentSchema, r.identifier)).toString
           if (tableType == CatalogObjectType.Column.toString) {
             PutIntoValuesColumnTable(r, colNames, valueExpr1.head)
           }
