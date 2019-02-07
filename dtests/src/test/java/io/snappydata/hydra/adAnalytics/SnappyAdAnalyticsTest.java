@@ -152,7 +152,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String command = "";
       if(!zookeeperHost.equals("localhost"))
         command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + zookeeperHost;
-      command = "nohup " + command + script + " " + myPropFilePath + " > " + logFile + " &";
+      command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun("QuorumPeerMain");
@@ -229,7 +229,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         Log.getLogWriter().info(broker + " properties files is  " + myPropFile);
         if(!hostname.equals("localhost"))
           command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
-        command = "nohup " + command + script + " " + myPropFilePath + " > " + logFile + " &";
+        command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
 
