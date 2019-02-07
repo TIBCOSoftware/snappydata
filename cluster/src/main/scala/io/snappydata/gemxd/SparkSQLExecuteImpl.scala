@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.DataSerializer
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
@@ -36,7 +37,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
@@ -78,7 +79,7 @@ class SparkSQLExecuteImpl(val sql: String,
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = session.sql(sql)
+  private[this] val df = Utils.sqlInternal(session, sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
@@ -481,7 +482,12 @@ object SnappySessionPerConnection {
     val session = connectionIdMap.get(connectionID)
     if (session != null) session
     else {
-      val session = SnappyContext().snappySession
+      val session = SnappyContext.globalSparkContext match {
+        // use a CancelException to force failover by client to another lead if available
+        case null => throw new CacheClosedException("No SparkContext ...")
+        case sc => new SnappySession(sc)
+      }
+      Property.PlanCaching.set(session.sessionState.conf, true)
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }
