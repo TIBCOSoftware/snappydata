@@ -25,7 +25,7 @@ You can use this command:
 ## Example
 
 ```
- ./bin/snappy validate-disk-store GFXD-DEFAULT-DISKSTORE /home/alex/snappy/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1
+ ./bin/snappy validate-disk-store GFXD-DEFAULT-DISKSTORE /home/xyz/<snappydata_install_dir>/work/localhost-server-1
 ```
 
 This command displays an output  as shown in the following example:
