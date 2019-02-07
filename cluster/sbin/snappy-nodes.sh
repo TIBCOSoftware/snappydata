@@ -264,6 +264,7 @@ function execute() {
       fi
     fi
     launchcommand="${@// /\\ } ${args} ${postArgs} < /dev/null 2>&1"
+    echo "LAUNCH_COMMAND = $launchcommand"
     eval $launchcommand &
     LAST_PID="$!"
   fi
