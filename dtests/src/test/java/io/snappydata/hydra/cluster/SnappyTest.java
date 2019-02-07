@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
@@ -2250,6 +2251,11 @@ public class SnappyTest implements Serializable {
       }
       boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
       if(!checkJobStatus(getJobIDs(logFile)) && !cycleVms){
+        if(SnappyPrms.isReRunWithDebugEnabled())
+        {
+          HydraTask_changeLogLevel();
+          HydraTask_executeSnappyJob();
+        }
         throw new TestException
             ("Snappy job execution has failed. Please check the logs.");
       }
@@ -3765,6 +3771,27 @@ public class SnappyTest implements Serializable {
       Log.getLogWriter().info(printStackTrace(e));
     }
     return hostNames;
+  }
+
+  public static void HydraTask_changeLogLevel() {
+    setLogLevel(SnappyPrms.getLogger(), SnappyPrms.getNewLogLevel());
+  }
+
+  public static void setLogLevel(String logger, String loglevel){
+    Connection conn = null;
+    try {
+      conn = getLocatorConnection();
+    } catch (SQLException se) {
+      throw new TestException("Got exception while getting connection", se);
+    }
+    try {
+      PreparedStatement ps = conn.prepareStatement("call sys.set_log_level(?,?)");
+      ps.setString(0, logger);
+      ps.setString(1, loglevel);
+      ps.execute();
+    } catch(SQLException se) {
+      throw new TestException("Got exception while executing set log level procedure.", se);
+    }
   }
 
   protected void startSnappyLocator() {

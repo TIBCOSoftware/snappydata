@@ -115,6 +115,9 @@ object LoadData extends SnappySQLJob {
     pw.flush()
   }
 
+  /*
+  Generate duplicate data from csv.
+   */
   def generateDupData(tableName: String, pw: PrintWriter, numIter: Int, snc: SQLContext,
   dataLocation: String, csvFileLocation: String, parquetFileLocation: String): Any
   = {
@@ -129,20 +132,24 @@ object LoadData extends SnappySQLJob {
     // generating 10 million records from 2 lac records
     pw.println("Duplicating data to temp table...")
     for (i <- 0 until numIter) {
-      temp_DF.write.format("column").mode(SaveMode.Append).saveAsTable(s"tempTable")
+      temp_DF.write.format("column").mode(SaveMode.Append).saveAsTable(s"${tableName}Temp")
     }
 
     // writing dat to parquet and csv
-    pw.println("creating df with duplicate records and writing it to csv and parquet..")
-    val df = snc.sql("select * from meterReadingstemp")
-    df.write.parquet(s"${parquetFileLocation}/${tableName}")
-    df.write.csv(s"${csvFileLocation}/$tableName")
+    writeToCsvAndParquet(tableName + "Temp", pw, snc, csvFileLocation, parquetFileLocation)
 
     pw.println("Dropping temp table")
     snc.sql(s"drop table if exists ${tableName}Temp")
-    pw.flush()
   }
 
+  def writeToCsvAndParquet(tableName: String, pw: PrintWriter, snc: SQLContext, csvFileLocation:
+  String, parquetFileLocation: String): Unit = {
+    pw.println("creating df with duplicate records and writing it to csv and parquet..")
+    val df = snc.sql(s"select * from ${tableName}")
+    df.write.parquet(s"${parquetFileLocation}/${tableName}")
+    df.write.csv(s"${csvFileLocation}/$tableName")
+    pw.flush()
+  }
   /**
     * Validate if the data files are available, else throw SparkJobInvalid
     *
