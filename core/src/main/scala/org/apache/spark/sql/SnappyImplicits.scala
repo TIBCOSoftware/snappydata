@@ -180,7 +180,7 @@ object snappy extends Serializable {
      *
      * This ignores all SaveMode.
      */
-    def putInto(tableName: String): Unit = {
+    def putInto(tableName: String): Int = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
@@ -200,7 +200,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.tableIdentifier(tableName)), input)).executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), input)).executedPlan.
+          executeCollect().foldLeft(0)(_ + _.getInt(0))
     }
 
     def deleteFrom(tableName: String): Unit = {

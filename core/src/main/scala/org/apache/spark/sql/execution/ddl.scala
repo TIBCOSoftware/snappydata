@@ -635,22 +635,23 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
     case _ => value
   }
 
+  override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
+
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    val snc = new SnappySession(sparkSession.sparkContext)
+    val snc = sparkSession.asInstanceOf[SnappySession]
     val sc = sparkSession.sparkContext
-    val stats = sparkSession.sharedState
+    val schema = sparkSession.sharedState
         .externalCatalog.getTable(snc.getCurrentSchema, identifier.identifier).schema
     var v1 = values.zipWithIndex.map { case (e, ci) =>
       val targetType = StringType
       Cast(e, targetType).eval()
     }
     val valuesList = v1.toList
-    val rowRdd = valuesList.zip(stats)
+    val rowRdd = valuesList.zip(schema)
         .map { case (value, struct) => convertTypes(value.toString, struct) }
     val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
     import snappy._
-    val someDF = snc.createDataFrame(rdd1, stats)
-    someDF.write.putInto(identifier.identifier)
-    Nil
+    val someDF = snc.createDataFrame(rdd1, schema)
+    Seq(Row(someDF.write.putInto(identifier.identifier)))
   }
 }
