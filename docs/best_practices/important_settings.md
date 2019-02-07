@@ -98,7 +98,7 @@ sudo sh -c "fallocate -l 32G /var/swapfile && chmod 0600 /var/swapfile && mkswap
 ## fallocate is recommended since it is much faster, although not supported by some filesystems such as ext3 and zfs.
 ## In case fallocate is not available, use dd:
 sudo dd if=/dev/zero of=/var/swapfile bs=1M count=32768
-sudo chmod 600 /var/swapfile.1
+sudo chmod 600 /var/swapfile
 sudo mkswap /var/swapfile
 sudo swapon /var/swapfile
 ```
