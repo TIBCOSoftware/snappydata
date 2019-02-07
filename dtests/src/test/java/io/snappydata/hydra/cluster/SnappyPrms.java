@@ -631,6 +631,39 @@ public class SnappyPrms extends BasePrms {
   }
 
   /**
+   *
+   */
+
+  public static Long reRunWithDebugLogging;
+
+  public static boolean isReRunWithDebugEnabled() {
+    Long key = reRunWithDebugLogging;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+
+  }
+  /**
+   * Parameter to pass for which logger the loglevel settings should be changed
+   */
+  public static Long logger;
+
+  public static String getLogger(){
+    Long key = logger;
+    return tasktab().stringAt(key, tab().stringAt(key, ""));
+  }
+
+  /**
+   * Parameter to specificy the required loglevel setting.
+   */
+
+  public static Long newLogLevel;
+
+  public static String getNewLogLevel(){
+    Long key = newLogLevel;
+    return tasktab().stringAt(key, tab().stringAt(key, "CONFIG"));
+  }
+
+
+  /**
    * Parameter used to get the List of expected exceptions in the test run.
    * Array of values for expected exceptions
    */
