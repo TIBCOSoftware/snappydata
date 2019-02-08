@@ -195,11 +195,7 @@ object Property extends Enumeration {
 
   val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
-    "Property to set/unset plan caching", Some(true))
-
-  val PlanCachingAll: SQLValue[Boolean] = SQLVal[Boolean](
-    s"${Constant.PROPERTY_PREFIX}sql.planCachingAll",
-    "Property to set/unset plan caching on all sessions", Some(true))
+    "Property to set/unset plan caching", Some(false))
 
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",
