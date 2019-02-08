@@ -51,7 +51,7 @@ while (( "$#" )); do
     -conf | --config)
       conf_dir="$2"
       if [ ! -d $conf_dir ] ; then
-        echo "Conf directory $conf_dir does not exists"
+        echo "Conf directory $conf_dir does not exist"
         exit 1
       fi
       CONF_DIR_ARG="--config $conf_dir"
