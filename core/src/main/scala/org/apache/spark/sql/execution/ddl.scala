@@ -55,6 +55,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.sql.functions._
+import org.apache.spark.unsafe.types.CalendarInterval
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -624,15 +625,22 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
     extends RunnableCommand {
 
   def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
+    case BooleanType => value.toBoolean
     case BinaryType => value.toCharArray().map(ch => ch.toByte)
     case ByteType => value.toByte
     case BooleanType => value.toBoolean
     case DoubleType => value.toDouble
     case FloatType => value.toFloat
     case ShortType => value.toShort
-    case DateType => value
     case IntegerType => value.toInt
     case LongType => value.toLong
+    case DateType => java.sql.Date.valueOf(value)
+    case TimestampType => java.sql.Timestamp.valueOf(value)
+    case CalendarIntervalType => CalendarInterval.fromString(value)
+    case t: DecimalType =>
+      val d = Decimal(value)
+      assert(d.changePrecision(t.precision, t.scale))
+      d
     case _ => value
   }
 
@@ -648,13 +656,13 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
     }
     var schema = sparkSession.sharedState
         .externalCatalog.getTable(snc.getCurrentSchema, tableName).schema
+    import snappy._
     var rowRdd = List.empty[Any]
     val valuesList = v1.toList
     if(colNames == None) {
       rowRdd = valuesList.zip(schema)
           .map { case (value, struct) => convertTypes(value.toString, struct) }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      import snappy._
       var someDF1 = snc.createDataFrame(rdd1, schema)
       Seq(Row(someDF1.write.putInto(tableName)))
     }
@@ -666,7 +674,6 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
       rowRdd = valuesList.zip(colSchema)
           .map { case (value, struct) => convertTypes(value.toString, struct) }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      import snappy._
       var someDF = snc.createDataFrame(rdd1, colSchema)
       val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
       var df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
