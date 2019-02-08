@@ -24,14 +24,16 @@ import scala.collection.mutable.ArrayBuffer
 import scala.reflect.{ClassTag, classTag}
 
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, ColocationHelper, PartitionedRegion}
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import io.snappydata.Property
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property.HashAggregateSize
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
-import org.apache.spark.sql.aqp.SnappyContextFunctions
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
@@ -681,11 +683,11 @@ class SnappySessionState(val snappySession: SnappySession)
   protected def newQueryExecution(plan: LogicalPlan): QueryExecution = {
     new QueryExecution(snappySession, plan) {
 
-      snappySession.addContextObject(SnappySession.ExecutionKey,
-        () => newQueryExecution(plan))
-
-      override protected def preparations: Seq[Rule[SparkPlan]] =
+      override protected def preparations: Seq[Rule[SparkPlan]] = {
+        snappySession.addContextObject(SnappySession.ExecutionKey,
+          () => newQueryExecution(plan))
         queryPreparations(topLevel = true)
+      }
     }
   }
 
@@ -818,14 +820,6 @@ class SnappyConf(@transient val session: SnappySession)
         case None => session.planCaching = Property.PlanCaching.defaultValue.get
       }
 
-    case Property.PlanCachingAll.name =>
-      value match {
-        case Some(boolVal) =>
-          val clearCache = !boolVal.toString.toBoolean
-          if (clearCache) SnappySession.getPlanCache.asMap().clear()
-        case None =>
-      }
-
     case Property.Tokenize.name =>
       value match {
         case Some(boolVal) => session.tokenize = boolVal.toString.toBoolean
@@ -841,6 +835,20 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
 
     case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
+
+    case Constant.TRIGGER_AUTHENTICATION => value match {
+      case Some(boolVal) if boolVal.toString.toBoolean =>
+        if ((Misc.getMemStoreBootingNoThrow ne null) && Misc.isSecurityEnabled) {
+          SecurityUtils.checkCredentials(getConfString(
+            com.pivotal.gemfirexd.Attribute.USERNAME_ATTR),
+            getConfString(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)) match {
+            case None => // success
+            case Some(failure) =>
+              throw Util.generateCsSQLException(SQLState.NET_CONNECT_AUTH_FAILED, failure)
+          }
+        }
+      case _ =>
+    }
 
     case _ => // ignore others
   }

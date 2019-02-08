@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -33,7 +32,6 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
@@ -48,7 +46,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -84,7 +82,6 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COMPRESSION_CODEC = "COMPRESSION"
-  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   // inbuilt basic table properties
   final val PARTITION_BY = "PARTITION_BY"
@@ -92,9 +89,10 @@ object ExternalStoreUtils {
   final val BUCKETS = "BUCKETS"
   final val KEY_COLUMNS = "KEY_COLUMNS"
 
-  // these two are obsolete column table properties only for backward compatibility
+  // these three are obsolete column table properties only for backward compatibility
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
+  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
@@ -492,11 +490,11 @@ object ExternalStoreUtils {
    * @return A Catalyst schema corresponding to columns in the given order.
    */
   def pruneSchema(fieldMap: scala.collection.Map[String, StructField],
-      columns: Array[String]): StructType = {
+      columns: Array[String], columnType: String): StructType = {
     new StructType(columns.map { col =>
       fieldMap.get(col) match {
         case None => throw new AnalysisException("Cannot resolve " +
-            s"""column name "$col" among (${fieldMap.keys.mkString(", ")})""")
+            s"""$columnType column name "$col" among (${fieldMap.keys.mkString(", ")})""")
         case Some(f) => f
       }
     })

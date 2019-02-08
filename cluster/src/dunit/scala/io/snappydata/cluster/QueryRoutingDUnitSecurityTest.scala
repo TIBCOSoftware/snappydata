@@ -19,6 +19,7 @@ package io.snappydata.cluster
 
 import java.sql.{BatchUpdateException, Connection, DriverManager, ResultSet, SQLException}
 
+import io.snappydata.cluster.ClusterManagerLDAPTestBase.thriftPort
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.Logging
@@ -56,9 +57,81 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 
     QueryRoutingDUnitSecurityTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
   }
+
+  /** Test some queries on the embedded thrift server */
+  def testEmbeddedThriftServer(): Unit = {
+    val jdbcUser1 = "gemfire1"
+    val jdbcUser2 = "gemfire2"
+
+    try {
+      DriverManager.getConnection(s"jdbc:hive2://localhost:$thriftPort/app")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "08004" => // expected
+    }
+    try {
+      DriverManager.getConnection(s"jdbc:hive2://localhost:$thriftPort/app",
+        "app", "app")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "08004" => // expected
+    }
+    try {
+      DriverManager.getConnection(s"jdbc:hive2://localhost:$thriftPort/$jdbcUser1",
+        jdbcUser1, jdbcUser2)
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "08004" => // expected
+    }
+    try {
+      DriverManager.getConnection(s"jdbc:hive2://localhost:$thriftPort/$jdbcUser1",
+        null, null)
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "08004" => // expected
+    }
+
+    val conn = DriverManager.getConnection(
+      s"jdbc:hive2://localhost:$thriftPort/$jdbcUser1", jdbcUser1, jdbcUser1)
+    val stmt = conn.createStatement()
+
+    stmt.execute("create table testTable100 (id int)")
+    var rs = stmt.executeQuery("show tables")
+    assert(rs.next())
+    assert(rs.getString(1) == jdbcUser1.toUpperCase())
+    assert(rs.getString(2) == "TESTTABLE100")
+    assert(!rs.getBoolean(3)) // isTemporary
+    assert(!rs.next())
+    rs.close()
+
+    rs = stmt.executeQuery(s"show tables in $jdbcUser1")
+    assert(rs.next())
+    assert(rs.getString(1) == jdbcUser1.toUpperCase())
+    assert(rs.getString(2) == "TESTTABLE100")
+    assert(!rs.getBoolean(3)) // isTemporary
+    assert(!rs.next())
+    rs.close()
+
+    rs = stmt.executeQuery("select count(*) from testTable100")
+    assert(rs.next())
+    assert(rs.getLong(1) == 0)
+    assert(!rs.next())
+    rs.close()
+    stmt.execute("insert into testTable100 select id from range(10000)")
+    rs = stmt.executeQuery("select count(*) from testTable100")
+    assert(rs.next())
+    assert(rs.getLong(1) == 10000)
+    assert(!rs.next())
+    rs.close()
+
+    stmt.execute("drop table testTable100")
+    rs = stmt.executeQuery(s"show tables in $jdbcUser1")
+    assert(!rs.next())
+    rs.close()
+
+    stmt.close()
+    conn.close()
+  }
 }
 
 object QueryRoutingDUnitSecurityTest {
+
   def columnTableRouting(jdbcUser1: String, jdbcUser2: String, tableName: String,
       serverHostPort: Int): Unit = {
     try {
@@ -78,7 +151,7 @@ object QueryRoutingDUnitSecurityTest {
         serverHostPort, jdbcUser2 + "." + tableName, jdbcUser1, jdbcUser1)
       assert(false) // fail
     } catch {
-      case x: BatchUpdateException => // ignore
+      case _: BatchUpdateException => // ignore
       // case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }
@@ -139,7 +212,7 @@ object QueryRoutingDUnitSecurityTest {
         serverHostPort, jdbcUser1 + "." + tableName, jdbcUser2, jdbcUser2)
       assert(false) // fail
     } catch {
-      case x: BatchUpdateException => // ignore
+      case _: BatchUpdateException => // ignore
       // case x: SQLException if x.getSQLState.equals("42500") => // ignore
       case t: Throwable => throw t
     }

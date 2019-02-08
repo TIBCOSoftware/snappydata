@@ -1093,10 +1093,13 @@ object SnappyContext extends Logging {
           if (ToolsCallbackInit.toolsCallback ne null) {
             SnappyContext.getClusterMode(sc) match {
               case _: SnappyEmbeddedMode =>
-                val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds()
-                // logInfo(s"deploycmnds size = ${deployCmds.size}")
-                // deployCmds.foreach(s => logDebug(s"s"))
-                deployCmds.foreach(d => {
+                val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds
+                val nonEmpty = deployCmds.length > 0
+                if (nonEmpty) {
+                  logInfo(s"deploycmnds size = ${deployCmds.length}")
+                  deployCmds.foreach(s => logDebug(s"s"))
+                }
+                if (nonEmpty) deployCmds.foreach(d => {
                   val cmdFields = d.split('|')
                   if (cmdFields.length > 1) {
                     val coordinate = cmdFields(0)

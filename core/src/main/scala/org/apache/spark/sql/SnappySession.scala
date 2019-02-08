@@ -173,8 +173,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
-  override def sql(sqlText: String): CachedDataFrame =
+  override def sql(sqlText: String): DataFrame = {
+    try {
+      sqInternal(sqlText)
+    } catch {
+      // fallback to uncached flow for streaming queries
+      case ae: AnalysisException
+        if ae.message.contains(
+          "Queries with streaming sources must be executed with writeStream.start()"
+        ) => sqlUncached(sqlText)
+    }
+  }
+
+   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+  }
 
   @DeveloperApi
   def sqlUncached(sqlText: String): DataFrame = {
@@ -295,7 +308,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   /**
    * Remove a context object registered using [[addContextObject]].
    */
-  private[sql] def removeContextObject(key: Any): Unit = {
+  private[sql] def removeContextObject(key: Any): Any = {
     contextObjects.remove(key)
   }
 
@@ -1815,8 +1828,8 @@ object SnappySession extends Logging {
   }
 
   def getExecutedPlan(plan: SparkPlan): (SparkPlan, CodegenSparkFallback) = plan match {
-    case cg@CodegenSparkFallback(WholeStageCodegenExec(p)) => (p, cg)
-    case cg@CodegenSparkFallback(p) => (p, cg)
+    case cg@CodegenSparkFallback(WholeStageCodegenExec(p), _) => (p, cg)
+    case cg@CodegenSparkFallback(p, _) => (p, cg)
     case WholeStageCodegenExec(p) => (p, null)
     case _ => (plan, null)
   }
@@ -1835,8 +1848,8 @@ object SnappySession extends Logging {
    * data to the active executions. SparkListenerSQLPlanExecutionEnd is
    * then sent with the accumulated time of both the phases.
    */
-  private def planExecution(qe: QueryExecution, session: SnappySession, sqlText: String,
-      executedPlan: SparkPlan, paramLiterals: Array[ParamLiteral], paramsId: Int)
+  private def planExecution(qe: QueryExecution, session: SnappySession, sqlShortText: String,
+      sqlText: String, executedPlan: SparkPlan, paramLiterals: Array[ParamLiteral], paramsId: Int)
       (f: => RDD[InternalRow]): (RDD[InternalRow], String, SparkPlanInfo,
       String, SparkPlanInfo, Long, Long, Long) = {
     // Right now the CachedDataFrame is not getting used across SnappySessions
@@ -1845,7 +1858,7 @@ object SnappySession extends Logging {
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
     localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, sqlText)
+    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, sqlShortText)
     localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
     val start = System.currentTimeMillis()
     try {
@@ -1870,8 +1883,8 @@ object SnappySession extends Logging {
     }
   }
 
-  private def evaluatePlan(qe: QueryExecution, session: SnappySession, sqlText: String,
-      paramLiterals: Array[ParamLiteral], paramsId: Int): CachedDataFrame = {
+  private def evaluatePlan(qe: QueryExecution, session: SnappySession, sqlShortText: String,
+      sqlText: String, paramLiterals: Array[ParamLiteral], paramsId: Int): CachedDataFrame = {
     val (executedPlan, withFallback) = getExecutedPlan(qe.executedPlan)
     var planCaching = session.planCaching
 
@@ -1898,13 +1911,15 @@ object SnappySession extends Logging {
         var rdd = if (isCommand) qe.toRdd else null
         // don't post separate plan for CTAS since it already has posted one for the insert
         val postGUIPlans = if (isCommand) executedPlan.asInstanceOf[ExecutedCommandExec].cmd match {
+          case c: CreateTableUsingCommand if c.query.isDefined && CatalogObjectType
+              .isTableBackedByRegion(SnappyContext.getProviderType(c.provider)) => false
           case c: CreateDataSourceTableAsSelectCommand if CatalogObjectType.isTableBackedByRegion(
             CatalogObjectType.getTableType(c.table)) => false
           case _: SnappyCacheTableCommand => false
           case _ => true
         } else true
         // post final execution immediately (collect for these plans will post nothing)
-        CachedDataFrame.withNewExecutionId(session, sqlText, sqlText, executionStr, planInfo,
+        CachedDataFrame.withNewExecutionId(session, sqlShortText, sqlText, executionStr, planInfo,
           postGUIPlans = postGUIPlans) {
           // create new LogicalRDD plan so that plan does not get re-executed
           // (e.g. just toRdd is not enough since further operators like show will pass
@@ -1920,14 +1935,15 @@ object SnappySession extends Logging {
 
       case plan: CollectAggregateExec =>
         val (childRDD, origExecutionStr, origPlanInfo, executionStr, planInfo, executionId,
-        planStartTime, planEndTime) = planExecution(qe, session, sqlText, plan, paramLiterals,
-          paramsId)(if (withFallback ne null) withFallback.execute(plan.child) else plan.childRDD)
+        planStartTime, planEndTime) = planExecution(qe, session, sqlShortText, sqlText, plan,
+          paramLiterals, paramsId)(
+          if (withFallback ne null) withFallback.execute(plan.child) else plan.childRDD)
         (childRDD, qe, origExecutionStr, origPlanInfo, executionStr, planInfo,
             childRDD.id, true, executionId, planStartTime, planEndTime)
 
       case plan =>
         val (rdd, origExecutionStr, origPlanInfo, executionStr, planInfo, executionId,
-        planStartTime, planEndTime) = planExecution(qe, session, sqlText, plan,
+        planStartTime, planEndTime) = planExecution(qe, session, sqlShortText, sqlText, plan,
           paramLiterals, paramsId) {
           plan match {
             case p: CollectLimitExec =>
@@ -1991,6 +2007,7 @@ object SnappySession extends Logging {
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
     val parser = session.sessionState.sqlParser
+    val sqlShortText = CachedDataFrame.queryStringShortForm(sqlText)
     val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching
     val paramLiterals = parser.sqlParser.getAllLiterals
@@ -2005,7 +2022,7 @@ object SnappySession extends Logging {
       session.currentKey = key
       try {
         val execution = session.executePlan(plan)
-        cachedDF = evaluatePlan(execution, session, sqlText, paramLiterals, paramsId)
+        cachedDF = evaluatePlan(execution, session, sqlShortText, sqlText, paramLiterals, paramsId)
         // put in cache if the DF has to be cached
         if (planCaching && cachedDF.isCached) {
           if (isTraceEnabled) {
@@ -2024,12 +2041,13 @@ object SnappySession extends Logging {
       logDebug(s"Using cached plan for: $sqlText (existing: ${cachedDF.queryString})")
       cachedDF = cachedDF.duplicate()
     }
-    handleCachedDataFrame(cachedDF, plan, session, sqlText, paramLiterals, paramsId)
+    handleCachedDataFrame(cachedDF, plan, session, sqlShortText, sqlText, paramLiterals, paramsId)
   }
 
   private def handleCachedDataFrame(cachedDF: CachedDataFrame, plan: LogicalPlan,
-      session: SnappySession, sqlText: String, paramLiterals: Array[ParamLiteral],
-      paramsId: Int): CachedDataFrame = {
+      session: SnappySession, sqlShortText: String, sqlText: String,
+      paramLiterals: Array[ParamLiteral], paramsId: Int): CachedDataFrame = {
+    cachedDF.queryShortString = sqlShortText
     cachedDF.queryString = sqlText
     if (cachedDF.isCached && (cachedDF.paramLiterals eq null)) {
       cachedDF.paramLiterals = paramLiterals
@@ -2203,11 +2221,7 @@ object CachedKey {
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
       case a: Alias =>
-        val name = if (a.name == Utils.WEIGHTAGE_COLUMN_NAME ||
-            a.name.startsWith(Utils.SKIP_ANALYSIS_PREFIX)) {
-          a.name
-        } else "none"
-        Alias(a.child, name)(exprId = ExprId(-1))
+        Alias(a.child, a.name)(exprId = ExprId(-1))
       case ae: AggregateExpression => ae.copy(resultId = ExprId(-1))
       case _: ScalarSubquery =>
         throw new IllegalStateException("scalar subquery should not have been present")

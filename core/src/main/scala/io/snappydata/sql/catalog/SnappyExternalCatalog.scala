@@ -28,10 +28,9 @@ import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
-import io.snappydata.{Constant, Property}
 
-import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
@@ -226,15 +225,20 @@ trait SnappyExternalCatalog extends ExternalCatalog {
    * Check for baseTable in both properties and storage.properties (older releases used a mix).
    */
   def getBaseTable(tableDefinition: CatalogTable): Option[String] = {
-    tableDefinition.properties.get(BASETABLE_PROPERTY) match {
+    (tableDefinition.properties.get(BASETABLE_PROPERTY) match {
       case None =>
         val params = new CaseInsensitiveMap(tableDefinition.storage.properties)
         params.get(BASETABLE_PROPERTY) match {
-        // older released didn't have base table entry for indexes
-        case None => params.get(INDEXED_TABLE).map(Utils.toUpperCase)
-        case Some(t) => Some(Utils.toUpperCase(t))
-      }
-      case Some(t) => Some(Utils.toUpperCase(t))
+          // older releases didn't have base table entry for indexes
+          case None => params.get(INDEXED_TABLE)
+          case t => t
+        }
+      case t => t
+    }) match {
+      case None => None
+      case Some(t) =>
+        if (t.indexOf('.') != -1) Some(Utils.toUpperCase(t))
+        else Some(tableDefinition.database + '.' + Utils.toUpperCase(t))
     }
   }
 
@@ -286,15 +290,9 @@ object SnappyExternalCatalog {
   val INDEXED_TABLE = "INDEXED_TABLE"
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
+  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
-
-  def cacheSize: Int = {
-    SparkEnv.get match {
-      case null => Property.CatalogCacheSize.defaultValue.get
-      case env => Property.CatalogCacheSize.get(env.conf)
-    }
-  }
 
   def getDependents(properties: Map[String, String]): Array[String] = {
     properties.get(DEPENDENT_RELATIONS) match {
