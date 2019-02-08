@@ -18,10 +18,16 @@ package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
+import java.util.Properties
 
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
+import org.junit.Assert._
+
+
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -558,6 +564,82 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop view careplans_v")
   }
 
+  test("SNAP-2368") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+      val stmt = conn.createStatement()
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", new Properties())
+      var rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      var tableType = rs.getString(1)
+      assertEquals("T", tableType)
+      stmt.execute("drop table names")
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      assertFalse(rs.next())
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      props.put("isolationLevel", "NONE")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
+  ignore("SNAP-2910") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+
+      val stmt = conn.createStatement()
+
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      val rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      val tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
   test("SNAP-2237") {
     snc
     snc.sql("drop table if exists test1")
@@ -576,5 +658,4 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       "group by x").collect
     snc.dropTable("test1")
   }
-
 }
