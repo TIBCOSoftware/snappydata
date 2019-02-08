@@ -1133,7 +1133,7 @@ class SnappyParser(session: SnappySession)
         VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws ~>
         ((r: TableIdentifier, identifiers: Any, valueExpr: Any)
         => {
-          val colNames = identifiers.asInstanceOf[Option[String]]
+          val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
           val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
           val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
             session.getCurrentSchema, r.identifier)).toString

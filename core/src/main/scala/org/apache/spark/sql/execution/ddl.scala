@@ -54,6 +54,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 import org.apache.spark.{SparkContext, SparkEnv}
+import org.apache.spark.sql.functions._
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -618,7 +619,7 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
 }
 
 case class PutIntoValuesColumnTable(identifier: TableIdentifier,
-    colNames: Option[String],
+    colNames: Option[Seq[String]],
     values: Seq[Expression])
     extends RunnableCommand {
 
@@ -638,20 +639,39 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
   override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+
     val snc = sparkSession.asInstanceOf[SnappySession]
     val sc = sparkSession.sparkContext
-    val schema = sparkSession.sharedState
-        .externalCatalog.getTable(snc.getCurrentSchema, identifier.identifier).schema
+    val tableName = identifier.identifier
     var v1 = values.zipWithIndex.map { case (e, ci) =>
-      val targetType = StringType
-      Cast(e, targetType).eval()
+      Cast(e, StringType).eval()
     }
+    var schema = sparkSession.sharedState
+        .externalCatalog.getTable(snc.getCurrentSchema, tableName).schema
+    var rowRdd = List.empty[Any]
     val valuesList = v1.toList
-    val rowRdd = valuesList.zip(schema)
-        .map { case (value, struct) => convertTypes(value.toString, struct) }
-    val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-    import snappy._
-    val someDF = snc.createDataFrame(rdd1, schema)
-    Seq(Row(someDF.write.putInto(identifier.identifier)))
+    if(colNames == None) {
+      rowRdd = valuesList.zip(schema)
+          .map { case (value, struct) => convertTypes(value.toString, struct) }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      import snappy._
+      var someDF1 = snc.createDataFrame(rdd1, schema)
+      Seq(Row(someDF1.write.putInto(tableName)))
+    }
+    else {
+      var colSchema = StructType(colNames.head.toList
+          .map(column => schema.fields.find(_.name
+              .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
+            s"Field $column does not exist in $tableName with schema=$schema."))))
+      rowRdd = valuesList.zip(colSchema)
+          .map { case (value, struct) => convertTypes(value.toString, struct) }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      import snappy._
+      var someDF = snc.createDataFrame(rdd1, colSchema)
+      val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
+      var df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
+        df.withColumn(c.name, lit(null).cast(c.dataType)))
+      Seq(Row(df2.write.putInto(tableName)))
+    }
   }
 }
