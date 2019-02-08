@@ -729,7 +729,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     assertEquals(3, snc.sql("select * from t").count())
     val rs = snc.sql("select str from t where id = 102")
     val rows = rs.collect()
-    for(row <- rows){
+    for (row <- rows) {
       assertEquals("dd", row.getAs[String]("STR"))
     }
 
@@ -742,23 +742,29 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     assertEquals(3, snc.sql("select * from t1").count())
     val rs1 = snc.sql("select id2 from t1 where id = 102")
     val rows1 = rs1.collect()
-    for(row <- rows1){
+    for (row <- rows1) {
       assertEquals("dd", row.getAs[String]("ID2"))
     }
 
     snc.sql("drop table if exists t2")
     snc.sql("create table t2(id integer, id2 string) using column " +
         "options(key_columns 'id', COLUMN_MAX_DELTA_ROWS '1', buckets '1')")
-    for(i <- 1 until 10) {
+    for (i <- 1 to 10) {
       stmt.execute("insert into t2 values(" + i + ",'test" + i + "')")
     }
 
-    for(i <- 1 until 10) {
+    for (i <- 1 to 10) {
       stmt.execute("put into t2 values(" + i + ",'test" + i + 1 + "')")
     }
 
-    val df = snc.sql("select * from t2")
-    df.show()
+    val rs2 = snc.sql("select * from t2 order by id")
+    assertEquals(10, rs2.count())
+    val rows2 = rs2.collect()
+    var i = 1
+    for (row <- rows2) {
+      assertEquals("test" + i + 1, row.getAs[String]("ID2"))
+      i = i + 1
+    }
   }
 
   test("Test Bug SNAP-2707 with snappy session") {
@@ -767,12 +773,13 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("create table t(id integer primary key, str string) using row           ")
     snc.sql("put into t values(100, 'aa')")
     snc.sql("put into t   (id, str) values    (101, 'bb')      ")
+    snc.sql("put into t   (id) values    (104)      ")
     snc.sql("put into t values(102, 'cc')")
     snc.sql("put into t values(102, 'dd')")
-    assertEquals(3, snc.sql("select * from t").count())
+    assertEquals(4, snc.sql("select * from t").count())
     val rs = snc.sql("select str from t where id = 102")
     val rows = rs.collect()
-    for(row <- rows){
+    for (row <- rows) {
       assertEquals("dd", row.getAs[String]("STR"))
     }
 
@@ -780,12 +787,13 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("create table t1(id integer, id2 string) using column options(key_columns 'id')")
     snc.sql("put into t1   (id, id2) values    (101, 'bb')      ")
     snc.sql("put into t1 values       (100, 'aa')      ")
+    snc.sql("put into t1   (id) values    (104)      ")
     snc.sql("put into t1 values(102, 'cc')")
     snc.sql("put into t1 values(102, 'dd')")
-    assertEquals(3, snc.sql("select * from t1").count())
+    assertEquals(4, snc.sql("select * from t1").count())
     val rs1 = snc.sql("select id2 from t1 where id = 102")
     val rows1 = rs1.collect()
-    for(row <- rows1){
+    for (row <- rows1) {
       assertEquals("dd", row.getAs[String]("ID2"))
     }
 
@@ -793,15 +801,21 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("drop table if exists t2")
     snc.sql("create table t2(id integer, id2 string) using column " +
         "options(key_columns 'id', COLUMN_MAX_DELTA_ROWS '1', buckets '1')")
-    for(i <- 1 until 10) {
+    for (i <- 1 to 10) {
       snc.sql("insert into t2 values(" + i + ",'test" + i + "')")
     }
 
-    for(i <- 1 until 10) {
+    for (i <- 1 to 10) {
       snc.sql("put into t2 values(" + i + ",'test" + i + 1 + "')")
     }
 
-    val df = snc.sql("select * from t2")
-    df.show()
+    val rs2 = snc.sql("select * from t2 order by id")
+    assertEquals(10, rs2.count())
+    val rows2 = rs2.collect()
+    var i = 1
+    for (row <- rows2) {
+      assertEquals("test" + i + 1, row.getAs[String]("ID2"))
+      i = i + 1
+    }
   }
 }
