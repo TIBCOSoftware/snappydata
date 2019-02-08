@@ -25,8 +25,8 @@ import io.snappydata.SnappyFunSuite
 import org.scalatest.BeforeAndAfterAll
 import org.junit.Assert._
 
-
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.jdbc.JdbcDialects
+import org.apache.spark.sql.{Row, SaveMode, SnappyStoreClientDialect, SparkSession}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
@@ -574,6 +574,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         Row("abc"),
         Row("def")
       )
+      JdbcDialects.unregisterDialect(SnappyStoreClientDialect)
       val stmt = conn.createStatement()
       val sparkSession = SparkSession.builder.appName("test").
         sparkContext(snc.sparkContext).getOrCreate()
@@ -602,6 +603,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       assertEquals("C", tableType)
       stmt.execute("drop table if exists test")
     } finally {
+      JdbcDialects.registerDialect(SnappyStoreClientDialect)
       TestUtil.stopNetServer
     }
   }

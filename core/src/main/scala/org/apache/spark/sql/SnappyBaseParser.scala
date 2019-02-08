@@ -199,6 +199,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def BYTE: Rule0 = newDataType(Consts.BYTE)
   final def CHAR: Rule0 = newDataType(Consts.CHAR)
   final def CLOB: Rule0 = newDataType(Consts.CLOB)
+  final def TEXT: Rule0 = newDataType(Consts.TEXT)
   final def DATE: Rule0 = newDataType(Consts.DATE)
   final def DECIMAL: Rule0 = newDataType(Consts.DECIMAL)
   final def DOUBLE: Rule0 = newDataType(Consts.DOUBLE)
@@ -240,6 +241,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     FLOAT ~> (() => FloatType) |
     REAL ~> (() => FloatType) |
     BOOLEAN ~> (() => BooleanType) |
+    TEXT ~> (() => StringType) |
     CLOB ~> (() => StringType) |
     BLOB ~> (() => BinaryType) |
     BINARY ~> (() => BinaryType) |
@@ -283,7 +285,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     VARCHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => VarcharType(d.toInt)) |
     CHAR ~ '(' ~ ws ~ digits ~ ')' ~ ws ~> ((d: String) => CharType(d.toInt)) |
     STRING ~> (() => StringType) |
-    CLOB ~> (() => VarcharType(Int.MaxValue))
+    (CLOB | TEXT) ~> (() => VarcharType(Int.MaxValue))
   }
 
   final def columnDataType: Rule1[DataType] = rule {
@@ -596,6 +598,7 @@ object SnappyParserConsts {
   final val BYTE: Keyword = nonReservedKeyword("byte")
   final val CHAR: Keyword = nonReservedKeyword("char")
   final val CLOB: Keyword = nonReservedKeyword("clob")
+  final val TEXT: Keyword = nonReservedKeyword("text")
   final val DATE: Keyword = nonReservedKeyword("date")
   final val DECIMAL: Keyword = nonReservedKeyword("decimal")
   final val DOUBLE: Keyword = nonReservedKeyword("double")
