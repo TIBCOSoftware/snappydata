@@ -564,7 +564,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop view careplans_v")
   }
 
-
   test("SNAP-2368") {
     snc
     try {
@@ -639,5 +638,24 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     } finally {
       TestUtil.stopNetServer
     }
+  }
+
+  test("SNAP-2237") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1_1 int, col1_2 int, col1_3 int, col1_4 string) " +
+      "using column ")
+    val insertDF = snc.range(50).selectExpr("id", "id*2", "id * 3",
+      "cast (id as string)")
+    insertDF.write.insertInto("test1")
+    snc.sql("select col1_2, sum(col1_1) as summ from test1 group by col1_2 " +
+      "order by sum(col1_1)").collect
+    snc.sql("select col1_2, sum(col1_1) as summ from test1 " +
+      "group by col1_2 order by summ").collect
+    snc.sql("select lower(col1_2) as x, " +
+      "sum(col1_1) as summ from test1 group by lower(col1_2) ").collect
+    snc.sql("select lower(col1_2) as x, sum(col1_1) as summ from test1 " +
+      "group by x").collect
+    snc.dropTable("test1")
   }
 }
