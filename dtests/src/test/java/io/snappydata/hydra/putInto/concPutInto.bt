@@ -1,9 +1,6 @@
 io/snappydata/hydra/putInto/concPutIntoWithStreaming.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=3
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
-  //dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
 
  /*
 io/snappydata/hydra/putInto/concPutIntoWithSelect.conf

@@ -54,18 +54,18 @@ public class SnappyPutIntoTest extends SnappyTest {
       Vector tableNames = SnappyCDCPrms.getNodeName();
       int deleteID = 0;
       int minID = 0;
-      for(int i = 0 ;i < tableNames.size();i++) {
-        String minQ = "SELECT min(ID) FROM " + tableNames.elementAt(i);
-        String selectQ = "SELECT count(*) FROM " + tableNames.elementAt(i);
-        int count = 0;
-        ResultSet rs = conn.createStatement().executeQuery(selectQ);
-        while (rs.next())
-          count = rs.getInt(1);
-        if (count > 5000000) {
+      long rowCount = 0L;
+      String sysTabQ = "SELECT sum(ROW_COUNT) FROM sys.TABLESTATS";
+      ResultSet rs = conn.createStatement().executeQuery(sysTabQ);
+      while (rs.next())
+        rowCount = rs.getLong(1);
+      if (rowCount >= 1000000000L) { // if total rowCount is = 1bn
+        for(int i = 0 ;i < tableNames.size();i++) {
+          String minQ = "SELECT min(ID) FROM " + tableNames.elementAt(i);
           ResultSet rs1 = conn.createStatement().executeQuery(minQ);
           while (rs1.next())
             minID = rs1.getInt(1);
-          deleteID = minID + 10000;
+          deleteID = minID + 50000000; //delete fifty million records
           Log.getLogWriter().info("The min id is  " + minID + " the delete id is " + deleteID);
           conn.createStatement().execute("DELETE FROM " + tableNames.elementAt(i) + " WHERE ID < " + deleteID);
         }

@@ -45,9 +45,9 @@ object PutIntoProducer {
   }
 
   def generateAndPublish(args: Array[String]) {
-    val eventCount: Long = args {0}.toInt
+    val eventCount: Long = args {0}.toLong
     val topic: String = args {1}
-    val startRange: Long = args {2}.toInt
+    val startRange: Long = args {2}.toLong
     var brokers: String = args {args.length - 1}
     brokers = brokers.replace("--", ":")
     // scalastyle:off println
@@ -92,7 +92,9 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
     PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
 
-    (startRange until (startRange + eventCount)).foreach(i => {
+   // (startRange until (startRange + eventCount)).foreach(i => {
+   var i = 0L
+    while(i < (startRange + eventCount)){
       val id: String = i.toString
       val data1: String = "data " + i
       val data2: Double = i * 10.2
@@ -134,7 +136,8 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
       PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + s"row id : $id")
       val data = new ProducerRecord[String, String](topic, id, row + s",1")
       producer.send(data)
-    })
+      i += 1
+    }
 
     PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + "Done producing " +
         "records...")

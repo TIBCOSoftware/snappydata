@@ -80,24 +80,47 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     return strArr;
   }
 
+  public static String[] getNames(Vector key) {
+    Log.getLogWriter().info("Inside getNames vector size is " +  key.size());
+    String[] strArr = new String[key.size()];
+    for (int i = 0; i < key.size(); i++) {
+      strArr[i] = (String)key.elementAt(i); //get what tables are in the tests
+    }
+    return strArr;
+  }
+
   public static String[] getHostNames() {
 
     String[] vmNames = getNames(HostPrms.names);
-    String[] vmHostNames = getNames(HostPrms.hostNames);
-    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
-    hostnames = new String[numServers];
+    String[] vmHostNames = null;
+    int numServers=0;
+    if(SnappyTest.isUserConfTest) {
+      Log.getLogWriter().info("Inside isUserConfTest = true");
+      vmHostNames = getNames(SnappyPrms.getHostNameList());
+      Log.getLogWriter().info("The vmHostNames size = " + vmHostNames.length);
+      hostnames = new String[vmHostNames.length];
+      numServers = vmHostNames.length;
+    }
+    else {
+      vmHostNames = getNames(HostPrms.hostNames);
+       numServers = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+      Log.getLogWriter().info("Number of servers = " + numServers);
+      hostnames = new String[numServers];
+    }
     if(vmHostNames==null) {
       for (int j = 0; j<numServers ;  j++)
         hostnames[j] = "localhost";
     } else {
       int j = 0;
-      for (int i = 0; i < vmNames.length; i++) {
-        if (vmNames[i].startsWith("snappyStore")) {
+      for (int i = 0; i < vmHostNames.length; i++) {
+        //if (vmNames[i].startsWith("snappyStore")) {
           hostnames[j] = vmHostNames[i];
+          Log.getLogWriter().info("Host name is " + hostnames[j]);
           j++;
-        }
+      //  }
       }
     }
+   // Log.getLogWriter().info("SP: Hostnames are " + hostnames);
     return hostnames;
   }
 
@@ -108,7 +131,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String s = "Didnot specify kafka directory.";
       throw new TestException(s);
     }
-    kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
+  //  kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
+    kafkaLogDir = "/home/spillai/kafka_logs";
     new File(kafkaLogDir).mkdir();
     snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();
   }
@@ -152,7 +176,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String command = "";
       if(!zookeeperHost.equals("localhost"))
         command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + zookeeperHost;
-      command = "nohup " + command + script + " " + myPropFilePath + " > " + logFile + " &";
+      command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun("QuorumPeerMain");
@@ -201,7 +225,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   protected void startKafkaBroker() {
     String command = "";
-    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    int numServers = 0 ;
+    if(SnappyTest.isUserConfTest)
+      numServers = hostnames.length;
+    else
+      numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
     String orgPropFilePath = snappyTest.getScriptLocation(kafkaDir + sep + "config/server.properties");
@@ -229,7 +257,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         Log.getLogWriter().info(broker + " properties files is  " + myPropFile);
         if(!hostname.equals("localhost"))
           command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
-        command = "nohup " + command + script + " " + myPropFilePath + " > " + logFile + " &";
+        command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
 
@@ -293,7 +321,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String topic = (String)topics.elementAt(i);
       String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-topics.sh");
       String command = script + " --create --zookeeper " + zookeeperHost + ":" + zookeeperPort +
-          " --partition 8 --topic " + topic + " --replication-factor=1";
+          " --partition 8 --topic " + topic + " --replication-factor=1 " ;
 
       String dest = kafkaLogDir + sep + "startTopic-" + topic + ".log";
       File logFile = new File(dest);
