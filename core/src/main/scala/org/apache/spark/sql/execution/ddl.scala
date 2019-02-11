@@ -644,7 +644,7 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
     case _ => value
   }
 
-  override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
+  override lazy val output: Seq[Attribute] = AttributeReference("count", LongType)() :: Nil
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
 
