@@ -652,16 +652,18 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
     val sc = sparkSession.sparkContext
     val tableName = identifier.identifier
     var v1 = values.zipWithIndex.map { case (e, ci) =>
-      Cast(e, StringType).eval()
+      if (e != null) Cast(e, StringType).eval() else null
     }
     var schema = sparkSession.sharedState
         .externalCatalog.getTable(snc.getCurrentSchema, tableName).schema
     import snappy._
     var rowRdd = List.empty[Any]
     val valuesList = v1.toList
-    if(colNames == None) {
+    if (colNames == None) {
       rowRdd = valuesList.zip(schema)
-          .map { case (value, struct) => convertTypes(value.toString, struct) }
+          .map { case (value, struct) =>
+            if (value != null) convertTypes(value.toString, struct) else null
+          }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
       var someDF1 = snc.createDataFrame(rdd1, schema)
       Seq(Row(someDF1.write.putInto(tableName)))
@@ -672,7 +674,9 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
               .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
             s"Field $column does not exist in $tableName with schema=$schema."))))
       rowRdd = valuesList.zip(colSchema)
-          .map { case (value, struct) => convertTypes(value.toString, struct) }
+          .map { case (value, struct) =>
+            if (value != null) convertTypes(value.toString, struct) else null
+          }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
       var someDF = snc.createDataFrame(rdd1, colSchema)
       val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
