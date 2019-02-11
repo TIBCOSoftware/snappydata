@@ -173,8 +173,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
-  override def sql(sqlText: String): CachedDataFrame =
+  override def sql(sqlText: String): DataFrame = {
+    try {
+      sqInternal(sqlText)
+    } catch {
+      // fallback to uncached flow for streaming queries
+      case ae: AnalysisException
+        if ae.message.contains(
+          "Queries with streaming sources must be executed with writeStream.start()"
+        ) => sqlUncached(sqlText)
+    }
+  }
+
+   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+  }
 
   @DeveloperApi
   def sqlUncached(sqlText: String): DataFrame = {
