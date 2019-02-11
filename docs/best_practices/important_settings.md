@@ -43,9 +43,17 @@ This attribute is set in the [configuration files](../configuring_cluster/config
 
 SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using `-dir` option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
-To achieve better performance, it is recommended to store temporary data on a different disk (preferably SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
+To achieve better performance, it is recommended to store temporary data on a different disk (preferably using SSD storage) than the table data. This can be done by setting the `spark.local.dir` property to a location with enough space (for example, ~2X of the data size). This property is set in [**conf/leads**](../configuring_cluster/configuring_cluster.md#lead) as follows:
 
-This attribute is set in the [leads configuration files](../configuring_cluster/configuring_cluster.md#lead) **conf/leads**.
+```
+localhost -spark.local.dir=/path/to/local-directory 
+```
+
+The path specified is inherited by all servers. The temporary data defaults to **/tmp**. In case different paths are required on each of the servers, then remove the property from **conf/leads** and instead set as system property in each of the **conf/servers** file as follows:
+
+```
+localhost ... -J-Dspark.local.dir=/path/to/local-directory1
+```
 
 <a id="os_setting"></a>
 ##  Operating System Settings 
