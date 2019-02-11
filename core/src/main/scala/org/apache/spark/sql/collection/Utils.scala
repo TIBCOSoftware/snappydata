@@ -845,6 +845,9 @@ object Utils {
   }
 
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
+
+  def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
+    snappy.sqInternal(sqlText)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
