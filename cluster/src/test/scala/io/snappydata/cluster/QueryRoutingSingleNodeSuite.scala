@@ -765,6 +765,23 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       assertEquals("test" + i + 1, row.getAs[String]("ID2"))
       i = i + 1
     }
+
+    snc.sql("CREATE TABLE columnTable (bigIntCol BIGINT," +
+        " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
+        " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
+        " doubleCol DOUBLE , floatCol FLOAT , intCol INT , integerCol INTEGER," +
+        " longVarcharCol LONG , numericCol NUMERIC, numeric1Col NUMERIC(10,2)," +
+        " doublePrecisionCol DOUBLE PRECISION, realCol REAL, stringCol STRING," +
+        " timestampCol TIMESTAMP , varcharCol VARCHAR( 20 ))" +
+        " using COLUMN options(BUCKETS '8', key_columns 'bigIntcol');")
+    stmt.execute("put into columntable values(-10, NULL, true, 56, 'ABC456'," +
+        " current_date, -66, 0.0111, -2.225E-307, -10, 10, 123456, -1, 1," +
+        " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
+    stmt.execute("put into columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
+        " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
+        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
+    assertEquals(2, snc.sql("select * from columntable").count())
   }
 
   test("Test Bug SNAP-2707 with snappy session") {
@@ -790,7 +807,8 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     snc.sql("put into t1   (id) values    (104)      ")
     snc.sql("put into t1 values(102, 'cc')")
     snc.sql("put into t1 values(102, 'dd')")
-    assertEquals(4, snc.sql("select * from t1").count())
+    snc.sql("put into t1 values(103, NULL)")
+    assertEquals(5, snc.sql("select * from t1").count())
     val rs1 = snc.sql("select id2 from t1 where id = 102")
     val rows1 = rs1.collect()
     for (row <- rows1) {
@@ -818,4 +836,21 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       i = i + 1
     }
   }
+
+  snc.sql("CREATE TABLE columnTable (bigIntCol BIGINT," +
+      " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
+      " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
+      " doubleCol DOUBLE , floatCol FLOAT , intCol INT , integerCol INTEGER," +
+      " longVarcharCol LONG , numericCol NUMERIC, numeric1Col NUMERIC(10,2)," +
+      " doublePrecisionCol DOUBLE PRECISION, realCol REAL, stringCol STRING," +
+      " timestampCol TIMESTAMP , varcharCol VARCHAR( 20 ))" +
+      " using COLUMN options(BUCKETS '8', key_columns 'bigIntcol');")
+  snc.sql("put into columntable values(-10, NULL, true, 56, 'ABC456'," +
+      " current_date, -66, 0.0111, -2.225E-307, -10, 10, 123456, -1, 1," +
+      " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
+  snc.sql("put into columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
+      " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
+      " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+      " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
+  assertEquals(2, snc.sql("select * from columntable").count())
 }
