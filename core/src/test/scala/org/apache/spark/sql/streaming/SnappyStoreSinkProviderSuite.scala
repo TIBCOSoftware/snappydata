@@ -21,7 +21,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
 
-import io.snappydata.{SnappyFunSuite, StreamingConstants}
+import io.snappydata.SnappyFunSuite
 import org.apache.log4j.LogManager
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
@@ -40,7 +40,6 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
   private val testIdGenerator = new AtomicInteger(0)
   private val tableName = "APP.USERS"
-  private val sinkTable = "APP.SINK_STATE_TABLE"
   private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderSuite"
 
   private def getTopic(id: Int) = s"topic-$id"
@@ -355,7 +354,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sqlString = s"select batch_id from $sinkTable " +
+    val sqlString = s"select batch_id from APP.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
         s"where stream_query_id = '${streamQueryId(testId)}'"
     val batchIdFromTable = snc.sql(sqlString).collect()
 
@@ -366,12 +365,12 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def assertData(expectedData: Array[Row]) = {
-    val actualData = session.sql("select * from " + tableName + " order by id, last_name").collect()
+    val actualData = session.sql(s"select * from $tableName order by id, last_name").collect()
     assertResult(expectedData)(actualData)
   }
 
   private def createTable(withKeyColumn: Boolean = true)(isRowTable: Boolean = false) = {
-    snc.sql("drop table if exists users")
+    snc.sql(s"drop table if exists $tableName")
 
     def provider = if (isRowTable) "row" else "column"
 
@@ -379,9 +378,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id,last_name)" else ""
 
-    val s = s"create table users (id long , first_name varchar(40), age int, " +
+    val s = s"create table $tableName (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
-    LogManager.getRootLogger.error(s)
     snc.sql(s)
   }
 
@@ -425,12 +423,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
           }
         })
         .writeStream
-        .format("snappysink")
+        .format("snappySink")
         .queryName(s"USERS_$testId")
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", tableName)
         .option("streamQueryId", streamQueryId(testId))
-        .option("stateTable", sinkTable)
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()

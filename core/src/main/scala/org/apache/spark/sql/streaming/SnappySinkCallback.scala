@@ -20,21 +20,20 @@ package org.apache.spark.sql.streaming
 import java.sql.SQLException
 import java.util.NoSuchElementException
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property._
-import io.snappydata.StreamingConstants._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
+import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
+import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappyContext, SnappySession, _}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
-import io.snappydata.StreamingConstants.EventType._
-import io.snappydata.util.ServiceUtils
-import org.apache.spark.storage.StorageLevel
 
 /**
  * Should be implemented by clients who wants to override default behavior provided by
@@ -66,9 +65,8 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       parameters: Map[String, String],
       partitionColumns: Seq[String],
       outputMode: OutputMode): Sink = {
-    val stateTable = parameters.getOrElse(STATE_TABLE,
-      throw new IllegalStateException("'stateTable' is a mandatory option."))
-    createSinkStateTableIfNotExist(sqlContext, stateTable)
+    val stateTableSchema = getStateTableSchema(parameters)
+    createSinkStateTableIfNotExist(sqlContext, stateTableSchema)
     val cc = try {
       Utils.classForName(parameters(SINK_CALLBACK)).newInstance()
     } catch {
@@ -79,17 +77,45 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       cc.asInstanceOf[SnappySinkCallback])
   }
 
-  private def createSinkStateTableIfNotExist(sqlContext: SQLContext, stateTable: String) = {
+  private def createSinkStateTableIfNotExist(sqlContext: SQLContext, stateTableSchema: String) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
-        s" $stateTable (" +
+        s" ${stateTable(stateTableSchema)} (" +
         " stream_query_id varchar(200)," +
         " batch_id long, " +
         " PRIMARY KEY (stream_query_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
   }
 
   @Override
-  def shortName(): String = SNAPPY_SINK_NAME
+  def shortName(): String = SnappyContext.SNAPPY_SINK_NAME
+}
 
+private[streaming] object SnappyStoreSinkProvider {
+
+  val EVENT_TYPE_COLUMN = "_eventType"
+  val SINK_STATE_TABLE = "SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val TABLE_NAME = "tableName"
+  val STREAM_QUERY_ID = "streamQueryId"
+  val SINK_CALLBACK = "sinkCallback"
+  val STATE_TABLE_SCHEMA = "stateTableSchema"
+  val CONFLATION = "conflation"
+  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
+
+  object EventType {
+    val INSERT = 0
+    val UPDATE = 1
+    val DELETE = 2
+  }
+
+  def getStateTableSchema(parameters: Map[String, String]): String = {
+    parameters.getOrElse(STATE_TABLE_SCHEMA, Misc.isSecurityEnabled match {
+      case true =>
+        val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
+        throw new IllegalStateException(msg)
+      case false => "APP"
+    })
+  }
+
+  def stateTable(schema: String): String = s"$schema.$SINK_STATE_TABLE"
 }
 
 case class SnappyStoreSink(snappySession: SnappySession,
@@ -98,22 +124,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
 
-    val updated = snappySession.sql(s"update ${parameters(STATE_TABLE)} " +
-        s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
-        .collect()(0).getAs("count").asInstanceOf[Long]
-
-    // TODO: use JDBC connection here
-    var posDup = false
-
-    if (updated == 0) {
-      try {
-        snappySession.insert(parameters(STATE_TABLE), Row(streamQueryId, batchId))
-        posDup = false
-      }
-      catch {
-        case e: SQLException if e.getSQLState.equals("23505") => posDup = true
-      }
-    }
+    val possibleDuplicate = updateStateTable(streamQueryId, batchId)
 
     val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
@@ -121,12 +132,34 @@ case class SnappyStoreSink(snappySession: SnappySession,
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
-      sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
+      sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
     } finally {
       if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
       }
     }
+  }
+
+  def updateStateTable(streamQueryId: String, batchId : Long) : Boolean = {
+    val stateTableSchema = getStateTableSchema(parameters)
+
+    stateTableSchema.isInstanceOf[String]
+    val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
+          s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
+          .collect()(0).getAs("count").asInstanceOf[Long]
+
+    // TODO: use JDBC connection here
+    var posDup = false
+    if (updated == 0) {
+      try {
+        snappySession.insert(stateTable(stateTableSchema), Row(streamQueryId, batchId))
+        posDup = false
+      }
+      catch {
+        case e: SQLException if e.getSQLState.equals("23505") => posDup = true
+      }
+    }
+    posDup
   }
 
   /**
