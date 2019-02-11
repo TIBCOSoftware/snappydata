@@ -123,9 +123,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
-
     val possibleDuplicate = updateStateTable(streamQueryId, batchId)
-
     val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
     if (hashAggregateSizeIsDefault) {
@@ -142,8 +140,6 @@ case class SnappyStoreSink(snappySession: SnappySession,
 
   def updateStateTable(streamQueryId: String, batchId : Long) : Boolean = {
     val stateTableSchema = getStateTableSchema(parameters)
-
-    stateTableSchema.isInstanceOf[String]
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
           s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
           .collect()(0).getAs("count").asInstanceOf[Long]
