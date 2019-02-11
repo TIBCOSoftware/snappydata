@@ -766,6 +766,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       i = i + 1
     }
 
+    snc.sql("drop table if exists columntable")
     snc.sql("CREATE TABLE columnTable (bigIntCol BIGINT," +
         " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
         " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
@@ -837,6 +838,7 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
     }
   }
 
+  snc.sql("drop table if exists columntable")
   snc.sql("CREATE TABLE columnTable (bigIntCol BIGINT," +
       " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
       " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
