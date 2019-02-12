@@ -298,7 +298,7 @@ pages:
 #    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
-    - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
+    - 'Setting Up SnappyData JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
     - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'
