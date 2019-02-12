@@ -232,7 +232,7 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
     val sqlString = s"select batch_id from $ldapGroup.${SnappyStoreSinkProvider.SINK_STATE_TABLE}" +
-        s" where stream_query_id = '${streamQueryId(testId)}'"
+        s" where stream_query_id = '${streamName(testId)}'"
     val batchIdFromTable = session.sql(sqlString).collect()
 
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
@@ -285,19 +285,17 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
         .map(r => Row(r(0).toLong, r(1), r(2).toInt, r(3), r(4).toInt))
         .writeStream
         .format("snappySink")
-        .queryName(s"USERS_$testId")
+        .queryName(streamName(testId))
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", s"$ldapGroup.$tableName")
-        .option("streamQueryId", streamQueryId(testId))
         .option("checkpointLocation", checkpointDirectory)
-
         if(passStateTableSchema){
           streamingQuery.option("stateTableSchema", ldapGroup)
         }
         streamingQuery.start()
   }
 
-  private def streamQueryId(testId: Int) = {
+  private def streamName(testId: Int) = {
     s"USERS_$testId"
   }
 }

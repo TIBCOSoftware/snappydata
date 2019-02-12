@@ -94,7 +94,7 @@ private[streaming] object SnappyStoreSinkProvider {
   val EVENT_TYPE_COLUMN = "_eventType"
   val SINK_STATE_TABLE = "SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
   val TABLE_NAME = "tableName"
-  val STREAM_QUERY_ID = "streamQueryId"
+  val QUERY_NAME = "queryName"
   val SINK_CALLBACK = "sinkCallback"
   val STATE_TABLE_SCHEMA = "stateTableSchema"
   val CONFLATION = "conflation"
@@ -122,8 +122,10 @@ case class SnappyStoreSink(snappySession: SnappySession,
     parameters: Map[String, String], sinkCallback: SnappySinkCallback) extends Sink {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
-    val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
-    val possibleDuplicate = updateStateTable(streamQueryId, batchId)
+    val message = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
+    val queryName = snappySession.sessionCatalog
+        .formatName(parameters.getOrElse(QUERY_NAME, throw new IllegalStateException(message)))
+    val possibleDuplicate = updateStateTable(queryName, batchId)
     val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
     if (hashAggregateSizeIsDefault) {
@@ -138,17 +140,17 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
-  def updateStateTable(streamQueryId: String, batchId : Long) : Boolean = {
+  def updateStateTable(queryName: String, batchId : Long) : Boolean = {
     val stateTableSchema = getStateTableSchema(parameters)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
-          s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
+          s"set batch_id=$batchId where stream_query_id='$queryName' and batch_id != $batchId")
           .collect()(0).getAs("count").asInstanceOf[Long]
 
     // TODO: use JDBC connection here
     var posDup = false
     if (updated == 0) {
       try {
-        snappySession.insert(stateTable(stateTableSchema), Row(streamQueryId, batchId))
+        snappySession.insert(stateTable(stateTableSchema), Row(queryName, batchId))
         posDup = false
       }
       catch {

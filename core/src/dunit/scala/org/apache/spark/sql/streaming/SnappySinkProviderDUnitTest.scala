@@ -315,7 +315,6 @@ object SnappySinkProviderDUnitTest extends Logging {
         .queryName(testId)
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", tableName)
-        .option("streamQueryId", testId)
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
       streamWriter.option("internal___failBatch", "true").start()
