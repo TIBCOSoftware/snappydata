@@ -43,7 +43,7 @@ When you add more servers to SnappyData, the processing capacity of the system i
 ### Configuring the Scheduler Pools for Concurrency
 SnappyData out of the box comes configured with two execution pools:
 
-* **Low-latency pool**: This pool is automatically used when SnappyData determines a request is that of low latency, that is, the queries that are partition pruned to two or fewer partitions. </br>
+* **Low-latency pool**: This pool is automatically used when SnappyData determines that a request is of low latency, that is, the queries that are partition pruned to two or fewer partitions. </br>
 
 * **Default pool**: This is the pool that is used for the remaining requests.
 
@@ -57,16 +57,16 @@ New pools can be added and properties of the existing pools can be configured by
 
 #### Controlling CPU Usage for User Jobs
 
-You can control the CPU usage for user jobs by configuring separate pools for different kinds of jobs. See configuration [here](https://spark.apache.org/docs/2.1.1/job-scheduling.html#configuring-pool-properties). 
-The product is configured with two out-of-the-box pools that is the **Default pool **and the** Low-latency pool**. The **Default pool** has higher priority and also has a **minShare**, so that some minimum cores are reserved for those jobs if possible. 
-The [**Stages**](../docs/monitoring/monitoring.md#stages) tab on the SnappyData Pulse UI shows the available pools.  When you track a job for an SQL query on the SQL tab, it shows the pool that is used in the **Pool Name** column.
+You can control the CPU usage for user jobs by configuring separate pools for different kinds of jobs. </br> See configuration [here](https://spark.apache.org/docs/2.1.1/job-scheduling.html#configuring-pool-properties). </br>
+The product is configured with two out-of-the-box pools, that is the **Default pool **and the** Low-latency pool**. The **Default pool** has higher priority and also has a **minShare**, so that some minimum cores are reserved for those jobs if possible. 
+The [**Stages**](/monitoring/monitoring.md#stages) tab on the SnappyData Pulse UI shows the available pools.  When you track a job for an SQL query on the [**SQL**](/monitoring/monitoring.md#sql) tab, it shows the pool that is used in the **Pool Name** column.
 
 In-built tasks such as ingestion can show lower priority pools by default to give priority to foreground queries. To configure such priority, do the following: 
 
 1.	Define the pools in **conf/fairscheduler.xml** 
 2.	Set a pool for a job using Spark API  or use `set snappydata.scheduler.pool` property in a SnappySession.
 
-To configure the priority based on specific requirements, you can also either permit the users to set the priority for queries or add some pool allocation logic in the application as per client requirements. 
+To configure the priority based on specific requirements, you can also either permit the users to set the priority for queries or add some pool allocation logic in the application as per client requirements.
 
 ### Using a Partitioning Strategy to Increase Concurrency
 
