@@ -52,7 +52,9 @@ SnappyData uses JVM heap memory for most of its allocations. Only column tables 
 <a id="heap"></a>
 ## SnappyData Heap Memory
 
+Heap is provided for row tables and working/temp object memory. For large imports most external connectors still do not use off-heap for temporary buffers.
 SnappyData heap memory regions are divided into two parts called `Heap Storage Pool` and `Heap Execution Pool`. Sizes of each pool are determined by the configuration parameters provided at boot time to each server. These two regions are only tentative demarcation and can grow into each other based on some conditions.
+
 
 ### Heap Storage Pool
 The heap objects which belong to SnappyData storage of Spark storage are accounted here. For example, when a row is inserted into a table or deleted, this pool accounts the memory size of that row. Objects that are temporary and die young are not considered here. As it is difficult and costly to do a precise estimation, this pool is an approximation of heap memory for objects that are going to be long-lived. Since precise estimation of heap memory is difficult, there is a heap monitor thread running in the background. </br>
