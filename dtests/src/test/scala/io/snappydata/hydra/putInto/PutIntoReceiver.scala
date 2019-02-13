@@ -62,6 +62,7 @@ class PutIntoReceiver extends SnappyStreamingJob {
           .option("kafka.bootstrap.servers", brokerList)
           .option("subscribe", topic)
           .option("startingOffsets", "earliest")
+          .option("maxOffsetsPerTrigger", "50000")
           .load()
 
       def structFields() = {

@@ -92,9 +92,9 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
     PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
 
-   // (startRange until (startRange + eventCount)).foreach(i => {
-   var i = 0L
-    while(i < (startRange + eventCount)){
+    //(startRange until (startRange + eventCount)).foreach(i => {
+      var i = 0L
+      while(i < (startRange + eventCount)){
       val id: String = i.toString
       val data1: String = "data " + i
       val data2: Double = i * 10.2
