@@ -257,7 +257,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
             .agg(exprs.head, exprs.tail: _*)
             .select(columns: _*)
       }
-      conflatedDf.cache()
+      conflatedDf
     }
 
     def persist(df: DataFrame) = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)) {
