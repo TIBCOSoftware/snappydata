@@ -37,6 +37,8 @@ fi
 BACKGROUND=-bg
 clustermode=
 recover=
+CONF_DIR_ARG=
+
 while (( "$#" )); do
   param="$1"
   case $param in
@@ -50,13 +52,21 @@ while (( "$#" )); do
     -r  | --recover)
       recover="-recover"
     ;;
+    -conf | --config)
+      conf_dir="$2"
+      if [ ! -d $conf_dir ] ; then
+        echo "Conf directory $conf_dir does not exist"
+        exit 1
+      fi
+      CONF_DIR_ARG="--config $conf_dir"
+      shift ;;
     rowstore)
       clustermode="rowstore"
     ;;
     *)
     ;;
   esac
-shift
+  shift
 done
 
 if [ ! -z "$clustermode" -a ! -z "$recover" ] ; then
@@ -66,12 +76,12 @@ fi
 
 # TODO: Why is "$@" there. The args are parsed and shifted above making $@ empty. Isn't it?
 # Start Locators
-"$sbin"/snappy-locators.sh start $clustermode $recover "$@"
+"$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode $recover "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode $recover "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND $CONF_DIR_ARG start $clustermode $recover "$@"
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh start $recover
+  "$sbin"/snappy-leads.sh $CONF_DIR_ARG start $recover
 fi
