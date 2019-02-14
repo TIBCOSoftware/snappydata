@@ -19,10 +19,15 @@
 package org.apache.spark.status.api.v1
 
 
+import java.text.SimpleDateFormat
+import java.util.Locale
+
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 import com.pivotal.gemfirexd.internal.engine.ui.ClusterStatistics
+
+import org.apache.spark.sql.SnappyContext
 
 object ClusterDetails {
   def getClusterDetailsInfo: Seq[ClusterSummary] = {
@@ -33,8 +38,15 @@ object ClusterDetails {
     val coresInfo = mutable.HashMap.empty[String, Int]
     coresInfo += ("totalCores" -> csInstance.getTotalCPUCores)
 
+    val sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss.SSS", Locale.US)
+    val sparkContextStartTime = SnappyContext.globalSparkContext.startTime
+    val clusterStartDateTime = sdf.format(sparkContextStartTime)
+    val clusterUpTime = System.currentTimeMillis() - sparkContextStartTime
+
     val clusterInfo = mutable.HashMap.empty[String, Any]
     clusterInfo += ("coresInfo" -> coresInfo);
+    clusterInfo += ("clusterStartDateTime" -> clusterStartDateTime);
+    clusterInfo += ("clusterUpTime" -> clusterUpTime);
     clusterInfo += ("timeLine" ->
         csInstance.getUsageTrends(ClusterStatistics.TREND_TIMELINE));
     clusterInfo += ("cpuUsageTrend" ->

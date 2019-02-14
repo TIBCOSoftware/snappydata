@@ -47,8 +47,16 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                                  "clustersStatsTitle",
                                  true)
       val clusterDetails = clusterStats
+      val clusterUpTimeNode =
+        <div style="padding-left: 10px; color: #716565;">
+          <span style="padding-right: 5px; font-weight: bold;">
+            Start Date &amp; Time : </span>
+          <span id="clusterStartDateTime" style="padding-right: 10px;"></span>|
+          <span style="padding-left: 10px; padding-right: 5px; font-weight: bold;">Uptime : </span>
+          <span id="clusterUpTime"></span>
+        </div>
 
-      clustersStatsTitle ++ clusterDetails
+      clustersStatsTitle ++ clusterUpTimeNode ++ clusterDetails
     }
 
     val membersStatsDetails = {
