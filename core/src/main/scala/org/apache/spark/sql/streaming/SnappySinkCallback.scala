@@ -77,7 +77,8 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       cc.asInstanceOf[SnappySinkCallback])
   }
 
-  private def createSinkStateTableIfNotExist(sqlContext: SQLContext, stateTableSchema: String) = {
+  private def createSinkStateTableIfNotExist(sqlContext: SQLContext,
+      stateTableSchema: Option[String]) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
         s" ${stateTable(stateTableSchema)} (" +
         " stream_query_id varchar(200)," +
@@ -106,16 +107,17 @@ private[streaming] object SnappyStoreSinkProvider {
     val DELETE = 2
   }
 
-  def getStateTableSchema(parameters: Map[String, String]): String = {
-    parameters.getOrElse(STATE_TABLE_SCHEMA, Misc.isSecurityEnabled match {
+  def getStateTableSchema(parameters: Map[String, String]): Option[String] = {
+    Option(parameters.getOrElse(STATE_TABLE_SCHEMA, Misc.isSecurityEnabled match {
       case true =>
         val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
         throw new IllegalStateException(msg)
-      case false => "APP"
-    })
+      case false => null
+    }))
   }
 
-  def stateTable(schema: String): String = s"$schema.$SINK_STATE_TABLE"
+  def stateTable(schema: Option[String]): String = schema.map(s => s"$s.$SINK_STATE_TABLE")
+      .getOrElse(SINK_STATE_TABLE)
 }
 
 case class SnappyStoreSink(snappySession: SnappySession,
