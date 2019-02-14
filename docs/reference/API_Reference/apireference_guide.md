@@ -72,7 +72,7 @@ You can use this API to run a query using a fresh plan for a given SQL String.
 **Syntax**
 
 ```
-snappySession.sqlUncached(“select * from t1”)
+sqlUncached(sqlText : String)
 ```
 
 **Parameters**
@@ -85,7 +85,7 @@ snappySession.sqlUncached(“select * from t1”)
 **Example **
 
 ```pre
-snappySession.sql(“select * from t1”)
+snappySession.sqlUncached(“select * from t1”)
 ```
 <a id= createtableapi> </a>
 ### createTable
