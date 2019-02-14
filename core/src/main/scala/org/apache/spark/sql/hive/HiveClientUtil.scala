@@ -77,6 +77,11 @@ object HiveClientUtil extends Logging {
         SystemProperties.SNAPPY_HIVE_METASTORE)
       dbURL
     }
+
+    // TODO: PP: Not sure if it is required to point logURL to derby in recovery mode. ???
+    if(Misc.getGemFireCache.isSnappyRecoveryMode){
+      logURL = "jdbc:derby:;default-schema=metastore_db"
+    }
     if (SnappyHiveExternalCatalog.getInstance eq null) {
       logInfo(s"Using dbURL = $logURL for Hive metastore initialization")
     }
@@ -107,6 +112,7 @@ object HiveClientUtil extends Logging {
       if (Misc.getGemFireCache.isSnappyRecoveryMode &&
           !(Misc.getMemStore.getMyVMKind.isLocator || Misc.getMemStore.getMyVMKind.isStore)) {
         logInfo("Using derby as hive metastore.")
+        logDebug("Spark conf being used for SnappyHiveExternalCatalog: " + sparkConf.toDebugString)
         val extCatalog = SnappyHiveExternalCatalog.getInstance(sparkConf, new SnappyHiveConf)
         extCatalog
       }
