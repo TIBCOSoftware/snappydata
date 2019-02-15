@@ -19,6 +19,7 @@ package io.snappydata.hydra.cluster;
 import java.io.*;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.RemoteException;
 import java.sql.Connection;
@@ -86,7 +87,7 @@ public class SnappyTest implements Serializable {
   private static String simulateStreamScriptName = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptName, "simulateFileStream");
   private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtests);
   public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
-  public static boolean isUserConfTest = TestConfig.tab().booleanAt(SnappyPrms.isUserConfTest, false);  //default to false
+  public static boolean isUserConfTest = TestConfig.tab().booleanAt(SnappyPrms.isUserConfTest, true);  //default to false
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
@@ -133,7 +134,7 @@ public class SnappyTest implements Serializable {
 
   public static int finalStart = SnappyCDCPrms.getInitEndRange() + 1;
   public static int finalEnd = SnappyCDCPrms.getInitEndRange() + 10;
-
+  public static String confFileDir = String.valueOf(new File(hd.getUserDir() + File.separator + "conf"));
 
   /**
    * (String) APP_PROPS to set dynamically
@@ -641,8 +642,16 @@ public class SnappyTest implements Serializable {
     //snappyTest.writeConfigData("spark-env.sh", "sparkMasterHost");
   }
 
+  protected String getConfFilePathLocation(String fileName) {
+    String filePath;
+    if (isUserConfTest) {
+      filePath = confFileDir + File.separator + fileName;
+    } else filePath = productConfDirPath + fileName;
+    return filePath;
+  }
+
   protected void writeConfigData(String fileName, String logDir) {
-    String filePath = productConfDirPath + fileName;
+    String filePath = getConfFilePathLocation(fileName);
     File file = new File(filePath);
     if (fileName.equalsIgnoreCase("spark-env.sh")) file.setExecutable(true);
     Set<String> fileContent = new LinkedHashSet<String>();
@@ -657,7 +666,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void writeLocatorConfigData(String fileName, String logDir) {
-    String filePath = productConfDirPath + fileName;
+    String filePath = getConfFilePathLocation(fileName);
     File file = new File(filePath);
     String peerDiscoveryPort = null;
     Set<String> fileContent = new LinkedHashSet<String>();
@@ -690,13 +699,13 @@ public class SnappyTest implements Serializable {
   }
 
   protected void writeNodeConfigData(String fileName, String nodeLogDir, boolean append) {
-    String filePath = productConfDirPath + fileName;
+    String filePath = getConfFilePathLocation(fileName);
     File file = new File(filePath);
     snappyTest.writeToFile(nodeLogDir, file, append);
   }
 
   protected void writeWorkerConfigData(String fileName, String logDir) {
-    String filePath = productConfDirPath + fileName;
+    String filePath = getConfFilePathLocation(fileName);
     File file = new File(filePath);
     ArrayList<String> fileContent = new ArrayList<>();
     fileContent = snappyTest.getWorkerFileContents(logDir, fileContent);
@@ -729,9 +738,9 @@ public class SnappyTest implements Serializable {
     return getEndpoints("server");
   }
 
-  protected HashMap getclientHostPort() {
+  protected HashMap getClientHostPort() {
     HashMap<String, Integer> hostPort = new HashMap<String, Integer>();
-    String endpoint = null;
+    String endpoint;
     List<String> endpoints = getNetworkLocatorEndpoints();
     if (endpoints.size() == 0) {
       if (isLongRunningTest) {
@@ -2613,13 +2622,23 @@ public class SnappyTest implements Serializable {
   public synchronized void generateConfig(String fileName) {
     File file = null;
     try {
-      String path = productConfDirPath + sep + fileName;
-      log().info("File Path is ::" + path);
+      String path;
+      if (isUserConfTest) {
+        path = confFileDir + sep + fileName;
+        Log.getLogWriter().info("SS - path is in generateConfig: " + path);
+      }
+      else path = productConfDirPath + sep + fileName;
+      Log.getLogWriter().info(" SS - File Path is ::" + path);
       file = new File(path);
-
       // if file doesnt exists, then create it
       if (!file.exists()) {
-        file.createNewFile();
+        Log.getLogWriter().info("SS - inside !file.exists()...");
+        FileUtil.mkdir(hd.getUserDir() + File.separator + "conf");
+        if (! FileUtil.exists(hd.getUserDir() + File.separator + "conf")){
+          throw new TestException("Directory does not exists: " + hd.getUserDir() + File.separator + "conf");
+        }
+        FileUtil.createNewFile(path);
+        // file.createNewFile();
       } else if (file.exists()) {
         if (isStopMode) return;
         file.setWritable(true);

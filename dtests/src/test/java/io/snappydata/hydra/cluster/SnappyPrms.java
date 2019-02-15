@@ -16,6 +16,7 @@
  */
 package io.snappydata.hydra.cluster;
 
+import java.io.File;
 import java.util.List;
 import java.util.Vector;
 
@@ -943,7 +944,7 @@ public class SnappyPrms extends BasePrms {
 
   public static String getUserConfLocation() {
     Long key = userConfLocation;
-    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, SnappyTest.confFileDir));
   }
 
   public static Vector getPersistenceModeList() {
