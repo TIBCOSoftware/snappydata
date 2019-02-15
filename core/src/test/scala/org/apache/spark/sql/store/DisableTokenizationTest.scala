@@ -16,8 +16,9 @@
  */
 package org.apache.spark.sql.store
 
+
 import io.snappydata.core.Data
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -33,14 +34,18 @@ class DisableTokenizationTest
         with BeforeAndAfterAll {
 
   val table = "my_table"
+  var planCaching : Boolean = false
 
   override def beforeAll(): Unit = {
     snc.sql(s"set snappydata.sql.tokenize = false")
+    planCaching = Property.PlanCaching.get(snc.sessionState.conf)
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
   override def afterAll(): Unit = {
     snc.sql(s"set snappydata.sql.tokenize = true")
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.afterAll()
   }
 
