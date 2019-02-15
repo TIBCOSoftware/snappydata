@@ -203,11 +203,15 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
-      val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
-      if (eventTypeColumnAvailable) {
-        processDataWithEventType(dataFrame)
-      } else {
-        if (persist(dataFrame).count() != 0) dataFrame.write.putInto(tableName)
+      val dataFrame: DataFrame = persist(if (conflationEnabled) getConflatedDf else df)
+      try {
+        if (eventTypeColumnAvailable) {
+          processDataWithEventType(dataFrame)
+        } else {
+          if (dataFrame.count() != 0) dataFrame.write.putInto(tableName)
+        }
+      } finally {
+        dataFrame.unpersist()
       }
     }
     else {
@@ -267,7 +271,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     } else df.persist()
 
     def processDataWithEventType(dataFrame: DataFrame): Unit = {
-      val hasUpdateOrDeleteEvents = persist(dataFrame)
+      val hasUpdateOrDeleteEvents = dataFrame
           .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
           .count() > 0
       if (hasUpdateOrDeleteEvents) {
@@ -291,6 +295,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
           updateDf.write.putInto(tableName)
         }
       }
+      dataFrame.unpersist(true)
     }
   }
 }
