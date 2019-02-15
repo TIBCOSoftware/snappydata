@@ -54,6 +54,7 @@ import sql.sqlutil.DMLStmtsFactory;
 import util.*;
 
 import static hydra.Prms.maxResultWaitSec;
+import static io.snappydata.hydra.cluster.SnappyPrms.getUserConfLocation;
 
 public class SnappyTest implements Serializable {
 
@@ -964,7 +965,7 @@ public class SnappyTest implements Serializable {
 
   protected void copyUserConfs(String fileName) {
     String filePath = productConfDirPath + fileName;
-    String userConfLocation = SnappyPrms.getUserConfLocation();
+    String userConfLocation = getUserConfLocation();
     if (userConfLocation == null) {
       throw new TestException("User conf location is not provided for starting the cluster..");
     }
@@ -2263,7 +2264,7 @@ public class SnappyTest implements Serializable {
   }
 
   public String setCDCSparkAppCmds(String userAppArgs, String commonArgs, String snappyJobScript,
-                                   String userJob, String masterHost, String masterPort, File logFileName) {
+      String userJob, String masterHost, String masterPort, File logFileName) {
     String appName = SnappyCDCPrms.getAppName();
     if (appName.equals("CDCIngestionApp2")) {
       int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
@@ -2492,7 +2493,7 @@ public class SnappyTest implements Serializable {
           jobIds.add(jobID);
         }
       }
-      if(jobIds==null) {
+      if (jobIds == null) {
         Log.getLogWriter().info("Failed to start the snappy job.");
         return true;
       }
@@ -2710,10 +2711,17 @@ public class SnappyTest implements Serializable {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"));
+      if (isUserConfTest) {
+        Log.getLogWriter().info("SS - inside isUserConfTest....");
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"),
+            "--config", getUserConfLocation());
+      } else {
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-start-all.sh"));
+      }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
+      Log.getLogWriter().info("SS - pb command is : " + pb.command().toString());
       snappyTest.executeProcess(pb, logFile);
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
@@ -2897,7 +2905,13 @@ public class SnappyTest implements Serializable {
     File log = null;
     try {
       initSnappyArtifacts();
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
+      ProcessBuilder pb = null;
+      if (isUserConfTest) {
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"),
+            "--config", getUserConfLocation());
+      } else {
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-stop-all.sh"));
+      }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappySystem.log";
       File logFile = new File(dest);
@@ -3080,7 +3094,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-                                            boolean restart, boolean rebalance) {
+      boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -3156,7 +3170,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-                           boolean isDmlOp, boolean restart, boolean rebalance) {
+      boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {
@@ -3586,11 +3600,22 @@ public class SnappyTest implements Serializable {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      if (useRowStore) {
-        Log.getLogWriter().info("Starting locator/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
+      if (isUserConfTest) {
+        if (useRowStore) {
+          Log.getLogWriter().info("Starting locator/s using rowstore option...");
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"),
+              "--config", getUserConfLocation(), "start", "rowstore");
+        } else {
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"),
+              "--config " + getUserConfLocation(), "start");
+        }
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");
+        if (useRowStore) {
+          Log.getLogWriter().info("Starting locator/s using rowstore option...");
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");
+        } else {
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");
+        }
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -3606,11 +3631,22 @@ public class SnappyTest implements Serializable {
     File log = null;
     ProcessBuilder pb = null;
     try {
-      if (useRowStore) {
-        Log.getLogWriter().info("Starting server/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
+      if (isUserConfTest) {
+        if (useRowStore) {
+          Log.getLogWriter().info("Starting server/s using rowstore option...");
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"),
+              "--config", getUserConfLocation(), "start", "rowstore");
+        } else {
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"),
+              "--config", getUserConfLocation(), "start");
+        }
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
+        if (useRowStore) {
+          Log.getLogWriter().info("Starting server/s using rowstore option...");
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");
+        } else {
+          pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");
+        }
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
@@ -3630,17 +3666,27 @@ public class SnappyTest implements Serializable {
 
   protected void startSnappyLead() {
     File log = null;
+    ProcessBuilder pb = null;
     try {
-      ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
-          "start");
+      if (isUserConfTest) {
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
+            "--config", getUserConfLocation(), "start");
+      } else {
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
+            "start");
+      }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
-    } catch (IOException e) {
+    } catch (
+        IOException e)
+
+    {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
     }
+
   }
 
   protected LogWriter log() {
