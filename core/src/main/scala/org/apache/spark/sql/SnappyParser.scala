@@ -194,21 +194,10 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected final def booleanLiteral: Rule1[Expression] = rule {
-    TRUE ~> (() => newTokenizedLiteral(true, BooleanType)) |
-    FALSE ~> (() => newTokenizedLiteral(false, BooleanType))
-  }
-
-  protected final def numericLiteral: Rule1[Expression] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
-        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
-        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => toNumericLiteral(s))
-  }
-
   protected final def literal: Rule1[Expression] = rule {
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
-    numericLiteral |
-    booleanLiteral |
+    numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
+    booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
     NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
