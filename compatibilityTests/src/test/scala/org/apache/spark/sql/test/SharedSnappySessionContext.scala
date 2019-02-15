@@ -16,8 +16,11 @@
  */
 package org.apache.spark.sql.test
 
+import scala.util.Random
+
 import org.apache.spark.DebugFilesystem
 import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.test.SharedSnappySessionContext.random
 
 /**
  * Extension to use SnappySession instead of SparkSession in spark-sql-core tests.
@@ -26,8 +29,12 @@ trait SharedSnappySessionContext extends SharedSQLContext {
 
   override protected def createSparkSession: SnappySession = {
     val session = new TestSnappySession(sparkConf.set("spark.hadoop.fs.file.impl",
-      classOf[DebugFilesystem].getName))
+      classOf[DebugFilesystem].getName).set("snappydata.sql.planCaching.", random.nextBoolean().toString))
     session.setCurrentSchema("default")
     session
   }
+}
+
+object SharedSnappySessionContext {
+  val random = new Random()
 }
