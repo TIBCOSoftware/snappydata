@@ -27,6 +27,8 @@ include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
 include ':snappy-encoders_' + scalaBinaryVersion
+// Commented "v2connector" in order to exclude from build and test process.
+// uncomment if we decide to include it.
 // include ':snappy-v2connector_' + scalaBinaryVersion
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
