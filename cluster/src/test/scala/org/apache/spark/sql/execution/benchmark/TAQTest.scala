@@ -19,12 +19,15 @@ package org.apache.spark.sql.execution.benchmark
 import java.sql.{Date, DriverManager, Timestamp}
 import java.time.{ZoneId, ZonedDateTime}
 
+import scala.util.Random
+
 import com.typesafe.config.Config
 import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql._
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.benchmark.TAQTest.CreateOp
 import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.types.{Decimal, DecimalType, StringType, StructField, StructType}
@@ -133,7 +136,7 @@ class TAQTestJob extends SnappySQLJob with Logging {
     for (_ <- 1 to numRuns) {
       val start = System.nanoTime()
       for (_ <- 1 to numIters) {
-        session.sql("select * from citi_order where id=1000 " +
+        Utils.sqlInternal(session, "select * from citi_order where id=1000 " +
             "--GEMFIREXD-PROPERTIES executionEngine=Spark").collectInternal()
       }
       val end = System.nanoTime()
@@ -267,6 +270,8 @@ object TAQTest extends Logging with Assertions {
     System.runFinalization()
   }
 
+  private val random = new Random()
+
   def newSparkConf(addOn: SparkConf => SparkConf = null): SparkConf = {
     val cores = math.min(16, Runtime.getRuntime.availableProcessors())
     val conf = new SparkConf()
@@ -277,8 +282,9 @@ object TAQTest extends Logging with Assertions {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
-    conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
-    conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+        .set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+        .set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+        .set("snappydata.sql.planCaching", random.nextBoolean().toString)
     if (addOn != null) {
       addOn(conf)
     }
