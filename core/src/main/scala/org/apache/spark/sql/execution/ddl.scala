@@ -629,7 +629,6 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
     case BooleanType => value.toBoolean
     case BinaryType => value.toCharArray().map(ch => ch.toByte)
     case ByteType => value.toByte
-    case BooleanType => value.toBoolean
     case DoubleType => value.toDouble
     case FloatType => value.toFloat
     case ShortType => value.toShort
