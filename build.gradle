@@ -818,6 +818,8 @@ task product(type: Zip) {
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
   dependsOn ':jdbcJar'
+  // Commented "v2connector" in order to exclude from build and test process.
+  // uncomment if we decide to include it.
 //  dependsOn ":snappy-v2connector_${scalaBinaryVersion}:jar"
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
