@@ -17,14 +17,16 @@
 
 package org.apache.spark.sql.streaming
 
-import java.sql.SQLException
+import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
-import com.pivotal.gemfirexd.internal.engine.Misc
+import scala.collection.mutable
+
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
@@ -65,7 +67,26 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       parameters: Map[String, String],
       partitionColumns: Seq[String],
       outputMode: OutputMode): Sink = {
-    val stateTableSchema = getStateTableSchema(parameters)
+    val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sqlContext.sparkSession),
+      mutable.Map.empty)
+
+    val connection = DriverManager.getConnection(connProperties.url, connProperties.connProps)
+    val stmt = connection.createStatement()
+    val isSecurityEnabled = try {
+      val resultSet = stmt.executeQuery("values sys.GET_IS_SECURITY_ENABLED();")
+      resultSet.next()
+      resultSet.getBoolean(1)
+    } finally {
+      stmt.close()
+      connection.close()
+    }
+
+    if(isSecurityEnabled && stateTableSchema.isEmpty){
+      val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
+      throw new IllegalStateException(msg)
+    }
+
     createSinkStateTableIfNotExist(sqlContext, stateTableSchema)
     val cc = try {
       Utils.classForName(parameters(SINK_CALLBACK)).newInstance()
@@ -107,15 +128,6 @@ private[streaming] object SnappyStoreSinkProvider {
     val DELETE = 2
   }
 
-  def getStateTableSchema(parameters: Map[String, String]): Option[String] = {
-    Option(parameters.getOrElse(STATE_TABLE_SCHEMA, Misc.isSecurityEnabled match {
-      case true =>
-        val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
-        throw new IllegalStateException(msg)
-      case false => null
-    }))
-  }
-
   def stateTable(schema: Option[String]): String = schema.map(s => s"$s.$SINK_STATE_TABLE")
       .getOrElse(SINK_STATE_TABLE)
 }
@@ -143,7 +155,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 
   def updateStateTable(queryName: String, batchId : Long) : Boolean = {
-    val stateTableSchema = getStateTableSchema(parameters)
+    val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
           s"set batch_id=$batchId where stream_query_id='$queryName' and batch_id != $batchId")
           .collect()(0).getAs("count").asInstanceOf[Long]

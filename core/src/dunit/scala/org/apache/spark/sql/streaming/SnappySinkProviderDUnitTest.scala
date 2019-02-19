@@ -20,6 +20,7 @@ package org.apache.spark.sql.streaming
 import java.io.PrintWriter
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
 import scala.sys.process._
@@ -36,6 +37,9 @@ import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructFiel
 import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
+/**
+ * Contains tests for streaming sink in smart connector mode
+ */
 class SnappySinkProviderDUnitTest(s: String)
     extends DistributedTestBase(s)
         with Logging
@@ -81,10 +85,10 @@ class SnappySinkProviderDUnitTest(s: String)
          |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg
          |""".stripMargin, s"$confDir/servers")
 
-    (snappyProductDir + "/sbin/snappy-start-all.sh").!!
+    val op = (snappyProductDir + "/sbin/snappy-start-all.sh").!!
+    logInfo("snappy-start-all output:" + op)
 
     vm.invoke(getClass, "startSparkCluster", sparkProductDir)
-
   }
 
   override def afterClass(): Unit = {
@@ -160,6 +164,7 @@ object SnappySinkProviderDUnitTest extends Logging {
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
   private val kafkaTestUtils = new KafkaTestUtils
   private var snc: SnappyContext = _
+  private val testIdGenerator = new AtomicInteger(0)
 
   private def setup(locatorClientPort: Int): Unit = {
     kafkaTestUtils.setup()
@@ -194,9 +199,9 @@ object SnappySinkProviderDUnitTest extends Logging {
   }
 
   def doTestStructuredStreaming(locatorClientPort: Int): Unit = {
-    setup(locatorClientPort)
-    val testId = "TEST1"
     try {
+      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      setup(locatorClientPort)
 
       kafkaTestUtils.createTopic(testId, partitions = 3)
 
@@ -219,9 +224,9 @@ object SnappySinkProviderDUnitTest extends Logging {
   }
 
   def doTestIdempotency(locatorClientPort: Int): Unit = {
-    setup(locatorClientPort)
-    val testId = "TEST2"
     try {
+      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      setup(locatorClientPort)
       kafkaTestUtils.createTopic(testId, partitions = 3)
 
       kafkaTestUtils.sendMessages(testId, (0 to 10).map(i => s"$i,name$i,$i,0").toArray)
@@ -253,9 +258,9 @@ object SnappySinkProviderDUnitTest extends Logging {
 
 
   def doTestCustomCallback(locatorClientPort: Int): Unit = {
-    setup(locatorClientPort)
-    val testId = "TEST3"
     try {
+      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      setup(locatorClientPort)
       kafkaTestUtils.createTopic(testId, partitions = 3)
 
       val dataBatch = Seq(Seq(1, "name1", 20, 0), Seq(1, "name2", 10, 0))
@@ -366,12 +371,7 @@ object SnappySinkProviderDUnitTest extends Logging {
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)
 
-
-    val sc = SparkContext.getOrCreate(conf)
-    //      sc.setLogLevel("DEBUG")
-    //      Logger.getLogger("org").setLevel(Level.DEBUG)
-    //      Logger.getLogger("akka").setLevel(Level.DEBUG)
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(SparkContext.getOrCreate(conf))
 
     val mode = SnappyContext.getClusterMode(snc.sparkContext)
     mode match {
