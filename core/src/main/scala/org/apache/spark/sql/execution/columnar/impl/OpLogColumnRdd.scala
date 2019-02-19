@@ -134,7 +134,8 @@ class OpLogColumnRdd(
         val dvdArr = new Array[DataValueDescriptor](schema.length)
         if (value.isInstanceOf[Array[Array[Byte]]]) {
           val valueArr = value.asInstanceOf[Array[Array[Byte]]]
-          val row = new com.pivotal.gemfirexd.internal.engine.store.CompactExecRow(rowFormatter)
+          val row = new com.pivotal.gemfirexd.internal.engine.store.CompactExecRow()
+          row.setRowFormatter(rowFormatter)
           fillRowUsingByteArrayArray(row, valueArr)
         } else {
           println("from row buffer : []")
