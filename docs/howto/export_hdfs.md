@@ -31,7 +31,7 @@ Or by using APIs (as a part of SnappyData job). Refer to [How to Run Spark Code 
 // create a DataFrame using parquet 
 val df2 = snappySession.read.parquet("hdfs://127.0.0.1:9000/customer")
 // insetert the data into table
-df2.write.mode(SaveMode.Append)saveAsTable("APP.CUSTOMER")
+df2.write.mode(SaveMode.Append).saveAsTable("APP.CUSTOMER")
 ```
 
 
