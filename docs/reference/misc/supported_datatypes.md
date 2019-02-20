@@ -1,7 +1,5 @@
 # Data Types
 
-**WORK IN PROGRESS - OUTDATED CONTENT**
-
 The SQL type system determines the compile-time and runtime type of an expression. Each type has a certain range of permissible values that can be assigned to a column or value of that type.
 
 The special value NULL, denotes an unassigned or missing value of any of the types (columns that have been assigned as non-nullable using NOT NULL clause or the primary key columns cannot have a NULL value). The supported types are given below.
@@ -64,8 +62,18 @@ The special value NULL, denotes an unassigned or missing value of any of the typ
 <a id="array"></a>
 ## ARRAY
 
+A column of ARRAY datatype can contain a collection of elements. A column of type Array can store array of Java objects (Object[]), typed arrays, java.util.Collection and scala.collection.Seq. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the array data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
+
 !!! Note
 	Supported only for column tables
+
+
+**SQL Example**
+```
+# Create a table with column of type of an array of doubles and insert few records
+CREATE TABLE IF NOT EXISTS Student(rollno Int, name String, marks Array<Double>) USING column;
+INSERT INTO Student SELECT 1,'John', Array(97.8,85.2,63.9,45.2,75.2,96.5);
+```
 
 <a id="bigint"></a>
 ## BIGINT
@@ -108,18 +116,27 @@ select length(data) from blob_data where id = 100;
 <a id="boolean"></a>
 ## BOOLEAN
 
+The data type representing `Boolean` values. This is equivalent to Java's `boolean` primitive type.
+
 <a id="byte"></a>
 ## BYTE
+
+The data type representing `Byte` values. It is an 8-bit signed integer (equivalent to Java's `byte` primitive type).
+
+|                                      |                                              |
+|--------------------------------------|----------------------------------------------|
+| Minimum value                  | java.lang.Byte.MIN_VALUE                             |
+| Maximum value | java.lang.Byte.MAX_VALUE |
 
 <a id="char"></a>
 ## CHAR
 
-Provides for fixed-length strings. If a string value is shorter than the expected length, then spaces are inserted to pad the string to the expected length. If a string value is longer than the expected length, then any trailing blanks are trimmed to make the length same as the expected length, while an exception is raised if characters other than spaces are required to be truncated. For comparision operations, the shorter CHAR string is padded with spaces to the longer value. Similarly when mixing CHARs and VARCHARs in expressions , the shorter value is padded with spaces to the length of longer string.
+Provides for fixed-length strings. If a string value is shorter than the expected length, then spaces are inserted to pad the string to the expected length. If a string value is longer than the expected length, then any trailing blanks are trimmed to make the length same as the expected length, while an exception is raised if characters other than spaces are required to be truncated. For comparison operations, the shorter CHAR string is padded with spaces to the longer value. Similarly when mixing CHARs and VARCHARs in expressions, the shorter value is padded with spaces to the length of the longer string.
 
 To represent a single quotation mark within a string, use two quotation marks:
 
 ```pre
-VALUES 'going to Chandra''s place' 
+VALUES 'going to Chandra's place' 
 ```
 
 The length of CHAR is an unsigned integer constant.
@@ -288,12 +305,15 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 
 
 <a id="long"></a>
-
 ## LONG
 
 
-<a id="map"></a>
-- [MAP](#map)
+The data type representing `Long` values. It's a 64-bit signed integer (equivalent to Java's `long` primitive type).
+
+|                      |                                            |
+|----------------------|--------------------------------------------|
+| Minimum value   | java.lang.Long.MIN_VALUE                          |
+|    Maximum value   | java.lang.Long.MAX_VALUE |
 
 !!! Note
 	Supported only for column tables
@@ -301,9 +321,40 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 
 <a id="numeric"></a>
 
+<a id="map"></a>
+## MAP
+
+
+A column of MAP datatype can contain a collection of key-value pairs. 
+
+**SQL Examples**
+
+```
+# Create a table with column of type MAP and insert few records
+CREATE TABLE IF NOT EXISTS StudentGrades (rollno Integer, name String, Course Map<String, String>) USING column;
+INSERT INTO StudentGrades SELECT 1,'Jim', Map('English', 'A+');
+INSERT INTO StudentGrades SELECT 2,'John', Map('English', 'A', 'Science', 'B');
+```
+```
+# Selecting grades for 'English'
+
+snappy> select ROLLNO, NAME, course['English'] from StudentGrades;
+
+ROLLNO  |NAME  |COURSE[English]     
+---------------------------
+2       |John  |A                                                                                          
+1       |Jim   |A+         
+```                                                                                
+
+
+A column of type Map can store **java.util.Map** or **scala.collection.Map**. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** class to serialize the map data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class. Map data can also be stored in a similar way.
+
+!!! Note
+	Supported only for column tables
+
 ## NUMERIC
 
-Synonym for DECIMAL data type.
+Synonym for the DECIMAL data type.
 
 The meta-data differences from DECIMAL are listed below. Otherwise, NUMERIC behaves identically to DECIMAL.
 
@@ -337,20 +388,40 @@ For behavior with other types in expressions, see Numeric type promotion in expr
 | Maximum value        | java.lang.Short.MAX\_VALUE (32767)             |
 
 
-<a id="struct"></a>
-- [STRUCT](#struct)
-
-!!! Note
-	Supported only for column tables
-
-
 <a id="string"></a>
 ## STRING
+
+The data type representing `String` values. A String encoded in UTF-8 as an Array[Byte], which can be used for comparison search.
+
+<a id="struct"></a>
+## STRUCT
+A column of struct datatype can contain a structure with different fields. 
+
+**SQL Examples**
+```
+# Create a table with column of type STRUCT and insert few records.
+
+CREATE TABLE IF NOT EXISTS StocksInfo (SYMBOL STRING, INFO STRUCT<TRADING_YEAR: STRING, AVG_DAILY_VOLUME: LONG, HIGHEST_PRICE_IN_YEAR: INT, LOWEST_PRICE_IN_YEAR: INT>) USING COLUMN;
+INSERT INTO StocksInfo SELECT 'ORD', STRUCT('2018', '400000', '112', '52');
+INSERT INTO StocksInfo SELECT 'MSGU', Struct('2018', '500000', '128', '110');
+```
+
+```
+# Select symbols with average daily volume is more than 400000
+
+SELECT SYMBOL FROM StocksInfo WHERE INFO.AVG_DAILY_VOLUME > 400000;
+SYMBOL
+-------------------------------------------------------------------------
+MSGU       
+
+```
+A column of type STRUCT can store array of Java objects (Object[]), typed arrays, java.util.Collection, scala.collection.Seq or scala.Product. You can use **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** 
+class to serialize the data in order to insert it into column tables. Refer [How to store and retrieve complex data types in JDBC programs](/howto/store_retrieve_complex_datatypes_JDBC.md) for a Scala example that shows how to serialize and store an array in a table using JDBC APIs and **ComplexTypeSerializer** class.
 
 <a id="timestamp"></a>
 ## TIMESTAMP
 
-Provides for storage of both DATE and TIME as a combined value. In addition it allows for fractional seconds having up to six digits. Supported formats are:
+Provides for storage of both DATE and TIME as a combined value. In addition, it allows for fractional seconds having up to six digits. Supported formats are:
 
 ```pre
 yyyy-MM-dd hh:mm:ss[.nnnnnn] 
@@ -384,7 +455,7 @@ The latter examples use the TIMESTAMP() function described in the section Built-
 <a id="varchar"></a>
 ## VARCHAR
 
-Provides for variable-length strings with a maximum limit for length. If a string value is longer than the maximum length, then any trailing blanks are trimmed to make the length same as the maximum length, while an exception is raised if characters other than spaces are required to be truncated. When mixing CHARs and VARCHARs in expressions, the shorter value is padded with spaces to the length of longer string.
+Provides for variable-length strings with a maximum limit for length. If a string value is longer than the maximum length, then any trailing blanks are trimmed to make the length same as the maximum length, while an exception is raised if characters other than spaces are required to be truncated. When mixing CHARs and VARCHARs in expressions, the shorter value is padded with spaces to the length of the longer string.
 
 The type of a string constant is CHAR, not VARCHAR. To represent a single quotation mark within a string, use two quotation marks:
 

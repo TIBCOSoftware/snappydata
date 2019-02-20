@@ -8,3 +8,14 @@ io/snappydata/hydra/ct/ctPutIntoWithEmbeddedMode.conf
   fullResultSetValidation=true
   insertUniqueRecords=true
   skipNumRowsValidation=true
+
+io/snappydata/hydra/ct/ctConcurrentPutIntoWithEmbeddedMode.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1  persistenceMode="sync"
+  dataFilesLocation="/export/shared/QA_DATA/ct"
+  tableType="PersistentColumn"
+  fullResultSetValidation=true
+  insertUniqueRecords=true
+  skipNumRowsValidation=true

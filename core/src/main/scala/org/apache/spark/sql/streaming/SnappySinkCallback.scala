@@ -22,6 +22,7 @@ import java.util.NoSuchElementException
 
 import io.snappydata.Property._
 import io.snappydata.StreamingConstants._
+import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.streaming.Sink
@@ -29,7 +30,11 @@ import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
+import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
+import io.snappydata.StreamingConstants.EventType._
+import io.snappydata.util.ServiceUtils
+import org.apache.spark.storage.StorageLevel
 
 /**
  * Should be implemented by clients who wants to override default behavior provided by
@@ -108,15 +113,15 @@ case class SnappyStoreSink(snappySession: SnappySession,
       }
     }
 
-    val hashAggregateSizeChanged = HashAggregateSize.get(snappySession.sessionState.conf)
+    val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
-    if (hashAggregateSizeChanged) {
+    if (hashAggregateSizeIsDefault) {
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
       sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
     } finally {
-      if (hashAggregateSizeChanged) {
+      if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
       }
     }
@@ -148,16 +153,16 @@ import org.apache.spark.sql.snappy._
 class DefaultSnappySinkCallback extends SnappySinkCallback {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    df.cache().count()
     log.debug(s"Processing batchId $batchId with parameters $parameters ...")
-    val tableName = snappySession.sessionCatalog.formatName(parameters(TABLE_NAME))
-    val conflationEnabled = if (parameters.contains(CONFLATION)) {
-      parameters(CONFLATION).toBoolean
-    } else {
-      false
-    }
+    val tableName = snappySession.sessionCatalog.formatTableName(parameters(TABLE_NAME))
     val keyColumns = snappySession.sessionCatalog.getKeyColumnsAndPositions(tableName)
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
+    val conflationEnabled = parameters.getOrElse(CONFLATION, "false").toBoolean
+    if (conflationEnabled && keyColumns.isEmpty) {
+      val msg = "Key column(s) or primary key must be defined on table in order " +
+          "to perform conflation."
+      throw new IllegalStateException(msg)
+    }
 
     log.debug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
@@ -165,25 +170,9 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     if (keyColumns.nonEmpty) {
       val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
       if (eventTypeColumnAvailable) {
-        val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.DELETE)
-            .drop(EVENT_TYPE_COLUMN)
-        deleteDf.write.deleteFrom(tableName)
-        if (posDup) {
-          val upsertEventTypes = List(EventType.INSERT, EventType.UPDATE)
-          val upsertDf = dataFrame
-              .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
-              .drop(EVENT_TYPE_COLUMN)
-          upsertDf.write.putInto(tableName)
-        } else {
-          val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.INSERT)
-              .drop(EVENT_TYPE_COLUMN)
-          insertDf.write.insertInto(tableName)
-          val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === EventType.UPDATE)
-              .drop(EVENT_TYPE_COLUMN)
-          updateDf.write.putInto(tableName)
-        }
+        processDataWithEventType(dataFrame)
       } else {
-        dataFrame.write.putInto(tableName)
+        if (persist(dataFrame).count() != 0) dataFrame.write.putInto(tableName)
       }
     }
     else {
@@ -202,7 +191,6 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
 
     log.debug(s"Processing batchId $batchId with parameters $parameters ... Done.")
 
-
     // We are grouping by key columns and getting the last record.
     // Note that this approach will work as far as the incoming dataframe is partitioned
     // by key columns and events are available in the correct order in the respective partition.
@@ -218,14 +206,56 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         index += 1
         contains
       }
-      val conflatedDf = if (otherCols.isEmpty) df.distinct()
-      else {
-        val exprs = otherCols.map(c => last(c).alias(c))
+
+      val conflatedDf: DataFrame = {
+        val exprs = otherCols.map(c => last(c).alias(c)) ++
+            Seq(count(lit(1)).alias(EVENT_COUNT_COLUMN))
+
+        val columns = if (eventTypeColumnAvailable) {
+          // if event type of the last event for a key is insert and there are more than one
+          // events for the same key, then convert inserts to put into
+          df.columns.filter(_ != EVENT_TYPE_COLUMN).map(col) ++
+              Seq(when(col(EVENT_TYPE_COLUMN) === INSERT && col(EVENT_COUNT_COLUMN) > 1,
+                UPDATE).otherwise(col(EVENT_TYPE_COLUMN)).alias(EVENT_TYPE_COLUMN))
+        } else {
+          df.columns.map(col)
+        }
         df.groupBy(keyCols.head, keyCols.tail: _*)
             .agg(exprs.head, exprs.tail: _*)
-            .select(df.columns.head, df.columns.tail: _*)
+            .select(columns: _*)
       }
       conflatedDf.cache()
+    }
+
+    def persist(df: DataFrame) = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)) {
+      df.persist(StorageLevel.OFF_HEAP)
+    } else df.persist()
+
+    def processDataWithEventType(dataFrame: DataFrame): Unit = {
+      val hasUpdateOrDeleteEvents = persist(dataFrame)
+          .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
+          .count() > 0
+      if (hasUpdateOrDeleteEvents) {
+        val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === DELETE)
+            .drop(EVENT_TYPE_COLUMN)
+        deleteDf.write.deleteFrom(tableName)
+      }
+      if (posDup) {
+        val upsertEventTypes = List(INSERT, UPDATE)
+        val upsertDf = dataFrame
+            .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
+            .drop(EVENT_TYPE_COLUMN)
+        upsertDf.write.putInto(tableName)
+      } else {
+        val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === INSERT)
+            .drop(EVENT_TYPE_COLUMN)
+        insertDf.write.insertInto(tableName)
+        if (hasUpdateOrDeleteEvents) {
+          val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === UPDATE)
+              .drop(EVENT_TYPE_COLUMN)
+          updateDf.write.putInto(tableName)
+        }
+      }
     }
   }
 }

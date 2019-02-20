@@ -26,7 +26,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
-import org.apache.spark.sql.catalyst.catalog.{CatalogTable, FunctionResource}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStatistics, CatalogStorageFormat, CatalogTable, CatalogTableType, FunctionResource}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
@@ -39,9 +39,10 @@ import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunction
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
-import org.apache.spark.sql.execution.{SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{DataType, Metadata}
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.storage.StorageLevel
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.3.2.
@@ -107,7 +108,7 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def newCaseInsensitiveMap(map: Map[String, String]): Map[String, String] = {
-    new CaseInsensitiveMap[String](map)
+    CaseInsensitiveMap[String](map)
   }
 
   // TODO: SW: inhibit SQLTab attach in SharedState.statusStore and instead do it
@@ -129,6 +130,7 @@ class Spark232Internals extends SparkInternals {
           state.sparkContext.removeSparkListener)
         state.sparkContext.listenerBus.addToStatusQueue(newListener)
         listenerField.set(state.statusStore, newListener)
+      case _ =>
     }
   }
 
@@ -276,6 +278,40 @@ class Spark232Internals extends SparkInternals {
     LogicalRelation(relation, output, catalogTable, isStreaming)
   }
 
+  // scalastyle:off
+
+  override def newCatalogTable(identifier: TableIdentifier, tableType: CatalogTableType,
+      storage: CatalogStorageFormat, schema: StructType, provider: Option[String],
+      partitionColumnNames: Seq[String], bucketSpec: Option[BucketSpec],
+      owner: String, createTime: Long, lastAccessTime: Long, properties: Map[String, String],
+      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])],
+      viewOriginalText: Option[String], viewText: Option[String],
+      comment: Option[String], unsupportedFeatures: Seq[String],
+      tracksPartitionsInCatalog: Boolean, schemaPreservesCase: Boolean,
+      ignoredProperties: Map[String, String]): CatalogTable = {
+    val statistics = stats match {
+      case None => None
+      case Some(s) => Some(CatalogStatistics(s._1, s._2, s._3))
+    }
+    CatalogTable(identifier, tableType, storage, schema, provider, partitionColumnNames,
+      bucketSpec, owner, createTime, lastAccessTime, createVersion = "", properties, statistics,
+      viewText, comment, unsupportedFeatures, tracksPartitionsInCatalog,
+      schemaPreservesCase, ignoredProperties)
+  }
+
+  // scalastyle:on
+
+  override def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String] = None
+
+  override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
+    catalogTable.schemaPreservesCase
+
+  override def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String] =
+    catalogTable.ignoredProperties
+
+  override def newCatalogTableWithViewOriginalText(catalogTable: CatalogTable,
+      viewOriginalText: Option[String]): CatalogTable = catalogTable
+
   override def newShuffleExchange(newPartitioning: Partitioning, child: SparkPlan): Exchange = {
     ShuffleExchangeExec(newPartitioning, child)
   }
@@ -314,5 +350,35 @@ class Spark232Internals extends SparkInternals {
 
   override def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit = {
     PreWriteCheck
+  }
+
+  override def newCacheManager(): CacheManager = new SnappyCacheManager
+}
+
+/**
+ * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
+ */
+final class SnappyCacheManager extends CacheManager {
+
+  override def cacheQuery(query: Dataset[_], tableName: Option[String],
+      storageLevel: StorageLevel): Unit = {
+    super.cacheQuery(query, tableName, storageLevel)
+    // clear plan cache since cached representation can change existing plans
+    query.sparkSession.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def uncacheQuery(session: SparkSession, plan: LogicalPlan, blocking: Boolean): Unit = {
+    super.uncacheQuery(session, plan, blocking)
+    session.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def recacheByPlan(session: SparkSession, plan: LogicalPlan): Unit = {
+    super.recacheByPlan(session, plan)
+    session.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def recacheByPath(session: SparkSession, resourcePath: String): Unit = {
+    super.recacheByPath(session, resourcePath)
+    session.asInstanceOf[SnappySession].clearPlanCache()
   }
 }

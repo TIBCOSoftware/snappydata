@@ -17,16 +17,62 @@
 
 package org.apache.spark.sql.store
 
+import java.sql.SQLException
+
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
+import io.snappydata.SnappyFunSuite.checkAnswer
 import io.snappydata.{Property, SnappyFunSuite}
+import org.scalatest.Assertions
 
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, HashJoinExec}
-import org.apache.spark.sql.{AnalysisException, Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession}
 
 /**
  * Tests for temporary, global and persistent views.
  */
 class ViewTest extends SnappyFunSuite {
+
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    ViewTest.createTables(this.snc.snappySession)
+  }
+
+  override def afterAll(): Unit = {
+    ViewTest.dropTables(this.snc.snappySession)
+    super.afterAll()
+  }
+
+  test("temporary view") {
+    ViewTest.testTemporaryView(snc.snappySession.sql, () => new SnappySession(sc).sql)
+  }
+
+  test("global temporary view") {
+    ViewTest.testGlobalTemporaryView(snc.snappySession.sql, () => new SnappySession(sc).sql)
+  }
+
+  test("temporary view using") {
+    ViewTest.testTemporaryViewUsing(snc.snappySession.sql, () => new SnappySession(sc).sql)
+  }
+
+  test("global temporary view using") {
+    ViewTest.testGlobalTemporaryViewUsing(snc.snappySession.sql, () => new SnappySession(sc).sql)
+  }
+
+  test("persistent view") {
+    ViewTest.testPersistentView(snc.snappySession.sql, checkPlans = true,
+      () => new SnappySession(sc).sql, restartSpark)
+  }
+
+  private def restartSpark(): Unit = {
+    stopAll()
+    val sys = InternalDistributedSystem.getConnectedInstance
+    if (sys ne null) {
+      sys.disconnect()
+    }
+  }
+}
+
+object ViewTest extends Assertions {
 
   private val columnTable = "viewColTable"
   private val rowTable = "viewRowTable"
@@ -35,269 +81,306 @@ class ViewTest extends SnappyFunSuite {
   private val viewTempMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null),
     Row("RANK", "int", null))
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    val session = this.snc.snappySession
+  private def getExpectedResult: Seq[Row] = {
+    (0 until numRows).map(i => Row(i, "address_" + (i + 1), i + 1))
+  }
+
+  private def tableExists(executeSQL: String => Dataset[Row], name: String): Boolean = {
+    try {
+      executeSQL(s"select 1 from $name where 1 = 0")
+      true
+    } catch {
+      case _: Exception => false
+    }
+  }
+
+  def createTables(session: SnappySession): Unit = {
     session.sql(s"create table $columnTable (id int, addr varchar(20)) using column " +
         "options (partition_by 'id')")
     session.sql(s"create table $rowTable (id int, addr varchar(20)) using row " +
         s"options (partition_by 'id', colocate_with '$columnTable')")
 
     val rows = (0 until numRows).map(i => Row(i, "address_" + (i + 1)))
-    snc.insert(columnTable, rows: _*)
-    snc.insert(rowTable, rows: _*)
+    session.insert(columnTable, rows: _*)
+    session.insert(rowTable, rows: _*)
   }
 
-  private def getExpectedResult: Seq[Row] = {
-    (0 until numRows).map(i => Row(i, "address_" + (i + 1), i + 1))
+  def dropTables(session: SnappySession): Unit = {
+    session.sql(s"drop table $rowTable")
+    session.sql(s"drop table $columnTable")
   }
 
-  test("temporary view") {
-    val session = this.snc.snappySession
+  def testTemporaryView(executeSQL: String => Dataset[Row],
+      newExecution: () => String => Dataset[Row]): Unit = {
+    val tableMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null))
 
-    val tableMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null))
-
-    checkAnswer(session.sql(s"describe $columnTable"), tableMeta)
-    checkAnswer(session.sql(s"describe $rowTable"), tableMeta)
+    checkAnswer(executeSQL(s"describe $columnTable"), tableMeta)
+    checkAnswer(executeSQL(s"describe $rowTable"), tableMeta)
 
     val expected = getExpectedResult
+    val showResult = Seq(Row("", "VIEWONTABLE", true, false))
 
     // check temporary view and its meta-data for column table
-    session.sql(s"create temporary view viewOnTable as $viewQuery from $columnTable")
+    executeSQL(s"create temporary view viewOnTable as $viewQuery from $columnTable")
 
-    assert(session.sessionCatalog.tableExists("viewOnTable") === true)
-    checkAnswer(session.sql("describe viewOnTable"), viewTempMeta)
-    checkAnswer(session.sql("select * from viewOnTable"), expected)
+    assert(tableExists(executeSQL, "viewOnTable") === true)
+    checkAnswer(executeSQL("describe viewOnTable"), viewTempMeta)
+    checkAnswer(executeSQL("select * from viewOnTable"), expected)
+    checkAnswer(executeSQL("show views"), showResult)
+    checkAnswer(executeSQL("show views in app"), showResult)
+    checkAnswer(executeSQL("show views from app"), showResult)
 
     // should not be visible from another session
-    val session2 = session.newSession()
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    val executeSQL2 = newExecution()
+    assert(tableExists(executeSQL2, "viewOnTable") === false)
 
     // drop and check unavailability
-    session.sql("drop view viewOnTable")
-    assert(session.sessionCatalog.tableExists("viewOnTable") === false)
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    executeSQL("drop view viewOnTable")
+    assert(tableExists(executeSQL, "viewOnTable") === false)
+    assert(tableExists(executeSQL2, "viewOnTable") === false)
 
     // check the same for view on row table
-    session.sql(s"create temporary view viewOnTable as $viewQuery from $rowTable")
+    executeSQL(s"create temporary view viewOnTable as $viewQuery from $rowTable")
 
-    assert(session.sessionCatalog.tableExists("viewOnTable") === true)
-    checkAnswer(session.sql("describe viewOnTable"), viewTempMeta)
-    checkAnswer(session.sql("select * from viewOnTable"), expected)
+    assert(tableExists(executeSQL, "viewOnTable") === true)
+    checkAnswer(executeSQL("describe viewOnTable"), viewTempMeta)
+    checkAnswer(executeSQL("select * from viewOnTable"), expected)
 
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
-    session.sql("drop view viewOnTable")
-    assert(session.sessionCatalog.tableExists("viewOnTable") === false)
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
-
-    session2.close()
+    assert(tableExists(executeSQL2, "viewOnTable") === false)
+    executeSQL("drop view viewOnTable")
+    assert(tableExists(executeSQL, "viewOnTable") === false)
+    assert(tableExists(executeSQL2, "viewOnTable") === false)
   }
 
-  test("global temporary view") {
-    val session = this.snc.snappySession
-
+  def testGlobalTemporaryView(executeSQL: String => Dataset[Row],
+      newExecution: () => String => Dataset[Row]): Unit = {
     val expected = getExpectedResult
+    val showResult = Seq(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true))
 
     // check temporary view and its meta-data for column table
-    session.sql(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
+    executeSQL(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
 
-    assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isDefined)
-    checkAnswer(session.sql("describe global_temp.viewOnTable"), viewTempMeta)
-    checkAnswer(session.sql("select * from viewOnTable"), expected)
+    assert(executeSQL("show views in global_temp").collect() ===
+        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+    checkAnswer(executeSQL("describe global_temp.viewOnTable"), viewTempMeta)
+    checkAnswer(executeSQL("select * from viewOnTable"), expected)
+    checkAnswer(executeSQL("show views"), Nil)
+    checkAnswer(executeSQL("show views in global_temp"), showResult)
+    checkAnswer(executeSQL("show views from global_temp"), showResult)
 
     // should be visible from another session
-    val session2 = session.newSession()
-    assert(session2.sessionCatalog.getGlobalTempView("viewOnTable").isDefined)
-    checkAnswer(session2.sql("describe global_temp.viewOnTable"), viewTempMeta)
-    checkAnswer(session2.sql("select * from viewOnTable"), expected)
+    val executeSQL2 = newExecution()
+    assert(executeSQL2("show views in global_temp").collect() ===
+        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+    checkAnswer(executeSQL2("describe global_temp.viewOnTable"), viewTempMeta)
+    checkAnswer(executeSQL2("select * from viewOnTable"), expected)
 
-    try {
-      session.sql("drop table viewOnTable")
-      fail("expected drop table to fail for view")
-    } catch {
-      case _: AnalysisException => // expected
-    }
     // drop and check unavailability
-    session.sql("drop view viewOnTable")
-    assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isEmpty)
-    assert(session2.sessionCatalog.getGlobalTempView("viewOnTable").isEmpty)
+    executeSQL("drop view viewOnTable")
+    assert(executeSQL("show views in global_temp").collect().isEmpty)
+    assert(executeSQL2("show views in global_temp").collect().isEmpty)
 
     // check the same for view on row table
-    session.sql(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
+    executeSQL(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
 
-    assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isDefined)
-    checkAnswer(session.sql("describe global_temp.viewOnTable"), viewTempMeta)
-    checkAnswer(session.sql("select * from viewOnTable"), expected)
+    assert(executeSQL("show views in global_temp").collect() ===
+        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+    checkAnswer(executeSQL("describe global_temp.viewOnTable"), viewTempMeta)
+    checkAnswer(executeSQL("select * from viewOnTable"), expected)
 
-    assert(session2.sessionCatalog.getGlobalTempView("viewOnTable").isDefined)
-    checkAnswer(session2.sql("describe global_temp.viewOnTable"), viewTempMeta)
-    checkAnswer(session2.sql("select * from viewOnTable"), expected)
+    assert(executeSQL2("show views in global_temp").collect() ===
+        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+    checkAnswer(executeSQL2("describe global_temp.viewOnTable"), viewTempMeta)
+    checkAnswer(executeSQL2("select * from viewOnTable"), expected)
 
-    session.sql("drop view viewOnTable")
-    assert(session.sessionCatalog.getGlobalTempView("viewOnTable").isEmpty)
-    assert(session2.sessionCatalog.getGlobalTempView("viewOnTable").isEmpty)
-
-    session2.close()
+    executeSQL("drop view viewOnTable")
+    assert(executeSQL("show views in global_temp").collect().isEmpty)
+    assert(executeSQL2("show views in global_temp").collect().isEmpty)
   }
 
-  test("temporary view using") {
-    val session = this.snc.snappySession
-
+  def testTemporaryViewUsing(executeSQL: String => Dataset[Row],
+      newExecution: () => String => Dataset[Row]): Unit = {
     // check temporary view with USING and its meta-data
     val hfile: String = getClass.getResource("/2015.parquet").getPath
-    val airline = session.read.parquet(hfile)
-    session.sql(s"create temporary view airlineView using parquet options(path '$hfile')")
-    val airlineView = session.table("airlineView")
+    executeSQL(s"create external table airlineTemp using parquet options (path '$hfile')")
+    val airline = executeSQL("select * from airlineTemp limit 1")
+    executeSQL(s"create temporary view airlineView using parquet options(path '$hfile')")
+    val airlineView = executeSQL("select * from airlineView limit 1")
 
-    assert(session.sessionCatalog.tableExists("airlineView") === true)
+    assert(tableExists(executeSQL, "airlineView") === true)
     assert(airlineView.schema === airline.schema)
-    checkAnswer(session.sql("select count(*) from airlineView"), Seq(Row(airline.count())))
-    assert(airlineView.count() == airline.count())
+    checkAnswer(executeSQL("select count(*) from airlineView"),
+      executeSQL("select count(*) from airlineTemp").collect())
 
     // should not be visible from another session
-    val session2 = session.newSession()
-    assert(session2.sessionCatalog.tableExists("airlineView") === false)
+    val executeSQL2 = newExecution()
+    assert(tableExists(executeSQL2, "airlineView") === false)
 
     // drop and check unavailability
-    session.sql("drop table airlineView")
-    assert(session.sessionCatalog.tableExists("airlineView") === false)
-    assert(session2.sessionCatalog.tableExists("airlineView") === false)
-
-    session2.close()
+    executeSQL("drop table airlineTemp")
+    executeSQL("drop table airlineView")
+    assert(tableExists(executeSQL, "airlineTemp") === false)
+    assert(tableExists(executeSQL2, "airlineTemp") === false)
+    assert(tableExists(executeSQL, "airlineView") === false)
+    assert(tableExists(executeSQL2, "airlineView") === false)
   }
 
-  test("global temporary view using") {
-    val session = this.snc.snappySession
-
+  def testGlobalTemporaryViewUsing(executeSQL: String => Dataset[Row],
+      newExecution: () => String => Dataset[Row]): Unit = {
     // check global temporary view with USING and its meta-data
     val hfile: String = getClass.getResource("/2015.parquet").getPath
-    val airline = session.read.parquet(hfile)
-    session.sql(s"create global temporary view airlineView using parquet options(path '$hfile')")
-    val airlineView = session.table("airlineView")
+    executeSQL(s"create external table airlineTemp using parquet options (path '$hfile')")
+    val airline = executeSQL("select * from airlineTemp limit 1")
+    executeSQL(s"create global temporary view airlineView using parquet options(path '$hfile')")
+    val airlineView = executeSQL("select * from airlineView limit 1")
 
-    assert(session.sessionCatalog.getGlobalTempView("airlineView").isDefined)
+    assert(executeSQL("show views in global_temp").collect() ===
+        Array(Row("GLOBAL_TEMP", "AIRLINEVIEW", true, true)))
     assert(airlineView.schema === airline.schema)
-    checkAnswer(session.sql("select count(*) from airlineView"), Seq(Row(airline.count())))
-    assert(airlineView.count() == airline.count())
+    checkAnswer(executeSQL("select count(*) from airlineView"),
+      executeSQL("select count(*) from airlineTemp").collect())
 
     // should be visible from another session
-    val session2 = session.newSession()
-    assert(session2.sessionCatalog.getGlobalTempView("airlineView").isDefined)
-    checkAnswer(session2.sql("select count(*) from airlineView"), Seq(Row(airline.count())))
+    val executeSQL2 = newExecution()
+    assert(executeSQL2("show views in global_temp").collect() ===
+        Array(Row("GLOBAL_TEMP", "AIRLINEVIEW", true, true)))
+    checkAnswer(executeSQL2("select count(*) from airlineView"),
+      executeSQL("select count(*) from airlineTemp").collect())
 
-    try {
-      session.sql("drop table airlineView")
-      fail("expected drop table to fail for view")
-    } catch {
-      case _: AnalysisException => // expected
-    }
     // drop and check unavailability
-    session.sql("drop view airlineView")
-    assert(session.sessionCatalog.getGlobalTempView("airlineView").isEmpty)
-    assert(session2.sessionCatalog.getGlobalTempView("airlineView").isEmpty)
-
-    session2.close()
+    executeSQL("drop table airlineTemp")
+    executeSQL("drop table airlineView")
+    assert(tableExists(executeSQL, "airlineTemp") === false)
+    assert(tableExists(executeSQL2, "airlineTemp") === false)
+    assert(executeSQL("show views in global_temp").collect().isEmpty)
+    assert(executeSQL2("show views in global_temp").collect().isEmpty)
   }
 
-  test("persistent view") {
+  def testPersistentView(executeSQL: String => Dataset[Row], checkPlans: Boolean,
+      newExecution: () => String => Dataset[Row], restartSpark: () => Unit): Unit = {
     val expected = getExpectedResult
     // check temporary view and its meta-data for column table
-    checkPersistentView(columnTable, rowTable, snc.snappySession, expected)
-    // check the same for view on row table
-    checkPersistentView(rowTable, columnTable, snc.snappySession, expected)
+    checkPersistentView(columnTable, rowTable, checkPlans, executeSQL, newExecution,
+      expected, restartSpark)
+    // check the same for view on row table with new session since old one would not be valid
+    val newExecuteSQL = newExecution()
+    checkPersistentView(rowTable, columnTable, checkPlans, newExecuteSQL, newExecution,
+      expected, restartSpark)
   }
 
-  private def checkPersistentView(table: String, otherTable: String, session: SnappySession,
-      expectedResult: Seq[Row]): Unit = {
-    session.sql(s"create view viewOnTable as $viewQuery from $table")
+  private def checkPersistentView(table: String, otherTable: String, checkPlans: Boolean,
+      executeSQL: String => Dataset[Row], newExecution: () => String => Dataset[Row],
+      expectedResult: Seq[Row], restartSpark: () => Unit): Unit = {
+    executeSQL(s"create view viewOnTable as $viewQuery from $table")
 
-    val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null),
+    val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null),
       Row("RANK", "int", null))
+    val showResult = Seq(Row("APP", "VIEWONTABLE", false, false))
 
-    assert(session.sessionCatalog.tableExists("viewOnTable") === true)
-    checkAnswer(session.sql("describe viewOnTable"), viewMeta)
-    checkAnswer(session.sql("select * from viewOnTable"), expectedResult)
+    assert(tableExists(executeSQL, "viewOnTable") === true)
+    checkAnswer(executeSQL("describe viewOnTable"), viewMeta)
+    checkAnswer(executeSQL("select * from viewOnTable"), expectedResult)
+    checkAnswer(executeSQL("show views"), showResult)
+    checkAnswer(executeSQL("show views in app"), showResult)
+    checkAnswer(executeSQL("show views from app"), showResult)
 
     // should be visible from another session
-    var session2 = session.newSession()
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === true)
-    checkAnswer(session2.sql("describe viewOnTable"), viewMeta)
-    checkAnswer(session2.sql("select * from viewOnTable"), expectedResult)
+    var executeSQL2 = newExecution()
+    assert(tableExists(executeSQL2, "viewOnTable") === true)
+    checkAnswer(executeSQL2("describe viewOnTable"), viewMeta)
+    checkAnswer(executeSQL2("select * from viewOnTable"), expectedResult)
 
     // test for SNAP-2205: see CompressionCodecId.isCompressed for a description of the problem
-    session.conf.set(Property.ColumnBatchSize.name, "10k")
+    executeSQL(s"set ${Property.ColumnBatchSize.name}=10k")
     // 21 columns mean 63 for ColumnStatsSchema so total of 64 fields including the COUNT
     // in the stats row which will fit in exactly one long for the nulls bitset
     val cols = (1 to 21).map(i => s"col$i string").mkString(", ")
-    session.sql(s"CREATE TABLE test2205 ($cols) using column options (buckets '4')")
+    executeSQL(s"CREATE TABLE test2205 ($cols) using column options (buckets '4')")
 
     val numElements = 10000
     val projection = (1 to 21).map(i => s"null as col$i")
-    session.range(numElements).selectExpr(projection: _*).write.insertInto("test2205")
+    executeSQL(
+      s"insert into test2205 select ${projection.mkString(", ")} from range($numElements)")
 
-    checkAnswer(session.sql("select count(*), count(col10) from test2205"),
+    checkAnswer(executeSQL("select count(*), count(col10) from test2205"),
       Seq(Row(numElements, 0)))
 
+    // test large view
+    val longStr = (1 to 1000).mkString("test data ", "", "")
+    val largeViewStr = (1 to 100).map(i =>
+      s"case when $i % 3 == 0 then cast(null as string) else '$longStr[$i]' end as c$i").mkString(
+      "select ", ", ", "")
+    assert(largeViewStr.length > 100000)
+    var rs = executeSQL2(largeViewStr).collect()
+    assert(rs.length == 1)
+    executeSQL2(s"create view largeView as $largeViewStr").collect()
+    rs = executeSQL("select * from largeView").collect()
+    assert(rs.length == 1)
+
     // should be available after a restart
-    session.close()
-    session2.close()
-    stopAll()
-    val sys = InternalDistributedSystem.getConnectedInstance
-    if (sys ne null) {
-      sys.disconnect()
-    }
+    restartSpark()
+    executeSQL2 = newExecution()
+    assert(tableExists(executeSQL2, "viewOnTable") === true)
+    checkAnswer(executeSQL2("describe viewOnTable"), viewMeta)
+    checkAnswer(executeSQL2("select * from viewOnTable"), expectedResult)
 
-    session2 = new SnappySession(sc)
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === true)
-    checkAnswer(session2.sql("describe viewOnTable"), viewMeta)
-    checkAnswer(session2.sql("select * from viewOnTable"), expectedResult)
-
-    checkAnswer(session2.sql("select count(*), count(col10) from test2205"),
+    checkAnswer(executeSQL2("select count(*), count(col10) from test2205"),
       Seq(Row(numElements, 0)))
 
     try {
-      session2.sql("drop table viewOnTable")
+      executeSQL2("drop table viewOnTable")
       fail("expected drop table to fail for view")
     } catch {
-      case _: AnalysisException => // expected
+      case _: AnalysisException | _: SQLException => // expected
     }
     // drop and check unavailability
-    session2.sql("drop view viewOnTable")
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
-    session2.sql("drop table test2205")
+    executeSQL2("drop view viewOnTable")
+    assert(tableExists(executeSQL2, "viewOnTable") === false)
+    executeSQL2("drop table test2205")
+
+    // test large view after restart
+    rs = executeSQL2("select * from largeView").collect()
+    assert(rs.length == 1)
+    executeSQL2("drop view largeView")
 
     // check colocated joins with VIEWs (SNAP-2204)
 
     val query = s"select c.id, r.addr from $columnTable c inner join $rowTable r on (c.id = r.id)"
     // first check with normal query
-    var ds = session2.sql(query)
+    var ds = executeSQL2(query)
     checkAnswer(ds, expectedResult.map(r => Row(r.get(0), r.get(1))))
-    var plan = ds.queryExecution.executedPlan
-    assert(plan.find(_.isInstanceOf[HashJoinExec]).isDefined)
-    assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
+    if (checkPlans) {
+      val plan = ds.queryExecution.executedPlan
+      assert(plan.find(_.isInstanceOf[HashJoinExec]).isDefined)
+      assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
+    }
 
     val expectedResult2 = expectedResult.map(r => Row(r.get(0), r.get(1)))
     // check for normal view join with table
-    session2.sql(s"create view viewOnTable as select id, addr, id + 1 from $table")
-    ds = session2.sql("select t.id, v.addr from viewOnTable v " +
+    executeSQL2(s"create view viewOnTable as select id, addr, id + 1 from $table")
+    ds = executeSQL2("select t.id, v.addr from viewOnTable v " +
         s"inner join $otherTable t on (v.id = t.id)")
     checkAnswer(ds, expectedResult2)
-    plan = ds.queryExecution.executedPlan
-    assert(plan.find(_.isInstanceOf[HashJoinExec]).isDefined)
-    assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
+    if (checkPlans) {
+      val plan = ds.queryExecution.executedPlan
+      assert(plan.find(_.isInstanceOf[HashJoinExec]).isDefined)
+      assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
+    }
 
-    session2.sql("drop view viewOnTable")
-    assert(session2.sessionCatalog.tableExists("viewOnTable") === false)
+    executeSQL2("drop view viewOnTable")
+    assert(tableExists(executeSQL2, "viewOnTable") === false)
 
     // next query on a join view
-    session2.sql(s"create view viewOnJoin as $query")
-    ds = session2.sql("select * from viewOnJoin")
+    executeSQL2(s"create view viewOnJoin as $query")
+    ds = executeSQL2("select * from viewOnJoin")
     checkAnswer(ds, expectedResult2)
-    plan = ds.queryExecution.executedPlan
-    assert(plan.find(_.isInstanceOf[HashJoinExec]).isDefined)
-    assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
+    if (checkPlans) {
+      val plan = ds.queryExecution.executedPlan
+      assert(plan.find(_.isInstanceOf[HashJoinExec]).isDefined)
+      assert(plan.find(_.isInstanceOf[BroadcastHashJoinExec]).isEmpty)
+    }
 
-    session2.sql("drop view viewOnJoin")
-    assert(session2.sessionCatalog.tableExists("viewOnJoin") === false)
+    executeSQL2("drop view viewOnJoin")
+    assert(tableExists(executeSQL2, "viewOnJoin") === false)
   }
 }

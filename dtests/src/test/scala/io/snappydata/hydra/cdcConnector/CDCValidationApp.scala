@@ -43,7 +43,7 @@ object CDCValidationApp {
     val dbName = args(3)
     val sqlServerInstance = args(4)
     val appName = args(5)
-    val startRange = args(6).toInt
+//    val startRange = args(6).toInt
     val conf = new SparkConf().setAppName(appName)
     val sc = SparkContext.getOrCreate(conf)
     val pw = new PrintWriter(appName + flag + ".out")
@@ -147,7 +147,7 @@ object CDCValidationApp {
             pw.println()
             pw.println("=============================================ResultSet Validation ==================================================")
             val rndNo = new Random()
-            val idVal = rndNo.nextInt(10) + startRange
+            val idVal = rndNo.nextInt(10) //+ startRange
             val sqlQ = "SELECT * FROM "+ sqlTable +" WHERE "+ idNameArr(j) +" = " + idVal
             System.out.println("The sql query is " + sqlQ)
             val snappyQ = "SELECT * FROM "+ tableName +" WHERE "+ idNameArr(j) +" = " + idVal

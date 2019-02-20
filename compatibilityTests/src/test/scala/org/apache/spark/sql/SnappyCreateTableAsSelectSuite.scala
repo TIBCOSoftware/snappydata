@@ -21,12 +21,9 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 
 class SnappyCreateTableAsSelectSuite
     extends CreateTableAsSelectSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil{
+        with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "CREATE TABLE USING AS SELECT",
-    "CREATE TABLE USING AS SELECT based on the file without write permission",
-    "create a table, drop it and create another one with the same name",
     "disallows CREATE TEMPORARY TABLE ... USING ... AS query",
     "disallows CREATE EXTERNAL TABLE ... USING ... AS query",
     "create table using as select - with partitioned by",

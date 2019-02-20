@@ -26,10 +26,8 @@ class SnappyGlobalTempViewSuite extends GlobalTempViewSuite
     "basic semantic",
     "global temp view is shared among all sessions",
     "global temp view database should be preserved",
-    "CREATE GLOBAL TEMP VIEW USING",
     "CREATE TABLE LIKE should work for global temp view",
     "list global temp views",
-    "should lookup global temp view if and only if global temp db is specified",
-    "public Catalog should recognize global temp view"
+    "should lookup global temp view if and only if global temp db is specified"
   )
 }

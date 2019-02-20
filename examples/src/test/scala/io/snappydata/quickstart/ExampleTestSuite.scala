@@ -70,7 +70,8 @@ class ExampleTestSuite extends SnappyTestRunner {
   }
 
   test("QuickStart.scala script") {
-    SparkShell(Seq.empty[String], "--driver-memory=4g --driver-java-options=" +
+    SparkShell("spark.sql.catalogImplementation=in-memory" :: Nil,
+      "--driver-memory=4g --driver-java-options=" +
       "\"-XX:+UseConcMarkSweepGC\" \"-XX:+UseParNewGC\" \"-XX:+CMSClassUnloadingEnabled\"" +
       " \"-XX:MaxNewSize=1g\"",
       scriptFile = s"$snappyHome/quickstart/scripts/Quickstart.scala")

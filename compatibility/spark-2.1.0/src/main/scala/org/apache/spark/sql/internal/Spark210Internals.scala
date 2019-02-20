@@ -21,11 +21,10 @@ import scala.util.control.NonFatal
 
 import io.snappydata.{HintName, QueryHint}
 
-import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTableValuedFunction}
-import org.apache.spark.sql.catalyst.catalog.{CatalogTable, FunctionResource}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType, FunctionResource}
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
@@ -39,9 +38,11 @@ import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunction
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
-import org.apache.spark.sql.execution.{SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
+import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{DataType, Metadata}
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.storage.StorageLevel
+import org.apache.spark.{SparkContext, SparkException}
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.1.0.
@@ -350,6 +351,47 @@ class Spark210Internals extends SparkInternals {
     LogicalRelation(relation, expectedOutputAttributes, catalogTable)
   }
 
+  // scalastyle:off
+
+  override def newCatalogTable(identifier: TableIdentifier, tableType: CatalogTableType,
+      storage: CatalogStorageFormat, schema: StructType, provider: Option[String],
+      partitionColumnNames: Seq[String], bucketSpec: Option[BucketSpec],
+      owner: String, createTime: Long, lastAccessTime: Long, properties: Map[String, String],
+      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])],
+      viewOriginalText: Option[String], viewText: Option[String],
+      comment: Option[String], unsupportedFeatures: Seq[String],
+      tracksPartitionsInCatalog: Boolean, schemaPreservesCase: Boolean,
+      ignoredProperties: Map[String, String]): CatalogTable = {
+    if (!schemaPreservesCase) {
+      throw new SparkException(s"schemaPreservesCase should be always true in Spark $version")
+    }
+    if (ignoredProperties.nonEmpty) {
+      throw new SparkException(s"ignoredProperties should be always empty in Spark $version")
+    }
+    val statistics = stats match {
+      case None => None
+      case Some(s) => Some(Statistics(s._1, s._2, s._3))
+    }
+    CatalogTable(identifier, tableType, storage, schema, provider, partitionColumnNames,
+      bucketSpec, owner, createTime, lastAccessTime, properties, statistics, viewOriginalText,
+      viewText, comment, unsupportedFeatures, tracksPartitionsInCatalog)
+  }
+
+  // scalastyle:on
+
+  override def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String] =
+    catalogTable.viewOriginalText
+
+  override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean = true
+
+  override def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String] =
+    Map.empty
+
+  override def newCatalogTableWithViewOriginalText(catalogTable: CatalogTable,
+      viewOriginalText: Option[String]): CatalogTable = {
+    catalogTable.copy(viewOriginalText = viewOriginalText)
+  }
+
   override def newShuffleExchange(newPartitioning: Partitioning, child: SparkPlan): Exchange = {
     ShuffleExchange(newPartitioning, child)
   }
@@ -382,5 +424,40 @@ class Spark210Internals extends SparkInternals {
 
   override def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit = {
     PreWriteCheck(sessionState.conf, sessionState.catalog)
+  }
+
+  override def newCacheManager(): CacheManager = new SnappyCacheManager
+}
+
+/**
+ * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
+ */
+final class SnappyCacheManager extends CacheManager {
+
+  override def cacheQuery(query: Dataset[_], tableName: Option[String],
+      storageLevel: StorageLevel): Unit = {
+    super.cacheQuery(query, tableName, storageLevel)
+    // clear plan cache since cached representation can change existing plans
+    query.sparkSession.asInstanceOf[SnappySession].clearPlanCache()
+  }
+
+  override def uncacheQuery(query: Dataset[_], blocking: Boolean): Boolean = {
+    if (super.uncacheQuery(query, blocking)) {
+      query.sparkSession.asInstanceOf[SnappySession].clearPlanCache()
+      true
+    } else false
+  }
+
+  override def invalidateCache(plan: LogicalPlan): Unit = {
+    super.invalidateCache(plan)
+    SparkSession.getActiveSession match {
+      case None =>
+      case Some(session) => session.asInstanceOf[SnappySession].clearPlanCache()
+    }
+  }
+
+  override def invalidateCachedPath(session: SparkSession, resourcePath: String): Unit = {
+    super.invalidateCachedPath(session, resourcePath)
+    session.asInstanceOf[SnappySession].clearPlanCache()
   }
 }

@@ -214,6 +214,7 @@ object SnappyTableStatsProviderDUnitTest {
     entryOverhead *= entryCount
     stats.setSizeInMemory(stats.getSizeInMemory + memSize + entryOverhead)
     stats.setTotalSize(stats.getTotalSize + totalSize + entryOverhead)
+    stats.setSizeSpillToDisk(stats.getTotalSize - stats.getSizeInMemory)
     stats
   }
 
@@ -249,6 +250,7 @@ object SnappyTableStatsProviderDUnitTest {
     totalSize += overhead * result.getRowCount
     result.setSizeInMemory(totalSize)
     result.setTotalSize(totalSize)
+    result.setSizeSpillToDisk(0)
     result
   }
 

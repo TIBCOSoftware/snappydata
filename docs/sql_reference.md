@@ -30,6 +30,13 @@ The following topics are covered in this section:
 
 - **[DELETE](reference/sql_reference/delete.md)**
 
+- **DEPLOY STATEMENTS**
+	-	**[DEPLOY PACKAGES](reference/sql_reference/deploy_package/)**
+	
+	-	**[DEPLOY JARS](reference/sql_reference/deploy_jar/)**
+	
+	-	**[UNDEPLOY](reference/sql_reference/undeploy/)**
+
 - **DROP STATEMENTS**
 
      - **[DROP DISKSTORE](reference/sql_reference/drop-diskstore.md)**

@@ -15,10 +15,6 @@
  * LICENSE file.
  */
 
-plugins {
-  id 'com.github.johnrengelman.shadow' version '2.0.4'
-}
-
 apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'

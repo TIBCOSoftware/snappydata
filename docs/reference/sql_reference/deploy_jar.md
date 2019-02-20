@@ -2,12 +2,12 @@
 
 Deploys a jar in a running system.
 
-## Syntax 
+## Syntax
 
 ```pre
-deploy jar <name> ‘jars’
+deploy jar <unique-alias-name> ‘jars’
 ```
-*	**name** - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.
+*	**unique-alias-name** - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.
 
 *	**jars** - Comma-delimited string of jar paths. These paths are expected to be accessible from all the lead nodes in SnappyData.
 
@@ -17,9 +17,8 @@ SnappyData provides a method to deploy a jar in a running system through SQL. Yo
 
 ## Example 
 
-	
 ```
-deploy jar spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
+deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
 ```
 
 

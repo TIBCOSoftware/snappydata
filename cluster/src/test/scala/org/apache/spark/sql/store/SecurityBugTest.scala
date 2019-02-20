@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.DriverManager
+import java.sql.{Connection, DriverManager}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
@@ -30,9 +30,12 @@ import org.apache.spark.SparkConf
 
 class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
   private val sysUser = "gemfire10"
-
+  var serverHostPort: String = _
   override def beforeAll(): Unit = {
     this.stopAll()
+    super.beforeAll()
+    snc
+    serverHostPort = TestUtil.startNetServer()
   }
   
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
@@ -60,6 +63,7 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def afterAll(): Unit = {
     this.stopAll()
+    TestUtil.stopNetServer()
     val ldapServer = LdapTestServer.getInstance()
     if (ldapServer.isServerStarted) {
       ldapServer.stopService()
@@ -102,4 +106,44 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
   }
 
+  test("Bug SNAP-2827 admin is unable to drop schema") {
+    val user1 = "gemfire1"
+    val adminSnc = snc.newSession()
+    adminSnc.snappySession.conf.set(Attribute.USERNAME_ATTR, sysUser)
+    adminSnc.snappySession.conf.set(Attribute.PASSWORD_ATTR, sysUser)
+    adminSnc.sql("create schema test_schema1 authorization ldapgroup:gemGroup1")
+    val snc1 = snc.newSession()
+    snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
+    snc1.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
+    snc1.sql(s"create table test_schema1.test (id  integer," +
+      s" name STRING) using column")
+    adminSnc.sql("drop table test_schema1.test")
+    adminSnc.sql("drop schema test_schema1")
+    adminSnc.sql("create schema test_schema2 authorization ldapgroup:gemGroup1")
+    adminSnc.sql("drop schema test_schema2")
+
+    val adminConn = getConnection(Some(sysUser))
+    val adminStmt = adminConn.createStatement
+    adminStmt.execute("create schema test_schema3 authorization ldapgroup:gemGroup1")
+    val userConn = getConnection(Some(user1))
+    val userStmt = userConn.createStatement
+    userStmt.execute("create table test_schema3.test (id  integer, name STRING) using column")
+    adminStmt.execute("drop table test_schema3.test")
+    adminStmt.execute("drop schema test_schema3")
+    adminStmt.execute("create schema test_schema4 authorization ldapgroup:gemGroup1")
+    adminStmt.execute("drop schema test_schema4")
+    adminStmt.execute("create schema test_schema5 authorization ldapgroup:gemGroup1")
+    adminSnc.sql("drop schema test_schema5")
+    adminSnc.sql("create schema test_schema6 authorization ldapgroup:gemGroup1")
+    adminStmt.execute("drop schema test_schema6")
+  }
+
+  private def getConnection(user: Option[String] = None): Connection = {
+    val props = new Properties()
+    if (user.isDefined) {
+      props.put(Attribute.USERNAME_ATTR, user.get)
+      props.put(Attribute.PASSWORD_ATTR, user.get)
+    }
+    DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort", props)
+  }
 }
