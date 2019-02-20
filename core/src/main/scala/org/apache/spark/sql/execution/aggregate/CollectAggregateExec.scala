@@ -21,7 +21,6 @@ import scala.collection.mutable.ArrayBuffer
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.physical.{Distribution, UnspecifiedDistribution}
 import org.apache.spark.sql.execution.{BufferedRowIterator, InputAdapter, PlanLater, SparkPlan, UnaryExecNode}
 import org.apache.spark.sql.internal.SnappySessionState
@@ -53,7 +52,7 @@ case class CollectAggregateExec(
   }
 
   @transient private[sql] lazy val generatedClass = {
-    CodeGenerator.compile(generatedSource)
+    internals.compile(generatedSource)
   }
 
   /**

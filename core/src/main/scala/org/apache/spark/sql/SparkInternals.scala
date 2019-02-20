@@ -16,21 +16,22 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedTableValuedFunction
-import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType, FunctionResource}
+import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, LogicalPlan, RepartitionByExpression, Statistics, SubqueryAlias}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.internal.{LogicalPlanWithHints, SharedState, SnappySessionState}
+import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionState}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, SparkContext}
@@ -313,8 +314,22 @@ trait SparkInternals extends Logging {
       expectedOutputAttributes: Option[Seq[AttributeReference]],
       catalogTable: Option[CatalogTable], isStreaming: Boolean): LogicalRelation
 
+  /**
+   * Create a new CatalogDatabase given the parameters. Newer Spark releases require a URI
+   * for locationUri so the given string will be converted to URI for those Spark versions.
+   */
+  def newCatalogDatabase(name: String, description: String,
+      locationUri: String, properties: Map[String, String]): CatalogDatabase
+
+  /** Get the locationURI for CatalogDatabase in String format. */
+  def catalogDatabaseLocationURI(database: CatalogDatabase): String
+
   // scalastyle:off
 
+  /**
+   * Create a new CatalogTable given the parameters. The primary constructor
+   * of the class has seen major changes across Spark versions.
+   */
   def newCatalogTable(identifier: TableIdentifier, tableType: CatalogTableType,
       storage: CatalogStorageFormat, schema: StructType, provider: Option[String],
       partitionColumnNames: Seq[String], bucketSpec: Option[BucketSpec],
@@ -327,14 +342,52 @@ trait SparkInternals extends Logging {
 
   // scalastyle:on
 
+  /** Get the viewOriginalText of CataLogTable or None if not present. */
   def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String]
 
+  /** Get the schemaPreservesCase field of CataLogTable or true if not present. */
   def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean
 
+  /** Get the ignoredProperties map of CataLogTable or empty map if not present. */
   def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String]
 
+  /** Return a new CatalogTable with updated viewOriginalText if possible. */
   def newCatalogTableWithViewOriginalText(catalogTable: CatalogTable,
       viewOriginalText: Option[String]): CatalogTable
+
+  /**
+   * Create a new CatalogStorageFormat given the parameters.
+   */
+  def newCatalogStorageFormat(locationUri: Option[String], inputFormat: Option[String],
+      outputFormat: Option[String], serde: Option[String], compressed: Boolean,
+      properties: Map[String, String]): CatalogStorageFormat
+
+  /** Get the string representation of locationUri field of CatalogStorageFormat. */
+  def catalogStorageFormatLocationUri(storageFormat: CatalogStorageFormat): Option[String]
+
+  /** Serialize a CatalogTablePartition to InternalRow */
+  def catalogTablePartitionToRow(partition: CatalogTablePartition,
+      partitionSchema: StructType, defaultTimeZoneId: String): InternalRow
+
+  /** Alter table statistics in the ExternalCatalog if possible else throw an exception */
+  def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
+      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit
+
+  /** Alter function definition in the ExternalCatalog if possible else throw an exception */
+  def alterFunction(externalCatalog: ExternalCatalog, schema: String,
+      function: CatalogFunction): Unit
+
+  /** Convert a ColumnStat to a map. */
+  def columnStatToMap(stat: ColumnStat, colName: String, dataType: DataType): Map[String, String]
+
+  /**
+   * Create a new instance of SmartConnectorExternalCatalog. The method overrides have changed
+   * across Spark versions.
+   */
+  def newSmartConnectorExternalCatalog(session: SparkSession): SmartConnectorExternalCatalog
+
+  /** Lookup the data source for a given provider. */
+  def lookupDataSource(provider: String, conf: => SQLConf): Class[_]
 
   /**
    * Create a new shuffle exchange plan.

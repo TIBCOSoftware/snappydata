@@ -23,8 +23,8 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import io.snappydata.{Constant, Property}
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
@@ -494,8 +494,8 @@ class ColumnFormatRelation(
       cr.origOptions, cr.externalStore, cr.partitioningColumns, cr.sqlContext,
       _relationInfoAndRegion)
     newRelation.delayRollover = true
-    relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+    internals.newLogicalRelation(newRelation, Some(relation.output ++
+        ColumnDelta.mutableKeyAttributes), relation.catalogTable, isStreaming = false)
   }
 
   override def dropIndex(indexIdent: TableIdentifier,
@@ -655,15 +655,16 @@ class IndexColumnFormatRelation(
       cr.externalStore, cr.partitioningColumns, cr.sqlContext, baseTableName,
       _relationInfoAndRegion)
     newRelation.delayRollover = true
-    relation.copy(relation = newRelation,
-      expectedOutputAttributes = Some(relation.output ++ ColumnDelta.mutableKeyAttributes))
+    internals.newLogicalRelation(newRelation, Some(relation.output ++
+        ColumnDelta.mutableKeyAttributes), relation.catalogTable, isStreaming = false)
   }
 
   def getBaseTableRelation: ColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionState.catalog
     catalog.resolveRelation(session.tableIdentifier(baseTableName)) match {
-      case LogicalRelation(cr: ColumnFormatRelation, _, _) => cr
+      case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] =>
+        lr.relation.asInstanceOf[ColumnFormatRelation]
       case _ =>
         throw new UnsupportedOperationException("Index scan other than Column table unsupported")
     }

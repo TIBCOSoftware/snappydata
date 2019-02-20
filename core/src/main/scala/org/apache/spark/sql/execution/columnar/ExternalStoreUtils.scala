@@ -41,7 +41,6 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
@@ -389,10 +388,10 @@ object ExternalStoreUtils extends SparkSupport {
   }
 
   /** check if the DataSource implements ExternalSchemaRelationProvider */
-  def isExternalSchemaRelationProvider(provider: String): Boolean = {
+  def isExternalSchemaRelationProvider(provider: String, session: SparkSession): Boolean = {
     try {
       classOf[ExternalSchemaRelationProvider].isAssignableFrom(
-        DataSource.lookupDataSource(provider))
+        internals.lookupDataSource(provider, session.sessionState.conf))
     } catch {
       case NonFatal(_) => false
     }

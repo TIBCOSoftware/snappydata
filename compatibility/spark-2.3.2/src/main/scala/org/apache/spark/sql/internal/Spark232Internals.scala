@@ -17,16 +17,20 @@
 package org.apache.spark.sql.internal
 
 import java.lang.reflect.Field
+import java.net.URI
+import java.nio.file.Paths
 
 import scala.collection.mutable
 
+import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
-import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStatistics, CatalogStorageFormat, CatalogTable, CatalogTableType, FunctionResource}
+import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
+import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
@@ -34,7 +38,7 @@ import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
@@ -278,6 +282,18 @@ class Spark232Internals extends SparkInternals {
     LogicalRelation(relation, output, catalogTable, isStreaming)
   }
 
+  private def toURI(uri: String): URI = {
+    if (uri.contains("://")) new URI(uri) else new URI("file://" + Paths.get(uri).toAbsolutePath)
+  }
+
+  override def newCatalogDatabase(name: String, description: String,
+      locationUri: String, properties: Map[String, String]): CatalogDatabase = {
+    CatalogDatabase(name, description, toURI(locationUri), properties)
+  }
+
+  override def catalogDatabaseLocationURI(database: CatalogDatabase): String =
+    database.locationUri.toString
+
   // scalastyle:off
 
   override def newCatalogTable(identifier: TableIdentifier, tableType: CatalogTableType,
@@ -311,6 +327,51 @@ class Spark232Internals extends SparkInternals {
 
   override def newCatalogTableWithViewOriginalText(catalogTable: CatalogTable,
       viewOriginalText: Option[String]): CatalogTable = catalogTable
+
+  override def newCatalogStorageFormat(locationUri: Option[String], inputFormat: Option[String],
+      outputFormat: Option[String], serde: Option[String], compressed: Boolean,
+      properties: Map[String, String]): CatalogStorageFormat = {
+    locationUri match {
+      case None => CatalogStorageFormat(None, inputFormat, outputFormat,
+        serde, compressed, properties)
+      case Some(uri) => CatalogStorageFormat(Some(toURI(uri)), inputFormat, outputFormat,
+        serde, compressed, properties)
+    }
+  }
+
+  override def catalogStorageFormatLocationUri(
+      storageFormat: CatalogStorageFormat): Option[String] = storageFormat.locationUri match {
+    case None => None
+    case Some(uri) => Some(uri.toString)
+  }
+
+  override def catalogTablePartitionToRow(partition: CatalogTablePartition,
+      partitionSchema: StructType, defaultTimeZoneId: String): InternalRow = {
+    partition.toRow(partitionSchema, defaultTimeZoneId)
+  }
+
+  override def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
+      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
+    val catalogStats = stats match {
+      case None => None
+      case Some(s) => Some(CatalogStatistics(s._1, s._2, s._3))
+    }
+    externalCatalog.alterTableStats(schema, table, catalogStats)
+  }
+
+  override def alterFunction(externalCatalog: ExternalCatalog, schema: String,
+      function: CatalogFunction): Unit = externalCatalog.alterFunction(schema, function)
+
+  override def columnStatToMap(stat: ColumnStat, colName: String,
+      dataType: DataType): Map[String, String] = stat.toMap(colName, dataType)
+
+  override def newSmartConnectorExternalCatalog(
+      session: SparkSession): SmartConnectorExternalCatalog = {
+    new SmartConnectorExternalCatalogImpl(session)
+  }
+
+  override def lookupDataSource(provider: String, conf: => SQLConf): Class[_] =
+    DataSource.lookupDataSource(provider, conf)
 
   override def newShuffleExchange(newPartitioning: Partitioning, child: SparkPlan): Exchange = {
     ShuffleExchangeExec(newPartitioning, child)
@@ -381,4 +442,61 @@ final class SnappyCacheManager extends CacheManager {
     super.recacheByPath(session, resourcePath)
     session.asInstanceOf[SnappySession].clearPlanCache()
   }
+}
+
+final class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
+    extends SmartConnectorExternalCatalog {
+
+  override protected def doCreateDatabase(schemaDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit = createDatabaseImpl(schemaDefinition, ignoreIfExists)
+
+  override protected def doDropDatabase(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = dropDatabaseImpl(schema, ignoreIfNotExists, cascade)
+
+  override protected def doAlterDatabase(schemaDefinition: CatalogDatabase): Unit =
+    alterDatabaseImpl(schemaDefinition)
+
+  override protected def doCreateTable(table: CatalogTable, ignoreIfExists: Boolean): Unit =
+    createTableImpl(table, ignoreIfExists)
+
+  override protected def doDropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = dropTableImpl(schema, table, ignoreIfNotExists, purge)
+
+  override protected def doRenameTable(schema: String, oldName: String, newName: String): Unit =
+    renameTableImpl(schema, oldName, newName)
+
+  override protected def doAlterTable(table: CatalogTable): Unit = alterTableImpl(table)
+
+  override protected def doAlterTableDataSchema(schemaName: String, table: String,
+      newSchema: StructType): Unit = alterTableSchemaImpl(schemaName, table, newSchema)
+
+  override protected def doAlterTableStats(schema: String, table: String,
+      stats: Option[CatalogStatistics]): Unit = stats match {
+    case None => alterTableStatsImpl(schema, table, None)
+    case Some(s) => alterTableStatsImpl(schema, table,
+      Some((s.sizeInBytes, s.rowCount, s.colStats)))
+  }
+
+  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int): Unit = {
+    loadDynamicPartitionsImpl(schema, table, loadPath, partition, replace, numDP,
+      holdDDLTime = false)
+  }
+
+  override def listPartitionsByFilter(schema: String, table: String, predicates: Seq[Expression],
+      defaultTimeZoneId: String): Seq[CatalogTablePartition] = {
+    listPartitionsByFilterImpl(schema, table, predicates, defaultTimeZoneId)
+  }
+
+  override protected def doCreateFunction(schema: String, function: CatalogFunction): Unit =
+    createFunctionImpl(schema, function)
+
+  override protected def doDropFunction(schema: String, funcName: String): Unit =
+    dropFunctionImpl(schema, funcName)
+
+  override protected def doAlterFunction(schema: String, function: CatalogFunction): Unit =
+    alterFunctionImpl(schema, function)
+
+  override protected def doRenameFunction(schema: String, oldName: String, newName: String): Unit =
+    renameFunctionImpl(schema, oldName, newName)
 }

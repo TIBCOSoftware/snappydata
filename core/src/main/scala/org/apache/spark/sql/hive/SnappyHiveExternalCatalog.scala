@@ -18,6 +18,7 @@
 package org.apache.spark.sql.hive
 
 import java.lang.reflect.InvocationTargetException
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -39,7 +40,6 @@ import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, R
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
-import org.apache.http.annotation.GuardedBy
 import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
@@ -64,7 +64,7 @@ import org.apache.spark.{SparkConf, SparkException}
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val hadoopConf: Configuration, val createTime: Long)
-    extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyExternalCatalog with SparkSupport {
+    extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyExternalCatalog {
 
   {
     // fire dummy queries to initialize more components of hive meta-store
@@ -83,7 +83,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     }
 
     // create the default database as in Spark
-    val defaultSchemaDefinition = CatalogDatabase(SPARK_DEFAULT_SCHEMA,
+    val defaultSchemaDefinition = internals.newCatalogDatabase(SPARK_DEFAULT_SCHEMA,
       s"$SPARK_DEFAULT_SCHEMA database", conf.get(WAREHOUSE_PATH), Map.empty)
     // Initialize default database if it doesn't exist
     if (!databaseExists(SPARK_DEFAULT_SCHEMA)) {
@@ -493,14 +493,6 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val catalogTable = cachedCatalogTables.getIfPresent(name)
     if (catalogTable ne null) catalogTable
     else withHiveExceptionHandling(cachedCatalogTables.get(name))
-  }
-
-  override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
-    try {
-      Some(getTable(schema, table))
-    } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => None
-    }
   }
 
   override def getRelationInfo(schema: String, table: String,

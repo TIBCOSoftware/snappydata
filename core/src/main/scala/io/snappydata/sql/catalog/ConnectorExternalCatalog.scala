@@ -33,6 +33,7 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.collection.Utils.EMPTY_STRING_ARRAY
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SparkSession, SparkSupport, TableNotFoundException}
 import org.apache.spark.{Logging, Partition, SparkEnv}
 
@@ -103,8 +104,24 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
 
   private def convertToCatalogStorage(storage: CatalogStorage,
       storageProps: Map[String, String]): CatalogStorageFormat = {
-    CatalogStorageFormat(Option(storage.getLocationUri), Option(storage.getInputFormat),
-      Option(storage.getOutputFormat), Option(storage.getSerde), storage.compressed, storageProps)
+    internals.newCatalogStorageFormat(Option(storage.getLocationUri),
+      Option(storage.getInputFormat), Option(storage.getOutputFormat),
+      Option(storage.getSerde), storage.compressed, storageProps)
+  }
+
+  private[snappydata] def convertToCatalogStatistics(schema: StructType, fullTableName: String,
+      catalogStats: CatalogStats): (BigInt, Option[BigInt], Map[String, ColumnStat]) = {
+    val colStats = schema.indices.flatMap { i =>
+      val f = schema(i)
+      val colStatsMap = catalogStats.colStats.get(i)
+      if (colStatsMap.isEmpty) None
+      else ColumnStat.fromMap(fullTableName, f, colStatsMap.asScala.toMap) match {
+        case None => None
+        case Some(s) => Some(f.name -> s)
+      }
+    }.toMap
+    (BigInt(catalogStats.sizeInBytes),
+        if (catalogStats.isSetRowCount) Some(BigInt(catalogStats.getRowCount)) else None, colStats)
   }
 
   private[snappydata] def convertToCatalogTable(request: CatalogMetadataDetails,
@@ -127,19 +144,8 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
       Some(BucketSpec(tableObj.getNumBuckets, tableObj.getBucketColumns.asScala,
         tableObj.getSortColumns.asScala))
     }
-    val stats = if (tableObj.isSetSizeInBytes) {
-      val colStatMaps = tableObj.getColStats.asScala
-      val colStats = schema.indices.flatMap { i =>
-        val f = schema(i)
-        val colStatsMap = colStatMaps(i)
-        if (colStatsMap.isEmpty) None
-        else ColumnStat.fromMap(identifier.unquotedString, f, colStatsMap.asScala.toMap) match {
-          case None => None
-          case Some(s) => Some(f.name -> s)
-        }
-      }.toMap
-      Some(BigInt(tableObj.getSizeInBytes),
-        if (tableObj.isSetRowCount) Some(BigInt(tableObj.getRowCount)) else None, colStats)
+    val stats = if (tableObj.isSetStats) {
+      Some(convertToCatalogStatistics(schema, identifier.unquotedString, tableObj.getStats))
     } else None
     val bucketOwners = tableObj.getBucketOwners
     // remove partitioning columns from CatalogTable for row/column tables
@@ -215,7 +221,8 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
 
   private def convertFromCatalogStorage(storage: CatalogStorageFormat): CatalogStorage = {
     val storageObj = new CatalogStorage(storage.properties.asJava, storage.compressed)
-    if (storage.locationUri.isDefined) storageObj.setLocationUri(storage.locationUri.get)
+    val locationUri = internals.catalogStorageFormatLocationUri(storage)
+    if (locationUri.isDefined) storageObj.setLocationUri(locationUri.get)
     if (storage.inputFormat.isDefined) storageObj.setInputFormat(storage.inputFormat.get)
     if (storage.outputFormat.isDefined) storageObj.setOutputFormat(storage.outputFormat.get)
     if (storage.serde.isDefined) storageObj.setSerde(storage.serde.get)
@@ -227,6 +234,21 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
     case Some(v) => v
   }
 
+  private[snappydata] def convertFromCatalogStatistics(schema: StructType, sizeInBytes: BigInt,
+      rowCount: Option[BigInt], stats: Map[String, ColumnStat]): CatalogStats = {
+    val colStats = schema.map { f =>
+      stats.get(f.name) match {
+        case None => Collections.emptyMap[String, String]()
+        case Some(stat) => internals.columnStatToMap(stat, f.name, f.dataType).asJava
+      }
+    }.asJava
+    val catalogStats = new CatalogStats(sizeInBytes.longValue(), colStats)
+    rowCount match {
+      case None => catalogStats
+      case Some(c) => catalogStats.setRowCount(c.longValue())
+    }
+  }
+
   private[snappydata] def convertFromCatalogTable(table: CatalogTable): CatalogTableObject = {
     val storageObj = convertFromCatalogStorage(table.storage)
     // non CatalogTable attributes like indexColumns, buckets will be set by caller
@@ -236,23 +258,11 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
       case Some(spec) => (spec.numBuckets, spec.bucketColumnNames.asJava,
           spec.sortColumnNames.asJava)
     }
-    val (sizeInBytes, rowCount, colStats) = table.stats match {
-      case None =>
-        (Long.MinValue, None, Collections.emptyList[java.util.Map[String, String]]())
-      case Some(stats) =>
-        val colStats = table.schema.map { f =>
-          stats.colStats.get(f.name) match {
-            case None => Collections.emptyMap[String, String]()
-            case Some(stat) => stat.toMap.asJava
-          }
-        }.asJava
-        (stats.sizeInBytes.toLong, stats.rowCount, colStats)
-    }
     val tableObj = new CatalogTableObject(table.identifier.table, table.tableType.name,
       storageObj, table.schema.json, table.partitionColumnNames.asJava, Collections.emptyList(),
       Collections.emptyList(), Collections.emptyList(), bucketColumns, sortColumns,
       table.owner, table.createTime, table.lastAccessTime, table.properties.asJava,
-      colStats, table.unsupportedFeatures.asJava, table.tracksPartitionsInCatalog,
+      table.unsupportedFeatures.asJava, table.tracksPartitionsInCatalog,
       internals.catalogTableSchemaPreservesCase(table))
     tableObj.setSchemaName(getOrNull(table.identifier.database))
         .setProvider(getOrNull(table.provider))
@@ -262,10 +272,10 @@ object ConnectorExternalCatalog extends Logging with SparkSupport {
     val ignoredProps = internals.catalogTableIgnoredProperties(table)
     if (ignoredProps.nonEmpty) tableObj.setIgnoredProperties(ignoredProps.asJava)
     if (numBuckets != -1) tableObj.setNumBuckets(numBuckets)
-    if (sizeInBytes != Long.MinValue) tableObj.setSizeInBytes(sizeInBytes)
-    rowCount match {
+    table.stats match {
       case None => tableObj
-      case Some(c) => tableObj.setRowCount(c.toLong)
+      case Some(stats) => tableObj.setStats(convertFromCatalogStatistics(table.schema,
+        stats.sizeInBytes, stats.rowCount, stats.colStats))
     }
   }
 

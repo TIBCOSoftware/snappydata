@@ -29,9 +29,10 @@ import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchP
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable, CatalogTablePartition}
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression}
+import org.apache.spark.sql.catalyst.plans.logical.ColumnStat
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
-import org.apache.spark.sql.{SnappyContext, SparkSession, TableNotFoundException, ThinClientConnectorMode}
+import org.apache.spark.sql.{SnappyContext, TableNotFoundException, ThinClientConnectorMode}
 
 /**
  * An ExternalCatalog implementation for the smart connector mode.
@@ -44,8 +45,7 @@ import org.apache.spark.sql.{SnappyContext, SparkSession, TableNotFoundException
  * be added later that switches the user authentication using thread-locals or similar, but as
  * of now it is used only by some hive insert paths which are not used in SnappySessionState.
  */
-class SmartConnectorExternalCatalog(override val session: SparkSession)
-    extends SnappyExternalCatalog with ConnectorExternalCatalog {
+trait SmartConnectorExternalCatalog extends SnappyExternalCatalog with ConnectorExternalCatalog {
 
   override def jdbcUrl: String = SnappyContext.getClusterMode(session.sparkContext)
       .asInstanceOf[ThinClientConnectorMode].url
@@ -67,16 +67,18 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
   // Using a common procedure to update catalog meta-data for create/drop/alter methods
   // and likewise a common procedure to get catalog meta-data for get/exists/list methods
 
-  override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit = {
+  protected def createDatabaseImpl(schemaDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setCatalogSchema(new CatalogSchemaObject(schemaDefinition.name,
-      schemaDefinition.description, schemaDefinition.locationUri,
+      schemaDefinition.description, internals.catalogDatabaseLocationURI(schemaDefinition),
       schemaDefinition.properties.asJava))
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_CREATE_SCHEMA, request))
   }
 
-  override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
+  protected def dropDatabaseImpl(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setNames(Collections.singletonList(schema)).setExists(ignoreIfNotExists)
         .setOtherFlags(Collections.singletonList(flag(cascade)))
@@ -92,8 +94,8 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
       snappydataConstants.CATALOG_GET_SCHEMA, request))
     if (result.isSetCatalogSchema) {
       val schemaObj = result.getCatalogSchema
-      CatalogDatabase(name = schemaObj.getName, description = schemaObj.getDescription,
-        locationUri = schemaObj.getLocationUri, properties = schemaObj.getProperties.asScala.toMap)
+      internals.newCatalogDatabase(schemaObj.getName, schemaObj.getDescription,
+        schemaObj.getLocationUri, schemaObj.getProperties.asScala.toMap)
     } else throw schemaNotFoundException(schema)
   }
 
@@ -127,7 +129,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     connectorHelper.setCurrentSchema(schema)
   }
 
-  override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
+  protected def createTableImpl(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setCatalogTable(ConnectorExternalCatalog.convertFromCatalogTable(table))
         .setExists(ignoreIfExists)
@@ -138,7 +140,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     invalidateCaches(Nil)
   }
 
-  override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+  protected def dropTableImpl(schema: String, table: String, ignoreIfNotExists: Boolean,
       purge: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setNames((schema :: table :: Nil).asJava).setExists(ignoreIfNotExists)
@@ -150,7 +152,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     invalidateCaches(Nil)
   }
 
-  override def alterTable(table: CatalogTable): Unit = {
+  protected def alterTableImpl(table: CatalogTable): Unit = {
     val request = new CatalogMetadataDetails()
     request.setCatalogTable(ConnectorExternalCatalog.convertFromCatalogTable(table))
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
@@ -160,9 +162,26 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     invalidateCaches(Nil)
   }
 
-  override def renameTable(schemaName: String, oldName: String, newName: String): Unit = {
+  protected def alterTableStatsImpl(schema: String, table: String,
+      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
     val request = new CatalogMetadataDetails()
-    request.setNames((schemaName :: oldName :: newName :: Nil).asJava)
+    request.setNames((schema :: table :: Nil).asJava)
+    stats match {
+      case None =>
+      case Some(s) =>
+        val catalogTable = getTable(schema, table)
+        request.setCatalogStats(ConnectorExternalCatalog.convertFromCatalogStatistics(
+          catalogTable.schema, s._1, s._2, s._3))
+    }
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_ALTER_TABLE_STATS, request))
+
+    invalidate(schema -> table)
+  }
+
+  protected def renameTableImpl(schema: String, oldName: String, newName: String): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setNames((schema :: oldName :: newName :: Nil).asJava)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_RENAME_TABLE, request))
 
@@ -179,14 +198,6 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
 
   override protected def getCachedCatalogTable(schema: String, table: String): CatalogTable = {
     ConnectorExternalCatalog.getCatalogTable(schema -> table, catalog = this)
-  }
-
-  override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
-    try {
-      Some(getTable(schema, table))
-    } catch {
-      case _: TableNotFoundException => None
-    }
   }
 
   override def getRelationInfo(schema: String, table: String,
@@ -300,7 +311,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     invalidateCaches(schema -> table :: Nil)
   }
 
-  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
+  protected def loadDynamicPartitionsImpl(schema: String, table: String, loadPath: String,
       partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
     val request = new CatalogMetadataDetails()
     request.setNames((schema :: table :: loadPath :: Nil).asJava)
@@ -353,8 +364,8 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     } else Nil
   }
 
-  override def listPartitionsByFilter(schema: String, table: String,
-      predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
+  protected def listPartitionsByFilterImpl(schema: String, table: String,
+      predicates: Seq[Expression], defaultTimeZoneId: String): Seq[CatalogTablePartition] = {
     // taken from HiveExternalCatalog.listPartitionsByFilter
     val catalogTable = getTable(schema, table)
     val partitionColumnNames = catalogTable.partitionColumnNames.toSet
@@ -374,11 +385,12 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
           val index = partitionSchema.indexWhere(_.name == attr.name)
           BoundReference(index, partitionSchema(index).dataType, nullable = true)
       }
-      partitions.filter(p => boundPredicate.eval(p.toRow(partitionSchema)).asInstanceOf[Boolean])
+      partitions.filter(p => boundPredicate.eval(internals.catalogTablePartitionToRow(
+        p, partitionSchema, defaultTimeZoneId)).asInstanceOf[Boolean])
     } else partitions
   }
 
-  override def createFunction(schema: String, function: CatalogFunction): Unit = {
+  protected def createFunctionImpl(schema: String, function: CatalogFunction): Unit = {
     val request = new CatalogMetadataDetails()
     request.setCatalogFunction(ConnectorExternalCatalog.convertFromCatalogFunction(function))
         .setNames(Collections.singletonList(schema))
@@ -386,13 +398,21 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
       snappydataConstants.CATALOG_CREATE_FUNCTION, request))
   }
 
-  override def dropFunction(schema: String, funcName: String): Unit = {
+  protected def dropFunctionImpl(schema: String, funcName: String): Unit = {
     val request = new CatalogMetadataDetails().setNames((schema :: funcName :: Nil).asJava)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(
       snappydataConstants.CATALOG_DROP_FUNCTION, request))
   }
 
-  override def renameFunction(schema: String, oldName: String, newName: String): Unit = {
+  protected def alterFunctionImpl(schema: String, function: CatalogFunction): Unit = {
+    val request = new CatalogMetadataDetails()
+    request.setCatalogFunction(ConnectorExternalCatalog.convertFromCatalogFunction(function))
+        .setNames(Collections.singletonList(schema))
+    withExceptionHandling(connectorHelper.updateCatalogMetadata(
+      snappydataConstants.CATALOG_ALTER_FUNCTION, request))
+  }
+
+  protected def renameFunctionImpl(schema: String, oldName: String, newName: String): Unit = {
     val request = new CatalogMetadataDetails()
         .setNames((schema :: oldName :: newName :: Nil).asJava)
     withExceptionHandling(connectorHelper.updateCatalogMetadata(

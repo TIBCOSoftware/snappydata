@@ -40,15 +40,15 @@ import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, S
 import io.snappydata.thrift._
 import org.apache.log4j.{Level, LogManager}
 
-import org.apache.spark.sql.{AnalysisException, SparkSupport}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
+import org.apache.spark.sql.catalyst.catalog.{CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
-import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
+import org.apache.spark.sql.{AnalysisException, SparkSupport}
 import org.apache.spark.{Logging, SparkConf}
 
 class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
@@ -274,7 +274,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
             }
             metaData.shortProvider = metaData.provider
             try {
-              val c = DataSource.lookupDataSource(metaData.provider)
+              val c = internals.lookupDataSource(metaData.provider, new SQLConf)
               if (classOf[DataSourceRegister].isAssignableFrom(c)) {
                 metaData.shortProvider = c.newInstance.asInstanceOf[DataSourceRegister].shortName()
               }
@@ -449,7 +449,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
                 case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
                 case _ => url
               }
-            case _ => storage.locationUri match { // fallback to locationUri
+            // fallback to locationUri
+            case _ => internals.catalogStorageFormatLocationUri(storage) match {
               case None => ""
               case Some(l) => l
             }
@@ -482,7 +483,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
       try {
         val catalogSchema = externalCatalog.getDatabase(request.getSchemaName)
         val schemaObj = new CatalogSchemaObject(catalogSchema.name, catalogSchema.description,
-          catalogSchema.locationUri, catalogSchema.properties.asJava)
+          internals.catalogDatabaseLocationURI(catalogSchema), catalogSchema.properties.asJava)
         metadata(result.setCatalogSchema(schemaObj))
       } catch {
         case _: AnalysisException => metadata(result)
@@ -581,7 +582,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
     case snappydataConstants.CATALOG_CREATE_SCHEMA =>
       assert(request.isSetCatalogSchema, "CREATE SCHEMA: expected catalogSchema to be set")
       val schemaObj = request.getCatalogSchema
-      val catalogSchema = CatalogDatabase(schemaObj.getName, schemaObj.getDescription,
+      val catalogSchema = internals.newCatalogDatabase(schemaObj.getName, schemaObj.getDescription,
         schemaObj.getLocationUri, schemaObj.getProperties.asScala.toMap)
       externalCatalog.createDatabase(catalogSchema, request.exists)
 
@@ -605,6 +606,18 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
     case snappydataConstants.CATALOG_ALTER_TABLE =>
       assert(request.isSetCatalogTable, "ALTER TABLE: expected catalogTable to be set")
       externalCatalog.alterTable(getCatalogTableForWrite(request, user))
+
+    case snappydataConstants.CATALOG_ALTER_TABLE_STATS =>
+      assert(request.isSetCatalogStats, "ALTER TABLE STATS: expected catalogStats to be set")
+      val schema = request.getNames.get(0)
+      val table = request.getNames.get(1)
+      checkSchemaPermission(schema, table, user)
+      val catalogTable = externalCatalog.getTable(schema, table)
+      val catalogStats = if (request.isSetCatalogStats) {
+        Some(ConnectorExternalCatalog.convertToCatalogStatistics(catalogTable.schema,
+          schema + '.' + table, request.getCatalogStats))
+      } else None
+      internals.alterTableStats(externalCatalog, schema, table, catalogStats)
 
     case snappydataConstants.CATALOG_RENAME_TABLE =>
       assert(request.getNamesSize == 3, "RENAME TABLE: unexpected names = " + request.getNames)
@@ -637,6 +650,14 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
       val function = request.getNames.get(1)
       checkSchemaPermission(schema, function, user)
       externalCatalog.dropFunction(schema, function)
+
+    case snappydataConstants.CATALOG_ALTER_FUNCTION =>
+      assert(request.isSetCatalogFunction, "ALTER FUNCTION: expected catalogFunction to be set")
+      val functionObj = request.getCatalogFunction
+      val schema = functionObj.getSchemaName
+      checkSchemaPermission(schema, functionObj.getFunctionName, user)
+      internals.alterFunction(externalCatalog, schema,
+        ConnectorExternalCatalog.convertToCatalogFunction(functionObj))
 
     case snappydataConstants.CATALOG_RENAME_FUNCTION =>
       assert(request.getNamesSize == 3, "RENAME FUNCTION: unexpected names = " + request.getNames)

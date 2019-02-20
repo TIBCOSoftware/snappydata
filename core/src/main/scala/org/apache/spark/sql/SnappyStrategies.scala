@@ -87,7 +87,7 @@ private[sql] trait SnappyStrategies {
       case HintName.JoinType_Hash =>
         if (canBuild(joinType)) {
           // don't hash join beyond 10GB estimated size because that is likely a mistake
-          val buildSize = buildPlan.statistics.sizeInBytes
+          val buildSize = getStats(buildPlan).sizeInBytes
           if (buildSize > math.max(JoinStrategy.getMaxHashJoinSize(conf),
             10L * 1024L * 1024L * 1024L)) {
             snappySession.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
@@ -103,7 +103,7 @@ private[sql] trait SnappyStrategies {
       case HintName.JoinType_Broadcast =>
         if (canBuild(joinType)) {
           // don't broadcast beyond 1GB estimated size because that is likely a mistake
-          val buildSize = buildPlan.statistics.sizeInBytes
+          val buildSize = getStats(buildPlan).sizeInBytes
           if (buildSize > math.max(conf.autoBroadcastJoinThreshold, 1L * 1024L * 1024L * 1024L)) {
             snappySession.addWarning(new SQLWarning(s"Plan hint ${QueryHint.JoinType}=" +
                 s"$joinHint for ${right.simpleString} skipped for ${joinType.sql} " +
@@ -170,7 +170,7 @@ private[sql] trait SnappyStrategies {
             // check for collocated joins before going for broadcast
             else if (isCollocatedJoin(joinType, left, leftKeys, right, rightKeys)) {
               val buildLeft = canBuildLeft(joinType) && canBuildLocalHashMap(left, conf)
-              if (buildLeft && left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+              if (buildLeft && getStats(left).sizeInBytes < getStats(right).sizeInBytes) {
                 makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                   joinType, joins.BuildLeft, replicatedTableJoin = false)
               } else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf)) {
@@ -181,8 +181,8 @@ private[sql] trait SnappyStrategies {
                   joinType, joins.BuildLeft, replicatedTableJoin = false)
               } else if (RowOrdering.isOrderable(leftKeys)) {
                 new joins.SnappySortMergeJoinExec(leftKeys, rightKeys, joinType, condition,
-                  planLater(left), planLater(right), left.statistics.sizeInBytes,
-                  right.statistics.sizeInBytes) :: Nil
+                  planLater(left), planLater(right), getStats(left).sizeInBytes,
+                  getStats(right).sizeInBytes) :: Nil
               } else Nil
             }
             // broadcast joins preferred over exchange+local hash join or SMJ
@@ -202,7 +202,7 @@ private[sql] trait SnappyStrategies {
             else if (canBuildRight(joinType) && canBuildLocalHashMap(right, conf) ||
                 !RowOrdering.isOrderable(leftKeys)) {
               if (canBuildLeft(joinType) && canBuildLocalHashMap(left, conf) &&
-                  left.statistics.sizeInBytes < right.statistics.sizeInBytes) {
+                  getStats(left).sizeInBytes < getStats(right).sizeInBytes) {
                 makeLocalHashJoin(leftKeys, rightKeys, left, right, condition,
                   joinType, joins.BuildLeft, replicatedTableJoin = false)
               } else {

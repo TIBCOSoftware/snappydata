@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, Table
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnarStorePartitionedRDD, IndexColumnFormatRelation, SmartConnectorColumnRDD}
 import org.apache.spark.sql.execution.columnar.{ColumnTableScan, ConnectionType}
-import org.apache.spark.sql.execution.exchange.{ReusedExchangeExec, ShuffleExchange}
+import org.apache.spark.sql.execution.exchange.ReusedExchangeExec
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetricInfo, SQLMetrics}
 import org.apache.spark.sql.execution.row.{RowFormatRelation, RowFormatScanRDD, RowTableScan}
 import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, SamplingRelation}
@@ -53,10 +53,10 @@ private[sql] abstract class PartitionedPhysicalScan(
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
-    @transient override val relation: BaseRelation,
-    // not used currently (if need to use then get from relation.table)
-    override val metastoreTableIdentifier: Option[TableIdentifier] = None)
+    @transient override val relation: BaseRelation)
     extends DataSourceScanExec with CodegenSupportOnExecutor with SparkSupport {
+
+  val metastoreTableIdentifier: Option[TableIdentifier] = None
 
   def getMetrics: Map[String, SQLMetric] = {
     if (sqlContext eq null) Map.empty
@@ -225,8 +225,13 @@ private[sql] object PartitionedPhysicalScan {
 
     val simpleString = SnappySession.replaceParamLiterals(
       plan.simpleString, paramLiterals, paramsId)
+    val metadata = plan match {
+      case s: FileSourceScanExec => s.metadata
+      case s: RowDataSourceScanExec => s.metadata
+      case _ => Map.empty[String, String]
+    }
     new SparkPlanInfo(plan.nodeName, simpleString,
-      children.map(getSparkPlanInfo(_, paramLiterals, paramsId)), plan.metadata, metrics)
+      children.map(getSparkPlanInfo(_, paramLiterals, paramsId)), metadata, metrics)
   }
 
   private[sql] def updatePlanInfo(planInfo: SparkPlanInfo,
@@ -344,7 +349,7 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
   private val inputCode = basePlan.asInstanceOf[CodegenSupport]
 
-  private val withShuffle = ShuffleExchange(HashPartitioning(
+  private val withShuffle = internals.newShuffleExchange(HashPartitioning(
     ClusteredDistribution(otherPartKeys)
         .clustering, inputCode.inputRDDs().head.getNumPartitions), otherPlan)
 
@@ -433,7 +438,7 @@ class StratumInternalRow(val weight: Long) extends InternalRow {
 
   def copy(): InternalRow = throw new UnsupportedOperationException("not implemented")
 
-  def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
+  override def anyNull: Boolean = throw new UnsupportedOperationException("not implemented")
 
   def isNullAt(ordinal: Int): Boolean = throw new UnsupportedOperationException("not implemented")
 

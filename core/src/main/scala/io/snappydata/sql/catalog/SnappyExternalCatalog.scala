@@ -32,8 +32,8 @@ import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -42,9 +42,9 @@ import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, RuntimeConfig, SnappyContext, SnappyParserConsts, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, RuntimeConfig, SnappyContext, SnappyParserConsts, SparkSupport, TableNotFoundException}
 
-trait SnappyExternalCatalog extends ExternalCatalog {
+trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
 
   // Overrides for better exceptions that say "schema" instead of "database"
 
@@ -74,7 +74,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
-  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+  protected def alterDatabaseImpl(schemaDefinition: CatalogDatabase): Unit = {
     throw new UnsupportedOperationException("Schema definitions cannot be altered")
   }
 
@@ -112,10 +112,18 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
+  def getTableOption(schema: String, table: String): Option[CatalogTable] = {
+    try {
+      Some(getTable(schema, table))
+    } catch {
+      case _: TableNotFoundException | _: NoSuchTableException => None
+    }
+  }
+
   protected def getCachedCatalogTable(schema: String, table: String): CatalogTable
 
   def systemSchemaDefinition: CatalogDatabase =
-    CatalogDatabase(SYS_SCHEMA, "System schema", SYS_SCHEMA, Map.empty) // path is dummy
+    internals.newCatalogDatabase(SYS_SCHEMA, "System schema", SYS_SCHEMA, Map.empty) // dummy path
 
   /**
    * Get RelationInfo for given table with underlying region in embedded mode.
@@ -206,6 +214,12 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }
   }
 
+  protected def alterTableSchemaImpl(schemaName: String, table: String,
+      newSchema: StructType): Unit = {
+    val catalogTable = getTable(schemaName, table)
+    alterTable(catalogTable.copy(schema = newSchema))
+  }
+
   /**
    * Get all the tables in the catalog skipping given schema names. By default
    * the inbuilt SYS schema is skipped.
@@ -222,7 +236,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   def getBaseTable(tableDefinition: CatalogTable): Option[String] = {
     (tableDefinition.properties.get(BASETABLE_PROPERTY) match {
       case None =>
-        val params = new CaseInsensitiveMap(tableDefinition.storage.properties)
+        val params = internals.newCaseInsensitiveMap(tableDefinition.storage.properties)
         params.get(BASETABLE_PROPERTY) match {
           // older releases didn't have base table entry for indexes
           case None => params.get(INDEXED_TABLE)
