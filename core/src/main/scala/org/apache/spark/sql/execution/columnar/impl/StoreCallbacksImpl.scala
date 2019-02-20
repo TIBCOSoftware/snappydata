@@ -49,7 +49,7 @@ import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
+import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -267,7 +267,7 @@ object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging 
 
       CodeGeneration.logDebug(s"\n${CodeFormatter.format(cleanedSource)}")
 
-      val clazz = CodeGenerator.compile(cleanedSource)
+      val clazz = internals.compile(cleanedSource)
       clazz.generate(ctx.references.toArray).asInstanceOf[StatsPredicate]
     }
     val batchIterator = ColumnBatchIterator(region, bucketIds, projection,

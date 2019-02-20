@@ -1179,7 +1179,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       case None => options
       case Some(ddl) =>
         // check that the DataSource should implement ExternalSchemaRelationProvider
-        if (!ExternalStoreUtils.isExternalSchemaRelationProvider(provider)) {
+        if (!ExternalStoreUtils.isExternalSchemaRelationProvider(provider, this)) {
           throw new AnalysisException(s"Provider '$provider' should implement " +
               s"ExternalSchemaRelationProvider to use a custom schema string in CREATE TABLE")
         }
@@ -1289,10 +1289,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
-      case LogicalRelation(ar: AlterableRelation, _, _) =>
+      case lr: LogicalRelation if lr.relation.isInstanceOf[AlterableRelation] =>
+        val ar = lr.asInstanceOf[AlterableRelation]
         ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        sessionCatalog.alterTable(metadata.copy(schema = lr.relation.schema))
       case _ =>
         throw new AnalysisException(s"ALTER TABLE not supported for ${tableIdent.unquotedString}")
     }

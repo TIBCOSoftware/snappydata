@@ -20,14 +20,13 @@ import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.sources.{CreatableRelationProvider, DataSourceRegister, ExternalSchemaRelationProvider, JdbcExtendedUtils, SchemaRelationProvider}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParserConsts, SnappySession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode, SnappyParserConsts, SnappySession, SparkSupport}
 
 /**
  * Column tables don't support any extensions over regular Spark schema syntax,
@@ -39,7 +38,7 @@ import org.apache.spark.sql.{AnalysisException, DataFrame, SQLContext, SaveMode,
  * which is parsed locally in the CreatableRelationProvider implementation.
  */
 final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationProvider
-    with CreatableRelationProvider with DataSourceRegister with Logging {
+    with CreatableRelationProvider with DataSourceRegister with Logging with SparkSupport {
 
   override def shortName(): String = SnappyParserConsts.COLUMN_SOURCE
 
@@ -134,7 +133,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     }
     val partitioningColumns = StoreUtils.getAndSetPartitioningAndKeyColumns(session,
       schema, parameters)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = internals.newCaseInsensitiveMap(parameters.toMap)
 
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = false, isShadowTable = false)

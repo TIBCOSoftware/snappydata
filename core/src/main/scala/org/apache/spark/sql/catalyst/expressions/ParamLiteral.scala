@@ -59,7 +59,7 @@ trait DynamicReplacableConstant extends Expression with SparkSupport {
     value
   }
 
-  override final def deterministic: Boolean = true
+  override final lazy val deterministic: Boolean = true
 
   private def checkValueType(value: Any, expectedClass: Class[_]): Unit = {
     val valueClass = if (value != null) value.getClass else null
@@ -404,12 +404,12 @@ object TokenLiteral {
 
   def isConstant(expression: Expression): Boolean = expression match {
     case _: DynamicReplacableConstant | _: Literal => true
-    case Cast(child, dataType) =>
-      val isConstant = child match {
+    case c: Cast =>
+      val isConstant = c.child match {
         case _: DynamicReplacableConstant | _: Literal => true
         case _ => false
       }
-      isConstant & dataType.isInstanceOf[AtomicType]
+      isConstant & c.dataType.isInstanceOf[AtomicType]
     case _ => false
   }
 

@@ -40,7 +40,7 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, LogicalRelation, RefreshTable}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.streaming.StreamPlanProvider
@@ -265,7 +265,7 @@ abstract class SnappyDDLParser(session: SparkSession)
       // check if a relation supporting free-form schema has been used that supports
       // syntax beyond Spark support
       val (userSpecifiedSchema, schemaDDL) = if (schemaString.length > 0) {
-        if (ExternalStoreUtils.isExternalSchemaRelationProvider(provider)) {
+        if (ExternalStoreUtils.isExternalSchemaRelationProvider(provider, session)) {
           None -> Some(schemaString)
         } else synchronized {
           // parse the schema string expecting Spark SQL format
@@ -521,7 +521,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         val specifiedSchema = schema.asInstanceOf[Option[Seq[StructField]]]
             .map(fields => StructType(fields))
         // check that the provider is a stream relation
-        val clazz = DataSource.lookupDataSource(provider)
+        val clazz = internals.lookupDataSource(provider, session.sessionState.conf)
         if (!classOf[StreamPlanProvider].isAssignableFrom(clazz)) {
           throw Utils.analysisException(s"CREATE STREAM provider $provider" +
               " does not implement StreamPlanProvider")
