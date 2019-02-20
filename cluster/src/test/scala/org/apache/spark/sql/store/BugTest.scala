@@ -480,6 +480,11 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("Bug SNAP-2887") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
     snappy.sql("drop table if exists portfolio")
     snappy.sql(s"create table portfolio (cid int not null, sid int not null, " +
       s"qty int not null,availQty int not null, subTotal int, tid int, " +
