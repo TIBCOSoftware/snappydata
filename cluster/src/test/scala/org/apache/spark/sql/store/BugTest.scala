@@ -18,10 +18,6 @@ package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
-
-import scala.tools.nsc.interpreter
-import scala.tools.nsc.interpreter.session
-
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
@@ -497,7 +493,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     snappy.sql(s"create table test1 (${sb.toString()}) " +
       "using column ")
-
     val params = Array.fill(numCols)('?').mkString(",")
     val insertStr = s"insert into test1 values (${params})"
     val ps = conn.prepareStatement(insertStr)
@@ -505,16 +500,14 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       for (j <- 1 until numCols + 1) {
         ps.setString(j, j.toString)
       }
-      ps.executeUpdate()
+      ps.addBatch()
     }
-
+    ps.executeBatch()
     snappy.sql(s"create table test2 using column as ( select * from test1)")
-
     for(i <- 1 until numCols + 1) {
       snappy.sql(s"select col${i} from test1").collect().foreach(r =>
         assert(r.getString(0).toInt == i) )
     }
-
     for(i <- 1 until (numCols + 1)/2) {
       snappy.sql(s"select col${i}, col${numCols - i + 1} from test1").collect().foreach(r =>
         {
@@ -522,7 +515,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
           assert(r.getString(1).toInt == numCols -i + 1)
         } )
     }
-
     for(i <- 1 until numCols + 1) {
       val projSeq = for (j <- 1 until i + 1) yield {
         s"col${j}"
@@ -534,21 +526,15 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
           assert(r.getString(j -1).toInt == j)
         })
     }
-
-
     snappy.sql("select col126 from test2").collect()
     snappy.sql("select col128 from test2").collect()
     snappy.sql("select col127 from test2").collect()
     snappy.sql("select col130 from test2").collect()
     snappy.sql("select col129 from test2").collect()
-
-
     snc.sql("drop table if exists test1")
     snc.sql("drop table if exists test2")
-
     conn.close()
     TestUtil.stopNetServer()
-
   }
 
 
