@@ -71,7 +71,7 @@ object RecoveryService extends Logging {
     val schema = parts(0)
     val table = parts(1)
     val cObject = mostRecentMemberObject.getCatalogObjects.asInstanceOf[Array[AnyRef]]
-// most effective way ??
+    // most effective way ??
     val cObjArr: Array[AnyRef] = cObject.filter {
       case a: CatalogTableObject => {
         if (a.schemaName == schema && a.tableName == table) {
@@ -101,7 +101,7 @@ object RecoveryService extends Logging {
       mutable.SortedSet[RecoveryModePersistentView]] = mutable.Map.empty
 
   val persistentObjectMemberMap: mutable.Map[
-      InternalDistributedMember, PersistentStateInRecoveryMode ] = mutable.Map.empty
+      InternalDistributedMember, PersistentStateInRecoveryMode] = mutable.Map.empty
 
   var mostRecentMemberObject: PersistentStateInRecoveryMode = null;
 
@@ -116,6 +116,7 @@ object RecoveryService extends Logging {
     val itr = persistentData.iterator()
 
     val snapCon = SnappyContext()
+
     val snappyHiveExternalCatalog = HiveClientUtil
         .getOrCreateExternalCatalog(snapCon.sparkContext, snapCon.sparkContext.getConf)
 
@@ -123,10 +124,9 @@ object RecoveryService extends Logging {
       val persistentViewObj = itr.next().asInstanceOf[
           ListResultCollectorValue].resultOfSingleExecution.asInstanceOf[
           PersistentStateInRecoveryMode]
-//      TODO: need to handle null pointer exception here - at following line??
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
-      while(regionItr.hasNext) {
+      while (regionItr.hasNext) {
         val x = regionItr.next();
         val regionPath = x.getRegionPath
         val set = regionViewSortedSet.get(regionPath)
@@ -141,7 +141,7 @@ object RecoveryService extends Logging {
     }
 
     // Print all the set
-    for((k, v) <- regionViewSortedSet) {
+    for ((k, v) <- regionViewSortedSet) {
       println(s"region = $k and set = $v")
     }
 
@@ -169,19 +169,19 @@ object RecoveryService extends Logging {
     import scala.collection.JavaConverters._
 
     val catalogArr = catalogObjects.asScala.map(catObj => {
-    val catalogMetadataDetails = new CatalogMetadataDetails()
-    catObj match {
-      case catFunObj: CatalogFunctionObject => {
-        ConnectorExternalCatalog.convertToCatalogFunction(catFunObj)
+      val catalogMetadataDetails = new CatalogMetadataDetails()
+      catObj match {
+        case catFunObj: CatalogFunctionObject => {
+          ConnectorExternalCatalog.convertToCatalogFunction(catFunObj)
+        }
+        case catDBObj: CatalogSchemaObject => {
+          ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
+        }
+        case catTabObj: CatalogTableObject => {
+          ConnectorExternalCatalog.convertToCatalogTable(
+            catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession)._1
+        }
       }
-      case catDBObj: CatalogSchemaObject => {
-        ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
-      }
-      case catTabObj: CatalogTableObject => {
-        ConnectorExternalCatalog.convertToCatalogTable(
-          catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession )._1
-      }
-    }
     })
 
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
@@ -201,22 +201,23 @@ object RecoveryService extends Logging {
   /**
    * Populates the external catalog, in recovery mode. Currently table,function and
    * database type of catalog objects is supported.
-   * @param catalogObjSeq   Sequence of catalog objects to be inserted in the catalog
-   * @param sc              Spark Context
+   *
+   * @param catalogObjSeq Sequence of catalog objects to be inserted in the catalog
+   * @param sc            Spark Context
    */
 
   def populateCatalog(catalogObjSeq: Seq[Any], sc: SparkContext): Unit = {
     val extCatalog = HiveClientUtil.getOrCreateExternalCatalog(sc, sc.getConf)
     catalogObjSeq.foreach {
       case catDB: CatalogDatabase =>
-        extCatalog.createDatabase(catDB, ignoreIfExists = false)
+        extCatalog.createDatabase(catDB, ignoreIfExists = true)
         logInfo(s"Inserting catalog database: ${catDB.name} in the catalog.")
       case catFunc: CatalogFunction =>
         extCatalog.createFunction(catFunc.identifier.database
             .getOrElse(Constant.DEFAULT_SCHEMA), catFunc)
         logInfo(s"Inserting catalog function: ${catFunc.identifier.funcName} in the catalog.")
       case catTab: CatalogTable =>
-        extCatalog.createTable(catTab, ignoreIfExists = false)
+        extCatalog.createTable(catTab, ignoreIfExists = true)
         logInfo(s"Inserting catalog table: ${catTab.identifier.table} in the catalog.")
     }
   }
