@@ -18,10 +18,13 @@ package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
+import java.util.Properties
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
-
+import org.junit.Assert._
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.SnappySession
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
@@ -476,6 +479,54 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
+  test("Bug SNAP-2887") {
+    snappy.sql("drop table if exists portfolio")
+    snappy.sql(s"create table portfolio (cid int not null, sid int not null, " +
+      s"qty int not null,availQty int not null, subTotal int, tid int, " +
+      s"constraint portf_pk primary key (cid, sid))")
+
+    val insertStr = s"insert into portfolio values (?, ?, ?, ?, ? , ?)"
+    val ps = conn.prepareStatement(insertStr)
+    for (i <- 1 until 101) {
+      ps.setInt(1, i % 10)
+      ps.setInt(2, i * 10)
+      ps.setInt(3, i)
+      ps.setInt(4, i)
+      ps.setInt(5, i)
+      ps.setInt(6, 10)
+      ps.executeUpdate()
+    }
+    val query = s"select * from portfolio where cid = ? and Sid = ? and tid = ?"
+    val qps = conn.prepareStatement(query)
+    for (i <- 0 until 11) {
+      qps.setInt(1, 8)
+      qps.setInt(2, 20)
+      qps.setInt(3, 10)
+      val rs = qps.executeQuery()
+      var count = 0
+      while (rs.next()) {
+        count += 1
+      }
+      assert(count == 0)
+    }
+    snappy.sql(s"create index portfolio_sid  on portfolio (sId )")
+
+    for (i <- 0 until 11) {
+      qps.setInt(1, 8)
+      qps.setInt(2, 20)
+      qps.setInt(3, 10)
+      val rs = qps.executeQuery()
+      var count = 0
+      while (rs.next()) {
+
+        count += 1
+      }
+      assert(count == 0)
+    }
+    stmt.execute("drop index  if exists portfolio_sid")
+    stmt.execute("drop table if exists portfolio")
+  }
+
   test("Bug SNAP-2890") {
     snc
     var serverHostPort2 = TestUtil.startNetServer()
@@ -537,5 +588,128 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     TestUtil.stopNetServer()
   }
 
+  test("SNAP-2718") {
+    snc
+    val path1 = getClass.getResource("/patients1000.csv").getPath
+    val df1 = snc.read.format("csv").option("header", "true").load(path1)
+    df1.registerTempTable("patients")
+    val path2 = getClass.getResource("/careplans1000.csv").getPath
+    val df2 = snc.read.format("csv").option("header", "true").load(path2)
+    df2.registerTempTable("careplans")
 
+    snc.sql("select p.first, p.last from (select patient from ( select *, " +
+      "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+      "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
+      "from careplans )c group by patient having sum(coverage) = 0)q " +
+      "join patients p on id = patient ").collect
+
+    df1.createOrReplaceTempView("patients_v")
+    df2.createOrReplaceTempView("careplans_v")
+
+    snc.sql("select p.first, p.last from (select patient from ( select *, " +
+      "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+      "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
+      "from careplans_v )c group by patient having sum(coverage) = 0)q " +
+      "join patients_v p on id = patient ").collect
+
+    snc.dropTempTable("patients")
+    snc.dropTempTable("careplans")
+    snc.sql("drop view patients_v")
+    snc.sql("drop view careplans_v")
+  }
+
+  test("SNAP-2368") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+      val stmt = conn.createStatement()
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", new Properties())
+      var rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      var tableType = rs.getString(1)
+      assertEquals("T", tableType)
+      stmt.execute("drop table names")
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      assertFalse(rs.next())
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      props.put("isolationLevel", "NONE")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
+  ignore("SNAP-2910") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+
+      val stmt = conn.createStatement()
+
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      val rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      val tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
+  test("SNAP-2237") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1_1 int, col1_2 int, col1_3 int, col1_4 string) " +
+      "using column ")
+    val insertDF = snc.range(50).selectExpr("id", "id*2", "id * 3",
+      "cast (id as string)")
+    insertDF.write.insertInto("test1")
+    snc.sql("select col1_2, sum(col1_1) as summ from test1 group by col1_2 " +
+      "order by sum(col1_1)").collect
+    snc.sql("select col1_2, sum(col1_1) as summ from test1 " +
+      "group by col1_2 order by summ").collect
+    snc.sql("select lower(col1_2) as x, " +
+      "sum(col1_1) as summ from test1 group by lower(col1_2) ").collect
+    snc.sql("select lower(col1_2) as x, sum(col1_1) as summ from test1 " +
+      "group by x").collect
+    snc.dropTable("test1")
+  }
 }
