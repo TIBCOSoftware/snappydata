@@ -1,0 +1,17 @@
+package io.snappydata.hydra.udfs;
+
+import org.apache.spark.sql.Row;
+import org.apache.spark.sql.api.java.UDF7;
+
+public class JavaUDF7 implements UDF7<Integer,Integer,Integer,Integer,Integer,Integer,Row,String> {
+    public String call(Integer la1, Integer la2, Integer la3, Integer la4, Integer la5, Integer la6, Row row) throws Exception {
+
+       Integer lResult = la1 + la2 + la3 + la4 + la5 +la6;
+       Integer  i1 = row.getInt(0);
+       Double  d2 = row.getDouble(1);
+       String s3 = row.getString(2);
+       Boolean b4 =   row.isNullAt(3);
+
+        return  lResult.toString() + "(" + i1.toString() + "," + d2.toString() + "," +  s3 + ", IsNull :" + b4.toString() + ")";
+    }
+}
