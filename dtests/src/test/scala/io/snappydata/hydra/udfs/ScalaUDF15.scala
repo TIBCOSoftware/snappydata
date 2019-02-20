@@ -1,9 +1,24 @@
-package com.snappy.scala.poc.udf
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+package io.snappydata.hydra.udfs
 
 import org.apache.spark.sql.api.java.UDF15
-
-
-class ScalaUDF15 extends UDF15[Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Boolean,Int]{
+// scalastyle:off
+class ScalaUDF15 extends UDF15[Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Int]{
   override def call(t1: Boolean, t2: Boolean, t3: Boolean, t4: Boolean, t5: Boolean, t6: Boolean, t7: Boolean, t8: Boolean, t9: Boolean, t10: Boolean, t11: Boolean, t12: Boolean, t13: Boolean, t14: Boolean, t15: Boolean): Int = {
     var  num : Int = 0
     if(t1 == true)

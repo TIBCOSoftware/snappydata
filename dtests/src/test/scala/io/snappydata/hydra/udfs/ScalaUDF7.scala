@@ -1,13 +1,32 @@
-package com.snappy.scala.poc.udf
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+package io.snappydata.hydra.udfs
 
 import org.apache.spark.sql.api.java.UDF7
-
 import scala.collection.mutable
 import scala.collection.mutable.WrappedArray
-//import scala.collection.mutable.ArrayBuffer
+//  import scala.collection.mutable.ArrayBuffer
 
-class ScalaUDF7 extends UDF7[WrappedArray[Double],WrappedArray[Double],WrappedArray[Double],WrappedArray[Double],WrappedArray[Double],WrappedArray[Double],WrappedArray[Double],String] {
-  override def call(t1: mutable.WrappedArray[Double], t2: mutable.WrappedArray[Double], t3: mutable.WrappedArray[Double], t4: mutable.WrappedArray[Double], t5: mutable.WrappedArray[Double], t6: mutable.WrappedArray[Double], t7: mutable.WrappedArray[Double]): String = {
+class ScalaUDF7 extends UDF7[WrappedArray[Double], WrappedArray[Double], WrappedArray[Double],
+  WrappedArray[Double], WrappedArray[Double], WrappedArray[Double], WrappedArray[Double], String] {
+  override def call(t1: mutable.WrappedArray[Double], t2: mutable.WrappedArray[Double],
+                    t3: mutable.WrappedArray[Double], t4: mutable.WrappedArray[Double],
+                    t5: mutable.WrappedArray[Double], t6: mutable.WrappedArray[Double],
+                    t7: mutable.WrappedArray[Double]): String = {
     var v1 : Double = 0.0
     var v2 : Double = 0.0
     var v3 : Double = 0.0
@@ -63,15 +82,18 @@ class ScalaUDF7 extends UDF7[WrappedArray[Double],WrappedArray[Double],WrappedAr
 }
 
 
-//class ScalaUDF7 extends UDF7[ArrayBuffer[Double],ArrayBuffer[Double],ArrayBuffer[Double],ArrayBuffer[Double],ArrayBuffer[Double],ArrayBuffer[Double],ArrayBuffer[Double],String] {
-//  override def call(t1: ArrayBuffer[Double], t2: ArrayBuffer[Double], t3: ArrayBuffer[Double], t4: ArrayBuffer[Double], t5: ArrayBuffer[Double], t6: ArrayBuffer[Double], t7: ArrayBuffer[Double]): String = {
-////    var v1 : Double = 0.0
-////    for(i <- 0 to t1.length) {
-////      v1 = v1 + t1(i)
-////    }
-////    v1 = v1 / t1.length
-////
-////    return  "V1 : " + v1
+//  class ScalaUDF7 extends UDF7[ArrayBuffer[Double], ArrayBuffer[Double], ArrayBuffer[Double],
+// ArrayBuffer[Double],  ArrayBuffer[Double], ArrayBuffer[Double], ArrayBuffer[Double], String] {
+//  override def call(t1: ArrayBuffer[Double], t2: ArrayBuffer[Double], t3: ArrayBuffer[Double],
+//  t4: ArrayBuffer[Double],  t5: ArrayBuffer[Double], t6: ArrayBuffer[Double],
+//  t7: ArrayBuffer[Double]): String = {
+//    var v1 : Double = 0.0
+//    for(i <- 0 to t1.length) {
+//      v1 = v1 + t1(i)
+//    }
+//    v1 = v1 / t1.length
+//
+//    return  "V1 : " + v1
 //    return "Success"
 //  }
-//}
+// }
