@@ -629,6 +629,7 @@ object SnappyParserConsts {
   // used as named strictIdentifier
   final val CASCADE: Keyword = new Keyword("cascade")
   final val DATABASE: Keyword = new Keyword("database")
+  final val DATABASES: Keyword = new Keyword("databases")
   final val RETURNS: Keyword = new Keyword("returns")
   final val TEMP: Keyword = new Keyword("temp")
 }
