@@ -25,7 +25,7 @@ import scala.collection.mutable
 
 
 class ClusterSummary private[spark](
-    val clusterInfo:  mutable.HashMap[String, Any],
+    val clusterInfo: mutable.HashMap[String, Any],
     val membersInfo: Seq[MemberSummary],
     val tablesInfo: Seq[TableSummary],
     val externalTablesInfo: Seq[ExternalTableSummary]
@@ -88,12 +88,13 @@ class TableSummary private[spark](
     val isReplicatedTable: Boolean,
     val rowCount: Long,
     val sizeInMemory: Long,
+    val sizeSpillToDisk: Long,
     val totalSize: Long,
     val bucketCount: Int
 )
 
 class ExternalTableSummary private[spark](
-    val tableName: String,
+    val tableFQName: String,
     val provider: String,
     val source: String
 )

@@ -1,0 +1,36 @@
+io/snappydata/hydra/putInto/concPutIntoWithSelect.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+
+io/snappydata/hydra/putInto/concPutIntoWithSelectUsingSnappyJob.conf
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+
+io/snappydata/hydra/putInto/concPutIntoWithSelect_onlyConcSelectInCloseTask.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+
+io/snappydata/hydra/putInto/putIntoMemLeak.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
+  startRange=1000001
+  endRange=2000001
+  threadCnt=5
+  insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto"
+  selectQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/selectOps.sql"
+
+io/snappydata/hydra/putInto/putIntoWithOverlappingKeys.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
+  startRange=1000001
+  endRange=1001000
+  threadCnt=4
+  insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/overLappingKeys"
+  selectQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/selectOps.sql"

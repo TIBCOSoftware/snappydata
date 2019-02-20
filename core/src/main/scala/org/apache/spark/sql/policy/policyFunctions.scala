@@ -41,13 +41,9 @@ case class CurrentUser() extends LeafExpression with SparkSupport {
   private val userName: UTF8String = {
     val snappySession = SparkSession.getActiveSession.getOrElse(
       throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
-    var owner = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
-
-    owner = IdUtil.getUserAuthorizationId(
-      if (owner.isEmpty) Constant.DEFAULT_SCHEMA
-      else snappySession.sessionState.catalog.formatDatabaseName(owner))
-
-    UTF8String.fromString(owner)
+    val owner = snappySession.conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
+    // normalize the name for string comparison
+    UTF8String.fromString(IdUtil.getUserAuthorizationId(owner))
   }
 
   override def eval(input: InternalRow): Any = userName

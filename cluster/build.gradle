@@ -34,6 +34,39 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
+  compile (project(':snappy-core_' + scalaBinaryVersion)) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+  compile (project(":compatibility:spark${sparkVersion}_${scalaBinaryVersion}")) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+  }
+  testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
+    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
+    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
+    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
+  }
+
   if (new File(rootDir, 'spark/build.gradle').exists()) {
     compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
@@ -73,26 +106,6 @@ dependencies {
     testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
                 version: snappySparkVersion, classifier: 'tests'
   }
-  compile (project(':snappy-core_' + scalaBinaryVersion)) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
-    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
-  compile (project(":compatibility:spark${sparkVersion}_${scalaBinaryVersion}")) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-  }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
     testCompile project(path: ':snappy-store:snappydata-store-tools', configuration: 'testOutput')
@@ -123,22 +136,11 @@ dependencies {
     exclude(group: 'com.sun.jersey.contribs')
     exclude(group: 'com.google.protobuf', module: 'protobuf-java')
     exclude(group: 'com.jcraft', module: 'jsch')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
   }
 
   testCompile project(':dunit')
-  testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
-    exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
-  testCompile 'it.unimi.dsi:fastutil:8.1.1'
+  testCompile "it.unimi.dsi:fastutil:${fastutilVersion}"
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
@@ -150,7 +152,7 @@ dependencies {
 
 // Creates the version properties file and writes it to the resources dir
 task createVersionPropertiesFile(dependsOn: 'processResources') {
-  def propertiesDir = file("${buildDir}/classes/main/io/snappydata")
+  def propertiesDir = file("${sourceSets.main.scala.outputDir}/io/snappydata")
   outputs.file "${propertiesDir}/SnappyDataVersion.properties"
   inputs.file "${rootProject.projectDir}/build.gradle"
 

@@ -78,7 +78,7 @@ case class SnappySortExec(sortPlan: SortExec, child: SparkPlan)
       })
   }
 
-  override def usedInputs: AttributeSet = AttributeSet(Seq.empty)
+  override def usedInputs: AttributeSet = AttributeSet(Nil)
 
   override def inputRDDs(): Seq[RDD[InternalRow]] =
     child.asInstanceOf[CodegenSupport].inputRDDs()

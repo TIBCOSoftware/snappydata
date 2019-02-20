@@ -177,7 +177,7 @@ private[sql] object PartitionedPhysicalScan {
           columnScan.sqlContext.sessionState.analyzer.resolver(left.name, right.name)
 
         val rowBufferScan = RowTableScan(output, StructType.fromAttributes(
-          output), baseTableRDD, numBuckets, Nil, Nil, table, caseSensitive)
+          output), baseTableRDD, numBuckets, Nil, Nil, table.table, table, caseSensitive)
         val otherPartKeys = partitionColumns.map(_.transform {
           case a: AttributeReference => rowBufferScan.output.find(resolveCol(_, a)).getOrElse {
             throw new AnalysisException(s"RowBuffer output column $a not found in " +
@@ -205,14 +205,14 @@ private[sql] object PartitionedPhysicalScan {
         }
       case r: RowFormatRelation =>
         RowTableScan(output, StructType.fromAttributes(output), rdd, numBuckets,
-          partitionColumns, partitionColumnAliases, relation,
+          partitionColumns, partitionColumnAliases, relation.table, relation,
           r.sqlContext.conf.caseSensitiveAnalysis)
     }
 
   def getSparkPlanInfo(fullPlan: SparkPlan, paramLiterals: Array[ParamLiteral] = EMPTY_PARAMS,
       paramsId: Int = -1): SparkPlanInfo = {
     val plan = fullPlan match {
-      case CodegenSparkFallback(child) => child
+      case CodegenSparkFallback(child, _) => child
       case _ => fullPlan
     }
     val children = plan match {

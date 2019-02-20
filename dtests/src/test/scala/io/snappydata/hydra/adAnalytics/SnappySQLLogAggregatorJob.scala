@@ -51,8 +51,8 @@ class SnappySQLLogAggregatorJob extends SnappyStreamingJob {
     snsc.sql("drop table if exists adImpressionStream")
     snsc.sql("drop table if exists sampledAdImpressions")
     snsc.sql("drop table if exists aggrAdImpressions")
-    pw.println("dropped tables. now creating stream table...")
-    snsc.sql("create stream table adImpressionStream (" +
+    pw.println("dropped tables.")
+    val sql = "create stream table adImpressionStream (" +
         " time_stamp timestamp," +
         " publisher string," +
         " advertiser string," +
@@ -61,13 +61,14 @@ class SnappySQLLogAggregatorJob extends SnappyStreamingJob {
         " bid double," +
         " cookie string) " +
         " using kafka_stream options(" +
-        " rowConverter 'io.snappydata.adanalytics.AdImpressionToRowsConverter' ," +
-        s" kafkaParams 'metadata.broker.list->$brokerList;auto.offset.reset->smallest'," +
-        s" subscribe '$kafkaTopic'," +
-        " K 'java.lang.String'," +
-        " V 'io.snappydata.adanalytics.AdImpressionLog', " +
-        " KD 'kafka.serializer.StringDecoder', " +
-        " VD 'io.snappydata.adanalytics.AdImpressionLogAvroDecoder')")
+        " rowConverter 'io.snappydata.adanalytics.AdImpressionToRowsConverter'," +
+        s" kafkaParams 'bootstrap.servers->$brokerList;auto.offset.reset->earliest ;" +
+        "key.deserializer->org.apache.kafka.common.serialization.StringDeserializer;" +
+        "value.deserializer->io.snappydata.adanalytics.AdImpressionLogAvroDecoder'," +
+        s" subscribe '$kafkaTopic')"
+    pw.println(s"Creating stream table using  $sql")
+    pw.flush()
+    snsc.sql(sql)
 
     pw.println("created stream table. now creating column table...")
     // Next, create the Column table where we ingest all our data into.

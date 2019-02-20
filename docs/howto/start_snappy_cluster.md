@@ -46,7 +46,6 @@ To start the cluster on multiple hosts:
 !!! Note
 	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](../install/install_on_premise.md) and [cluster configuration](../configuring_cluster/configuring_cluster.md).
 
-<a id="start-component"></a>
 ## Starting Individual Components
 
 Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be started on a system locally using the following commands:
@@ -54,8 +53,12 @@ Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, i
 !!! Tip
 	All [configuration parameters](../configuring_cluster/configuring_cluster.md) are provided as command line arguments rather than reading from a configuration file.
 
+For example, you can run any of the following commands depending on the individual component that you want to start.
+
 ```pre
 $ ./bin/snappy locator start  -dir=/node-a/locator1
 $ ./bin/snappy server start  -dir=/node-b/server1  -locators=localhost[10334] -heap-size=16g
 $ ./bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spark.executor.cores=32
 ```
+!!!Note
+	The path mentioned for `-dir` should exist. Otherwise, the command will fail with **FileNotFoundException**.

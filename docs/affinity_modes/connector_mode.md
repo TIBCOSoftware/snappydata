@@ -46,19 +46,33 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 **Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
+
 ```pre
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.2-s_2.11"
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11"
 ```
 !!! Note 
 	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).
  
  	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 
-This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
+This opens a Scala Shell.
+
+**Step 3: Import any or all of the following:** 
+
+*	**SQL Context**
+*	**SnappyContext**
+*	**SnappySession**
+
+```
+import org.apache.spark.sql.{SQLContext,SnappyContext,SnappySession}
+```
+
+ This starts the SnappyData cluster with Smart Connector mode. Create a SnappySession to interact with the SnappyData store.
+
 ```pre
-// Create a SnappySession to work with SnappyData store
-$scala > val snSession = new SnappySession(spark.sparkContext)
+	// Create a SnappySession to work with SnappyData store
+	$scala > val snSession = new SnappySession(spark.sparkContext)
 ```
 
 The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
@@ -68,11 +82,11 @@ The code example for writing a Smart Connector application program is located in
 **Cluster mode**
 
 ```pre
-./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.2-s_2.11"
+./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11"
 ```
 **Client mode**
 ```pre
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.2-s_2.11"
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11"
 ```
 
 

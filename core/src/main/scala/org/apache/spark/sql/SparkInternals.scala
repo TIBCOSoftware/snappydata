@@ -19,20 +19,20 @@ package org.apache.spark.sql
 import io.snappydata.{HintName, QueryHint}
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedTableValuedFunction
-import org.apache.spark.sql.catalyst.catalog.{CatalogTable, FunctionResource}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType, FunctionResource}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame}
 import org.apache.spark.sql.catalyst.json.JSONOptions
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, RepartitionByExpression, Statistics, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, LogicalPlan, RepartitionByExpression, Statistics, SubqueryAlias}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.{SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.internal.{LogicalPlanWithHints, SharedState, SnappySessionState}
 import org.apache.spark.sql.sources.BaseRelation
-import org.apache.spark.sql.types.{DataType, Metadata}
+import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, SparkContext}
 
 /**
@@ -313,6 +313,29 @@ trait SparkInternals extends Logging {
       expectedOutputAttributes: Option[Seq[AttributeReference]],
       catalogTable: Option[CatalogTable], isStreaming: Boolean): LogicalRelation
 
+  // scalastyle:off
+
+  def newCatalogTable(identifier: TableIdentifier, tableType: CatalogTableType,
+      storage: CatalogStorageFormat, schema: StructType, provider: Option[String],
+      partitionColumnNames: Seq[String], bucketSpec: Option[BucketSpec],
+      owner: String, createTime: Long, lastAccessTime: Long, properties: Map[String, String],
+      stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])],
+      viewOriginalText: Option[String], viewText: Option[String],
+      comment: Option[String], unsupportedFeatures: Seq[String],
+      tracksPartitionsInCatalog: Boolean, schemaPreservesCase: Boolean,
+      ignoredProperties: Map[String, String]): CatalogTable
+
+  // scalastyle:on
+
+  def catalogTableViewOriginalText(catalogTable: CatalogTable): Option[String]
+
+  def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean
+
+  def catalogTableIgnoredProperties(catalogTable: CatalogTable): Map[String, String]
+
+  def newCatalogTableWithViewOriginalText(catalogTable: CatalogTable,
+      viewOriginalText: Option[String]): CatalogTable
+
   /**
    * Create a new shuffle exchange plan.
    */
@@ -355,7 +378,12 @@ trait SparkInternals extends Logging {
   /**
    * Return the Spark plan for check pre-conditions before a write operation.
    */
-  def newPreWriteCheck(sessionState: SnappySessionState): (LogicalPlan => Unit)
+  def newPreWriteCheck(sessionState: SnappySessionState): LogicalPlan => Unit
+
+  /**
+   * Create a new SnappyData extended CacheManager to clear cached plans on cached data changes.
+   */
+  def newCacheManager(): CacheManager
 }
 
 /**

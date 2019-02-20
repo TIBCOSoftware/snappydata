@@ -26,7 +26,7 @@ object TableDetails {
 
     val tableBuff = SnappyTableStatsProviderService.getService.getAllTableStatsFromService
 
-    tableBuff.mapValues(table =>{
+    tableBuff.mapValues(table => {
       val storageModel = {
         if (table.isColumnTable) {
           "COLUMN"
@@ -45,7 +45,7 @@ object TableDetails {
 
       new TableSummary(table.getTableName, storageModel, distributionType,
         table.isColumnTable, table.isReplicatedTable, table.getRowCount, table.getSizeInMemory,
-        table.getTotalSize, table.getBucketCount)
+        table.getSizeSpillToDisk, table.getTotalSize, table.getBucketCount)
     }).values.toList
 
   }
@@ -56,7 +56,7 @@ object TableDetails {
       SnappyTableStatsProviderService.getService.getAllExternalTableStatsFromService
 
     externalTableBuff.mapValues(table => {
-      new ExternalTableSummary(table.getTableName, table.getProvider,
+      new ExternalTableSummary(table.getTableFullyQualifiedName, table.getProvider,
         table.getDataSourcePath)
     }).values.toList
   }

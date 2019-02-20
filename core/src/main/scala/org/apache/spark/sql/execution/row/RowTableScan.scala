@@ -26,7 +26,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCo
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan, SparkPlan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
@@ -44,6 +44,7 @@ private[sql] final case class RowTableScan(
     numBuckets: Int,
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
+    table: String,
     @transient baseRelation: PartitionedDataSourceScan,
     caseSensitive: Boolean)
     extends PartitionedPhysicalScan(output, dataRDD, numBuckets,
@@ -53,6 +54,11 @@ private[sql] final case class RowTableScan(
   override lazy val schema: StructType = _schema
 
   override val nodeName: String = "RowTableScan"
+
+  override def sameResult(plan: SparkPlan): Boolean = plan match {
+    case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
+    case _ => false
+  }
 
   override def doProduce(ctx: CodegenContext): String = {
     // a parent plan may set a custom input (e.g. HashJoinExec)

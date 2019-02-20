@@ -1,4 +1,4 @@
-# snappydata.default-startup-recovery-delay
+# gemfirexd.default-startup-recovery-delay
 
 ## Description
 

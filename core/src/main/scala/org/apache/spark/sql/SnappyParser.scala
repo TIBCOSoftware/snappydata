@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.ShowTablesHiveCommand
+import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.LikeEscapeSimplification
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, PutIntoTable, Update}
@@ -191,21 +191,10 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected final def booleanLiteral: Rule1[Expression] = rule {
-    TRUE ~> (() => newTokenizedLiteral(true, BooleanType)) |
-    FALSE ~> (() => newTokenizedLiteral(false, BooleanType))
-  }
-
-  protected final def numericLiteral: Rule1[Expression] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
-        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
-        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => toNumericLiteral(s))
-  }
-
   protected final def literal: Rule1[Expression] = rule {
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
-    numericLiteral |
-    booleanLiteral |
+    numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
+    booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
     NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
@@ -356,16 +345,20 @@ class SnappyParser(session: SnappySession)
     })
   }
 
-  final def parsedDataType: Rule1[DataType] = rule {
+  final def parseDataType: Rule1[DataType] = rule {
     ws ~ dataType ~ EOI
   }
 
-  final def parsedExpression: Rule1[Expression] = rule {
+  final def parseExpression: Rule1[Expression] = rule {
     ws ~ namedExpression ~ EOI
   }
 
-  final def parsedTableIdentifier: Rule1[TableIdentifier] = rule {
+  final def parseTableIdentifier: Rule1[TableIdentifier] = rule {
     ws ~ tableIdentifier ~ EOI
+  }
+
+  final def parseIdentifier: Rule1[String] = rule {
+    ws ~ identifier ~ EOI
   }
 
   protected final def expression: Rule1[Expression] = rule {
@@ -392,7 +385,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def comparisonExpression: Rule1[Expression] = rule {
     termExpression ~ (
-        '=' ~ ws ~ termExpression ~> EqualTo |
+        '=' ~ '='.? ~ ws ~ termExpression ~> EqualTo |
         '>' ~ (
           '=' ~ ws ~ termExpression ~> GreaterThanOrEqual |
           '>' ~ (
@@ -1110,13 +1103,13 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
-    UPDATE ~ baseRelation ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
+    UPDATE ~ tableIdentifier ~ SET ~ TOKENIZE_BEGIN ~ (((identifier + ('.' ~ ws)) ~
         '=' ~ ws ~ expression ~> ((cols: Seq[String], e: Expression) =>
       UnresolvedAttribute(cols) -> e)) + commaSep) ~ TOKENIZE_END ~
         (FROM ~ relations).? ~ (WHERE ~ TOKENIZE_BEGIN ~ expression ~ TOKENIZE_END).? ~>
-        ((t: Any, updateExprs: Seq[(UnresolvedAttribute,
-            Expression)], relations : Any, whereExpr: Any) => {
-          val table = t.asInstanceOf[LogicalPlan]
+        ((t: TableIdentifier, updateExprs: Seq[(UnresolvedAttribute, Expression)],
+            relations: Any, whereExpr: Any) => {
+          val table = session.sessionCatalog.resolveRelationWithAlias(t)
           val base = relations match {
             case Some(plan) => plan.asInstanceOf[LogicalPlan]
             case _ => table
@@ -1163,11 +1156,11 @@ class SnappyParser(session: SnappySession)
   // SHOW FUNCTIONS `mydb.a`.`func1.aa`;
   protected def show: Rule1[LogicalPlan] = rule {
     SHOW ~ TABLES ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
-        ((id: Any, pat: Any) => if (Property.HiveCompatible.get(session.sessionState.conf)) {
-          ShowTablesHiveCommand(id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])
-        } else {
-          ShowTablesCommand(id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])
-        }) |
+        ((id: Any, pat: Any) => new ShowSnappyTablesCommand(session,
+          id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
+    SHOW ~ VIEWS ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
+        ((id: Any, pat: Any) => ShowViewsCommand(session,
+          id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
     SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
       ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
     SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
@@ -1224,7 +1217,7 @@ class SnappyParser(session: SnappySession)
   private var canTokenize = false
 
   protected final def TOKENIZE_BEGIN: Rule0 = rule {
-    MATCH ~> (() => tokenize = SnappySession.tokenize && canTokenize)
+    MATCH ~> (() => tokenize = session.tokenize && canTokenize)
   }
 
   protected final def TOKENIZE_END: Rule0 = rule {
@@ -1253,9 +1246,10 @@ class SnappyParser(session: SnappySession)
     parseSQL(sqlText, parseRule)
   }
 
-  protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T = {
+  /** Parse SQL without any other handling like query hints */
+  def parseSQLOnly[T](sqlText: String, parseRule: => Try[T]): T = {
     this.input = sqlText
-    val plan = parseRule match {
+    parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
         throw new ParseException(formatError(e, new ErrorFormatter(
@@ -1263,11 +1257,15 @@ class SnappyParser(session: SnappySession)
       case Failure(e) =>
         throw new ParseException(e.toString, Some(e))
     }
+  }
+
+  override protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T = {
+    val plan = parseSQLOnly(sqlText, parseRule)
     if (!queryHints.isEmpty) {
       session.queryHints.putAll(queryHints)
     }
     plan
   }
 
-  protected def newInstance(): SnappyParser = new SnappyParser(session)
+  def newInstance(): SnappyParser = new SnappyParser(session)
 }

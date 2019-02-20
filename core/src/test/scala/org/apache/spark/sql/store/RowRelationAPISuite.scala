@@ -71,8 +71,7 @@ class RowRelationAPISuite extends SnappyFunSuite with BeforeAndAfterAll {
         "USING row " +
         "options " +
         "(" +
-        "PARTITION_BY 'OrderId'," +
-        "PRESERVEPARTITIONS 'true')")
+        "PARTITION_BY 'OrderId')")
 
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table3")
     val count = snc.sql("select * from row_table3").count()
