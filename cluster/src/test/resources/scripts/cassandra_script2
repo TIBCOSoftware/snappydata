@@ -1,0 +1,7 @@
+CREATE KEYSPACE test1 WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 3};
+use test1;
+CREATE TABLE customer1(customer_id int PRIMARY KEY, customer_name text, customer_city text, customer_phone varint);
+insert into customer1(customer_id,customer_name,customer_city,customer_phone) values(1,'aa','pune',123456789);
+insert into customer1(customer_id,customer_name,customer_city,customer_phone) values(2,'bb','pune',123456789);
+insert into customer1(customer_id,customer_name,customer_city,customer_phone) values(3,'cc','pune',123456789);
+select * from customer1;
