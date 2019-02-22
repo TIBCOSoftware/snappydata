@@ -142,10 +142,11 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param tableName
     * @param isAddColumn
     * @param column
+    * @param defaultValue
     */
   def alterTable(tableName: String, isAddColumn: Boolean,
-                 column: StructField): Unit = {
-    snappySession.alterTable(tableName, isAddColumn, column)
+      column: StructField, defaultValue: Option[String] = None): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column, defaultValue)
   }
 
   /**
@@ -154,10 +155,11 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param tableIdent
     * @param isAddColumn
     * @param column
+    * @param defaultValue
     */
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-                              column: StructField): Unit = {
-    snappySession.alterTable(tableIdent, isAddColumn, column)
+      column: StructField, defaultValue: Option[String]): Unit = {
+    snappySession.alterTable(tableIdent, isAddColumn, column, defaultValue)
   }
 
   /**
@@ -825,6 +827,9 @@ object SnappyContext extends Logging {
 
   private val builtinSources = new CaseInsensitiveMutableHashMap[
       (String, CatalogObjectType.Type)](Map(
+    ParserConsts.OPLOG_SOURCE ->
+      (classOf[execution.oplog.impl.DefaultSource].getCanonicalName ->
+        CatalogObjectType.Oplog),
     ParserConsts.COLUMN_SOURCE ->
         (classOf[execution.columnar.impl.DefaultSource].getCanonicalName ->
             CatalogObjectType.Column),
