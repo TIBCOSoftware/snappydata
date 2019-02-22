@@ -403,6 +403,7 @@ object SnappyParserConsts {
 
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
+  final val OPLOG_SOURCE = "oplog"
   final val DEFAULT_SOURCE = ROW_SOURCE
 
   // reserved keywords

@@ -174,34 +174,17 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
         partitioningColumns,
         session.sqlContext,
         baseTable)
-      case None => {
-        if (Misc.getGemFireCache.isSnappyRecoveryMode) {
-          logInfo("1891: datasource is in recovery mode")
-          new OpLogFormatRelation(
-            fullTableName,
-            getClass.getCanonicalName,
-            mode,
-            schema,
-            schemaExtension,
-            ddlExtensionForShadowTable,
-            tableOptions,
-            externalStore,
-            partitioningColumns,
-            session.sqlContext)
-        } else {
-          new ColumnFormatRelation(
-            fullTableName,
-            getClass.getCanonicalName,
-            mode,
-            schema,
-            schemaExtension,
-            ddlExtensionForShadowTable,
-            tableOptions,
-            externalStore,
-            partitioningColumns,
-            session.sqlContext)
-         }
-      }
+      case None => new ColumnFormatRelation(
+          fullTableName,
+          getClass.getCanonicalName,
+          mode,
+          schema,
+          schemaExtension,
+          ddlExtensionForShadowTable,
+          tableOptions,
+          externalStore,
+          partitioningColumns,
+          session.sqlContext)
     }
     try {
       logDebug(s"Trying to create table $fullTableName")
