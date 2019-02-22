@@ -14,33 +14,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.apache.spark.sql.execution.columnar
+package org.apache.spark.sql.execution.oplog
 
-import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.{Row, SnappySession, SparkSession}
+import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, GenericInternalRow, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, UnsafeRow}
 import org.apache.spark.sql.execution.LeafExecNode
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, OpLogFormatRelation, OpLogColumnRdd}
-import org.apache.spark.sql.execution.row.ResultSetTraversal
-import org.apache.spark.sql.types.{DataType, IntegerType, StructType}
+import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
+import org.apache.spark.sql.sources.BaseRelation
 
 
 class OpLogTableScan(
                       rdd: RDD[Any],
-                      relation: BaseColumnFormatRelation,
+                      relation: BaseRelation,
                       schemaAttributes: Seq[AttributeReference],
                       session: SparkSession) extends LeafExecNode {
 
   override protected def doExecute(): RDD[InternalRow] = {
     val rddOfInternalRow = rdd.map(pair => {
-      val p = pair.asInstanceOf[Seq[Integer]]
+      println(s"1891: from oplogtablescan doexecute")
+      // val p = pair.asInstanceOf[Seq[Integer]]
       val ur = new UnsafeRow(2)
       val data = new Array[Byte](18)
+
       ur.pointTo(data, 18)
-      ur.setInt(0, p(0))
-      ur.setInt(1, p(1))
+      ur.setInt(0, 100)
+      ur.setInt(1, 111)
       ur.asInstanceOf[InternalRow]
       // new GenericInternalRow(r).asInstanceOf[InternalRow]
     })
