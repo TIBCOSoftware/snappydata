@@ -45,7 +45,7 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
@@ -473,9 +473,8 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
 /**
  * This extends Spark's describe to add support for CHAR and VARCHAR types.
  */
-class DescribeSnappyTableCommand(table: TableIdentifier,
-    partitionSpec: TablePartitionSpec, isExtended: Boolean, isFormatted: Boolean)
-    extends DescribeTableCommand(table, partitionSpec, isExtended, isFormatted) {
+case class DescribeSnappyTableCommand(table: TableIdentifier, partitionSpec: TablePartitionSpec,
+    isExtended: Boolean) extends RunnableCommand with SparkSupport {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
@@ -483,7 +482,7 @@ class DescribeSnappyTableCommand(table: TableIdentifier,
       // set the flag to return CharStringType if present
       catalog.convertCharTypesInMetadata = true
       try {
-        super.run(sparkSession)
+        internals.newDescribeTableCommand(table, partitionSpec, isExtended).run(sparkSession)
       } finally {
         catalog.convertCharTypesInMetadata = false
       }

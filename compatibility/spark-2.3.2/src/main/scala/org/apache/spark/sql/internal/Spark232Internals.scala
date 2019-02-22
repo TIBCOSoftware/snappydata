@@ -27,24 +27,26 @@ import io.snappydata.{HintName, QueryHint}
 
 import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.internal.config.ConfigBuilder
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
-import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand}
+import org.apache.spark.sql.catalyst.{AccessUtils, FunctionIdentifier, InternalRow, TableIdentifier}
+import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
-import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
 
@@ -79,6 +81,9 @@ class Spark232Internals extends SparkInternals {
       forceInline: Boolean, useFreshName: Boolean): String = {
     ctx.addMutableState(javaType, varName, initFunc, forceInline, useFreshName)
   }
+
+  override def getInlinedClassFields(ctx: CodegenContext): (Seq[(String, String)], Seq[String]) =
+    AccessUtils.getInlinedMutableStates(ctx)
 
   override def addFunction(ctx: CodegenContext, funcName: String, funcCode: String,
       inlineToOuterClass: Boolean = false): String = {
@@ -161,7 +166,7 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def newDescribeTableCommand(table: TableIdentifier,
-      partitionSpec: Map[String, String], isExtended: Boolean): LogicalPlan = {
+      partitionSpec: Map[String, String], isExtended: Boolean): RunnableCommand = {
     DescribeTableCommand(table, partitionSpec, isExtended)
   }
 
@@ -181,9 +186,13 @@ class Spark232Internals extends SparkInternals {
 
   override def newInsertPlanWithCountOutput(table: LogicalPlan,
       partition: Map[String, Option[String]], child: LogicalPlan,
-      overwrite: Boolean, ifNotExists: Boolean): LogicalPlan = {
-    new Insert23(table, partition, child, overwrite, ifNotExists)
+      overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable = {
+    new Insert(table, partition, child, overwrite, ifNotExists)
   }
+
+  override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite
+
+  override def getIfNotExistsOption(insert: InsertIntoTable): Boolean = insert.ifPartitionNotExists
 
   override def newGroupingSet(groupingSets: Seq[Seq[Expression]],
       groupByExprs: Seq[Expression], child: LogicalPlan,
@@ -199,6 +208,15 @@ class Spark232Internals extends SparkInternals {
 
   override def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias = {
     SubqueryAlias(alias, child)
+  }
+
+  override def newAlias(child: Expression, name: String,
+      copyAlias: Option[NamedExpression]): Alias = {
+    copyAlias match {
+      case None => Alias(child, name)()
+      case Some(a: Alias) => Alias(child, name)(a.exprId, a.qualifier, a.explicitMetadata)
+      case Some(a) => Alias(child, name)(a.exprId, a.qualifier)
+    }
   }
 
   override def newUnresolvedColumnAliases(outputColumnNames: Seq[String],
@@ -280,6 +298,14 @@ class Spark232Internals extends SparkInternals {
       case Some(attrs) => attrs
     }
     LogicalRelation(relation, output, catalogTable, isStreaming)
+  }
+
+  override def newRowDataSourceScanExec(fullOutput: Seq[Attribute], requiredColumnsIndex: Seq[Int],
+      filters: Seq[Filter], handledFilters: Seq[Filter], rdd: RDD[InternalRow],
+      metadata: Map[String, String], relation: BaseRelation,
+      tableIdentifier: Option[TableIdentifier]): RowDataSourceScanExec = {
+    RowDataSourceScanExec(fullOutput, requiredColumnsIndex, filters.toSet, handledFilters.toSet,
+      rdd, relation, tableIdentifier)
   }
 
   private def toURI(uri: String): URI = {
@@ -377,6 +403,10 @@ class Spark232Internals extends SparkInternals {
     ShuffleExchangeExec(newPartitioning, child)
   }
 
+  override def isShuffleExchange(plan: SparkPlan): Boolean = plan.isInstanceOf[ShuffleExchangeExec]
+
+  override def classOfShuffleExchange(): Class[_] = classOf[ShuffleExchangeExec]
+
   override def getStatistics(plan: LogicalPlan): Statistics = plan.stats
 
   override def supportsPartial(aggregate: AggregateFunction): Boolean = true
@@ -414,7 +444,10 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def newCacheManager(): CacheManager = new SnappyCacheManager
+
+  override def buildConf(key: String): ConfigBuilder = SQLConf.buildConf(key)
 }
+
 
 /**
  * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.

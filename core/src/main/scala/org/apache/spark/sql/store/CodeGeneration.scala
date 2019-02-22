@@ -166,7 +166,7 @@ object CodeGeneration extends Logging with SparkSupport {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
-          v => s"$v = new $encoderClass();")
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final ArrayData $arr = ${ev.value};
            |if ($arr instanceof $serArrayClass) {
@@ -185,7 +185,7 @@ object CodeGeneration extends Logging with SparkSupport {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
-          v => s"$v = new $encoderClass();")
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final MapData $map = ${ev.value};
            |if ($map instanceof $serMapClass) {
@@ -203,7 +203,7 @@ object CodeGeneration extends Logging with SparkSupport {
         val encoder = ctx.freshName("encoder")
         val cursor = ctx.freshName("cursor")
         val encoderVar = internals.addClassField(ctx, encoderClass, "encoderObj",
-          v => s"$v = new $encoderClass();")
+          v => s"$v = new $encoderClass();", forceInline = true)
         s"""
            |final InternalRow $struct = ${ev.value};
            |if ($struct instanceof $serRowClass) {
@@ -280,11 +280,16 @@ object CodeGeneration extends Logging with SparkSupport {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+    val mutableStates = internals.getInlinedClassFields(ctx)
+    val varDeclarations = mutableStates._1.map { case (javaType, name) =>
+      s"$javaType $name;"
+    }
+    val initVars = mutableStates._2.map { init =>
+      init.replace("this.", "")
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}
+      ${initVars.mkString(separator)}
       int $rowCount = 0;
       int $result = 0;
       while ($rows.hasNext()) {
@@ -328,11 +333,16 @@ object CodeGeneration extends Logging with SparkSupport {
     evaluator.setParentClassLoader(getClass.getClassLoader)
     evaluator.setDefaultImports(defaultImports)
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+    val mutableStates = internals.getInlinedClassFields(ctx)
+    val varDeclarations = mutableStates._1.map { case (javaType, name) =>
+      s"$javaType $name;"
+    }
+    val initVars = mutableStates._2.map { init =>
+      init.replace("this.", "")
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}
+      ${initVars.mkString(separator)}
         $code
         stmt.addBatch();
       return 1;"""
@@ -427,11 +437,16 @@ object CodeGeneration extends Logging with SparkSupport {
       classOf[MapData].getName,
       classOf[InternalDataSerializer].getName))
     val separator = "\n      "
-    val varDeclarations = ctx.mutableStates.map { case (javaType, name, init) =>
-      s"$javaType $name;$separator${init.replace("this.", "")}"
+    val mutableStates = internals.getInlinedClassFields(ctx)
+    val varDeclarations = mutableStates._1.map { case (javaType, name) =>
+      s"$javaType $name;"
+    }
+    val initVars = mutableStates._2.map { init =>
+      init.replace("this.", "")
     }
     val expression = s"""
       ${varDeclarations.mkString(separator)}
+      ${initVars.mkString(separator)}
       $typeConversion"""
 
     logDebug(s"DEBUG: For complex type=$dataType, generated code=$expression")

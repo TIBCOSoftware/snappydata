@@ -19,21 +19,18 @@ package org.apache.spark.sql.types
 import scala.math.Ordering
 import scala.reflect.runtime.universe.typeTag
 
-import org.apache.spark.sql.catalyst.ScalaReflectionLock
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
-  * An internal type to represent VARCHAR() and CHAR() types in
-  * column definitions of "CREATE TABLE".
-  */
+ * An internal type to represent VARCHAR() and CHAR() types in
+ * column definitions of "CREATE TABLE".
+ */
 case class CharStringType(override val defaultSize: Int,
     baseType: String) extends AtomicType {
 
   override private[sql] type InternalType = UTF8String
 
-  @transient override private[sql] lazy val tag = ScalaReflectionLock.synchronized {
-    typeTag[InternalType]
-  }
+  @transient override private[sql] lazy val tag = typeTag[InternalType]
 
   override private[sql] val ordering = implicitly[Ordering[InternalType]]
 

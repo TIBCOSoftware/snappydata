@@ -34,8 +34,10 @@ import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
+import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
+import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
@@ -64,9 +66,9 @@ import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
 
 object Utils extends SparkSupport {
 
@@ -670,6 +672,16 @@ object Utils extends SparkSupport {
     new ChunkedByteBuffer(chunks)
 
   def getInternalSparkConf(sc: SparkContext): SparkConf = sc.conf
+
+  def getUserPassword(sparkConf: SparkConf): Option[(String, String)] = {
+    sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR) match {
+      case None => sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR) match {
+        case None => None
+        case Some(user) => Some(user -> sparkConf.get(STORE_PROPERTY_PREFIX + PASSWORD_ATTR, ""))
+      }
+      case Some(user) => Some(user -> sparkConf.get(SPARK_STORE_PREFIX + PASSWORD_ATTR, ""))
+    }
+  }
 
   def newClusterSparkConf(): SparkConf =
     newClusterSparkConf(Misc.getMemStoreBooting.getBootProperties)

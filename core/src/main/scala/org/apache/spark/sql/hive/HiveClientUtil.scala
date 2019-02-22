@@ -21,10 +21,10 @@ import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.Constant
-import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.impl.SnappyHiveConf
 import org.apache.hadoop.hive.conf.HiveConf.ConfVars
 
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.SparkPlan
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.execution.HiveTableScanExec
@@ -52,21 +52,18 @@ object HiveClientUtil extends Logging {
     val metadataConf = new SnappyHiveConf
     // make a copy of SparkConf since it is to be updated later
     val sparkConf = conf.clone()
-    var user = sparkConf.getOption(SPARK_STORE_PREFIX + USERNAME_ATTR)
-    var password = sparkConf.getOption(SPARK_STORE_PREFIX + PASSWORD_ATTR)
-    if (user.isEmpty) {
-      user = sparkConf.getOption(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
-      password = sparkConf.getOption(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
-    }
-    // check store boot properties
-    if (user.isEmpty) {
-      val bootProperties = Misc.getMemStore.getBootProperties
-      bootProperties.get(USERNAME_ATTR).asInstanceOf[String] match {
-        case null =>
-        case u =>
-          user = Some(u)
-          password = Option(bootProperties.get(PASSWORD_ATTR).asInstanceOf[String])
-      }
+    val (user, password) = Utils.getUserPassword(sparkConf) match {
+      case None =>
+        // check store boot properties
+        val bootProperties = Misc.getMemStore.getBootProperties
+        bootProperties.get(USERNAME_ATTR) match {
+          case null => None -> None
+          case u => bootProperties.get(PASSWORD_ATTR) match {
+            case null => Some(u) -> Some("")
+            case p => Some(u) -> Some(p)
+          }
+        }
+      case Some((u, p)) => Some(u) -> Some(p)
     }
     var logURL = dbURL
     val secureDbURL = if (user.isDefined && password.isDefined) {

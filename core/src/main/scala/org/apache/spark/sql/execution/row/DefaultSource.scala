@@ -17,7 +17,6 @@
 package org.apache.spark.sql.execution.row
 
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.jdbc.JDBCPartition
@@ -28,7 +27,7 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.{Logging, Partition, SparkContext}
 
 final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationProvider
-    with CreatableRelationProvider with DataSourceRegister with Logging {
+    with CreatableRelationProvider with DataSourceRegister with Logging with SparkSupport {
 
   override def shortName(): String = SnappyParserConsts.ROW_SOURCE
 
@@ -98,7 +97,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
-    val tableOptions = new CaseInsensitiveMap(parameters.toMap)
+    val tableOptions = internals.newCaseInsensitiveMap(parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schemaString $ddlExtension"

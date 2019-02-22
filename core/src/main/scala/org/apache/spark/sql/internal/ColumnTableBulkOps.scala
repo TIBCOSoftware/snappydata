@@ -82,7 +82,8 @@ object ColumnTableBulkOps extends SparkSupport {
               putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
 
         val insertChild = sparkSession.asInstanceOf[SnappySession].cachePutInto(
-          subQuery.statistics.sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
+          internals.getStatistics(subQuery).sizeInBytes <= cacheSize,
+          updateSubQuery, mutable.table) match {
           case None => subQuery
           case Some(newUpdateSubQuery) =>
             if (updateSubQuery ne newUpdateSubQuery) {

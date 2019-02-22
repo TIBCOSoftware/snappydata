@@ -48,8 +48,9 @@ object StreamSqlHelper {
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
     val catalog = ssc.snappySession.sessionState.catalog
     catalog.resolveRelation(ssc.snappySession.tableIdentifier(tableName)) match {
-      case LogicalRelation(sr: StreamPlan, _, _) => new SchemaDStream(ssc,
-        LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))
+      case lr: LogicalRelation if lr.relation.isInstanceOf[StreamPlan] =>
+        val sr = lr.relation.asInstanceOf[StreamPlan]
+        new SchemaDStream(ssc, LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))
       case _ =>
         throw new AnalysisException(s"Table $tableName not a stream table")
     }
