@@ -28,13 +28,96 @@ public class UDFInterface extends SnappyTest {
             Log.getLogWriter().info("Creating the tables...");
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T1;");
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T2;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T3;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T4;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T5;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T6;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T7;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T8;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T9;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T10;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T11;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T12;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T13;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T14;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T15;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T16;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T17;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T18;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T19;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T20;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T21;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T22;");
 
             jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T1(id Integer) USING COLUMN;");
             jdbcConnection.createStatement().execute("INSERT INTO T1 VALUES(25);");
 
             jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T2(s1 String, s2 String) USING COLUMN;");
-            jdbcConnection.createStatement().execute("INSERT INTO T2 VALUES('Snappy','Data')");
+            jdbcConnection.createStatement().execute("INSERT INTO T2 VALUES('Snappy','Data');");
 
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T3(arr1 Array<String>,arr2 Array<String>,arr3 Array<String>) USING COLUMN;");
+            //jdbcConnection.createStatement().execute("INSERT INTO T3 VALUES(array('snappydata','udf1testing','successful'),array('snappydata','udf2testing','successful'),array('snappydata','udf3testing','successful'));");
+            jdbcConnection.createStatement().execute("INSERT INTO T3 SELECT Array('snappydata','udf1testing','successful'),Array('snappydata','udf2testing','successful'),Array('snappydata','udf3testing','successful');");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T4(m1 Map<String,Double>,m2 Map<String,Double>,m3 Map<String,Double>,m4 Map<String,Double>) USING COLUMN");
+            jdbcConnection.createStatement().execute("INSERT INTO T4 SELECT Map('Maths',100.0d),Map('Science',96.5d),Map('English',92.0d),Map('Music',98.5d);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T5(b1 Boolean,b2 Boolean,b3 Boolean,b4 Boolean,b5 Boolean) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T5 VALUES(true,true,true,true,true);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T6(d1 Decimal,d2 Decimal,d3 Decimal,d4 Decimal,d5 Decimal,d6 Decimal) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T6 VALUES(231.45,563.93,899.25,611.98,444.44,999.99);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T7(i1 Integer,i2 Integer,i3 Integer,i4 Integer,i5 Integer,i6 Integer,st Struct<ist:Integer,dst:Double,sst:String,snull:Integer>) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T7 SELECT 10,20,30,40,50,60,Struct(17933,54.68d,'SnappyData','');");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T8(l1 Long,l2 Long,l3 Long,l4 Long,l5 Long,l6 Long,l7 Long,l8 Long) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T8 VALUES(10,20,30,40,50,60,70,80);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T9(c1 Varchar(9),c2 Varchar(9),c3 Varchar(9),c4 Varchar(9),c5 Varchar(9),c6 Varchar(9),c7 Varchar(9),c8 Varchar(9),c9 Varchar(9)) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T9 VALUES('c','h','a','n','d','r','e','s','h');");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T10(f1 Float,f2 Float,f3 Float,f4 Float,f5 Float,f6 Float,f7 Float,f8 Float,f9 Float,f10 Float) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T10 VALUES(12.7,12.7,12.7,12.7,12.7,12.7,12.7,12.7,12.7,12.7);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T11(f1 Float,f2 Float,f3 Float,f4 Float,f5 Float,f6 Float,f7 Float,f8 Float,f9 Float,f10 Float,f11 Float) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T11 VALUES(12.1,12.2,12.3,12.4,12.5,12.6,12.7,12.8,12.9,14.1,12.8);");
+
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T11(f1 Float,f2 Float,f3 Float,f4 Float,f5 Float,f6 Float,f7 Float,f8 Float,f9 Float,f10 Float,f11 Float) USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T11 VALUES(12.1,12.2,12.3,12.4,12.5,12.6,12.7,12.8,12.9,14.1,15.5);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T12(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String,s8 String,s9 String,s10 String,s11 String,s12 String) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T12 VALUES('Snappy','Data','Leader','Locator','Server','Cluster','Performance','UI','SQL','DataFrame','Dataset','API');");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T13(i1 Integer,i2 Integer,i3 Integer,i4 Integer,i5 Integer,i6 Integer,i7 Integer,i8 Integer,i9 Integer,i10 Integer,i11 Integer,i12 Integer,i13 Integer) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T13 VALUES(10,21,25,54,89,78,63,78,55,13,14,85,71);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T14(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String,s8 String,s9 String,s10 String,s11 String,s12 String,s13 String,s14 String) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T14 VALUES('0XFF','10','067','54534','0X897','999','077','1234567891234567','0x8978','015','1005','13177','14736','07777');");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T15(d1 Double,d2 Double,d3 Double,d4 Double,d5 Double,d6 Double,d7 Double,d8 Double,d9 Double,d10 Double,d11 Double,d12 Double,d13 Double,d14 Double,d15 Double) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T15 VALUES(5.23,99.3,115.6,0.9,78.5,999.99,458.32,133.58,789.87,269.21,333.96,653.21,550.32,489.14,129.87);");
+
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T16(s1 String,s2 String,s3 String,s4 String,s5 String,s6 String,s7 String,s8 String,s9 String,s10 String,s11 String,s12 String,s13 String,s14 String,s15 String,s16 String) USING COLUMN;");
+            jdbcConnection.createStatement().execute("INSERT INTO T16 VALUES('snappy','data','is','working','on','a','distributed','data','base.','Its','Performance','is','faster','than','Apache','spark');");
+//
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T17() USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T17 VALUES();");
+//
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T18() USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T18 VALUES();");
+//
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T19() USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T19 VALUES();");
+//
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T20() USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T20 VALUES();");
+//
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T21() USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T21 VALUES();");
+//
+//            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T22() USING COLUMN;");
+//            jdbcConnection.createStatement().execute("INSERT INTO T22 VALUES();");
 
         } catch(SQLException se) {
             throw new TestException(se.getMessage() + ", Error in creating and ingesting the data.");
@@ -46,6 +129,27 @@ public class UDFInterface extends SnappyTest {
             Log.getLogWriter().info("Dropping the tables...");
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T1;");
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T2;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T3;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T4;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T5;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T6;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T7;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T8;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T9;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T10;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T11;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T12;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T13;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T14;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T15;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T16;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T17;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T18;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T19;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T20;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T21;");
+            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T22;");
+
         } catch(SQLException se) {
             throw new TestException(se.getMessage() + ", Error in droping the tables.");
         }
@@ -56,20 +160,21 @@ public class UDFInterface extends SnappyTest {
             Log.getLogWriter().info("Creating the Java UDFs...");
             jdbcConnection.createStatement().execute("CREATE FUNCTION UDF1 AS com.snappy.poc.udf.JavaUDF1 RETURNS INTEGER USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
             jdbcConnection.createStatement().execute("CREATE FUNCTION UDF2 AS com.snappy.poc.udf.JavaUDF2 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF3 AS com.snappy.poc.udf.JavaUDF3 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF4 AS com.snappy.poc.udf.JavaUDF4 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF5 AS com.snappy.poc.udf.JavaUDF5 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF6 AS com.snappy.poc.udf.JavaUDF6 RETURNS DECIMAL USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF7 AS com.snappy.poc.udf.JavaUDF7 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF8 AS com.snappy.poc.udf.JavaUDF8 RETURNS SHORT USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF9 AS com.snappy.poc.udf.JavaUDF9 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF10 AS com.snappy.poc.udf.JavaUDF10 RETURNS FLOAT USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF3 AS com.snappy.poc.udf.JavaUDF3 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF4 AS com.snappy.poc.udf.JavaUDF4 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF5 AS com.snappy.poc.udf.JavaUDF5 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF6 AS com.snappy.poc.udf.JavaUDF6 RETURNS DECIMAL USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF7 AS com.snappy.poc.udf.JavaUDF7 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF8 AS com.snappy.poc.udf.JavaUDF8 RETURNS SHORT USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF9 AS com.snappy.poc.udf.JavaUDF9 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF10 AS com.snappy.poc.udf.JavaUDF10 RETURNS FLOAT USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF11 AS com.snappy.poc.udf.JavaUDF11 RETURNS BOOLEAN USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
 //            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF11 AS com.snappy.poc.udf.JavaUDF11 RETURNS BOOLEAN USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF12 AS com.snappy.poc.udf.JavaUDF12 RETURNS DATE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF13 AS com.snappy.poc.udf.JavaUDF13 RETURNS TIMESTAMP USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF14 AS com.snappy.poc.udf.JavaUDF14 RETURNS LONG USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF15 AS com.snappy.poc.udf.JavaUDF15 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF16 AS com.snappy.poc.udf.JavaUDF16 RETURNS VARCHAR(255) USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF12 AS com.snappy.poc.udf.JavaUDF12 RETURNS DATE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF13 AS com.snappy.poc.udf.JavaUDF13 RETURNS TIMESTAMP USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF14 AS com.snappy.poc.udf.JavaUDF14 RETURNS LONG USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF15 AS com.snappy.poc.udf.JavaUDF15 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
+            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF16 AS com.snappy.poc.udf.JavaUDF16 RETURNS VARCHAR(255) USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
 //            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF17 AS com.snappy.poc.udf.JavaUDF17 RETURNS BOOLEAN USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
 //            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF18 AS com.snappy.poc.udf.JavaUDF18 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
 //            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF19 AS com.snappy.poc.udf.JavaUDF19 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
@@ -84,21 +189,21 @@ public class UDFInterface extends SnappyTest {
     private void executeJavaUDF(Connection jdbcConnecton) {
             getUDFResult(jdbcConnecton,"SELECT UDF1(id) FROM T1;","UDF1");
             getUDFResult(jdbcConnecton,"SELECT UDF2(s1,s2) FROM T2;","UDF2");
-//            getUDFResult(jdbcConnecton,"SELECT UDF3(Array('snappydata','udf1testing','successful'),Array('snappydata','udf2testing','successful'),Array('snappydata','udf3testing','successful'));","UDF3");
-//            getUDFResult(jdbcConnecton,"SELECT UDF4(Map('Maths',100.0d),Map('Science',96.5d),Map('English',92.0d),Map('Music',98.5d));","UDF4");
-//            getUDFResult(jdbcConnecton,"SELECT UDF5(true,true,true,true,true);","UDF5");
-//            getUDFResult(jdbcConnecton,"SELECT UDF6(231.45,563.93,899.25,611.98,444.44,999.99);","UDF6");
-//            getUDFResult(jdbcConnecton,"SELECT UDF7(10,20,30,40,50,60,Struct(17933,54.68d,'SnappyData',null));","UDF7");
-//            getUDFResult(jdbcConnecton,"SELECT UDF8(10L,20L,30L,40L,50L,60L,70L,80L);","UDF8");
-//            getUDFResult(jdbcConnecton,"SELECT UDF9('c','h','a','n','d','r','e','s','h');","UDF9");
-//            getUDFResult(jdbcConnecton,"SELECT UDF10(12.7f,12.7f,12.7f,12.7f,12.7f,12.7f,12.7f,12.7f,12.7f,12.7f);","UDF10");
-//            getUDFResult(jdbcConnecton,"SELECT UDF11(12.1f,12.2f,12.3f,12.4f,12.5f,12.6f,12.7f,12.8f,12.9f,14.1f,12.8f);","UDF11");
-//            getUDFResult(jdbcConnecton,"SELECT UDF11(12.1f,12.2f,12.3f,12.4f,12.5f,12.6f,12.7f,12.8f,12.9f,14.1f,15.5f);","UDF11");
-//            getUDFResult(jdbcConnecton,"SELECT UDF12('Snappy','Data','Leader','Locator','Server','Cluster','Performance','UI','SQL','DataFrame','Dataset','API');","UDF12");
-//            getUDFResult(jdbcConnecton,"SELECT UDF13(10,21,25,54,89,78,63,78,55,13,14,85,71);","UDF13");
-//            getUDFResult(jdbcConnecton,"SELECT UDF14('0XFF','10','067','54534','0X897','999','077','1234567891234567','0x8978','015','1005','13177','14736','07777');","UDF14");
-//            getUDFResult(jdbcConnecton,"SELECT UDF15(5.23d,99.3d,115.6d,0.9d,78.5d,999.99d,458.32d,133.58d,789.87d,269.21d,333.96d,653.21d,550.32d,489.14d,129.87d);","UDF15");
-//            getUDFResult(jdbcConnecton,"SELECT UDF16('snappy','data','is','working','on','a','distributed','data','base.','Its','Performance','is','faster','than','Apache','spark');","UDF16");
+            getUDFResult(jdbcConnecton,"SELECT UDF3(arr1,arr2,arr3) FROM T3;","UDF3");
+            getUDFResult(jdbcConnecton,"SELECT UDF4(m1,m2,m3,m4) FROM T4;","UDF4");
+            getUDFResult(jdbcConnecton,"SELECT UDF5(b1,b2,b3,b4,b5) FROM T5;","UDF5");
+            getUDFResult(jdbcConnecton,"SELECT UDF6(d1,d2,d3,d4,d5,d6) FROM T6;","UDF6");
+            getUDFResult(jdbcConnecton,"SELECT UDF7(i1,i2,i3,i4,i5,i6,st) FROM T7;","UDF7");
+            getUDFResult(jdbcConnecton,"SELECT UDF8(l1,l2,l3,l4,l5,l6,l7,l8) FROM T8;","UDF8");
+            getUDFResult(jdbcConnecton,"SELECT UDF9(c1,c2,c3,c4,c5,c6,c7,c8,c9) FROM T9;","UDF9");
+            getUDFResult(jdbcConnecton,"SELECT UDF10(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10) FROM T10;","UDF10");
+            getUDFResult(jdbcConnecton,"SELECT UDF11(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11) FROM T11;","UDF11");
+//            getUDFResult(jdbcConnecton,"SELECT UDF11(f1,f2,f3,f4,f5,f6,f7,f8,f9,f10,f11) FROM T11;","UDF11");
+            getUDFResult(jdbcConnecton,"SELECT UDF12(s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12) FROM T12;","UDF12");
+            getUDFResult(jdbcConnecton,"SELECT UDF13(i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12,i13) FROM T13;","UDF13");
+            getUDFResult(jdbcConnecton,"SELECT UDF14(s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14) FROM T14;","UDF14");
+            getUDFResult(jdbcConnecton,"SELECT UDF15(d1,d2,d3,d4,d5,d6,d7,d8,d9,d10,d11,d12,d13,d14,d15) FROM T15;","UDF15");
+            getUDFResult(jdbcConnecton,"SELECT UDF16(s1,s2,s3,s4,s5,s6,s7,s8,s9,s10,s11,s12,s13,s14,s15,s16) FROM T16;","UDF16");
 //            getUDFResult(jdbcConnecton,"SELECT UDF17(15.2f,17.2f,99.9f,45.2f,71.0f,89.8f,66.6f,23.7f,33.1f,13.5f,77.7f,38.3f,44.4f,21.7f,41.8f,83.2f,78.1f);","UDF17");
 //            getUDFResult(jdbcConnecton,"SELECT UDF18('snappy','data','spark','leader','locator','server','memory','eviction','sql','udf','udaf','scala','docker','catalog','smart connector','cores','executor','dir');","UDF18");
 //            getUDFResult(jdbcConnecton,"SELECT UDF19('snappy','data','spark','leader','locator','server','memory','eviction','sql','udf','udaf','scala','docker','catalog','smart connector','cores','executor','dir','avro');","UDF19");
@@ -145,20 +250,21 @@ public class UDFInterface extends SnappyTest {
             Log.getLogWriter().info("Dropping the Java UDFs...");
             jdbcConnection.createStatement().execute("DROP FUNCTION UDF1;");
             jdbcConnection.createStatement().execute("DROP FUNCTION UDF2;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF3;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF4;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF5;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF6;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF7;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF8;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF9;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF10;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF3;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF4;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF5;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF6;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF7;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF8;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF9;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF10;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF11;");
 //            jdbcConnection.createStatement().execute("DROP FUNCTION UDF11;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF12;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF13;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF14;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF15;");
-//            jdbcConnection.createStatement().execute("DROP FUNCTION UDF16;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF12;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF13;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF14;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF15;");
+            jdbcConnection.createStatement().execute("DROP FUNCTION UDF16;");
 //            jdbcConnection.createStatement().execute("DROP FUNCTION UDF17;");
 //            jdbcConnection.createStatement().execute("DROP FUNCTION UDF18;");
 //            jdbcConnection.createStatement().execute("DROP FUNCTION UDF19;");
