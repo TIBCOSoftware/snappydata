@@ -410,7 +410,7 @@ case class HashJoinExec(leftKeys: Seq[Expression],
 
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
-    ctx.copyResult = false
+    internals.resetCopyResult(ctx)
 
     // initialization of min/max for integral keys
     val initMinMaxVars = mapAccessor.integralKeys.zipWithIndex.map {

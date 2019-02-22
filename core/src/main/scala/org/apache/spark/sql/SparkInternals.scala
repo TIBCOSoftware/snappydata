@@ -19,20 +19,23 @@ package org.apache.spark.sql
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 
+import org.apache.spark.internal.config.ConfigBuilder
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.analysis.UnresolvedTableValuedFunction
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame}
 import org.apache.spark.sql.catalyst.json.JSONOptions
-import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, LogicalPlan, RepartitionByExpression, Statistics, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, InsertIntoTable, LogicalPlan, RepartitionByExpression, Statistics, SubqueryAlias}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
+import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionState}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.{Logging, SparkContext}
 
@@ -83,6 +86,11 @@ trait SparkInternals extends Logging {
   def addClassField(ctx: CodegenContext, javaType: String,
       varName: String, initFunc: String => String = emptyFunc,
       forceInline: Boolean = false, useFreshName: Boolean = true): String
+
+  /**
+   * Get all the inline class fields in the given CodegenContext.
+   */
+  def getInlinedClassFields(ctx: CodegenContext): (Seq[(String, String)], Seq[String])
 
   /**
    * Adds a function to the generated class. In newer Spark versions, if the code for outer class
@@ -189,7 +197,7 @@ trait SparkInternals extends Logging {
    * Create a [[LogicalPlan]] for DESCRIBE TABLE.
    */
   def newDescribeTableCommand(table: TableIdentifier, partitionSpec: Map[String, String],
-      isExtended: Boolean): LogicalPlan
+      isExtended: Boolean): RunnableCommand
 
   /**
    * Create a [[LogicalPlan]] for CLEAR CACHE.
@@ -213,7 +221,17 @@ trait SparkInternals extends Logging {
    * Create a new INSERT plan that has a LONG count of rows as its output.
    */
   def newInsertPlanWithCountOutput(table: LogicalPlan, partition: Map[String, Option[String]],
-      child: LogicalPlan, overwrite: Boolean, ifNotExists: Boolean): LogicalPlan
+      child: LogicalPlan, overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable
+
+  /**
+   * Return true if overwrite is enabled in the insert plan else false.
+   */
+  def getOverwriteOption(insert: InsertIntoTable): Boolean
+
+  /**
+   * Return true if "ifNotExists" is enabled in the insert plan else false.
+   */
+  def getIfNotExistsOption(insert: InsertIntoTable): Boolean
 
   /**
    * Create an expression for GROUPING SETS.
@@ -230,6 +248,9 @@ trait SparkInternals extends Logging {
    * Create an alias for a sub-query.
    */
   def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias
+
+  /** Create an alias. */
+  def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression]): Alias
 
   /**
    * Create a plan for column aliases in a table/sub-query/...
@@ -315,6 +336,14 @@ trait SparkInternals extends Logging {
       catalogTable: Option[CatalogTable], isStreaming: Boolean): LogicalRelation
 
   /**
+   * Create a new [[RowDataSourceScanExec]] with the given parameters.
+   */
+  def newRowDataSourceScanExec(fullOutput: Seq[Attribute], requiredColumnsIndex: Seq[Int],
+      filters: Seq[Filter], handledFilters: Seq[Filter], rdd: RDD[InternalRow],
+      metadata: Map[String, String], relation: BaseRelation,
+      tableIdentifier: Option[TableIdentifier]): RowDataSourceScanExec
+
+  /**
    * Create a new CatalogDatabase given the parameters. Newer Spark releases require a URI
    * for locationUri so the given string will be converted to URI for those Spark versions.
    */
@@ -395,6 +424,16 @@ trait SparkInternals extends Logging {
   def newShuffleExchange(newPartitioning: Partitioning, child: SparkPlan): Exchange
 
   /**
+   * Return true if the given plan is a ShuffleExchange.
+   */
+  def isShuffleExchange(plan: SparkPlan): Boolean
+
+  /**
+   * Get the classOf ShuffleExchange operator.
+   */
+  def classOfShuffleExchange(): Class[_]
+
+  /**
    * Get the [[Statistics]] for a given [[LogicalPlan]].
    */
   def getStatistics(plan: LogicalPlan): Statistics
@@ -437,6 +476,11 @@ trait SparkInternals extends Logging {
    * Create a new SnappyData extended CacheManager to clear cached plans on cached data changes.
    */
   def newCacheManager(): CacheManager
+
+  /**
+   * Create a new SQLConf entry with registration actions for the given key.
+   */
+  def buildConf(key: String): ConfigBuilder
 }
 
 /**

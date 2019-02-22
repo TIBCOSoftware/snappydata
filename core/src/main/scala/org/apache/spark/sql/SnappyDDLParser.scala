@@ -662,8 +662,8 @@ abstract class SnappyDDLParser(session: SparkSession)
             ((extended: Any, tableIdent: TableIdentifier) => {
               // ensure columns are sent back as CLOB for large results with EXTENDED
               queryHints.put(QueryHint.ColumnsAsClob.toString, "data_type,comment")
-              new DescribeSnappyTableCommand(tableIdent, Map.empty[String, String], extended
-                  .asInstanceOf[Option[Boolean]].isDefined, isFormatted = false)
+              DescribeSnappyTableCommand(tableIdent, Map.empty[String, String], extended
+                  .asInstanceOf[Option[Boolean]].isDefined)
             })
     )
   }

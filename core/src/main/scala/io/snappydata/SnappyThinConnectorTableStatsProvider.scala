@@ -26,11 +26,12 @@ import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
-import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import io.snappydata.Constant._
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 
 object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
@@ -39,16 +40,18 @@ object SnappyThinConnectorTableStatsProvider extends TableStatsProviderService {
   private var getStatsStmt: PreparedStatement = _
   private var _url: String = _
 
-  def initializeConnection(context: Option[SparkContext] = None): Unit = {
-    var securePart = ""
-    context match {
+  def initializeConnection(sparkContext: Option[SparkContext] = None): Unit = {
+    val context = sparkContext match {
+      case None => Option(SnappyContext.globalSparkContext)
+      case _ => sparkContext
+    }
+    val securePart = context match {
       case Some(sc) =>
-        val user = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, "")
-        if (!user.isEmpty) {
-          val pass = sc.getConf.get(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, "")
-          securePart = s";user=$user;password=$pass"
+        Utils.getUserPassword(Utils.getInternalSparkConf(sc)) match {
+          case None => ""
+          case Some((user, password)) => s";user=$user;password=$password"
         }
-      case None =>
+      case None => ""
     }
     val jdbcOptions = new JDBCOptions(_url + securePart + ";route-query=false;", "",
       Map("driver" -> Constant.JDBC_CLIENT_DRIVER))

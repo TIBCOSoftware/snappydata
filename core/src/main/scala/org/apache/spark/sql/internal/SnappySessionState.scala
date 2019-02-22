@@ -50,7 +50,6 @@ import org.apache.spark.sql.execution.command.{DDLUtils, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
-import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -933,7 +932,7 @@ class SQLConfigEntry private(private[sql] val entry: ConfigEntry[_]) {
   override def toString: String = entry.toString
 }
 
-object SQLConfigEntry {
+object SQLConfigEntry extends SparkSupport {
 
   private def handleDefault[T](entry: TypedConfigBuilder[T],
       defaultValue: Option[T]): SQLConfigEntry = defaultValue match {
@@ -963,16 +962,16 @@ object SQLConfigEntry {
   def apply[T: ClassTag](key: String, doc: String, defaultValue: Option[T],
       isPublic: Boolean = true): SQLConfigEntry = {
     classTag[T] match {
-      case ClassTag.Int => handleDefault[Int](SQLConfigBuilder(key)
+      case ClassTag.Int => handleDefault[Int](internals.buildConf(key)
           .doc(doc).intConf, defaultValue.asInstanceOf[Option[Int]])
-      case ClassTag.Long => handleDefault[Long](SQLConfigBuilder(key)
+      case ClassTag.Long => handleDefault[Long](internals.buildConf(key)
           .doc(doc).longConf, defaultValue.asInstanceOf[Option[Long]])
-      case ClassTag.Double => handleDefault[Double](SQLConfigBuilder(key)
+      case ClassTag.Double => handleDefault[Double](internals.buildConf(key)
           .doc(doc).doubleConf, defaultValue.asInstanceOf[Option[Double]])
-      case ClassTag.Boolean => handleDefault[Boolean](SQLConfigBuilder(key)
+      case ClassTag.Boolean => handleDefault[Boolean](internals.buildConf(key)
           .doc(doc).booleanConf, defaultValue.asInstanceOf[Option[Boolean]])
       case c if c.runtimeClass == classOf[String] =>
-        handleDefault[String](SQLConfigBuilder(key).doc(doc).stringConf,
+        handleDefault[String](internals.buildConf(key).doc(doc).stringConf,
           defaultValue.asInstanceOf[Option[String]])
       case c => throw new IllegalArgumentException(
         s"Unknown type of configuration key: $c")

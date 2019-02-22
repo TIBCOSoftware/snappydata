@@ -26,7 +26,6 @@ import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
@@ -215,7 +214,7 @@ class RowFormatRelation(
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): String = {
 
-    val parameters = new CaseInsensitiveMap(options)
+    val parameters = internals.newCaseInsensitiveMap(options)
     val columns = indexColumns.tail.foldLeft[String](
       getColumnStr(indexColumns.head))((cumulative, colsWithDirection) =>
       cumulative + "," + getColumnStr(colsWithDirection))

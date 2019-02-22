@@ -18,10 +18,11 @@
 package org.apache.spark.sql.sources
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.QueryHint._
 
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, PredicateHelper}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
 import org.apache.spark.sql.catalyst.plans.Inner
@@ -32,14 +33,14 @@ import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
+import org.apache.spark.sql.{SnappySession, SparkSupport}
 
 
 /**
  * Replace table with index hint
  */
-case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
+case class ResolveQueryHints(snappySession: SnappySession)
+    extends Rule[LogicalPlan] with SparkSupport {
 
   private def catalog = snappySession.sessionState.catalog
 
@@ -54,13 +55,14 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
     }
 
     plan transformUp {
-      case table@LogicalRelation(colRelation: ColumnFormatRelation, _, _) =>
-        explicitIndexHint.getOrElse(colRelation.table, Some(table)).get
-      case subQuery@SubqueryAlias(alias, lr: LogicalRelation, _)
-        if !lr.relation.isInstanceOf[IndexColumnFormatRelation] =>
-        explicitIndexHint.get(alias) match {
-          case Some(Some(index)) => SubqueryAlias(alias, index, None)
-          case _ => subQuery
+      case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] =>
+        explicitIndexHint.getOrElse(lr.relation.asInstanceOf[ColumnFormatRelation].table,
+          Some(lr)).get
+      case s: SubqueryAlias if s.child.isInstanceOf[LogicalRelation] &&
+          s.child.asInstanceOf[LogicalRelation].relation.isInstanceOf[IndexColumnFormatRelation] =>
+        explicitIndexHint.get(s.alias) match {
+          case Some(Some(index)) => internals.newSubqueryAlias(s.alias, index)
+          case _ => s
         }
     } transformUp {
       case q: LogicalPlan =>
@@ -110,10 +112,6 @@ case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalP
 case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[LogicalPlan]
     with PredicateHelper {
 
-  lazy val catalog = snappySession.sessionState.catalog
-
-  lazy val analyzer = snappySession.sessionState.analyzer
-
   private def createColocatedJoins(input: Seq[LogicalPlan],
       conditions: Seq[Expression],
       visited: mutable.HashSet[LogicalPlan]): CompletePlan = {
@@ -137,8 +135,8 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val (partitioned, replicates, others) =
       ((new TableList, new TableList, new TableList) /: input) {
         case (splitted@(part, rep, _),
-        l@LogicalRelation(b: PartitionedDataSourceScan, _, _)) =>
-          if (b.partitionColumns.nonEmpty) {
+        l: LogicalRelation) if l.relation.isInstanceOf[PartitionedDataSourceScan] =>
+          if (l.relation.asInstanceOf[PartitionedDataSourceScan].partitionColumns.nonEmpty) {
             part += l
           } else {
             rep += l
@@ -189,7 +187,8 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
     val nonColocatedWithFilters = ncf.map(r => RuleUtils.chooseIndexForFilter(r, conditions)
         .getOrElse(Replacement(r, r)))
 
-    val replicatesWithColocated = ReplacementSet(replicates.map(r => Replacement(r, r, false)) ++
+    val replicatesWithColocated = ReplacementSet(replicates.map(
+      r => Replacement(r, r, isPartitioned = false)) ++
         (if (colocationGroups.nonEmpty) colocationGroups.head.chain else Nil), conditions)
 
     val replicatesWithNonColocatedHavingFilters = nonColocatedWithFilters.map(nc =>
@@ -223,7 +222,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
 
       finalJoinOrder ++= nonColocated.map(r => Replacement(r, r))
     } else {
-      for (i <- 0 to smallerNC) {
+      for (_ <- 0 to smallerNC) {
         // pack NC tables first.
       }
     }
@@ -317,7 +316,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
                 case l :: r :: o if o.isEmpty
                     & RuleUtils.getJoinKeys(l, r, joinConditions).nonEmpty =>
                   List(replicates.toList)
-                case l :: o if o.isEmpty =>
+                case _ :: o if o.isEmpty =>
                   List(replicates.toList)
                 case _ => List(List.empty[Entity.TABLE])
               }
@@ -508,7 +507,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
               case f: AttributeReference =>
                 val newA = newAttributes.find(_.name.equalsIgnoreCase(f.name)).
                     getOrElse(throw new IllegalStateException(
-                      s"Field $f not found in ${newAttributes}"))
+                      s"Field $f not found in $newAttributes"))
                 newAttributesMap ++= Some((f, newA))
             }
           case _ =>
@@ -521,7 +520,7 @@ case class ResolveIndex(implicit val snappySession: SnappySession) extends Rule[
         case q: LogicalPlan =>
           q transformExpressionsUp {
             case a: AttributeReference => newAttributesMap.find({
-              case (tableA, indexA) => tableA.exprId == a.exprId
+              case (tableA, _) => tableA.exprId == a.exprId
             }).map({ case (t, i) => i.withQualifier(t.qualifier) }).getOrElse(a)
           }
       }

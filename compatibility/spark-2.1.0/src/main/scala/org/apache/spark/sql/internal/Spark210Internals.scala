@@ -23,6 +23,8 @@ import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 
 import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.internal.config.ConfigBuilder
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -30,18 +32,19 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.plans.logical._
-import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, UnknownPartitioning}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, SQLBuilder, TableIdentifier}
-import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand}
+import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
-import org.apache.spark.sql.execution.{CacheManager, SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
-import org.apache.spark.sql.sources.BaseRelation
+import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
+import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
+import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkContext, SparkException}
@@ -117,6 +120,10 @@ class Spark210Internals extends SparkInternals {
     val variableName = if (useFreshName) ctx.freshName(varName) else varName
     ctx.addMutableState(javaType, varName, initFunc(variableName))
     variableName
+  }
+
+  override def getInlinedClassFields(ctx: CodegenContext): (Seq[(String, String)], Seq[String]) = {
+    ctx.mutableStates.map(t => t._1 -> t._2) -> ctx.mutableStates.map(_._3)
   }
 
   override def addFunction(ctx: CodegenContext, funcName: String, funcCode: String,
@@ -217,7 +224,7 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def newDescribeTableCommand(table: TableIdentifier,
-      partitionSpec: Map[String, String], isExtended: Boolean): LogicalPlan = {
+      partitionSpec: Map[String, String], isExtended: Boolean): RunnableCommand = {
     DescribeTableCommand(table, partitionSpec, isExtended, isFormatted = false)
   }
 
@@ -236,9 +243,13 @@ class Spark210Internals extends SparkInternals {
 
   override def newInsertPlanWithCountOutput(table: LogicalPlan,
       partition: Map[String, Option[String]], child: LogicalPlan,
-      overwrite: Boolean, ifNotExists: Boolean): LogicalPlan = {
+      overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable = {
     new Insert(table, partition, child, OverwriteOptions(enabled = overwrite), ifNotExists)
   }
+
+  override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite.enabled
+
+  override def getIfNotExistsOption(insert: InsertIntoTable): Boolean = insert.ifNotExists
 
   override def newGroupingSet(groupingSets: Seq[Seq[Expression]],
       groupByExprs: Seq[Expression], child: LogicalPlan,
@@ -262,6 +273,16 @@ class Spark210Internals extends SparkInternals {
 
   override def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias = {
     SubqueryAlias(alias, child, view = None)
+  }
+
+  override def newAlias(child: Expression, name: String,
+      copyAlias: Option[NamedExpression]): Alias = {
+    copyAlias match {
+      case None => Alias(child, name)()
+      case Some(a: Alias) =>
+        Alias(child, name)(a.exprId, a.qualifier, a.explicitMetadata, a.isGenerated)
+      case Some(a) => Alias(child, name)(a.exprId, a.qualifier, isGenerated = a.isGenerated)
+    }
   }
 
   override def newUnresolvedColumnAliases(outputColumnNames: Seq[String],
@@ -353,6 +374,14 @@ class Spark210Internals extends SparkInternals {
     LogicalRelation(relation, expectedOutputAttributes, catalogTable)
   }
 
+  override def newRowDataSourceScanExec(fullOutput: Seq[Attribute], requiredColumnsIndex: Seq[Int],
+      filters: Seq[Filter], handledFilters: Seq[Filter], rdd: RDD[InternalRow],
+      metadata: Map[String, String], relation: BaseRelation,
+      tableIdentifier: Option[TableIdentifier]): RowDataSourceScanExec = {
+    RowDataSourceScanExec(requiredColumnsIndex.map(fullOutput), rdd, relation,
+      UnknownPartitioning(0), metadata, tableIdentifier)
+  }
+
   override def newCatalogDatabase(name: String, description: String,
       locationUri: String, properties: Map[String, String]): CatalogDatabase = {
     CatalogDatabase(name, description, locationUri, properties)
@@ -440,6 +469,10 @@ class Spark210Internals extends SparkInternals {
     ShuffleExchange(newPartitioning, child)
   }
 
+  override def isShuffleExchange(plan: SparkPlan): Boolean = plan.isInstanceOf[ShuffleExchange]
+
+  override def classOfShuffleExchange(): Class[_] = classOf[ShuffleExchange]
+
   override def getStatistics(plan: LogicalPlan): Statistics = plan.statistics
 
   override def supportsPartial(aggregate: AggregateFunction): Boolean = aggregate.supportsPartial
@@ -471,6 +504,8 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def newCacheManager(): CacheManager = new SnappyCacheManager
+
+  override def buildConf(key: String): ConfigBuilder = SQLConfigBuilder(key)
 }
 
 /**
