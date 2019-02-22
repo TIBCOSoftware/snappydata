@@ -140,7 +140,7 @@ object RecoveryService extends Logging {
           ListResultCollectorValue].resultOfSingleExecution.asInstanceOf[
           PersistentStateInRecoveryMode]
       logInfo(s"1891: cVARD persistentViewObj${persistentViewObj}")
-//      TODO: need to handle null pointer exception here - at following line??
+
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
       while(regionItr.hasNext) {

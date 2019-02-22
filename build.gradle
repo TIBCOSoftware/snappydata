@@ -458,62 +458,60 @@ subprojects {
     }
   }
 
-  task dunitRecoveryTest(type: Test) {
-    dependsOn ':cleanDUnit'
-    dependsOn ':product'
-    dependsOn ':copyShadowJars'
+  task recoveryTest(type: Test) {
+    def factory = new com.github.maiflai.BackwardsCompatibleJavaExecActionFactory(gradle.gradleVersion)
+    actions = [ new com.github.maiflai.ScalaTestAction(factory) ]
+    // top-level default is single process run since scalatest does not
+    // spawn separate JVMs
     maxParallelForks = 1
-    minHeapSize '1536m'
-    maxHeapSize '1536m'
+    minHeapSize '4g'
+    maxHeapSize '4g'
+    jvmArgs '-ea', '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=1g',
+        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
+    // for benchmarking
+    // minHeapSize '12g'
+    // maxHeapSize '12g'
+    // jvmArgs '-XX:+HeapDumpOnOutOfMemoryError','-XX:+UseConcMarkSweepGC', '-XX:MaxNewSize=2g',
+    //        '-XX:+UseParNewGC', '-XX:+CMSClassUnloadingEnabled'
 
-    // limit netty buffer arenas to avoid occasional OOMEs with 1.5g heap
-    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors())
-    jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
-               '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
-               '-XX:CMSInitiatingOccupancyFraction=50',
-               '-XX:+CMSClassUnloadingEnabled', '-ea',
-               '-Dspark.sql.codegen.cacheSize=1000',
-               '-Dspark.ui.retainedStages=500',
-               '-Dspark.ui.retainedJobs=500',
-               '-Dspark.sql.ui.retainedExecutions=500',
-               '-Dio.netty.allocator.pageSize=8192',
-               '-Dio.netty.allocator.maxOrder=10',
-               "-Dio.netty.allocator.numHeapArenas=${numArenas}",
-               "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
+    testLogging.exceptionFormat = TestExceptionFormat.FULL
+    testLogging.events = TestLogEvent.values() as Set
 
-    workingDir = "${testResultsBase}/recovery-mode"
+    extensions.add(com.github.maiflai.ScalaTestAction.TAGS, new org.gradle.api.tasks.util.PatternSet())
+    List<String> suites = []
+    extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
+    extensions.add('suite', { String name -> suites.add(name) } )
+    extensions.add('suites', { String... name -> suites.addAll(name) } )
 
+    def result = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTRESULT, result)
+    extensions.add('testResult', { String name -> result.setLength(0); result.append(name) } )
+
+    def output = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
+    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) })
+
+    def errorOutput = new StringBuilder()
+    extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
+    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) })
+
+    // running a single scala suite
+    if (rootProject.hasProperty('singleSuite')) {
+      suite singleSuite
+    }
+    workingDir = "${testResultsBase}/recoveryTest"
+
+    systemProperties 'java.net.preferIPv4Stack': 'true',
+        'SNAPPY_HOME': snappyProductDir,
+        'RECOVERY_TEST_DIR': workingDir
+
+    // testResult '/dev/tty'
+    testOutput "${workingDir}/output.txt"
+    testError "${workingDir}/error.txt"
     binResultsDir = file("${workingDir}/binary/${project.name}")
     reports.html.destination = file("${workingDir}/html/${project.name}")
     reports.junitXml.destination = file(workingDir)
-
-    systemProperties 'java.net.preferIPv4Stack': 'true',
-        'SNAPPY_HOME': snappyProductDir
-
-    int numTestClasses = 0
-    def testCount = new java.util.concurrent.atomic.AtomicInteger(0)
-
-    doFirst {
-      String eol = System.getProperty('line.separator')
-      String now = new Date().format('yyyy-MM-dd HH:mm:ss.SSS Z')
-      def progress = new File(workingDir, 'progress.txt')
-      numTestClasses = getCandidateClassFiles().getFiles().size()
-      progress << "${eol}${now} ========== STARTING DUNIT RECOVERY TEST SUITE FOR ${project.name} ==========${eol}${eol}"
-    }
-
-      beforeSuite { desc ->
-        if (desc.className != null) {
-          def count = testCount.incrementAndGet()
-          println "${now()} Start ${desc.className} ($count/$numTestClasses)"
-        }
-      }
-      afterSuite { desc, result ->
-        if (desc.className != null) {
-          println "${now()} END ${desc.className}"
-        }
-      }
-    }
-  
+  }
 
   task dunitSecurityTest(type: Test) {
     dependsOn ':cleanSecurityDUnit'
@@ -703,11 +701,6 @@ gradle.taskGraph.whenReady { graph ->
     dunitSingle = rootProject.hasProperty('dunit.single') ?
         rootProject.property('dunit.single') : null
   }
-  String dunitRecoverySingle = System.getProperty('dunitRecovery.single')
-  if (dunitRecoverySingle == null || dunitRecoverySingle.length() == 0) {
-    dunitRecoverySingle = rootProject.hasProperty('dunitRecovery.single') ?
-        rootProject.property('dunitRecovery.single') : null
-  }
   String dunitSecSingle = System.getProperty('dunitSecurity.single')
   if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
     dunitSecSingle = rootProject.hasProperty('dunitSecurity.single') ?
@@ -782,30 +775,6 @@ gradle.taskGraph.whenReady { graph ->
             include filteredSet
           } else {
             include dunitSecSingle
-          }
-        } else if (test.name == 'dunitRecoveryTest') {
-          includes.clear()
-          excludes.clear()
-          if (dunitRecoverySingle == null || dunitRecoverySingle.length() == 0) {
-            def dunitRecoveryTests = testClassesDirs.asFileTree.matching {
-              includes = ['**/*DUnitRecoveryTest.class']
-              excludes = ['**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class']
-            }
-            FileTree includeTestFiles = dunitRecoveryTests
-            int dunitFrom = rootProject.hasProperty('dunitRecovery.from') ?
-                getLast(includeTestFiles, rootProject.property('dunitRecovery.from')) : 0
-            int dunitTo = rootProject.hasProperty('dunitRecovery.to') ?
-                getLast(includeTestFiles, rootProject.property('dunitRecovery.to')) : includeTestFiles.size()
-            int begin = dunitFrom != -1 ? dunitFrom : 0
-            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-            def filteredSet = includeTestFiles.drop(begin).take(end - begin + 1).collect { f -> "**/" + f.name }
-            if (begin != 0 || end != includeTestFiles.size()) {
-              println("Picking tests :")
-              filteredSet.each { a -> println(a) }
-            }
-            include filteredSet
-          } else {
-            include dunitRecoverySingle
           }
         }
 
