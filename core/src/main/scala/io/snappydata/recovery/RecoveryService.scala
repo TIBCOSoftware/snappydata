@@ -59,7 +59,13 @@ object RecoveryService extends Logging {
     val tablePath = tableName.replace(".", "/")
     var bucketPath = tablePath
     if (bucketId >= 0) {
-      bucketPath = PartitionedRegionHelper.getBucketFullPath(tablePath, bucketId)
+      // bucketPath = PartitionedRegionHelper.getBucketFullPath(tablePath, bucketId)
+      bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/${PartitionedRegionHelper.getBucketName(tablePath, bucketId)}"
+    }
+    // TODO remove replace used and handle it in a proper way
+    bucketPath = bucketPath.replace("/__PR/_B_", "/__PR/_B__")
+    for (entry <- regionViewSortedSet) {
+      logInfo(s"1891: regionViewSortedSet[${entry._1}, ${entry._2}] and bucketPath = $bucketPath" )
     }
     Seq(regionViewSortedSet(bucketPath).lastKey.getExecutorHost)
   }
@@ -67,10 +73,10 @@ object RecoveryService extends Logging {
   /* Table type, PR or replicated, DStore name, numBuckets */
   def getTableDiskInfo(fqtn: String):
   Tuple4[String, Boolean, String, Int] = {
-    val parts = fqtn.split(".")
+    val parts = fqtn.split("\\.")
     val schema = parts(0)
     val table = parts(1)
-    val cObject = mostRecentMemberObject.getCatalogObjects.asInstanceOf[Array[AnyRef]]
+    val cObject = mostRecentMemberObject.getCatalogObjects.toArray()
 // most effective way ??
     val cObjArr: Array[AnyRef] = cObject.filter {
       case a: CatalogTableObject => {
@@ -83,7 +89,13 @@ object RecoveryService extends Logging {
       case _ => false
     }
     val cObj = cObjArr(0).asInstanceOf[CatalogTableObject]
+    logInfo(s"1891: cObj = ${cObj}")
     val tablePath = fqtn.replace(".", "/")
+    import collection.JavaConversions._
+    for((s, i) <- mostRecentMemberObject.getPrToNumBuckets){
+      logInfo(s"1891: mostrecentmemberobject map ${s} -> ${i} and tablePath = ${tablePath}")
+    }
+
     val numBuckets = mostRecentMemberObject.getPrToNumBuckets.get(tablePath)
     val robj = mostRecentMemberObject.getAllRegionViews.asScala.find(r => {
       val regionPath = r.getRegionPath
@@ -94,7 +106,11 @@ object RecoveryService extends Logging {
         tablePath == regionPath
       }
     })
-    (cObj.provider, numBuckets != null, robj.get.getDiskStoreName, numBuckets)
+    logInfo(s"1891: robj = ${robj == null} numbuckets = ${numBuckets}")
+    // robj.get.getDiskStoreName
+    (cObj.provider, numBuckets != null,
+        null,
+        numBuckets)
   }
 
   val regionViewSortedSet: mutable.Map[String,
@@ -123,6 +139,7 @@ object RecoveryService extends Logging {
       val persistentViewObj = itr.next().asInstanceOf[
           ListResultCollectorValue].resultOfSingleExecution.asInstanceOf[
           PersistentStateInRecoveryMode]
+      logInfo(s"1891: cVARD persistentViewObj${persistentViewObj}")
 //      TODO: need to handle null pointer exception here - at following line??
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
@@ -151,13 +168,16 @@ object RecoveryService extends Logging {
 
     val hiveRegionToConsider =
       hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
-    println(s"Hive region to consider = $hiveRegionToConsider")
+    logInfo(s"Hive region to consider = $hiveRegionToConsider")
 
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
 
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
 
-    println(s"For Hive memberToConsiderForHiveCatalog = $memberToConsiderForHiveCatalog")
+    logInfo(s"For Hive memberToConsiderForHiveCatalog = $memberToConsiderForHiveCatalog")
+    for ((k, v) <- persistentObjectMemberMap) {
+      logInfo(s"1891: persistentObjectMemberMap = ${k} ${v}")
+    }
 
     mostRecentMemberObject = persistentObjectMemberMap(memberToConsiderForHiveCatalog)
     val otherExtractedDDLs = mostRecentMemberObject.getOtherDDLs
@@ -169,19 +189,23 @@ object RecoveryService extends Logging {
     import scala.collection.JavaConverters._
 
     val catalogArr = catalogObjects.asScala.map(catObj => {
-    val catalogMetadataDetails = new CatalogMetadataDetails()
-    catObj match {
-      case catFunObj: CatalogFunctionObject => {
-        ConnectorExternalCatalog.convertToCatalogFunction(catFunObj)
+      val catalogMetadataDetails = new CatalogMetadataDetails()
+      catObj match {
+        case catFunObj: CatalogFunctionObject => {
+          ConnectorExternalCatalog.convertToCatalogFunction(catFunObj)
+        }
+        case catDBObj: CatalogSchemaObject => {
+          ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
+        }
+        case catTabObj: CatalogTableObject => {
+          logInfo(s"1891: RecoveryService catalogthriftObj = $catTabObj and numbuckets = ${catTabObj.getNumBuckets}")
+          val ctobj = ConnectorExternalCatalog.convertToCatalogTable(
+            catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession)._1
+          val str = ctobj.properties.mkString(":")
+          logInfo(s"1891: RecoveryService catalogTableObj = $ctobj and properties = ${str}")
+          ctobj
+        }
       }
-      case catDBObj: CatalogSchemaObject => {
-        ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
-      }
-      case catTabObj: CatalogTableObject => {
-        ConnectorExternalCatalog.convertToCatalogTable(
-          catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession )._1
-      }
-    }
     })
 
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
@@ -209,14 +233,15 @@ object RecoveryService extends Logging {
     val extCatalog = HiveClientUtil.getOrCreateExternalCatalog(sc, sc.getConf)
     catalogObjSeq.foreach {
       case catDB: CatalogDatabase =>
-        extCatalog.createDatabase(catDB, ignoreIfExists = false)
+        extCatalog.createDatabase(catDB, ignoreIfExists = true)
         logInfo(s"Inserting catalog database: ${catDB.name} in the catalog.")
       case catFunc: CatalogFunction =>
         extCatalog.createFunction(catFunc.identifier.database
             .getOrElse(Constant.DEFAULT_SCHEMA), catFunc)
         logInfo(s"Inserting catalog function: ${catFunc.identifier.funcName} in the catalog.")
       case catTab: CatalogTable =>
-        extCatalog.createTable(catTab, ignoreIfExists = false)
+        val opLogTable = catTab.copy(provider = Option("oplog"))
+        extCatalog.createTable(opLogTable, ignoreIfExists = true)
         logInfo(s"Inserting catalog table: ${catTab.identifier.table} in the catalog.")
     }
   }
