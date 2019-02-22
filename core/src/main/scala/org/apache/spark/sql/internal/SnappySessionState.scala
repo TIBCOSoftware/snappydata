@@ -424,7 +424,8 @@ class SnappySessionState(val snappySession: SnappySession)
             aggs.collectFirst {
               case Alias(exp, name) if name.equalsIgnoreCase(nameParts.head) =>
                 exp
-            }.getOrElse(u.failAnalysis("unresolved group by alias"))
+            }.getOrElse(u)
+          case x => x
         }
         Aggregate(newGroups, aggs, child)
       case o => o
