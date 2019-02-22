@@ -35,16 +35,12 @@
 
 package org.apache.spark.sql.execution.sources
 
-import com.pivotal.gemfirexd.internal.engine.Misc
-
 import scala.collection.mutable
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, AttributeSet, EmptyRow, Expression, NamedExpression, ParamLiteral, PredicateHelper, TokenLiteral}
 import org.apache.spark.sql.catalyst.plans.logical.{BroadcastHint, LogicalPlan, Project, Filter => LFilter}
 import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
-import org.apache.spark.sql.execution.columnar.OpLogTableScan
-import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, OpLogFormatRelation, OpLogColumnRdd}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
 import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
@@ -66,10 +62,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           filters,
           t.numBuckets,
           t.partitionColumns,
-          (cols, filters) => {
-            val res = t.buildUnsafeScan(cols.map(_.name).toArray, filters.toArray)
-            res
-          }
+          (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)
         ) :: Nil
       case l@LogicalRelation(t: PrunedUnsafeFilteredScan, _, _) =>
         pruneFilterProject(
@@ -192,28 +185,18 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       val (rdd, otherRDDs) = scanBuilder(requestedColumns, candidatePredicates)
       val scan = relation.relation match {
         case partitionedRelation: PartitionedDataSourceScan =>
-          logInfo("1891: datasourcestrategy is in recovery mode")
-          if (Misc.getGemFireCache.isSnappyRecoveryMode) {
-            new OpLogTableScan(
-              rdd,
-              partitionedRelation.asInstanceOf[BaseColumnFormatRelation],
-              relation.output,
-              SparkSession.getActiveSession.get
-            )
-          } else {
-            execution.PartitionedPhysicalScan.createFromDataSource(
-              mappedProjects,
-              numBuckets,
-              joinedCols,
-              joinedAliases,
-              rdd,
-              otherRDDs,
-              partitionedRelation,
-              filterPredicates, // filter predicates for column batch screening
-              relation.output,
-              (requestedColumns, candidatePredicates)
-            )
-           }
+          execution.PartitionedPhysicalScan.createFromDataSource(
+            mappedProjects,
+            numBuckets,
+            joinedCols,
+            joinedAliases,
+            rdd,
+            otherRDDs,
+            partitionedRelation,
+            filterPredicates, // filter predicates for column batch screening
+            relation.output,
+            (requestedColumns, candidatePredicates)
+          )
         case baseRelation =>
           RowDataSourceScanExec(
             mappedProjects,
