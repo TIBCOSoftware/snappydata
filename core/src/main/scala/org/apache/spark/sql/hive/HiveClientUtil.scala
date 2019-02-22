@@ -78,7 +78,7 @@ object HiveClientUtil extends Logging {
       dbURL
     }
 
-    //TODO: PP: Not sure if it is required to point logURL to derby in recovery mode. ???
+    // TODO: PP: Not sure if it is required to point logURL to derby in recovery mode. ???
     if(Misc.getGemFireCache.isSnappyRecoveryMode){
       logURL = "jdbc:derby:;default-schema=metastore_db"
     }
