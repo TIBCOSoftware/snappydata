@@ -403,6 +403,7 @@ object SnappyParserConsts {
 
   final val COLUMN_SOURCE = "column"
   final val ROW_SOURCE = "row"
+  final val OPLOG_SOURCE = "oplog"
   final val DEFAULT_SOURCE = ROW_SOURCE
 
   // reserved keywords
@@ -481,6 +482,7 @@ object SnappyParserConsts {
   final val COMMENT: Keyword = nonReservedKeyword("comment")
   final val CROSS: Keyword = nonReservedKeyword("cross")
   final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
+  final val DEFAULT: Keyword = nonReservedKeyword("default")
   final val DEPLOY: Keyword = nonReservedKeyword("deploy")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
   final val DISABLE: Keyword = nonReservedKeyword("disable")
@@ -628,6 +630,7 @@ object SnappyParserConsts {
   // used as named strictIdentifier
   final val CASCADE: Keyword = new Keyword("cascade")
   final val DATABASE: Keyword = new Keyword("database")
+  final val DATABASES: Keyword = new Keyword("databases")
   final val RETURNS: Keyword = new Keyword("returns")
   final val TEMP: Keyword = new Keyword("temp")
 }
