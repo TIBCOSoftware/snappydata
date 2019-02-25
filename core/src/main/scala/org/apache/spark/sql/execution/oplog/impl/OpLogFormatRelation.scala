@@ -84,6 +84,7 @@ class OpLogFormatRelation(
   override def sqlContext: SQLContext = _context
 
   override def buildScan(): RDD[Row] = {
+    logWarning(s"KN: buildScan called for table ${s"$schemaName.$tableName"} with schema: $schema")
     val externalColumnTableName = columnBatchTableName()
     scnTbl(externalColumnTableName, null, null, null)._1.asInstanceOf[RDD[Row]]
   }

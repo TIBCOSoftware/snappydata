@@ -24,24 +24,23 @@ import com.pivotal.gemfirexd.internal.catalog.UUID
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store._
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.{ColumnDescriptor, ColumnDescriptorList}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataTypeDescriptor, DataValueDescriptor, TypeId}
-
+import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.types._
 import org.apache.spark.{Partition, TaskContext}
+
 import scala.annotation.meta.param
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.recovery.RecoveryService
 import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
 import io.snappydata.thrift.CatalogTableObject
 import org.apache.avro.generic.GenericData
-
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatValue}
@@ -113,7 +112,7 @@ class OpLogColumnRdd(
     sch.toList.foreach(field => {
       val cd = new ColumnDescriptor(
         field.name,
-        sch.fieldIndex(field.name),
+        sch.fieldIndex(field.name) + 1,
         getDVDType(field),
         // getDVDType(field.dataType),
         null,
@@ -127,10 +126,24 @@ class OpLogColumnRdd(
       )
       cdl.add(null, cd)
     })
-    println(s"columndescriptor list = ${cdl}")
+    //if (RecoveryService.getProvider(dbTableName).equalsIgnoreCase("COLUMN")) {
+      cdl.add(null, new ColumnDescriptor("SNAPPYDATA_INTERNAL_ROWID", sch.size + 1,
+        DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, false),
+        null,
+        null,
+        null.asInstanceOf[UUID],
+        null.asInstanceOf[UUID],
+        0L,
+        0L,
+        0L,
+        false))
+    //}
+    logInfo(s"KN: columndescriptor list = ${cdl}")
     val schemaName = tblName.split("\\.")(0)
     val tableName = tblName.split("\\.")(1)
-    new RowFormatter(cdl, schemaName, tableName, 0, null, false)
+    val rf = new RowFormatter(cdl, schemaName, tableName, 0, null, false)
+    rf.printColumnArray()
+    rf
   }
 
   private def fillRowUsingByteArrayArray(
@@ -174,7 +187,24 @@ class OpLogColumnRdd(
           val valueArr = value.asInstanceOf[Array[Array[Byte]]]
           rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
           val row = Row.fromSeq(dvdArr.map(dvd => {
-            dvd.getObject
+            val typeId = dvd.getTypeFormatId
+            logInfo(s"KN: typeId=${typeId} " +
+                s"smallintId=${StoredFormatIds.SQL_SMALLINT_ID} " +
+                s"tinyintId=${StoredFormatIds.SQL_TINYINT_ID} and dvd = ${dvd.getClass}")
+            typeId match {
+              case StoredFormatIds.SQL_SMALLINT_ID => {
+                logInfo(s"1891: small int $dvd")
+                dvd.getShort
+              }
+              case StoredFormatIds.SQL_TINYINT_ID => {
+                logInfo(s"1891: tiny int $dvd")
+                dvd.getShort
+              }
+              case _ => {
+                logInfo(s"1891: object $dvd")
+                dvd.getObject
+              }
+            }
           }))
           logInfo(s"1891: rowasseq[][]: ${row}")
           result = (result :+ row)
@@ -209,6 +239,7 @@ class OpLogColumnRdd(
         logInfo(s"1891: reading stats colNum = ${colNum}")
         // TODO check if ordinal 0 can be non hardcoded
         numOfRows = scanColBuf.getInt(0)
+        logInfo(s"1891: number of rows = ${numOfRows}")
         if (tbl != null && !tbl.equals(Array.ofDim[Any](numOfRows, sch.length))) {
           logInfo("1891: adding prev col batch to result")
           tbl.foreach(arr => result = result :+ Row.fromSeq(arr.toSeq))
@@ -242,8 +273,7 @@ class OpLogColumnRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Any] = {
-    logInfo("1891: started compute()")
-    Thread.dumpStack()
+    logInfo("1891: started compute()", new Throwable)
     rowFormatter = getRowFormatter
     // TODO: hmeka think of better way to build iterator
     result = Seq.empty
