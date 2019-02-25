@@ -20,7 +20,6 @@ import java.io.{BufferedWriter, ByteArrayInputStream, File, FileFilter, FileOutp
 import java.util
 
 import scala.sys.process._
-import scala.util.control.NonFatal
 import scala.language.postfixOps
 
 import io.snappydata.test.dunit.DistributedTestBase
@@ -83,11 +82,10 @@ class CassandraSnappyDUnitTest(val s: String)
     (s"$snappyProductDir/workTestCassandraSnappy"))
 
     logInfo("Stopping cassandra cluster")
-    val cassandraStopCmd = "ps aux | grep -i cassandra | awk {'print $2'} | xargs kill -9"
-    val p = Runtime.getRuntime.exec(cassandraStopCmd)
+    val p = Runtime.getRuntime.exec("pkill -f cassandra")
     p.waitFor()
     p.exitValue() == 0
-    logInfo("Cassandra cluster stopped successfully" + p)
+    logInfo("Cassandra cluster stopped successfully")
   }
 
   def getJobJar(className: String, packageStr: String = ""): String = {
@@ -200,7 +198,6 @@ class CassandraSnappyDUnitTest(val s: String)
   }
 
   def snappyJobTest(): Unit = {
-
     (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
     submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "CassandraSnappyConnectionJob"),
       "--packages com.datastax.spark:spark-cassandra-connector_2.11:2.4.1" +
