@@ -37,6 +37,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedAttribute, UnresolvedOrdinal, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -102,14 +103,18 @@ class SnappySessionState(val snappySession: SnappySession)
 
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+        val rules = batch.rules.filter(_ match {
           case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
             false
           } else {
             true
           }
           case _ => true
-        }): _*)
+        }).flatMap(_ match {
+          case PromoteStrings => Seq(PreUpdateTypeConversionCheck, PromoteStrings)
+          case a => Seq(a)
+        })
+        Batch(batch.name, getStrategy(batch.strategy), rules: _*)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
     }
 
@@ -138,12 +143,49 @@ class SnappySessionState(val snappySession: SnappySession)
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
 
+  private lazy val dummyAnalyzer = new Analyzer(catalog, conf)
+
   override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+
+    def getStrategy(strategy: dummyAnalyzer.Strategy): Strategy = strategy match {
+      case dummyAnalyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = dummyAnalyzer.batches.map {
+      case batch  if batch.name.equalsIgnoreCase("Resolution") =>
+        val rules = batch.rules.flatMap {
+          case PromoteStrings => Seq(PreUpdateTypeConversionCheck, PromoteStrings)
+        }
+        Batch(batch.name, getStrategy(batch.strategy), rules: _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+  }
+
+
+  object PreUpdateTypeConversionCheck extends Rule[LogicalPlan] {
+
+    override def apply(plan: LogicalPlan): LogicalPlan = {
+      plan match {
+        case Update(_, _, _, _, _) => plan resolveExpressions {
+          case e if !e.childrenResolved => e
+
+          case a @ BinaryArithmetic(left @ StringType(), right) =>
+            throw new AnalysisException(s"${right.dataType} is not compatible" +
+                s" with ${left.dataType}.")
+          case a @ BinaryArithmetic(left, right @ StringType()) =>
+            throw new AnalysisException(s"${right.dataType} is not compatible" +
+                s" with ${left.dataType}.")
+
+        }
+        case _ => plan
+      }
+    }
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
