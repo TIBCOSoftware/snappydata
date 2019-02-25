@@ -146,7 +146,7 @@ pages:
     - 'Authorization': 'security/authorization.md'
     - 'Implementing Row Level Security': 'security/row_level_security.md'
     - 'Configuring Network Encryption and Authentication using SSL': 'security/configuring_network_encryption_and_authentication_using_ssl.md'
-    - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
+    - 'Enabling SSL Encryption in Different Socket Endpoints of SnappyData': 'configuring_cluster/ssl_setup.md'
     - 'Securing SnappyData Pulse UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
 - 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
