@@ -46,7 +46,6 @@ To start the cluster on multiple hosts:
 !!! Note
 	It is recommended that you set up passwordless SSH on all hosts in the cluster. Refer to the documentation for more details on [installation](../install/install_on_premise.md) and [cluster configuration](../configuring_cluster/configuring_cluster.md).
 
-<a id="start-component"></a>
 ## Starting Individual Components
 
 Instead of starting SnappyData cluster using the `snappy-start-all.sh` script, individual components can be started on a system locally using the following commands:
