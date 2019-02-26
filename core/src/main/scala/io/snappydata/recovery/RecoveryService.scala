@@ -221,6 +221,19 @@ object RecoveryService extends Logging {
         + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
   }
 
+  def getProvider(tableName: String): String = {
+    logInfo(s"RecoveryService.getProvider called with tablename $tableName")
+    val res = mostRecentMemberObject.getCatalogObjects.asScala.filter( x => {
+      x.isInstanceOf[CatalogTableObject] && {
+        val cbo = x.asInstanceOf[CatalogTableObject]
+        val fqtn = s"${cbo.getSchemaName}.${cbo.getTableName}"
+        logInfo(s"RecoveryService.getProvider fqtn $fqtn")
+        fqtn.equalsIgnoreCase(tableName)
+      }
+    }).head.asInstanceOf[CatalogTableObject]
+    logInfo(s"RecoveryService.getProvider provider for $tableName is ${res.getProvider}")
+    res.getProvider
+  }
 
   /**
    * Populates the external catalog, in recovery mode. Currently table,function and
