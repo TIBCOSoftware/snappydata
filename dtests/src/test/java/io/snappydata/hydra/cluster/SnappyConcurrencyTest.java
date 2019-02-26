@@ -90,7 +90,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
           "review_count,PRODUCT_ID FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count > 10";
       conn.createStatement().executeUpdate(query);
       query = " CREATE OR REPLACE VIEW REVIEW_count_rating_GT_3 AS SELECT COUNT(*) AS review_count ," +
-          "PRODUCT_ID FROM (SELECT PRODUCT_ID FROM REVIEWS WHERE STAR_RATING > 3) GROUP BYPRODUCT_ID";
+          "PRODUCT_ID FROM (SELECT PRODUCT_ID FROM REVIEWS WHERE STAR_RATING > 3) GROUP BY PRODUCT_ID";
       conn.createStatement().executeUpdate(query);
       query = "CREATE OR REPLACE VIEW REVIE_RANKINGS AS SELECT PRODUCT_ID,STAR_RATING,RANK() OVER" +
           " (PARTITION BY PRODUCT_ID ORDER BY REVIEW_DATE) AS REVIEW_NUMBER FROM REVIEWS";
