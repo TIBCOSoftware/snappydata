@@ -191,21 +191,10 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected final def booleanLiteral: Rule1[Expression] = rule {
-    TRUE ~> (() => newTokenizedLiteral(true, BooleanType)) |
-    FALSE ~> (() => newTokenizedLiteral(false, BooleanType))
-  }
-
-  protected final def numericLiteral: Rule1[Expression] = rule {
-    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
-        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
-        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => toNumericLiteral(s))
-  }
-
   protected final def literal: Rule1[Expression] = rule {
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
-    numericLiteral |
-    booleanLiteral |
+    numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
+    booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
     NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
@@ -1142,7 +1131,7 @@ class SnappyParser(session: SnappySession)
     SHOW ~ VIEWS ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
         ((id: Any, pat: Any) => ShowViewsCommand(session,
           id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
-    SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
+    SHOW ~ (SCHEMAS | DATABASES) ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
       ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
     SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
         ((table: TableIdentifier, db: Any) =>
