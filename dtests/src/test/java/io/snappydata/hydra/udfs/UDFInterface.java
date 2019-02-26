@@ -77,8 +77,7 @@ public class UDFInterface extends SnappyTest {
         executeScalaUDF10(jdbcConnection);
         executeScalaUDF11(jdbcConnection);
         executeScalaUDF12(jdbcConnection);
-//        executeScalaUDF13(jdbcConnection);
-//        executeScalaUDF13_BadCase(jdbcConnection);
+        executeScalaUDF13(jdbcConnection);
         executeScalaUDF14(jdbcConnection);
         executeScalaUDF15(jdbcConnection);
         executeScalaUDF15_1(jdbcConnection);
@@ -90,9 +89,7 @@ public class UDFInterface extends SnappyTest {
         executeScalaUDF20(jdbcConnection);
         executeScalaUDF21(jdbcConnection);
         executeScalaUDF22(jdbcConnection);
-//        createScalaUDF(jdbcConnection);
-//        executeScalaUDF(jdbcConnection);
-//        dropScalaUDF(jdbcConnection);
+        executeScalaUDF13_BadCase(jdbcConnection);
         closeConnection(jdbcConnection);
         Log.getLogWriter().info("Scala UDF execution successful.");
     }
@@ -124,7 +121,10 @@ public class UDFInterface extends SnappyTest {
                     st.close();
             }
         } catch (SQLException se) {
-            throw new TestException(se.getMessage() + ", Error in getting UDF result");
+            if(udfIndex == "UDF13_1")
+                Log.getLogWriter().info("Error in executing UDF13_1 -> " + se.getMessage());
+            else
+                throw new TestException(se.getMessage() + ", Error in getting UDF result");
         }
     }
 
@@ -651,7 +651,7 @@ public class UDFInterface extends SnappyTest {
     private void executeScalaUDF13(Connection jdbcConnection) {
         try {
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS ST13;");
-            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ST13(d1 Decimal,d2 Decimal,d3 Decimal,d4 Decimal,d5 Decimal,d6 Decimal,d7 Decimal,d8 Decimal,d9 Decimal,d10 Decimal,d11 Decimal,d12 Decimal,d13 Decimal) USING COLUMN;");
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ST13(d1 Decimal(5,2),d2 Decimal(5,2),d3 Decimal(5,2),d4 Decimal(5,2),d5 Decimal(5,2),d6 Decimal(5,2),d7 Decimal(5,2),d8 Decimal(5,2),d9 Decimal(5,2),d10 Decimal(5,2),d11 Decimal(5,2),d12 Decimal(5,2),d13 Decimal(5,2)) USING COLUMN;");
             jdbcConnection.createStatement().execute("INSERT INTO ST13 VALUES(123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45);");
             jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF13 AS com.snappy.scala.poc.udf.ScalaUDF13 RETURNS DECIMAL USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
             getUDFResult(jdbcConnection,"SELECT ScalaUDF13(d1,d2,d3,d4,d5,d6,d7,d8,d9,d10,d11,d12,d13) FROM ST13;","UDF13");
@@ -665,15 +665,23 @@ public class UDFInterface extends SnappyTest {
     private void executeScalaUDF13_BadCase(Connection jdbcConnection) {
         try {
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS ST13;");
-            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ST13(d1 Decimal,d2 Decimal,d3 Decimal,d4 Decimal,d5 Decimal,d6 Decimal,d7 Decimal,d8 Decimal,d9 Decimal,d10 Decimal,d11 Decimal,d12 Decimal,d13 Decimal) USING COLUMN;");
+            jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS ST13(d1 Decimal(5,2),d2 Decimal(5,2),d3 Decimal(5,2),d4 Decimal(5,2),d5 Decimal(5,2),d6 Decimal(5,2),d7 Decimal(5,2),d8 Decimal(5,2),d9 Decimal(5,2),d10 Decimal(5,2),d11 Decimal(5,2),d12 Decimal(5,2),d13 Decimal(5,2)) USING COLUMN;");
             jdbcConnection.createStatement().execute("INSERT INTO ST13 VALUES(123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45);");
             jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF13_1 AS com.snappy.scala.poc.udf.BadCase_ScalaUDF13 RETURNS DECIMAL USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
             getUDFResult(jdbcConnection,"SELECT ScalaUDF13_1(d1,d2,d3,d4,d5,d6,d7,d8,d9,d10,d11,d12,d13) FROM ST13;","UDF13_1");
-            jdbcConnection.createStatement().execute("DROP FUNCTION ScalaUDF13;");
-            jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS ST13;");
+
         }catch(SQLException se) {
-            throw new TestException(se.getMessage() + " Error in executing ScalaUDF13");
-        }
+            Log.getLogWriter().info(se.getMessage() + " Error in executing ScalaUDF13.");
+            //throw new TestException(se.getMessage() + " Error in executing ScalaUDF13");
+        }finally {
+            try {
+                jdbcConnection.createStatement().execute("DROP FUNCTION ScalaUDF13_1;");
+                jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS ST13;");
+            } catch(SQLException se) {
+                throw new TestException(se.getMessage());
+            }
+       }
+
     }
 
     private void executeScalaUDF14(Connection jdbcConnection) {
@@ -829,67 +837,4 @@ public class UDFInterface extends SnappyTest {
             throw new TestException(se.getMessage() + " Error in executing ScalaUDF22");
         }
     }
-
-
-
-
-//    private void createScalaUDF(Connection jdbcConnection) {
-//        try {
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF1 AS com.snappy.scala.poc.udf.ScalaUDF1 RETURNS TIMESTAMP USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF2 AS com.snappy.scala.poc.udf.ScalaUDF2 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF3 AS com.snappy.scala.poc.udf.ScalaUDF3 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF4 AS com.snappy.scala.poc.udf.ScalaUDF4 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF5 AS com.snappy.scala.poc.udf.ScalaUDF5 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF6 AS com.snappy.scala.poc.udf.ScalaUDF6 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF7 AS com.snappy.scala.poc.udf.ScalaUDF7 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF8 AS com.snappy.scala.poc.udf.ScalaUDF8 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF9 AS com.snappy.scala.poc.udf.ScalaUDF9 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF10 AS com.snappy.scala.poc.udf.ScalaUDF10 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF11 AS com.snappy.scala.poc.udf.ScalaUDF11 RETURNS FLOAT USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF12 AS com.snappy.scala.poc.udf.ScalaUDF12 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF13 AS com.snappy.scala.poc.udf.ScalaUDF13 RETURNS DECIMAL USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF13_1 AS com.snappy.scala.poc.udf.BadCase_ScalaUDF13 RETURNS DECIMAL USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF14 AS com.snappy.scala.poc.udf.ScalaUDF14 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF15 AS com.snappy.scala.poc.udf.ScalaUDF15 RETURNS INTEGER USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF16 AS com.snappy.scala.poc.udf.ScalaUDF16 RETURNS BOOLEAN USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF17 AS com.snappy.scala.poc.udf.ScalaUDF17 RETURNS LONG USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF18 AS com.snappy.scala.poc.udf.ScalaUDF18 RETURNS DATE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF19 AS com.snappy.scala.poc.udf.ScalaUDF19 RETURNS DOUBLE USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF20 AS com.snappy.scala.poc.udf.ScalaUDF20 RETURNS STRING USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF21 AS com.snappy.scala.poc.udf.ScalaUDF21 RETURNS FLOAT USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION ScalaUDF22 AS com.snappy.scala.poc.udf.ScalaUDF22 RETURNS INTEGER USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
-//        } catch (SQLException se) {
-//            throw new TestException(se.getMessage() + ", Error in creating Scala UDF.");
-//        }
-//    }
-
-//    private void executeScalaUDF(Connection jdbcConnection) {
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF1('snappyData');","UDF1");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF2(CAST('2019-02-17 08:10:15' AS TIMESTAMP),CAST('2019-02-18 10:10:15' AS TIMESTAMP));","UDF2");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF2(CAST('2019-02-17 08:10:15' AS TIMESTAMP),CAST('2019-02-18 10:20:23' AS TIMESTAMP));","UDF2");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF3(15.3d,15.3d,15.3d);","UDF3");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF4(1024,2048,4096,8192);","UDF4");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF5(10,20,30,40,Struct(17933,54.68d,'SnappyData',null));","UDF5");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF6(Map('Maths',98.7d),Map('Science',96.1d),Map('English',89.5d),Map('Social Studies',88.0d),Map('Computer',95.4d),Map('Music',92.5d));","UDF6");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF7(Array(29.8d,30.7d,12.3d,25.9d),Array(17.3d,45.3d,32.6d,24.1d,10.7d,23.8d,78.8d),Array(0.0d,12.3d,33.6d,65.9d,78.9d,21.1d),Array(12.4d,99.9d),Array(23.4d,65.6d,52.1d,32.6d,85.6d),Array(25.6d,52.3d,87.4d),Array(30.2d));","UDF7");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF8('Spark','Snappy','GemXD','Docker','AWS','Scala','JIRA','Git');","UDF8");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF9(false,false,true,false,false,true,true,true,false);","UDF9");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF9(false,false,true,false,false,true,true,true,true);","UDF9");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF10(2,4,6,8,10,12,14,16,18,20);","UDF10");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF11(5.1f,5.2f,5.3f,5.4f,5.5f,5.6f,5.7f,5.8f,5.9f,6.3f,8.7f);","UDF11");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF12('+',15,30,'-',30L,15L,'*',10.5f,10.5F,'/',smallint(12),smallint(12));","UDF12");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF13(123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45);","UDF13");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF13_1(123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45,123.45);","UDF13_1");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF14('s','n','a','p','p','y','d','a','t','a','a','s','D','B');","UDF14");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF15(true,false,true,false,true,false,true,false,true,false,true,false,true,false,true);","UDF15");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF15(true,true,true,true,true,true,true,true,true,false,false,false,false,false,true);","UDF15");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF16(TINYINT(1),TINYINT(2),TINYINT(3),TINYINT(4),TINYINT(5),TINYINT(6),TINYINT(7),TINYINT(8),TINYINT(9),TINYINT(10),TINYINT(11),TINYINT(12),TINYINT(13),TINYINT(14),TINYINT(15),TINYINT(16));","UDF16");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF16(TINYINT(2),TINYINT(2),TINYINT(3),TINYINT(4),TINYINT(5),TINYINT(6),TINYINT(7),TINYINT(8),TINYINT(9),TINYINT(10),TINYINT(11),TINYINT(12),TINYINT(13),TINYINT(14),TINYINT(15),TINYINT(16));","UDF16");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF17(125401L,20456789L,1031425L,2000000L,787321654L,528123085L,14777777L,33322211145L,4007458725L,27712345678L,666123654L,1005L,201020092008L,1500321465L,888741852L,963852147L,444368417L);","UDF17");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF18(125L,204L,103L,20L,787L,528L,147L,333L,400L,277L,666L,1005L,2010L,1500L,888L,963L,444L,777L);","UDF18");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF19(25.3d,200.8d,101.5d,201.9d,789.85d,522.398d,144.2d,336.1d,400.0d,277.7d,666.6d,1005.630d,2010.96d,1500.21d,888.7d,963.87d,416.0d,786.687d,1.1d);","UDF19");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF20(' Snappy ','   Data   ','  is  ',' the ','  first    ','   product','to ',' integrate   ','a',' database','  into  ','  spark  ','making      ','   Spark   ','  work  ','just    ','like','    a','         database   ',' . ');","UDF20");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF21('23','21','30','37','25','22','28','32','31','24','24','26','35','89','98','45','54','95','74','66','5');","UDF21");
-//            getUDFResult(jdbcConnection,"SELECT ScalaUDF22(2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2);","UDF22");
-//    }
 }
