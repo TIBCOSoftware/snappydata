@@ -38,6 +38,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
       longAt(SnappyPrms.warmUpTimeSec, 300));
 
   public static boolean isTPCHSchema = TestConfig.tab().booleanAt(SnappyPrms.isTPCHSchema, false);  //default to false
+  public static boolean isStabilityTest = TestConfig.tab().booleanAt(SnappyPrms.isStabilityTest, false);  //default to false
 
   public static void runPointLookUpQueries() throws SQLException {
     Vector<String> queryVect = SnappyPrms.getPointLookUpQueryList();
@@ -82,6 +83,41 @@ public class SnappyConcurrencyTest extends SnappyTest {
       query = "create or replace temporary view revenue as select  l_suppkey as supplier_no, " +
           "sum(l_extendedprice * (1 - l_discount)) as total_revenue from LINEITEM where l_shipdate >= '1993-02-01'" +
           " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey";
+      conn.createStatement().executeUpdate(query);
+    }
+    if (isStabilityTest){
+      query = "CREATE OR replace VIEW review_count_GT_10 AS SELECT * FROM (SELECT COUNT(*) AS " +
+          "review_count,PRODUCT_ID FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count > 10";
+      conn.createStatement().executeUpdate(query);
+      query = " CREATE OR REPLACE VIEW REVIEW_count_rating_GT_3 AS SELECT COUNT(*) AS review_count ," +
+          "PRODUCT_ID FROM (SELECT PRODUCT_ID FROM REVIEWS WHERE STAR_RATING > 3) GROUP BYPRODUCT_ID";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR REPLACE VIEW REVIE_RANKINGS AS SELECT PRODUCT_ID,STAR_RATING,RANK() OVER" +
+          " (PARTITION BY PRODUCT_ID ORDER BY REVIEW_DATE) AS REVIEW_NUMBER FROM REVIEWS";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR REPLACE VIEW COUNT_PER_RATING_REVIEW_NUMBER AS SELECT COUNT(*) COUNT," +
+          "REVIEW_NUMBER,STAR_RATING FROM REVIE_RANKINGS GROUP BY REVIEW_NUMBER,STAR_RATING ORDER BY REVIEW_NUMBER";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR REPLACE VIEW COUNT_PER_REVIEW_NUMBER AS SELECT COUNT(*) COUNT," +
+          "REVIEW_NUMBER FROM REVIE_RANKINGS GROUP BY REVIEW_NUMBER ORDER BY REVIEW_NUMBER";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR replace VIEW votes_by_category_and_marketplace AS SELECT CUSTOMER_ID,MARKETPLACE," +
+          "product_category,TOTAL_VOTES,RANK() OVER (PARTITION BY MARKETPLACE,product_category ORDER BY " +
+          "TOTAL_VOTES DESC) AS RANK FROM (SELECT CUSTOMER_ID,MARKETPLACE,product_category,SUM(TOTAL_VOTES) " +
+          "AS TOTAL_VOTES FROM REVIEWS GROUP BY CUSTOMER_ID,MARKETPLACE,product_category)";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR REPLACE VIEW total_customers_per_marketplace_and_category AS SELECT " +
+          "COUNT(customer_id) AS COUNT,marketplace,product_category FROM votes_by_category_and_marketplace " +
+          "GROUP BY marketplace,product_category";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR REPLACE VIEW product_ratings AS SELECT MARKETPLACE,PRODUCT_ID,AVG(STAR_RATING)" +
+          " AS avg_rating FROM REVIEWS GROUP BY MARKETPLACE,PRODUCT_ID";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR replace VIEW products_with_votes_lt_50 AS (SELECT * FROM (SELECT PRODUCT_ID, " +
+          "COUNT(*) review_count FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count < 50)";
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE OR replace VIEW rating_gt_3_count AS SELECT PRODUCT_ID, COUNT(*) AS review_count " +
+          "FROM (SELECT * FROM REVIEWS WHERE STAR_RATING > 3) GROUP BY PRODUCT_ID";
       conn.createStatement().executeUpdate(query);
     }
     long startTime = System.currentTimeMillis();
