@@ -126,23 +126,23 @@ class OpLogColumnRdd(
       )
       cdl.add(null, cd)
     })
-    //if (RecoveryService.getProvider(dbTableName).equalsIgnoreCase("COLUMN")) {
-      cdl.add(null, new ColumnDescriptor("SNAPPYDATA_INTERNAL_ROWID", sch.size + 1,
-        DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, false),
-        null,
-        null,
-        null.asInstanceOf[UUID],
-        null.asInstanceOf[UUID],
-        0L,
-        0L,
-        0L,
-        false))
-    //}
+    // if (RecoveryService.getProvider(dbTableName).equalsIgnoreCase("COLUMN")) {
+    cdl.add(null, new ColumnDescriptor("SNAPPYDATA_INTERNAL_ROWID", sch.size + 1,
+      DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, false),
+      null,
+      null,
+      null.asInstanceOf[UUID],
+      null.asInstanceOf[UUID],
+      0L,
+      0L,
+      0L,
+      false))
+    // }
     logInfo(s"KN: columndescriptor list = ${cdl}")
     val schemaName = tblName.split("\\.")(0)
     val tableName = tblName.split("\\.")(1)
     val rf = new RowFormatter(cdl, schemaName, tableName, 0, null, false)
-    rf.printColumnArray()
+    logInfo(s"1891: rowformatter = ${rf}")
     rf
   }
 
@@ -186,33 +186,44 @@ class OpLogColumnRdd(
         if (value.isInstanceOf[Array[Array[Byte]]]) {
           val valueArr = value.asInstanceOf[Array[Array[Byte]]]
           rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
-          val row = Row.fromSeq(dvdArr.map(dvd => {
-            val typeId = dvd.getTypeFormatId
-            logInfo(s"KN: typeId=${typeId} " +
-                s"smallintId=${StoredFormatIds.SQL_SMALLINT_ID} " +
-                s"tinyintId=${StoredFormatIds.SQL_TINYINT_ID} and dvd = ${dvd.getClass}")
-            typeId match {
-              case StoredFormatIds.SQL_SMALLINT_ID => {
-                logInfo(s"1891: small int $dvd")
-                dvd.getShort
-              }
-              case StoredFormatIds.SQL_TINYINT_ID => {
-                logInfo(s"1891: tiny int $dvd")
-                dvd.getShort
-              }
-              case _ => {
-                logInfo(s"1891: object $dvd")
+          val row = Row.fromSeq(dvdArr.zipWithIndex.map { case (dvd, i) => {
+            val field = sch(i)
+            logInfo(s"1891: at index ${i} datatype is ${field.dataType} ")
+            field.dataType match {
+              case ShortType =>
+                logInfo(s"1891: for index ${i} small int $dvd")
+                new Integer(33).shortValue()
+              case ByteType =>
+                logInfo(s"1891: for index ${i} byte $dvd")
+                dvd.getByte
+              case _ =>
+                logInfo(s"1891: for index ${i} object $dvd")
                 dvd.getObject
-              }
             }
-          }))
+          }
+          })
           logInfo(s"1891: rowasseq[][]: ${row}")
           result = (result :+ row)
         } else {
           val valueArr = value.asInstanceOf[Array[Byte]]
           rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
           // dvd gets gemfire data types
-          val row = Row.fromSeq(dvdArr.map(dvd => dvd.getObject))
+          val row = Row.fromSeq(dvdArr.zipWithIndex.map { case (dvd, i) => {
+            val field = sch(i)
+            logInfo(s"1891: at index ${i} datatype is ${field.dataType} ")
+            field.dataType match {
+              case ShortType =>
+                logInfo(s"1891: for index ${i} small int $dvd")
+                dvd.getShort
+              case ByteType =>
+                logInfo(s"1891: for index ${i} byte $dvd")
+                dvd.getByte
+              case _ =>
+                logInfo(s"1891: for index ${i} object $dvd")
+                dvd.getObject
+            }
+          }
+          })
           logInfo(s"1891: rowasseq[]: ${row}")
           result = (result :+ row)
         }
@@ -298,12 +309,12 @@ class OpLogColumnRdd(
       "null"
     } else {
       val s = Misc.getRegionPath(tblName)
-      "/_PR//B_" + s.substring(1, s.length - 1) + "/_" + "0"
+      logInfo(s"1891: split index = ${split.index}")
+      s"/_PR//B_${s.substring(1, s.length - 1)}/_${split.index}"
     }
     logInfo(s"1891: col regName get is ${colRegPath}")
 
-    // TODO after test replace 0 with actual paritition num
-    val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/').toUpperCase()}/0"
+    val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/').toUpperCase()}/${split.index}"
     logInfo(s"1891: row regName get is ${rowRegPath}")
 
     val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
@@ -312,7 +323,7 @@ class OpLogColumnRdd(
 
     readRowData(phdrRow)
     readColData(phdrCol)
-
+    logInfo(s"1891: split number from compute is ${split.index} and result size is ${result.size}")
     result.iterator
   }
 
