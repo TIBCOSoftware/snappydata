@@ -1,3 +1,3 @@
 io/snappydata/hydra/concurrency/stabilityConcQueries.conf
   A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
-  C=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  B=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
