@@ -24,24 +24,23 @@ import com.pivotal.gemfirexd.internal.catalog.UUID
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store._
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.{ColumnDescriptor, ColumnDescriptorList}
-import com.pivotal.gemfirexd.internal.iapi.types.{DataTypeDescriptor, DataValueDescriptor, TypeId}
-
+import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.types._
 import org.apache.spark.{Partition, TaskContext}
+
 import scala.annotation.meta.param
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.recovery.RecoveryService
 import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
 import io.snappydata.thrift.CatalogTableObject
 import org.apache.avro.generic.GenericData
-
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatValue}
@@ -113,7 +112,7 @@ class OpLogColumnRdd(
     sch.toList.foreach(field => {
       val cd = new ColumnDescriptor(
         field.name,
-        sch.fieldIndex(field.name),
+        sch.fieldIndex(field.name) + 1,
         getDVDType(field),
         // getDVDType(field.dataType),
         null,
@@ -127,10 +126,24 @@ class OpLogColumnRdd(
       )
       cdl.add(null, cd)
     })
-    println(s"columndescriptor list = ${cdl}")
+    // if (RecoveryService.getProvider(dbTableName).equalsIgnoreCase("COLUMN")) {
+    cdl.add(null, new ColumnDescriptor("SNAPPYDATA_INTERNAL_ROWID", sch.size + 1,
+      DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, false),
+      null,
+      null,
+      null.asInstanceOf[UUID],
+      null.asInstanceOf[UUID],
+      0L,
+      0L,
+      0L,
+      false))
+    // }
+    logInfo(s"KN: columndescriptor list = ${cdl}")
     val schemaName = tblName.split("\\.")(0)
     val tableName = tblName.split("\\.")(1)
-    new RowFormatter(cdl, schemaName, tableName, 0, null, false)
+    val rf = new RowFormatter(cdl, schemaName, tableName, 0, null, false)
+    logInfo(s"1891: rowformatter = ${rf}")
+    rf
   }
 
   private def fillRowUsingByteArrayArray(
@@ -173,16 +186,44 @@ class OpLogColumnRdd(
         if (value.isInstanceOf[Array[Array[Byte]]]) {
           val valueArr = value.asInstanceOf[Array[Array[Byte]]]
           rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
-          val row = Row.fromSeq(dvdArr.map(dvd => {
-            dvd.getObject
-          }))
+          val row = Row.fromSeq(dvdArr.zipWithIndex.map { case (dvd, i) => {
+            val field = sch(i)
+            logInfo(s"1891: at index ${i} datatype is ${field.dataType} ")
+            field.dataType match {
+              case ShortType =>
+                logInfo(s"1891: for index ${i} small int $dvd")
+                new Integer(33).shortValue()
+              case ByteType =>
+                logInfo(s"1891: for index ${i} byte $dvd")
+                dvd.getByte
+              case _ =>
+                logInfo(s"1891: for index ${i} object $dvd")
+                dvd.getObject
+            }
+          }
+          })
           logInfo(s"1891: rowasseq[][]: ${row}")
           result = (result :+ row)
         } else {
           val valueArr = value.asInstanceOf[Array[Byte]]
           rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
           // dvd gets gemfire data types
-          val row = Row.fromSeq(dvdArr.map(dvd => dvd.getObject))
+          val row = Row.fromSeq(dvdArr.zipWithIndex.map { case (dvd, i) => {
+            val field = sch(i)
+            logInfo(s"1891: at index ${i} datatype is ${field.dataType} ")
+            field.dataType match {
+              case ShortType =>
+                logInfo(s"1891: for index ${i} small int $dvd")
+                dvd.getShort
+              case ByteType =>
+                logInfo(s"1891: for index ${i} byte $dvd")
+                dvd.getByte
+              case _ =>
+                logInfo(s"1891: for index ${i} object $dvd")
+                dvd.getObject
+            }
+          }
+          })
           logInfo(s"1891: rowasseq[]: ${row}")
           result = (result :+ row)
         }
@@ -209,6 +250,7 @@ class OpLogColumnRdd(
         logInfo(s"1891: reading stats colNum = ${colNum}")
         // TODO check if ordinal 0 can be non hardcoded
         numOfRows = scanColBuf.getInt(0)
+        logInfo(s"1891: number of rows = ${numOfRows}")
         if (tbl != null && !tbl.equals(Array.ofDim[Any](numOfRows, sch.length))) {
           logInfo("1891: adding prev col batch to result")
           tbl.foreach(arr => result = result :+ Row.fromSeq(arr.toSeq))
@@ -242,8 +284,7 @@ class OpLogColumnRdd(
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Any] = {
-    logInfo("1891: started compute()")
-    Thread.dumpStack()
+    logInfo("1891: started compute()", new Throwable)
     rowFormatter = getRowFormatter
     // TODO: hmeka think of better way to build iterator
     result = Seq.empty
@@ -268,12 +309,12 @@ class OpLogColumnRdd(
       "null"
     } else {
       val s = Misc.getRegionPath(tblName)
-      "/_PR//B_" + s.substring(1, s.length - 1) + "/_" + "0"
+      logInfo(s"1891: split index = ${split.index}")
+      s"/_PR//B_${s.substring(1, s.length - 1)}/_${split.index}"
     }
     logInfo(s"1891: col regName get is ${colRegPath}")
 
-    // TODO after test replace 0 with actual paritition num
-    val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/').toUpperCase()}/0"
+    val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/').toUpperCase()}/${split.index}"
     logInfo(s"1891: row regName get is ${rowRegPath}")
 
     val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
@@ -282,7 +323,7 @@ class OpLogColumnRdd(
 
     readRowData(phdrRow)
     readColData(phdrCol)
-
+    logInfo(s"1891: split number from compute is ${split.index} and result size is ${result.size}")
     result.iterator
   }
 
