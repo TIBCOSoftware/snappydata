@@ -52,12 +52,12 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   }
 
   test("Nodes Pruning for row table") {
-    // val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
+    val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
     try {
-      // io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
       SingleNodeTest.testNodesPruning(snc, "row")
     } finally {
-      // io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
     }
   }
 
@@ -176,11 +176,10 @@ object SingleNodeTest {
     executeQuery(snc, query4, 801)
     executeQuery(snc, query5, 1410)
 
-    val df = executeQuery(snc, query6, 32)
+    val df = executeQuery(snc, query6, 32, false)
     val r = df.collect()(0)
-    println("Row "+r)
-    // assert(r.getDate(0).toString.equals("1995-07-16"))
-    // assert(r.getDate(1).toString.equals("1994-12-30"))
+    assert(r.getDate(0).toString.equals("1995-07-16"))
+    assert(r.getDate(1).toString.equals("1994-12-30"))
   }
 
   /**
@@ -226,21 +225,23 @@ object SingleNodeTest {
     validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
     executeQuery(snc, query1 + "'1'", 1)
     executeQuery(snc, query1 + "'32'", 32)
-    // executeQuery(snc, query2, 1)
+    executeQuery(snc, query2, 1)
     executeQuery(snc, query3, 801)
     executeQuery(snc, query4, 801)
     executeQuery(snc, query5, 1410)
 
-    val df = executeQuery(snc, query6, 32)
+    val df = executeQuery(snc, query6, 32, false)
     val r = df.collect()(0)
     assert(r.getDate(0).toString.equals("1995-07-16"))
     assert(r.getDate(1).toString.equals("1994-12-30"))
 
   }
 
-  private def executeQuery(snc: SnappyContext, sql: String, orderKey: Int) : DataFrame = {
+  private def executeQuery(snc: SnappyContext, sql: String, orderKey: Int,
+                           doAssert: Boolean = true) : DataFrame = {
     val df = snc.sql(sql)
-    assert(df.collect()(0).getLong(0) == orderKey)
+    if(doAssert) assert(df.collect()(0).getLong(0) == orderKey)
     df
   }
+
 }

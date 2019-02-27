@@ -333,28 +333,37 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     // (updated values in ParamLiteral will take care of updating filters)
     evaluateWhereClause()
     // use incoming partitions if provided (e.g. for collocated tables)
-    val parts = partitionEvaluator()
+    var parts = partitionEvaluator()
     if (parts != null && parts.length > 0) {
       return parts
     }
 
     // In the case of Direct Row scan, partitionEvaluator will be always empty.
     // So, evaluating partition here again..
-    evaluatePartitions(region)
+    parts = evaluatePartitions()
+    if (parts != null && parts.length > 0) {
+      return parts
+    }
+
+    region match {
+      case Some(pr: PartitionedRegion) => session.sessionState.getTablePartitions(pr)
+      case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
+      // system table/VTI is shown as a replicated table having a single partition
+      case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
+    }
+
   }
 
-  private[this] var allPartitions: Array[Partition] = _
-
-  private def evaluatePartitions(reg: Option[LocalRegion]): Array[Partition] = {
+  private def evaluatePartitions(): Array[Partition] = {
+    val region = Misc.getRegionForTable(tableName, true)
     partitionPruner() match {
+      case -1 =>
+        Array.empty[Partition]
       case bucketId: Int =>
-        val region1 = Misc.getRegionForTable(tableName, true)
         if (!session.partitionPruning) {
-          allPartitions = session.sessionState.getTablePartitions(
-            region1.asInstanceOf[PartitionedRegion])
-          allPartitions
+          Array.empty[Partition]
         } else {
-          val pr = region1.asInstanceOf[PartitionedRegion]
+          val pr = region.asInstanceOf[PartitionedRegion]
           val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
           val prefNodes = new ArrayBuffer[String](2)
           distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
@@ -363,14 +372,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
           })
           Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
             pr.getTotalNumberOfBuckets, prefNodes))
-        }
-
-      case _ =>
-        reg match {
-          case Some(pr: PartitionedRegion) => session.sessionState.getTablePartitions(pr)
-          case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
-          // system table/VTI is shown as a replicated table having a single partition
-          case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
         }
     }
   }
