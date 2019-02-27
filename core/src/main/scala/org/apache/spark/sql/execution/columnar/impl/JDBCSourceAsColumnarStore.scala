@@ -882,7 +882,8 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _partitionPruner, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
+    _filters, _partEval, _partitionPruner, _commitTx, _delayRollover,
+    projection = Array.emptyIntArray, None) {
 
   private var preferHostName = SmartConnectorHelper.preferHostName(session)
 
