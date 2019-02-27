@@ -88,7 +88,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
     if (isStabilityTest) {
       query = "set snappydata.sql.hashAggregateSize=-1";
       conn.createStatement().executeUpdate(query);
-      query = "CREATE OR replace VIEW review_count_GT_10 AS SELECT * FROM (SELECT COUNT(*) AS " +
+      /* query = "CREATE OR replace VIEW review_count_GT_10 AS SELECT * FROM (SELECT COUNT(*) AS " +
           "review_count,PRODUCT_ID FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count > 10";
       conn.createStatement().executeUpdate(query);
       query = " CREATE OR REPLACE VIEW REVIEW_count_rating_GT_3 AS SELECT COUNT(*) AS review_count ," +
@@ -120,7 +120,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
       conn.createStatement().executeUpdate(query);
       query = "CREATE OR replace VIEW rating_gt_3_count AS SELECT PRODUCT_ID, COUNT(*) AS review_count " +
           "FROM (SELECT * FROM REVIEWS WHERE STAR_RATING > 3) GROUP BY PRODUCT_ID";
-      conn.createStatement().executeUpdate(query);
+      conn.createStatement().executeUpdate(query); */
     }
     long startTime = System.currentTimeMillis();
     long endTime = startTime + warmUpTimeSec * 1000;
@@ -129,6 +129,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         int queryNum = new Random().nextInt(queryVect.size());
         query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {}
         long queryExecutionEndTime = System.currentTimeMillis();
         long queryExecutionTime = queryExecutionEndTime - startTime;
         if (isStabilityTest) {
@@ -145,6 +146,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         int queryNum = new Random().nextInt(queryVect.size());
         query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {}
         long queryExecutionEndTime = System.currentTimeMillis();
         long queryExecutionTime = queryExecutionEndTime - startTime;
         if (isStabilityTest) {
