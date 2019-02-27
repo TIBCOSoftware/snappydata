@@ -85,7 +85,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
           " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey";
       conn.createStatement().executeUpdate(query);
     }
-    if (isStabilityTest){
+    if (isStabilityTest) {
       query = "set snappydata.sql.hashAggregateSize=-1";
       conn.createStatement().executeUpdate(query);
       query = "CREATE OR replace VIEW review_count_GT_10 AS SELECT * FROM (SELECT COUNT(*) AS " +
@@ -129,6 +129,11 @@ public class SnappyConcurrencyTest extends SnappyTest {
         int queryNum = new Random().nextInt(queryVect.size());
         query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
+        long queryExecutionEndTime = System.currentTimeMillis();
+        long queryExecutionTime = queryExecutionEndTime - startTime;
+        if (isStabilityTest) {
+          Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime);
+        }
       } catch (SQLException se) {
         throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
@@ -142,7 +147,9 @@ public class SnappyConcurrencyTest extends SnappyTest {
         rs = conn.createStatement().executeQuery(query);
         long queryExecutionEndTime = System.currentTimeMillis();
         long queryExecutionTime = queryExecutionEndTime - startTime;
-        //Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime);
+        if (isStabilityTest) {
+          Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime);
+        }
         SnappyBB.getBB().getSharedMap().put(queryNum + "_" + query + "_" + System.currentTimeMillis(), queryExecutionTime);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
