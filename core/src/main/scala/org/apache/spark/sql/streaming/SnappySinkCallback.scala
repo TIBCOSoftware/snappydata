@@ -82,7 +82,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       connection.close()
     }
 
-    if(isSecurityEnabled && stateTableSchema.isEmpty){
+    if (isSecurityEnabled && stateTableSchema.isEmpty) {
       val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
       throw new IllegalStateException(msg)
     }
@@ -154,11 +154,11 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
-  def updateStateTable(queryName: String, batchId : Long) : Boolean = {
+  def updateStateTable(queryName: String, batchId: Long): Boolean = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
-          s"set batch_id=$batchId where stream_query_id='$queryName' and batch_id != $batchId")
-          .collect()(0).getAs("count").asInstanceOf[Long]
+        s"set batch_id=$batchId where stream_query_id='$queryName' and batch_id != $batchId")
+        .collect()(0).getAs("count").asInstanceOf[Long]
 
     // TODO: use JDBC connection here
     var posDup = false
@@ -311,7 +311,6 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
           updateDf.write.putInto(tableName)
         }
       }
-      dataFrame.unpersist(true)
     }
   }
 }
