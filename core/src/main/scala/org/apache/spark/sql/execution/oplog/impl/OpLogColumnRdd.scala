@@ -17,6 +17,8 @@
 package org.apache.spark.sql.execution.oplog.impl
 
 
+import java.sql.Timestamp
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache._
@@ -342,9 +344,20 @@ class OpLogColumnRdd(
       case DoubleType => decoder.readDouble(value, rowNum)
       case BinaryType => decoder.readBinary(value, rowNum)
       case ShortType => decoder.readShort(value, rowNum)
-      case TimestampType => decoder.readTimestamp(value, rowNum)
+      case TimestampType =>
+        // TODO figure out why decoder gives 1000 x value
+        val lv = decoder.readTimestamp(value, rowNum) / 1000
+        logInfo(s"1891: long value of timestamp = ${lv}")
+        new Timestamp(lv)
       case StringType => decoder.readUTF8String(value, rowNum)
-      case DateType => decoder.readDate(value, rowNum)
+      case DateType =>
+        val daysSinceEpoch = decoder.readDate(value, rowNum)
+        logInfo(s"for date col, days from epoch = ${daysSinceEpoch}")
+        new java.sql.Date(1L * daysSinceEpoch * 24 * 60 * 60 * 1000)
+      case d: DecimalType if (d.precision <= Decimal.MAX_LONG_DIGITS) =>
+        decoder.readLongDecimal(value, d.precision, d.scale, rowNum)
+      case d: DecimalType =>
+        decoder.readDecimal(value, d.precision, d.scale, rowNum)
       case _ => null
     }
   }
