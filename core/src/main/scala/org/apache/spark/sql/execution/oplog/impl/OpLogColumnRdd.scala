@@ -17,6 +17,8 @@
 package org.apache.spark.sql.execution.oplog.impl
 
 
+import java.sql.Timestamp
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache._
@@ -25,15 +27,16 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store._
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.{ColumnDescriptor, ColumnDescriptorList}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
+
 import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.types._
 import org.apache.spark.{Partition, TaskContext}
-
 import scala.annotation.meta.param
 import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.client.am.Types
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
@@ -41,8 +44,9 @@ import io.snappydata.recovery.RecoveryService
 import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
 import io.snappydata.thrift.CatalogTableObject
 import org.apache.avro.generic.GenericData
+
 import org.apache.spark.serializer.StructTypeSerializer
-import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding}
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatValue}
 
 class OpLogColumnRdd(
@@ -240,8 +244,7 @@ class OpLogColumnRdd(
       logInfo("1891: column region has more entries")
       val regEntry = colRegEntriesItr.next()
       val value = DiskEntry.Helper.readValueFromDisk(regEntry.asInstanceOf[DiskEntry], phdrCol)
-      // TODO remove hardcoding below
-      val numStatsColumns = 7
+      val numStatsColumns = sch.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
 
       val scanColBuf = org.apache.spark.sql.collection.SharedUtils
           .toUnsafeRow(value.asInstanceOf[ColumnFormatValue].getBuffer, numStatsColumns)
@@ -341,9 +344,20 @@ class OpLogColumnRdd(
       case DoubleType => decoder.readDouble(value, rowNum)
       case BinaryType => decoder.readBinary(value, rowNum)
       case ShortType => decoder.readShort(value, rowNum)
-      case TimestampType => decoder.readTimestamp(value, rowNum)
+      case TimestampType =>
+        // TODO figure out why decoder gives 1000 x value
+        val lv = decoder.readTimestamp(value, rowNum) / 1000
+        logInfo(s"1891: long value of timestamp = ${lv}")
+        new Timestamp(lv)
       case StringType => decoder.readUTF8String(value, rowNum)
-      case DateType => decoder.readDate(value, rowNum)
+      case DateType =>
+        val daysSinceEpoch = decoder.readDate(value, rowNum)
+        logInfo(s"for date col, days from epoch = ${daysSinceEpoch}")
+        new java.sql.Date(1L * daysSinceEpoch * 24 * 60 * 60 * 1000)
+      case d: DecimalType if (d.precision <= Decimal.MAX_LONG_DIGITS) =>
+        decoder.readLongDecimal(value, d.precision, d.scale, rowNum)
+      case d: DecimalType =>
+        decoder.readDecimal(value, d.precision, d.scale, rowNum)
       case _ => null
     }
   }
