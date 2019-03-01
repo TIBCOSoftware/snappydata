@@ -10,10 +10,6 @@
         <weight>2</weight>
         <minShare>2</minShare>
     </pool>
-    <pool name="streaming">
-        <schedulingMode>FAIR</schedulingMode>
-        <weight>1</weight>
-    </pool>
     <pool name="custom">
         <schedulingMode>FAIR</schedulingMode>
         <weight>1</weight>

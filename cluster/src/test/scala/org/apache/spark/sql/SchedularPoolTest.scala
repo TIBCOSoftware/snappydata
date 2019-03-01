@@ -31,7 +31,7 @@ import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.streaming.{ProcessingTime, SnappySinkCallback}
 
-class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAndAfterAll{
+class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAndAfterAll {
 
   private var kafkaTestUtils: KafkaTestUtils = _
 
@@ -51,7 +51,7 @@ class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAn
     }
   }
 
-  after{
+  after {
     // CAUTION!! - recursively deleting checkpoint directory. handle with care.
     Path(checkPointDir).deleteRecursively()
   }
@@ -68,15 +68,7 @@ class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAn
 
   private def newTopic(): String = s"topic-${topicId.getAndIncrement()}"
 
-  test("streaming scheduler pool"){
-
-    val topic = newTopic()
-    startStreaming(snc.snappySession, topic, "org.apache.spark.sql.TestSinkCallbackStreamingPool",
-      "testQuery")
-    assert(snc.sparkContext.getLocalProperty("spark.scheduler.pool") == null)
-  }
-
-  test("custom scheduler pool"){
+  test("custom scheduler pool") {
     SchedulerPool.set(snc.sessionState.conf, "custom")
     val topic = newTopic()
 
@@ -86,30 +78,14 @@ class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAn
     assert(snc.sparkContext.getLocalProperty("spark.scheduler.pool") == null)
   }
 
-  test("default scheduler pool"){
-    snc.sparkContext.stop()
+  test("default scheduler pool") {
+    SchedulerPool.remove(snc.sessionState.conf)
+    val topic = newTopic()
+    startStreaming(snc.snappySession, topic,
+      "org.apache.spark.sql.TestSinkCallbackStreamingPoolNotConfigured",
+      "testQuery2")
 
-    val xmlPath = getClass.getClassLoader
-        .getResource("testFairschedulerWithoutStreamingPool.xml").getFile
-    var session : SnappySession = null
-    try {
-      session = new SnappySession(new SparkContext(
-        LocalSparkConf.newConf(c => {
-          c.set("spark.scheduler.allocation.file", xmlPath)
-              .set("spark.scheduler.mode", "FAIR")
-        })))
-      val topic = newTopic()
-
-      startStreaming(session, topic,
-        "org.apache.spark.sql.TestSinkCallbackStreamingPoolNotConfigured",
-        "testQuery2")
-
-      assert(session.sparkContext.getLocalProperty("spark.scheduler.pool") == null)
-    } finally {
-      if (session != null) {
-        session.stop()
-      }
-    }
+    assert(snc.sparkContext.getLocalProperty("spark.scheduler.pool") == null)
   }
 
   private def startStreaming(snc: SnappySession, topic: String, callback: String,
@@ -135,15 +111,6 @@ class SchedulerPoolTest extends SnappyFunSuite with BeforeAndAfter with BeforeAn
         .start()
 
     streamingQuery.processAllAvailable()
-  }
-}
-
-
-
-class TestSinkCallbackStreamingPool extends SnappySinkCallback {
-  override def process(snappySession: SnappySession, sinkProps: Map[String, String],
-      batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean): Unit = {
-    assert(snappySession.sparkContext.getLocalProperty("spark.scheduler.pool") == "streaming")
   }
 }
 

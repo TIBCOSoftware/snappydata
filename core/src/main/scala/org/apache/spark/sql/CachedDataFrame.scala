@@ -216,13 +216,11 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     var pool = snappySession.sessionState.conf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
     if (isLowLatencyQuery && pool == "default") {
-        if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
-          snappySession.sparkContext
-              .setLocalProperty("spark.scheduler.pool", Constant.LOW_LATENCY_POOL)
+      if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
+        pool = Constant.LOW_LATENCY_POOL
       }
-    } else if (pool != "default") {
-      snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
     }
+    snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
   }
 
 
