@@ -5,7 +5,7 @@ create table testL (id string NOT NULL, data1 string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL1;
 create table testL1 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -14,7 +14,7 @@ create table testL1 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL2;
 create table testL2 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -23,7 +23,7 @@ create table testL2 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL3;
 create table testL3 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -32,7 +32,7 @@ create table testL3 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL4;
 create table testL4 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -41,7 +41,7 @@ create table testL4 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL5;
 create table testL5 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -50,7 +50,7 @@ create table testL5 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL6;
 create table testL6 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -59,7 +59,7 @@ create table testL6 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL7;
 create table testL7 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -68,7 +68,7 @@ create table testL7 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL8;
 create table testL8 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -77,7 +77,7 @@ create table testL8 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL9;
 create table testL9 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -86,7 +86,7 @@ create table testL9 (id string NOT NULL, data string, data2 decimal, APPLICATION
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');
 
 DROP TABLE IF EXISTS testL10;
 create table testL10 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
@@ -95,94 +95,4 @@ create table testL10 (id string NOT NULL, data string, data2 decimal, APPLICATIO
   PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
  PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
  PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL11;
-create table testL11 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL12;
-create table testL12 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL13;
-create table testL13 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL14;
-create table testL14 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL15;
-create table testL15 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL16;
-create table testL16 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL17;
-create table testL17 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL18;
-create table testL18 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL19;
-create table testL19 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
-
-DROP TABLE IF EXISTS testL20;
-create table testL20 (id string NOT NULL, data string, data2 decimal, APPLICATION_ID string NOT NULL, ORDERGROUPID string,
- PAYMENTADDRESS1 string, PAYMENTADDRESS2 string, PAYMENTCOUNTRY string, PAYMENTSTATUS string, PAYMENTRESULT string,
- PAYMENTZIP string, PAYMENTSETUP string, PROVIDER_RESPONSE_DETAILS string, PAYMENTAMOUNT string, PAYMENTCHANNEL string,
-  PAYMENTCITY string, PAYMENTSTATECODE string,PAYMENTSETDOWN string,  PAYMENTREFNUMBER string, PAYMENTST string,
- PAYMENTAUTHCODE string,  PAYMENTID string, PAYMENTMERCHID string, PAYMENTHOSTRESPONSECODE string,PAYMENTNAME string,
- PAYMENTOUTLETID string, PAYMENTTRANSTYPE string,  PAYMENTDATE string, CLIENT_ID string, CUSTOMERID string)
-using column options (key_columns 'id,APPLICATION_ID', BUCKETS '128', REDUNDANCY '1');
+using column options (partition_by 'id,APPLICATION_ID',COLUMN_MAX_DELTA_ROWS '1000',overflow 'true',key_columns 'id,APPLICATION_ID', BUCKETS '96');

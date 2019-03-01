@@ -45,6 +45,8 @@ object PutIntoProducer {
   }
 
   def generateAndPublish(args: Array[String]) {
+    // 0 - insert
+    // 1 - upsert
     val eventCount: Long = args {0}.toLong
     val topic: String = args {1}
     val startRange: Long = args {2}.toLong
@@ -54,14 +56,15 @@ object PutIntoProducer {
     pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
     pw.flush()
     val producer = new KafkaProducer[String, String](properties(brokers))
-    val numThreads = 1;
+    val numThreads = 2;
     val threads = new Array[Thread](numThreads)
-    val eventsPerThread = eventCount / numThreads;
+    val eventsPerThread = eventCount ; // numThreads;
     for (i <- 0 until numThreads) {
-      val thrStartRange = startRange + (i * eventsPerThread)
-      val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer))
+      val thrStartRange = startRange // + (i * eventsPerThread)
+      val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer,i))
       thread.start()
       threads(i) = thread
+      Thread.sleep(60000)
     }
     threads.foreach(_.join())
     pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
@@ -76,7 +79,7 @@ object PutIntoProducer {
 }
 
 final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
-    producer: KafkaProducer[String, String])
+    producer: KafkaProducer[String, String], eventType: Int)
     extends Runnable {
 
   val schema = Array ("id", "data1", "data2", "APPLICATION_ID", "ORDERGROUPID", "PAYMENTADDRESS1",
@@ -96,25 +99,25 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
       var i = 0L
       while(i < (startRange + eventCount)){
       val id: String = i.toString
-      val data1: String = "data " + i
+      val data1: String = "data1"
       val data2: Double = i * 10.2
       val applicatoin_id: String = "APPLICATION_ID_" + i
-      val orderGrp_id: String = "ORDERGROUPID" + i
-      val payment_add1: String = "PAYMENTADDRESS1" + i
-      val payment_add2: String = "PAYMENTADDRESS2" + i
-      val payment_country: String = "PAYMENTCOUNTRY" + i
-      val payment_status: String = "PAYMENTSTATUS" + i
-      val payment_result: String = "PAYMENTRESULT" + i
-      val payment_zip: String = "PAYMENTZIP" + i
-      val payment_setup: String = "PAYMENTSETUP" + i
-      val provider_details: String = "PROVIDER_RESPONSE_DETAILS" + i
-      val payment_amount: String = "PAYMENTAMOUNT" + i
-      val payment_channel: String = "PAYMENTCHANNEL" + i
-      val payment_city: String = "PAYMENTCITY" + i
-      val payment_state_code: String = "PAYMENTSTATECODE" + i
-      val payment_setdown: String = "PAYMENTSETDOWN" + i
-      val payment_refnumber: String = "PAYMENTREFNUMBER" + i
-      val paymenttst: String = "PAYMENTST" + i
+      val orderGrp_id: String = "ORDERGROUPID" + randomAlphanumeric(3)
+      val payment_add1: String = "PAYMENTADDRESS1" + randomAlphanumeric(3)
+      val payment_add2: String = "PAYMENTADDRESS2" + randomAlphanumeric(3)
+      val payment_country: String = "PAYMENTCOUNTRY" + randomAlphanumeric(3)
+      val payment_status: String = "PAYMENTSTATUS" + randomAlphanumeric(3)
+      val payment_result: String = "PAYMENTRESULT" + randomAlphanumeric(3)
+      val payment_zip: String = "PAYMENTZIP" + randomAlphanumeric(3)
+      val payment_setup: String = "PAYMENTSETUP" + randomAlphanumeric(3)
+      val provider_details: String = "PROVIDER_RESPONSE_DETAILS" + randomAlphanumeric(3)
+      val payment_amount: String = "PAYMENTAMOUNT" + randomAlphanumeric(3)
+      val payment_channel: String = "PAYMENTCHANNEL" + randomAlphanumeric(3)
+      val payment_city: String = "PAYMENTCITY" + randomAlphanumeric(3)
+      val payment_state_code: String = "PAYMENTSTATECODE" + randomAlphanumeric(3) 
+      val payment_setdown: String = "PAYMENTSETDOWN" + randomAlphanumeric(3)
+      val payment_refnumber: String = "PAYMENTREFNUMBER" + randomAlphanumeric(3)
+      val paymenttst: String = "PAYMENTST" + randomAlphanumeric(3)
       val payment_auth_code: String = ""
       val payment_id: String = ""
       val payment_merchind: String = ""
@@ -133,8 +136,13 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
           s"$payment_auth_code,$payment_id,$payment_merchind,$payment_response_code," +
           s"$payment_name,$payment_outled_id,$payment_transfer_type,$payment_date," +
           s"$client_id,$customer_id"
-      PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + s"row id : $id")
-      val data = new ProducerRecord[String, String](topic, id, row + s",1")
+      if((i%1000) == 0){
+         if(eventType == 0)
+         PutIntoProducer.pw.println(s"PutIntoProducer.getCurrTimeAsString Inserting row id : $id")
+         if(eventType == 1)
+         PutIntoProducer.pw.println(s"PutIntoProducer.getCurrTimeAsString Updating row id : $id")
+      }
+      val data = new ProducerRecord[String, String](topic, id, row + s",${eventType}")
       producer.send(data)
       i += 1
     }

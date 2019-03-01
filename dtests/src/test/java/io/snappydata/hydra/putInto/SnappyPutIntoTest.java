@@ -48,7 +48,7 @@ public class SnappyPutIntoTest extends SnappyTest {
   }
 
   public static void HydraTask_bulkDelete(){
-    try {
+      try {
       Log.getLogWriter().info("Inside bulkDelete");
       Connection conn = SnappyTest.getLocatorConnection();
       Vector tableNames = SnappyCDCPrms.getNodeName();
@@ -71,9 +71,9 @@ public class SnappyPutIntoTest extends SnappyTest {
         }
       }
     }
-    catch (SQLException ex) {
+   catch (SQLException ex) {
       throw new util.TestException("Caught exception in HydraTask_bulkDelete() " + ex.getMessage());
-    }
-  }
+   }
+ }
 
 }
