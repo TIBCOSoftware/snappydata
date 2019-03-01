@@ -134,6 +134,26 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
     }
   }
 
+  test("user name not provided and state table schema not provided") {
+
+    session.conf.set(Attribute.USERNAME_ATTR, user1)
+    session.conf.set(Attribute.PASSWORD_ATTR, user1)
+    val testId = testIdGenerator.getAndIncrement()
+    createTable(user1)
+    session.conf.unset(Attribute.USERNAME_ATTR)
+    session.conf.unset(Attribute.PASSWORD_ATTR)
+    val topic = getTopic(testId)
+    try{
+      val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId, false)
+      streamingQuery.processAllAvailable()
+      fail("IllegalStateException was expected")
+    } catch {
+      case x : IllegalStateException =>
+        val expectedMessage = "stateTableSchema is a mandatory option when security is enabled."
+        assert(x.getMessage.equals(expectedMessage))
+    }
+  }
+
   test("state table schema provided") {
     session.conf.set(Attribute.USERNAME_ATTR, user1)
     session.conf.set(Attribute.PASSWORD_ATTR, user1)

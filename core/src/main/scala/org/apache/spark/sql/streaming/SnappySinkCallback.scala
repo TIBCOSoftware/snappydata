@@ -22,13 +22,15 @@ import java.util.NoSuchElementException
 
 import scala.collection.mutable
 
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
+import com.pivotal.gemfirexd.jdbc.ClientAttribute.USERNAME
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
-import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
+import org.apache.spark.sql.sources.{ConnectionProperties, DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
@@ -70,23 +72,10 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sqlContext.sparkSession),
       mutable.Map.empty)
-
-    val connection = DriverManager.getConnection(connProperties.url, connProperties.connProps)
-    val stmt = connection.createStatement()
-    val isSecurityEnabled = try {
-      val resultSet = stmt.executeQuery("values sys.GET_IS_SECURITY_ENABLED();")
-      resultSet.next()
-      resultSet.getBoolean(1)
-    } finally {
-      stmt.close()
-      connection.close()
-    }
-
-    if (isSecurityEnabled && stateTableSchema.isEmpty) {
+    if (isSecurityEnabled(connProperties) && stateTableSchema.isEmpty) {
       val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
       throw new IllegalStateException(msg)
     }
-
     createSinkStateTableIfNotExist(sqlContext, stateTableSchema)
     val cc = try {
       Utils.classForName(parameters(SINK_CALLBACK)).newInstance()
@@ -96,6 +85,22 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
     SnappyStoreSink(sqlContext.asInstanceOf[SnappyContext].snappySession, parameters,
       cc.asInstanceOf[SnappySinkCallback])
+  }
+
+  private def isSecurityEnabled(connProperties: ConnectionProperties) = {
+    val isSecurityEnabled = if (connProperties.connProps.containsKey(USERNAME)
+        && !connProperties.connProps.getProperty(USERNAME).isEmpty) {
+      true
+    } else {
+      try {
+        val connection = DriverManager.getConnection(connProperties.url, connProperties.connProps)
+        connection.close()
+        false
+      } catch {
+        case ex: SQLException if ex.getSQLState.equals(LOGIN_FAILED) => true
+      }
+    }
+    isSecurityEnabled
   }
 
   private def createSinkStateTableIfNotExist(sqlContext: SQLContext,
