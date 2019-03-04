@@ -119,10 +119,10 @@ In addition to using SSL for client-server connections, you can optionally confi
 
 Peer SSL configuration is managed using `javax.net.ssl` system properties and the following SnappyData boot properties:
 
-*	`ssl-enabled`
-*	`ssl-protocols`
-*	`ssl-ciphers`
-*	`ssl-require-authentication`
+*	[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md)
+*	[ssl-protocols](../reference/configuration_parameters/ssl_protocols.md)
+*	[ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md)
+*	[ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md) 
 
 The following sections provide an example that demonstrates the configuration and startup of SnappyData members with SSL encryption.
 
@@ -213,13 +213,13 @@ Start the SnappyData cluster using `snappy-start-all.sh` script and perform oper
 
 Spark layer  SSL configuration is managed using the following SnappyData boot properties:
 
-*	`spark.ssl.enabled`
-*	`spark.ssl.keyPassword`
-*	`spark.ssl.keyStore`
-*	`spark.ssl.keyStorePassword`
-*	`spark.ssl.trustStore`
-*	`spark.ssl.trustStorePassword`
-*	`spark.ssl.protocol`
+*	[spark.ssl.enabled](property_description.md#ssl_spark_enabled)
+*	[spark.ssl.keyPassword](property_description.md#ssl_spark_password)
+*	[spark.ssl.keyStore](property_description.md#ssl_spark_keystore)
+*	[spark.ssl.keyStorePassword](property_description.md#ssl_spark_keystorpass)
+*	[spark.ssl.trustStore](property_description.md#ssl_spark_trustore)
+*	[spark.ssl.trustStorePassword](property_description.md#truststorepassword)
+*	[spark.ssl.protocol](property_description.md#ssl_spark_ssl_protocol)
 
 The following sections provide a simple example that demonstrates the configuration and startup of SnappyData members for enabling Spark layer for Wire Encryption.
 
