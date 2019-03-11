@@ -20,19 +20,26 @@ package org.apache.spark.sql.streaming
 import java.io.PrintWriter
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
+import java.sql.Connection
+import java.util.Properties
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
 import scala.sys.process._
 import scala.util.control.NonFatal
 
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
+import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
+import io.snappydata.Constant
+import io.snappydata.cluster.SplitClusterDUnitTest
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
-import io.snappydata.Constant
 
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
+import org.apache.spark.sql.streaming.SnappySinkProviderDUnitTest.{adminUser, getConn, ldapGroup, locatorNetPort}
 import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
 import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession, ThinClientConnectorMode}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
@@ -60,13 +67,36 @@ class SnappySinkProviderDUnitTest(s: String)
     vm = host.getVM(0)
   }
 
+  private[this] var ldapProperties: Properties = new Properties()
+
+  def setSecurityProps(): Unit = {
+    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SEARCH_BASE, AUTH_LDAP_SERVER}
+    ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0,
+      adminUser, getClass.getResource("/auth.ldif").getPath)
+    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
+      System.setProperty(k, ldapProperties.getProperty(k))
+    }
+  }
+
+  def getLdapConf: String = {
+    var conf = ""
+    for (k <- List(Attribute.AUTH_PROVIDER, Attribute.USERNAME_ATTR, Attribute.PASSWORD_ATTR)) {
+      conf += s"-$k=${ldapProperties.getProperty(k)} "
+    }
+    for (k <- List(AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
+      conf += s"-J-D$k=${ldapProperties.getProperty(k)} "
+    }
+    conf
+  }
 
   override def beforeClass(): Unit = {
     super.beforeClass()
 
+    setSecurityProps()
+
     // create locators, leads and servers files
     val port = AvailablePortHelper.getRandomAvailableTCPPort
-    val netPort = SnappySinkProviderDUnitTest.locatorNetPort
+    val netPort = locatorNetPort
     val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
     val netPort3 = AvailablePortHelper.getRandomAvailableTCPPort
 
@@ -76,25 +106,44 @@ class SnappySinkProviderDUnitTest(s: String)
 
     val waitForInit = "-jobserver.waitForInitialization=true"
     val confDir = s"$snappyProductDir/conf"
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
+    val ldapConf = getLdapConf
+    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort $ldapConf",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg",
+    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg $ldapConf",
       s"$confDir/leads")
     writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg
-         |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg
+      s"""localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg $ldapConf
+         |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg $ldapConf
          |""".stripMargin, s"$confDir/servers")
 
     val op = (snappyProductDir + "/sbin/snappy-start-all.sh").!!
     logInfo("snappy-start-all output:" + op)
 
     vm.invoke(getClass, "startSparkCluster", sparkProductDir)
+
+    var connection: Connection = null
+    try {
+      connection = getConn(adminUser)
+      val statement = connection.createStatement()
+      statement.execute(s"CREATE SCHEMA ${ldapGroup}" +
+          s" AUTHORIZATION ldapgroup:${ldapGroup};")
+      statement.close()
+    } finally {
+      connection.close()
+    }
+  }
+
+  def stopLdapTestServer(): Unit = {
+    val ldapServer = LdapTestServer.getInstance()
+    if (ldapServer.isServerStarted) {
+      ldapServer.stopService()
+    }
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
     vm.invoke(getClass, "stopSparkCluster", sparkProductDir)
-
+    stopLdapTestServer()
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
@@ -108,17 +157,22 @@ class SnappySinkProviderDUnitTest(s: String)
 
   def testStructuredStreaming(): Unit = {
     vm.invoke(getClass, "doTestStructuredStreaming",
-      Int.box(SnappySinkProviderDUnitTest.locatorNetPort))
+      Int.box(locatorNetPort))
   }
 
   def testIdempotency(): Unit = {
     vm.invoke(getClass, "doTestIdempotency",
-      Int.box(SnappySinkProviderDUnitTest.locatorNetPort))
+      Int.box(locatorNetPort))
   }
 
   def testCustomCallback(): Unit = {
     vm.invoke(getClass, "doTestCustomCallback",
-      Int.box(SnappySinkProviderDUnitTest.locatorNetPort))
+      Int.box(locatorNetPort))
+  }
+
+  def testStateTableSchemaNotProvided(): Unit = {
+    vm.invoke(getClass, "doTestStateTableSchemaNotProvided",
+      Int.box(locatorNetPort))
   }
 
   private def writeToFile(str: String, fileName: String): Unit = {
@@ -158,18 +212,31 @@ class SnappySinkProviderDUnitTest(s: String)
 
 object SnappySinkProviderDUnitTest extends Logging {
 
-  private val tableName = "APP.USERS"
+  private val tableName = "USERS"
   private val checkpointDirectory = "/tmp/SnappyStoreSinkProviderDUnitTest"
   private val streamQueryId = s"USERS"
   private val locatorNetPort = AvailablePortHelper.getRandomAvailableTCPPort
   private val kafkaTestUtils = new KafkaTestUtils
   private var snc: SnappyContext = _
   private val testIdGenerator = new AtomicInteger(0)
+  private val user = "gemfire1"
+  private val adminUser = "gemfire10"
+  val ldapGroup = "gemGroup1"
 
   private def setup(locatorClientPort: Int): Unit = {
     kafkaTestUtils.setup()
-    snc = getSnappyContextForConnector(locatorClientPort)
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, user)
+    props.setProperty(Attribute.PASSWORD_ATTR, user)
+    snc = getSnappyContextForConnector(locatorClientPort, props)
     createTable()
+  }
+
+  private def getConn(u: String): Connection = {
+    val props = new Properties()
+    props.setProperty(Attribute.USERNAME_ATTR, u)
+    props.setProperty(Attribute.PASSWORD_ATTR, u)
+    SplitClusterDUnitTest.getConnection(locatorNetPort, props)
   }
 
   private def teardown() = {
@@ -209,7 +276,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       kafkaTestUtils.sendMessages(testId, dataBatch1.map(r => r.mkString(",")).toArray)
 
       val streamingQuery: StreamingQuery = createAndStartStreamingQuery(testId)
-      snc.sql(s"select * from APP.${SnappyStoreSinkProvider.SINK_STATE_TABLE}").show()
+      snc.sql(s"select * from ${ldapGroup}.${SnappyStoreSinkProvider.SINK_STATE_TABLE}").show()
       waitTillTheBatchIsPickedForProcessing(0, testId)
 
       val dataBatch2 = Seq(Seq(1, "name11", 30, 1), Seq(2, "name2", 10, 2), Seq(3, "name3", 30, 0))
@@ -217,7 +284,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       streamingQuery.processAllAvailable()
 
       assertData(Array(Row(1, "name11", 30), Row(3, "name3", 30)))
-
+      streamingQuery.stop()
     } finally {
       teardown()
     }
@@ -251,6 +318,7 @@ object SnappySinkProviderDUnitTest extends Logging {
       streamingQuery2.processAllAvailable()
 
       assertData((0 to 30).map(i => Row(i, s"name$i", i)).toArray)
+      streamingQuery.stop()
     } finally {
       teardown()
     }
@@ -272,6 +340,32 @@ object SnappySinkProviderDUnitTest extends Logging {
 
       streamingQuery.processAllAvailable()
       assertData(Array(Row(1, "name1", 20), Row(1, "name2", 10)))
+      streamingQuery.stop()
+    } finally {
+      teardown()
+    }
+  }
+
+  def doTestStateTableSchemaNotProvided(locatorClientPort: Int): Unit = {
+    try {
+      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      setup(locatorClientPort)
+
+      kafkaTestUtils.createTopic(testId, partitions = 3)
+
+      val dataBatch1 = Seq(Seq(1, "name1", 20, 2), Seq(1, "name1", 20, 0), Seq(2, "name2", 10, 0))
+      kafkaTestUtils.sendMessages(testId, dataBatch1.map(r => r.mkString(",")).toArray)
+
+      try {
+        val streamingQuery: StreamingQuery = createAndStartStreamingQuery(testId,
+          provideStateTableSchema = false)
+        streamingQuery.processAllAvailable()
+        throw new RuntimeException("IllegalStateException was expected")
+      } catch {
+        case x: IllegalStateException =>
+          val expectedMessage = "'stateTableSchema' is a mandatory option when security is enabled."
+          assert(x.getMessage.equals(expectedMessage))
+      }
     } finally {
       teardown()
     }
@@ -279,7 +373,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   private def createAndStartStreamingQuery(testId: String,
       withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
-      withCustomCallback: Boolean = false) = {
+      withCustomCallback: Boolean = false, provideStateTableSchema: Boolean = true) = {
     val streamingDF = snc
         .readStream
         .format("kafka")
@@ -319,26 +413,31 @@ object SnappySinkProviderDUnitTest extends Logging {
         .format("snappysink")
         .queryName(testId)
         .trigger(ProcessingTime("1 seconds"))
-        .option("tableName", tableName)
+        .option("tableName", s"$ldapGroup.$tableName")
         .option("checkpointLocation", checkpointDirectory)
-    if (failBatch) {
-      streamWriter.option("internal___failBatch", "true").start()
-    } else if (withCustomCallback) {
-      streamWriter.option("sinkCallback", classOf[TestSinkCallback].getName).start()
-    } else {
-      streamWriter.start()
+    if (provideStateTableSchema) {
+      streamWriter.option("stateTableSchema", ldapGroup)
     }
+    if (failBatch) {
+      streamWriter.option("internal___failBatch", "true")
+    }
+    if (withCustomCallback) {
+      streamWriter.option("sinkCallback", classOf[TestSinkCallback].getName)
+    }
+    streamWriter.start()
   }
 
   private def createTable() = {
-    snc.sql(s"drop table if exists $tableName")
+    snc.sql(s"drop table if exists ${ldapGroup}.$tableName")
     snc.sql(
-      s"""create table $tableName (id long , name varchar(40), age int)
-        using column options(key_columns 'id')""")
+      s"""create table ${ldapGroup}.$tableName
+       (id long , name varchar(40), age int) using column options(key_columns 'id')""")
   }
 
-  private def assertData(expectedData: Array[Row]) = {
-    val actualData = snc.sql(s"select * from $tableName order by id, name, age").collect()
+  private def assertData(expectedData: Array[Row]): Unit = {
+    val actualData = snc.sql(s"select * from ${ldapGroup}.$tableName" +
+        s" order by id, name, age")
+        .collect()
 
     assert(expectedData sameElements actualData, "actual data:" +
         actualData.map(a => a.toString()).mkString(","))
@@ -349,7 +448,7 @@ object SnappySinkProviderDUnitTest extends Logging {
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sql = s"select batch_id from APP.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
+    val sql = s"select batch_id from ${ldapGroup}.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
         s"where stream_query_id = '$testId'"
     val batchIdFromTable = snc.sql(sql).collect()
 
@@ -360,7 +459,8 @@ object SnappySinkProviderDUnitTest extends Logging {
   }
 
 
-  def getSnappyContextForConnector(locatorClientPort: Int): SnappyContext = {
+  def getSnappyContextForConnector(locatorClientPort: Int, props: Properties = null):
+  SnappyContext = {
     val hostName = InetAddress.getLocalHost.getHostName
     val connectionURL = s"localhost:$locatorClientPort"
     val conf = new SparkConf()
@@ -370,6 +470,9 @@ object SnappySinkProviderDUnitTest extends Logging {
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)
+
+    conf.set(Constant.SPARK_STORE_PREFIX + Attribute.USERNAME_ATTR, user)
+    conf.set(Constant.SPARK_STORE_PREFIX + Attribute.PASSWORD_ATTR, user)
 
     val snc = SnappyContext(SparkContext.getOrCreate(conf))
 
@@ -384,7 +487,8 @@ object SnappySinkProviderDUnitTest extends Logging {
   class TestSinkCallback extends SnappySinkCallback {
     override def process(snappySession: SnappySession, sinkProps: Map[String, String],
         batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean): Unit = {
-      df.write.insertInto(tableName)
+      df.write.insertInto(s"${SnappySinkProviderDUnitTest.ldapGroup}.$tableName")
     }
   }
+
 }

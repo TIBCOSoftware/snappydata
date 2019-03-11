@@ -123,13 +123,13 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
     val testId = testIdGenerator.getAndIncrement()
     createTable(user1)
     val topic = getTopic(testId)
-    try{
+    try {
       val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId, false)
       streamingQuery.processAllAvailable()
       fail("IllegalStateException was expected")
     } catch {
-      case x : IllegalStateException =>
-        val expectedMessage = "stateTableSchema is a mandatory option when security is enabled."
+      case x: IllegalStateException =>
+        val expectedMessage = "'stateTableSchema' is a mandatory option when security is enabled."
         assert(x.getMessage.equals(expectedMessage))
     }
   }
@@ -143,13 +143,13 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
     session.conf.unset(Attribute.USERNAME_ATTR)
     session.conf.unset(Attribute.PASSWORD_ATTR)
     val topic = getTopic(testId)
-    try{
+    try {
       val streamingQuery: StreamingQuery = createAndStartStreamingQuery(topic, testId, false)
       streamingQuery.processAllAvailable()
       fail("IllegalStateException was expected")
     } catch {
-      case x : IllegalStateException =>
-        val expectedMessage = "stateTableSchema is a mandatory option when security is enabled."
+      case x: IllegalStateException =>
+        val expectedMessage = "'stateTableSchema' is a mandatory option when security is enabled."
         assert(x.getMessage.equals(expectedMessage))
     }
   }
@@ -233,7 +233,7 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
     val dataBatch2 = Seq(Seq(1, "name11", 30, "lname1", 1), Seq(2, "name2", 13, "lname2", 2),
       Seq(3, "name3", 30, "lname3", 0), Seq(4, "name4", 10, "lname4", 2))
     kafkaTestUtils.sendMessages(topic, dataBatch2.map(r => r.mkString(",")).toArray)
-    try{
+    try {
       streamingQuery1.processAllAvailable()
       fail("StreamingQueryException was expected")
     } catch {
@@ -257,7 +257,7 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
 
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
       Thread.sleep(1000)
-      waitTillTheBatchIsPickedForProcessing(batchId, testId , retries - 1)
+      waitTillTheBatchIsPickedForProcessing(batchId, testId, retries - 1)
     }
   }
 
@@ -277,7 +277,7 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
   }
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
-      passStateTableSchema : Boolean = true) = {
+      provideStateTableSchema: Boolean = true) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -309,10 +309,10 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
         .trigger(ProcessingTime("1 seconds"))
         .option("tableName", s"$ldapGroup.$tableName")
         .option("checkpointLocation", checkpointDirectory)
-        if(passStateTableSchema){
-          streamingQuery.option("stateTableSchema", ldapGroup)
-        }
-        streamingQuery.start()
+    if (provideStateTableSchema) {
+      streamingQuery.option("stateTableSchema", ldapGroup)
+    }
+    streamingQuery.start()
   }
 
   private def streamName(testId: Int) = {

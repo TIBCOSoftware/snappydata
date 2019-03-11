@@ -23,14 +23,13 @@ import java.util.NoSuchElementException
 import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
-import com.pivotal.gemfirexd.jdbc.ClientAttribute.USERNAME
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
-import org.apache.spark.sql.sources.{ConnectionProperties, DataSourceRegister, StreamSinkProvider}
+import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
@@ -70,10 +69,8 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       partitionColumns: Seq[String],
       outputMode: OutputMode): Sink = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
-    val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sqlContext.sparkSession),
-      mutable.Map.empty)
-    if (isSecurityEnabled(connProperties) && stateTableSchema.isEmpty) {
-      val msg = s"$STATE_TABLE_SCHEMA is a mandatory option when security is enabled."
+    if (isSecurityEnabled(sqlContext.sparkSession) && stateTableSchema.isEmpty) {
+      val msg = s"'$STATE_TABLE_SCHEMA' is a mandatory option when security is enabled."
       throw new IllegalStateException(msg)
     }
     createSinkStateTableIfNotExist(sqlContext, stateTableSchema)
@@ -87,9 +84,11 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       cc.asInstanceOf[SnappySinkCallback])
   }
 
-  private def isSecurityEnabled(connProperties: ConnectionProperties) = {
-    val isSecurityEnabled = if (connProperties.connProps.containsKey(USERNAME)
-        && !connProperties.connProps.getProperty(USERNAME).isEmpty) {
+  private def isSecurityEnabled(sparkSession: SparkSession) = {
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sparkSession),
+      mutable.Map.empty)
+    val (user, _) = ExternalStoreUtils.getCredentials(sparkSession)
+    if (!user.isEmpty) {
       true
     } else {
       try {
@@ -100,16 +99,15 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
         case ex: SQLException if ex.getSQLState.equals(LOGIN_FAILED) => true
       }
     }
-    isSecurityEnabled
   }
 
   private def createSinkStateTableIfNotExist(sqlContext: SQLContext,
       stateTableSchema: Option[String]) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
         s" ${stateTable(stateTableSchema)} (" +
-        " stream_query_id varchar(200)," +
-        " batch_id long, " +
-        " PRIMARY KEY (stream_query_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
+        s" $QUERY_ID_COLUMN varchar(200)," +
+        s" $BATCH_ID_COLUMN long, " +
+        s" PRIMARY KEY ($QUERY_ID_COLUMN)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
   }
 
   @Override
@@ -126,6 +124,8 @@ private[streaming] object SnappyStoreSinkProvider {
   val STATE_TABLE_SCHEMA = "stateTableSchema"
   val CONFLATION = "conflation"
   val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
+  val QUERY_ID_COLUMN = "stream_query_id"
+  val BATCH_ID_COLUMN = "batch_id"
 
   object EventType {
     val INSERT = 0
@@ -162,7 +162,8 @@ case class SnappyStoreSink(snappySession: SnappySession,
   def updateStateTable(queryName: String, batchId: Long): Boolean = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
-        s"set batch_id=$batchId where stream_query_id='$queryName' and batch_id != $batchId")
+        s"set $BATCH_ID_COLUMN=$batchId where $QUERY_ID_COLUMN='$queryName' " +
+        s"and $BATCH_ID_COLUMN != $batchId")
         .collect()(0).getAs("count").asInstanceOf[Long]
 
     // TODO: use JDBC connection here
