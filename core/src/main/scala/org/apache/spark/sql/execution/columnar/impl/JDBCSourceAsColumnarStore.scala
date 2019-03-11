@@ -1003,8 +1003,20 @@ class SmartConnectorRowRDD(_session: SnappySession,
     // (updated values in ParamLiteral will take care of updating filters)
     evaluateWhereClause()
     val parts = partitionEvaluator()
+    if(parts.length == _partEval.apply().length){
+      return getPartitionEvaluator
+    }
     logDebug(s"$toString.getPartitions: $tableName partitions ${parts.mkString("; ")}")
     parts
+  }
+
+  def getPartitionEvaluator: Array[Partition] = {
+    partitionPruner() match {
+      case -1 => _partEval.apply()
+      case bucketId =>
+        val part = _partEval.apply()(bucketId).asInstanceOf[SmartExecutorBucketPartition]
+        Array(new SmartExecutorBucketPartition(0, bucketId, part.hostList))
+    }
   }
 
   def getSQLStatement(resolvedTableName: String,
