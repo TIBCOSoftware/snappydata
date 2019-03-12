@@ -339,18 +339,15 @@ class OpLogRdd(
         }
       }
     }
-    assert(diskStrCol != null && diskStrRow != null, s"1891: col/row disk store is null")
-
-    val rowDIF = diskStrRow.getDiskInitFile
-    val colDIF = diskStrCol.getDiskInitFile
-
-    val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
+    assert(diskStrRow != null, s"1891: row disk store is null")
     val phdrRow = getPlaceHolderDiskRegion(diskStrRow, rowRegPath)
-    logInfo(s"Column region name: ${colRegPath} for table: $tblName")
-    logInfo(s"1891: phdrcolname = ${phdrCol == null} and ${phdrRow == null}")
+    logInfo(s"1891: phdrRow is null = ${phdrRow == null} ")
 
     readRowData(phdrRow, result)
     if (provider.equalsIgnoreCase("COLUMN")) {
+      assert(diskStrCol != null, s"1891: col disk store is null")
+      val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
+      logInfo(s"1891: phdrcol is null = ${phdrCol == null} ")
       readColData(phdrCol, result)
     }
     logInfo(s"1891: split number from compute is ${split.index} and result size is ${result.size}")
