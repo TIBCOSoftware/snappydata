@@ -143,30 +143,35 @@ class SnappySessionState(val snappySession: SnappySession)
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
 
-  private lazy val dummyAnalyzer = new Analyzer(catalog, conf)
-
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+  private lazy val snappyAnalyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
 
+  }
+
+  override lazy val analyzer = new Analyzer(catalog, conf) {
+
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
 
-    def getStrategy(strategy: dummyAnalyzer.Strategy): Strategy = strategy match {
-      case dummyAnalyzer.FixedPoint(_) => fixedPoint
+    private def getStrategy(strategy: snappyAnalyzer.Strategy): Strategy = strategy match {
+      case snappyAnalyzer.FixedPoint(_) => fixedPoint
       case _ => Once
     }
 
-    override lazy val batches: Seq[Batch] = dummyAnalyzer.batches.map {
+    override lazy val batches: Seq[Batch] = snappyAnalyzer.batches.map {
       case batch  if batch.name.equalsIgnoreCase("Resolution") =>
         val rules = batch.rules.flatMap {
-          case PromoteStrings => Seq(PreUpdateTypeConversionCheck, PromoteStrings)
+          case PromoteStrings =>
+            Seq(PreUpdateTypeConversionCheck.asInstanceOf[Rule[LogicalPlan]],
+              PromoteStrings)
+          case r => Seq(r)
         }
+
         Batch(batch.name, getStrategy(batch.strategy), rules: _*)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
     }
   }
-
 
   object PreUpdateTypeConversionCheck extends Rule[LogicalPlan] {
 
@@ -174,14 +179,12 @@ class SnappySessionState(val snappySession: SnappySession)
       plan match {
         case Update(_, _, _, _, _) => plan resolveExpressions {
           case e if !e.childrenResolved => e
-
           case a @ BinaryArithmetic(left @ StringType(), right) =>
             throw new AnalysisException(s"${right.dataType} is not compatible" +
                 s" with ${left.dataType}.")
           case a @ BinaryArithmetic(left, right @ StringType()) =>
             throw new AnalysisException(s"${right.dataType} is not compatible" +
                 s" with ${left.dataType}.")
-
         }
         case _ => plan
       }
