@@ -51,6 +51,7 @@ class OpLogRdd(
     private var dbTableName: String,
     private var tblName: String,
     private var sch: StructType,
+    private var provider: String,
     private var projection: Array[Int],
     @transient private[sql] val filters: Array[Expression],
     private[sql] var fullScan: Boolean,
@@ -73,7 +74,6 @@ class OpLogRdd(
       case IntegerType => DataTypeDescriptor.INTEGER
       case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN, isNullable)
       case ByteType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.SMALLINT, isNullable)
-      // TODO where is Types.float
       case FloatType => DataTypeDescriptor.getSQLDataTypeDescriptor("float", isNullable)
       case BinaryType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BLOB, isNullable)
       case DoubleType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.DOUBLE, isNullable)
@@ -159,14 +159,19 @@ class OpLogRdd(
   def getPlaceHolderDiskRegion(
       diskStr: DiskStoreImpl,
       regPath: String): PlaceHolderDiskRegion = {
+    logDebug(s"Getting PlaceHolderDiskRegion for Disk Store $diskStr for Region Path $regPath")
     var phdr: PlaceHolderDiskRegion = null
     val iter = diskStr.getAllDiskRegions.entrySet().iterator()
     while (iter.hasNext) {
       val entry = iter.next()
       val adr = entry.getValue()
       val adrPath = adr.getFullPath
+      logInfo(s"PP: getPlaceHolderDiskRegion adrpath: $adrPath \n adr: ${adr.toString}" +
+          s" is adr bucket : ${adr.isBucket} ")
       if (PartitionedRegionHelper.unescapePRPath(adrPath).equals(regPath) && adr.isBucket) {
         phdr = adr.asInstanceOf[PlaceHolderDiskRegion]
+        logInfo(s"PP: getPlaceHolderDiskRegion:" +
+            s" ${PartitionedRegionHelper.unescapePRPath(adrPath)} -- ${regPath} -- ${adr.isBucket}")
       } else {
         logInfo(s"1891: getPlaceHolderDiskRegion " +
             s"${PartitionedRegionHelper.unescapePRPath(adrPath)} -- ${regPath} -- ${adr.isBucket}")
@@ -341,10 +346,13 @@ class OpLogRdd(
 
     val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
     val phdrRow = getPlaceHolderDiskRegion(diskStrRow, rowRegPath)
+    logInfo(s"Column region name: ${colRegPath} for table: $tblName")
     logInfo(s"1891: phdrcolname = ${phdrCol == null} and ${phdrRow == null}")
 
     readRowData(phdrRow, result)
-    readColData(phdrCol, result)
+    if (provider.equalsIgnoreCase("COLUMN")) {
+      readColData(phdrCol, result)
+    }
     logInfo(s"1891: split number from compute is ${split.index} and result size is ${result.size}")
     result.iterator
   }
@@ -451,6 +459,7 @@ class OpLogRdd(
     super.write(kryo, output)
     output.writeString(tblName)
     output.writeString(dbTableName)
+    output.writeString(provider)
     StructTypeSerializer.write(kryo, output, sch)
   }
 
@@ -458,6 +467,7 @@ class OpLogRdd(
     super.read(kryo, input)
     tblName = input.readString()
     dbTableName = input.readString()
+    provider = input.readString()
     sch = StructTypeSerializer.read(kryo, input, c = null)
     logWarning(s"1891: sch = ${sch}")
   }

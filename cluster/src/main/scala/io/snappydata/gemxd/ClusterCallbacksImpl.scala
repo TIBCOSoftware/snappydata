@@ -17,6 +17,7 @@
 package io.snappydata.gemxd
 
 import java.io.InputStream
+import java.lang
 import java.util.{Iterator => JIterator}
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -34,6 +35,7 @@ import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 import org.apache.spark.Logging
 import org.apache.spark.scheduler.cluster.SnappyClusterManager
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
+import org.apache.spark.sql.SaveMode
 
 /**
  * Callbacks that are sent by GemXD to Snappy for cluster management
@@ -129,6 +131,36 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
       is.close()
     }
     GemFireVersion.getClusterType
+  }
+
+  override def recoverData(connId: lang.Long, exportUri: String,
+      formatType: String, tableNames: String): Unit = {
+
+    // todo: make sure tableNames are fully qualified... how?
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+
+    val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
+      val catalogTables = session.externalCatalog.getAllTables()
+
+      val tablesArr = catalogTables.map(ct => {
+        ct.identifier.database match {
+         case Some(db) =>
+        db + "." + ct.identifier.table
+         case None => ct.identifier.table
+      }
+      })
+      tablesArr
+    } else {
+      tableNames.split(",").toSeq
+    }
+      logDebug(s"Using connection ID: $connId\n Export path:" +
+          s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
+
+      tablesArr.foreach(table => {
+        val tableData = session.sql(s"select * from $table;")
+        logDebug(s"Querying table $table.")
+        tableData.write.mode(SaveMode.Overwrite).format(formatType).save(exportUri + "_" + table)
+      })
   }
 
   override def setLeadClassLoader(): Unit = {

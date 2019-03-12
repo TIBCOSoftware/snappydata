@@ -16,19 +16,14 @@
  */
 package org.apache.spark.sql.execution.oplog.impl
 
-import com.gemstone.gemfire.internal.cache.LocalRegion
 import io.snappydata.Constant
-import io.snappydata.sql.catalog.RelationInfo
+import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
+import io.snappydata.thrift.CatalogTableObject
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Attribute, EqualNullSafe, EqualTo, Expression, SpecificInternalRow, TokenLiteral, UnsafeProjection}
-import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.expressions.{Expression}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.PartitionedDataSourceScan
-import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStore}
-import org.apache.spark.sql.execution.columnar.impl.ColumnDelta
 import org.apache.spark.sql.hive.HiveClientUtil
 import org.apache.spark.sql.sources.{BaseRelation, TableScan}
 import org.apache.spark.sql.types.StructType
@@ -75,8 +70,19 @@ class OpLogFormatRelation(
     //    }
 
     logWarning(s"1891; getcolumnbatchrdd schema is null ${_userSchema}")
+    logInfo(s"PP: OpLogFormatRelation: dbTableName: $dbTableName ; tableName: $tableName")
+
+    import scala.collection.JavaConverters._
+    val provider = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
+      x.isInstanceOf[CatalogTableObject] && {
+        val cto = x.asInstanceOf[CatalogTableObject]
+        val fqtn = s"${cto.getSchemaName}.${cto.getTableName}"
+        fqtn.equalsIgnoreCase(dbTableName)
+      }
+    }).head.asInstanceOf[CatalogTableObject].getProvider
+
     val snappySession = SparkSession.builder().getOrCreate().asInstanceOf[SnappySession]
-    (new OpLogRdd(snappySession, dbTableName, tableName, _userSchema, projection,
+    (new OpLogRdd(snappySession, dbTableName, tableName, _userSchema, provider, projection,
       filters, (filters eq null) || filters.length == 0, prunePartitions), projection)
   }
 
