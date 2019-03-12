@@ -57,7 +57,7 @@ class CassandraSnappyDUnitTest(val s: String)
     val start = System.currentTimeMillis
     "curl -OL http://www-us.apache.org/dist/cassandra/2.1.21/apache-cassandra-2.1.21-bin.tar.gz".!!
     val end1 = System.currentTimeMillis
-    logInfo("Time to download cassandra cluster " + (end1 - start))
+    logInfo("Time to download cassandra " + (end1 - start))
     logInfo("Cassandra jar downloaded")
     val jarLoc = getUserAppJarLocation("apache-cassandra-2.1.21-bin*", currDir)
     ("tar xvf " + jarLoc).!!
@@ -192,7 +192,7 @@ class CassandraSnappyDUnitTest(val s: String)
     }
   }
 
-  def testDeployJarWithCassandra(): Unit = {
+  def testDeployPackageWithCassandra(): Unit = {
     snappyJobTest()
     externalTableCreateTest()
   }
