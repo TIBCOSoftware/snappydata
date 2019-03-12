@@ -232,25 +232,29 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     } else df.persist()
 
     def processDataWithEventType(dataFrame: DataFrame): Unit = {
-      val hasUpdateOrDeleteEvents = persist(dataFrame)
-          .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
-          .count() > 0
-      if (hasUpdateOrDeleteEvents) {
+      val incomingEventTypes = persist(dataFrame).filter(dataFrame(EVENT_TYPE_COLUMN)
+          .isin(INSERT, UPDATE, DELETE)).groupBy(dataFrame(EVENT_TYPE_COLUMN)).count()
+          .select(EVENT_TYPE_COLUMN).collect().map(r => r(0).asInstanceOf[Int]).toSet[Int]
+      if (incomingEventTypes.contains(DELETE)) {
         val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === DELETE)
             .drop(EVENT_TYPE_COLUMN)
         deleteDf.write.deleteFrom(tableName)
       }
       if (posDup) {
-        val upsertEventTypes = List(INSERT, UPDATE)
-        val upsertDf = dataFrame
-            .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
-            .drop(EVENT_TYPE_COLUMN)
-        upsertDf.write.putInto(tableName)
+        if (incomingEventTypes.contains(INSERT) || incomingEventTypes.contains(UPDATE)) {
+          val upsertEventTypes = List(INSERT, UPDATE)
+          val upsertDf = dataFrame
+              .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
+              .drop(EVENT_TYPE_COLUMN)
+          upsertDf.write.putInto(tableName)
+        }
       } else {
-        val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === INSERT)
-            .drop(EVENT_TYPE_COLUMN)
-        insertDf.write.insertInto(tableName)
-        if (hasUpdateOrDeleteEvents) {
+        if (incomingEventTypes.contains(INSERT)) {
+          val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === INSERT)
+              .drop(EVENT_TYPE_COLUMN)
+          insertDf.write.insertInto(tableName)
+        }
+        if (incomingEventTypes.contains(UPDATE)) {
           val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === UPDATE)
               .drop(EVENT_TYPE_COLUMN)
           updateDf.write.putInto(tableName)
