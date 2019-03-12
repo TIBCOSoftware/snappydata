@@ -76,7 +76,7 @@ class OpLogFormatRelation(
 
     logWarning(s"1891; getcolumnbatchrdd schema is null ${_userSchema}")
     val snappySession = SparkSession.builder().getOrCreate().asInstanceOf[SnappySession]
-    (new OpLogColumnRdd(snappySession, dbTableName, tableName, _userSchema, projection,
+    (new OpLogRdd(snappySession, dbTableName, tableName, _userSchema, projection,
       filters, (filters eq null) || filters.length == 0, prunePartitions), projection)
   }
 
