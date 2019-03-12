@@ -322,8 +322,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         case table if CatalogObjectType.isTableBackedByRegion(
           CatalogObjectType.getTableType(table)) => table.database -> table.identifier.table
       }.asInstanceOf[R]
-// here instead of sending only tables, we need to get all the hive entries not just catalogtables
-        // how ??
+
       case GET_ALL_HIVE_ENTRIES => {
         println(s"KN: this is $this and case is GET_ALL_HIVE_ENTRIES and" +
             s" externalCatalog = $externalCatalog")
