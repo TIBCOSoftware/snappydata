@@ -33,9 +33,7 @@ import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, Cata
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
 
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
-import org.apache.hadoop.hive.ql.exec.spark.session.SparkSession
 
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.{Logging, SparkContext}
@@ -55,6 +53,7 @@ object RecoveryService extends Logging {
 
   /* fqtn and bucket number for PR r Column table, -1 indicates replicated row table */
   def getExecutorHost(tableName: String, bucketId: Int = -1): Seq[String] = {
+    // TODO need checking for row replicated/row partitioned/col table
     // Expecting table in the format fqtn i.e. schemaname.tablename
     val tablePath = tableName.replace(".", "/")
     var bucketPath = tablePath
@@ -65,8 +64,11 @@ object RecoveryService extends Logging {
     // TODO remove replace used and handle it in a proper way
     bucketPath = bucketPath.replace("/__PR/_B_", "/__PR/_B__")
     for (entry <- regionViewSortedSet) {
-      logInfo(s"1891: regionViewSortedSet[${entry._1}, ${entry._2}] and bucketPath = $bucketPath" )
+      logInfo(s"1891: regionViewSortedSet[${entry._1}, ${entry._2}] and bucketPath = $bucketPath")
     }
+    // check if the path exists else check path of column buffer.
+    // also there could be no data in any.
+    // check only row, only col, no data
     Seq(regionViewSortedSet(bucketPath).lastKey.getExecutorHost)
   }
 
@@ -77,7 +79,6 @@ object RecoveryService extends Logging {
     val schema = parts(0)
     val table = parts(1)
     val cObject = mostRecentMemberObject.getCatalogObjects.toArray()
-// most effective way ??
     val cObjArr: Array[AnyRef] = cObject.filter {
       case a: CatalogTableObject => {
         if (a.schemaName == schema && a.tableName == table) {
@@ -88,11 +89,11 @@ object RecoveryService extends Logging {
       }
       case _ => false
     }
-    val cObj = cObjArr(0).asInstanceOf[CatalogTableObject]
+    val cObj = cObjArr.head.asInstanceOf[CatalogTableObject]
     logInfo(s"1891: cObj = ${cObj}")
     val tablePath = fqtn.replace(".", "/")
     import collection.JavaConversions._
-    for((s, i) <- mostRecentMemberObject.getPrToNumBuckets){
+    for ((s, i) <- mostRecentMemberObject.getPrToNumBuckets) {
       logInfo(s"1891: mostrecentmemberobject map ${s} -> ${i} and tablePath = ${tablePath}")
     }
 
@@ -117,10 +118,26 @@ object RecoveryService extends Logging {
       mutable.SortedSet[RecoveryModePersistentView]] = mutable.Map.empty
 
   val persistentObjectMemberMap: mutable.Map[
-      InternalDistributedMember, PersistentStateInRecoveryMode ] = mutable.Map.empty
+      InternalDistributedMember, PersistentStateInRecoveryMode] = mutable.Map.empty
 
   var mostRecentMemberObject: PersistentStateInRecoveryMode = null;
+  var memberObject: PersistentStateInRecoveryMode = null;
 
+  def getNumBuckets(schemaName: String, tableName: String): Integer = {
+    val memberHashRegion = memberObject
+        .getPrToNumBuckets.containsKey(s"/${schemaName}/${tableName}")
+    import collection.JavaConversions._
+    for((k, v) <- memberObject.getPrToNumBuckets) {
+        logInfo(s"1891: PrToNumBuckets map values = ${k} -> ${v}")
+    }
+    logInfo(s"1891: PrToNumBuckets contains = ${memberHashRegion} for member" + memberObject.getMember)
+    if (memberHashRegion) {
+      memberObject.getPrToNumBuckets.get(s"/${schemaName}/${tableName}")
+    } else {
+      logWarning(s"1891: num of buckets not found for /${schemaName}/${tableName}")
+      -1
+    }
+  }
 
   def collectViewsAndRecoverDDLs(): Unit = {
     // Send a message to all the servers and locators to send back their
@@ -143,7 +160,7 @@ object RecoveryService extends Logging {
 
       persistentObjectMemberMap += persistentViewObj.getMember -> persistentViewObj
       val regionItr = persistentViewObj.getAllRegionViews.iterator()
-      while(regionItr.hasNext) {
+      while (regionItr.hasNext) {
         val x = regionItr.next();
         val regionPath = x.getRegionPath
         val set = regionViewSortedSet.get(regionPath)
@@ -158,21 +175,29 @@ object RecoveryService extends Logging {
     }
 
     // Print all the set
-    for((k, v) <- regionViewSortedSet) {
+    for ((k, v) <- regionViewSortedSet) {
       println(s"region = $k and set = $v")
     }
 
     // identify which members catalog object to be used
     val hiveRegionViews = regionViewSortedSet.filterKeys(
       _.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
-
     val hiveRegionToConsider =
       hiveRegionViews.keySet.toSeq.sortBy(hiveRegionViews.get(_).size).reverse.head
     logInfo(s"Hive region to consider = $hiveRegionToConsider")
-
     val mostUptodateRegionView = regionViewSortedSet(hiveRegionToConsider).lastKey
-
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
+
+
+    val nonHiveRegionViews = regionViewSortedSet.filterKeys(
+      !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
+    val regionToConsider =
+      nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
+    logInfo(s"Hive region to consider = $regionToConsider")
+    val regionView = regionViewSortedSet(regionToConsider).lastKey
+    val memberToConsider = regionView.getMember
+    memberObject = persistentObjectMemberMap(memberToConsider)
+
 
     logInfo(s"For Hive memberToConsiderForHiveCatalog = $memberToConsiderForHiveCatalog")
     for ((k, v) <- persistentObjectMemberMap) {
@@ -223,7 +248,7 @@ object RecoveryService extends Logging {
 
   def getProvider(tableName: String): String = {
     logInfo(s"RecoveryService.getProvider called with tablename $tableName")
-    val res = mostRecentMemberObject.getCatalogObjects.asScala.filter( x => {
+    val res = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
       x.isInstanceOf[CatalogTableObject] && {
         val cbo = x.asInstanceOf[CatalogTableObject]
         val fqtn = s"${cbo.getSchemaName}.${cbo.getTableName}"
@@ -238,8 +263,9 @@ object RecoveryService extends Logging {
   /**
    * Populates the external catalog, in recovery mode. Currently table,function and
    * database type of catalog objects is supported.
-   * @param catalogObjSeq   Sequence of catalog objects to be inserted in the catalog
-   * @param sc              Spark Context
+   *
+   * @param catalogObjSeq Sequence of catalog objects to be inserted in the catalog
+   * @param sc            Spark Context
    */
 
   def populateCatalog(catalogObjSeq: Seq[Any], sc: SparkContext): Unit = {
@@ -262,7 +288,7 @@ object RecoveryService extends Logging {
 
 object RegionDiskViewOrdering extends Ordering[RecoveryModePersistentView] {
   def compare(element1: RecoveryModePersistentView,
-    element2: RecoveryModePersistentView): Int = {
+      element2: RecoveryModePersistentView): Int = {
     element2.compareTo(element1)
   }
 }

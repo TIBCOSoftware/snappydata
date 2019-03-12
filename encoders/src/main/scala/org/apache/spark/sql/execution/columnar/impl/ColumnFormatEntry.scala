@@ -144,6 +144,10 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
 
   def getColumnIndex: Int = columnIndex
 
+  def getPartitionId() = partitionId
+
+  def getUuid() = uuid
+
   private[columnar] def withColumnIndex(columnIndex: Int): ColumnFormatKey = {
     if (columnIndex != this.columnIndex) new ColumnFormatKey(uuid, partitionId, columnIndex)
     else this
