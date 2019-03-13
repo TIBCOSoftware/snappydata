@@ -284,7 +284,6 @@ pages:
         - 'gemfirexd.query-timeout': 'reference/configuration_parameters/snappydata.query-timeout.md'
 #        - 'snappydata.storage.tempDirectory': 'reference/configuration_parameters/snappydata.storage.tempDirectory.md'
 #        - 'snappydata.system.home': 'reference/configuration_parameters/snappydata.system.home.md'
-        - 'ssl': 'reference/configuration_parameters/ssl.md'
         - 'ssl-enabled': 'reference/configuration_parameters/ssl_enabled.md'
         - 'ssl-protocols': 'reference/configuration_parameters/ssl_protocols.md'
         - 'ssl-ciphers': 'reference/configuration_parameters/ssl_ciphers.md'
