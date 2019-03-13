@@ -40,7 +40,7 @@ If there are more than 100 entries for a single index entry, the heap overhead p
 
 <a id="memory-execution"></a>
 ## Estimating Memory Size for Execution
-Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (for example, a UDF allocating memory), etc. Most of these allocations automatically overflow to disk. But, it is strongly recommended that you allocate at least 5GB per data server/lead node for production systems that run large scale analytic queries.
+Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (for example, a UDF allocating memory), etc. Most of these allocations automatically overflow to disk.  But it is strongly recommended to allocate minimum 6-8 GB of heap per data server/lead node for production systems that run large scale analytic queries.
 
 SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (for example, columns stored as byte arrays).
 </br>It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The [memory-size](../configuring_cluster/property_description.md#memory-size) and [heap-size](../configuring_cluster/property_description.md#heap-size) properties control the off-heap and on-heap sizes of the SnappyData server process.
