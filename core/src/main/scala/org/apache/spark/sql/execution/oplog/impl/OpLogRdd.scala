@@ -156,27 +156,27 @@ class OpLogRdd(
    * @param regPath region path constructed from given table name
    * @return PlaceHolderDiskRegion
    */
-  def getPlaceHolderDiskRegion(
-      diskStr: DiskStoreImpl,
-      regPath: String): PlaceHolderDiskRegion = {
-    logDebug(s"Getting PlaceHolderDiskRegion for Disk Store $diskStr for Region Path $regPath")
+  def getPlaceHolderDiskRegion(diskStr: DiskStoreImpl, regPath: String): PlaceHolderDiskRegion = {
+    import scala.collection.JavaConversions._
+    logInfo(s"Getting PlaceHolderDiskRegion from Disk Store $diskStr for Region Path $regPath")
     var phdr: PlaceHolderDiskRegion = null
-    val iter = diskStr.getAllDiskRegions.entrySet().iterator()
-    while (iter.hasNext) {
-      val entry = iter.next()
-      val adr = entry.getValue()
+
+    for ((_, adr) <- diskStr.getAllDiskRegions) {
       val adrPath = adr.getFullPath
-      logInfo(s"PP: getPlaceHolderDiskRegion adrpath: $adrPath \n adr: ${adr.toString}" +
-          s" is adr bucket : ${adr.isBucket} ")
-      if (PartitionedRegionHelper.unescapePRPath(adrPath).equals(regPath) && adr.isBucket) {
+      var regUnescPath = PartitionedRegionHelper.unescapePRPath(adrPath)
+
+      var regionPath = regPath
+      if (!adr.isBucket) {
+        // regPath for pr tables is in the format /_PR//B_<schema>/<table>/0
+        // but for replicated tables it is /<schema>/<table>
+        regionPath = s"/${dbTableName.replace('.', '/')}"
+      }
+
+      if (regUnescPath.equals(regionPath)) {
         phdr = adr.asInstanceOf[PlaceHolderDiskRegion]
-        logInfo(s"PP: getPlaceHolderDiskRegion:" +
-            s" ${PartitionedRegionHelper.unescapePRPath(adrPath)} -- ${regPath} -- ${adr.isBucket}")
-      } else {
-        logInfo(s"1891: getPlaceHolderDiskRegion " +
-            s"${PartitionedRegionHelper.unescapePRPath(adrPath)} -- ${regPath} -- ${adr.isBucket}")
       }
     }
+    assert(phdr != null, s"PlaceHolderDiskRegion not found for regionPath=${regPath}")
     phdr
   }
 
@@ -189,6 +189,7 @@ class OpLogRdd(
   def readRowData(phdrRow: PlaceHolderDiskRegion, result: mutable.ArrayBuffer[Row]): Unit = {
     val rowFormatter = getRowFormatter
     val dvdArr = new Array[DataValueDescriptor](sch.length)
+
     val regMapItr = phdrRow.getRegionMap.regionEntries().iterator()
     while (regMapItr.hasNext) {
       logInfo("1891: regmapitr has more entries")
@@ -243,7 +244,7 @@ class OpLogRdd(
     val statsKeys = keys.filter(_.getColumnIndex == -1)
     var tbl: Array[Array[Any]] = null
 
-    var totalRowCount = 0
+    var totalRowsInColBatches = 0
     for (statsKey <- statsKeys) {
       val cfk = statsKey.asInstanceOf[ColumnFormatKey]
       val regEntry = regMap.getEntry(cfk)
@@ -255,17 +256,19 @@ class OpLogRdd(
       val numOfRows = stats.getInt(0)
       logInfo(s"1891: regmap key = ${statsKey} and entry in map is ${cfk.getUuid} -> $numOfRows")
       batchCounts += (cfk -> numOfRows)
-      totalRowCount += numOfRows
+      totalRowsInColBatches += numOfRows
     }
 
-    logInfo(s"1891: totalRowCount = ${totalRowCount}")
-    tbl = Array.ofDim[Any](totalRowCount, sch.length)
+    logInfo(s"1891: totalRowCount = ${totalRowsInColBatches} and batchCounts size is ${batchCounts.size}")
+    tbl = Array.ofDim[Any](totalRowsInColBatches, sch.length)
+    var globalRowIndex = 0
 
     for ((statsKey, batchCount) <- batchCounts) {
+      logInfo(s"1891: for every entry in batchCounts ${statsKey} -> ${batchCount}")
       val cfk = statsKey.asInstanceOf[ColumnFormatKey]
 
       for ((field, colIndx) <- sch.zipWithIndex) {
-        logInfo(s"1891: keys size = ${keys.size}")
+        // logInfo(s"1891: column index = ${colIndx} colname ${field.name}")
         val columnKey = keys.filter(k => k.getColumnIndex == colIndx + 1 &&
             k.getUuid == cfk.getUuid &&
             k.getPartitionId == cfk.getPartitionId
@@ -281,25 +284,26 @@ class OpLogRdd(
         } else {
           valueBuffer.array()
         }
-        (0 until batchCount).map(rowNum => {
-          logInfo(s"1891: adding prev col batch to tbl rowNum = ${rowNum}")
-          // tbl(rowNum)(colNum - 1) = decoder.readInt(valueArray, rowNum)
-          tbl(rowNum)(colIndx) = getDecodedValue(
-            decoder, valueArray, sch(colIndx).dataType, rowNum
-          )
+        (0  until batchCount).foreach(batchIndex => {
+          logInfo(s"1891: accessing index : ${globalRowIndex} + ${batchIndex}")
+          tbl(globalRowIndex + batchIndex)(colIndx) =
+              getDecodedValue(decoder, valueArray, sch(colIndx).dataType, batchIndex)
         })
       }
+      globalRowIndex += batchCount
     }
-    if (tbl != null && !tbl.equals(Array.ofDim[Any](totalRowCount, sch.length))) {
-      logInfo("1891: adding prev col batch to result")
-      tbl.foreach(arr => result += Row.fromSeq(arr.toSeq))
+    if (tbl != null && !tbl.equals(Array.ofDim[Any](totalRowsInColBatches, sch.length))) {
+      // logInfo(s"1891: adding prev col batch to result and globalRowIndex=${globalRowIndex}")
+      tbl.foreach(arr => {
+        result += Row.fromSeq(arr.toSeq)
+      })
     }
   }
 
   override def compute(split: Partition, context: TaskContext): Iterator[Any] = {
+    val t1 = System.currentTimeMillis()
     var result: mutable.ArrayBuffer[Row] = new mutable.ArrayBuffer[Row]()
     logInfo("1891: started compute()", new Throwable)
-    // TODO: hmeka think of better way to build iterator
     val diskStrs = Misc.getGemFireCache.listDiskStores()
     var diskStrCol: DiskStoreImpl = null
     var diskStrRow: DiskStoreImpl = null
@@ -318,14 +322,14 @@ class OpLogRdd(
     val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/').toUpperCase()}/${split.index}"
     logInfo(s"1891: row regName get is ${rowRegPath}")
 
+    val t2 = System.currentTimeMillis()
     import scala.collection.JavaConversions._
     for (d <- diskStrs) {
       val dskRegMap = d.getAllDiskRegions
       for ((_, adr) <- dskRegMap) {
         val adrPath = adr.getFullPath
         val adrUnescapePath = PartitionedRegionHelper.unescapePRPath(adrPath)
-        if ((adrUnescapePath.equals(colRegPath))
-            && adr.isBucket) {
+        if (adrUnescapePath.equals(colRegPath) && adr.isBucket) {
           logInfo(s"1891: matches with col region constructed: ${adrUnescapePath}")
           diskStrCol = d
         } else if (adrUnescapePath.equals(rowRegPath)) {
@@ -333,24 +337,34 @@ class OpLogRdd(
           diskStrRow = d
         } else if (!adr.isBucket && adrUnescapePath
             .equals('/' + dbTableName.replace('.', '/'))) {
+          logInfo(s"1891: matched with row replicated: ${adrUnescapePath}")
           diskStrRow = d
         } else {
           logInfo(s"1891: region doesn't match with constructed path: ${adrUnescapePath}")
         }
       }
     }
+    val t3 = System.currentTimeMillis()
     assert(diskStrRow != null, s"1891: row disk store is null")
     val phdrRow = getPlaceHolderDiskRegion(diskStrRow, rowRegPath)
+    val t4 = System.currentTimeMillis()
     logInfo(s"1891: phdrRow is null = ${phdrRow == null} ")
-
     readRowData(phdrRow, result)
+    val t5 = System.currentTimeMillis()
+
+    var t6: Long = 0
+    var t7: Long = 0
     if (provider.equalsIgnoreCase("COLUMN")) {
       assert(diskStrCol != null, s"1891: col disk store is null")
       val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
+      t6 = System.currentTimeMillis()
       logInfo(s"1891: phdrcol is null = ${phdrCol == null} ")
       readColData(phdrCol, result)
+      t7 = System.currentTimeMillis()
     }
+
     logInfo(s"1891: split number from compute is ${split.index} and result size is ${result.size}")
+    logInfo(s"1891: time: ${t2 - t1} ${t3 - t2} ${t4 - t3} ${t5 - t4} ${t6 - t5} ${t7 - t6}")
     result.iterator
   }
 
@@ -438,18 +452,26 @@ class OpLogRdd(
     val tableName = dbTableName.split('.')(1)
     val numBuckets = RecoveryService.getNumBuckets(schemaName, tableName)
     logInfo(s"1891: numbuckets = ${numBuckets}")
-    val parr = (0 until numBuckets).map { p =>
-      val prefNodes = null // RecoveryService.getExecutorHost(dbTableName, p)
-      logInfo(s"1891: prefNodes = ${prefNodes}")
-      val buckets = new mutable.ArrayBuffer[Int](numBuckets)
-      buckets += p
-      // new MultiBucketExecutorPartition(p, buckets, numBuckets, prefNodes)
-      // TODO: need to enforce prefNodes
+    val partition = (0 until numBuckets).map { p =>
       new Partition {
         override def index: Int = p
       }
     }.toArray[Partition]
-    parr
+    partition
+  }
+
+  /**
+   * Returns seq of hostnames where the corresponding
+   * split/bucket is present.
+   *
+   * @param split partition corresponding to bucket
+   * @return sequence of hostnames
+   */
+  override def getPreferredLocations(split: Partition): Seq[String] = {
+    // super.getPreferredLocations(split)
+    val host = RecoveryService.getExecutorHost(dbTableName, split.index)
+    logInfo(s"1891: preferred host location for split: ${split.index} is ${host}")
+    host
   }
 
   override def write(kryo: Kryo, output: Output): Unit = {
@@ -466,6 +488,5 @@ class OpLogRdd(
     dbTableName = input.readString()
     provider = input.readString()
     sch = StructTypeSerializer.read(kryo, input, c = null)
-    logWarning(s"1891: sch = ${sch}")
   }
 }
