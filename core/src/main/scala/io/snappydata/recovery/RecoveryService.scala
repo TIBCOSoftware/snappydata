@@ -124,18 +124,21 @@ object RecoveryService extends Logging {
   var memberObject: PersistentStateInRecoveryMode = null;
 
   def getNumBuckets(schemaName: String, tableName: String): Integer = {
-    val memberHashRegion = memberObject
+    val memberContainsRegion = memberObject
         .getPrToNumBuckets.containsKey(s"/${schemaName}/${tableName}")
     import collection.JavaConversions._
     for((k, v) <- memberObject.getPrToNumBuckets) {
         logInfo(s"1891: PrToNumBuckets map values = ${k} -> ${v}")
     }
-    logInfo(s"1891: PrToNumBuckets contains = ${memberHashRegion} for member" + memberObject.getMember)
-    if (memberHashRegion) {
+    logInfo(s"1891: PrToNumBuckets contains = ${memberContainsRegion} for member" + memberObject.getMember)
+    if (memberContainsRegion) {
       memberObject.getPrToNumBuckets.get(s"/${schemaName}/${tableName}")
     } else {
       logWarning(s"1891: num of buckets not found for /${schemaName}/${tableName}")
-      -1
+      if (memberObject.getreplicatedRegions().contains(s"/${schemaName}/${tableName}")) {
+        logInfo("1891: table is replicated ")
+        1
+      } else -1
     }
   }
 
