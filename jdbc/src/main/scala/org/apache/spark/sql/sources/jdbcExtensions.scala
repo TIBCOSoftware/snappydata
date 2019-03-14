@@ -179,13 +179,14 @@ object JdbcExtendedUtils extends Logging {
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
     } else session match {
-      case None => conn.getSchema
+      case None if conn != null => conn.getSchema
       // get the current schema
       case Some(s) => s.catalog.currentDatabase
+      case None => ""
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     // hive meta-store is case-insensitive
-    (toUpperCase(schemaName), toUpperCase(tableName))
+    (if (!schemaName.isEmpty) toUpperCase(schemaName) else schemaName, toUpperCase(tableName))
   }
 
   private def getTableMetadataResultSet(schemaName: String, tableName: String,
@@ -338,11 +339,16 @@ object JdbcExtendedUtils extends Logging {
     val (schema, tableName) = getTableWithSchema(table, conn = null, None)
     if (escapeQuotes) {
       val sb = new java.lang.StringBuilder(schema.length + tableName.length + 9)
-      sb.append("\\\"").append(schema).append("\\\".\\\"")
-          .append(tableName).append("\\\"").toString
+      if (!schema.isEmpty) {
+        sb.append("\\\"").append(schema).append("\\\".")
+      }
+      sb.append("\\\"").append(tableName).append("\\\"").toString
     } else {
       val sb = new java.lang.StringBuilder(schema.length + tableName.length + 5)
-      sb.append('"').append(schema).append("\".\"").append(tableName).append('"').toString
+      if (!schema.isEmpty) {
+        sb.append('"').append(schema).append("\".")
+      }
+      sb.append('"').append(tableName).append('"').toString
     }
   }
 
