@@ -46,7 +46,7 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowDatabasesCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
@@ -407,14 +407,14 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
     else {
-      AttributeReference("schemaName", StringType, nullable = false)() ::
+      AttributeReference("database", StringType, nullable = false)() ::
           AttributeReference("tableName", StringType, nullable = false)() ::
           AttributeReference("isTemporary", BooleanType, nullable = false)() :: Nil
     }
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (!hiveCompatible) return super.run(sparkSession)
+    if (!hiveCompatible) return super.run(sparkSession).map(r => Row(r.getString(0).toLowerCase, r.getString(1).toLowerCase, r.getBoolean(2)))
 
     val catalog = sparkSession.sessionState.catalog
     val schemaName = schemaOpt match {
@@ -429,6 +429,14 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
   }
 }
 
+class ShowSchemasCommand(schemaOpt: Option[String]) extends ShowDatabasesCommand(schemaOpt) {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    super.run(sparkSession).map(r => Row(r.getString(0).toLowerCase))
+  }
+}
+
+
 case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     viewPattern: Option[String]) extends RunnableCommand {
 
@@ -438,7 +446,7 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("viewName", StringType, nullable = false)() :: Nil
     else {
-      AttributeReference("schemaName", StringType, nullable = false)() ::
+      AttributeReference("database", StringType, nullable = false)() ::
           AttributeReference("viewName", StringType, nullable = false)() ::
           AttributeReference("isTemporary", BooleanType, nullable = false)() ::
           AttributeReference("isGlobal", BooleanType, nullable = false)() :: Nil

@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
+import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowSchemasCommand, ShowViewsCommand}
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
@@ -1132,7 +1132,7 @@ class SnappyParser(session: SnappySession)
         ((id: Any, pat: Any) => ShowViewsCommand(session,
           id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
     SHOW ~ (SCHEMAS | DATABASES) ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
-      ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
+      new ShowSchemasCommand(pat.asInstanceOf[Option[String]])) |
     SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
         ((table: TableIdentifier, db: Any) =>
           ShowColumnsCommand(db.asInstanceOf[Option[String]], table)) |
