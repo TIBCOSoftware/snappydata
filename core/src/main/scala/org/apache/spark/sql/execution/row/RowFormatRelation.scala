@@ -152,6 +152,9 @@ class RowFormatRelation(
 
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
+        // scalastyle:off
+        println(" RowFormatScanRDD ===================> Executed")
+        // scalastyle:on
         val region = schemaName match {
           case SnappyExternalCatalog.SYS_SCHEMA => None
           case _ => Some(Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion])
@@ -171,6 +174,9 @@ class RowFormatRelation(
           projection = Array.emptyIntArray, region = region)
 
       case _ =>
+        // scalastyle:off
+        println(" SmartConnectorRowRDD ===================> Executed")
+        // scalastyle:on
         new SmartConnectorRowRDD(
           session,
           resolvedName,
