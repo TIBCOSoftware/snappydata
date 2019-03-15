@@ -1152,7 +1152,7 @@ class SnappyParser(session: SnappySession)
     SHOW ~ VIEWS ~ ((FROM | IN) ~ identifier).? ~ (LIKE.? ~ stringLiteral).? ~>
         ((id: Any, pat: Any) => ShowViewsCommand(session,
           id.asInstanceOf[Option[String]], pat.asInstanceOf[Option[String]])) |
-    SHOW ~ SCHEMAS ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
+    SHOW ~ (SCHEMAS | DATABASES) ~ (LIKE.? ~ stringLiteral).? ~> ((pat: Any) =>
       ShowDatabasesCommand(pat.asInstanceOf[Option[String]])) |
     SHOW ~ COLUMNS ~ (FROM | IN) ~ tableIdentifier ~ ((FROM | IN) ~ identifier).? ~>
         ((table: TableIdentifier, db: Any) =>
