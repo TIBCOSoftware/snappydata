@@ -346,13 +346,6 @@ object TPCHUtils extends Logging {
       isSnappy, buckets_Cust_Part_PartSupp, null)
   }
 
-  def createOrderTable(snc: SQLContext, isSnappy: Boolean): Unit = {
-    val tpchDataPath = getClass.getResource("/TPCH").getPath // "/data/wrk/w/TPCH/1GB"
-    val buckets_Order_Lineitem = "5"
-    TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath,
-      isSnappy, buckets_Order_Lineitem, null)
-  }
-
   def validateResult(snc: SQLContext, isSnappy: Boolean, isTokenization: Boolean = false): Unit = {
     val sc: SparkContext = snc.sparkContext
 

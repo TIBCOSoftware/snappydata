@@ -206,11 +206,13 @@ object SmartConnectorFunctions {
 
   private def verifyColumnTablePruning(snc: SnappyContext): Unit = {
 
-    // val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
+    val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
     try {
-
-      // io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
-      TPCHUtils.createOrderTable(snc, true)
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
+      val tpchDataPath = TPCHColumnPartitionedTable.getClass.getResource("/TPCH").getPath
+      val buckets_Order_Lineitem = "5"
+      TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath,
+        isSnappy = true, buckets_Order_Lineitem, null, provider = "column")
 
       def validateSinglePartition(df: DataFrame, bucketId: Int): Unit = {
         val plan = df.queryExecution.executedPlan.collectFirst {
@@ -275,7 +277,7 @@ object SmartConnectorFunctions {
       assert(r.getDate(1).toString.equals("1994-12-30"))
 
     } finally {
-      // io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
+      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
     }
   }
 
