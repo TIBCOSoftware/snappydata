@@ -1,0 +1,185 @@
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir 'src/main/java'
+sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala',
+                                  'src/dunit/java', 'src/dunit/scala' ]
+sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = []
+
+def osName = org.gradle.internal.os.OperatingSystem.current()
+
+dependencies {
+  compileOnly 'org.scala-lang:scala-library:' + scalaVersion
+  compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
+
+  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:2.3.2")
+  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:2.3.2")
+
+  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:2.3.2")
+  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:2.3.2")
+
+  compile project(":snappy-jdbc_${scalaBinaryVersion}")
+  compile project(":snappy-encoders_${scalaBinaryVersion}")
+
+  testCompile project(':dunit')
+  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+
+  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:2.3.2:tests")
+  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:2.3.2:tests")
+
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+
+//def downloadApacheSparkDist(String ver, String distName, String prodDir) {
+//  return tasks.create("downloadApache${ver}SparkDist", Download) {
+//    outputs.files "${prodDir}.tgz"
+//
+//    src "http://archive.apache.org/dist/spark/spark-${ver}/${distName}.tgz"
+//    dest sparkDistDir
+//    onlyIfNewer true
+//
+//    doFirst {
+//      mkdir(sparkDistDir)
+//    }
+//  }
+//}
+//
+//def taskGetApacheSparkDist(String ver, String distName, String prodDir) {
+//  return tasks.create("getApacheSpark${ver}Dist") {
+//    dependsOn downloadApacheSparkDist(ver, distName, prodDir)
+//
+//    outputs.files "${prodDir}.tgz", "${prodDir}/README.md"
+//
+//    doLast {
+//      if (osName.isWindows()) {
+//        copy {
+//          from tarTree(resources.gzip("${sparkDistDir}/${distName}.tgz"))
+//          into sparkDistDir
+//        }
+//      } else {
+//        // gradle tarTree does not preserve symlinks (GRADLE-2844)
+//        exec {
+//          executable 'tar'
+//          args 'xzf', "${distName}.tgz"
+//          workingDir = sparkDistDir
+//        }
+//      }
+//    }
+//  }
+//}
+
+/*task getApacheSparkDist {
+  dependsOn taskGetApacheSparkDist(sparkCurrentVersion, sparkCurrentDistName, sparkCurrentProductDir)
+}*/
+
+test.dependsOn ':cleanJUnit'
+// dunitTest.dependsOn getApacheSparkDist
+check.dependsOn test, scalaTest, dunitTest
+
+archivesBaseName = 'snappydata-v2connector_' + scalaBinaryVersion
+shadowJar {
+  zip64 = true
+  // avoid conflict with the 0.9.2 version in stock Spark
+  relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
+  // relocate koloboke for possible conflicts with user dependencies
+  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
+  // relocate the guava's com.google packages
+  relocate 'com.google.common', 'io.snappydata.com.google.common'
+
+  mergeServiceFiles()
+  exclude 'log4j.properties'
+
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = 'SnappyData Build Team'
+  } else {
+    createdBy = System.getProperty('user.name')
+  }
+  manifest {
+    attributes(
+      'Manifest-Version'  : '1.0',
+      'Created-By'        : createdBy,
+      'Title'             : "snappydata-v2connector_${scalaBinaryVersion}",
+      'Version'           : version,
+      'Vendor'            : vendorName
+    )
+  }
+}
+
+// write the POM for spark-package
+String sparkPackageName = "snappydata-${version}-s_${scalaBinaryVersion}"
+
+task sparkPackagePom(dependsOn: shadowJar) { doLast {
+  file("${rootProject.buildDir}/distributions").mkdirs()
+  pom {
+    project {
+      groupId 'SnappyDataInc'
+      artifactId 'snappydata'
+      version "${version}-s_${scalaBinaryVersion}"
+      licenses {
+        license {
+          name 'The Apache Software License, Version 2.0'
+          url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+          distribution 'repo'
+        }
+      }
+    }
+    whenConfigured { p -> p.dependencies.clear() }
+  }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
+  copy {
+    from "${buildDir}/libs"
+    into "${rootProject.buildDir}/distributions"
+    include "${shadowJar.archiveName}"
+    rename { filename -> "${sparkPackageName}.jar" }
+  }
+} }
+task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
+  archiveName "${sparkPackageName}.zip"
+  destinationDir = file("${rootProject.buildDir}/distributions")
+  outputs.upToDateWhen { false }
+
+  from ("${rootProject.buildDir}/distributions") {
+    include "${sparkPackageName}.jar"
+    include "${sparkPackageName}.pom"
+  }
+}

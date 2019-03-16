@@ -45,9 +45,10 @@ dependencies {
   } else {
     compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
   }
-
+  
   compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
   compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
+  compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
   compile "com.zaxxer:HikariCP:${hikariCPVersion}"
 
@@ -71,4 +72,3 @@ scalaTest {
 
 test.dependsOn ':cleanJUnit'
 
-archivesBaseName = 'snappydata-encoders_' + scalaBinaryVersion

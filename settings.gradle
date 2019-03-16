@@ -27,6 +27,9 @@ include 'dunit'
 include ':snappy-dtests_' + scalaBinaryVersion
 include ':snappy-compatibility-tests_' + scalaBinaryVersion
 include ':snappy-encoders_' + scalaBinaryVersion
+// Commented "v2connector" in order to exclude from build and test process.
+// uncomment if we decide to include it.
+// include ':snappy-v2connector_' + scalaBinaryVersion
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
@@ -36,6 +39,7 @@ project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/example
 project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" as File
 project(':snappy-compatibility-tests_' + scalaBinaryVersion).projectDir = "$rootDir/compatibilityTests" as File
 project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoders" as File
+// project(':snappy-v2connector_' + scalaBinaryVersion).projectDir = "$rootDir/v2connector" as File
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'

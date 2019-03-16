@@ -22,19 +22,18 @@ import java.nio.ByteBuffer
 
 import scala.collection.mutable
 import scala.language.existentials
-
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
-
 import org.apache.spark._
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode, TaskMemoryManager}
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
 import org.apache.spark.storage.BlockManagerId
+import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.MutableURLClassLoader
 
@@ -67,6 +66,12 @@ object SharedUtils {
   }
 
   def taskMemoryManager(context: TaskContext): TaskMemoryManager = context.taskMemoryManager()
+
+
+  def executorsListener(sc: SparkContext): Option[ExecutorsListener] = sc.ui match {
+    case Some(ui) => Some(ui.executorsListener)
+    case _ => None
+  }
 
   def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
     if (buffer eq null) return null
@@ -133,11 +138,9 @@ object SharedUtils {
    * @return
    */
   def deserialize(value: Array[Byte]): Any = {
-    val bais: ByteArrayInputStream = new ByteArrayInputStream(value)
-    val os: ObjectInputStream = new ObjectInputStream(bais)
-    val filters = os.read()
-    os.close()
-    filters
+    val baip = new ByteArrayInputStream(value)
+    val ois = new ObjectInputStream(baip)
+    ois.readObject()
   }
 }
 

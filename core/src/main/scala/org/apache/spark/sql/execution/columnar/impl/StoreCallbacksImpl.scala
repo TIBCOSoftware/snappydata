@@ -22,7 +22,6 @@ import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
 import com.gemstone.gemfire.internal.cache.persistence.query.CloseableIterator
@@ -43,8 +42,7 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.{EmbedConnection, Util}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
-import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-
+import io.snappydata.sql.catalog.{CatalogObjectType, SmartConnectorHelper, SnappyExternalCatalog}
 import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
 import org.apache.spark.serializer.KryoSerializerPool
@@ -52,7 +50,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
@@ -129,7 +127,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
           if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+             schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
@@ -197,11 +195,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   @throws(classOf[SQLException])
   override def columnTableScan(columnTable: String,
       projection: Array[Int], serializedFilters: Array[Byte],
-      bucketIds: java.util.Set[Integer]): CloseableIterator[ColumnTableEntry] = {
+      bucketIds: java.util.Set[Integer],
+      useKryoSerializer: Boolean): CloseableIterator[ColumnTableEntry] = {
     // deserialize the filters
     val batchFilters = if ((serializedFilters ne null) && serializedFilters.length > 0) {
-      KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
-        (kryo, in) => kryo.readObject(in, classOf[Array[Filter]])).toSeq
+      if (useKryoSerializer) {
+        KryoSerializerPool.deserialize(serializedFilters, 0, serializedFilters.length,
+          (kryo, in) => kryo.readObject(in, classOf[Array[Filter]])).toSeq
+      } else {
+        // java serializer
+        val v = SharedUtils.deserialize(serializedFilters).asInstanceOf[Array[Filter]]
+        v.toSeq
+      }
     } else null
     val (region, schemaAttrs, batchFilterExprs) = try {
       val lr = Misc.getRegionForTable(columnTable, true).asInstanceOf[LocalRegion]
@@ -372,7 +377,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
   private def attr(a: String, schema: Seq[AttributeReference]): AttributeReference = {
     // filter passed should have same case as in schema and not be qualified which
     // should be true since these have been created from resolved Expression by sender
-    schema.find(_.name == a) match {
+    // TODO: [shirish] converted to uppercase to make v2 connector work
+    schema.find(x => x.name == a || x.name == a.toUpperCase) match {
       case Some(attr) => attr
       case _ => throw Utils.analysisException(s"Could not find $a in ${schema.mkString(", ")}")
     }

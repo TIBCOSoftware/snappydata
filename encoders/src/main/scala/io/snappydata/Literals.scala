@@ -16,10 +16,10 @@
  */
 package io.snappydata
 
-import scala.reflect.ClassTag
-
-import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.SharedExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
+
+import scala.reflect.ClassTag
 
 object StreamingConstants {
   val EVENT_TYPE_COLUMN = "_eventType"
@@ -140,7 +140,7 @@ object Property extends Enumeration {
         "store. When inserting data into the column storage this is the unit " +
         "(in bytes or k/m/g suffixes for unit) that will be used to split the data " +
         "into chunks for efficient storage and retrieval. It can also be set for each " +
-        s"table using the ${ExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
+        s"table using the ${SharedExternalStoreUtils.COLUMN_BATCH_SIZE} option in " +
         "create table DDL. Maximum allowed size is 2GB.", Some("24m"))
 
   val ColumnMaxDeltaRows: SQLValue[Int] = SQLVal[Int](
@@ -150,7 +150,7 @@ object Property extends Enumeration {
         "this allows a lower limit on number of rows for better scan performance. " +
         "So the delta buffer will be rolled into the column store whichever of " +
         s"$ColumnBatchSize and this property is hit first. It can also be set for " +
-        s"each table using the ${ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
+        s"each table using the ${SharedExternalStoreUtils.COLUMN_MAX_DELTA_ROWS} option in " +
         s"create table DDL else this setting is used for the create table.", Some(10000))
 
   val DisableHashJoin: SQLValue[Boolean] = SQLVal[Boolean](

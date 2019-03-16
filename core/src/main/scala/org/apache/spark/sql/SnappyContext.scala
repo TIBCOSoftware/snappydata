@@ -1325,10 +1325,3 @@ case class LocalMode(override val sc: SparkContext,
     override val url: String) extends ClusterMode {
   override val description: String = "Local mode"
 }
-
-class TableNotFoundException(schema: String, table: String, cause: Option[Throwable] = None)
-    extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
-      cause = cause)
-
-class PolicyNotFoundException(schema: String, name: String, cause: Option[Throwable] = None)
-    extends AnalysisException(s"Policy '$name' not found in schema '$schema'", cause = cause)

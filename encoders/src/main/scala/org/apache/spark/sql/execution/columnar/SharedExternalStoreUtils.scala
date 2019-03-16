@@ -154,8 +154,3 @@ object SharedExternalStoreUtils {
     }
   }
 }
-
-class TableNotFoundException(schema: String, table: String, cause: Option[Throwable] = None)
-    extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
-      cause = cause)
-

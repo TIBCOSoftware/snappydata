@@ -310,7 +310,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
         stmt.execute(s"CALL SYS.SET_BUCKETS_FOR_LOCAL_EXECUTION('$columnTable', " +
             s"'${(0 until numBuckets).mkString(",")}', -1)")
         val rs = stmt.executeQuery(s"CALL SYS.COLUMN_TABLE_SCAN('$columnTable', " +
-            s"'${(1 to numColumns).mkString(",")}', null)")
+            s"'${(1 to numColumns).mkString(",")}', null, 1)")
         var n = 0
         while (rs.next()) {
           n += 1
