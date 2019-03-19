@@ -7,7 +7,7 @@ SnappyData supports SSL encryption for the following:
 *	[Spark layer](#sparksetup)
 *	[Spark Jobserver](#jobserverssl)
 
-SSL encryption for the three socket endpoints (P2P, client-server and Spark) must be [configured individually](#configureseparate) in their corresponding conf files. For jobserver, you must modify the **application.conf** file in the **spark-jobserver** repository (**/snappydata/spark-jobserver/job-server/resources/application.conf**) to activate the SSL communication.
+SSL encryption for the three socket endpoints (P2P, client-server and Spark) must be [configured individually](#configureseparate) and the corresponding configuration must be added in configuration files of the respective SnappyData cluster members. For jobserver, you must modify the **application.conf** file in the **spark-jobserver** repository (**/snappydata/spark-jobserver/job-server/resources/application.conf**) to activate the SSL communication.
 
 !!! Note
 	Properties that begin with `thrift` is for client-server, `javax.net.ssl` is for P2P, and `spark` is for Spark layer SSL settings.
@@ -15,30 +15,30 @@ SSL encryption for the three socket endpoints (P2P, client-server and Spark) mus
 <a id= contogether> </a>
 ## Enabling SSL Encryption Simultaneously for all the Socket Endpoints in SnappyData Cluster
 
-Using the following configuration files, you can simultaneously enable SSL encryption for all the three socket endpoints (P2P, client-server, and park layer ssl encryption) in a SnappyData cluster.
+Using the following configuration files, you can simultaneously enable SSL encryption for all the three socket endpoints (P2P, client-server, and Spark layer ssl encryption) in a SnappyData cluster.
 
 !!! Note
-	Currently, SSL encryption for all the socket endpoints must be configured separately. SnappyData intends to integrate Spark and P2P endpoints together in the future. Also for the jobserver, currently you cannot configure the SSL encryption through the startup properties or by using **user-specified conf** file. These supports are planned to be included in future releases.
+	Currently, SSL encryption for all the socket endpoints must be configured separately. SnappyData intends to integrate Spark and P2P endpoints together in future release. The same implies for the jobserver.  Currently you cannot configure the SSL encryption for the jobserver through the startup properties or by using **user-specified conf** file.
 
-In the following configuration files, a two node SnappyData cluster setup is done using the physical hosts **dev15** and **dev14**.
+In the following configuration files, a two node SnappyData cluster setup is done using the physical hosts.
 
 All examples given here includes one locator, one server, and one lead member in a SnappyData cluster configuration.
 
-If you want to configure multiple locators, servers and lead members in a cluster, then ensure to copy all the SSL properties from each member configuration into the respective configuration files. 
+If you want to configure multiple locators, servers and lead members in a cluster, then ensure to copy all the SSL properties for each member configuration into the respective configuration files.
 
 For more information about each of these properties mentioned in the respective conf files, as well as for details on configuring multiple locators, servers, and lead members in a cluster,  refer to [SnappyData Configuration](configuring_cluster.md).
 
 ### Locator Configuration File (conf/locators)
 
 ```
-# hostname locator <all ssl properties>
-dev15 locators=dev15:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-locatorKeyStore.keyfile> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-locatorKeyStore.keyfile>  -J-Djavax.net.ssl.trustStorePassword=<password> -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
+# hostname locators <all ssl properties>
+dev15 -locators=dev15:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-locatorKeyStore.keyfile> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-locatorKeyStore.keyfile>  -J-Djavax.net.ssl.trustStorePassword=<password> -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 ```
 
 ### Server Configuration File (conf/servers)
 
 ```
-# hostname locator <all ssl properties>
+# hostname locators <all ssl properties>
 dev15 -locators=dev15:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password> -spark.ssl.enabled=true -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-serverKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=<path-to-serverKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS -client-port=1528 -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 
 ```
@@ -46,7 +46,7 @@ dev15 -locators=dev15:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks
 ### Lead Configuration File (conf/leads)
 
 ```
-# hostname locator <all ssl properties>
+# hostname locators <all ssl properties>
 dev14 -locators=dev15:10334 -ssl-enabled=true  -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-leadKeyStore.key file>  -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password> -spark.ssl.enabled=true -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-leadKeyStore.key file>  -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=<path-to-leadKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS -client-port=1529
 ```
 
@@ -72,8 +72,8 @@ In the following example, the SSL configuration for client-server is demonstrate
 
 #### Requirements
 
-*	Configure SSL keypairs and certificates as needed for client and server. See [Generate Key Pairs and Certificates](https://gemfirexd.docs.pivotal.io/docs-gemfirexd/deploy_guide/Topics/security/ssl_keys.html#cadminsslkeys).
-*	Ensure that all the SnappyData members use the same SSL boot parameters at startup.
+*	Configure SSL keypairs and certificates as needed for client and server. Refer the following example.
+*	Ensure that all the locator and server members, in the cluster, use the same SSL boot parameters at startup.
 
 #### Provider-Specific Configuration Files
 
@@ -90,7 +90,7 @@ The same keystore is used for SnappyData locator and server members as well as f
 #### Locator Configuration File (conf/locators)
 
 ```
-# hostname locator <ssl properties for configuring SSL for SnappyData client-server connections>
+# hostname locators <ssl properties for configuring SSL for SnappyData client-server connections>
  
 localhost -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 
@@ -99,12 +99,12 @@ localhost -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeySto
 #### Server Configuration File (conf/servers)
 
 ```
-# hostname locator <ssl properties for configuring SSL for SnappyData client-server connections>
+# hostname locators <ssl properties for configuring SSL for SnappyData client-server connections>
  
 localhost -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 
 ```
-Start the SnappyData cluster using `snappy-start-all.sh` script and perform operations either by using SnappyData shell or through JDBC connection. You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData documentation](../quickstart/snappydataquick_start.md) for the same. 
+Start the SnappyData cluster using `snappy-start-all.sh` script and perform operations either by using SnappyData shell or through JDBC connection. You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for the same. 
 
 Use the protocol/ciphers as per requirement. The corresponding setup on client-side can appear as follows:
 
@@ -124,7 +124,7 @@ Peer SSL configuration is managed using `javax.net.ssl` system properties and th
 *	[ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md)
 *	[ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md) 
 
-The following sections provide an example that demonstrates the configuration and startup of SnappyData members with SSL encryption.
+The following sections provide an example of P2P connections encryption that demonstrates the configuration and startup of SnappyData members with SSL encryption.
 
 #### Requirements
 
@@ -185,14 +185,14 @@ In the following example, SSL encryption is enabled for communication between th
 #### Locator Configuration File (conf/locators)
 
 ```
-# hostname locator <ssl properties for configuring SSL for SnappyData P2P connections>
+# hostname locators <ssl properties for configuring SSL for SnappyData P2P connections>
 localhost -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password>
 ```
 
 #### Server Configuration File (conf/servers)
 
 ```
-# hostname locator <ssl properties for configuring SSL for #SnappyData P2P connections>
+# hostname locators <ssl properties for configuring SSL for #SnappyData P2P connections>
  
 localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-serverKeyStore.keyfile>  -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password> -client-port=1528
 
@@ -200,13 +200,13 @@ localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStore
 #### Lead Configuration File (conf/leads)
 
 ```
-# hostname locator <ssl properties for configuring SSL for #SnappyData P2P connections>
+# hostname locators <ssl properties for configuring SSL for #SnappyData P2P connections>
  
 localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-leadKeyStore.key file>  -J-Djavax.net.ssl.trustStorePassword=<password> -client-port=1529
 
 ```
 
-Start the SnappyData cluster using `snappy-start-all.sh` script and perform operations using the SnappyData shell, SnappyData job, and Smart Connector mode. You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData documentation](../quickstart/snappydataquick_start.md) for more information.
+Start the SnappyData cluster using `snappy-start-all.sh` script and perform operations using the SnappyData shell, SnappyData job, and Smart Connector mode. You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.
 
 <a id= sparksetup> </a>
 ### Configuring SSL Encryption for Spark layer
@@ -229,6 +229,9 @@ To configure SSL for Spark layer:
 
 *	Configure SSL keypairs and certificates as needed for each SnappyData member. See [Generate Key Pairs and Certificates](https://gemfirexd.docs.pivotal.io/docs-gemfirexd/deploy_guide/Topics/security/ssl_keys.html#cadminsslkeys).
 *	Ensure theat SnappyData locator, server, and lead members use the same SSL boot parameters at startup.
+
+!!! Note
+	For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL. 
 
 #### Provider-Specific Configuration Files
 
@@ -277,7 +280,7 @@ You can enable SSL encryption for Spark layer by specifying the properties as th
 #### Locator Configuration File (conf/locators)
 
 ```
-# hostname locator <ssl properties for configuring SSL for SnappyData Spark layer>
+# hostname locators <ssl properties for configuring SSL for SnappyData Spark layer>
 localhost -ssl-enabled=true -spark.ssl.enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password> 
 -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-locatorKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=<path-to-locatorKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS 
 ```
@@ -285,7 +288,7 @@ localhost -ssl-enabled=true -spark.ssl.enabled=true -J-Djavax.net.ssl.keyStoreTy
 #### Server Configuration File (conf/servers)
 
 ```
-# hostname locator <ssl properties for configuring SSL for #SnappyData spark layer>
+# hostname locators <ssl properties for configuring SSL for #SnappyData spark layer>
  
 localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password>
 -spark.ssl.enabled=true -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-serverKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=<path-to-serverKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS 
@@ -294,18 +297,18 @@ localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStore
 #### Lead Configuration File (conf/leads)
 
 ```
-# hostname locator <ssl properties for configuring SSL for #SnappyData spark layer>
+# hostname locators <ssl properties for configuring SSL for #SnappyData spark layer>
 localhost -locators=localhost:10334  -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password>
 -spark.ssl.enabled=true -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-leadKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=/<path-to-leadKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS 
 Start the SnappyData cluster using snappy-start-all.sh script and perform operations using SnappyData shell, SnappyData  job, and Smart Connector mode.
 ```
 
-You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData documentation](../quickstart/snappydataquick_start.md) for more information.
+You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.
 
 <a id= jobserverssl> </a>
 ### Configuring SSL Encryption for Spark Job Server
 
-To activate SSL communication in the Spark job server, you must set these flags in your **application.conf** file (Section 'spray.can.server'). Later, you must either compile the jobserver repository after changing the settings in this conf file or compile the product after modifying this conf file.
+To activate SSL communication in the Spark job server, you must set the following flags in your **application.conf** file in the 'spray.can.server' section. Later, you must either compile the jobserver repository after changing the settings in this conf file or compile the product after modifying this conf file.
 
 ```
 ssl-encryption = on
@@ -314,7 +317,7 @@ ssl-encryption = on
   keystorePW = "changeit"
 ```
 !!! Note
-	Currently you cannot configure SSL encryption for Spark job server through the startup properties or by using user-specified conf file. This is planned to be supported in the future releases.
+	Currently you cannot configure SSL encryption for Spark job server through the startup properties or by using user-specified conf file. This is planned to be supported in a future release.
 
 #### Requirements
 
@@ -340,7 +343,7 @@ This example uses keystores created by the Java keytool application to provide t
 6.	Modify the **application.conf** file under **spark-jobserver **repository (**/snappydata/spark-jobserver/job-server/resources/application.conf**) to activate server authentication and SSL communication.
 7.	Modify the section **spray.can.server** in this file for the following properties:
 
-         ssl-encryption = on
+         ssl-encryption = ons
           # absolute path to keystore file
           keystore = "/path to/jobserverkeystoreRSA.jks"
           keystorePW = "<password>"
@@ -351,6 +354,8 @@ This example uses keystores created by the Java keytool application to provide t
 		curl -k -d  "" 'https://localhost:8090/jobs?appName=myapp&classPath=io.snappydata.hydra.northwind.CreateTableJob';
 
 ### Code Snippet for Sample CreateTableJob (snappyjob)
+
+Use the following code snippet to test the configured encryption.
 
 ```
 package io.snappydata.hydra.northwind
