@@ -45,6 +45,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
 |-peer-discovery-address|Use this as value for the port in the "host:port" value of "-locators" property |
 |-peer-discovery-port|The port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|
+|SSL properties|[ssl-enabled](ssl_enabled.md), [ssl-ciphers](ssl_ciphers.md), [ssl-protocols](ssl_protocols.md), [ssl-require-authentication](ssl_require_auth.md).|
 
 <a id="locator-example"></a>
 **Example**: To start two locators on node-a:9999 and node-b:8888, update the configuration file as follows:
@@ -99,7 +100,15 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
 |-spark.network.timeout|The default timeout for all network interactions while running queries. |
 |-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. The default is 2000.|
-|-spark.ui.port|Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050|
+|-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false.|
+|-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store.|
+|-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|
+|-spark.ssl.keyStorePassword<a id="ssl_spark_keystorpass"></a>|The password used to access the keystore. |Lead|
+|-spark.ssl.trustStore<a id="ssl_spark_trustore"></a>|Path to the trust store file. The path can be absolute or relative to the directory in which the process is started.|
+|-spark.ssl.trustStorePassword<a id="truststorepassword"></a>|The password used to access the truststore.|
+|-spark.ssl.protocol<a id="ssl_spark_ssl_protocol"></a>|The protocol that must be supported by JVM. For example, TLS.|
+|-spark.ui.port|Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050.|
+|SSL properties|[ssl-enabled](ssl_enabled.md), [ssl-ciphers](ssl_ciphers.md), [ssl-protocols](ssl_protocols.md), [ssl-require-authentication](ssl_require_auth.md). These properties need not be added to  the Lead members in case of a client-server connection.|
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
