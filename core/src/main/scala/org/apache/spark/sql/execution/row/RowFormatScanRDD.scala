@@ -49,29 +49,28 @@ import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
 
 /**
-  * A scanner RDD which is very specific to Snappy store row tables.
-  * This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
-  */
+ * A scanner RDD which is very specific to Snappy store row tables.
+ * This scans row tables in parallel unlike Spark's inbuilt JDBCRDD.
+ */
 class RowFormatScanRDD(@transient val session: SnappySession,
-                       protected var tableName: String,
-                       protected var isPartitioned: Boolean,
-                       @transient private val columns: Array[String],
-                       var pushProjections: Boolean,
-                       protected var useResultSet: Boolean,
-                       protected var connProperties: ConnectionProperties,
-                       @transient private[sql] val filters: Array[Expression]
-                       = Array.empty[Expression],
-                       @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-                         Array.empty[Partition], protected val partitionPruner: () => Int,
-                       protected var commitTx: Boolean,
-                       protected var delayRollover: Boolean, protected var projection: Array[Int],
-                       @transient protected val region: Option[LocalRegion])
-  extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
+    protected var tableName: String,
+    protected var isPartitioned: Boolean,
+    @transient private val columns: Array[String],
+    var pushProjections: Boolean,
+    protected var useResultSet: Boolean,
+    protected var connProperties: ConnectionProperties,
+    @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
+    @transient protected val partitionEvaluator: () => Array[Partition] = () =>
+      Array.empty[Partition], protected val partitionPruner: () => Int,
+    protected var commitTx: Boolean,
+    protected var delayRollover: Boolean, protected var projection: Array[Int],
+    @transient protected val region: Option[LocalRegion])
+    extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   protected var filterWhereArgs: ArrayBuffer[Any] = _
   /**
-    * `filters`, but as a WHERE clause suitable for injection into a SQL query.
-    */
+   * `filters`, but as a WHERE clause suitable for injection into a SQL query.
+   */
   protected var filterWhereClause: String = _
 
   protected def evaluateWhereClause(): Unit = {
@@ -99,7 +98,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   // below should exactly match ExternalStoreUtils.handledFilter
   private def compileFilter(f: Filter, sb: StringBuilder,
-                            args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
     case EqualTo(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
@@ -165,8 +164,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   /**
-    * `columns`, but as a String suitable for injection into a SQL query.
-    */
+   * `columns`, but as a String suitable for injection into a SQL query.
+   */
   protected var columnList: String = {
     if (!pushProjections) "*"
     else if (columns.length > 0) {
@@ -180,7 +179,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   def computeResultSet(
-                        thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
+      thePart: Partition, context: TaskContext): (Connection, Statement, ResultSet) = {
     val conn = ExternalStoreUtils.getConnection(tableName,
       connProperties, forExecutor = true)
 
@@ -260,8 +259,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   /**
-    * Runs the SQL query against the JDBC driver.
-    */
+   * Runs the SQL query against the JDBC driver.
+   */
   override def compute(thePart: Partition, context: TaskContext): Iterator[Any] = {
 
     if (pushProjections) {
@@ -351,7 +350,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       // system table/VTI is shown as a replicated table having a single partition
       case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
     }
-
   }
 
   private def evaluatePartitions(): Array[Partition] = {
@@ -444,13 +442,13 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 }
 
 /**
-  * This does not return any valid results from result set rather caller is
-  * expected to explicitly invoke ResultSet.next()/get*.
-  * This is primarily intended to be used for cleanup.
-  */
+ * This does not return any valid results from result set rather caller is
+ * expected to explicitly invoke ResultSet.next()/get*.
+ * This is primarily intended to be used for cleanup.
+ */
 final class ResultSetTraversal(conn: Connection,
-                               stmt: Statement, val rs: ResultSet, context: TaskContext)
-  extends ResultSetIterator[Void](conn, stmt, rs, context) {
+    stmt: Statement, val rs: ResultSet, context: TaskContext)
+    extends ResultSetIterator[Void](conn, stmt, rs, context) {
 
   lazy val defaultCal: GregorianCalendar =
     ClientSharedData.getDefaultCleanCalendar
@@ -459,9 +457,9 @@ final class ResultSetTraversal(conn: Connection,
 }
 
 final class CompactExecRowIteratorOnRS(conn: Connection,
-                                       stmt: Statement, ers: EmbedResultSet, context: TaskContext)
-  extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
-    ers, context) {
+    stmt: Statement, ers: EmbedResultSet, context: TaskContext)
+    extends ResultSetIterator[AbstractCompactExecRow](conn, stmt,
+      ers, context) {
 
   override protected def getCurrentValue: AbstractCompactExecRow = {
     ers.currentRow.asInstanceOf[AbstractCompactExecRow]
@@ -469,7 +467,7 @@ final class CompactExecRowIteratorOnRS(conn: Connection,
 }
 
 abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalRegion,
-                                   bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T] {
+    bucketIds: java.util.Set[Integer], context: TaskContext) extends Iterator[T] {
 
   protected type PRIterator = PartitionedRegion#PRLocalScanIterator
 
@@ -481,7 +479,7 @@ abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalReg
   private[execution] final val itr = createIterator(container, region, tx)
 
   protected def createIterator(container: GemFireContainer, region: LocalRegion,
-                               tx: TXStateInterface): PRIterator = if (container ne null) {
+      tx: TXStateInterface): PRIterator = if (container ne null) {
     container.getEntrySetIteratorForBucketSet(
       bucketIds.asInstanceOf[java.util.Set[Integer]], null, tx, 0,
       false, true).asInstanceOf[PRIterator]
@@ -521,12 +519,12 @@ abstract class PRValuesIterator[T](container: GemFireContainer, region: LocalReg
 }
 
 final class CompactExecRowIteratorOnScan(container: GemFireContainer,
-                                         bucketIds: java.util.Set[Integer], txId: TXId, context: TaskContext)
-  extends PRValuesIterator[AbstractCompactExecRow](container,
-    region = null, bucketIds, context) {
+    bucketIds: java.util.Set[Integer], txId: TXId, context: TaskContext)
+    extends PRValuesIterator[AbstractCompactExecRow](container,
+      region = null, bucketIds, context) {
 
   override protected[sql] val currentVal: AbstractCompactExecRow = container
-    .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
+      .newTemplateRow().asInstanceOf[AbstractCompactExecRow]
 
   override protected[sql] def moveNext(): Unit = {
     val itr = this.itr
@@ -534,8 +532,8 @@ final class CompactExecRowIteratorOnScan(container: GemFireContainer,
       val rl = itr.next()
       val owner = itr.getHostedBucketRegion
       if (((owner ne null) || rl.isInstanceOf[NonLocalRegionEntry]) &&
-        RegionEntryUtils.fillRowWithoutFaultInOptimized(container, owner,
-          rl.asInstanceOf[RowLocation], currentVal)) {
+          RegionEntryUtils.fillRowWithoutFaultInOptimized(container, owner,
+            rl.asInstanceOf[RowLocation], currentVal)) {
         return
       }
     }

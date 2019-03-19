@@ -31,7 +31,6 @@ import org.apache.spark.{SparkConf, SparkContext}
 class SmartConnectorFunctions {
 
 }
-
 object SmartConnectorFunctions {
 
   def queryValidationOnConnector(locatorNetPort: Int): Unit = {
@@ -49,7 +48,6 @@ object SmartConnectorFunctions {
     TPCHUtils.queryExecution(snc, true)
     TPCHUtils.validateResult(snc, true)
   }
-
   def createTablesUsingConnector(locatorNetPort: Int): Unit = {
     val hostName = InetAddress.getLocalHost.getHostName
     val conf = new SparkConf()
@@ -72,7 +70,6 @@ object SmartConnectorFunctions {
     }
     value
   }
-
   def nwQueryValidationOnConnector(locatorNetPort: Int, tableType: String): Unit = {
     val hostName = InetAddress.getLocalHost.getHostName
     val conf = new SparkConf()
