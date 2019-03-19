@@ -52,24 +52,34 @@ object RecoveryService extends Logging {
   }
 
   /* fqtn and bucket number for PR r Column table, -1 indicates replicated row table */
-  def getExecutorHost(tableName: String, bucketId: Int = -1): Seq[String] = {
+  def getExecutorHost(fqtn: String, bucketId: Int = -1): Seq[String] = {
     // TODO need checking for row replicated/row partitioned/col table
     // Expecting table in the format fqtn i.e. schemaname.tablename
-    val tablePath = tableName.replace(".", "/")
+    val schemaName = fqtn.split('.')(0)
+    val tableName = fqtn.split('.')(1)
+    val (numBuckets, isReplicated) = getNumBuckets(schemaName, tableName)
+
+    val tablePath = '/' + fqtn.replace(".", "/")
     var bucketPath = tablePath
-    if (bucketId >= 0) {
+    if (!isReplicated) {
       // bucketPath = PartitionedRegionHelper.getBucketFullPath(tablePath, bucketId)
       bucketPath = s"/${PartitionedRegionHelper.PR_ROOT_REGION_NAME}/${PartitionedRegionHelper.getBucketName(tablePath, bucketId)}"
+      // TODO remove replace used and handle it in a proper way
+      // bucketPath = bucketPath.replace("/__PR/_B_", "/__PR/_B__")
     }
-    // TODO remove replace used and handle it in a proper way
-    bucketPath = bucketPath.replace("/__PR/_B_", "/__PR/_B__")
     for (entry <- regionViewSortedSet) {
       logInfo(s"1891: regionViewSortedSet[${entry._1}, ${entry._2}] and bucketPath = $bucketPath")
     }
     // check if the path exists else check path of column buffer.
     // also there could be no data in any.
     // check only row, only col, no data
-    Seq(regionViewSortedSet(bucketPath).lastKey.getExecutorHost)
+    if(regionViewSortedSet.contains(bucketPath)) {
+      Seq(regionViewSortedSet(bucketPath).lastKey.getExecutorHost)
+    } else {
+      logWarning("1891: getExecutorHost else ")
+      // Seq("localhost")
+      null
+    }
   }
 
   /* Table type, PR or replicated, DStore name, numBuckets */
@@ -123,7 +133,7 @@ object RecoveryService extends Logging {
   var mostRecentMemberObject: PersistentStateInRecoveryMode = null;
   var memberObject: PersistentStateInRecoveryMode = null;
 
-  def getNumBuckets(schemaName: String, tableName: String): Integer = {
+  def getNumBuckets(schemaName: String, tableName: String): (Integer, Boolean) = {
     val memberContainsRegion = memberObject
         .getPrToNumBuckets.containsKey(s"/${schemaName}/${tableName}")
     import collection.JavaConversions._
@@ -132,13 +142,13 @@ object RecoveryService extends Logging {
     }
     logInfo(s"1891: PrToNumBuckets contains = ${memberContainsRegion} for member" + memberObject.getMember)
     if (memberContainsRegion) {
-      memberObject.getPrToNumBuckets.get(s"/${schemaName}/${tableName}")
+      (memberObject.getPrToNumBuckets.get(s"/${schemaName}/${tableName}"), false)
     } else {
       logWarning(s"1891: num of buckets not found for /${schemaName}/${tableName}")
       if (memberObject.getreplicatedRegions().contains(s"/${schemaName}/${tableName}")) {
         logInfo("1891: table is replicated ")
-        1
-      } else -1
+        (1, true)
+      } else (-1, false)
     }
   }
 

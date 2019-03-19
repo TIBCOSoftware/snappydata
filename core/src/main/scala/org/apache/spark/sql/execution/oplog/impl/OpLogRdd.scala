@@ -71,7 +71,13 @@ class OpLogRdd(
 
     dataType match {
       case LongType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, isNullable)
-      case IntegerType => DataTypeDescriptor.INTEGER
+      case IntegerType => if (isNullable) {
+        logInfo("1891: integer null")
+        DataTypeDescriptor.INTEGER
+      } else {
+        logInfo("1891: integer not null")
+        DataTypeDescriptor.INTEGER_NOT_NULL
+      }
       case BooleanType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BOOLEAN, isNullable)
       case ByteType => DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.SMALLINT, isNullable)
       case FloatType => DataTypeDescriptor.getSQLDataTypeDescriptor("float", isNullable)
@@ -164,12 +170,14 @@ class OpLogRdd(
     for ((_, adr) <- diskStr.getAllDiskRegions) {
       val adrPath = adr.getFullPath
       var regUnescPath = PartitionedRegionHelper.unescapePRPath(adrPath)
+      logInfo(s"1891: getPlaceHolderDiskRegion regUnescPath=${regUnescPath}")
 
       var regionPath = regPath
       if (!adr.isBucket) {
         // regPath for pr tables is in the format /_PR//B_<schema>/<table>/0
         // but for replicated tables it is /<schema>/<table>
         regionPath = s"/${dbTableName.replace('.', '/')}"
+          logInfo(s"1891: getplaceholderdiskregion regionPath=${regionPath}")
       }
 
       if (regUnescPath.equals(regionPath)) {
@@ -279,13 +287,13 @@ class OpLogRdd(
         // -3 for delete at columnbatch
         val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
         val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-          logInfo(s"1891: valueBuffers is direct : ${valueBuffer.isDirect}")
+          // logInfo(s"1891: valueBuffers is direct : ${valueBuffer.isDirect}")
           null
         } else {
           valueBuffer.array()
         }
-        (0  until batchCount).foreach(batchIndex => {
-          logInfo(s"1891: accessing index : ${globalRowIndex} + ${batchIndex}")
+        (0 until batchCount).foreach(batchIndex => {
+          // logInfo(s"1891: accessing index : ${globalRowIndex} + ${batchIndex}")
           tbl(globalRowIndex + batchIndex)(colIndx) =
               getDecodedValue(decoder, valueArray, sch(colIndx).dataType, batchIndex)
         })
@@ -450,7 +458,7 @@ class OpLogRdd(
   override protected def getPartitions: Array[Partition] = {
     val schemaName = dbTableName.split('.')(0)
     val tableName = dbTableName.split('.')(1)
-    val numBuckets = RecoveryService.getNumBuckets(schemaName, tableName)
+    val (numBuckets, isReplicated) = RecoveryService.getNumBuckets(schemaName, tableName)
     logInfo(s"1891: numbuckets = ${numBuckets}")
     val partition = (0 until numBuckets).map { p =>
       new Partition {
