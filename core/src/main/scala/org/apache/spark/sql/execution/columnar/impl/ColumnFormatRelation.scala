@@ -196,7 +196,8 @@ abstract class BaseColumnFormatRelation(
       requiredColumns: Array[String], filters: Array[Expression],
       useResultSet: Boolean, projection: Array[Int]): RDD[Any] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    def partitionPruning() : Int = { -1 } // Dummy call.
+    // defining as a syntactic sugar, in column scan partitionEvaluator does the job.
+    def partitionPruning() : Int = { -1 }
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
@@ -211,7 +212,8 @@ abstract class BaseColumnFormatRelation(
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator = partitionEvaluator,
-          partitionPruning, // dummy argument
+          // passing as a syntactic sugar, in column scan partitionEvaluator does the job.
+          partitionPruning,
           commitTx = false, delayRollover = delayRollover,
           projection = projection, region = Some(region))
       case _ =>
