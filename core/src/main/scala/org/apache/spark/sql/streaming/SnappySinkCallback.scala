@@ -69,7 +69,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       partitionColumns: Seq[String],
       outputMode: OutputMode): Sink = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
-    if (isSecurityEnabled(sqlContext.sparkSession) && stateTableSchema.isEmpty) {
+    if (stateTableSchema.isEmpty && isSecurityEnabled(sqlContext.sparkSession)) {
       val msg = s"'$STATE_TABLE_SCHEMA' is a mandatory option when security is enabled."
       throw new IllegalStateException(msg)
     }
