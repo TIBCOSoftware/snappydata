@@ -10,8 +10,9 @@ Row tables, on the other hand, consume more space than the original data size. T
 It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
 
 ## Disk and Memory Sizing
-For efficient usage of disk, the best alternative is to load some sample data and extrapolate for both memory and disk requirements. The disk usage is the sum of all  the **Total size** of the tables. For total disk requirement the rule of thumb is ~4X data size which accounts for temporary space required for the compactor and the space required for [spark.local.dir](../best_practices/important_settings.md#spark-local-dir). In case of concurrent thread execution,the requirement will differ as mentioned in [spark.local.dir](../best_practices/important_settings.md#spark-local-dir).
-If the data and the temporary storage set with `spark.local.dir` are in separate locations, then disk for data store can be 2X of the total estimated data size while temporary storage can be 2X. The temporary storage is used for shuffle output of large joins and a query can potentially shuffle the entire data. Likewise, a large import can also shuffle data before inserting into partitioned tables.
+For efficient use of the disk, the best alternative is to load some sample data and extrapolate for both memory and disk requirements. The disk usage is the sum of all the **Total size** of the tables. You can check the value of **Total Size** on the SnappyData Pulse UI. 
+For total disk requirement, the rule of thumb is ~4X data size which accounts for temporary space required for the compactor and the space required for [spark.local.dir](../best_practices/important_settings.md#spark-local-dir). In case of concurrent thread execution,the requirement will differ as mentioned in [spark.local.dir](../best_practices/important_settings.md#spark-local-dir).
+If the data and the temporary storage set with `spark.local.dir` are in separate locations, then the disk for data storage can be 2X of the total estimated data size while temporary storage can be 2X. The temporary storage is used to shuffle the output of large joins, and a query can potentially shuffle the entire data. Likewise, a massive import can also shuffle data before inserting into partitioned tables.
 
 <a id="table-memory"></a>
 ## Table Memory Requirements
@@ -90,7 +91,7 @@ At the start, each of the two pools is assigned a portion of the available memor
 -heap-size=20g -critical-heap-percentage=95 -eviction-heap-percentage=85.5
 ```
 
-**Example**: Depicts how SnappyData derives different memory region sizes
+**Example**: Depicts how SnappyData derives different memory region sizes.
 
 ```scala
 Reserved_Heap_Memory => 20g * (1 - 0.95) = 1g ( 0.95 being derived from critical_heap_percentage)
