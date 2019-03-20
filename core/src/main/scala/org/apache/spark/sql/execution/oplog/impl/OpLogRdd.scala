@@ -104,7 +104,9 @@ class OpLogRdd(
           }
         }
         else {
-          throw new Exception(s"Error getting proper DataTypeDescriptor for DataType: $dataType")
+          // when - create table using column as select ..- is used,
+          // it create string column with no base information in metadata
+          DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.CLOB, isNullable)
         }
       }
       case _ => new DataTypeDescriptor(TypeId.CHAR_ID, true)
