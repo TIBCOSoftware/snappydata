@@ -158,7 +158,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
       } catch (SQLException se) {
-        throw new TestException("Got exception while executing Analytical query:" + query, se);
+        if (isStabilityTest && se.getMessage().contains("java.lang.OutOfMemoryError: Unable to acquire"))
+          Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
+        else
+          throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
     }
     /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
