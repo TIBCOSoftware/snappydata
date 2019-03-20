@@ -2218,8 +2218,8 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <td>The port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.</td>
 </tr>
 <tr>
-<td>SSL properties</td>
-<td><a href="ssl_enabled.md">ssl-enabled</a>, <a href="ssl_ciphers.md">ssl-ciphers</a>, <a href="ssl_protocols.md">ssl-protocols</a>, <a href="ssl_require_auth.md">ssl-require-authentication</a>.</td>
+<td>Properties for SSL Encryption</td>
+<td><a href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>, <a href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>, <a href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>, <a href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>.</td>
 </tr>
 </tbody>
 </table>
@@ -2397,8 +2397,8 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <td>Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050.</td>
 </tr>
 <tr>
-<td>SSL properties</td>
-<td><a href="ssl_enabled.md">ssl-enabled</a>, <a href="ssl_ciphers.md">ssl-ciphers</a>, <a href="ssl_protocols.md">ssl-protocols</a>, <a href="ssl_require_auth.md">ssl-require-authentication</a>. These properties need not be added to  the Lead members in case of a client-server connection.</td>
+<td>Properties for SSL Encryption</td>
+<td><a href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>, <a href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>, <a href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>, <a href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>. </br> These properties need not be added to  the Lead members in case of a client-server connection.</td>
 </tr>
 </tbody>
 </table>
@@ -2507,6 +2507,10 @@ node-l2 -heap-size=4096m -locators=node-b:8888,node-a:9999
 <tr>
 <td>-spark.local.dir</td>
 <td>Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.</td>
+</tr>
+<tr>
+<td>Properties for SSL Encryption</td>
+<td><a href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>, <a href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>, <a href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>, <a href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>.</td>
 </tr>
 <tr>
 <td>-thrift-ssl<a id="thrift-properties"></a></td>

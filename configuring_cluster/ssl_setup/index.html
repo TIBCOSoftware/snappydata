@@ -2170,7 +2170,7 @@ The Thrift servers use the <strong>Thrift Compact Protocol</strong> by default w
 <p>In the following example, the SSL configuration for client-server is demonstrated along with the startup of SnappyData members with SSL encryption. </p>
 <h4 id="requirements">Requirements</h4>
 <ul>
-<li>Configure SSL keypairs and certificates as needed for client and server. Refer to the following example.</li>
+<li>Configure SSL keypairs and certificates as needed for client and server.</li>
 <li>Ensure that all the locator and server members, in the cluster, use the same SSL boot parameters at startup.</li>
 </ul>
 <h4 id="provider-specific-configuration-files">Provider-Specific Configuration Files</h4>
@@ -2215,7 +2215,7 @@ localhost -thrift-ssl=true -thrift-ssl-properties=keystore=&lt;path-to-serverKey
 <h4 id="requirements_1">Requirements</h4>
 <p>To configure SSL for SnappyData peer connections:</p>
 <ul>
-<li>Configure SSL keypairs and certificates as needed for each SnappyData member. See Generate Key Pairs and Certificates. </li>
+<li>Configure SSL keypairs and certificates as needed for each SnappyData member. Refer to the following example.  </li>
 <li>Ensure that all SnappyData members use the same SSL boot parameters at startup.</li>
 </ul>
 <h4 id="provider-specific-configuration-files_1">Provider-Specific Configuration Files</h4>
@@ -2288,12 +2288,12 @@ localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStore
 <h4 id="requirements_2">Requirements</h4>
 <p>To configure SSL for Spark layer:</p>
 <ul>
-<li>Configure SSL keypairs and certificates as needed for each SnappyData member. See <a href="https://gemfirexd.docs.pivotal.io/docs-gemfirexd/deploy_guide/Topics/security/ssl_keys.html#cadminsslkeys">Generate Key Pairs and Certificates</a>.</li>
+<li>Configure SSL keypairs and certificates as needed for each SnappyData member.</li>
 <li>Ensure that SnappyData locator, server, and lead members use the same SSL boot parameters at startup.</li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL. </p>
+<p>For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL.</p>
 </div>
 <h4 id="provider-specific-configuration-files_2">Provider-Specific Configuration Files</h4>
 <p>This example uses keystores created by the Java keytool application to provide the proper credentials to the provider.  On each node, create keystore files, certificates, and truststore files. Here, in this example, to create the keystore and certificate for the locator, the following was run:</p>
