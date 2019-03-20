@@ -50,7 +50,7 @@ class DefaultSource extends ExternalSchemaRelationProvider with SchemaRelationPr
     val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
     ExternalStoreUtils.getAndSetTotalPartitions(
       session, parameters, forManagedTable = true, forColumnTable = false)
-    StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
+    StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema , parameters)
     val ddlExtension = StoreUtils.ddlExtensionString(
       parameters, isRowTable = true, isShadowTable = false)
 
