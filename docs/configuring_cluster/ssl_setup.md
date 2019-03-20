@@ -71,7 +71,7 @@ In the following example, the SSL configuration for client-server is demonstrate
 
 #### Requirements
 
-*	Configure SSL keypairs and certificates as needed for client and server. Refer to the following example.
+*	Configure SSL keypairs and certificates as needed for client and server.
 *	Ensure that all the locator and server members, in the cluster, use the same SSL boot parameters at startup.
 
 #### Provider-Specific Configuration Files
@@ -129,7 +129,7 @@ The following sections provide an example of P2P connections encryption that dem
 
 To configure SSL for SnappyData peer connections:
 
-*	Configure SSL keypairs and certificates as needed for each SnappyData member. See Generate Key Pairs and Certificates. 
+*	Configure SSL keypairs and certificates as needed for each SnappyData member. Refer to the following example.  
 *	Ensure that all SnappyData members use the same SSL boot parameters at startup.
 
 #### Provider-Specific Configuration Files
@@ -226,11 +226,11 @@ The following sections provide a simple example that demonstrates the configurat
 
 To configure SSL for Spark layer:
 
-*	Configure SSL keypairs and certificates as needed for each SnappyData member. See [Generate Key Pairs and Certificates](https://gemfirexd.docs.pivotal.io/docs-gemfirexd/deploy_guide/Topics/security/ssl_keys.html#cadminsslkeys).
+*	Configure SSL keypairs and certificates as needed for each SnappyData member.
 *	Ensure that SnappyData locator, server, and lead members use the same SSL boot parameters at startup.
 
 !!! Note
-	For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL. 
+	For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL.
 
 #### Provider-Specific Configuration Files
 
