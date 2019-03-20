@@ -5,9 +5,8 @@ SnappyData supports SSL encryption for the following:
 *	[Client-server](#clientserversetup)
 *	[Peer-to-peer (P2P)](#p2psetup)
 *	[Spark layer](#sparksetup)
-*	[Spark Jobserver](#jobserverssl)
 
-SSL encryption for the three socket endpoints (P2P, client-server and Spark) must be [configured individually](#configureseparate) and the corresponding configuration must be added in configuration files of the respective SnappyData cluster members. For jobserver, you must modify the **application.conf** file in the **spark-jobserver** repository (**/snappydata/spark-jobserver/job-server/resources/application.conf**) to activate the SSL communication.
+SSL encryption for the three socket endpoints (P2P, client-server, and Spark) must be [configured individually](#configureseparate), and the corresponding configuration must be added in configuration files of the respective SnappyData cluster members.
 
 !!! Note
 	Properties that begin with `thrift` is for client-server, `javax.net.ssl` is for P2P, and `spark` is for Spark layer SSL settings.
@@ -15,12 +14,12 @@ SSL encryption for the three socket endpoints (P2P, client-server and Spark) mus
 <a id= contogether> </a>
 ## Enabling SSL Encryption Simultaneously for all the Socket Endpoints in SnappyData Cluster
 
-Using the following configuration files, you can simultaneously enable SSL encryption for all the three socket endpoints (P2P, client-server, and Spark layer ssl encryption) in a SnappyData cluster.
+Using the following configuration files, you can simultaneously enable SSL encryption for all the three socket endpoints (P2P, client-server, and Spark layer SSL encryption) in a SnappyData cluster.
 
 !!! Note
-	Currently, SSL encryption for all the socket endpoints must be configured separately. SnappyData intends to integrate Spark and P2P endpoints together in future release. The same implies for the jobserver.  Currently you cannot configure the SSL encryption for the jobserver through the startup properties or by using **user-specified conf** file.
+	Currently, you must configure the SSL encryption for all the socket endpoints separately. SnappyData intends to integrate Spark and P2P endpoints in a future release.
 
-In the following configuration files, a two node SnappyData cluster setup is done using the physical hosts.
+In the following configuration files, a two-node SnappyData cluster setup is done using the physical hosts.
 
 All examples given here includes one locator, one server, and one lead member in a SnappyData cluster configuration.
 
@@ -53,7 +52,7 @@ dev14 -locators=dev15:10334 -ssl-enabled=true  -J-Djavax.net.ssl.keyStoreType=jk
 <a id= configureseparate> </a>
 ## Configuring SSL Encryption for Different Socket Endpoints in SnappyData Cluster
 
-You can individually configure the SnappyData socket endpoints as per your requirements. This section provides the instructions to configure each of the socket endpoint.
+You can individually configure the SnappyData socket endpoints as per your requirements. This section provides the instructions to configure each of the socket endpoints.
 
 *	[Configuring SSL encryption for client-server](#clientserversetup)
 *	[Configuring SSL encryption for p2p](#p2psetup)
@@ -68,11 +67,11 @@ The Thrift servers use the **Thrift Compact Protocol** by default which is not S
 
 In the **conf/locators** and **conf/servers** files, you need to add `-thrift-ssl` and the required SSL setup in `-thrift-ssl-properties`. Refer to the [SnappyData thrift properties](../configuring_cluster/property_description.md#thrift-properties) section for more information.
 
-In the following example, the SSL configuration for client-server is demonstrated alongwith the startup of SnappyData members with SSL encryption. 
+In the following example, the SSL configuration for client-server is demonstrated along with the startup of SnappyData members with SSL encryption. 
 
 #### Requirements
 
-*	Configure SSL keypairs and certificates as needed for client and server. Refer the following example.
+*	Configure SSL keypairs and certificates as needed for client and server. Refer to the following example.
 *	Ensure that all the locator and server members, in the cluster, use the same SSL boot parameters at startup.
 
 #### Provider-Specific Configuration Files
@@ -155,7 +154,7 @@ keytool -genkey -alias mySnappyLead -keystore leadKeyStore.key
 keytool -export -alias mySnappyLead -keystore leadKeyStore.key -rfc -file myLead.cert
 ```
 
-Each of the member's certificate are then imported into the other member's trust store.
+Each of the member's certificate is then imported into the other member's trust store.
 
 For the server member:
 
@@ -228,14 +227,14 @@ The following sections provide a simple example that demonstrates the configurat
 To configure SSL for Spark layer:
 
 *	Configure SSL keypairs and certificates as needed for each SnappyData member. See [Generate Key Pairs and Certificates](https://gemfirexd.docs.pivotal.io/docs-gemfirexd/deploy_guide/Topics/security/ssl_keys.html#cadminsslkeys).
-*	Ensure theat SnappyData locator, server, and lead members use the same SSL boot parameters at startup.
+*	Ensure that SnappyData locator, server, and lead members use the same SSL boot parameters at startup.
 
 !!! Note
 	For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL. 
 
 #### Provider-Specific Configuration Files
 
-This example uses keystores created by the Java keytool application to provide the proper credentials to the provider.  On each node, create keystore files, certificates, and truststore files. Here, in this example, to create the keystore and certificate for the locator, the following were run:
+This example uses keystores created by the Java keytool application to provide the proper credentials to the provider.  On each node, create keystore files, certificates, and truststore files. Here, in this example, to create the keystore and certificate for the locator, the following was run:
 
 ```
 keytool -genkey -alias mySnappyLocator -keystore locatorKeyStore.key
@@ -255,7 +254,7 @@ keytool -genkey -alias mySnappyLead -keystore leadKeyStore.key
 keytool -export -alias mySnappyLead -keystore leadKeyStore.key -rfc -file myLead.cert
 ```
 
-Each of the member's certificate was then imported into the other member's trust store.
+After this, each of the member's certificate is imported into the other member's trust store.
 
 For the locator member:
 ```
@@ -304,97 +303,3 @@ Start the SnappyData cluster using snappy-start-all.sh script and perform operat
 ```
 
 You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.
-
-<a id= jobserverssl> </a>
-### Configuring SSL Encryption for Spark Job Server
-
-To activate SSL communication in the Spark job server, you must set the following flags in your **application.conf** file in the 'spray.can.server' section. Later, you must either compile the jobserver repository after changing the settings in this conf file or compile the product after modifying this conf file.
-
-```
-ssl-encryption = on
-  # absolute path to keystore file
-  keystore = "/some/path/keystore.jks"
-  keystorePW = "changeit"
-```
-!!! Note
-	Currently you cannot configure SSL encryption for Spark job server through the startup properties or by using user-specified conf file. This is planned to be supported in a future release.
-
-#### Requirements
-
-A keystore that contains the server certificate. 
-
-#### Provider-Specific Configuration Files
-This example uses keystores created by the Java keytool application to provide the proper credentials to the provider. You must create keystore files, certificates, and truststore files on each node of the SnappyData cluster.
-
-1.	Create a keystore file.
-
-		keytool -genkey -alias localhost -keyalg RSA -keystore jobserverkeystoreRSA.jks
-
-2.	Create a certificate.
-
-		keytool -export -alias localhost -keystore jobserverkeystoreRSA.jks -rfc -file jobserverkeystore.cert
-
-3.	Create a truststore file.
-
-		keytool -import -noprompt -alias localhost -file jobserverkeystore.cert -keystore jobservertrustStore.key
-
-4.	Create one truststore file that contains the public keys from all certificates.
-5.	Log on to one host and import the truststore file for that host and copy the <all_jks> file to the other nodes in your cluster, and repeat the keytool command on each node in case of multi host cluster.
-6.	Modify the **application.conf** file under **spark-jobserver **repository (**/snappydata/spark-jobserver/job-server/resources/application.conf**) to activate server authentication and SSL communication.
-7.	Modify the section **spray.can.server** in this file for the following properties:
-
-         ssl-encryption = ons
-          # absolute path to keystore file
-          keystore = "/path to/jobserverkeystoreRSA.jks"
-          keystorePW = "<password>"
-     
-8.	Use Curl commands to submit a sample job to SSL enabled Spark job server:
-
-		curl -k --data-binary @/path/to/jarfile/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar 	https://localhost:8090/jars/myapp;
-		curl -k -d  "" 'https://localhost:8090/jobs?appName=myapp&classPath=io.snappydata.hydra.northwind.CreateTableJob';
-
-### Code Snippet for Sample CreateTableJob (snappyjob)
-
-Use the following code snippet to test the configured encryption.
-
-```
-package io.snappydata.hydra.northwind
- 
-import java.io.{File, FileOutputStream, PrintWriter}
- 
-import com.typesafe.config.Config
-import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
- 
-import scala.util.{Failure, Success, Try}
- 
- 
-class CreateTableJob extends SnappySQLJob {
- override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-   val pw = new PrintWriter(new FileOutputStream(new File("CreateTableJob.out"), true));
-   def getCurrentDirectory = new java.io.File(".").getCanonicalPath
- 
-   Try {
-     val snc = snSession.sqlContext
-     snc.sql("create table t1 (id int) using column")
-     snc.sql("select * from t1").show()
-     snc.sql("insert into t1 values (1)").show()
-     snc.sql("select * from t1").show()
-     snc.sql("insert into t1 values (2)").show()
-     snc.sql("select * from t1").show()
-     snc.sql(" update t1 set id=3 where id=1").show()
-     snc.sql("select * from t1").show()
-     pw.println("table craete/inserted/update successfully....")
-   } match {
-     case Success(v) => pw.close()
-       s"See ${getCurrentDirectory}/CreateTableJob.out"
-     case Failure(e) => pw.close();
-       throw e;
-   }
- }
- 
- override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-}
-
-
-
-```
