@@ -292,6 +292,12 @@
             
                 <li class="toctree-l3"><a href="#how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</a></li>
                 
+                    <li><a class="toctree-l4" href="#using-mavensbt-dependencies">Using Maven/SBT Dependencies</a></li>
+                
+                    <li><a class="toctree-l4" href="#dowloading-snappydata-jdbc-driver-jar">Dowloading SnappyData JDBC Driver Jar</a></li>
+                
+                    <li><a class="toctree-l4" href="#code-example">Code Example</a></li>
+                
                     <li><a class="toctree-l4" href="#connecting-with-jdbc-client-pool-driver">Connecting with JDBC Client Pool Driver</a></li>
                 
                     <li><a class="toctree-l4" href="#limitations">Limitations</a></li>
@@ -938,7 +944,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1836,7 +1842,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1923,7 +1950,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2096,27 +2123,30 @@
               
                 <p><a id="howto-jdbc"></a></p>
 <h1 id="how-to-connect-using-jdbc-driver">How to Connect using JDBC Driver</h1>
-<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers.</p>
+<p>You can connect to and execute queries against SnappyData cluster using JDBC driver. 
+The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers.</p>
 <p>To connect to the SnappyData cluster using JDBC, use URL of the form <code>jdbc:snappydata://&lt;locatorHostName&gt;:&lt;locatorClientPort&gt;/</code></p>
 <p>Where the <code>&lt;locatorHostName&gt;</code> is the hostname of the node on which the locator is started and <code>&lt;locatorClientPort&gt;</code> is the port on which the locator accepts client connections (default 1527).</p>
-<p><strong>Dependencies</strong>: Use the Maven/SBT dependencies for the latest released version of SnappyData.</p>
+<p>You can use Maven or SBT dependencies to get the latest SnappyData JBDC driver which is used for establishing the JDBC connection with SnappyData. Other than this you can also directly download the JDBC driver from the SnappyData release page. </p>
+<h2 id="using-mavensbt-dependencies">Using Maven/SBT Dependencies</h2>
+<p>You can use the Maven or the SBT dependencies to get the latest released version of SnappyData JDBC driver.</p>
 <p><strong>Example: Maven dependency</strong></p>
 <pre><code class="pre">&lt;!-- https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client --&gt;
 &lt;dependency&gt;
     &lt;groupId&gt;io.snappydata&lt;/groupId&gt;
     &lt;artifactId&gt;snappydata-jdbc_2.11&lt;/artifactId&gt;
-    &lt;version&gt;1.0.2.1&lt;/version&gt;
+    &lt;version&gt;1.0.2.2&lt;/version&gt;
 &lt;/dependency&gt;
 </code></pre>
 
 <p><strong>Example: SBT dependency</strong></p>
 <pre><code class="pre">// https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-jdbc_2.11&quot; % &quot;1.0.2.1&quot;
+libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-jdbc_2.11&quot; % &quot;1.0.2.2&quot;
 </code></pre>
 
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the <strong>build.sbt</strong>:</p>
+<p>If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due to an issue with its pom file. </br>As a workaround, add the below code to the <strong>build.sbt</strong>:</p>
 </div>
 <pre><code>val workaround = {
   sys.props += &quot;packaging.type&quot; -&gt; &quot;jar&quot;
@@ -2125,7 +2155,9 @@ libraryDependencies += &quot;io.snappydata&quot; % &quot;snappydata-jdbc_2.11&qu
 </code></pre>
 
 <p>For more details, refer <a href="https://github.com/sbt/sbt/issues/3618">https://github.com/sbt/sbt/issues/3618</a>.</p>
-<p><strong>Code Example</strong></p>
+<h2 id="dowloading-snappydata-jdbc-driver-jar">Dowloading SnappyData JDBC Driver Jar</h2>
+<p>You can directly <a href="https://github.com/SnappyDataInc/snappydata/releases/latest">download the SnappyData JDBC driver</a> from the latest SnappyData release page. Scroll down to download the SnappyData JDBC driver jar which is listed in the <strong>Description of download Artifacts</strong> &gt; <strong>Assets</strong> section.</p>
+<h2 id="code-example">Code Example</h2>
 <p><strong>Connect to a SnappyData cluster using JDBC on default client port</strong></p>
 <p>The code snippet shows how to connect to a SnappyData cluster using JDBC on default client port 1527. The complete source code of the example is located at <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/JDBCExample.scala">JDBCExample.scala</a></p>
 <pre><code class="pre">val url: String = s&quot;jdbc:snappydata://localhost:1527/&quot;

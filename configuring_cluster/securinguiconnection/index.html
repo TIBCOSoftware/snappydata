@@ -927,7 +927,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1832,7 +1832,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1919,7 +1940,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2096,17 +2117,8 @@
 <ol>
 <li>Make sure that you have valid SSL certificate imported into truststore.</li>
 <li>
-<p>Provide the following spark configuration in the leads conf files:</p>
-<pre><code>localhost-spark.ssl.enabled=true \
-        -spark.ssl.protocol=&lt;ssl-protocol&gt; \
-        -spark.ssl.enabledAlgorithms=&lt;comma-separated-list-of-ciphers&gt; \
-        -spark.ssl.keyPassword=&lt;key-password&gt; \
-        -spark.ssl.keyStore=&lt;path-to-key-store&gt; \
-        -spark.ssl.keyStorePassword=&lt;key-store-password&gt; \
-        -spark.ssl.keyStoreType=&lt;key-store-type&gt; \
-        -spark.ssl.trustStore=&lt;path-to-trust-store&gt; \
-        -spark.ssl.trustStorePassword=&lt;trust-store-type&gt; \
-        -spark.ssl.trustStoreType=&lt;trust-store-type&gt;
+<p>Provide the following spark configuration in the conf/lead files:</p>
+<pre><code>localhost -spark.ssl.enabled=true -spark.ssl.protocol=&lt;ssl-protocol&gt; -spark.ssl.enabledAlgorithms=&lt;comma-separated-list-of-ciphers&gt; -spark.ssl.keyPassword=&lt;key-password&gt; -spark.ssl.keyStore=&lt;path-to-key-store&gt; -spark.ssl.keyStorePassword=&lt;key-store-password&gt; -spark.ssl.keyStoreType=&lt;key-store-type&gt; -spark.ssl.trustStore=&lt;path-to-trust-store&gt; -spark.ssl.trustStorePassword=&lt;trust-store-password&gt; -spark.ssl.trustStoreType=&lt;trust-store-type&gt;
 </code></pre>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
@@ -2117,14 +2129,14 @@
 </div>
 </li>
 <li>
-<p>Launch the Snappy cluster.
+<p>Launch the Snappy cluster.</br>
     <code>./sbin/snappy-start-all.sh</code> </p>
 </li>
 <li>Launch the Snappy Pulse UI in your web browser. You are directed to the HTTPS site.</li>
 </ol>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Users are automatically redirected to HTTPS (on port 5450) even if the SnappyData Pulse UI is accessed with HTTP protocol.</p>
+<p>You are automatically redirected to HTTPS (on port 5450) even if the SnappyData Pulse UI is accessed with HTTP protocol.</p>
 </div>
               
             </div>
@@ -2136,7 +2148,7 @@
         <a href="../../security/user_names_for_authentication_authorization_and_membership/" class="btn btn-neutral float-right" title="User Names for Authentication, Authorization, and Membership">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../ssl_setup/" class="btn btn-neutral" title="SSL Setup for Client-Server"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../ssl_setup/" class="btn btn-neutral" title="Enabling SSL Encryption in Different Socket Endpoints of SnappyData"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   

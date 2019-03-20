@@ -927,7 +927,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1825,7 +1825,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1925,7 +1946,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2259,7 +2280,7 @@
 </tbody>
 </table>
 <p><strong>Example </strong></p>
-<pre><code class="pre">snappySession.sql(“select * from t1”)
+<pre><code class="pre">snappySession.sqlUncached(“select * from t1”)
 </code></pre>
 
 <p><a id= createtableapi> </a></p>
@@ -2302,6 +2323,10 @@
 <tr>
 <td>allowExisting</td>
 <td>When set to <strong>true</strong>, tables with the same name are ignored, else an <strong>AnalysisException</strong> is thrown stating that the table already exists.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Dataframe</td>
 </tr>
 </tbody>
 </table>
@@ -2401,6 +2426,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <td>ifExists</td>
 <td>Attempt truncate only if the table exists.</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Dataframe</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
@@ -2431,6 +2460,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <tr>
 <td>ifExists</td>
 <td>Attempts drop only if the table exists.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Unit</td>
 </tr>
 </tbody>
 </table>
@@ -2474,6 +2507,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <tr>
 <td>allowExisting</td>
 <td>When set to <strong>true</strong>,  tables with the same name are ignored, else a <strong>table exist</strong> exception is shown.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Dataframe</td>
 </tr>
 </tbody>
 </table>
@@ -2521,7 +2558,11 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 </tr>
 <tr>
 <td>allowExisting</td>
-<td></td>
+<td>When set to <strong>true</strong>,  tables with the same name are ignored, else a <strong>table exist</strong> exception is shown.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Dataframe</td>
 </tr>
 </tbody>
 </table>
@@ -2550,6 +2591,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <td>schemaName</td>
 <td>schema name which goes into the catalog.</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Unit</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
@@ -2568,6 +2613,8 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <pre><code class="pre">snappySession.getCurrentSchema
 </code></pre>
 
+<p><strong>Returns</strong></p>
+<p>String</p>
 <p><a id= insertapi> </a></p>
 <h3 id="insert">insert</h3>
 <p>Inserts one or more row into an existing table.</p>
@@ -2593,6 +2640,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <tr>
 <td>Rows</td>
 <td>List of rows to be inserted into the table.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Int</td>
 </tr>
 </tbody>
 </table>
@@ -2625,6 +2676,10 @@ snappySession.insert(&quot;t1&quot;, row)
 <tr>
 <td>rows</td>
 <td>List of rows to be put into the table.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Int</td>
 </tr>
 </tbody>
 </table>
@@ -2664,6 +2719,10 @@ snappySession.insert(&quot;t1&quot;, row)
 <td>updateColumns</td>
 <td>List of all column names that are updated.</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Int</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
@@ -2693,6 +2752,10 @@ snappySession.insert(&quot;t1&quot;, row)
 <tr>
 <td>filterExpr</td>
 <td>SSQL WHERE criteria to select rows that will be updated.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Int</td>
 </tr>
 </tbody>
 </table>
@@ -2735,6 +2798,10 @@ snappySession.insert(&quot;t1&quot;, row)
 <td>k</td>
 <td>Optional. The number of elements to be queried. This is to be passed only for stream summary</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Dataframe</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
@@ -2770,6 +2837,10 @@ If some rows are already present in the table, then they are updated. Also, the 
 <td>tableName</td>
 <td>Name of the table.</td>
 </tr>
+<tr>
+<td>Returns</td>
+<td>Unit</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example </strong></p>
@@ -2798,6 +2869,10 @@ df.write.putInto(“snappy_table”)
 <tr>
 <td>tableName</td>
 <td>Name of the table.</td>
+</tr>
+<tr>
+<td>Returns</td>
+<td>Unit</td>
 </tr>
 </tbody>
 </table>

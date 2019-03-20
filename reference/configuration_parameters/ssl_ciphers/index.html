@@ -9,7 +9,7 @@
   <meta name="author" content="SnappyData Team">
   <link rel="shortcut icon" href="../../../favicon.ico">
   
-  <title>ssl - SnappyData Documentation v.1.0.2.1</title>
+  <title>ssl-ciphers - SnappyData Documentation v.1.0.2.1</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../../css/theme.css" type="text/css" />
@@ -24,9 +24,9 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "ssl";
-    var mkdocs_page_input_path = "reference/configuration_parameters/ssl.md";
-    var mkdocs_page_url = "/reference/configuration_parameters/ssl/";
+    var mkdocs_page_name = "ssl-ciphers";
+    var mkdocs_page_input_path = "reference/configuration_parameters/ssl_ciphers.md";
+    var mkdocs_page_url = "/reference/configuration_parameters/ssl_ciphers/";
   </script>
   
   <script src="../../../js/jquery-2.1.1.min.js"></script>
@@ -927,7 +927,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1824,12 +1824,26 @@
 
         
             
+    <li class="toctree-l1 ">
+        <a class="" href="../ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
     <li class="toctree-l1 current">
-        <a class="current" href="./">ssl</a>
+        <a class="current" href="./">ssl-ciphers</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#ssl">ssl</a></li>
+                <li class="toctree-l3"><a href="#ssl-ciphers">ssl-ciphers</a></li>
                 
                     <li><a class="toctree-l4" href="#description">Description</a></li>
                 
@@ -1841,6 +1855,13 @@
                 
             
             </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1927,7 +1948,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2086,7 +2107,7 @@
         
       
     
-    <li>ssl</li>
+    <li>ssl-ciphers</li>
 <!--    <li class="wy-breadcrumbs-aside">
       
         
@@ -2102,14 +2123,15 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="ssl">ssl</h1>
+                <h1 id="ssl-ciphers">ssl-ciphers</h1>
 <h2 id="description">Description</h2>
-<p>Determines whether this connection is encrypted or not, and whether certificate-based peer authentication is enabled. Possible values are Off, Basic, and peerAuthentication.</p>
+<p>Used for configuring SSL encryption between SnappyData members. A space-separated list of the valid SSL ciphers for member connections. A setting of 'any' uses any ciphers that are enabled by default in the configured JSSE provider.</p>
 <h2 id="default-value">Default Value</h2>
-<p>Off</p>
+<p>any</p>
 <h2 id="property-type">Property Type</h2>
-<p>Connection</p>
+<p>connection (boot)</p>
 <h2 id="prefix">Prefix</h2>
+<p>NA</p>
               
             </div>
           </div>
@@ -2117,10 +2139,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../start-locator/" class="btn btn-neutral float-right" title="start-locator">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../ssl_require_auth/" class="btn btn-neutral float-right" title="ssl-require-authentication">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../snappydata.query-timeout/" class="btn btn-neutral" title="gemfirexd.query-timeout"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../ssl_protocols/" class="btn btn-neutral" title="ssl-protocols"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -2154,10 +2176,10 @@
           <a href="https://github.com/SnappyDataInc/snappydata" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../snappydata.query-timeout/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../ssl_protocols/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../start-locator/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../ssl_require_auth/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

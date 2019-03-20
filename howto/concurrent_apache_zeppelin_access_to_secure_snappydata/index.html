@@ -940,7 +940,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1838,7 +1838,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1925,7 +1946,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2191,16 +2212,17 @@ snappy&gt; GRANT UPDATE ON Table airline TO user4;
 </table>
 </li>
 <li>
-<p><strong>Dependency settings</strong></br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for   SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.0.2.1.jar) is available on <a href="https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2.1">the release page</a>. </br>
-    The SnappyData Client (JDBC) JAR file can also be placed under <ZEPPELIN_HOME>/interpreter/jdbc before starting Zeppelin instead of providing it in the dependency setting.</p>
+<p><strong>Dependency settings</strong></br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for   SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.0.2.2.jar) is available on <a href="https://github.com/SnappyDataInc/snappydata/releases/latest">the release page</a>. </br>
+    The SnappyData Client (JDBC) JAR file can also be placed under <strong><ZEPPELIN_HOME>/interpreter/jdbc</strong> before starting Zeppelin instead of providing it in the dependency setting.</p>
 </li>
 <li>
 <p>If required, edit other properties, and then click <strong>Save</strong> to apply your changes. </p>
 </li>
 </ol>
-<p><strong>Related Topics</strong></p>
+<p><strong>See also</strong></p>
 <ul>
 <li><a href="../use_apache_zeppelin_with_snappydata/">How to Use Apache Zeppelin with SnappyData</a></li>
+<li><a href="../connect_using_jdbc_driver/">How to connect using JDBC driver</a></li>
 </ul>
               
             </div>

@@ -940,7 +940,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1838,7 +1838,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1925,7 +1946,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2127,10 +2148,10 @@ If a table has 16 partitions (buckets, for the row or column tables), a scan que
 <p>SnappyData out of the box comes configured with two execution pools:</p>
 <ul>
 <li>
-<p>Low-latency pool: This pool is automatically used when SnappyData determines a request to be “low latency”, that is, the queries that are partition pruned to two or fewer partitions. </br></p>
+<p><strong>Low-latency pool</strong>: This pool is automatically used when SnappyData determines that a request is of low latency, that is, the queries that are partition pruned to two or fewer partitions. </br></p>
 </li>
 <li>
-<p>Default pool: This is the pool that is used for the remaining requests.</p>
+<p><strong>Default pool</strong>: This is the pool that is used for the remaining requests.</p>
 </li>
 </ul>
 <p>Two cores are statically assigned to the low latency pool. Also, the low latency pool has weight twice that of the default pool. Thus, if there are 30 cores available to an executor for a query that has 30 partitions, only 28 would be assigned to it and two cores would be reserved to not starve the low latency queries. When the system has both low latency and normal queries, 20 cores are used for the low latency queries as it has higher priority (weight=2).
@@ -2138,6 +2159,15 @@ If a query requires all 30 partitions and no low latency queries are running at 
 </br></p>
 <p>Applications can explicitly configure to use a particular pool for the current session using a SQL configuration property, <code>snappydata.scheduler.pool</code>. For example, the <code>set snappydata.scheduler.pool=lowlatency</code> command sets the pool as low latency pool for the current session. </p>
 <p>New pools can be added and properties of the existing pools can be configured by modifying the <strong>conf/fairscheduler.xml</strong> file. We do not recommend changing the pool names (<code>default</code> and <code>lowlatency</code>).</p>
+<h4 id="controlling-cpu-usage-for-user-jobs">Controlling CPU Usage for User Jobs</h4>
+<p>You can control the CPU usage for user jobs by configuring separate pools for different kinds of jobs. </br> See configuration <a href="https://spark.apache.org/docs/2.1.1/job-scheduling.html#configuring-pool-properties">here</a>. </br>
+The product is configured with two out-of-the-box pools, that is the <strong>Default pool</strong> and the <strong>Low-latency pool</strong>. The <strong>Default pool</strong> has higher priority and also has a <strong>minShare</strong>, so that some minimum cores are reserved for those jobs if possible. 
+The <a href="../../monitoring/monitoring/#stages"><strong>Stages</strong></a> tab on the SnappyData Pulse UI shows the available pools.  When you track a job for an SQL query on the <a href="../../monitoring/monitoring/#sql"><strong>SQL</strong></a> tab, it shows the pool that is used in the <strong>Pool Name</strong> column. In-built tasks such as ingestion can show lower priority pools by default to give priority to foreground queries. To configure such priority, do the following: </p>
+<ol>
+<li>Define the pools in <strong>conf/fairscheduler.xml</strong> </li>
+<li>Set a pool for a job using Spark API  or use <code>set snappydata.scheduler.pool</code> property in a SnappySession.</li>
+</ol>
+<p>To configure the priority based on specific requirements, you can also either permit the users to set the priority for queries or add some pool allocation logic in the application as per client requirements.</p>
 <h3 id="using-a-partitioning-strategy-to-increase-concurrency">Using a Partitioning Strategy to Increase Concurrency</h3>
 <p>The best way to increasing concurrency is to design your schema such that you minimize the need to run your queries across many partitions. The common strategy is to understand your application patterns and choose a partitioning strategy such that queries often target a specific partition. Such queries will be pruned to a single node and SnappyData automatically optimises such queries to use a single task. 
 For more information see, <a href="../design_schema/">How to design your schema</a>.</p>

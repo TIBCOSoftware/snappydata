@@ -707,6 +707,8 @@
                 
                     <li><a class="toctree-l4" href="#estimating-memory-size-for-column-and-row-tables">Estimating Memory Size for Column and Row Tables</a></li>
                 
+                    <li><a class="toctree-l4" href="#disk-and-memory-sizing">Disk and Memory Sizing</a></li>
+                
                     <li><a class="toctree-l4" href="#table-memory-requirements">Table Memory Requirements</a></li>
                 
                     <li><a class="toctree-l4" href="#estimating-memory-size-for-execution">Estimating Memory Size for Execution</a></li>
@@ -944,7 +946,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1842,7 +1844,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1929,7 +1952,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2108,6 +2131,10 @@
 <p>Column tables use compression by default and the amount of compression is dependent on the data itself. While we commonly see compression of 50%, it is also possible to achieve much higher compression ratios when the data has many repeated strings or text.</br>
 Row tables, on the other hand, consume more space than the original data size. There is a per row overhead in SnappyData. While this overhead varies and is dependent on the options configured on the Row table, as a simple guideline we suggest you assume 100 bytes per row as overhead. Thus, it is clear that it is not straightforward to compute the memory requirements.</br> 
 It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.</p>
+<h2 id="disk-and-memory-sizing">Disk and Memory Sizing</h2>
+<p>For efficient use of the disk, the best alternative is to load some sample data and extrapolate for both memory and disk requirements. The disk usage is the sum of all the <strong>Total size</strong> of the tables. You can check the value of <strong>Total Size</strong> on the SnappyData Pulse UI. 
+For total disk requirement, the rule of thumb is ~4X data size which accounts for temporary space required for the compactor and the space required for <a href="../important_settings/#spark-local-dir">spark.local.dir</a>. In case of concurrent thread execution,the requirement will differ as mentioned in <a href="../important_settings/#spark-local-dir">spark.local.dir</a>.
+If the data and the temporary storage set with <code>spark.local.dir</code> are in separate locations, then the disk for data storage can be 2X of the total estimated data size while temporary storage can be 2X. The temporary storage is used to shuffle the output of large joins, and a query can potentially shuffle the entire data. Likewise, a massive import can also shuffle data before inserting into partitioned tables.</p>
 <p><a id="table-memory"></a></p>
 <h2 id="table-memory-requirements">Table Memory Requirements</h2>
 <p>SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. If the memory-size is configured (off-heap is enabled), the entire column table is stored in off-heap memory.</p>
@@ -2167,14 +2194,15 @@ It is recommended that you take a sample of the data set (as close as possible t
 <p>If there are more than 100 entries for a single index entry, the heap overhead per entry increases from 8 bytes to approximately 24 bytes.</p>
 <p><a id="memory-execution"></a></p>
 <h2 id="estimating-memory-size-for-execution">Estimating Memory Size for Execution</h2>
-<p>Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (for example, a UDF allocating memory), etc. Most of these allocations automatically overflow to disk. But, it is strongly recommended that you allocate at least 5GB per data server/lead node for production systems that run large scale analytic queries.</p>
+<p>Spark and SnappyData also need room for execution. This includes memory for sorting, joining data sets, Spark execution, application managed objects (for example, a UDF allocating memory), etc. Most of these allocations automatically overflow to disk.  But it is strongly recommended to allocate minimum 6-8 GB of heap per data server/lead node for production systems that run large scale analytic queries.</p>
 <p>SnappyData is a Java application and by default supports on-heap storage. It also supports off-heap storage, to improve the performance for large blocks of data (for example, columns stored as byte arrays).
 </br>It is recommended to use off-heap storage for column tables. Row tables are always stored on on-heap. The <a href="../../configuring_cluster/property_description/#memory-size">memory-size</a> and <a href="../../configuring_cluster/property_description/#heap-size">heap-size</a> properties control the off-heap and on-heap sizes of the SnappyData server process.</p>
 <p><img alt="On-Heap and Off-Heap" src="../../Images/on-off-heap.png" /></p>
 <p>SnappyData uses JVM heap memory for most of its allocations. Only column tables can use off-heap storage (if configured). We suggest going through the following options and configuring them appropriately based on the suggested sizing estimates.</p>
 <p><a id="heap"></a></p>
 <h2 id="snappydata-heap-memory">SnappyData Heap Memory</h2>
-<p>SnappyData heap memory regions are divided into two parts called <code>Heap Storage Pool</code> and <code>Heap Execution Pool</code>. Sizes of each pool are determined by the configuration parameters provided at boot time to each server. These two regions are only tentative demarcation and can grow into each other based on some conditions.</p>
+<p>Heap is provided for row tables and working/temp object memory. For large imports most external connectors still do not use off-heap for temporary buffers.
+SnappyData heap memory regions are divided into two parts called <code>Heap Storage Pool</code> and <code>Heap Execution Pool</code>. Sizes of each pool are determined by the configuration parameters provided at boot time to each server. These two regions are only tentative demarcation and can grow into each other based on some conditions.</p>
 <h3 id="heap-storage-pool">Heap Storage Pool</h3>
 <p>The heap objects which belong to SnappyData storage of Spark storage are accounted here. For example, when a row is inserted into a table or deleted, this pool accounts the memory size of that row. Objects that are temporary and die young are not considered here. As it is difficult and costly to do a precise estimation, this pool is an approximation of heap memory for objects that are going to be long-lived. Since precise estimation of heap memory is difficult, there is a heap monitor thread running in the background. </br>
 If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <code>critical-heap-percentage</code> the database engine starts canceling jobs and queries and a LowMemoryException is reported. This is also an indication of heap pressure on the system.</p>
@@ -2237,8 +2265,8 @@ If the total heap as seen by JVM (and not SnappyUnifiedMemoryManager) exceeds <c
 <pre><code class="scala">-heap-size=20g -critical-heap-percentage=95 -eviction-heap-percentage=85.5
 </code></pre>
 
-<p><strong>Example</strong>: Depicts how SnappyData derives different memory region sizes</p>
-<pre><code class="scala">Reserved_Heap_Memory =&gt; 20g * (1 - 0.95) = 1g ( 0.9 being derived from critical_heap_percentage)
+<p><strong>Example</strong>: Depicts how SnappyData derives different memory region sizes.</p>
+<pre><code class="scala">Reserved_Heap_Memory =&gt; 20g * (1 - 0.95) = 1g ( 0.95 being derived from critical_heap_percentage)
 Heap_Memory_Fraction =&gt; (20g - Reserved_Memory) *(0.97) = 17.4 ( 0.97 being derived from spark.memory.fraction)
 Heap_Storage_Pool_Size =&gt; 17.4 * (0.5) = 8.73 ( 0.5 being derived from spark.memory.storageFraction)
 Heap_Execution_Pool_Size =&gt; 17.4 * (0.5) = 8.73

@@ -950,7 +950,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1848,7 +1848,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1935,7 +1956,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2107,7 +2128,7 @@
             <div class="section">
               
                 <h1 id="snappydata-pulse">SnappyData Pulse</h1>
-<p>SnappyData Pulse is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigage easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+<p>SnappyData Pulse is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.</p>
 <p>To access SnappyData Pulse, start your cluster and open <a href="http:&lt;leadhost&gt;:5050/dashboard/">http:<code>&lt;leadhost&gt;</code>:5050/dashboard/</a> in the web browser.</p>
 <div class="admonition note">
@@ -2150,7 +2171,7 @@ All the usage details are automatically refreshed after every five seconds.</p>
 <p><img alt="" src="../../Images/snapshot.png" /></p>
 <p><a id="dashboard"></a></p>
 <h2 id="dashboard">Dashboard</h2>
-<p>The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to automatically update after every five seconds.  If you want to turn off the auto-refresh, use the <strong>Auto Refresh</strong> switch that is provided on the upper-right corner.
+<p>The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to update automatically after every five seconds.  If you want to turn off the auto-refresh, use the <strong>Auto Refresh</strong> switch that is provided on the upper-right corner.
 <img alt="" src="../../Images/AutoRefresh-is-ON.png" /></p>
 <p>You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
 <img alt="" src="../../Images/CPU_cores.png" /></p>

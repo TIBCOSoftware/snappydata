@@ -946,7 +946,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1844,7 +1844,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1931,7 +1952,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2142,8 +2163,14 @@ However, note that this can cause spurious node failures to be reported due to G
 <h2 id="sparklocaldir">spark.local.dir</h2>
 <p>SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using <code>-dir</code> option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
-To achieve better performance, it is recommended to store temporary data on a different disk (preferably SSD) than the table data. This can be done by setting the <code>spark.local.dir</code> parameter.</p>
-<p>This attribute is set in the <a href="../../configuring_cluster/configuring_cluster/#lead">leads configuration files</a> <strong>conf/leads</strong>.</p>
+To achieve better performance, it is recommended to store temporary data on a different disk (preferably using SSD storage) than the table data. This can be done by setting the <code>spark.local.dir</code> property to a location with enough space. For example, ~2X of the data size, in case of single thread execution. In case of concurrent thread execution, the requirement for temp space is approximately data size * number of threads. For example, if the data size in the cluster is 100 GB and three threads are executing concurrent ad hoc analytical queries in the cluster, then the temp space should be ~3X of the data size. This property is set in <a href="../../configuring_cluster/configuring_cluster/#lead"><strong>conf/leads</strong></a> as follows:</p>
+<pre><code>localhost -spark.local.dir=/path/to/local-directory 
+</code></pre>
+
+<p>The path specified is inherited by all servers. The temporary data defaults to <strong>/tmp</strong>. In case different paths are required on each of the servers, then remove the property from <strong>conf/leads</strong> and instead set as system property in each of the <strong>conf/servers</strong> file as follows:</p>
+<pre><code>localhost ... -J-Dspark.local.dir=/path/to/local-directory1
+</code></pre>
+
 <p><a id="os_setting"></a></p>
 <h2 id="operating-system-settings">Operating System Settings</h2>
 <p>For best performance, the following operating system settings are recommended on the lead and server nodes.</p>
@@ -2185,7 +2212,7 @@ sudo sh -c &quot;fallocate -l 32G /var/swapfile &amp;&amp; chmod 0600 /var/swapf
 ## fallocate is recommended since it is much faster, although not supported by some filesystems such as ext3 and zfs.
 ## In case fallocate is not available, use dd:
 sudo dd if=/dev/zero of=/var/swapfile bs=1M count=32768
-sudo chmod 600 /var/swapfile.1
+sudo chmod 600 /var/swapfile
 sudo mkswap /var/swapfile
 sudo swapon /var/swapfile
 </code></pre>

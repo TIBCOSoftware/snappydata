@@ -954,7 +954,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../configuring_cluster/ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../../configuring_cluster/ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1852,7 +1852,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1939,7 +1960,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2149,15 +2170,15 @@
 <p>Navigate to the SnappyData product root directory to start the cluster. Run the <code>./sbin/snappy-start-all.sh</code> script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. </p>
 <pre><code class="pre">$./sbin/snappy-start-all.sh
 
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/xyz/&lt;snappydata_install_dir&gt;/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9086 status: running
   Distributed system now has 1 members.
   Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1/snappyserver.log
+Logs generated in /home/xyz/&lt;snappydata_install_dir&gt;/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 9220 status: running
   Distributed system now has 2 members.
   Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-lead-1/snappyleader.log
+Logs generated in /home/xyz/&lt;snappydata_install_dir&gt;/snappy/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 9370 status: running
   Distributed system now has 3 members.
   Starting job server on: 0.0.0.0[8090]
@@ -2385,7 +2406,7 @@ NULL
 <h2 id="add-servers-into-cluster">Add Servers into Cluster</h2>
 <p>You can add more than one server to a cluster. To add a new server, do the following:</p>
 <ol>
-<li>Go to SnappyData home directory.</br><code>cd snappydata/build-artifacts/scala-2.11/snappy</code></li>
+<li>Go to SnappyData home directory.</br><code>cd &lt;snappydata_install_dir&gt;</code></li>
 <li>Create a configuration file named <strong>servers</strong> in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files <strong>servers.template</strong> and rename it to <strong>servers</strong> as shown:</br><code>cp -f conf/servers.template conf/servers</code></li>
 <li>Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry <strong>localhost</strong> in this file for the primary server. You can add an entry <strong>localhost</strong> below this entry for the additional server. The <strong>servers</strong> file should contain the hostnames of the nodes (one per line) where you intend to start the member.</li>
 <li>From the SnappyData home directory, start the cluster again using the <code>./sbin/snappy-start-all.sh</code> command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Pulse UI. </li>
@@ -2395,7 +2416,7 @@ NULL
 <p>Further, you can distribute the data among the servers in the cluster. This ensures that each server carries almost equal data.
 To balance the data equally on the servers, do the following:</p>
 <ol>
-<li>Go to SnappyData home directory.</br><code>cd snappydata/build-artifacts/scala-2.11/snappy</code></li>
+<li>Go to SnappyData home directory.</br><code>cd &lt;snappydata_install_dir&gt;</code></li>
 <li><a href="#connectsnappyshell">Connect to snappy shell</a> and obtain the jdbc client connection.</li>
 <li>Run the rebalance command.</br> <code>call sys.rebalance_all_buckets();</code></li>
 <li>

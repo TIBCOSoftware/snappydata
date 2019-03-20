@@ -950,7 +950,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../ssl_setup/">SSL Setup for Client-Server</a>
+        <a class="" href="../ssl_setup/">Enabling SSL Encryption in Different Socket Endpoints of SnappyData</a>
         
     </li>
 
@@ -1848,7 +1848,28 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../reference/configuration_parameters/ssl/">ssl</a>
+        <a class="" href="../../reference/configuration_parameters/ssl_enabled/">ssl-enabled</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_protocols/">ssl-protocols</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_ciphers/">ssl-ciphers</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../reference/configuration_parameters/ssl_require_auth/">ssl-require-authentication</a>
         
     </li>
 
@@ -1935,7 +1956,7 @@
         
             
     <li class="toctree-l1 ">
-        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Driver and QlikView</a>
+        <a class="" href="../../setting_up_jdbc_driver_qlikview/">Setting Up SnappyData JDBC Client and QlikView</a>
         
     </li>
 
@@ -2196,6 +2217,10 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <td>-peer-discovery-port</td>
 <td>The port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.</td>
 </tr>
+<tr>
+<td>SSL properties</td>
+<td><a href="ssl_enabled.md">ssl-enabled</a>, <a href="ssl_ciphers.md">ssl-ciphers</a>, <a href="ssl_protocols.md">ssl-protocols</a>, <a href="ssl_require_auth.md">ssl-require-authentication</a>.</td>
+</tr>
 </tbody>
 </table>
 <p><a id="locator-example"></a>
@@ -2245,7 +2270,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-heap-size</td>
-<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85.5% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.</td>
+<td><a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, <code>-heap-size=8g</code> </br> It is recommended to allocate minimum 6-8 GB of heap size per lead node. If you use the <code>-heap-size</code> option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the <code>eviction-heap-percentage</code> to 85.5% of the <code>critical-heap-percentage</code>. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.</td>
 </tr>
 <tr>
 <td>-J</td>
@@ -2277,7 +2302,7 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 </tr>
 <tr>
 <td>-memory-size</td>
-<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is either 0 or it gets auto-configured in <a href="./#autoconfigur_offheap">specific scenarios</a>.</td>
+<td><a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. However, lead member do not need off-heap memory.  You can configure the off-heap memory for leads only when you are planning to increase the broadcast limit to a large value. This is generally not recommended and you must preferably limit the broadcast to a smaller value. The default off-heap size for leads is 0.</td>
 </tr>
 <tr>
 <td>-snappydata.column.batchSize</td>
@@ -2340,8 +2365,40 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <td>Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. The default is 2000.</td>
 </tr>
 <tr>
+<td>-spark.ssl.enabled<a id="ssl_spark_enabled"></a></td>
+<td>Enables or disables Spark layer encryption. The default is false.</td>
+</tr>
+<tr>
+<td>-spark.ssl.keyPassword<a id="ssl_spark_password"></a></td>
+<td>The password to the private key in the key store.</td>
+</tr>
+<tr>
+<td>-spark.ssl.keyStore<a id="ssl_spark_keystore"></a></td>
+<td>Path to the key store file. The path can be absolute or relative to the directory in which the process is started.</td>
+</tr>
+<tr>
+<td>-spark.ssl.keyStorePassword<a id="ssl_spark_keystorpass"></a></td>
+<td>The password used to access the keystore.</td>
+</tr>
+<tr>
+<td>-spark.ssl.trustStore<a id="ssl_spark_trustore"></a></td>
+<td>Path to the trust store file. The path can be absolute or relative to the directory in which the process is started.</td>
+</tr>
+<tr>
+<td>-spark.ssl.trustStorePassword<a id="truststorepassword"></a></td>
+<td>The password used to access the truststore.</td>
+</tr>
+<tr>
+<td>-spark.ssl.protocol<a id="ssl_spark_ssl_protocol"></a></td>
+<td>The protocol that must be supported by JVM. For example, TLS.</td>
+</tr>
+<tr>
 <td>-spark.ui.port</td>
-<td>Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050</td>
+<td>Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050.</td>
+</tr>
+<tr>
+<td>SSL properties</td>
+<td><a href="ssl_enabled.md">ssl-enabled</a>, <a href="ssl_ciphers.md">ssl-ciphers</a>, <a href="ssl_protocols.md">ssl-protocols</a>, <a href="ssl_require_auth.md">ssl-require-authentication</a>. These properties need not be added to  the Lead members in case of a client-server connection.</td>
 </tr>
 </tbody>
 </table>
