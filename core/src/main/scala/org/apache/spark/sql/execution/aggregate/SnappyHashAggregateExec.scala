@@ -37,7 +37,7 @@
 package org.apache.spark.sql.execution.aggregate
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import io.snappydata.collection.{ByteBufferHashMap, ObjectHashSet, SHAMap}
+import io.snappydata.collection.{ByteBufferData, ByteBufferHashMap, ObjectHashSet, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -504,11 +504,13 @@ case class SnappyHashAggregateExec(
 
     // Create a name for iterator from HashMap
     val iterTerm = ctx.freshName("mapIter")
+    val valueOffsetTerm = ctx.freshName("valueOffset")
     val iter = ctx.freshName("mapIter")
     val iterObj = ctx.freshName("iterObj")
     val iterClass = "java.util.Iterator"
     ctx.addMutableState(iterClass, iterTerm, "")
-
+    val currentValueOffSetTerm = ctx.freshName("currentValueOffSet")
+    val valueDataTerm = ctx.freshName("valueData")
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
@@ -523,10 +525,12 @@ case class SnappyHashAggregateExec(
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val numKeyBytesTerm = (ctx.freshName("numKeyBytes"))
     byteBufferAccessor = ByteBufferHashMapAccessor(session, ctx, groupingExpressions,
         aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-        mapDataTerm, this, this.parent, child)
-
+        mapDataTerm, this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
+      currentValueOffSetTerm, valueDataTerm)
+    val bbDataClass = classOf[ByteBufferData].getName
 
     val numKeyColumns = groupingExpressions.length
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
@@ -541,6 +545,7 @@ case class SnappyHashAggregateExec(
         private void $doAgg() throws java.io.IOException {
           $hashMapTerm = new $hashSetClassName(128, 0.6, 0, $valueSize,
           ${GemFireCacheImpl.getCurrentBufferAllocator}, null, null, 0L));
+          $bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
           $childProduce
           $iterTerm = $hashMapTerm.iterator();
         }

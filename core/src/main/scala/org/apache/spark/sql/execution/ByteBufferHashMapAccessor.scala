@@ -41,101 +41,40 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
   @transient valueExprs: Seq[Expression], classPrefix: String,
   hashMapTerm: String, dataTerm: String, @transient consumer: CodegenSupport,
-  @transient cParent: CodegenSupport, override val child: SparkPlan)
+  @transient cParent: CodegenSupport, override val child: SparkPlan,
+  valueOffsetTerm: String, numKeyBytesTerm: String,
+  currentValueOffSetTerm: String, valueDataTerm: String)
   extends UnaryExecNode with CodegenSupport {
 
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
-  /**
-   * Get the ExprCode for the key and/or value columns given a class object
-   * variable. This also returns an initialization code that should be inserted
-   * in generated code first. The last element in the result tuple is the names
-   * of null mask variables.
-   */
-  def getColumnVars(keyObjVar: String, localValObjVar: String,
-    onlyKeyVars: Boolean, onlyValueVars: Boolean,
-    checkNullObj: Boolean = false): (String, Seq[ExprCode], Array[String]) = {
-    // no local value if no separate value class
-    val valObjVar = if (valueClassName.isEmpty) keyObjVar else localValObjVar
-    // Generate initial declarations for null masks to avoid reading those
-    // repeatedly. Caller is supposed to insert the code at the start.
-    val declarations = new StringBuilder
-    val nullValMaskVars = new Array[String](numNullVars)
-    val nullMaskVarMap = (0 until numNullVars).map { index =>
-      val nullVar = s"$nullsMaskPrefix$index"
-      // separate final variable for nulls mask of key columns because
-      // value can change for multi-map case whose nullsMask may not
-      // be properly set for key fields
-      val nullMaskVar = ctx.freshName("localKeyNullsMask")
-      val nullValMaskVar = ctx.freshName("localNullsMask")
-      if (checkNullObj) {
-        // for outer joins, check for null entry and set all bits to 1
-        declarations.append(s"final long $nullMaskVar = " +
-          s"$keyObjVar != null ? $keyObjVar.$nullVar : -1L;\n")
-      } else {
-        declarations.append(s"final long $nullMaskVar = $keyObjVar.$nullVar;\n")
-      }
-      declarations.append(s"long $nullValMaskVar = $nullMaskVar;\n")
-      nullValMaskVars(index) = nullValMaskVar
-      nullVar -> (nullMaskVar, nullValMaskVar)
-    }.toMap
 
-    val vars = if (onlyKeyVars) classVars.take(valueIndex)
-    else {
-      // for value variables that are part of common expressions with keys,
-      // indicate the same as a null ExprCode with "nullIndex" pointing to
-      // the index of actual key variable to use in classVars
-      val valueVars = valueExprIndexes.collect {
-        case (_, i) if i >= 0 => classVars(i + valueIndex)
-        case (_, i) => (null, null, null, -i - 1) // i < 0
-      }
-      if (onlyValueVars) valueVars else classVars.take(valueIndex) ++ valueVars
-    }
+  def getAggregateVars(aggregateDataTypes: Seq[DataType], aggVarNames: Seq[String]):
+  Seq[ExprCode] = {
+    val plaformClass = classOf[Platform].getName
+    aggregateDataTypes.zip(aggVarNames).map{case (dt, varName) => {
+      val nullVar = ctx.freshName("isNull")
 
-    // lookup common expressions in key for values if accumulated by
-    // back to back calls to getColumnVars for keys, then columns
-    val columnVars = new mutable.ArrayBuffer[ExprCode]
-    vars.indices.foreach { index =>
-      val (dataType, javaType, ev, nullIndex) = vars(index)
-      val isKeyVar = index < valueIndex
-      val objVar = if (isKeyVar) keyObjVar else valObjVar
-      ev match {
-        // nullIndex contains index of referenced key variable in this case
-        case null if !onlyValueVars => columnVars += columnVars(nullIndex)
-        case _ =>
-          val (localVar, localDeclaration) = {
-            dataType match {
-              case StringType if !multiMap =>
-                // wrap the bytes in UTF8String
-                val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(s"final UTF8String $lv = ").append(
-                  if (checkNullObj) {
-                    s"($objVar != null ? UTF8String.fromBytes(" +
-                      s"$objVar.${ev.value}) : null);"
-                  } else {
-                    s"UTF8String.fromBytes($objVar.${ev.value});"
-                  }))
-              case _ =>
-                val lv = ctx.freshName("localField")
-                (lv, new StringBuilder().append(s"final $javaType $lv = ").append(
-                  if (checkNullObj) {
-                    s"($objVar != null ? $objVar.${ev.value} " +
-                      s" : ${ctx.defaultValue(dataType)});"
-                  } else {
-                    s"$objVar.${ev.value};"
-                  }))
-            }
-          }
-          val nullExpr = nullMaskVarMap.get(ev.isNull)
-            .map(p => if (isKeyVar) genNullCode(p._1, nullIndex)
-            else genNullCode(p._2, nullIndex)).getOrElse(
-            if (nullIndex == NULL_NON_PRIM) s"($localVar == null)"
-            else "false")
-          val nullVar = ctx.freshName("isNull")
-          localDeclaration.append(s"\nboolean $nullVar = $nullExpr;")
-          columnVars += ExprCode(localDeclaration.toString, nullVar, localVar)
+      ExprCode(s"$varName = ${dt match {
+        case ByteType => s"$plaformClass.getByte($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+        case ShortType => s"$plaformClass.getShort($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm);"
+        case IntegerType => s"$plaformClass.getInt($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+        case LongType => s"$plaformClass.getLong($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+        case LongType => s"$plaformClass.getLong($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+        case FloatType => s"$plaformClass.getFloat($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+        case DoubleType => s"$plaformClass.getDouble($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
       }
-    }
-    (declarations.toString(), columnVars, nullValMaskVars)
+      }; " +
+        s"$currentValueOffSetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
+        nullVar, varName)
+    }}
+
   }
 
 
@@ -146,9 +85,14 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     valueInitCode: String, input: Seq[ExprCode], keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
-    val numKeyBytes = (ctx.freshName("numKeyBytes"))
+
     val keyBytesHolder = (ctx.freshName("keyBytesHolder"))
     val numValueBytes = (ctx.freshName("numValueBytes"))
+    val allocator = ctx.freshName("allocator")
+    val allocatorClass = classOf[BufferAllocator].getName
+    val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
+    val baseKeyoffset = ctx.freshName("baseKeyoffset")
+    val baseObject = ctx.freshName("baseObject")
 
     val valueInit = valueInitCode + '\n'
     val numAggBytes = aggregateDataTypes.foldLeft(0)( _ + _.defaultSize)
@@ -159,15 +103,21 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
         val inputEvals = evaluateVariables(input)
 
         s"""
+           ${allocatorClass} ${allocator} = ${gfeCacheImplClass}.
+                   getCurrentBufferAllocator();
           // evaluate the key expressions
           $inputEvals
           ${evaluateVariables(keyVars)}
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
-          ${generateKeySizeCode(keyVars, keysDataType, numKeyBytes)}
+          ${generateKeySizeCode(keyVars, keysDataType, numKeyBytesTerm)}
           int ${numValueBytes} = ${numAggBytes};
-
-          $className $objVar;
+          ${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
+      keysDataType, aggregateDataTypes, allocator, baseObject, baseKeyoffset)}
+           // insert or lookup
+          int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseObject, $baseKeyoffset,
+      $numKeyBytesTerm, $numValueBytes);
+          long $currentValueOffSetTerm = $valueOffsetTerm;
           ${mapLookupCode(keyVars)}
          """
 
@@ -175,54 +125,51 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
 
   def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String, keyBytesHolderVar: String,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    aggregatesDataType: Seq[DataType]): String = {
-    val allocator = ctx.freshName("allocator")
-    val byteBufferClass = classOf[ByteBuffer].getName
-    val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
-    val allocatorClass = classOf[BufferAllocator].getName
-    val plaformClass = classOf[Platform].getName
-    val offset = ctx.freshName("offset")
-    val baseObject = ctx.freshName("baseObject")
-    val writer = ByteBufferHashMapAccessor.getPartialFunctionForWriting(baseObject, offset)
-    s"""
-        ${allocatorClass} ${allocator} = ${gfeCacheImplClass}.
-        getCurrentBufferAllocator();
+    aggregatesDataType: Seq[DataType], allocatorTerm: String, baseObjectTerm: String, baseKeyoffsetTerm: String): String = {
 
-        ${byteBufferClass} ${keyBytesHolderVar} =  ${allocator}.
+    val byteBufferClass = classOf[ByteBuffer].getName
+    val currentOffset = (ctx.freshName("currentOffset"))
+    val plaformClass = classOf[Platform].getName
+   val writer = ByteBufferHashMapAccessor.getPartialFunctionForWriting(baseObjectTerm, currentOffset)
+    s"""
+
+
+        ${byteBufferClass} ${keyBytesHolderVar} =  ${allocatorTerm}.
         allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
-        Object $baseObject = $allocator.baseObject($keyBytesHolderVar)
-        long $offset = $allocator.baseOffset($keyBytesHolderVar);
+        Object $baseObjectTerm = $allocatorTerm.baseObject($keyBytesHolderVar)
+        long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
+        long $currentOffset = $baseKeyoffsetTerm;
         ${keysDataType.zip(keyVars.map(_.value)).foldLeft(""){
       case (code, (dt, variable)) => {
         var codex = code
         codex = codex  + (dt match {
           case x: AtomicType => typeOf(x.tag) match {
-            case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObject," +
-              s" $offset, $variable); " +
-              s"\n $offset += 1; \n"
-            case t if t =:= typeOf[Short] => s"\n ${Platform}.putShort($baseObject," +
-              s"$offset, $variable); " +
-              s"\n $offset += 2; \n"
-            case t if t =:= typeOf[Int] => s"\n ${Platform}.putInt($baseObject, " +
-              s"$offset, $variable); " +
-              s"\n $offset += 4; \n"
-            case t if t =:= typeOf[Long] => s"\n ${Platform}.putLong($baseObject," +
-              s" $offset, $variable); " +
-              s"\n $offset += 8; \n"
-            case t if t =:= typeOf[Float] => s"\n ${Platform}.putFloat($baseObject," +
-              s"$offset, $variable); " +
-              s"\n $offset += 4; \n"
+            case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObjectTerm," +
+              s" $currentOffset, $variable); " +
+              s"\n $currentOffset += 1; \n"
+            case t if t =:= typeOf[Short] => s"\n ${Platform}.putShort($baseObjectTerm," +
+              s"$currentOffset, $variable); " +
+              s"\n $currentOffset += 2; \n"
+            case t if t =:= typeOf[Int] => s"\n ${Platform}.putInt($baseObjectTerm, " +
+              s"$currentOffset, $variable); " +
+              s"\n $currentOffset += 4; \n"
+            case t if t =:= typeOf[Long] => s"\n ${Platform}.putLong($baseObjectTerm," +
+              s" $currentOffset, $variable); " +
+              s"\n $currentOffset += 8; \n"
+            case t if t =:= typeOf[Float] => s"\n ${Platform}.putFloat($baseObjectTerm," +
+              s"$currentOffset, $variable); " +
+              s"\n $currentOffset += 4; \n"
             case t if t =:= typeOf[Double] => s"\n ${Platform}.putDouble(" +
-              s"$baseObject, $offset, $variable); " +
-              s"\n $offset += 8; \n"
+              s"$baseObjectTerm, $currentOffset, $variable); " +
+              s"\n $currentOffset += 8; \n"
             case t if t =:= typeOf[Decimal] =>
               throw new UnsupportedOperationException("implement decimal")
             case _ => throw new UnsupportedOperationException("unknown type" + dt)
           }
-          case StringType =>  s"\n ${Platform}.putInt($baseObject, $offset, " +
+          case StringType =>  s"\n ${Platform}.putInt($baseObjectTerm, $currentOffset, " +
             s"$variable.numBytes());" +
-            s"\n $offset += 4; \n   $variable.writeToMemory($baseObject, $offset);" +
-            s"\n $offset += $variable.numBytes(); \n"
+            s"\n $currentOffset += 4; \n   $variable.writeToMemory($baseObjectTerm, $currentOffset);" +
+            s"\n $currentOffset += $variable.numBytes(); \n"
         })
         codex
     }}}
@@ -231,24 +178,24 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
       var codex = code
       codex = codex  + (dt match {
         case x: AtomicType => typeOf(x.tag) match {
-          case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObject," +
-            s" $offset, 0); " +
-            s"\n $offset += 1; \n"
-          case t if t =:= typeOf[Short] => s"\n ${Platform}.putShort($baseObject," +
-            s"$offset, 0); " +
-            s"\n $offset += 2; \n"
-          case t if t =:= typeOf[Int] => s"\n ${Platform}.putInt($baseObject, " +
-            s"$offset, 0); " +
-            s"\n $offset += 4; \n"
-          case t if t =:= typeOf[Long] => s"\n ${Platform}.putLong($baseObject," +
-            s" $offset, 0l); " +
-            s"\n $offset += 8; \n"
-          case t if t =:= typeOf[Float] => s"\n ${Platform}.putFloat($baseObject," +
-            s"$offset, 0f); " +
-            s"\n $offset += 4; \n"
+          case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObjectTerm," +
+            s" $currentOffset, 0); " +
+            s"\n $currentOffset += 1; \n"
+          case t if t =:= typeOf[Short] => s"\n ${Platform}.putShort($baseObjectTerm," +
+            s"$currentOffset, 0); " +
+            s"\n $currentOffset += 2; \n"
+          case t if t =:= typeOf[Int] => s"\n ${Platform}.putInt($baseObjectTerm, " +
+            s"$currentOffset, 0); " +
+            s"\n $currentOffset += 4; \n"
+          case t if t =:= typeOf[Long] => s"\n ${Platform}.putLong($baseObjectTerm," +
+            s" $currentOffset, 0l); " +
+            s"\n $currentOffset += 8; \n"
+          case t if t =:= typeOf[Float] => s"\n ${Platform}.putFloat($baseObjectTerm," +
+            s"$currentOffset, 0f); " +
+            s"\n $currentOffset += 4; \n"
           case t if t =:= typeOf[Double] => s"\n ${Platform}.putDouble(" +
-            s"$baseObject, $offset, 0); " +
-            s"\n $offset += 8; \n"
+            s"$baseObjectTerm, $currentOffset, 0); " +
+            s"\n $currentOffset += 8; \n"
           case t if t =:= typeOf[Decimal] =>
             throw new UnsupportedOperationException("implement decimal")
           case _ => throw new UnsupportedOperationException("unknown type" + dt)
@@ -264,7 +211,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     numKeyBytesVar: String): String = {
 
     s"""
-         ${keysDataType.zipWithIndex.foldLeft("${numKeyBytesVar} = " ){case (expr, (dt, i)) => {
+         ${keysDataType.zipWithIndex.foldLeft(s"${numKeyBytesVar} = " ){case (expr, (dt, i)) => {
       var rs = expr
       if (i > 0) {
         rs = rs + " + "
