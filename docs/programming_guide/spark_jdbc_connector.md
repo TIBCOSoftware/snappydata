@@ -11,7 +11,6 @@ All you need is a JDBC driver from the database vendor. Likewise, applications c
 !!!Note
 	The usage model for the Spark JDBC data source is described [here](https://spark.apache.org/docs/2.1.1/sql-programming-guide.html#jdbc-to-other-databases). We strongly recommend you to go through this section in case you are not familiar with how Spark works with data sources.
 
-
 ### Pushing Entire Query into the Database
 When Spark queries are executed against external data sources, the current Spark model can only push down filters and projections in the query down to the database. If you are running an expensive aggregation on a large data set, then the entire data set is fetched into the Spark partitions, and the query is executed inside your Spark cluster. 
 However, when you use a JDBC data source, you can pass entire queries or portions of the query entirely to the database such as shown in the following sample:
@@ -39,11 +38,11 @@ Following is a sample of Spark JDBC Extension setup and usage:
 
 1.	Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell: 
 
-			$SPARK_HOME/bin/spark-shell --packages SnappyDataInc:snappydata-jdbc:1.0.2.1-s_2.11
+			$SPARK_HOME/bin/spark-shell --packages io.snappydata:snappydata-jdbc_2.11:1.0.2.2
   
 2.	Set the session properties.</br> The SnappyData connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in **spark-defaults.conf** along with all the other Spark properties.  You can also set any of these properties in your app code. </br>Overloads of the above methods accepting **user+password** and **host+port **is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the **DataFrameReader.jdbc **method.</br> Following is a sample code of configuring the properties in **SparkConf**:
 
-        	$SPARK_HOME/bin/spark-shell --packages SnappyDataInc:snappydata-jdbc:1.0.2.1-s_2.11 --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password> 
+        	$SPARK_HOME/bin/spark-shell --packages io.snappydata:snappydata-jdbc_2.11:1.0.2.2 --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password> 
   
 3.	Import the required implicits in the job/shell code as follows:
 

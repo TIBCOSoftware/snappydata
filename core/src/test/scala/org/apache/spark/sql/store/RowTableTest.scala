@@ -26,6 +26,12 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql._
 import org.apache.spark.sql.snappy._
+import org.apache.spark.sql.types.{DateType, FloatType, IntegerType, StringType, StructField, TimestampType}
+import org.apache.spark.sql._
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+import scala.util.{Failure, Success, Try}
+
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.types.{IntegerType, StructField}
 
 /**
@@ -443,6 +449,121 @@ class RowTableTest
     snc.alterTable(tableName, false, StructField("col3", IntegerType, true))
     assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 3)
   }
+
+  test("Test alter table add column SQL with default value") {
+    snc.sql("drop table if exists employees")
+    snc.sql("create table employees(name string, surname string)")
+    snc.sql("insert into employees values ('Joe', 'Lamb')")
+    var df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 2)
+    assert(df1.collect().length == 1)
+
+    snc.sql("alter table employees add column age int not null default 25")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 3)
+    var v = df1.select("age").collect()
+    assert(v(0).getInt(0) == 25)
+
+    snc.sql("alter table employees add column state string default 'CA'")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 4)
+    v = df1.select("state").collect()
+    assert(v(0).getString(0) == "CA")
+
+
+    snc.sql("alter table employees add column address string default NULL")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 5)
+    v = df1.select("address").collect()
+    assert(v(0).getString(0) == null)
+
+    snc.sql("alter table employees add column joiningDate date default '2000-08-03'")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 6)
+    v = df1.select("joiningDate").collect()
+    assert(v(0).getDate(0).toString == "2000-08-03")
+
+    snc.sql("alter table employees add column timestampColumn" +
+        " timestamp default '2000-08-03 12:20:30.0'")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 7)
+    v = df1.select("timestampColumn").collect()
+    assert(v(0).getTimestamp(0).toString == "2000-08-03 12:20:30.0")
+
+
+    snc.sql("alter table employees add column floatColumn" +
+        " float default 2.4")
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 8)
+    v = df1.select("floatColumn").collect()
+    assert(v(0).getFloat(0) == 2.4f)
+
+    // insert a row with non default values
+    snc.sql("insert into employees values ('James', 'Lee', 30, 'OR'," +
+        " 'High Street', '2000-09-06', '2012-08-03 12:20:30.0', 3.9)")
+    df1 = snc.sql("select * from employees where name like 'James'")
+    assert(df1.schema.fields.length == 8)
+    val result = df1.collect()
+    assert(result(0).getString(0) == "James")
+    assert(result(0).getInt(2) == 30)
+    assert(result(0).getString(3) == "OR")
+    assert(result(0).getString(4) == "High Street")
+    assert(result(0).getDate(5).toString == "2000-09-06")
+    assert(result(0).getTimestamp(6).toString == "2012-08-03 12:20:30.0")
+    assert(result(0).getFloat(7) == 3.9f)
+  }
+
+  test("Test alter table add column API with default value") {
+    snc.sql("drop table if exists employees")
+    snc.sql("create table employees(name string, surname string)")
+    snc.sql("insert into employees values ('Joe', 'Lamb')")
+    var df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 2)
+    assert(df1.collect().length == 1)
+
+    snc.alterTable("EMPLOYEES", isAddColumn = true,
+      StructField("age", IntegerType, nullable = false), Option("25"))
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 3)
+    var v = df1.select("age").collect()
+    assert(v(0).getInt(0) == 25)
+
+    snc.alterTable("EMPLOYEES", isAddColumn = true,
+      StructField("state", StringType, nullable = false), Option("CA"))
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 4)
+    v = df1.select("state").collect()
+    assert(v(0).getString(0) == "CA")
+
+    snc.alterTable("EMPLOYEES", isAddColumn = true,
+      StructField("address", StringType), None)
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 5)
+    v = df1.select("address").collect()
+    assert(v(0).getString(0) == null)
+
+    snc.alterTable("EMPLOYEES", isAddColumn = true,
+      StructField("joiningDate", DateType), Option("2000-08-03"))
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 6)
+    v = df1.select("joiningDate").collect()
+    assert(v(0).getDate(0).toString == "2000-08-03")
+
+    snc.alterTable("EMPLOYEES", isAddColumn = true,
+      StructField("timestampColumn", TimestampType), Option("2000-08-03 12:20:30.0"))
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 7)
+    v = df1.select("timestampColumn").collect()
+    assert(v(0).getTimestamp(0).toString == "2000-08-03 12:20:30.0")
+
+    snc.alterTable("EMPLOYEES", isAddColumn = true,
+      StructField("floatColumn", FloatType), Option("2.4"))
+    df1 = snc.sql("select * from employees")
+    assert(df1.schema.fields.length == 8)
+    v = df1.select("floatColumn").collect()
+    assert(v(0).getFloat(0) == 2.4f)
+  }
+
 
   test("SNAP-1825") {
     snc.sql("create table tabOne(id int, name String, address String)" +
