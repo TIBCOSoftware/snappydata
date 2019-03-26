@@ -24,6 +24,7 @@ import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, ClientResolverUtils}
 import io.snappydata.collection.ObjectHashSet
 import scala.reflect.runtime.universe._
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -36,6 +37,7 @@ import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
+import org.apache.spark.unsafe.types.UTF8String
 
 case class ByteBufferHashMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
@@ -48,33 +50,96 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
 
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
 
-  def getAggregateVars(aggregateDataTypes: Seq[DataType], aggVarNames: Seq[String]):
+  override def output: Seq[Attribute] = child.output
+
+  override protected def doExecute(): RDD[InternalRow] =
+    throw new UnsupportedOperationException("unexpected invocation")
+
+  override def inputRDDs(): Seq[RDD[InternalRow]] = Nil
+
+  override protected def doProduce(ctx: CodegenContext): String =
+    throw new UnsupportedOperationException("unexpected invocation")
+
+  override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
+    row: ExprCode): String = {
+    throw new UnsupportedOperationException("unexpected invocation")
+  }
+  def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String]):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
-    aggregateDataTypes.zip(aggVarNames).map{case (dt, varName) => {
+    dataTypes.zip(varNames).map { case (dt, varName) => {
       val nullVar = ctx.freshName("isNull")
-
-      ExprCode(s"$varName = ${dt match {
-        case ByteType => s"$plaformClass.getByte($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-        case ShortType => s"$plaformClass.getShort($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm);"
-        case IntegerType => s"$plaformClass.getInt($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-        case LongType => s"$plaformClass.getLong($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-        case LongType => s"$plaformClass.getLong($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-        case FloatType => s"$plaformClass.getFloat($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-        case DoubleType => s"$plaformClass.getDouble($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+      dt match {
+        case StringType => {
+          val allocator = ctx.freshName("allocator")
+          val holder = ctx.freshName("holder")
+          val holderBaseObject = ctx.freshName("holderBaseObject")
+          val holderBaseOffset = ctx.freshName("holderBaseOffset")
+          val allocatorClass = classOf[BufferAllocator].getName
+          val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
+          val byteBufferClass = classOf[ByteBuffer].getName
+          val plaformClass = classOf[Platform].getName
+          val len = ctx.freshName("len")
+          ExprCode(
+            s"""
+            int $len = $plaformClass.getInt($valueDataTerm.baseObject,
+          $valueDataTerm.baseOffset + $currentValueOffSetTerm);
+          ${allocatorClass} ${allocator} = ${gfeCacheImplClass}.
+            getCurrentBufferAllocator();
+          ${byteBufferClass} ${holder} =  ${allocator}.
+            allocate($len, "SHA");
+          Object $holderBaseObject = $allocator.baseObject($holder)
+          long $holderBaseOffset = $allocator.baseOffset($holder);
+           $currentValueOffSetTerm += 4;
+           $plaformClass.copyMemory($valueDataTerm.baseObject,
+            $valueDataTerm.baseOffset + $currentValueOffSetTerm,
+              $holderBaseObject, $holderBaseOffset , $len)
+           $varName = ${classOf[UTF8String].getName}.
+           fromAddress($holderBaseObject, $holderBaseOffset, $len);
+             $currentValueOffSetTerm += len;
+           boolean $nullVar = false;"
+          """.stripMargin, nullVar, varName)
+        }
+        case x =>
+          ExprCode(s"$varName = ${
+            x match {
+              case ByteType => s"$plaformClass.getByte($valueDataTerm.baseObject, " +
+                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+              case ShortType => s"$plaformClass.getShort($valueDataTerm.baseObject, " +
+                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm);"
+              case IntegerType => s"$plaformClass.getInt($valueDataTerm.baseObject, " +
+                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+              case LongType => s"$plaformClass.getLong($valueDataTerm.baseObject, " +
+                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+              case FloatType => s"$plaformClass.getFloat($valueDataTerm.baseObject, " +
+                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+              case DoubleType => s"$plaformClass.getDouble($valueDataTerm.baseObject, " +
+                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+            }
+          }; " +
+            s"$currentValueOffSetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
+            nullVar, varName)
       }
-      }; " +
-        s"$currentValueOffSetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
-        nullVar, varName)
-    }}
+    }
 
+    }
+  }
+
+
+  def initKeyOrBufferVal(aggregateDataTypes: Seq[DataType], aggVarNames: Seq[String]):
+  String = {
+    aggregateDataTypes.zip(aggVarNames).map { case (dt, varName) => {
+      dt match {
+        case ByteType => s"byte ${varName} = 0;"
+        case ShortType => s"short ${varName} = 0;"
+        case IntegerType => s"int ${varName} = 0;"
+        case LongType => s"long ${varName} = 0;"
+        case FloatType => s"float ${varName} = 0;"
+        case DoubleType => s"double ${varName} = 0;"
+        case StringType => s"${classOf[UTF8String].getName} ${varName} = 0;"
+      }
+    }
+    }.mkString("\n")
   }
 
 
@@ -118,9 +183,82 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes);
           long $currentValueOffSetTerm = $valueOffsetTerm;
-          ${mapLookupCode(keyVars)}
+
          """
 
+  }
+
+
+  def generateUpdate(columnVars: Seq[ExprCode], aggBufferDataType: Seq[DataType],
+    resultVars: Seq[ExprCode]): String = {
+    val plaformClass = classOf[Platform].getName
+
+    s"${currentValueOffSetTerm} = ${valueOffsetTerm}; \n" + resultVars.zip(aggBufferDataType).
+      map{case(expr, dt) => {
+      (dt match {
+        case ByteType => s"$plaformClass.putByte($valueDataTerm.baseObject," +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value});"
+        case ShortType => s"$plaformClass.putShort($valueDataTerm.baseObject," +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value});"
+        case IntegerType => s"$plaformClass.putInt($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
+        case LongType => s"$plaformClass.putLong($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
+        case FloatType => s"$plaformClass.putFloat($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
+        case DoubleType => s"$plaformClass.putDouble($valueDataTerm.baseObject, " +
+          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
+      })  + s"\n $currentValueOffSetTerm += ${dt.defaultSize}; \n "
+    }}
+    /*
+    val fieldVars = if (forKey) classVars.take(valueIndex)
+    else classVars.drop(valueIndex)
+
+    val nullLocalVars = if (columnVars.isEmpty) {
+      // get nullability from object fields
+      fieldVars.map(e => genNullCode(s"$objVar.${e._3.isNull}", e._4))
+    } else {
+      // get nullability from already set local vars passed in columnVars
+      columnVars.map(_.isNull)
+    }
+
+    fieldVars.zip(nullLocalVars).zip(resultVars).map { case (((dataType, _,
+    fieldVar, nullIdx), nullLocalVar), resultVar) =>
+      if (nullIdx == -1) {
+        // if incoming variable is null, then default will get assigned
+        // because the variable will be initialized with the default
+        genVarAssignCode(objVar, resultVar, fieldVar.value, dataType, doCopy)
+      } else if (nullIdx == NULL_NON_PRIM) {
+        val varName = fieldVar.value
+        s"""
+          if (${resultVar.isNull}) {
+            $objVar.$varName = null;
+          } else {
+            ${genVarAssignCode(objVar, resultVar, varName, dataType, doCopy)}
+          }
+        """
+      } else {
+        val nullVar = fieldVar.isNull
+        // when initializing the object, no need to clear null mask
+        val nullClear = if (forInit) ""
+        else {
+          s"""
+            if ($nullLocalVar) {
+              $objVar.$nullVar &= ~${genNullBitMask(nullIdx)};
+            }
+          """
+        }
+        s"""
+          if (${resultVar.isNull}) {
+            $objVar.$nullVar |= ${genNullBitMask(nullIdx)};
+          } else {
+            $nullClear
+            ${genVarAssignCode(objVar, resultVar, fieldVar.value,
+          dataType, doCopy)}
+          }
+        """
+      }
+    }.mkString("\n") */
   }
 
   def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String, keyBytesHolderVar: String,
@@ -147,26 +285,26 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
             case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObjectTerm," +
               s" $currentOffset, $variable); " +
               s"\n $currentOffset += 1; \n"
-            case t if t =:= typeOf[Short] => s"\n ${Platform}.putShort($baseObjectTerm," +
+            case t if t =:= typeOf[Short] => s"\n ${plaformClass}.putShort($baseObjectTerm," +
               s"$currentOffset, $variable); " +
               s"\n $currentOffset += 2; \n"
-            case t if t =:= typeOf[Int] => s"\n ${Platform}.putInt($baseObjectTerm, " +
+            case t if t =:= typeOf[Int] => s"\n ${plaformClass}.putInt($baseObjectTerm, " +
               s"$currentOffset, $variable); " +
               s"\n $currentOffset += 4; \n"
-            case t if t =:= typeOf[Long] => s"\n ${Platform}.putLong($baseObjectTerm," +
+            case t if t =:= typeOf[Long] => s"\n ${plaformClass}.putLong($baseObjectTerm," +
               s" $currentOffset, $variable); " +
               s"\n $currentOffset += 8; \n"
-            case t if t =:= typeOf[Float] => s"\n ${Platform}.putFloat($baseObjectTerm," +
+            case t if t =:= typeOf[Float] => s"\n ${plaformClass}.putFloat($baseObjectTerm," +
               s"$currentOffset, $variable); " +
               s"\n $currentOffset += 4; \n"
-            case t if t =:= typeOf[Double] => s"\n ${Platform}.putDouble(" +
+            case t if t =:= typeOf[Double] => s"\n ${plaformClass}.putDouble(" +
               s"$baseObjectTerm, $currentOffset, $variable); " +
               s"\n $currentOffset += 8; \n"
             case t if t =:= typeOf[Decimal] =>
               throw new UnsupportedOperationException("implement decimal")
             case _ => throw new UnsupportedOperationException("unknown type" + dt)
           }
-          case StringType =>  s"\n ${Platform}.putInt($baseObjectTerm, $currentOffset, " +
+          case StringType =>  s"\n ${plaformClass}.putInt($baseObjectTerm, $currentOffset, " +
             s"$variable.numBytes());" +
             s"\n $currentOffset += 4; \n   $variable.writeToMemory($baseObjectTerm, $currentOffset);" +
             s"\n $currentOffset += $variable.numBytes(); \n"
@@ -181,19 +319,19 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObjectTerm," +
             s" $currentOffset, 0); " +
             s"\n $currentOffset += 1; \n"
-          case t if t =:= typeOf[Short] => s"\n ${Platform}.putShort($baseObjectTerm," +
+          case t if t =:= typeOf[Short] => s"\n ${plaformClass}.putShort($baseObjectTerm," +
             s"$currentOffset, 0); " +
             s"\n $currentOffset += 2; \n"
-          case t if t =:= typeOf[Int] => s"\n ${Platform}.putInt($baseObjectTerm, " +
+          case t if t =:= typeOf[Int] => s"\n ${plaformClass}.putInt($baseObjectTerm, " +
             s"$currentOffset, 0); " +
             s"\n $currentOffset += 4; \n"
-          case t if t =:= typeOf[Long] => s"\n ${Platform}.putLong($baseObjectTerm," +
+          case t if t =:= typeOf[Long] => s"\n ${plaformClass}.putLong($baseObjectTerm," +
             s" $currentOffset, 0l); " +
             s"\n $currentOffset += 8; \n"
-          case t if t =:= typeOf[Float] => s"\n ${Platform}.putFloat($baseObjectTerm," +
+          case t if t =:= typeOf[Float] => s"\n ${plaformClass}.putFloat($baseObjectTerm," +
             s"$currentOffset, 0f); " +
             s"\n $currentOffset += 4; \n"
-          case t if t =:= typeOf[Double] => s"\n ${Platform}.putDouble(" +
+          case t if t =:= typeOf[Double] => s"\n ${plaformClass}.putDouble(" +
             s"$baseObjectTerm, $currentOffset, 0); " +
             s"\n $currentOffset += 8; \n"
           case t if t =:= typeOf[Decimal] =>
