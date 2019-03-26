@@ -45,7 +45,8 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
   hashMapTerm: String, dataTerm: String, @transient consumer: CodegenSupport,
   @transient cParent: CodegenSupport, override val child: SparkPlan,
   valueOffsetTerm: String, numKeyBytesTerm: String,
-  currentValueOffSetTerm: String, valueDataTerm: String)
+  currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
+  vdBaseObjectTerm: String, vdBaseOffsetTerm: String)
   extends UnaryExecNode with CodegenSupport {
 
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
@@ -64,7 +65,8 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     row: ExprCode): String = {
     throw new UnsupportedOperationException("unexpected invocation")
   }
-  def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String]):
+  def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
+    currentValueOffsetTerm: String):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
     dataTypes.zip(varNames).map { case (dt, varName) => {
@@ -82,42 +84,42 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           val len = ctx.freshName("len")
           ExprCode(
             s"""
-            int $len = $plaformClass.getInt($valueDataTerm.baseObject,
-          $valueDataTerm.baseOffset + $currentValueOffSetTerm);
+            int $len = $plaformClass.getInt($vdBaseObjectTerm,
+          $vdBaseOffsetTerm + $currentValueOffsetTerm);
           ${allocatorClass} ${allocator} = ${gfeCacheImplClass}.
             getCurrentBufferAllocator();
           ${byteBufferClass} ${holder} =  ${allocator}.
             allocate($len, "SHA");
-          Object $holderBaseObject = $allocator.baseObject($holder)
+          Object $holderBaseObject = $allocator.baseObject($holder);
           long $holderBaseOffset = $allocator.baseOffset($holder);
-           $currentValueOffSetTerm += 4;
-           $plaformClass.copyMemory($valueDataTerm.baseObject,
-            $valueDataTerm.baseOffset + $currentValueOffSetTerm,
-              $holderBaseObject, $holderBaseOffset , $len)
+           $currentValueOffsetTerm += 4;
+           $plaformClass.copyMemory($vdBaseObjectTerm,
+            $vdBaseOffsetTerm + $currentValueOffsetTerm,
+              $holderBaseObject, $holderBaseOffset , $len);
            $varName = ${classOf[UTF8String].getName}.
            fromAddress($holderBaseObject, $holderBaseOffset, $len);
-             $currentValueOffSetTerm += len;
+             $currentValueOffsetTerm += len;
            boolean $nullVar = false;"
           """.stripMargin, nullVar, varName)
         }
         case x =>
           ExprCode(s"$varName = ${
             x match {
-              case ByteType => s"$plaformClass.getByte($valueDataTerm.baseObject, " +
-                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-              case ShortType => s"$plaformClass.getShort($valueDataTerm.baseObject, " +
-                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm);"
-              case IntegerType => s"$plaformClass.getInt($valueDataTerm.baseObject, " +
-                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-              case LongType => s"$plaformClass.getLong($valueDataTerm.baseObject, " +
-                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-              case FloatType => s"$plaformClass.getFloat($valueDataTerm.baseObject, " +
-                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
-              case DoubleType => s"$plaformClass.getDouble($valueDataTerm.baseObject, " +
-                s"$valueDataTerm.baseOffset + $currentValueOffSetTerm); "
+              case ByteType => s"$plaformClass.getByte($vdBaseObjectTerm, " +
+                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+              case ShortType => s"$plaformClass.getShort($vdBaseObjectTerm, " +
+                s"$vdBaseOffsetTerm + $currentValueOffsetTerm);"
+              case IntegerType => s"$plaformClass.getInt($vdBaseObjectTerm, " +
+                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+              case LongType => s"$plaformClass.getLong($vdBaseObjectTerm, " +
+                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+              case FloatType => s"$plaformClass.getFloat($vdBaseObjectTerm, " +
+                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+              case DoubleType => s"$plaformClass.getDouble($vdBaseObjectTerm, " +
+                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
             }
           }; " +
-            s"$currentValueOffSetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
+            s"$currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
             nullVar, varName)
       }
     }
@@ -175,14 +177,15 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           ${evaluateVariables(keyVars)}
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
+          int ${numKeyBytesTerm} = 0;
           ${generateKeySizeCode(keyVars, keysDataType, numKeyBytesTerm)}
           int ${numValueBytes} = ${numAggBytes};
           ${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
       keysDataType, aggregateDataTypes, allocator, baseObject, baseKeyoffset)}
            // insert or lookup
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseObject, $baseKeyoffset,
-      $numKeyBytesTerm, $numValueBytes);
-          long $currentValueOffSetTerm = $valueOffsetTerm;
+      $numKeyBytesTerm, $numValueBytes, ${hashVar(0)});
+          long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
 
          """
 
@@ -193,23 +196,23 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     resultVars: Seq[ExprCode]): String = {
     val plaformClass = classOf[Platform].getName
 
-    s"${currentValueOffSetTerm} = ${valueOffsetTerm}; \n" + resultVars.zip(aggBufferDataType).
+    s"${currentOffSetForMapLookupUpdt} = ${valueOffsetTerm}; \n" + resultVars.zip(aggBufferDataType).
       map{case(expr, dt) => {
       (dt match {
-        case ByteType => s"$plaformClass.putByte($valueDataTerm.baseObject," +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value});"
-        case ShortType => s"$plaformClass.putShort($valueDataTerm.baseObject," +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value});"
-        case IntegerType => s"$plaformClass.putInt($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
-        case LongType => s"$plaformClass.putLong($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
-        case FloatType => s"$plaformClass.putFloat($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
-        case DoubleType => s"$plaformClass.putDouble($valueDataTerm.baseObject, " +
-          s"$valueDataTerm.baseOffset + $currentValueOffSetTerm, ${expr.value}); "
-      })  + s"\n $currentValueOffSetTerm += ${dt.defaultSize}; \n "
-    }}
+        case ByteType => s"$plaformClass.putByte($vdBaseObjectTerm," +
+          s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
+        case ShortType => s"$plaformClass.putShort($vdBaseObjectTerm," +
+          s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
+        case IntegerType => s"$plaformClass.putInt($vdBaseObjectTerm, " +
+          s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
+        case LongType => s"$plaformClass.putLong($vdBaseObjectTerm, " +
+          s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
+        case FloatType => s"$plaformClass.putFloat($vdBaseObjectTerm, " +
+          s"$vdBaseOffsetTerm+ $currentOffSetForMapLookupUpdt, ${expr.value}); "
+        case DoubleType => s"$plaformClass.putDouble($vdBaseObjectTerm, " +
+          s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
+      })  + s"\n $currentOffSetForMapLookupUpdt += ${dt.defaultSize}; \n "
+    }}.mkString("")
     /*
     val fieldVars = if (forKey) classVars.take(valueIndex)
     else classVars.drop(valueIndex)
@@ -274,7 +277,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
 
         ${byteBufferClass} ${keyBytesHolderVar} =  ${allocatorTerm}.
         allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
-        Object $baseObjectTerm = $allocatorTerm.baseObject($keyBytesHolderVar)
+        Object $baseObjectTerm = $allocatorTerm.baseObject($keyBytesHolderVar);
         long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
         long $currentOffset = $baseKeyoffsetTerm;
         ${keysDataType.zip(keyVars.map(_.value)).foldLeft(""){
@@ -310,7 +313,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
             s"\n $currentOffset += $variable.numBytes(); \n"
         })
         codex
-    }}}
+    }}.mkString("")}
        // now add values
        ${aggregatesDataType.foldLeft("")((code, dt) => {
       var codex = code
@@ -340,7 +343,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
         }
     })
     codex
-    })}
+    }).mkString("")}
 
          """
   }
@@ -355,9 +358,9 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
         rs = rs + " + "
       }
       if (TypeUtilities.isFixedWidth(dt)) {
-        rs = rs + dt.defaultSize.toString
+        rs = rs + dt.defaultSize.toString + ";"
       } else {
-        rs = rs + s"${keyVars(i).value}.numBytes() + 4"
+        rs = rs + s"${keyVars(i).value}.numBytes() + 4;"
       }
       rs
     }
