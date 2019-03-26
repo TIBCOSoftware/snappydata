@@ -28,7 +28,7 @@ import hydra.Log;
 import hydra.blackboard.AnyCyclicBarrier;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyTest;
-import io.snappydata.hydra.snapshotIsolation.SnapshotIsolationPrms;
+import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import util.TestException;
 
@@ -36,24 +36,25 @@ public class SnappyConsistencyTest extends SnappyTest {
 
   public static boolean testUniqueKeys = false;
   public static int batchSize = 1000;
-  protected static hydra.blackboard.SharedLock BBLock_DML,BBLock_select;
+  protected static hydra.blackboard.SharedLock BBLock;
+  public static DerbyTestUtils derbyTestUtils;
 
   public String updateStmt[] = {
-      "update tab1 set code = case when coded=-1 then 0 else (coded+5) end;",
+      "update table1 set code = case when coded=-1 then 0 else (coded+5) end;",
   };
 
   public String selectStmt[] = {
-      "select count(*) from tab1",
-      "select avg(code) from tab1"
+      "select count(*) from table1",
+      "select avg(code) from table1"
   };
 
   public String insertStmt[] = {
-      "insert into tab1 values (?,?,?,?)"
+      "insert into table1 values (?,?,?,?)"
   };
 
 
   public String deleteStmt[] = {
-      "delete from tab1 where tid = ?",
+      "delete from table1 where tid = ?",
    };
 
   protected static SnappyConsistencyTest testInstance;
@@ -61,6 +62,7 @@ public class SnappyConsistencyTest extends SnappyTest {
   public static void HydraTask_initialize() {
     if (testInstance == null)
       testInstance = new SnappyConsistencyTest();
+    derbyTestUtils = new DerbyTestUtils();
   }
 
   public static void HydraTask_populateTables() {
@@ -69,14 +71,19 @@ public class SnappyConsistencyTest extends SnappyTest {
 
   public void populateTables(){
     batchSize = 65000;
-    Connection conn = getConnection();
-    performBulkInsert(conn);
+    try {
+      Connection conn = getLocatorConnection();
+      for(int i =0; i<10 ; i++)
+        performBulkInsert(conn, true);
+    } catch (SQLException se) {
+
+    }
   }
 
   public static void HydraTask_registerDMLThreads(){
     if (testInstance == null)
       testInstance = new SnappyConsistencyTest();
-    testInstance.getBBLock(BBLock_DML);
+    testInstance.getBBLock();
     ArrayList<Integer> dmlThreads;
     if (SnappyBB.getBB().getSharedMap().containsKey("dmlThreads"))
       dmlThreads = (ArrayList<Integer>)SnappyBB.getBB().getSharedMap().get("dmlThreads");
@@ -86,13 +93,13 @@ public class SnappyConsistencyTest extends SnappyTest {
       dmlThreads.add(testInstance.getMyTid());
       SnappyBB.getBB().getSharedMap().put("dmlThreads", dmlThreads);
     }
-    testInstance.releaseDmlLock(BBLock_DML);
+    testInstance.releaseDmlLock();
   }
 
   public static void HydraTask_registerSelectThreads(){
     if (testInstance == null)
       testInstance = new SnappyConsistencyTest();
-    testInstance.getBBLock(BBLock_select);
+    testInstance.getBBLock();
     ArrayList<Integer> selectThreads;
     if (SnappyBB.getBB().getSharedMap().containsKey("selectThreads"))
       selectThreads = (ArrayList<Integer>)SnappyBB.getBB().getSharedMap().get("selectThreads");
@@ -102,17 +109,17 @@ public class SnappyConsistencyTest extends SnappyTest {
       selectThreads.add(testInstance.getMyTid());
       SnappyBB.getBB().getSharedMap().put("selectThreads", selectThreads);
     }
-    testInstance.releaseDmlLock(BBLock_select);
+    testInstance.releaseDmlLock();
   }
 
-  protected void getBBLock(hydra.blackboard.SharedLock lock) {
-    if (lock == null)
-      lock = SnappyBB.getBB().getSharedLock();
-    lock.lock();
+  protected void getBBLock() {
+    if (BBLock == null)
+      BBLock = SnappyBB.getBB().getSharedLock();
+    BBLock.lock();
   }
 
-  protected void releaseDmlLock(hydra.blackboard.SharedLock lock) {
-    lock.unlock();
+  protected void releaseDmlLock() {
+    BBLock.unlock();
   }
 
 
@@ -125,20 +132,30 @@ public class SnappyConsistencyTest extends SnappyTest {
     int tid = getDMLThread();
     String dmlOp = getOperationForDMLThr(tid);
     String query = "";
-    if(dmlOp == "insert" || dmlOp == "delete")
+    if (dmlOp == "insert" || dmlOp == "delete")
       query = selectStmt[0];
     else
       query = selectStmt[1];
     try {
       conn = getLocatorConnection();
+      Log.getLogWriter().info("Executing query :" + query);
       ResultSet beforeDMLRS = conn.createStatement().executeQuery(query);
-      waitForBarrier(2);
+      waitForBarrier("" + tid, 2);
       ResultSet afterDMLRS = conn.createStatement().executeQuery(query);
-      if (!verifyAtomicity()) {
+      conn.close();
+      Log.getLogWriter().info("Verifying the results for atomicity..");
+      int before_result = 0, after_result = 0;
+      while (beforeDMLRS.next()) {
+        before_result = beforeDMLRS.getInt(1);
+      }
+      while (afterDMLRS.next()) {
+        after_result = afterDMLRS.getInt(1);
+      }
+      if (!verifyAtomicity(before_result, after_result)) {
         throw new TestException("Test failed to get atomic data during DML operations");
       }
     } catch (SQLException se) {
-
+      Log.getLogWriter().info("Got exception while executing select query", se);
     }
   }
 
@@ -154,8 +171,12 @@ public class SnappyConsistencyTest extends SnappyTest {
     return dmlThreads.get(index);
   }
 
-  public static boolean verifyAtomicity() {
-   return false;
+  public static boolean verifyAtomicity(int rs_before, int rs_after) {
+    Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
+        "after DML start : " + rs_after);
+    if(rs_before == rs_after)
+      return true;
+    return false;
   }
 
   public enum DMLOp {
@@ -196,10 +217,11 @@ public class SnappyConsistencyTest extends SnappyTest {
       Connection conn = getLocatorConnection();
       //perform DML operation which can be insert, update, delete.
       String operation = SnappySchemaPrms.getDMLOperations();
+      registerOperationInBB(operation);
       switch (DMLOp.getOperation(operation)) {
         case INSERT:
           Log.getLogWriter().info("Performing insert operation...");
-          performBulkInsert(conn);
+          performBulkInsert(conn, false);
           break;
         case UPDATE:
           Log.getLogWriter().info("Performing update operation...");
@@ -215,7 +237,6 @@ public class SnappyConsistencyTest extends SnappyTest {
         default: Log.getLogWriter().info("Invalid operation. ");
           throw new TestException("Invalid operation type.");
       }
-      registerOperationInBB(operation);
       closeConnection(conn);
     } catch (SQLException se) {
       throw new TestException("Got exception while performing DML Ops. Exception is : " ,se);
@@ -226,57 +247,92 @@ public class SnappyConsistencyTest extends SnappyTest {
     SnappyBB.getBB().getSharedMap().put("op_" + getMyTid(),operation);
   }
 
-  public void performBulkInsert(Connection conn) {
+  public void performBulkInsert(Connection conn, boolean isPopulate) {
     int tid = getMyTid();
-    String query = "select max(id) from tab1";
+    String query = "select max(id) from table1";
     int maxID = 0;
+    Connection dConn = derbyTestUtils.getDerbyConnection();
     try {
       ResultSet rs = conn.createStatement().executeQuery(query);
       while(rs.next()) {
         maxID = rs.getInt(1);
       }
       PreparedStatement ps = conn.prepareStatement(insertStmt[0]);
+      PreparedStatement psDerby = dConn.prepareStatement(insertStmt[0]);
       for(int i = 0; i<batchSize ; i++) {
         ps.setInt(1, maxID++);
         ps.setString(2,"name" + maxID);
         ps.setInt(3, -1);
         ps.setInt(4, tid);
         ps.addBatch();
+
+        psDerby.setInt(1, maxID++);
+        psDerby.setString(2,"name" + maxID);
+        psDerby.setInt(3, -1);
+        psDerby.setInt(4, tid);
+        psDerby.addBatch();
       }
-      waitForBarrier(2);
+      if(!isPopulate)
+        waitForBarrier("" + tid,2);
       ps.executeBatch();
-      Log.getLogWriter().info("Inserted " + batchSize + " rows in the table.");
+      Log.getLogWriter().info("Inserted " + batchSize + " rows in the snappy table.");
+      psDerby.executeBatch();
+
     } catch( SQLException se) {
+      throw new TestException("Caught Exception while performing bulk inserts", se);
 
     }
   }
 
   public void performBatchUpdate(Connection conn) {
     String query = updateStmt[0];
-    waitForBarrier(2);
+    int tid = getMyTid();
+    Connection dConn = derbyTestUtils.getDerbyConnection();
+    Log.getLogWriter().info("Performing batch update in snappy..");
+    waitForBarrier("" + tid,2);
     try {
       conn.createStatement().execute(query);
+      Log.getLogWriter().info("Performing batch update in derby..");
+      dConn.createStatement().execute(query);
     } catch (SQLException se) {
+      throw new TestException("Got exception while executing batch update", se);
     }
+
+
   }
 
   public void performBulkDelete(Connection conn) {
     String query = deleteStmt[0];
-    waitForBarrier(2);
+    int tid = getMyTid();
+    Connection dConn = derbyTestUtils.getDerbyConnection();
+    Log.getLogWriter().info("Performing delete in snappy..");
+    waitForBarrier("" + tid,2);
     try {
       conn.createStatement().execute(query);
+      Log.getLogWriter().info("Performing delete in derby..");
+      dConn.createStatement().execute(query);
     } catch (SQLException se) {
+      throw new TestException("Got exception while executing batch delete", se);
     }
   }
 
   public void performPutInto(Connection conn) {
-    waitForBarrier(2);
+    int tid = getMyTid();
+    waitForBarrier("" + tid ,2);
   }
 
+  /*
   protected void waitForBarrier(int numThreads) {
     AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, "barrier");
     Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier");
     barrier.await();
+  }*/
+
+  protected void waitForBarrier(String barrierName, int numThreads) {
+    AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, barrierName);
+    Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier");
+    barrier.await();
   }
+
 
 }
