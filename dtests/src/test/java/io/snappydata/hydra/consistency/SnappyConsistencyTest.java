@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import hydra.Log;
 import hydra.blackboard.AnyCyclicBarrier;
 import io.snappydata.hydra.cluster.SnappyBB;
+import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
@@ -131,11 +132,17 @@ public class SnappyConsistencyTest extends SnappyTest {
     Connection conn = null;
     int tid = getDMLThread();
     String dmlOp = getOperationForDMLThr(tid);
+    Log.getLogWriter().info("DML op is : " + dmlOp);
     String query = "";
-    if (dmlOp == "insert" || dmlOp == "delete")
+    if (dmlOp.equalsIgnoreCase("insert") || dmlOp.equalsIgnoreCase("delete"))
       query = selectStmt[0];
     else
       query = selectStmt[1];
+    if(SnappySchemaPrms.isTestUniqueKeys()){
+      if(!query.contains("where"))
+        query = query + " where ";
+      query = query + " tid = " +  tid;
+    }
     try {
       conn = getLocatorConnection();
       Log.getLogWriter().info("Executing query :" + query);
@@ -159,11 +166,19 @@ public class SnappyConsistencyTest extends SnappyTest {
     }
   }
 
-  public String getOperationForDMLThr(int tid){
-    return (String)SnappyBB.getBB().getSharedMap().get("op_" + tid);
+  public String getOperationForDMLThr(int tid) {
+    String operation = "";
+    try {
+      while (!SnappyBB.getBB().getSharedMap().containsKey("op_" + tid)) Thread.sleep(10);
+    } catch (InterruptedException ie) {
+      Log.getLogWriter().info("Got interrupted exception");
+    }
+    operation = (String) SnappyBB.getBB().getSharedMap().get("op_" + tid);
+    SnappyBB.getBB().getSharedMap().remove("op_" + tid);
+    return operation;
   }
 
-  public int getDMLThread(){
+  public int getDMLThread() {
     int myTid = getMyTid();
     ArrayList<Integer> dmlThreads = (ArrayList<Integer>) SnappyBB.getBB().getSharedMap().get("dmlThreads");
     ArrayList<Integer> selectThreads = (ArrayList<Integer>) SnappyBB.getBB().getSharedMap().get("selectThreads");
