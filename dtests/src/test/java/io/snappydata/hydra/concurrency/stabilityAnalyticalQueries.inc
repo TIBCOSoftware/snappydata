@@ -127,7 +127,7 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   " SELECT product_title from STAGING_REVIEWS limit 10"
   " SELECT distinct year from STAGING_REVIEWS order by year"*/
   /*" SELECT count(*), year from STAGING_REVIEWS group by year order by count(*) desc"*/
-  " SELECT count(*), spark_partition_id() from STAGING_REVIEWS group by spark_part/ition_id() order by count(*) desc"
+  " SELECT count(*), spark_partition_id() from STAGING_REVIEWS group by spark_partition_id() order by count(*) desc"
   /*" SELECT distinct customer_id from STAGING_REVIEWS"*/
   " SELECT count(distinct customer_id) from STAGING_REVIEWS"
   " SELECT customer_id, count(*)  from STAGING_REVIEWS where review_body is not null group by customer_id"
