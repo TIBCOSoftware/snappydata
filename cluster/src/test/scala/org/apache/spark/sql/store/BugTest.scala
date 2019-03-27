@@ -19,13 +19,16 @@ package org.apache.spark.sql.store
 import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
 import java.util.Properties
+
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.{Property, SnappyFunSuite}
-import org.scalatest.BeforeAndAfterAll
 import org.junit.Assert._
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.scalatest.BeforeAndAfterAll
+
+import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -716,5 +719,55 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("select lower(col1_2) as x, sum(col1_1) as summ from test1 " +
       "group by x").collect
     snc.dropTable("test1")
+  }
+
+  test("Verify number of tasks for limit query") {
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    snc.sql(s"CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet options(path '$hfile')")
+    var numTasks = 0
+    snc.sparkContext.addSparkListener( new SparkListener {
+      override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = numTasks += 1
+    })
+    snc.sql(s"select * from STAGING_AIRLINE limit 1").collect()
+    // num tasks should be 1 as only 1 partition needs to be scanned to get 1 row
+    assert(numTasks == 1, s"numTasks should be 1. numTasks is $numTasks")
+
+    snc.sql(s"CREATE TABLE T1 (COL1 INT) using column options ('buckets' '3')")
+    snc.sql(s"INSERT INTO T1 VALUES (1)")
+    snc.sql(s"INSERT INTO T1 VALUES (2)")
+    snc.sql(s"INSERT INTO T1 VALUES (3)")
+    snc.sql(s"INSERT INTO T1 VALUES (4)")
+    snc.sql(s"INSERT INTO T1 VALUES (5)")
+    snc.sql(s"INSERT INTO T1 VALUES (6)")
+    numTasks = 0
+    snc.sql(s"select * from T1 limit 1").collect()
+    // num tasks should be 1 as only 1 partition needs to be scanned to get 1 row
+    assert(numTasks == 1, s"numTasks should be 1. numTasks is $numTasks")
+    snc.sql(s"drop table STAGING_AIRLINE")
+    snc.sql(s"drop table T1")
+  }
+
+  test("multi-partition limit") {
+    val snappy = snc.snappySession
+    snappy.sql("create table testLimit (id long, data string, data2 string) using column " +
+        "options (partition_by 'id', buckets '128') as " +
+        "select id, 'someTestData_' || id, 'someOtherData_' || id from range(10000)")
+    val schema = snappy.table("testLimit").schema
+    val port = TestUtil.startNetserverAndReturnPort()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$port")
+    val stmt = conn.createStatement()
+    val rows = Utils.resultSetToSparkInternalRows(
+      stmt.executeQuery("select * from testLimit limit 5000"), schema)
+    assert(rows.length === 5000)
+    val res = snappy.sql("select * from testLimit limit 10000")
+    val expected = snappy.sql("select * from testLimit").collect()
+    checkAnswer(res, expected)
+    val res2 = SnappyFunSuite.resultSetToDataset(
+      snappy, stmt)("select * from testLimit limit 10000")
+    checkAnswer(res2, expected)
+
+    conn.close()
+    snappy.sql("drop table testLimit")
+    TestUtil.stopNetServer()
   }
 }
