@@ -545,7 +545,7 @@ case class SnappyHashAggregateExec(
     } else {
       // generate result based on grouping key
       ctx.INPUT_ROW = null
-      ctx.currentVars = keyBufferVars
+      ctx.currentVars = keyBufferVars ++ aggBufferVars
       val eval = resultExpressions.map { e =>
         BindReferences.bindReference(e, groupingAttributes).genCode(ctx)
       }
@@ -624,6 +624,7 @@ case class SnappyHashAggregateExec(
           long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
           $childProduce
           $mapCounter = $hashMapTerm.size();
+          System.out.println("Num elements in hashmap= " +$mapCounter);
         }
        """)
 
@@ -832,8 +833,9 @@ case class SnappyHashAggregateExec(
        |// initialization for buffer fields
        |
        |$bufferEval
-       |
-       |// common sub-expressions
+       | // reset the  offset position to start of values for writing update
+       |${byteBufferAccessor.currentOffSetForMapLookupUpdt} = ${byteBufferAccessor.valueOffsetTerm};
+       | // common sub-expressions
        |$inputCodes
        |$effectiveCodes
        |
@@ -841,9 +843,10 @@ case class SnappyHashAggregateExec(
        |${evaluateVariables(updateEvals)}
        |
        |// update generated class object fields
-       |${byteBufferAccessor.generateUpdate( bufferVars, aggBuffDataTypes,
-      updateEvals)}
-    """.stripMargin
+       |${byteBufferAccessor.generateUpdate( bufferVars, aggBuffDataTypes, updateEvals)}
+
+      """.stripMargin
+
   }
 
   private def doConsumeWithKeys(ctx: CodegenContext,

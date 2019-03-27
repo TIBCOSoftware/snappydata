@@ -119,7 +119,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
                 s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
             }
           }; " +
-            s"$currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
+            s" \n $currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
             nullVar, varName)
       }
     }
@@ -177,6 +177,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           ${evaluateVariables(keyVars)}
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
+          System.out.println("hash code for key = " +${hashVar(0)});
           int ${numKeyBytesTerm} = 0;
           ${generateKeySizeCode(keyVars, keysDataType, numKeyBytesTerm)}
           int ${numValueBytes} = ${numAggBytes};
@@ -185,6 +186,9 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
            // insert or lookup
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes, ${hashVar(0)});
+          // read key bytes length & position the offset to start of aggregate value
+          $valueOffsetTerm +=  ${classOf[Platform].getName}.getInt($vdBaseObjectTerm,
+                              $vdBaseOffsetTerm + $valueOffsetTerm) + 4 ;
           long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
 
          """
@@ -196,7 +200,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     resultVars: Seq[ExprCode]): String = {
     val plaformClass = classOf[Platform].getName
 
-    s"${currentOffSetForMapLookupUpdt} = ${valueOffsetTerm}; \n" + resultVars.zip(aggBufferDataType).
+     resultVars.zip(aggBufferDataType).
       map{case(expr, dt) => {
       (dt match {
         case ByteType => s"$plaformClass.putByte($vdBaseObjectTerm," +
