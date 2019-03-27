@@ -26,11 +26,11 @@ final class SHAMap(valueSize: Int) extends ByteBufferHashMap(128, 0.6, 0, valueS
 
   override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
     // Get the valueOffSet
-    (Platform.getLong(mapKeyObject, mapKeyOffset) >> 32L).toInt
+    (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
   }
 
   override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
     handleNewInsert()
-    0
+    (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
   }
 }

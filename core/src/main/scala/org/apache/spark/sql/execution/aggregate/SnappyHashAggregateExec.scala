@@ -623,8 +623,8 @@ case class SnappyHashAggregateExec(
           Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
           long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
           $childProduce
-          $mapCounter = $hashMapTerm.size();
-          System.out.println("Num elements in hashmap= " +$mapCounter);
+
+          System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
         }
        """)
 
@@ -634,9 +634,9 @@ case class SnappyHashAggregateExec(
       keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
 
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
-      iterValueOffsetTerm)
+      iterValueOffsetTerm, true)
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
-      aggregateBufferVars, iterValueOffsetTerm)
+      aggregateBufferVars, iterValueOffsetTerm, false)
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
@@ -662,10 +662,19 @@ case class SnappyHashAggregateExec(
       long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
 
       int $sizeTerm = $hashMapTerm.size();
-      for (; $mapCounter < $sizeTerm; ++$mapCounter) {
-        $numOutput.${metricAdd("1")};
-        $outputCode
+      if (${modes.contains(Final)}) {
+     // System.out.println("Num elements in hashmap when producing= " + $sizeTerm );
+       }
+      for (; $mapCounter < $sizeTerm; ) {
+       if (${modes.contains(Final)}) {
+         //   System.out.println("iterating for counter position when producing= " + $mapCounter );
+              }
 
+        $numOutput.${metricAdd("1")};
+        // skip the key length
+        $iterValueOffsetTerm += 4;
+        $outputCode
+        ++$mapCounter;
         if (shouldStop()) return;
       }
     """
@@ -800,7 +809,7 @@ case class SnappyHashAggregateExec(
       initVars, initCode, input, keysExpr, keysDataType, aggBuffDataTypes)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
-      aggregateBufferVars, byteBufferAccessor.currentOffSetForMapLookupUpdt)
+      aggregateBufferVars, byteBufferAccessor.currentOffSetForMapLookupUpdt, false)
     val bufferEval = evaluateVariables(bufferVars)
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr

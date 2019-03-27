@@ -31,7 +31,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BindReferences, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans._
-import org.apache.spark.sql.execution.columnar.encoding.StringDictionary
+import org.apache.spark.sql.execution.columnar.encoding.{ColumnEncoding, StringDictionary}
 import org.apache.spark.sql.execution.joins.{BuildLeft, BuildRight, BuildSide, HashJoinExec}
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.types._
@@ -66,7 +66,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     throw new UnsupportedOperationException("unexpected invocation")
   }
   def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
-    currentValueOffsetTerm: String):
+    currentValueOffsetTerm: String, isKey: Boolean):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
     dataTypes.zip(varNames).map { case (dt, varName) => {
@@ -119,8 +119,12 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
                 s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
             }
           }; " +
-            s" \n $currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;",
+            s"""
+                \n $currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;
+             System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+             """,
             nullVar, varName)
+
       }
     }
 
@@ -177,7 +181,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           ${evaluateVariables(keyVars)}
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
-          System.out.println("hash code for key = " +${hashVar(0)});
+        //  System.out.println("hash code for key = " +${hashVar(0)});
           int ${numKeyBytesTerm} = 0;
           ${generateKeySizeCode(keyVars, keysDataType, numKeyBytesTerm)}
           int ${numValueBytes} = ${numAggBytes};
@@ -185,10 +189,10 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
       keysDataType, aggregateDataTypes, allocator, baseObject, baseKeyoffset)}
            // insert or lookup
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseObject, $baseKeyoffset,
-      $numKeyBytesTerm, $numValueBytes, ${hashVar(0)});
+      $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
           // read key bytes length & position the offset to start of aggregate value
-          $valueOffsetTerm +=  ${classOf[Platform].getName}.getInt($vdBaseObjectTerm,
-                              $vdBaseOffsetTerm + $valueOffsetTerm) + 4 ;
+          $valueOffsetTerm += $numKeyBytesTerm;
+       // ${classOf[ColumnEncoding].getName}.getInt($vdBaseObjectTerm, $vdBaseOffsetTerm + $valueOffsetTerm - 4) ;
           long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
 
          """
