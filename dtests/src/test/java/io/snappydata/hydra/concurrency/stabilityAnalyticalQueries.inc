@@ -50,8 +50,8 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   " select avg(depdelay) avgdelay, uniquecarrier from STAGING_AIRLINE where uniquecarrier = 'UA' group by uniquecarrier order by avgdelay desc"
   " select avg(depdelay) delay, dest, month_ from STAGING_AIRLINE where month_ in (10, 11, 12, 1) group by month_, dest order by delay"*/
   " select avg(depdelay) from STAGING_AIRLINE where dayofweek in (1, 2)"
-  /*" select avg(depdelay), origin from STAGING_AIRLINE group by origin order by avg(depdelay) limit 50"
-  " select avg(depdelay), uniquecarrier from STAGING_AIRLINE group by uniquecarrier"
+  " select avg(depdelay), origin from STAGING_AIRLINE group by origin order by avg(depdelay) limit 50"
+  /*" select avg(depdelay), uniquecarrier from STAGING_AIRLINE group by uniquecarrier"
   " select avg(depdelay), uniquecarrier from STAGING_AIRLINE where dayofweek in (1, 2) group by uniquecarrier"*/
   /*" select avg(arrdelay), count(*) from STAGING_AIRLINE where uniquecarrier = 'UA'"*/
   " select avg(arrdelay) arrdelay, dest, month_ from STAGING_AIRLINE where month_ in (10, 11, 12, 1) group by month_, dest order by arrdelay"
@@ -64,14 +64,14 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   " select count(*), uniquecarrier, origin from STAGING_AIRLINE group by uniquecarrier, origin order by uniquecarrier, origin"
   " select count(*), uniquecarrier, year_ from STAGING_AIRLINE group by uniquecarrier, year_"*/
   " select count(*), uniquecarrier, year_, month_ from STAGING_AIRLINE group by year_, month_, uniquecarrier order by year_, month_, uniquecarrier desc"
-  /*" select * from STAGING_AIRLINE limit 1"*/
+  " select * from STAGING_AIRLINE limit 1"
   " select max(arrdelay), max(depdelay), uniquecarrier from STAGING_AIRLINE group by uniquecarrier"
   /*" select max(arrdelay), uniquecarrier from STAGING_AIRLINE group by uniquecarrier"
   " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE group by uniquecarrier"*/
-/*  " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE group by uniquecarrier limit 10"
+  " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE group by uniquecarrier limit 10"
   " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE where uniquecarrier = 'AA' group by uniquecarrier"
   " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE where uniquecarrier = 'DL' group by uniquecarrier"
-  " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE where uniquecarrier = 'UA' group by uniquecarrier"*/
+  " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE where uniquecarrier = 'UA' group by uniquecarrier"
   " select sum(arrdelay + depdelay), count(*) from STAGING_AIRLINE where uniquecarrier = 'WN' group by uniquecarrier"
   " select avg(arrdelay), avg(depdelay) from STAGING_AIRLINE group by flightnum"
   /*" select avg(arrdelay), avg(depdelay), uniquecarrier from STAGING_AIRLINE group by uniquecarrier"
@@ -104,7 +104,7 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   " SELECT customer_id, count(*)  from reviews where review_body is not null group by customer_id"
   " SELECT customer_id, count(*)  from reviews where review_body is not null group by customer_id order by count(*) desc limit 20"
   " SELECT product_title from reviews where product_title like '%iPhone%' limit 20"
-  /*" SELECT CUSTOMER_ID,TOTAL_HELPFUL_VOTES FROM (SELECT CUSTOMER_ID,SUM(HELPFUL_VOTES) AS TOTAL_HELPFUL_VOTES FROM STAGING_REVIEWS GROUP BY CUSTOMER_ID) ORDER BY TOTAL_HELPFUL_VOTES DESC LIMIT 10"*/
+  " SELECT CUSTOMER_ID,TOTAL_HELPFUL_VOTES FROM (SELECT CUSTOMER_ID,SUM(HELPFUL_VOTES) AS TOTAL_HELPFUL_VOTES FROM STAGING_REVIEWS GROUP BY CUSTOMER_ID) ORDER BY TOTAL_HELPFUL_VOTES DESC LIMIT 10"
   " SELECT count(PRODUCT_ID) count, average_star_rating from (SELECT PRODUCT_ID,ceil(AVG(STAR_RATING)) AS average_star_rating FROM STAGING_REVIEWS GROUP BY PRODUCT_ID) GROUP BY average_star_rating ORDER BY average_star_rating DESC"
   " SELECT * FROM (SELECT CUSTOMER_ID,YEAR,TOTAL_HELPFUL_VOTES,DENSE_RANK() OVER (PARTITION BY YEAR ORDER BY TOTAL_HELPFUL_VOTES DESC ) AS RANK FROM (SELECT CUSTOMER_ID,YEAR,SUM(HELPFUL_VOTES) AS TOTAL_HELPFUL_VOTES FROM STAGING_REVIEWS GROUP BY CUSTOMER_ID, YEAR)) WHERE RANK <= 10"
   /*" SELECT MARKETPLACE, average_star_rating, COUNT(PRODUCT_ID) COUNT FROM (SELECT PRODUCT_ID, MARKETPLACE, CEIL(AVG(STAR_RATING)) AS average_star_rating FROM STAGING_REVIEWS GROUP BY PRODUCT_ID, MARKETPLACE) GROUP BY MARKETPLACE, average_star_rating ORDER BY MARKETPLACE, average_star_rating DESC"
@@ -123,28 +123,28 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   /*" SELECT CUSTOMER_ID FROM (SELECT CUSTOMER_ID, COUNT(*) COUNT FROM (SELECT * FROM STAGING_REVIEWS WHERE UPPER(VERIFIED_PURCHASE) <> 'Y' ) GROUP BY CUSTOMER_ID) WHERE COUNT = 0"*/
   /*" SELECT MONTH(REVIEW_DATE) AS review_MONTH, YEAR(REVIEW_DATE) AS review_YEAR , SUM(HELPFUL_VOTES)/ COUNT(*) AS HELPFUL_VOTES_to_submitted_STAGING_REVIEWS_ratio FROM STAGING_REVIEWS GROUP BY MONTH(REVIEW_DATE), YEAR(REVIEW_DATE)"
   " SELECT * FROM (SELECT PRODUCT_PARENT, AVG(STAR_RATING) AS avg_rating, COUNT(DISTINCT(PRODUCT_ID)) AS no_of_products FROM STAGING_REVIEWS GROUP BY PRODUCT_PARENT) WHERE no_of_products > 5 AND avg_rating < 2"*/
-  /*" SELECT count(distinct product_id) from STAGING_REVIEWS"
+  /*" SELECT count(distinct product_id) from STAGING_REVIEWS"*/
   " SELECT product_title from STAGING_REVIEWS limit 10"
-  " SELECT distinct year from STAGING_REVIEWS order by year"*/
+  /*" SELECT distinct year from STAGING_REVIEWS order by year"*/
   /*" SELECT count(*), year from STAGING_REVIEWS group by year order by count(*) desc"*/
   " SELECT count(*), spark_partition_id() from STAGING_REVIEWS group by spark_partition_id() order by count(*) desc"
   /*" SELECT distinct customer_id from STAGING_REVIEWS"*/
   " SELECT count(distinct customer_id) from STAGING_REVIEWS"
   " SELECT customer_id, count(*)  from STAGING_REVIEWS where review_body is not null group by customer_id"
-  /*" SELECT customer_id, count(*)  from STAGING_REVIEWS where review_body is not null group by customer_id order by count(*) desc limit 20"*/
-  /*" SELECT product_title from STAGING_REVIEWS where product_title like '%iPhone%' limit 20"*/
+  " SELECT customer_id, count(*)  from STAGING_REVIEWS where review_body is not null group by customer_id order by count(*) desc limit 20"
+  " SELECT product_title from STAGING_REVIEWS where product_title like '%iPhone%' limit 20"
   /*" SELECT first,last,address,zip, total,rank() over (partition by zip order by total desc) as rnk from (SELECT patient, sum(cost) as total from (SELECT patient, cost from encounters  union  SELECT patient, cost from immunizations union SELECT patient, cost from medications   union  SELECT patient, cost from procedures) a group by patient) b  join patients p on id = patient having rnk < 11 order by zip,total desc",
   " SELECT * FROM (SELECT concat(p.first, ' ', p.LAST) AS name,p.address,m.total_cost AS expenses, p.zip,RANK() OVER (PARTITION BY zip ORDER BY m.total_cost DESC ) AS RANK  FROM patients p JOIN (SELECT patient, SUM(cost) AS total_cost  FROM ((SELECT patient, totalcost AS cost  FROM medications)  UNION ALL (SELECT patient, cost FROM immunizations )  UNION ALL (SELECT patient,cost FROM encounters)  UNION ALL (SELECT patient, cost FROM procedures))  GROUP BY patient ) m ON p.id = m.patient )  WHERE RANK <= 10",
   " SELECT * from (SELECT rank() over (order by tot_expense desc) as rank,  tot_expense,address,patname,zip from (SELECT sum(expense) tot_expense, address,patname,zip from (SELECT sum(enc.cost) as expense,pat.address,  concat(pat.first,' ',pat.last) as PatName,pat.zip from patients as pat inner join encounters as enc on pat.id =  enc.patient   group by pat.first,pat.last,pat.address,pat.zip union SELECT sum(proc.cost) as expense,pat.address, concat(pat.first,' ',pat.last) as PatName, pat.zip from patients as pat inner join procedures as proc on pat.id =  proc.patient  group by pat.first,pat.last,pat.address,pat.zip union  SELECT sum(imm.cost) as expense,pat.address, concat(pat.first,' ',pat.last) as PatName, pat.zip from patients as pat inner join immunizations as imm on pat.id =  imm.patient   group by pat.first,pat.last,pat.address,pat.zip union SELECT sum(med.cost) as expense,pat.address, concat(pat.first,' ',pat.last) as PatName, pat.zip from patients as pat  inner join medications as med on pat.id =  med.patient   group by pat.first,pat.last,pat.address,pat.zip)  group by address,patname,zip)) as res where rank <=10",
   " SELECT zip, id, tot_cost, rank  from (SELECT zip, id, tot_cost, dense_rank() over (partition by zip order by tot_cost desc) as rank  from (SELECT p.id, p.zip, (e.cost + i.cost + m.cost + pr.cost) tot_cost  from patients p, encounters e, immunizations i, medications m, procedures pr  where p.id = e.patient and e.patient = i.patient and i.patient = m.patient  and m.patient = pr.patient and e.id = i.encounter and e.id = m.encounter and e.id = pr.encounter))  where rank < 11",
   " SELECT * FROM (SELECT PREFIX,FIRST,LAST,SUFFIX,MAIDEN,ZIP,EXPENSES,row_number()  over(partition by t1.ZIP order by EXPENSES desc) as RANK FROM PATIENTS t1 INNER JOIN (SELECT  p.patient, sum(p.cost) AS EXPENSES   FROM (SELECT COST, PATIENT FROM Immunizations   UNION  SELECT COST, PATIENT FROM Encounters   UNION   SELECT COST, PATIENT FROM Medications UNION SELECT COST, PATIENT FROM Procedures) as p  group by p.patient) ON t1.ID = p.PATIENT)  where RANK <= 10 ORDER BY ZIP",
-  " With patients_with_totalcost as (SELECT p.*, (e.Ecost+i.Icost+m.Mcost+pr.Pcost) as TotalCost  from patients p inner join (SELECT patient, sum(cost) as Ecost  from Encounters group by patient) e on p.ID = e.patient inner join (SELECT patient, sum(cost) as Icost  from Immunizations group by patient) i on p.ID = i.patient inner join (SELECT patient, sum(cost) as Mcost  from Medications group by patient) m on p.ID = m.patient inner join (SELECT patient, sum(cost) as Pcost  from Procedures group by patient) pr on p.ID = pr.patient), Topten as (SELECT *, RANK() over (PARTITION BY zip  order by totalcost desc) AS RowNo  FROM patients_with_totalcost)  SELECT zip,first,last,address,city,totalcost from Topten WHERE RowNo <= 10",
-  " SELECT p.zip,p.FIRST,p.ADDRESS,m.TOTALCOST from PATIENTS p , medications m where p.ID = m.PATIENT  group by p.zip,p.FIRST,p.ADDRESS,m.totalcost order by m.totalcost desc limit 10",
-  " SELECT DISTINCT sqei.ID,sqei.Zip,(TotalEICost+m.cost) as TotalEMICost  FROM Medications m JOIN (SELECT DISTINCT p.ID,p.Zip,(e.cost + i.cost ) as TotalEICost  FROM Patients p  JOIN Encounters e ON p.ID=e.Patient  JOIN Immunizations i ON i.Patient=p.ID) sqei ON sqei.ID=m.Patient  ORDER BY TotalEMICost DESC",
-  " SELECT description, sum(cost) as total from medications group by description order by total desc limit 10",
-  " SELECT * FROM (SELECT code, expenses, RANK() OVER ( ORDER BY expenses DESC ) AS RANK  FROM  (SELECT code, SUM(TOTALCOST) AS expenses   FROM medications   GROUP BY code )) WHERE RANK <= 10",
-  " SELECT description,sum(cost) as totcost  from medications group by description  order by totcost  desc  limit 10",
-  " SELECT code,sum(cost) as totcost  from medications group by code  order by totcost  desc  limit 10",
+  " With patients_with_totalcost as (SELECT p.*, (e.Ecost+i.Icost+m.Mcost+pr.Pcost) as TotalCost  from patients p inner join (SELECT patient, sum(cost) as Ecost  from Encounters group by patient) e on p.ID = e.patient inner join (SELECT patient, sum(cost) as Icost  from Immunizations group by patient) i on p.ID = i.patient inner join (SELECT patient, sum(cost) as Mcost  from Medications group by patient) m on p.ID = m.patient inner join (SELECT patient, sum(cost) as Pcost  from Procedures group by patient) pr on p.ID = pr.patient), Topten as (SELECT *, RANK() over (PARTITION BY zip  order by totalcost desc) AS RowNo  FROM patients_with_totalcost)  SELECT zip,first,last,address,city,totalcost from Topten WHERE RowNo <= 10",*/
+  //" SELECT p.zip,p.FIRST,p.ADDRESS,m.TOTALCOST from PATIENTS p , medications m where p.ID = m.PATIENT  group by p.zip,p.FIRST,p.ADDRESS,m.totalcost order by m.totalcost desc limit 10",
+  /*" SELECT DISTINCT sqei.ID,sqei.Zip,(TotalEICost+m.cost) as TotalEMICost  FROM Medications m JOIN (SELECT DISTINCT p.ID,p.Zip,(e.cost + i.cost ) as TotalEICost  FROM Patients p  JOIN Encounters e ON p.ID=e.Patient  JOIN Immunizations i ON i.Patient=p.ID) sqei ON sqei.ID=m.Patient  ORDER BY TotalEMICost DESC",*/
+ // " SELECT description, sum(cost) as total from medications group by description order by total desc limit 10",
+  //" SELECT * FROM (SELECT code, expenses, RANK() OVER ( ORDER BY expenses DESC ) AS RANK  FROM  (SELECT code, SUM(TOTALCOST) AS expenses   FROM medications   GROUP BY code )) WHERE RANK <= 10",
+  //" SELECT description,sum(cost) as totcost  from medications group by description  order by totcost  desc  limit 10",
+  /*" SELECT code,sum(cost) as totcost  from medications group by code  order by totcost  desc  limit 10",
   " SELECT sum(TOTALCOST) , DESCRIPTION  from medications group by DESCRIPTION  order by 1 desc limit 10",
   " SELECT description, sum(totalcost) as total_cost, count(totalcost) as cnt  from medications group by description  order by total_cost desc limit 10",
   " SELECT CODE, DESCRIPTION, COUNT(CODE) AS SPEND_COUNT  FROM MEDICATIONS GROUP BY CODE, DESCRIPTION  ORDER BY SPEND_COUNT DESC LIMIT 10",
@@ -199,8 +199,8 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   " SELECT sum(passenger_count),sum(tip_amt),payment_type from NYCTAXI  group by payment_type order by 2 desc limit 30"
   " SELECT ROUND(SUM(FLOAT(Total_Amt)),2) AS amt,date_format(Trip_Pickup_DateTime,'dd.mm.yyyy'),vendor_name FROM NYCTAXI GROUP BY 2,vendor_name ORDER BY amt LIMIT 10 "
   " SELECT ROUND(Start_Lat, 4) as lat , ROUND(Start_Lon, 4) as lon, COUNT(*) as num_pickups ,ROUND(sum(Total_Amt),2) as totalAmt FROM NYCTAXI  WHERE (Start_Lat BETWEEN 40.61 AND 40.91) AND (Start_Lon BETWEEN -74.06 AND -73.77) GROUP BY 1,2 ORDER BY num_pickups desc"
-  /*" SELECT hour(Trip_Pickup_DateTime) as  hour ,avg(trip_distance/((unix_timestamp(Trip_Dropoff_DateTime)-unix_timestamp(Trip_Pickup_DateTime))/3600000000)) as AVG_SPEED from STAGING_NYCTAXI where hour(Trip_Pickup_DateTime) BETWEEN 8 AND 10 group by Trip_Pickup_DateTime order by hour limit 100"
-  " SELECT dayofmonth(Trip_Pickup_DateTime) dayofweek,cast(100*AVG(trip_distance/(unix_timestamp(Trip_Dropoff_DateTime)-unix_timestamp(Trip_Pickup_DateTime)/3600000000))/100 as int)  speed FROM STAGING_NYCTAXI WHERE Fare_Amt/trip_distance BETWEEN 2 AND 10 AND HOUR(Trip_Pickup_DateTime) BETWEEN 8 AND 18 GROUP BY 1 ORDER BY 1"*/
+  " SELECT hour(Trip_Pickup_DateTime) as  hour ,avg(trip_distance/((unix_timestamp(Trip_Dropoff_DateTime)-unix_timestamp(Trip_Pickup_DateTime))/3600000000)) as AVG_SPEED from STAGING_NYCTAXI where hour(Trip_Pickup_DateTime) BETWEEN 8 AND 10 group by Trip_Pickup_DateTime order by hour limit 100"
+  /*" SELECT dayofmonth(Trip_Pickup_DateTime) dayofweek,cast(100*AVG(trip_distance/(unix_timestamp(Trip_Dropoff_DateTime)-unix_timestamp(Trip_Pickup_DateTime)/3600000000))/100 as int)  speed FROM STAGING_NYCTAXI WHERE Fare_Amt/trip_distance BETWEEN 2 AND 10 AND HOUR(Trip_Pickup_DateTime) BETWEEN 8 AND 18 GROUP BY 1 ORDER BY 1"*/
  /* " SELECT dayofmonth(Trip_Pickup_DateTime) AS day, month(Trip_Pickup_DateTime) as month,SUM(Total_Amt) AS total_revenue FROM STAGING_NYCTAXI GROUP BY dayofmonth(Trip_Pickup_DateTime),month(Trip_Pickup_DateTime)"*/
  /* " SELECT vendor_name, COUNT(*) AS number_of_trips FROM STAGING_NYCTAXI GROUP BY vendor_name"*/
   " SELECT mm as weekofyear,sum(Total_Amt) as total_revenue from (SELECT weekofyear(Trip_Pickup_DateTime) as mm, Total_Amt from STAGING_NYCTAXI) ff group by mm order by mm"
@@ -211,9 +211,9 @@ io.snappydata.hydra.cluster.SnappyPrms-analyticalQueryList =
   " SELECT SUM(FLOAT(Total_Amt)) FROM  STAGING_NYCTAXI WHERE cast(YEAR(TIMESTAMP(Trip_Pickup_DateTime)) as int ) = 2013 AND cast(MONTH(TIMESTAMP(Trip_Pickup_DateTime)) as int) = 12"
   " SELECT ROUND(Start_Lat, 4) as lat , ROUND(Start_Lon, 4) as lon, COUNT(*) as num_pickups FROM STAGING_NYCTAXI  WHERE (Start_Lat BETWEEN 40.61 AND 40.91) AND (Start_Lon BETWEEN -74.06 AND -73.77) GROUP BY 1,2 ORDER BY num_pickups desc"
   " SELECT to_date(Trip_Dropoff_DateTime), COUNT(*) AS c  FROM STAGING_NYCTAXI GROUP BY to_date(Trip_Dropoff_DateTime)"
-  /*" SELECT hour(STAGING_NYCTAXI.Trip_Pickup_DateTime),sum(Fare_Amt),sum(surcharge),sum(tip_amt) from STAGING_NYCTAXI group by 1 order by sum(Fare_Amt) desc limit 30"
+  " SELECT hour(STAGING_NYCTAXI.Trip_Pickup_DateTime),sum(Fare_Amt),sum(surcharge),sum(tip_amt) from STAGING_NYCTAXI group by 1 order by sum(Fare_Amt) desc limit 30"
   " SELECT sum(passenger_count),sum(tip_amt),payment_type from STAGING_NYCTAXI  group by payment_type order by 2 desc limit 30"
   " SELECT ROUND(SUM(FLOAT(Total_Amt)),2) AS amt,date_format(Trip_Pickup_DateTime,'dd.mm.yyyy'),vendor_name FROM STAGING_NYCTAXI GROUP BY 2,vendor_name ORDER BY amt LIMIT 10"
-  " SELECT ROUND(Start_Lat, 4) as lat , ROUND(Start_Lon, 4) as lon, COUNT(*) as num_pickups ,ROUND(sum(Total_Amt),2) as totalAmt FROM STAGING_NYCTAXI  WHERE (Start_Lat BETWEEN 40.61 AND 40.91) AND (Start_Lon BETWEEN -74.06 AND -73.77) GROUP BY 1,2 ORDER BY num_pickups desc"*/
+  /*" SELECT ROUND(Start_Lat, 4) as lat , ROUND(Start_Lon, 4) as lon, COUNT(*) as num_pickups ,ROUND(sum(Total_Amt),2) as totalAmt FROM STAGING_NYCTAXI  WHERE (Start_Lat BETWEEN 40.61 AND 40.91) AND (Start_Lon BETWEEN -74.06 AND -73.77) GROUP BY 1,2 ORDER BY num_pickups desc"*/
 
 ;
