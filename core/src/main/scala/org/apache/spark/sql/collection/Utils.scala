@@ -23,23 +23,16 @@ import java.nio.ByteBuffer
 import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
-import scala.annotation.tailrec
-import scala.collection.{mutable, Map => SMap}
-import scala.language.existentials
-import scala.reflect.ClassTag
-import scala.util.Sorting
-import scala.util.control.NonFatal
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.cache.Region
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
-import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark._
 import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
@@ -49,10 +42,10 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, EqualNullSafe, EqualTo, Expression, GenericRow, SpecificInternalRow, TokenLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
-import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.SQLExecution
@@ -61,13 +54,23 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWr
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
+
+import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
+import scala.collection.{mutable, Map => SMap}
+import scala.language.existentials
+import scala.reflect.ClassTag
+import scala.util.Sorting
+import scala.util.control.NonFatal
 
 object Utils {
 
@@ -78,7 +81,7 @@ object Utils {
 
   // 1 - (1 - 0.95) / 2 = 0.975
   final val Z95Percent: Double = new NormalDistribution().
-      inverseCumulativeProbability(0.975)
+    inverseCumulativeProbability(0.975)
   final val Z95Squared: Double = Z95Percent * Z95Percent
 
   def fillArray[T](a: Array[_ >: T], v: T, start: Int, endP1: Int): Unit = {
@@ -90,7 +93,7 @@ object Utils {
   }
 
   def analysisException(msg: String,
-      cause: Option[Throwable] = None): AnalysisException =
+                        cause: Option[Throwable] = None): AnalysisException =
     new AnalysisException(msg, None, None, None, cause)
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
@@ -106,7 +109,7 @@ object Utils {
   }
 
   def fieldIndex(relationOutput: Seq[Attribute], columnName: String,
-      caseSensitive: Boolean): Int = {
+                 caseSensitive: Boolean): Int = {
     // lookup as per case-sensitivity (SNAP-1714)
     val resolver = if (caseSensitive) analysis.caseSensitiveResolution
     else analysis.caseInsensitiveResolution
@@ -118,7 +121,7 @@ object Utils {
   }
 
   def getAllExecutorsMemoryStatus(
-      sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
+                                   sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
     val memoryStatus = sc.env.blockManager.master.getMemoryStatus
     // no filtering for local backend
     if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
@@ -133,14 +136,14 @@ object Utils {
   def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
   def qcsOf(qa: Array[String], cols: Array[String],
-      module: String): (Array[Int], Array[String]) = {
+            module: String): (Array[Int], Array[String]) = {
     val colIndexes = qa.map(columnIndex(_, cols, module))
     Sorting.quickSort(colIndexes)
     (colIndexes, colIndexes.map(cols))
   }
 
   def resolveQCS(qcsV: Option[Any], fieldNames: Array[String],
-      module: String): (Array[Int], Array[String]) = {
+                 module: String): (Array[Int], Array[String]) = {
     qcsV.map {
       case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
@@ -153,7 +156,7 @@ object Utils {
   }
 
   def matchOption(optName: String,
-      options: SMap[String, Any]): Option[(String, Any)] = {
+                  options: SMap[String, Any]): Option[(String, Any)] = {
     val optionName = toLowerCase(optName)
     options.get(optionName).map((optionName, _)).orElse {
       options.collectFirst { case (key, value)
@@ -163,12 +166,12 @@ object Utils {
   }
 
   def resolveQCS(options: SMap[String, Any], fieldNames: Array[String],
-      module: String): (Array[Int], Array[String]) = {
+                 module: String): (Array[Int], Array[String]) = {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
   }
 
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,
-      max: Int = Int.MaxValue): Int = {
+                   max: Int = Int.MaxValue): Int = {
     val vl: Long = v match {
       case vi: Int => vi
       case vs: String =>
@@ -193,7 +196,7 @@ object Utils {
   }
 
   def parseDouble(v: Any, module: String, option: String, min: Double,
-      max: Double, exclusive: Boolean = true): Double = {
+                  max: Double, exclusive: Boolean = true): Double = {
     val vd: Double = v match {
       case vd: Double => vd
       case vs: String =>
@@ -227,7 +230,7 @@ object Utils {
   }
 
   def parseColumn(cv: Any, cols: Array[String], module: String,
-      option: String): Int = {
+                  option: String): Int = {
     val cl: Long = cv match {
       case cs: String => columnIndex(cs, cols, module)
       case ci: Int => ci
@@ -241,7 +244,7 @@ object Utils {
       cl.toInt
     } else {
       throw analysisException(s"$module: Column index out of bounds " +
-          s"for '$option'=$cl among ${cols.mkString(", ")}")
+        s"for '$option'=$cl among ${cols.mkString(", ")}")
     }
   }
 
@@ -291,22 +294,22 @@ object Utils {
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
-      f: () => Iterator[T], maxTries: Int = 30,
-      blockManagerIds: Seq[BlockManagerId] = Nil): Array[T] = {
+                                f: () => Iterator[T], maxTries: Int = 30,
+                                blockManagerIds: Seq[BlockManagerId] = Nil): Array[T] = {
     val cleanedF = sc.clean(f)
     mapExecutorsWithRetries(sc, (_: TaskContext, _: ExecutorLocalPartition) => cleanedF(),
       blockManagerIds, maxTries)
   }
 
   def mapExecutors[T: ClassTag](sc: SparkContext,
-      f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
+                                f: (TaskContext, ExecutorLocalPartition) => Iterator[T], maxTries: Int): Array[T] = {
     val cleanedF = sc.clean(f)
     mapExecutorsWithRetries(sc, cleanedF, Nil, maxTries)
   }
 
   private def mapExecutorsWithRetries[T: ClassTag](sc: SparkContext,
-      cleanedF: (TaskContext, ExecutorLocalPartition) => Iterator[T],
-      blockManagerIds: Seq[BlockManagerId], maxTries: Int): Array[T] = {
+                                                   cleanedF: (TaskContext, ExecutorLocalPartition) => Iterator[T],
+                                                   blockManagerIds: Seq[BlockManagerId], maxTries: Int): Array[T] = {
     var tries = 1
     while (true) {
       try {
@@ -334,8 +337,8 @@ object Utils {
   }
 
   def getFixedPartitionRDD[T: ClassTag](sc: SparkContext,
-      f: (TaskContext, Partition) => Iterator[T], partitioner: Partitioner,
-      numPartitions: Int): RDD[T] = {
+                                        f: (TaskContext, Partition) => Iterator[T], partitioner: Partitioner,
+                                        numPartitions: Int): RDD[T] = {
     val cleanedF = sc.clean(f)
     new FixedPartitionRDD[T](sc, cleanedF, numPartitions, Some(partitioner))
   }
@@ -385,7 +388,7 @@ object Utils {
     if (addrIdx > 0) {
       val portIndex = netServer.indexOf('[')
       netServer.substring(0, addrIdx) +
-          netServer.substring(portIndex, portEndIndex + 1)
+        netServer.substring(portIndex, portEndIndex + 1)
     } else {
       netServer.substring(addrIdx + 1, portEndIndex + 1)
     }
@@ -421,88 +424,88 @@ object Utils {
   def toUpperCase(k: String): String = JdbcExtendedUtils.toUpperCase(k)
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is stored (and rendered) as VARCHAR by SnappyStore.
-   *
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is stored (and rendered) as VARCHAR by SnappyStore.
+    *
+    * @return the result Metadata object to use for StructField
+    */
   def varcharMetadata(): Metadata = {
     varcharMetadata(Constant.MAX_VARCHAR_SIZE, Metadata.empty)
   }
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is stored (and rendered) as VARCHAR by SnappyStore.
-   *
-   * @param size the size parameter of the VARCHAR() column type
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is stored (and rendered) as VARCHAR by SnappyStore.
+    *
+    * @param size the size parameter of the VARCHAR() column type
+    * @return the result Metadata object to use for StructField
+    */
   def varcharMetadata(size: Int): Metadata = {
     varcharMetadata(size, Metadata.empty)
   }
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is stored (and rendered) as VARCHAR by SnappyStore.
-   *
-   * @param size the size parameter of the VARCHAR() column type
-   * @param md optional Metadata object to be merged into the result
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is stored (and rendered) as VARCHAR by SnappyStore.
+    *
+    * @param size the size parameter of the VARCHAR() column type
+    * @param md optional Metadata object to be merged into the result
+    * @return the result Metadata object to use for StructField
+    */
   def varcharMetadata(size: Int, md: Metadata): Metadata = {
     if (size < 1 || size > Constant.MAX_VARCHAR_SIZE) {
       throw new IllegalArgumentException(s"VARCHAR size should be between 1 " +
-          s"and ${Constant.MAX_VARCHAR_SIZE}")
+        s"and ${Constant.MAX_VARCHAR_SIZE}")
     }
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "VARCHAR")
-        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+      .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
   }
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is stored (and rendered) as CHAR by SnappyStore.
-   *
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is stored (and rendered) as CHAR by SnappyStore.
+    *
+    * @return the result Metadata object to use for StructField
+    */
   def charMetadata(): Metadata = {
     charMetadata(Constant.MAX_CHAR_SIZE, Metadata.empty)
   }
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is stored (and rendered) as CHAR by SnappyStore.
-   *
-   * @param size the size parameter of the CHAR() column type
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is stored (and rendered) as CHAR by SnappyStore.
+    *
+    * @param size the size parameter of the CHAR() column type
+    * @return the result Metadata object to use for StructField
+    */
   def charMetadata(size: Int): Metadata = {
     charMetadata(size, Metadata.empty)
   }
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is stored (and rendered) as CHAR by SnappyStore.
-   *
-   * @param size the size parameter of the CHAR() column type
-   * @param md optional Metadata object to be merged into the result
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is stored (and rendered) as CHAR by SnappyStore.
+    *
+    * @param size the size parameter of the CHAR() column type
+    * @param md optional Metadata object to be merged into the result
+    * @return the result Metadata object to use for StructField
+    */
   def charMetadata(size: Int, md: Metadata): Metadata = {
     if (size < 1 || size > Constant.MAX_CHAR_SIZE) {
       throw new IllegalArgumentException(s"CHAR size should be between 1 " +
-          s"and ${Constant.MAX_CHAR_SIZE}")
+        s"and ${Constant.MAX_CHAR_SIZE}")
     }
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CHAR")
-        .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
+      .putLong(Constant.CHAR_TYPE_SIZE_PROP, size).build()
   }
 
   /**
-   * Utility function to return a metadata for a StructField of StringType, to ensure that the
-   * field is rendered as CLOB by SnappyStore.
-   *
-   * @param md optional Metadata object to be merged into the result
-   * @return the result Metadata object to use for StructField
-   */
+    * Utility function to return a metadata for a StructField of StringType, to ensure that the
+    * field is rendered as CLOB by SnappyStore.
+    *
+    * @param md optional Metadata object to be merged into the result
+    * @return the result Metadata object to use for StructField
+    */
   def stringMetadata(md: Metadata = Metadata.empty): Metadata = {
     // Put BASE as 'CLOB' so that SnappySessionCatalog.normalizeSchema() removes these
     // CHAR_TYPE* properties from the metadata. This enables SparkSQLExecuteImpl.getSQLType() to
@@ -510,7 +513,7 @@ object Utils {
     // If we don't add this property here, SnappySessionCatalog.normalizeSchema() will add one
     // on its own and this field would be rendered as VARCHAR.
     new MetadataBuilder().withMetadata(md).putString(Constant.CHAR_TYPE_BASE_PROP, "CLOB")
-        .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
+      .remove(Constant.CHAR_TYPE_SIZE_PROP).build()
   }
 
   def schemaFields(schema: StructType): SMap[String, StructField] = {
@@ -530,9 +533,9 @@ object Utils {
     * In case both are specified, then check compatibility between the two.
     */
   def getSchemaAndPlanFromBase(schemaOpt: Option[StructType],
-      baseTableOpt: Option[String], catalog: SnappySessionCatalog,
-      asSelect: Boolean, table: String,
-      tableType: String): (StructType, Option[LogicalPlan]) = {
+                               baseTableOpt: Option[String], catalog: SnappySessionCatalog,
+                               asSelect: Boolean, table: String,
+                               tableType: String): (StructType, Option[LogicalPlan]) = {
     schemaOpt match {
       case Some(s) => baseTableOpt match {
         case Some(baseTableName) =>
@@ -546,14 +549,14 @@ object Utils {
               (s, Some(tablePlan))
             } else if (asSelect) {
               throw analysisException(s"CREATE $tableType TABLE AS SELECT:" +
-                  " mismatch of schema with that of base table." +
-                  "\n  Base table schema: " + tableSchema +
-                  "\n  AS SELECT schema: " + s)
+                " mismatch of schema with that of base table." +
+                "\n  Base table schema: " + tableSchema +
+                "\n  AS SELECT schema: " + s)
             } else {
               throw analysisException(s"CREATE $tableType TABLE:" +
-                  " mismatch of specified schema with that of base table." +
-                  "\n  Base table schema: " + tableSchema +
-                  "\n  Specified schema: " + s)
+                " mismatch of specified schema with that of base table." +
+                "\n  Base table schema: " + tableSchema +
+                "\n  Specified schema: " + s)
             }
           } catch {
             // continue with specified schema if base table fails to load
@@ -572,11 +575,11 @@ object Utils {
           } catch {
             case ae: AnalysisException =>
               throw analysisException(s"Base table $baseTable " +
-                  s"not found for $tableType TABLE $table", Some(ae))
+                s"not found for $tableType TABLE $table", Some(ae))
           }
         case None =>
           throw analysisException(s"CREATE $tableType TABLE must provide " +
-              "either column definition or baseTable option.")
+            "either column definition or baseTable option.")
       }
     }
   }
@@ -608,9 +611,9 @@ object Utils {
   }
 
   /**
-   * Wrap a DataFrame action to track all Spark jobs in the body so that
-   * we can connect them with an execution.
-   */
+    * Wrap a DataFrame action to track all Spark jobs in the body so that
+    * we can connect them with an execution.
+    */
   def withNewExecutionId[T](df: DataFrame, body: => T): T = {
     df.withNewExecutionId(body)
   }
@@ -661,7 +664,7 @@ object Utils {
     CatalystTypeConverters.createToCatalystConverter(dataType)
 
   def resultSetToSparkInternalRows(resultSet: ResultSet, schema: StructType,
-      inputMetrics: InputMetrics = new InputMetrics): Iterator[InternalRow] = {
+                                   inputMetrics: InputMetrics = new InputMetrics): Iterator[InternalRow] = {
     JdbcUtils.resultSetToSparkInternalRows(resultSet, schema, inputMetrics)
   }
 
@@ -690,10 +693,10 @@ object Utils {
       val entry = propsIterator.next()
       val propName = entry.getKey.toString
       if (propName.startsWith(Constant.SPARK_PREFIX) ||
-          propName.startsWith(Constant.PROPERTY_PREFIX) ||
-          propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
-          propName.startsWith("zeppelin.") ||
-          propName.startsWith("hive.")) {
+        propName.startsWith(Constant.PROPERTY_PREFIX) ||
+        propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
+        propName.startsWith("zeppelin.") ||
+        propName.startsWith("hive.")) {
         entry.getValue match {
           case v: String => conf.set(propName, v)
           case _ =>
@@ -707,7 +710,7 @@ object Utils {
     SharedUtils.newMutableURLClassLoader(urls)
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
-      default: String): Unit = {
+                             default: String): Unit = {
     conf.getOption(name) match {
       case None =>
         // set both in configuration and as System property for all
@@ -750,15 +753,15 @@ object Utils {
       (v => s"addLong($v)", v => s"$v.longValue()")
     } else {
       (v => s"add($v)",
-          // explicit cast for value to Object is for janino bug
-          v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
+        // explicit cast for value to Object is for janino bug
+        v => s"(Long)((${classOf[AccumulatorV2[_, _]].getName})$v).value()")
     }
   }
 
   /**
-   * Minimum size of block beyond which data will be stored in BlockManager
-   * before being consumed to store data from multiple partitions safely.
-   */
+    * Minimum size of block beyond which data will be stored in BlockManager
+    * before being consumed to store data from multiple partitions safely.
+    */
   private[sql] val MIN_LOCAL_BLOCK_SIZE: Int = 32 * 1024 // 32K
 
   private[sql] val nextExecutionIdMethod: Method = {
@@ -774,14 +777,14 @@ object Utils {
   }
 
   def getJsonGenerator(dataType: DataType, columnName: String,
-      writer: java.io.Writer): AnyRef = {
+                       writer: java.io.Writer): AnyRef = {
     val schema = StructType(Seq(StructField(columnName, dataType)))
     JacksonUtils.verifySchema(schema)
     new JacksonGenerator(schema, writer, new JSONOptions(Map.empty[String, String]))
   }
 
   def generateJson(gen: AnyRef, row: InternalRow, columnIndex: Int,
-      columnType: DataType): Unit = {
+                   columnType: DataType): Unit = {
     val generator = gen.asInstanceOf[JacksonGenerator]
     generator.write(InternalRow(row.get(columnIndex, columnType)))
     generator.flush()
@@ -804,10 +807,10 @@ object Utils {
     val row = new UnsafeRow(numColumns)
     if (buffer.isDirect) {
       row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
+        buffer.position(), buffer.remaining())
     } else {
       row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
+        buffer.arrayOffset() + buffer.position(), buffer.remaining())
     }
     row
   }
@@ -848,15 +851,64 @@ object Utils {
 
   def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
     snappy.sqInternal(sqlText)
+
+  def getPartitions(region: Any, bucketId: Int): Array[Partition] = {
+    val pr = region.asInstanceOf[PartitionedRegion]
+    val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
+    val prefNodes = new ArrayBuffer[String](2)
+    distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+      case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+      case _ =>
+    })
+    Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
+      pr.getTotalNumberOfBuckets, prefNodes))
+  }
+
+  def getPrunedPartition(partitionColumns: Seq[String],
+                         filters: Array[Expression], schema: StructType,
+                         numBuckets: Int, partitionColumnCount: Int): Int = {
+
+    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
+    // RDDs needn't have to care for orderless hashing scheme at invocation point.
+    val (pruningExpressions, fields) = partitionColumns.map { pc =>
+      filters.collectFirst {
+        case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+      }
+    }.filter(_.nonEmpty).map(_.get).unzip
+
+    val pcFields = StructType(fields).toAttributes
+    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
+    val bucketIdGeneration = UnsafeProjection.create(
+      HashPartitioning(pcFields, numBuckets)
+        .partitionIdExpression :: Nil, pcFields)
+    if (pruningExpressions.nonEmpty &&
+      // verify all the partition columns are provided as filters
+      pruningExpressions.length == partitionColumnCount) {
+      pruningExpressions.zipWithIndex.foreach { case (e, i) =>
+        mutableRow(i) = e.eval(null)
+      }
+      bucketIdGeneration(mutableRow).getInt(0)
+    } else {
+      -1
+    }
+  }
+
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
-    f: (TaskContext, ExecutorLocalPartition) => Iterator[T])
-    extends RDD[T](_sc, Nil) {
+                                    f: (TaskContext, ExecutorLocalPartition) => Iterator[T])
+  extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
     var numberedPeers = Utils.getAllExecutorsMemoryStatus(sparkContext).
-        keySet.toList.zipWithIndex
+      keySet.toList.zipWithIndex
 
     if (blockManagerIds.nonEmpty) {
       numberedPeers = numberedPeers.filter(x => blockManagerIds.contains(x._1))
@@ -871,7 +923,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[Bloc
   }
 
   def createPartition(index: Int,
-      blockId: BlockManagerId): ExecutorLocalPartition =
+                      blockId: BlockManagerId): ExecutorLocalPartition =
     new ExecutorLocalPartition(index, blockId)
 
   override def getPreferredLocations(split: Partition): Seq[String] =
@@ -881,7 +933,7 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[Bloc
     val part = split.asInstanceOf[ExecutorLocalPartition]
     val thisBlockId = SparkEnv.get.blockManager.blockManagerId
     if (part.blockId.host != thisBlockId.host ||
-        part.blockId.executorId != thisBlockId.executorId) {
+      part.blockId.executorId != thisBlockId.executorId) {
       // kill the task and force a retry
       val msg = s"Unexpected execution of $part on $thisBlockId"
       logWarning(msg)
@@ -898,9 +950,9 @@ class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[Bloc
 }
 
 class FixedPartitionRDD[T: ClassTag](_sc: SparkContext,
-    f: (TaskContext, Partition) => Iterator[T], numPartitions: Int,
-    override val partitioner: Option[Partitioner])
-    extends RDD[T](_sc, Nil) {
+                                     f: (TaskContext, Partition) => Iterator[T], numPartitions: Int,
+                                     override val partitioner: Option[Partitioner])
+  extends RDD[T](_sc, Nil) {
 
   override def getPartitions: Array[Partition] = {
     var i = 0
@@ -920,7 +972,7 @@ class FixedPartitionRDD[T: ClassTag](_sc: SparkContext,
 }
 
 class ExecutorLocalPartition(override val index: Int,
-    val blockId: BlockManagerId) extends Partition {
+                             val blockId: BlockManagerId) extends Partition {
 
   def hostExecutorId: String = Utils.getHostExecutorId(blockId)
 
@@ -928,9 +980,9 @@ class ExecutorLocalPartition(override val index: Int,
 }
 
 final class MultiBucketExecutorPartition(private[this] var _index: Int,
-    _buckets: mutable.ArrayBuffer[Int], numBuckets: Int,
-    private[this] var _hostExecutorIds: Seq[String])
-    extends Partition with KryoSerializable {
+                                         _buckets: mutable.ArrayBuffer[Int], numBuckets: Int,
+                                         private[this] var _hostExecutorIds: Seq[String])
+  extends Partition with KryoSerializable {
 
   private[this] var bucketSet = {
     if (_buckets ne null) {
@@ -1006,14 +1058,14 @@ final class MultiBucketExecutorPartition(private[this] var _index: Int,
   }
 
   override def toString: String = s"MultiBucketExecutorPartition(" +
-      s"$index, buckets=[$bucketsString], ${_hostExecutorIds.mkString(",")})"
+    s"$index, buckets=[$bucketsString], ${_hostExecutorIds.mkString(",")})"
 }
 
 
 private[spark] case class NarrowExecutorLocalSplitDep(
-    @transient rdd: RDD[_],
-    @transient splitIndex: Int,
-    private var split: Partition) extends Serializable with KryoSerializable {
+                                                       @transient rdd: RDD[_],
+                                                       @transient splitIndex: Int,
+                                                       private var split: Partition) extends Serializable with KryoSerializable {
 
   // noinspection ScalaUnusedSymbol
   @throws[java.io.IOException]
@@ -1047,9 +1099,9 @@ private[spark] case class NarrowExecutorLocalSplitDep(
   *                  the number of parents.
   */
 private[spark] class CoGroupExecutorLocalPartition(
-    idx: Int, val blockId: BlockManagerId,
-    val narrowDep: Option[NarrowExecutorLocalSplitDep])
-    extends Partition with Serializable {
+                                                    idx: Int, val blockId: BlockManagerId,
+                                                    val narrowDep: Option[NarrowExecutorLocalSplitDep])
+  extends Partition with Serializable {
 
   override val index: Int = idx
 
@@ -1072,7 +1124,7 @@ object ToolsCallbackInit extends Logging {
     } catch {
       case _: ClassNotFoundException =>
         logWarning("ToolsCallback couldn't be INITIALIZED. " +
-            "DriverURL won't get published to others.")
+          "DriverURL won't get published to others.")
         null
     }
   }

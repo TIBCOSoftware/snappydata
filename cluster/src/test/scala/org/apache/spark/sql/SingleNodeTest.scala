@@ -52,13 +52,7 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
   }
 
   test("Nodes Pruning for row table") {
-    val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
-    try {
-      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
-      SingleNodeTest.testNodesPruning(snc, "row")
-    } finally {
-      io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
-    }
+    SingleNodeTest.testNodesPruning(snc, "row")
   }
 
   test("case when generation") {
@@ -89,6 +83,8 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
 
 object SingleNodeTest {
 
+  val query0 = "select * from orders where o_orderkey = 1 or o_orderkey = 1"
+
   val query1 = "select * from orders where o_orderkey = "
 
   val query2 = "select * from orders where o_orderkey = {fn substring('d1xxd2', 2, 1)} "
@@ -113,7 +109,7 @@ object SingleNodeTest {
       isSnappy = true, buckets_Order_Lineitem, null, provider = tblProvider)
 
     tblProvider match {
-      case "row" => testRowTablePruning(snc)
+      case "row" => SmartConnectorFunctions.verifyRowTablePruning(snc)
       case "column" => testColumnTablePruning(snc)
     }
   }
@@ -180,61 +176,6 @@ object SingleNodeTest {
     val r = df.collect()(0)
     assert(r.getDate(0).toString.equals("1995-07-16"))
     assert(r.getDate(1).toString.equals("1994-12-30"))
-  }
-
-  /**
-   *
-   */
-  private def testRowTablePruning(snc: SnappyContext): Unit = {
-
-    def validateSinglePartition(df: DataFrame, bucketId: Int): Unit = {
-      val plan = df.queryExecution.executedPlan.collectFirst {
-        case c: RowTableScan => c
-      }
-
-      val scanRDD = plan.map(_.dataRDD).
-        getOrElse(throw new AssertionError("Expecting RowTable Scan"))
-      val partitions = scanRDD.partitions
-      assert(plan.get.outputPartitioning == SinglePartition)
-      assert(partitions.length == 1, {
-        val sb = new StringBuilder("Pruning not in effect ? partitions found ")
-        partitions.foreach(p => sb.append(p.index).append(","))
-        sb.toString
-      })
-      val bstr = partitions(0) match {
-        case zp: ZippedPartitionsPartition => zp.partitionValues.map {
-          case mb: MultiBucketExecutorPartition => mb.bucketsString
-        }
-        case _ => Nil
-      }
-
-      // each BucketExecutor must have only one bucket.
-      // there are 2 BucketExecutor entries due to ZipPartion of RowBuffer.
-      assert(bstr.forall(_.toInt == bucketId), s"Expected $bucketId, found $bstr")
-    }
-
-    validateSinglePartition(executeQuery(snc, query1 + 1, 1), 4)
-    validateSinglePartition(executeQuery(snc, query1 + 32, 32), 0)
-    validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
-    // repeating the query deliberately
-    validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
-    validateSinglePartition(executeQuery(snc, query1 + 1408, 1408), 0)
-    validateSinglePartition(executeQuery(snc, query1 + 1409, 1409), 2)
-    validateSinglePartition(executeQuery(snc, query1 + 1410, 1410), 0)
-    validateSinglePartition(executeQuery(snc, query1 + 1796, 1796), 4)
-    validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
-    executeQuery(snc, query1 + "'1'", 1)
-    executeQuery(snc, query1 + "'32'", 32)
-    executeQuery(snc, query2, 1)
-    executeQuery(snc, query3, 801)
-    executeQuery(snc, query4, 801)
-    executeQuery(snc, query5, 1410)
-
-    val df = executeQuery(snc, query6, 32, false)
-    val r = df.collect()(0)
-    assert(r.getDate(0).toString.equals("1995-07-16"))
-    assert(r.getDate(1).toString.equals("1994-12-30"))
-
   }
 
   private def executeQuery(snc: SnappyContext, sql: String, orderKey: Int,

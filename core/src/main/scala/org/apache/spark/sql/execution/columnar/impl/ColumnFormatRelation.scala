@@ -118,42 +118,11 @@ abstract class BaseColumnFormatRelation(
   override def scanTable(tableName: String, requiredColumns: Array[String],
       filters: Array[Expression], _ignore: () => Int): (RDD[Any], Array[Int]) = {
 
-    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
-    // RDDs needn't have to care for orderless hashing scheme at invocation point.
-    val (pruningExpressions, fields) = partitionColumns.map { pc =>
-      filters.collectFirst {
-        case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-      }
-    }.filter(_.nonEmpty).map(_.get).unzip
-
-    def prunePartitions(): Int = {
-      val pcFields = StructType(fields).toAttributes
-      val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
-      val bucketIdGeneration = UnsafeProjection.create(
-        HashPartitioning(pcFields, numBuckets)
-            .partitionIdExpression :: Nil, pcFields)
-      if (pruningExpressions.nonEmpty &&
-          // verify all the partition columns are provided as filters
-          pruningExpressions.length == partitioningColumns.length) {
-        pruningExpressions.zipWithIndex.foreach { case (e, i) =>
-          mutableRow(i) = e.eval(null)
-        }
-        bucketIdGeneration(mutableRow).getInt(0)
-      } else {
-        -1
-      }
-    }
-
     // note: filters is expected to be already split by CNF.
     // see PhysicalScan#unapply
-    super.scanTable(externalColumnTableName, requiredColumns, filters, prunePartitions)
+    super.scanTable(externalColumnTableName, requiredColumns, filters,
+      () => Utils.getPrunedPartition(partitionColumns, filters, schema,
+        numBuckets, partitioningColumns.length))
   }
 
   override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] = filters
@@ -196,8 +165,6 @@ abstract class BaseColumnFormatRelation(
       requiredColumns: Array[String], filters: Array[Expression],
       useResultSet: Boolean, projection: Array[Int]): RDD[Any] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    // defining as a syntactic sugar, in column scan partitionEvaluator does the job.
-    def partitionPruning() : Int = { -1 }
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable(resolvedName, true).asInstanceOf[LocalRegion]
@@ -212,8 +179,7 @@ abstract class BaseColumnFormatRelation(
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator = partitionEvaluator,
-          // passing as a syntactic sugar, in column scan partitionEvaluator does the job.
-          partitionPruning,
+          partitionPruner = () => -1,
           commitTx = false, delayRollover = delayRollover,
           projection = projection, region = Some(region))
       case _ =>
@@ -226,7 +192,7 @@ abstract class BaseColumnFormatRelation(
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
-          partitionPruning,
+          _partitionPruner = () => -1,
           relationInfo.catalogSchemaVersion,
           _commitTx = false, delayRollover)
     }

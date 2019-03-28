@@ -27,6 +27,7 @@ import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Des
 import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -117,39 +118,6 @@ class RowFormatRelation(
       ++ pushdownPKColumns(filters)) )
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
 
-    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
-    // RDDs needn't have to care for orderless hashing scheme at invocation point.
-    val (pruningExpressions, fields) = partitionColumns.map { pc =>
-      filters.collectFirst {
-        case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-      }
-    }.filter(_.nonEmpty).map(_.get).unzip
-
-    def partitionPruner(): Int = {
-      val pcFields = StructType(fields).toAttributes
-      val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
-      val bucketIdGeneration = UnsafeProjection.create(
-        HashPartitioning(pcFields, numBuckets)
-          .partitionIdExpression :: Nil, pcFields)
-      if (pruningExpressions.nonEmpty &&
-        // verify all the partition columns are provided as filters
-        pruningExpressions.length == relationInfo.partitioningCols.length) {
-        pruningExpressions.zipWithIndex.foreach { case (e, i) =>
-          mutableRow(i) = e.eval(null)
-        }
-        bucketIdGeneration(mutableRow).getInt(0)
-      } else {
-        -1
-      }
-    }
-
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
         val region = schemaName match {
@@ -166,7 +134,9 @@ class RowFormatRelation(
           useResultSet = pushProjections,
           connProperties,
           handledFilters,
-          partitionPruner = partitionPruner,
+          partitionPruner = () => Utils.getPrunedPartition(partitionColumns,
+            filters, schema,
+            numBuckets, relationInfo.partitioningCols.length),
           commitTx = true, delayRollover = false,
           projection = Array.emptyIntArray, region = region)
 
@@ -179,7 +149,9 @@ class RowFormatRelation(
           connProperties,
           handledFilters,
           _partEval = () => relationInfo.partitions,
-          partitionPruner,
+          () => Utils.getPrunedPartition(partitionColumns,
+          filters, schema,
+          numBuckets, relationInfo.partitioningCols.length),
           relationInfo.catalogSchemaVersion,
           _commitTx = true, _delayRollover = false)
     }
