@@ -23,11 +23,11 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Random;
 
 import hydra.Log;
 import hydra.blackboard.AnyCyclicBarrier;
 import io.snappydata.hydra.cluster.SnappyBB;
-import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
@@ -41,7 +41,7 @@ public class SnappyConsistencyTest extends SnappyTest {
   public static DerbyTestUtils derbyTestUtils;
 
   public String updateStmt[] = {
-      "update table1 set code = case when coded=-1 then 0 else (coded+5) end;",
+      "update table1 set code = case when code=-1 then 0 else (code+5) end ",
   };
 
   public String selectStmt[] = {
@@ -55,7 +55,7 @@ public class SnappyConsistencyTest extends SnappyTest {
 
 
   public String deleteStmt[] = {
-      "delete from table1 where tid = ?",
+      "delete from table1 ",
    };
 
   protected static SnappyConsistencyTest testInstance;
@@ -141,6 +141,7 @@ public class SnappyConsistencyTest extends SnappyTest {
     if(SnappySchemaPrms.isTestUniqueKeys()){
       if(!query.contains("where"))
         query = query + " where ";
+      else query = query + " and ";
       query = query + " tid = " +  tid;
     }
     try {
@@ -158,7 +159,7 @@ public class SnappyConsistencyTest extends SnappyTest {
       while (afterDMLRS.next()) {
         after_result = afterDMLRS.getInt(1);
       }
-      if (!verifyAtomicity(before_result, after_result)) {
+      if (!verifyAtomicity(before_result, after_result, dmlOp)) {
         throw new TestException("Test failed to get atomic data during DML operations");
       }
     } catch (SQLException se) {
@@ -186,10 +187,10 @@ public class SnappyConsistencyTest extends SnappyTest {
     return dmlThreads.get(index);
   }
 
-  public static boolean verifyAtomicity(int rs_before, int rs_after) {
+  public static boolean verifyAtomicity(int rs_before, int rs_after, String op) {
     Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
         "after DML start : " + rs_after);
-    if(rs_before == rs_after)
+    if((rs_before == rs_after) || (rs_before %1000 == 0))
       return true;
     return false;
   }
@@ -266,6 +267,12 @@ public class SnappyConsistencyTest extends SnappyTest {
     int tid = getMyTid();
     String query = "select max(id) from table1";
     int maxID = 0;
+    ArrayList<Integer> dmlThreads = null;
+    if(isPopulate) {
+      if (SnappyBB.getBB().getSharedMap().containsKey("dmlThreads"))
+        dmlThreads = (ArrayList<Integer>) SnappyBB.getBB().getSharedMap().get("dmlThreads");
+      tid = dmlThreads.get(new Random().nextInt(dmlThreads.size()));
+    }
     Connection dConn = derbyTestUtils.getDerbyConnection();
     try {
       ResultSet rs = conn.createStatement().executeQuery(query);
@@ -292,6 +299,7 @@ public class SnappyConsistencyTest extends SnappyTest {
       ps.executeBatch();
       Log.getLogWriter().info("Inserted " + batchSize + " rows in the snappy table.");
       psDerby.executeBatch();
+      derbyTestUtils.closeDiscConnection(dConn, true);
 
     } catch( SQLException se) {
       throw new TestException("Caught Exception while performing bulk inserts", se);
@@ -309,6 +317,7 @@ public class SnappyConsistencyTest extends SnappyTest {
       conn.createStatement().execute(query);
       Log.getLogWriter().info("Performing batch update in derby..");
       dConn.createStatement().execute(query);
+      derbyTestUtils.closeDiscConnection(dConn, true);
     } catch (SQLException se) {
       throw new TestException("Got exception while executing batch update", se);
     }
@@ -326,8 +335,9 @@ public class SnappyConsistencyTest extends SnappyTest {
       conn.createStatement().execute(query);
       Log.getLogWriter().info("Performing delete in derby..");
       dConn.createStatement().execute(query);
+      derbyTestUtils.closeDiscConnection(dConn, true);
     } catch (SQLException se) {
-      throw new TestException("Got exception while executing batch delete", se);
+      throw new TestException("Got exception while executing bulk delete", se);
     }
   }
 
