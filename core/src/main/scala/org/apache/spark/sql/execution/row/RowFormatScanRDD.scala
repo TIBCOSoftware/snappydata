@@ -61,7 +61,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var connProperties: ConnectionProperties,
     @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition], protected val partitionPruner: () => Int,
+      Array.empty[Partition], protected val partitionPruner: () => Int = () => -1,
     protected var commitTx: Boolean,
     protected var delayRollover: Boolean, protected var projection: Array[Int],
     @transient protected val region: Option[LocalRegion])
@@ -353,7 +353,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
   }
 
   private def evaluatePartitions(): Array[Partition] = {
-    val region = Misc.getRegionForTable(tableName, true)
     partitionPruner() match {
       case -1 =>
         Array.empty[Partition]
@@ -361,15 +360,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         if (!session.partitionPruning) {
           Array.empty[Partition]
         } else {
-          val pr = region.asInstanceOf[PartitionedRegion]
-          val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
-          val prefNodes = new ArrayBuffer[String](2)
-          distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
-            case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
-            case _ =>
-          })
-          Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
-            pr.getTotalNumberOfBuckets, prefNodes))
+          Utils.getPartitions(region.get, bucketId)
         }
     }
   }
