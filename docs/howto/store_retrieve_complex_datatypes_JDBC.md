@@ -91,3 +91,5 @@ while (rs.next()) {
 
 
 ```
+
+**See also:**</br>[How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md)

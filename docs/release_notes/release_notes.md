@@ -79,7 +79,7 @@ The following table describes the download artifacts included in SnappyData 1.0.
 | ------------- |:-------------:| 
 |snappydata-1.0.2.1-bin.tar.gz| Full product binary (includes Hadoop 2.7) |
 |snappydata-1.0.2.1-without-hadoop-bin.tar.gz| Product without the Hadoop dependency JARs |
-|snappydata-jdbc_2.11-1.0.2.1.jar|Client (JDBC) JAR|
+|snappydata-jdbc_2.11-1.0.2.2.jar|Client (JDBC) JAR|
 |[snappydata-zeppelin_2.11-0.7.3.4.jar](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/download/v0.7.3.4/snappydata-zeppelin_2.11-0.7.3.4.jar)| The Zeppelin interpreter jar for SnappyData, compatible with Apache Zeppelin 0.7.3 |
 |[snappydata-ec2-0.8.2.tar.gz](https://github.com/SnappyDataInc/snappy-cloud-tools/releases/download/v0.8.2/snappydata-ec2-0.8.2.tar.gz)|Script to Launch SnappyData cluster on AWS EC2 instances
 
