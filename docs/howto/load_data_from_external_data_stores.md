@@ -3,7 +3,9 @@
 
 SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.
 
-## Example - Loading data from CSV file using SQL
+## Example - Loading Data from CSV File using SQL
+
+The following example demonstrates how you can load data from the CSV file, in a local file system, by using SQL:
 
 ```pre
 // Create an external table based on CSV file
@@ -14,7 +16,7 @@ CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_
 ```
 
 !!! Tip
-	Similarly, you can create an external table for all data sources and use SQL "insert into" query to load data. For more information on creating external tables refer to, [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table/)
+	Similarly, you can create an external table for all data sources and use SQL "insert into" query to load data. For more information on creating external tables refer to, [CREATE EXTERNAL TABLE](../reference/sql_reference/create-external-table/).
 
 
 ## Example - Loading CSV Files from HDFS using API
@@ -73,7 +75,7 @@ val df = session.createDataFrame(rdd, ds.schema)
 df.write.format("column").saveAsTable("columnTable")
 ```
 
-## Importing Data using JDBC from a relational DB
+## Importing Data using JDBC from Rrelational DB
 
 !!! Note
 	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
