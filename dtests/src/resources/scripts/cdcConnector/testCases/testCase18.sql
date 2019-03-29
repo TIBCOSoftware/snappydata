@@ -1,1 +1,0 @@
-update [testdatabase].[dbo].[ADJUSTMENT] set DESCR = N'iTTTzT' where adj_id = 95000010093;
