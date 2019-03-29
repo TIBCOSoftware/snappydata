@@ -387,6 +387,10 @@ class QuickLauncher extends LauncherBase {
     commandLine.add("-Dorg.apache.commons.logging.Log=" +
         "org.apache.commons.logging.impl.Log4JLogger");
     setDefaultVMArgs(options, hostData, commandLine);
+    // For lead node set the member-weight to be 17
+    if (launcherClass.equals("io.snappydata.tools.LeaderLauncher")) {
+      vmArgs.add("-Dgemfire.member-weight=17");
+    }
     // add the provided JVM args after the defaults
     if (!vmArgs.isEmpty()) {
       commandLine.addAll(vmArgs);
