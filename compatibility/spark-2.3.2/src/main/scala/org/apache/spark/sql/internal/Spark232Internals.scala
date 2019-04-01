@@ -49,7 +49,7 @@ import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, 
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
 import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
@@ -510,7 +510,7 @@ final class SnappyCacheManager extends CacheManager {
 
 final class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
-    extends SnappyHiveExternalCatalog {
+    extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
 
   override protected def doCreateDatabase(schemaDefinition: CatalogDatabase,
       ignoreIfExists: Boolean): Unit = createDatabaseImpl(schemaDefinition, ignoreIfExists)
