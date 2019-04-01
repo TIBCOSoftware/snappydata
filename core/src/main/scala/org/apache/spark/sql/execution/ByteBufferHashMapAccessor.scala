@@ -98,8 +98,8 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
               $holderBaseObject, $holderBaseOffset , $len);
            $varName = ${classOf[UTF8String].getName}.
            fromAddress($holderBaseObject, $holderBaseOffset, $len);
-             $currentValueOffsetTerm += len;
-           boolean $nullVar = false;"
+             $currentValueOffsetTerm += $len;
+           boolean $nullVar = false;
           """.stripMargin, nullVar, varName)
         }
         case x =>
@@ -121,7 +121,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
           }; " +
             s"""
                 \n $currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;
-             System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+            // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
              """,
             nullVar, varName)
 
@@ -142,7 +142,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
         case LongType => s"long ${varName} = 0;"
         case FloatType => s"float ${varName} = 0;"
         case DoubleType => s"double ${varName} = 0;"
-        case StringType => s"${classOf[UTF8String].getName} ${varName} = 0;"
+        case StringType => s"${classOf[UTF8String].getName} ${varName} = null;"
       }
     }
     }.mkString("\n")
@@ -313,12 +313,14 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
               s"\n $currentOffset += 8; \n"
             case t if t =:= typeOf[Decimal] =>
               throw new UnsupportedOperationException("implement decimal")
-            case _ => throw new UnsupportedOperationException("unknown type" + dt)
+            case t if t =:= typeOf[UTF8String]  =>  s"\n ${plaformClass}.putInt($baseObjectTerm, $currentOffset, " +
+              s"$variable.numBytes());" +
+              s"\n $currentOffset += 4; \n   $variable.writeToMemory($baseObjectTerm, $currentOffset);" +
+              s"\n $currentOffset += $variable.numBytes(); \n"
+            case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }
-          case StringType =>  s"\n ${plaformClass}.putInt($baseObjectTerm, $currentOffset, " +
-            s"$variable.numBytes());" +
-            s"\n $currentOffset += 4; \n   $variable.writeToMemory($baseObjectTerm, $currentOffset);" +
-            s"\n $currentOffset += $variable.numBytes(); \n"
+          case _ => throw new UnsupportedOperationException("unknown type " + dt)
+
         })
         codex
     }}.mkString("")}
