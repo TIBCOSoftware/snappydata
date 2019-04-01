@@ -88,6 +88,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
     if (isStabilityTest) {
       query = "set snappydata.sql.hashAggregateSize=-1";
       conn.createStatement().executeUpdate(query);
+      query = "set spark.driver.maxResultSize=6g";
+      conn.createStatement().executeUpdate(query);
       /* query = "CREATE OR replace VIEW review_count_GT_10 AS SELECT * FROM (SELECT COUNT(*) AS " +
           "review_count,PRODUCT_ID FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count > 10";
       conn.createStatement().executeUpdate(query);
