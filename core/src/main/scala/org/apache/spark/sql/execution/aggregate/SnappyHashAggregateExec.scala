@@ -624,7 +624,7 @@ case class SnappyHashAggregateExec(
           long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
           $childProduce
 
-          System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
+          // System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
         }
        """)
 
