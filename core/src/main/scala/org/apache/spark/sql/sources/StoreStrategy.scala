@@ -43,7 +43,7 @@ object StoreStrategy extends Strategy with SparkSupport {
       val l = insert.table.asInstanceOf[LogicalRelation]
       val p = l.relation.asInstanceOf[PlanInsertableRelation]
       val preAction = if (internals.getOverwriteOption(insert)) () => p.truncate() else () => ()
-      ExecutePlan(p.getInsertPlan(l, planLater(insert.query)), preAction) :: Nil
+      ExecutePlan(p.getInsertPlan(l, planLater(insert.children.head)), preAction) :: Nil
 
     case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil

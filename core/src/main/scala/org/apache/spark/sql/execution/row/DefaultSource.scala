@@ -81,7 +81,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     } finally {
       if (!success && relation.tableCreated) {
         // remove the catalog entry
-        session.sessionCatalog.externalCatalog.dropTable(relation.schemaName,
+        session.sessionCatalog.snappyExternalCatalog.dropTable(relation.schemaName,
           relation.tableName, ignoreIfNotExists = true, purge = false)
         // destroy the relation
         relation.destroy(ifExists = true)

@@ -19,14 +19,17 @@ package org.apache.spark.sql.internal
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
+import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
@@ -43,11 +46,12 @@ import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, 
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
 import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
-import org.apache.spark.{SparkContext, SparkException}
+import org.apache.spark.{SparkConf, SparkContext, SparkException}
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.1.0.
@@ -444,6 +448,13 @@ class Spark210Internals extends SparkInternals {
     partition.toRow(partitionSchema)
   }
 
+  override def loadDynamicPartitions(externalCatalog: ExternalCatalog, schema: String,
+      table: String, loadPath: String, partition: TablePartitionSpec, replace: Boolean,
+      numDP: Int, holdDDLTime: Boolean): Unit = {
+    externalCatalog.loadDynamicPartitions(schema, table, loadPath, partition, replace,
+      numDP, holdDDLTime)
+  }
+
   override def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
       stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
     throw new ParseException(s"ALTER TABLE STATS not supported in Spark $version")
@@ -457,9 +468,23 @@ class Spark210Internals extends SparkInternals {
   override def columnStatToMap(stat: ColumnStat, colName: String,
       dataType: DataType): Map[String, String] = stat.toMap
 
+  override def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+      createTime: Long): SnappyHiveExternalCatalog = {
+    new SnappyHiveExternalCatalogImpl(conf, hadoopConf, createTime)
+  }
+
   override def newSmartConnectorExternalCatalog(
       session: SparkSession): SmartConnectorExternalCatalog = {
     new SmartConnectorExternalCatalogImpl(session)
+  }
+
+  override def newSnappySessionCatalog(sessionState: SnappySessionState,
+      externalCatalog: SnappyExternalCatalog, globalTempViewManager: GlobalTempViewManager,
+      functionRegistry: FunctionRegistry, conf: SQLConf,
+      hadoopConf: Configuration): SnappySessionCatalog = {
+    new SnappySessionCatalogImpl(sessionState.snappySession, externalCatalog, globalTempViewManager,
+      sessionState.functionResourceLoader, functionRegistry, sessionState.sqlParser,
+      conf, hadoopConf)
   }
 
   override def lookupDataSource(provider: String, conf: => SQLConf): Class[_] =
@@ -541,7 +566,53 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-final class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
+class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
+    override val hadoopConf: Configuration, override val createTime: Long)
+    extends SnappyHiveExternalCatalog {
+
+  override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
+    createDatabaseImpl(schemaDefinition, ignoreIfExists)
+
+  override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit =
+    dropDatabaseImpl(schema, ignoreIfNotExists, cascade)
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit =
+    alterDatabaseImpl(schemaDefinition)
+
+  override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit =
+    createTableImpl(table, ignoreIfExists)
+
+  override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = {
+    dropTableImpl(schema, table, ignoreIfNotExists, purge)
+  }
+
+  override def renameTable(schema: String, oldName: String, newName: String): Unit =
+    renameTableImpl(schema, oldName, newName)
+
+  override def alterTable(table: CatalogTable): Unit = alterTableImpl(table)
+
+  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
+    loadDynamicPartitionsImpl(schema, table, loadPath, partition, replace, numDP, holdDDLTime)
+  }
+
+  override def listPartitionsByFilter(schema: String, table: String,
+      predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
+    listPartitionsByFilterImpl(schema, table, predicates)
+  }
+
+  override def createFunction(schema: String, function: CatalogFunction): Unit =
+    createFunctionImpl(schema, function)
+
+  override def dropFunction(schema: String, funcName: String): Unit =
+    dropFunctionImpl(schema, funcName)
+
+  override def renameFunction(schema: String, oldName: String, newName: String): Unit =
+    renameFunctionImpl(schema, oldName, newName)
+}
+
+class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
   override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
@@ -566,9 +637,6 @@ final class SmartConnectorExternalCatalogImpl(override val session: SparkSession
 
   override def alterTable(table: CatalogTable): Unit = alterTableImpl(table)
 
-  override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
-    alterTableSchemaImpl(schemaName, table, newSchema)
-
   override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
       partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
     loadDynamicPartitionsImpl(schema, table, loadPath, partition, replace, numDP, holdDDLTime)
@@ -587,4 +655,32 @@ final class SmartConnectorExternalCatalogImpl(override val session: SparkSession
 
   override def renameFunction(schema: String, oldName: String, newName: String): Unit =
     renameFunctionImpl(schema, oldName, newName)
+}
+
+final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
+    override val snappyExternalCatalog: SnappyExternalCatalog,
+    override val globalTempViewManager: GlobalTempViewManager,
+    override val functionResourceLoader: FunctionResourceLoader,
+    override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
+    override val sqlConf: SQLConf, hadoopConf: Configuration)
+    extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionResourceLoader,
+      functionRegistry, sqlConf, hadoopConf) with SnappySessionCatalog {
+
+  override def getTableMetadataOption(name: TableIdentifier): Option[CatalogTable] = {
+    super.getTableMetadataOption(name) match {
+      case None => None
+      case Some(table) => Some(convertCharTypes(table))
+    }
+  }
+
+  override protected def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan = child
+
+  override protected def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
+    SimpleCatalogRelation(schemaName, table)
+
+  override def lookupRelation(name: TableIdentifier, alias: Option[String]): LogicalPlan =
+    lookupRelationImpl(name, alias)
+
+  override def makeFunctionBuilder(name: String, functionClassName: String): FunctionBuilder =
+    makeFunctionBuilderImpl(name, functionClassName)
 }

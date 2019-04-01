@@ -101,7 +101,8 @@ allprojects {
     vendorName = 'SnappyData, Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = '2.3.2'
+    sparkVersion = rootProject.hasProperty('spark.connector.version')
+        ? rootProject.property('spark.connector.version') : '2.3.2'
     snappySparkVersion = '2.1.1.4'
 
     sparkOldVersion = '2.1.1'
