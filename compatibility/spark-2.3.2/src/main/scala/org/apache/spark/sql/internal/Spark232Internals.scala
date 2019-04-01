@@ -22,15 +22,18 @@ import java.nio.file.Paths
 
 import scala.collection.mutable
 
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
+import org.apache.hadoop.conf.Configuration
 
-import org.apache.spark.SparkContext
+import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
@@ -46,9 +49,11 @@ import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, 
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
 import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.util.Utils
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.3.2.
@@ -109,7 +114,7 @@ class Spark232Internals extends SparkInternals {
   override def copyPredicateSubquery(expr: Expression, newPlan: LogicalPlan,
       newExprId: ExprId): Expression = {
     throw new UnsupportedOperationException(
-      "unexpected copyPredicateSubquery call in Spark 2.3 module")
+      s"unexpected copyPredicateSubquery call in Spark $version module")
   }
 
   override def newWholeStagePlan(plan: SparkPlan): WholeStageCodegenExec = {
@@ -144,15 +149,13 @@ class Spark232Internals extends SparkInternals {
   }
 
   def clearSQLListener(): Unit = {
-    // no global SQLListener in Spark 2.3
+    // no global SQLListener in Spark 2.3.x
   }
 
   override def createViewSQL(session: SparkSession, plan: LogicalPlan,
       originalText: Option[String]): String = originalText match {
     case Some(viewSQL) => viewSQL
-    case None =>
-      throw new AnalysisException(
-        "Cannot create a persisted VIEW from the Dataset API")
+    case None => throw new AnalysisException("Cannot create a persisted VIEW from the Dataset API")
   }
 
   override def createView(desc: CatalogTable, output: Seq[Attribute],
@@ -376,6 +379,16 @@ class Spark232Internals extends SparkInternals {
     partition.toRow(partitionSchema, defaultTimeZoneId)
   }
 
+  override def loadDynamicPartitions(externalCatalog: ExternalCatalog, schema: String,
+      table: String, loadPath: String, partition: TablePartitionSpec, replace: Boolean,
+      numDP: Int, holdDDLTime: Boolean): Unit = {
+    if (holdDDLTime) {
+      throw new UnsupportedOperationException(
+        s"unexpected loadDynamicPartitions with holdDDLTime=true in Spark $version module")
+    }
+    externalCatalog.loadDynamicPartitions(schema, table, loadPath, partition, replace, numDP)
+  }
+
   override def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
       stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit = {
     val catalogStats = stats match {
@@ -391,9 +404,27 @@ class Spark232Internals extends SparkInternals {
   override def columnStatToMap(stat: ColumnStat, colName: String,
       dataType: DataType): Map[String, String] = stat.toMap(colName, dataType)
 
+  override def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+      createTime: Long): SnappyHiveExternalCatalog = {
+    new SnappyHiveExternalCatalogImpl(conf, hadoopConf, createTime)
+  }
+
   override def newSmartConnectorExternalCatalog(
       session: SparkSession): SmartConnectorExternalCatalog = {
     new SmartConnectorExternalCatalogImpl(session)
+  }
+
+  override def newSnappySessionCatalog(sessionState: SnappySessionState,
+      externalCatalog: SnappyExternalCatalog, globalTempViewManager: GlobalTempViewManager,
+      functionRegistry: FunctionRegistry, conf: SQLConf,
+      hadoopConf: Configuration): SnappySessionCatalog = {
+    val session = sessionState.snappySession
+    val functionResourceLoader = externalCatalog match {
+      case c: SnappyHiveExternalCatalog => new HiveSessionResourceLoader(session, c.client())
+      case _ => new SessionResourceLoader(session)
+    }
+    new SnappySessionCatalogImpl(session, externalCatalog, globalTempViewManager,
+      functionResourceLoader, functionRegistry, sessionState.sqlParser, conf, hadoopConf)
   }
 
   override def lookupDataSource(provider: String, conf: => SQLConf): Class[_] =
@@ -415,7 +446,7 @@ class Spark232Internals extends SparkInternals {
       aggregateExpressions: Seq[AggregateExpression], resultExpressions: Seq[NamedExpression],
       planChild: () => SparkPlan): Seq[SparkPlan] = {
     throw new UnsupportedOperationException(
-      "unexpected planAggregateWithoutPartial call in Spark 2.3 module")
+      s"unexpected planAggregateWithoutPartial call in Spark $version module")
   }
 
   override def compile(code: CodeAndComment): GeneratedClass = CodeGenerator.compile(code)._1
@@ -477,6 +508,64 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
+final class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
+    override val hadoopConf: Configuration, override val createTime: Long)
+    extends SnappyHiveExternalCatalog {
+
+  override protected def doCreateDatabase(schemaDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit = createDatabaseImpl(schemaDefinition, ignoreIfExists)
+
+  override protected def doDropDatabase(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = dropDatabaseImpl(schema, ignoreIfNotExists, cascade)
+
+  override protected def doAlterDatabase(schemaDefinition: CatalogDatabase): Unit =
+    alterDatabaseImpl(schemaDefinition)
+
+  override protected def doCreateTable(table: CatalogTable, ignoreIfExists: Boolean): Unit =
+    createTableImpl(table, ignoreIfExists)
+
+  override protected def doDropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = dropTableImpl(schema, table, ignoreIfNotExists, purge)
+
+  override protected def doRenameTable(schema: String, oldName: String, newName: String): Unit =
+    renameTableImpl(schema, oldName, newName)
+
+  override protected def doAlterTable(table: CatalogTable): Unit = alterTableImpl(table)
+
+  override protected def doAlterTableDataSchema(schemaName: String, table: String,
+      newSchema: StructType): Unit = alterTableSchemaImpl(schemaName, table, newSchema)
+
+  override protected def doAlterTableStats(schema: String, table: String,
+      stats: Option[CatalogStatistics]): Unit = stats match {
+    case None => alterTableStatsImpl(schema, table, None)
+    case Some(s) => alterTableStatsImpl(schema, table,
+      Some((s.sizeInBytes, s.rowCount, s.colStats)))
+  }
+
+  override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int): Unit = {
+    loadDynamicPartitionsImpl(schema, table, loadPath, partition, replace, numDP,
+      holdDDLTime = false)
+  }
+
+  override def listPartitionsByFilter(schema: String, table: String, predicates: Seq[Expression],
+      defaultTimeZoneId: String): Seq[CatalogTablePartition] = {
+    listPartitionsByFilterImpl(schema, table, predicates, defaultTimeZoneId)
+  }
+
+  override protected def doCreateFunction(schema: String, function: CatalogFunction): Unit =
+    createFunctionImpl(schema, function)
+
+  override protected def doDropFunction(schema: String, funcName: String): Unit =
+    dropFunctionImpl(schema, funcName)
+
+  override protected def doAlterFunction(schema: String, function: CatalogFunction): Unit =
+    alterFunctionImpl(schema, function)
+
+  override protected def doRenameFunction(schema: String, oldName: String, newName: String): Unit =
+    renameFunctionImpl(schema, oldName, newName)
+}
+
 final class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
@@ -532,4 +621,40 @@ final class SmartConnectorExternalCatalogImpl(override val session: SparkSession
 
   override protected def doRenameFunction(schema: String, oldName: String, newName: String): Unit =
     renameFunctionImpl(schema, oldName, newName)
+}
+
+final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
+    override val snappyExternalCatalog: SnappyExternalCatalog,
+    override val globalTempViewManager: GlobalTempViewManager,
+    override val functionResourceLoader: FunctionResourceLoader,
+    override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
+    override val sqlConf: SQLConf, hadoopConf: Configuration)
+    extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionRegistry,
+      sqlConf, hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog {
+
+  override protected def newView(table: CatalogTable, child: LogicalPlan): LogicalPlan =
+    View(desc = table, output = table.schema.toAttributes, child)
+
+  override protected def newCatalogRelation(schemaName: String, table: CatalogTable): LogicalPlan =
+    UnresolvedCatalogRelation(table)
+
+  override def lookupRelation(name: TableIdentifier): LogicalPlan = lookupRelationImpl(name, None)
+
+  override def registerFunction(funcDefinition: CatalogFunction,
+      overrideIfExists: Boolean, functionBuilder: Option[FunctionBuilder]): Unit = {
+    val func = funcDefinition.identifier
+    if (functionRegistry.functionExists(func) && !overrideIfExists) {
+      throw new AnalysisException(s"Function $func already exists")
+    }
+    val info = new ExpressionInfo(funcDefinition.className, func.database.orNull, func.funcName)
+    val builder = functionBuilder.getOrElse {
+      val className = funcDefinition.className
+      if (!Utils.classIsLoadable(className)) {
+        throw new AnalysisException(s"Can not load class '$className' when registering " +
+            s"the function '$func', please make sure it is on the classpath")
+      }
+      makeFunctionBuilderImpl(func.unquotedString, className)
+    }
+    functionRegistry.registerFunction(func, info, builder)
+  }
 }

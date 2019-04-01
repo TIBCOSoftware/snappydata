@@ -119,7 +119,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
 
   def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 
-  def externalCatalog: SnappyExternalCatalog = sessionState.catalog.externalCatalog
+  def externalCatalog: SnappyExternalCatalog = sessionState.catalog.snappyExternalCatalog
 
   def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
 

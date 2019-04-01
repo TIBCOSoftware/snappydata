@@ -16,12 +16,15 @@
  */
 package org.apache.spark.sql
 
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
+import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.UnresolvedTableValuedFunction
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, GeneratedClass}
@@ -34,10 +37,11 @@ import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
 import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionState}
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
+import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionCatalog, SnappySessionState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
-import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
  * Common interface for Spark internal API used by the core module.
@@ -249,7 +253,9 @@ trait SparkInternals extends Logging {
    */
   def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias
 
-  /** Create an alias. */
+  /**
+   * Create an alias with given parameters and optionally copying other fields from existing Alias.
+   */
   def newAlias(child: Expression, name: String, copyAlias: Option[NamedExpression]): Alias
 
   /**
@@ -398,6 +404,11 @@ trait SparkInternals extends Logging {
   def catalogTablePartitionToRow(partition: CatalogTablePartition,
       partitionSchema: StructType, defaultTimeZoneId: String): InternalRow
 
+  /** Query catalog to load dynamic partitions defined in given Spark table. */
+  def loadDynamicPartitions(externalCatalog: ExternalCatalog, schema: String,
+      table: String, loadPath: String, partition: TablePartitionSpec, replace: Boolean,
+      numDP: Int, holdDDLTime: Boolean): Unit
+
   /** Alter table statistics in the ExternalCatalog if possible else throw an exception */
   def alterTableStats(externalCatalog: ExternalCatalog, schema: String, table: String,
       stats: Option[(BigInt, Option[BigInt], Map[String, ColumnStat])]): Unit
@@ -410,10 +421,25 @@ trait SparkInternals extends Logging {
   def columnStatToMap(stat: ColumnStat, colName: String, dataType: DataType): Map[String, String]
 
   /**
-   * Create a new instance of SmartConnectorExternalCatalog. The method overrides have changed
-   * across Spark versions.
+   * Create a new instance of SnappyHiveExternalCatalog. The method overrides in
+   * ExternalCatalog have changed across Spark versions.
+   */
+  def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+      createTime: Long): SnappyHiveExternalCatalog
+
+  /**
+   * Create a new instance of SmartConnectorExternalCatalog. The method overrides in
+   * ExternalCatalog have changed across Spark versions.
    */
   def newSmartConnectorExternalCatalog(session: SparkSession): SmartConnectorExternalCatalog
+
+  /**
+   * Create a new implementation of SnappySession with given parameters.
+   */
+  def newSnappySessionCatalog(sessionState: SnappySessionState,
+      externalCatalog: SnappyExternalCatalog, globalTempViewManager: GlobalTempViewManager,
+      functionRegistry: FunctionRegistry, conf: SQLConf,
+      hadoopConf: Configuration): SnappySessionCatalog
 
   /** Lookup the data source for a given provider. */
   def lookupDataSource(provider: String, conf: => SQLConf): Class[_]

@@ -16,15 +16,19 @@
  */
 package org.apache.spark.sql.internal
 
-import org.apache.spark.SparkException
+import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
+import org.apache.hadoop.conf.Configuration
+
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogStorageFormat, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, LogicalPlan, Statistics}
 import org.apache.spark.sql.execution.CacheManager
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.{SparkConf, SparkException}
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.1.1.
@@ -69,6 +73,16 @@ class Spark211Internals extends Spark210Internals {
   override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
     catalogTable.schemaPreservesCase
 
+  override def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+      createTime: Long): SnappyHiveExternalCatalog = {
+    new SnappyHiveExternalCatalog211Impl(conf, hadoopConf, createTime)
+  }
+
+  override def newSmartConnectorExternalCatalog(
+      session: SparkSession): SmartConnectorExternalCatalog = {
+    new SmartConnectorExternalCatalog211Impl(session)
+  }
+
   override def newCacheManager(): CacheManager = new SnappyCacheManager
 }
 
@@ -98,4 +112,19 @@ final class SnappyCacheManager extends CacheManager {
     super.recacheByPath(session, resourcePath)
     session.asInstanceOf[SnappySession].clearPlanCache()
   }
+}
+
+final class SnappyHiveExternalCatalog211Impl(conf: SparkConf,
+    hadoopConf: Configuration, createTime: Long)
+    extends SnappyHiveExternalCatalogImpl(conf, hadoopConf, createTime) {
+
+  override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
+    alterTableSchemaImpl(schemaName, table, newSchema)
+}
+
+final class SmartConnectorExternalCatalog211Impl(session: SparkSession)
+    extends SmartConnectorExternalCatalogImpl(session) {
+
+  override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
+    alterTableSchemaImpl(schemaName, table, newSchema)
 }

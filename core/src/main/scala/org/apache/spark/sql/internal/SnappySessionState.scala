@@ -663,14 +663,10 @@ class SnappySessionState(val snappySession: SnappySession)
    * Internal catalog for managing table and database states.
    */
   override lazy val catalog: SnappySessionCatalog = {
-    new SnappySessionCatalog(
+    internals.newSnappySessionCatalog(this,
       snappySharedState.getExternalCatalogInstance(snappySession),
-      snappySession,
       snappySession.sharedState.globalTempViewManager,
-      functionResourceLoader,
-      functionRegistry,
-      conf,
-      newHadoopConf())
+      functionRegistry, conf, newHadoopConf())
   }
 
   protected[sql] def queryPreparations(

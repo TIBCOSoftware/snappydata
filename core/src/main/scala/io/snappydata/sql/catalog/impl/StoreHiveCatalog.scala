@@ -719,7 +719,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
       val table = request.getNames.get(1)
       val path = request.getNames.get(2)
       checkSchemaPermission(schema, table, user)
-      externalCatalog.loadDynamicPartitions(schema, table, path,
+      internals.loadDynamicPartitions(externalCatalog, schema, table, path,
         request.getProperties.get(0).asScala.toMap, request.otherFlags.get(0) != 0,
         request.otherFlags.get(1), request.otherFlags.get(2) != 0)
 
