@@ -42,7 +42,7 @@ import io.snappydata.ResultSetWithNull
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.InternalRow
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
@@ -83,7 +83,15 @@ private[sql] final case class ColumnTableScan(
 
   override val nodeName: String = "ColumnTableScan"
 
-  override def sameResult(plan: SparkPlan): Boolean = plan match {
+  lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
+    case null => None
+    case r => sqlContext match {
+      case null => None
+      case c => Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table))
+    }
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
     case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
         r.numBuckets == numBuckets && r.schema == schema
     case _ => false
@@ -132,9 +140,10 @@ private[sql] final case class ColumnTableScan(
 
   private lazy val otherRDDsPartitionIndex = rdd.getNumPartitions
 
-
-  @transient private val session =
-    Option(sqlContext).map(_.sparkSession.asInstanceOf[SnappySession])
+  private def session = sqlContext match {
+    case null => None
+    case c => Some(c.sparkSession.asInstanceOf[SnappySession])
+  }
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     allRDDs.asInstanceOf[RDD[InternalRow]] :: Nil

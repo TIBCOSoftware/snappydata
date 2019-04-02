@@ -22,11 +22,13 @@ import com.gemstone.gemfire.internal.shared.ClientSharedData
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, ResultWasNull}
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan, SparkPlan}
+import org.apache.spark.sql.execution.{PartitionedDataSourceScan, PartitionedPhysicalScan}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.types._
 
@@ -55,7 +57,15 @@ private[sql] final case class RowTableScan(
 
   override val nodeName: String = "RowTableScan"
 
-  override def sameResult(plan: SparkPlan): Boolean = plan match {
+  lazy val tableIdentifier: Option[TableIdentifier] = baseRelation match {
+    case null => None
+    case r => sqlContext match {
+      case null => None
+      case c => Some(c.sparkSession.asInstanceOf[SnappySession].tableIdentifier(r.table))
+    }
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
     case r: RowTableScan => r.table == table && r.numBuckets == numBuckets && r.schema == schema
     case _ => false
   }

@@ -66,6 +66,8 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   override lazy val metrics: Map[String, SQLMetric] = getMetrics
 
+  def metadata: Map[String, String] = Map.empty
+
   private lazy val extraInformation = if (relation != null) {
     relation.toString
   } else {
