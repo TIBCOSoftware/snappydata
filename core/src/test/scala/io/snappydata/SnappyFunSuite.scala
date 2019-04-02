@@ -29,14 +29,14 @@ import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
-import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, PredicateSubquery, ScalarSubquery}
+import org.apache.spark.sql.catalyst.expressions.{Alias, And, AttributeReference, EqualNullSafe, EqualTo, Exists, ExprId, Expression, ListQuery, PredicateHelper, ScalarSubquery}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, Join, LogicalPlan, OneRowRelation, Sample}
 import org.apache.spark.sql.catalyst.util.{sideBySide, stackTraceToString}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row, SnappySession}
+import org.apache.spark.sql.{AnalysisException, DataFrame, Dataset, QueryTest, Row, SnappySession, SparkSupport}
 // scalastyle:off
 import org.scalatest.{BeforeAndAfterAll, FunSuite, Outcome, Retries}
 // scalastyle:on
@@ -206,7 +206,7 @@ abstract class SnappyFunSuite
     SnappyFunSuite.checkAnswer(df, expectedAnswer)
 }
 
-object SnappyFunSuite extends Assertions {
+object SnappyFunSuite extends Assertions with SparkSupport {
   def checkAnswer(df: => DataFrame, expectedAnswer: Seq[Row]): Unit = {
     val analyzedDF = try df catch {
       case ae: AnalysisException =>
@@ -252,7 +252,7 @@ object SnappyFunSuite extends Assertions {
       val rs = stmt.getResultSet
       val schema = JdbcUtils.getSchema(rs, SnappyStoreDialect)
       val rows = Utils.resultSetToSparkInternalRows(rs, schema).map(_.copy()).toSeq
-      session.internalCreateDataFrame(session.sparkContext.makeRDD(rows), schema)
+      internals.internalCreateDataFrame(session, session.sparkContext.makeRDD(rows), schema)
     } else {
       implicit val encoder: ExpressionEncoder[Row] = RowEncoder(StructType(Nil))
       session.createDataset[Row](Nil)

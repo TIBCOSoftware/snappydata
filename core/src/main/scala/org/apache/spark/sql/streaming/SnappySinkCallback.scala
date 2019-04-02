@@ -21,6 +21,7 @@ import java.sql.SQLException
 import java.util.NoSuchElementException
 
 import io.snappydata.Property._
+import io.snappydata.StreamingConstants.EventType._
 import io.snappydata.StreamingConstants._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
@@ -32,9 +33,6 @@ import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
-import io.snappydata.StreamingConstants.EventType._
-import io.snappydata.util.ServiceUtils
-import org.apache.spark.storage.StorageLevel
 
 /**
  * Should be implemented by clients who wants to override default behavior provided by
@@ -90,8 +88,8 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
 }
 
-case class SnappyStoreSink(snappySession: SnappySession,
-    parameters: Map[String, String], sinkCallback: SnappySinkCallback) extends Sink {
+case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String, String],
+    sinkCallback: SnappySinkCallback) extends Sink with SparkSupport {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
@@ -137,7 +135,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
    * for a detailed discussion.
    */
   def convert(ds: DataFrame): DataFrame = {
-    snappySession.internalCreateDataFrame(
+    internals.internalCreateDataFrame(snappySession,
       ds.queryExecution.toRdd,
       StructType(ds.schema.fields))
   }

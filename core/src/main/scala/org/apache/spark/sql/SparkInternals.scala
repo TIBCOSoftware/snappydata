@@ -347,6 +347,12 @@ trait SparkInternals extends Logging {
       catalogTable: Option[CatalogTable], isStreaming: Boolean): LogicalRelation
 
   /**
+   * Create a DataFrame out of an RDD of InternalRows.
+   */
+  def internalCreateDataFrame(session: SparkSession, catalystRows: RDD[InternalRow],
+    schema: StructType, isStreaming: Boolean = false): Dataset[Row]
+
+  /**
    * Create a new [[RowDataSourceScanExec]] with the given parameters.
    */
   def newRowDataSourceScanExec(fullOutput: Seq[Attribute], requiredColumnsIndex: Seq[Int],
@@ -492,6 +498,11 @@ trait SparkInternals extends Logging {
    */
   def newJSONOptions(parameters: Map[String, String],
       session: Option[SparkSession]): JSONOptions
+
+  /**
+   * Create a new instance of [[SnappySessionState]] appropriate for the current Spark version.
+   */
+  def newSnappySessionState(snappySession: SnappySession): SnappySessionState
 
   /**
    * Create a new optimizer with extended rules for SnappyData.

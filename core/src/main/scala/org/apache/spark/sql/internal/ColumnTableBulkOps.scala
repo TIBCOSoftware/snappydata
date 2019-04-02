@@ -182,7 +182,7 @@ object ColumnTableBulkOps extends SparkSupport {
     val session = sparkSession.asInstanceOf[SnappySession]
     val tableIdent = session.tableIdentifier(resolvedName)
     val encoder = RowEncoder(schema)
-    val ds = session.internalCreateDataFrame(session.sparkContext.parallelize(
+    val ds = internals.internalCreateDataFrame(session, session.sparkContext.parallelize(
       rows.map(encoder.toRow)), schema)
     val plan = if (putInto) {
       PutIntoTable(

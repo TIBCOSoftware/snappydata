@@ -213,7 +213,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   }
 
   private def setPoolForExecution(): Unit = {
-    var pool = snappySession.sessionState.conf.activeSchedulerPool
+    var pool = snappySession.sessionState.snappyConf.activeSchedulerPool
     // Check if it is pruned query, execute it automatically on the low latency pool
     if (isLowLatencyQuery && pool == "default") {
       if (snappySession.sparkContext.getPoolForName(Constant.LOW_LATENCY_POOL).isDefined) {
@@ -258,7 +258,7 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
       prepared = false
       // reset the pool
       if (isLowLatencyQuery) {
-        val pool = snappySession.sessionState.conf.activeSchedulerPool
+        val pool = snappySession.sessionState.snappyConf.activeSchedulerPool
         snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
       }
       // clear the shuffle dependencies asynchronously after the execution.
@@ -283,8 +283,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
   override def collect(): Array[Row] = {
     collectInternal().map(boundEnc.fromRow).toArray
   }
-
-  override def withNewExecutionId[T](body: => T): T = withNewExecutionIdTiming(body)._1
 
   private def withNewExecutionIdTiming[T](body: => T): (T, Long) = if (noSideEffects) {
     var didPrepare = false

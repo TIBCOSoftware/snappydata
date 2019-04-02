@@ -812,7 +812,9 @@ case class DMLExternalTable(
     tableName: TableIdentifier,
     query: LogicalPlan,
     command: String)
-    extends LeafNode with Command {
+    extends Command {
+
+  override def producedAttributes: AttributeSet = outputSet
 
   override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
 
