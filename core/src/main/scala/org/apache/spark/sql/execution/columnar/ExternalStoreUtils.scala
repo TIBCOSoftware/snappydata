@@ -19,14 +19,18 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
+import javax.naming.NameNotFoundException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.auth.callback.UserAuthenticator
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
+import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.{AuthenticationServiceBase, LDAPAuthenticationSchemeImpl}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
@@ -206,6 +210,18 @@ object ExternalStoreUtils {
       }
     })
     new CaseInsensitiveMap(optMap.toMap)
+  }
+
+  def getLdapGroupsForUser(userId: String): Array[String] = {
+    val auth = Misc.getMemStoreBooting.getDatabase.getAuthenticationService.
+      asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
+
+    auth match {
+      case x: LDAPAuthenticationSchemeImpl => x.getLdapGroupsOfUser(userId).
+        toArray[String](Array.empty)
+      case _ => throw new NameNotFoundException("Require LDAP authentication scheme for " +
+        "LDAP group support but is " + auth)
+    }
   }
 
   def getExpandedGranteesIterator(grantees: Seq[String]): Iterator[String] = {
