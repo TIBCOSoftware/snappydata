@@ -19,6 +19,7 @@ package org.apache.spark.sql.internal
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
+import io.snappydata.Property.HashAggregateSize
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
@@ -29,26 +30,29 @@ import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, UnresolvedRelation, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, FunctionRegistry, NoSuchTableException, UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameBoundary, FrameType, Generator, Literal, NamedExpression, NullOrdering, PredicateHelper, PredicateSubquery, SortDirection, SortOrder, SpecifiedWindowFrame, UnboundedFollowing, UnboundedPreceding, ValueFollowing, ValuePreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, UnknownPartitioning}
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, SQLBuilder, TableIdentifier}
 import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
-import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
 import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
 import org.apache.spark.sql.hive.{SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
-import org.apache.spark.sql.sources.{BaseRelation, Filter}
+import org.apache.spark.sql.sources.{BaseRelation, Filter, PutIntoTable, ResolveQueryHints}
+import org.apache.spark.sql.streaming.StreamingQueryManager
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.{SparkConf, SparkContext, SparkException}
@@ -382,6 +386,14 @@ class Spark210Internals extends SparkInternals {
     LogicalRelation(relation, expectedOutputAttributes, catalogTable)
   }
 
+  override def internalCreateDataFrame(session: SparkSession, catalystRows: RDD[InternalRow],
+      schema: StructType, isStreaming: Boolean): Dataset[Row] = {
+    if (isStreaming) {
+      throw new SparkException(s"Streaming datasets not supported in Spark $version")
+    }
+    session.internalCreateDataFrame(catalystRows, schema)
+  }
+
   override def newRowDataSourceScanExec(fullOutput: Seq[Attribute], requiredColumnsIndex: Seq[Int],
       filters: Seq[Filter], handledFilters: Seq[Filter], rdd: RDD[InternalRow],
       metadata: Map[String, String], relation: BaseRelation,
@@ -520,6 +532,10 @@ class Spark210Internals extends SparkInternals {
 
   override def newJSONOptions(parameters: Map[String, String],
       session: Option[SparkSession]): JSONOptions = new JSONOptions(parameters)
+
+  override def newSnappySessionState(snappySession: SnappySession): SnappySessionState = {
+    new SnappySessionStateImpl(snappySession)
+  }
 
   override def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer = {
     new SparkOptimizer(sessionState.catalog, sessionState.conf, sessionState.experimentalMethods)
@@ -714,4 +730,98 @@ final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
 
   override def makeFunctionBuilder(name: String, functionClassName: String): FunctionBuilder =
     makeFunctionBuilderImpl(name, functionClassName)
+}
+
+class SnappySessionStateImpl(override val snappySession: SnappySession)
+    extends SessionState(snappySession) with SnappySessionState {
+
+  self =>
+
+  protected def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
+    AnalyzeCreateTable(snappySession) ::
+        new PreprocessTable(this) ::
+        // ResolveRelationsExtended ::
+        ResolveAliasInGroupBy ::
+        new FindDataSourceTable(snappySession) ::
+        DataSourceAnalysis(conf) ::
+        AnalyzeMutableOperations(snappySession, analyzer) ::
+        ResolveQueryHints(snappySession) ::
+        RowLevelSecurity ::
+        ExternalRelationLimitFetch ::
+        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
+            Nil else Nil)
+
+  protected def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
+    Seq(ConditionalPreWriteCheck(internals.newPreWriteCheck(self)), PrePutCheck)
+  }
+
+  override val analyzerPrepareBuilder: () => Analyzer = () => new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
+            false
+          } else {
+            true
+          }
+          case _ => true
+        }): _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  override val analyzerBuilder: () => Analyzer = () => new Analyzer(catalog, conf) {
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  override val conf: SnappyConf = new SnappyConf(snappySession)
+
+  override val sqlParser: SnappySqlParser = contextFunctions.newSQLParser(snappySession)
+
+  override val streamingQueryManager: StreamingQueryManager = {
+    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+    // implies that Snappydata aggregation optimisation will be turned off for any usage of
+    // this session including non-streaming queries.
+
+    HashAggregateSize.set(snappySession.sessionState.conf, "-1")
+    new StreamingQueryManager(snappySession)
+  }
+
+  /**
+   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
+   */
+  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
+    def getTable(u: UnresolvedRelation): LogicalPlan = {
+      try {
+        catalog.lookupRelation(u.tableIdentifier, u.alias)
+      } catch {
+        case _: NoSuchTableException =>
+          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
+      }
+    }
+
+    def apply(plan: LogicalPlan): LogicalPlan = plan.transformUp {
+      case i@PutIntoTable(u: UnresolvedRelation, _) =>
+        i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
+        d.copy(query = EliminateSubqueryAliases(getTable(u)))
+    }
+  }
+
 }

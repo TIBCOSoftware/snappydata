@@ -113,7 +113,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     SnappySession.aqpSessionStateClass match {
       case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
           newInstance(self).asInstanceOf[SnappySessionState]
-      case None => new SnappySessionState(self)
+      case None => internals.newSnappySessionState(self)
     }
   }
 
@@ -121,7 +121,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
 
   def externalCatalog: SnappyExternalCatalog = sessionState.catalog.snappyExternalCatalog
 
-  def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
+  def snappyParser: SnappyParser = sessionState.snappySqlParser.sqlParser
 
   private[spark] def snappyContextFunctions = sessionState.contextFunctions
 
@@ -202,7 +202,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
   }
 
   final def prepareSQL(sqlText: String): LogicalPlan = {
-    val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
+    val logical = sessionState.snappySqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     sessionState.analyzerPrepare.execute(logical)
   }
@@ -621,9 +621,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     val logicalPlan = LogicalRDD(schema.toAttributes, catalystRows)(self)
     Dataset.ofRows(self, logicalPlan)
   }
-
-  override def internalCreateDataFrame(catalystRows: RDD[InternalRow],
-      schema: StructType): DataFrame = super.internalCreateDataFrame(catalystRows, schema)
 
   /**
    * Create a stratified sample table.
@@ -2016,7 +2013,7 @@ object SnappySession extends Logging {
   def getPlanCache: Cache[CachedKey, CachedDataFrame] = planCache
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
-    val parser = session.sessionState.sqlParser
+    val parser = session.sessionState.snappySqlParser
     val sqlShortText = CachedDataFrame.queryStringShortForm(sqlText)
     val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching

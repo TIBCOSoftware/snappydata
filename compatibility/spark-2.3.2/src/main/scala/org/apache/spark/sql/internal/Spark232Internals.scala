@@ -307,6 +307,11 @@ class Spark232Internals extends SparkInternals {
     LogicalRelation(relation, output, catalogTable, isStreaming)
   }
 
+  override def internalCreateDataFrame(session: SparkSession, catalystRows: RDD[InternalRow],
+      schema: StructType, isStreaming: Boolean): Dataset[Row] = {
+    session.internalCreateDataFrame(catalystRows, schema, isStreaming)
+  }
+
   override def newRowDataSourceScanExec(fullOutput: Seq[Attribute], requiredColumnsIndex: Seq[Int],
       filters: Seq[Filter], handledFilters: Seq[Filter], rdd: RDD[InternalRow],
       metadata: Map[String, String], relation: BaseRelation,

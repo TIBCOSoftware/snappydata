@@ -28,17 +28,16 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import io.snappydata.Property.HashAggregateSize
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, HintName, Property, QueryHint}
 
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, Star, UnresolvedAttribute, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
+import org.apache.spark.sql.catalyst.parser.ParserInterface
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
 import org.apache.spark.sql.catalyst.plans.logical.{Filter => LogicalFilter, _}
@@ -59,11 +58,18 @@ import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Partition, SparkConf}
 
+trait SnappySessionState extends SessionState with SnappyStrategies with SparkSupport {
 
-class SnappySessionState(val snappySession: SnappySession)
-    extends SessionState(snappySession) with SnappyStrategies with SparkSupport {
+  val snappySession: SnappySession
+  val analyzerBuilder: () => Analyzer
+  val analyzerPrepareBuilder: () => Analyzer
+  val conf: SQLConf
+  val sqlParser: ParserInterface
+  val streamingQueryManager: StreamingQueryManager
 
-  self =>
+  final def snappyConf: SnappyConf = conf.asInstanceOf[SnappyConf]
+
+  final def snappySqlParser: SnappySqlParser = sqlParser.asInstanceOf[SnappySqlParser]
 
   @transient
   val contextFunctions: SnappyContextFunctions = new SnappyContextFunctions
@@ -76,75 +82,13 @@ class SnappySessionState(val snappySession: SnappySession)
 
   protected lazy val snappySharedState: SnappySharedState = snappySession.sharedState
 
-  override lazy val streamingQueryManager: StreamingQueryManager = {
-    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
-    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
-    // implies that Snappydata aggregation optimisation will be turned off for any usage of
-    // this session including non-streaming queries.
-
-    HashAggregateSize.set(snappySession.sessionState.conf, "-1")
-    new StreamingQueryManager(snappySession)
-  }
-
-  override lazy val sqlParser: SnappySqlParser =
-    contextFunctions.newSQLParser(this.snappySession)
-
   private[sql] var disableStoreOptimizations: Boolean = false
 
   // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
   // Rest all rules, even if redundant, are same as analyzer for maintainability reason
-  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
+  lazy val analyzerPrepare: Analyzer = analyzerPrepareBuilder()
 
-    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
-      case analyzer.FixedPoint(_) => fixedPoint
-      case _ => Once
-    }
-
-    override lazy val batches: Seq[Batch] = analyzer.batches.map {
-      case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
-            false
-          } else {
-            true
-          }
-          case _ => true
-        }): _*)
-      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
-    }
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
-  def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
-    AnalyzeCreateTable(snappySession) ::
-        new PreprocessTable(this) ::
-        // ResolveRelationsExtended ::
-        ResolveAliasInGroupBy ::
-        new FindDataSourceTable(snappySession) ::
-        DataSourceAnalysis(conf) ::
-        AnalyzeMutableOperations(snappySession, analyzer) ::
-        ResolveQueryHints(snappySession) ::
-        RowLevelSecurity ::
-        ExternalRelationLimitFetch ::
-        (if (conf.runSQLonFile) new ResolveDataSource(snappySession) ::
-            Nil else Nil)
-
-
-  def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
-    Seq(ConditionalPreWriteCheck(internals.newPreWriteCheck(self)), PrePutCheck)
-  }
-
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
+  override lazy val analyzer: Analyzer = analyzerBuilder()
 
   override lazy val optimizer: Optimizer = internals.newSparkOptimizer(this)
 
@@ -288,8 +232,6 @@ class SnappySessionState(val snappySession: SnappySession)
       plan
     }
   }
-
-  override lazy val conf: SnappyConf = new SnappyConf(snappySession)
 
   /**
    * The partition mapping selected for the lead partitioned region in
@@ -722,7 +664,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   private[spark] def clearExecutionData(): Unit = {
-    conf.refreshNumShufflePartitions()
+    snappyConf.refreshNumShufflePartitions()
     leaderPartitions.clear()
     snappySession.clearContext()
   }
@@ -737,8 +679,7 @@ class SnappySessionState(val snappySession: SnappySession)
           if (linkPartitionsToBuckets || preferPrimaries) {
             // also set the default shuffle partitions for this execution
             // to minimize exchange
-            snappySession.sessionState.conf.setExecutionShufflePartitions(
-              region.getTotalNumberOfBuckets)
+            snappyConf.setExecutionShufflePartitions(region.getTotalNumberOfBuckets)
           }
           StoreUtils.getPartitionsPartitionedTable(snappySession, pr,
             linkPartitionsToBuckets, preferPrimaries)
