@@ -166,6 +166,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="memberStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
+            <th style="width: 5px;">
+              <div style="padding: 0px 5px 10px 5px; text-align: center; cursor: pointer;"
+                   onclick="toggleAllRowsAddOnDetails();" data-toggle="tooltip" title=""
+                   data-original-title={
+                     SnappyDashboardPage.memberStatsColumn("expandCollapseTooltip")
+                   }>
+                <span id="expandallrows-btn" class="row-caret-downward"></span>
+              </div>
+            </th>
             <th class="table-th-col-heading" style="width: 60px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
@@ -377,6 +386,7 @@ object SnappyDashboardPage {
   val membersStatsTitle = "Members"
   val membersStatsTitleTooltip = "SnappyData Members Summary"
   val memberStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
+  memberStatsColumn += ("expandCollapseTooltip" -> "Expand/Collapse All Rows")
   memberStatsColumn += ("status" -> "Status")
   memberStatsColumn += ("statusTooltip" -> "Members Status")
   memberStatsColumn += ("id" -> "Id")

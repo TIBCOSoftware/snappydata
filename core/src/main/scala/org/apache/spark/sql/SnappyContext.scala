@@ -34,7 +34,7 @@ import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Constant, Property, SnappyTableStatsProviderService, StreamingConstants}
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -142,10 +142,11 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param tableName
     * @param isAddColumn
     * @param column
+    * @param defaultValue
     */
   def alterTable(tableName: String, isAddColumn: Boolean,
-                 column: StructField): Unit = {
-    snappySession.alterTable(tableName, isAddColumn, column)
+      column: StructField, defaultValue: Option[String] = None): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column, defaultValue)
   }
 
   /**
@@ -154,10 +155,11 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param tableIdent
     * @param isAddColumn
     * @param column
+    * @param defaultValue
     */
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-                              column: StructField): Unit = {
-    snappySession.alterTable(tableIdent, isAddColumn, column)
+      column: StructField, defaultValue: Option[String]): Unit = {
+    snappySession.alterTable(tableIdent, isAddColumn, column, defaultValue)
   }
 
   /**
@@ -822,6 +824,7 @@ object SnappyContext extends Logging {
   val TEXT_SOCKET_STREAM_SOURCE = "text_socket_stream"
   val TWITTER_STREAM_SOURCE = "twitter_stream"
   val RABBITMQ_STREAM_SOURCE = "rabbitmq_stream"
+  val SNAPPY_SINK_NAME = "snappySink"
 
   private val builtinSources = new CaseInsensitiveMutableHashMap[
       (String, CatalogObjectType.Type)](Map(
@@ -830,7 +833,7 @@ object SnappyContext extends Logging {
             CatalogObjectType.Column),
     ParserConsts.ROW_SOURCE ->
         (classOf[execution.row.DefaultSource].getCanonicalName -> CatalogObjectType.Row),
-    StreamingConstants.SNAPPY_SINK_NAME ->
+    SNAPPY_SINK_NAME ->
         (classOf[SnappyStoreSinkProvider].getCanonicalName -> CatalogObjectType.Stream),
     SOCKET_STREAM_SOURCE ->
         (classOf[SocketStreamSource].getCanonicalName -> CatalogObjectType.Stream),
