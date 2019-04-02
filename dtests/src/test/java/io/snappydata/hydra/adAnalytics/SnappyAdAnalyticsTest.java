@@ -73,6 +73,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static String[] getNames(Long key) {
     Vector vec = TestConfig.tab().vecAt(key, null);
+    if(vec == null) return null;
     String[] strArr = new String[vec.size()];
     for (int i = 0; i < vec.size(); i++) {
       strArr[i] = (String)vec.elementAt(i); //get what tables are in the tests
@@ -153,6 +154,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       if(!zookeeperHost.equals("localhost"))
         command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + zookeeperHost;
       command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
+      Log.getLogWriter().info("Executing command : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun("QuorumPeerMain");
@@ -230,6 +232,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         if(!hostname.equals("localhost"))
           command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
         command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
+        Log.getLogWriter().info("Executing command : " + command);
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
 
@@ -294,9 +297,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-topics.sh");
       String command = script + " --create --zookeeper " + zookeeperHost + ":" + zookeeperPort +
           " --partition 8 --topic " + topic + " --replication-factor=1";
-
       String dest = kafkaLogDir + sep + "startTopic-" + topic + ".log";
       File logFile = new File(dest);
+      Log.getLogWriter().info("Executing command : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       Log.getLogWriter().info("Started Kafka topic: " + topic);
@@ -334,7 +337,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
           APP_PROPS + " --stream ";
       String dest = getCurrentDirPath() + File.separator + logFileName;
-      Log.getLogWriter().info("Executing cmd:" + snappyJobCommand);
+      Log.getLogWriter().info("Executing command:" + snappyJobCommand);
       logFile = new File(dest);
       pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
       snappyTest.executeProcess(pb, logFile);
@@ -472,7 +475,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           "jars/* " +  processName + " " + APP_PROPS + " > " + logFile;
       if(SnappyPrms.executeInBackGround())
         command = "nohup " + command + " & ";
-      Log.getLogWriter().info("Executing cmd : " + command);
+      Log.getLogWriter().info("Executing command : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun(processName);
@@ -560,12 +563,20 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     File log = null;
     ProcessBuilder pb = null;
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-stop.sh");
-    String dest = kafkaLogDir + sep + "stopKafkaServer.log";
-    File logFile = new File(dest);
-    pb = new ProcessBuilder("/bin/bash", "-c", script);
-    snappyTest.executeProcess(pb, logFile);
+    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    for (int i = 1; i <= numServers; i++) {
+      String dest = kafkaLogDir + sep + "broker" + i + sep + "stopKafkaServer.log";
+      File logFile = new File(dest);
+      String hostname = hostnames[i-1];
+      String command = "";
+      if(!hostname.equals("localhost"))
+        command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
+      command = command + "  " + script;
+      Log.getLogWriter().info("Executing command : " + command);
+      pb = new ProcessBuilder("/bin/bash", "-c", command);
+      snappyTest.executeProcess(pb, logFile);
+    }
     Log.getLogWriter().info("Stopped Kafka servers");
-
   }
 
   /**
@@ -582,11 +593,17 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   protected void stopKafkaZookeeper() {
     File log = null;
+    String command = "";
     ProcessBuilder pb = null;
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/zookeeper-server-stop.sh");
     String dest = kafkaLogDir + sep + "stopZookeeper.log";
     File logFile = new File(dest);
-    pb = new ProcessBuilder("/bin/bash", "-c", script);
+    String hostname = (String)SnappyBB.getBB().getSharedMap().get("zookeeperHost");
+    if(!hostname.equals("localhost"))
+      command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
+    command = command + "  " + script;
+    Log.getLogWriter().info("Executing command : " + command);
+    pb = new ProcessBuilder("/bin/bash", "-c", command);
     snappyTest.executeProcess(pb, logFile);
     Log.getLogWriter().info("Stopped Kafka zookeeper");
   }
@@ -611,7 +628,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     String userJob = (String)jobClassNames.elementAt(0);
     String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
         " --app-name AdAnalytics --class " + userJob + " --app-jar " + userJarPath;
-    Log.getLogWriter().info("Executing cmd :" + snappyJobCommand);
+    Log.getLogWriter().info("Executing command :" + snappyJobCommand);
     String dest = getCurrentDirPath() + File.separator + "stopSnappyStreamingJobTaskResult.log";
     logFile = new File(dest);
     pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
