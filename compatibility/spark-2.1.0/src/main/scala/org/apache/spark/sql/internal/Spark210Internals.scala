@@ -245,6 +245,10 @@ class Spark210Internals extends SparkInternals {
       exprId = attr.exprId, qualifier = attr.qualifier, isGenerated = attr.isGenerated)
   }
 
+  override def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable = {
+    insert.copy(child = newChild)
+  }
+
   override def newInsertPlanWithCountOutput(table: LogicalPlan,
       partition: Map[String, Option[String]], child: LogicalPlan,
       overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable = {
@@ -468,9 +472,9 @@ class Spark210Internals extends SparkInternals {
   override def columnStatToMap(stat: ColumnStat, colName: String,
       dataType: DataType): Map[String, String] = stat.toMap
 
-  override def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+  override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyHiveExternalCatalogImpl(conf, hadoopConf, createTime)
+    new SnappyEmbeddedHiveCatalogImpl(conf, hadoopConf, createTime)
   }
 
   override def newSmartConnectorExternalCatalog(
@@ -566,9 +570,36 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
+class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
+
+  override protected def baseCreateDatabase(schemaDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit = super.createDatabase(schemaDefinition, ignoreIfExists)
+
+  override protected def baseDropDatabase(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = super.dropDatabase(schema, ignoreIfNotExists, cascade)
+
+  override protected def baseCreateTable(tableDefinition: CatalogTable,
+      ignoreIfExists: Boolean): Unit = super.createTable(tableDefinition, ignoreIfExists)
+
+  override protected def baseDropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = super.dropTable(schema, table, ignoreIfNotExists, purge)
+
+  override protected def baseAlterTable(tableDefinition: CatalogTable): Unit =
+    super.alterTable(tableDefinition)
+
+  override protected def baseRenameTable(schema: String, oldName: String, newName: String): Unit =
+    super.renameTable(schema, oldName, newName)
+
+  override protected def baseCreateFunction(schema: String,
+      funcDefinition: CatalogFunction): Unit = super.createFunction(schema, funcDefinition)
+
+  override protected def baseDropFunction(schema: String, name: String): Unit =
+    super.dropFunction(schema, name)
+
+  override protected def baseRenameFunction(schema: String, oldName: String,
+      newName: String): Unit = super.renameFunction(schema, oldName, newName)
 
   override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
     createDatabaseImpl(schemaDefinition, ignoreIfExists)
@@ -599,7 +630,7 @@ class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
 
   override def listPartitionsByFilter(schema: String, table: String,
       predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
-    listPartitionsByFilterImpl(schema, table, predicates)
+    withHiveExceptionHandling(super.listPartitionsByFilter(schema, table, predicates))
   }
 
   override def createFunction(schema: String, function: CatalogFunction): Unit =

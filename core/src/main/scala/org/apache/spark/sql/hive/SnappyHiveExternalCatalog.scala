@@ -48,7 +48,6 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
-import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.StringUtils
 import org.apache.spark.sql.collection.Utils.EMPTY_STRING_ARRAY
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -135,7 +134,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
   /**
    * Retries on transient disconnect exceptions.
    */
-  private[sql] def withHiveExceptionHandling[T](function: => T,
+  protected[sql] def withHiveExceptionHandling[T](function: => T,
       handleDisconnects: Boolean = true): T = synchronized {
     val skipFlags = GfxdDataDictionary.SKIP_CATALOG_OPS.get()
     val oldSkipCatalogCalls = skipFlags.skipHiveCatalogCalls
@@ -199,6 +198,34 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
   }
 
   // --------------------------------------------------------------------------
+  // Base HiveExternalCatalog calls
+  // --------------------------------------------------------------------------
+
+  protected def baseCreateDatabase(schemaDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit
+
+  protected def baseDropDatabase(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit
+
+  protected def baseCreateTable(tableDefinition: CatalogTable, ignoreIfExists: Boolean): Unit
+
+  protected def baseDropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit
+
+  protected def baseAlterTable(table: CatalogTable): Unit
+
+  protected def baseRenameTable(schema: String, oldName: String, newName: String): Unit
+
+  protected def baseLoadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit
+
+  protected def baseCreateFunction(schema: String, funcDefinition: CatalogFunction): Unit
+
+  protected def baseDropFunction(schema: String, name: String): Unit
+
+  protected def baseRenameFunction(schema: String, oldName: String, newName: String): Unit
+
+  // --------------------------------------------------------------------------
   // Databases
   // --------------------------------------------------------------------------
 
@@ -218,13 +245,13 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
       if (ignoreIfExists) return
       else throw new AnalysisException(s"Schema ${schemaDefinition.name} already exists")
     }
-    withHiveExceptionHandling(super.createDatabase(schemaDefinition, ignoreIfExists))
+    withHiveExceptionHandling(baseCreateDatabase(schemaDefinition, ignoreIfExists))
   }
 
   protected def dropDatabaseImpl(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
     if (schema == SYS_SCHEMA) throw new AnalysisException(s"$schema is a system reserved schema")
-    withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    withHiveExceptionHandling(baseDropDatabase(schema, ignoreIfNotExists, cascade))
   }
 
   // Special in-built SYS schema does not have hive catalog entry so the methods below
@@ -368,7 +395,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
     }
 
     try {
-      withHiveExceptionHandling(super.createTable(catalogTable, ifExists))
+      withHiveExceptionHandling(baseCreateTable(catalogTable, ifExists))
     } catch {
       case _: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
@@ -387,7 +414,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
         if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
       case Some(t) => t
     }
-    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists = false, purge))
+    withHiveExceptionHandling(baseDropTable(schema, table, ignoreIfNotExists = false, purge))
 
     // drop all policies for the table
     if (Misc.getMemStoreBooting.isRLSEnabled) {
@@ -395,7 +422,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
       if (policies.nonEmpty) for (policy <- policies) {
         val schemaName = policy.database
         val policyName = policy.identifier.table
-        withHiveExceptionHandling(super.dropTable(schemaName, policyName,
+        withHiveExceptionHandling(baseDropTable(schemaName, policyName,
           ignoreIfNotExists = true, purge = false))
         invalidate(schemaName -> policyName)
       }
@@ -441,13 +468,13 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
       }
     }
 
-    withHiveExceptionHandling(super.alterTable(catalogTable))
+    withHiveExceptionHandling(baseAlterTable(catalogTable))
 
     registerCatalogSchemaChange(schemaName -> tableName :: Nil)
   }
 
   protected def renameTableImpl(schema: String, oldName: String, newName: String): Unit = {
-    withHiveExceptionHandling(super.renameTable(schema, oldName, newName))
+    withHiveExceptionHandling(baseRenameTable(schema, oldName, newName))
   }
 
   /**
@@ -566,7 +593,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
           val expandedApplyTo = ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
           val newProperties = table.properties +
               (PolicyProperties.expandedPolicyApplyTo -> expandedApplyTo.mkString(","))
-          withHiveExceptionHandling(super.alterTable(table.copy(properties = newProperties)))
+          withHiveExceptionHandling(baseAlterTable(table.copy(properties = newProperties)))
         }
       }
     }
@@ -652,7 +679,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
 
   protected def loadDynamicPartitionsImpl(schema: String, table: String, loadPath: String,
       partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
-    withHiveExceptionHandling(super.loadDynamicPartitions(schema, table, loadPath, partition,
+    withHiveExceptionHandling(baseLoadDynamicPartitions(schema, table, loadPath, partition,
       replace, numDP, holdDDLTime))
   }
 
@@ -676,27 +703,22 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
     withHiveExceptionHandling(super.listPartitions(schema, table, partialSpec))
   }
 
-  protected def listPartitionsByFilterImpl(schema: String, table: String,
-      predicates: Seq[Expression]): Seq[CatalogTablePartition] = {
-    withHiveExceptionHandling(super.listPartitionsByFilter(schema, table, predicates))
-  }
-
   // --------------------------------------------------------------------------
   // Functions
   // --------------------------------------------------------------------------
 
   protected def createFunctionImpl(schema: String, funcDefinition: CatalogFunction): Unit = {
-    withHiveExceptionHandling(super.createFunction(schema, funcDefinition))
+    withHiveExceptionHandling(baseCreateFunction(schema, funcDefinition))
     SnappySession.clearAllCache()
   }
 
   protected def dropFunctionImpl(schema: String, name: String): Unit = {
-    withHiveExceptionHandling(super.dropFunction(schema, name))
+    withHiveExceptionHandling(baseDropFunction(schema, name))
     SnappySession.clearAllCache()
   }
 
   protected def renameFunctionImpl(schema: String, oldName: String, newName: String): Unit = {
-    withHiveExceptionHandling(super.renameFunction(schema, oldName, newName))
+    withHiveExceptionHandling(baseRenameFunction(schema, oldName, newName))
     SnappySession.clearAllCache()
   }
 
@@ -755,7 +777,7 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
   }
 }
 
-object SnappyHiveExternalCatalog {
+object SnappyHiveExternalCatalog extends SparkSupport {
 
   @GuardedBy("this")
   private[this] var instance: SnappyHiveExternalCatalog = _
@@ -789,7 +811,7 @@ object SnappyHiveExternalCatalog {
     try {
       // delete the hive scratch directory if it exists
       FileUtils.deleteDirectory(new java.io.File("./hive"))
-      instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
+      instance = internals.newEmbeddedHiveCatalog(sparkConf, hadoopConf, createTime)
     } finally {
       logger.setLevel(previousLevel)
       log4jLogger.setLevel(log4jLevel)
