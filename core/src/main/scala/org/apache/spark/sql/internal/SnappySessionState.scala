@@ -110,7 +110,7 @@ class SnappySessionState(val snappySession: SnappySession)
           }
           case _ => true
         }).flatMap(_ match {
-          case PromoteStrings => Seq(PreUpdateTypeConversionCheck, PromoteStrings)
+          case PromoteStrings => Seq(StringPromotionCheckForUpdate, PromoteStrings)
           case a => Seq(a)
         })
         Batch(batch.name, getStrategy(batch.strategy), rules: _*)
@@ -161,8 +161,9 @@ class SnappySessionState(val snappySession: SnappySession)
     override lazy val batches: Seq[Batch] = snappyAnalyzer.batches.map {
       case batch  if batch.name.equalsIgnoreCase("Resolution") =>
         val rules = batch.rules.flatMap {
+          // Prepending PreUpdateTypeConversionCheck rule before PromoteString rule
           case PromoteStrings =>
-            Seq(PreUpdateTypeConversionCheck.asInstanceOf[Rule[LogicalPlan]],
+            Seq(StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]],
               PromoteStrings)
           case r => Seq(r)
         }
@@ -172,18 +173,20 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
-  object PreUpdateTypeConversionCheck extends Rule[LogicalPlan] {
+  // This Rule fails an update query when type of Arithmetic operators doesn't match. This
+  // need to be done because by default spark performs null safe implicit type
+  // conversion when type of two operands does't match and this can lead to null values getting
+  // populated in the table.
+  object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
 
     override def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
         case Update(_, _, _, _, _) => plan resolveExpressions {
           case e if !e.childrenResolved => e
-          case a @ BinaryArithmetic(left @ StringType(), right) =>
-            throw new AnalysisException(s"${right.dataType} is not compatible" +
-                s" with ${left.dataType}.")
-          case a @ BinaryArithmetic(left, right @ StringType()) =>
-            throw new AnalysisException(s"${right.dataType} is not compatible" +
-                s" with ${left.dataType}.")
+          case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
+            throw new AnalysisException("Implicit type casting is not performed for update" +
+                " statements")
+          case e => e
         }
         case _ => plan
       }
@@ -672,19 +675,11 @@ class SnappySessionState(val snappySession: SnappySession)
               throw new AnalysisException("Cannot update partitioning/key column " +
                   s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
-            // cast the update expressions if required
-            val newExpr = if (attr.dataType.sameType(expr.dataType)) {
-              expr
-            } else {
-              // avoid unnecessary copy+cast when inserting DECIMAL types
-              // into column table
-              expr.dataType match {
-                case _: DecimalType
-                  if attr.dataType.isInstanceOf[DecimalType] => expr
-                case _ => Alias(Cast(expr, attr.dataType), attr.name)()
-              }
+            if (!attr.dataType.sameType(expr.dataType)) {
+              throw new AnalysisException("Implicit type casting is not performed for update" +
+                  " statements")
             }
-            (attr, newExpr)
+            (attr, expr)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
