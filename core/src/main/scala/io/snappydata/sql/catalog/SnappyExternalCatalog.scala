@@ -217,8 +217,10 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
   protected def alterTableSchemaImpl(schemaName: String, table: String,
       newSchema: StructType): Unit = {
     val catalogTable = getTable(schemaName, table)
-    alterTable(catalogTable.copy(schema = newSchema))
+    alterTableImpl(catalogTable.copy(schema = newSchema))
   }
+
+  protected def alterTableImpl(table: CatalogTable): Unit
 
   /**
    * Get all the tables in the catalog skipping given schema names. By default

@@ -27,7 +27,6 @@ import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 import org.apache.hadoop.conf.Configuration
 
-import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
@@ -54,6 +53,7 @@ import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
+import org.apache.spark.{SparkConf, SparkContext}
 
 /**
  * Implementation of [[SparkInternals]] for Spark 2.3.2.
@@ -185,6 +185,10 @@ class Spark232Internals extends SparkInternals {
       dataType: DataType, nullable: Boolean, metadata: Metadata): AttributeReference = {
     attr.copy(name = name, dataType = dataType, nullable = nullable, metadata = metadata)(
       exprId = attr.exprId, qualifier = attr.qualifier)
+  }
+
+  override def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable = {
+    insert.copy(query = newChild)
   }
 
   override def newInsertPlanWithCountOutput(table: LogicalPlan,
@@ -404,9 +408,9 @@ class Spark232Internals extends SparkInternals {
   override def columnStatToMap(stat: ColumnStat, colName: String,
       dataType: DataType): Map[String, String] = stat.toMap(colName, dataType)
 
-  override def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+  override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyHiveExternalCatalogImpl(conf, hadoopConf, createTime)
+    new SnappyEmbeddedHiveCatalogImpl(conf, hadoopConf, createTime)
   }
 
   override def newSmartConnectorExternalCatalog(
@@ -508,9 +512,42 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-final class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
+final class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
+
+  override protected def baseCreateDatabase(schemaDefinition: CatalogDatabase,
+      ignoreIfExists: Boolean): Unit = super.doCreateDatabase(schemaDefinition, ignoreIfExists)
+
+  override protected def baseDropDatabase(schema: String, ignoreIfNotExists: Boolean,
+      cascade: Boolean): Unit = super.doDropDatabase(schema, ignoreIfNotExists, cascade)
+
+  override protected def baseCreateTable(tableDefinition: CatalogTable,
+      ignoreIfExists: Boolean): Unit = super.doCreateTable(tableDefinition, ignoreIfExists)
+
+  override protected def baseDropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
+      purge: Boolean): Unit = super.doDropTable(schema, table, ignoreIfNotExists, purge)
+
+  override protected def baseAlterTable(tableDefinition: CatalogTable): Unit =
+    super.doAlterTable(tableDefinition)
+
+  override protected def baseRenameTable(schema: String, oldName: String, newName: String): Unit =
+    super.doRenameTable(schema, oldName, newName)
+
+  override protected def baseLoadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
+    SparkSupport.internals().loadDynamicPartitions(this, schema, table, loadPath, partition,
+      replace, numDP, holdDDLTime)
+  }
+
+  override protected def baseCreateFunction(schema: String,
+      funcDefinition: CatalogFunction): Unit = super.doCreateFunction(schema, funcDefinition)
+
+  override protected def baseDropFunction(schema: String, name: String): Unit =
+    super.doDropFunction(schema, name)
+
+  override protected def baseRenameFunction(schema: String, oldName: String,
+      newName: String): Unit = super.doRenameFunction(schema, oldName, newName)
 
   override protected def doCreateDatabase(schemaDefinition: CatalogDatabase,
       ignoreIfExists: Boolean): Unit = createDatabaseImpl(schemaDefinition, ignoreIfExists)
@@ -536,10 +573,8 @@ final class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
       newSchema: StructType): Unit = alterTableSchemaImpl(schemaName, table, newSchema)
 
   override protected def doAlterTableStats(schema: String, table: String,
-      stats: Option[CatalogStatistics]): Unit = stats match {
-    case None => alterTableStatsImpl(schema, table, None)
-    case Some(s) => alterTableStatsImpl(schema, table,
-      Some((s.sizeInBytes, s.rowCount, s.colStats)))
+      stats: Option[CatalogStatistics]): Unit = {
+    withHiveExceptionHandling(super.doAlterTableStats(schema, table, stats))
   }
 
   override def loadDynamicPartitions(schema: String, table: String, loadPath: String,
@@ -550,7 +585,8 @@ final class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
 
   override def listPartitionsByFilter(schema: String, table: String, predicates: Seq[Expression],
       defaultTimeZoneId: String): Seq[CatalogTablePartition] = {
-    listPartitionsByFilterImpl(schema, table, predicates, defaultTimeZoneId)
+    withHiveExceptionHandling(super.listPartitionsByFilter(schema, table,
+      predicates, defaultTimeZoneId))
   }
 
   override protected def doCreateFunction(schema: String, function: CatalogFunction): Unit =
@@ -559,8 +595,10 @@ final class SnappyHiveExternalCatalogImpl(override val conf: SparkConf,
   override protected def doDropFunction(schema: String, funcName: String): Unit =
     dropFunctionImpl(schema, funcName)
 
-  override protected def doAlterFunction(schema: String, function: CatalogFunction): Unit =
-    alterFunctionImpl(schema, function)
+  override protected def doAlterFunction(schema: String, function: CatalogFunction): Unit = {
+    withHiveExceptionHandling(super.doAlterFunction(schema, function))
+    SnappySession.clearAllCache()
+  }
 
   override protected def doRenameFunction(schema: String, oldName: String, newName: String): Unit =
     renameFunctionImpl(schema, oldName, newName)

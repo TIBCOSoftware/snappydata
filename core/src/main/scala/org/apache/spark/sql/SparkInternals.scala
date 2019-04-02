@@ -222,6 +222,11 @@ trait SparkInternals extends Logging {
       metadata: Metadata = attr.metadata): AttributeReference
 
   /**
+   * Create a copy of [[InsertIntoTable]] plan with a new child.
+   */
+  def withNewChild(insert: InsertIntoTable, newChild: LogicalPlan): InsertIntoTable
+
+  /**
    * Create a new INSERT plan that has a LONG count of rows as its output.
    */
   def newInsertPlanWithCountOutput(table: LogicalPlan, partition: Map[String, Option[String]],
@@ -424,7 +429,7 @@ trait SparkInternals extends Logging {
    * Create a new instance of SnappyHiveExternalCatalog. The method overrides in
    * ExternalCatalog have changed across Spark versions.
    */
-  def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+  def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog
 
   /**

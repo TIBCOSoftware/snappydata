@@ -73,9 +73,9 @@ class Spark211Internals extends Spark210Internals {
   override def catalogTableSchemaPreservesCase(catalogTable: CatalogTable): Boolean =
     catalogTable.schemaPreservesCase
 
-  override def newHiveExternalCatalog(conf: SparkConf, hadoopConf: Configuration,
+  override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyHiveExternalCatalog211Impl(conf, hadoopConf, createTime)
+    new SnappyEmbeddedHiveCatalog211Impl(conf, hadoopConf, createTime)
   }
 
   override def newSmartConnectorExternalCatalog(
@@ -114,9 +114,9 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-final class SnappyHiveExternalCatalog211Impl(conf: SparkConf,
+final class SnappyEmbeddedHiveCatalog211Impl(conf: SparkConf,
     hadoopConf: Configuration, createTime: Long)
-    extends SnappyHiveExternalCatalogImpl(conf, hadoopConf, createTime) {
+    extends SnappyEmbeddedHiveCatalogImpl(conf, hadoopConf, createTime) {
 
   override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
     alterTableSchemaImpl(schemaName, table, newSchema)

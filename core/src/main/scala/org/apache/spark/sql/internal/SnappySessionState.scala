@@ -316,7 +316,7 @@ class SnappySessionState(val snappySession: SnappySession)
       }
     }
 
-    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+    def apply(plan: LogicalPlan): LogicalPlan = plan.transformUp {
       case i@PutIntoTable(u: UnresolvedRelation, _) =>
         i.copy(table = EliminateSubqueryAliases(getTable(u)))
       case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
@@ -396,7 +396,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
-    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+    def apply(plan: LogicalPlan): LogicalPlan = plan.transformUp {
       case p if !p.childrenResolved => p
       case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
         groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
@@ -1286,7 +1286,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState)
         child = Project(newChildOutput, child)).asInstanceOf[T]
       case d: DeleteFromTable => d.copy(table = newRelation,
         child = Project(newChildOutput, child)).asInstanceOf[T]
-      case i: InsertIntoTable => i.copy(child = Project(newChildOutput,
+      case i: InsertIntoTable => internals.withNewChild(i, Project(newChildOutput,
         child)).asInstanceOf[T]
     }
   }
