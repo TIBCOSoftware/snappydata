@@ -36,8 +36,10 @@
 
 package org.apache.spark.sql.execution.aggregate
 
+
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import io.snappydata.collection.{ByteBufferData, ByteBufferHashMap, ObjectHashSet, SHAMap}
+import com.gemstone.gemfire.internal.shared.BufferAllocator
+import io.snappydata.collection.{ByteBufferData, ObjectHashSet, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -559,15 +561,24 @@ case class SnappyHashAggregateExec(
      // Create a name for iterator from HashMap
     val mapCounter = ctx.freshName("mapCounter")
     ctx.addMutableState("int", mapCounter, s"$mapCounter = 0;")
-    val iterValueOffsetTerm = ctx.freshName("iterValueOffsetTerm")
 
+    val iterValueOffsetTerm = ctx.freshName("iterValueOffsetTerm")
     ctx.addMutableState("int", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
 
+    val nullKeysBitsetTerm = ctx.freshName("nullKeysBitset")
+
+    val numBytesForNullKeyBits = this.groupingAttributes.length / 8 +
+      (if (this.groupingAttributes.length % 8 > 0) 1 else 0)
+
+    if ( numBytesForNullKeyBits > 8) {
+      ctx.addMutableState("byte[]", nullKeysBitsetTerm,
+        s"$nullKeysBitsetTerm = new byte[$numBytesForNullKeyBits];")
+    }
 
     val valueOffsetTerm = ctx.freshName("valueOffset")
-
     val currentValueOffSetTerm = ctx.freshName("currentValueOffSet")
     val valueDataTerm = ctx.freshName("valueData")
+
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
@@ -587,12 +598,11 @@ case class SnappyHashAggregateExec(
 
     val keysDataType = this.groupingAttributes.map(_.dataType)
     val aggBuffDataTypes = this.aggregateBufferAttributesForGroup.map(_.dataType)
-
+    val allocatorTerm = ctx.freshName("bufferAllocator")
+    val allocatorClass = classOf[BufferAllocator].getName
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
-    // generate variables for HashMap data array and mask
-    mapDataTerm = ctx.freshName("mapData")
     val sizeTerm = ctx.freshName("size")
     // generate the map accessor to generate key/value class
     // and get map access methods
@@ -600,10 +610,11 @@ case class SnappyHashAggregateExec(
     val numKeyBytesTerm = (ctx.freshName("numKeyBytes"))
     byteBufferAccessor = ByteBufferHashMapAccessor(session, ctx, groupingExpressions,
         aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-        mapDataTerm, this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
-      currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm)
+         this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
+      currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
+      nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm)
 
-
+    val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
 
     val bbDataClass = classOf[ByteBufferData].getName
 
@@ -622,6 +633,8 @@ case class SnappyHashAggregateExec(
           $bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
           Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
           long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+          ${allocatorClass} ${allocatorTerm} = ${gfeCacheImplClass}.
+               getCurrentBufferAllocator();
           $childProduce
 
           // System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
@@ -654,6 +667,8 @@ case class SnappyHashAggregateExec(
         $doAgg();
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
       }
+      ${allocatorClass} ${allocatorTerm} = ${gfeCacheImplClass}.
+                      getCurrentBufferAllocator();
       ${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
       ${byteBufferAccessor.initKeyOrBufferVal(keysDataType, KeyBufferVars)}
       // output the result
