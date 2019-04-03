@@ -36,11 +36,14 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIden
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
 import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionCatalog, SnappySessionState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
+import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
+import org.apache.spark.streaming.SnappyStreamingContext
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 /**
@@ -350,7 +353,7 @@ trait SparkInternals extends Logging {
    * Create a DataFrame out of an RDD of InternalRows.
    */
   def internalCreateDataFrame(session: SparkSession, catalystRows: RDD[InternalRow],
-    schema: StructType, isStreaming: Boolean = false): Dataset[Row]
+      schema: StructType, isStreaming: Boolean = false): Dataset[Row]
 
   /**
    * Create a new [[RowDataSourceScanExec]] with the given parameters.
@@ -359,6 +362,17 @@ trait SparkInternals extends Logging {
       filters: Seq[Filter], handledFilters: Seq[Filter], rdd: RDD[InternalRow],
       metadata: Map[String, String], relation: BaseRelation,
       tableIdentifier: Option[TableIdentifier]): RowDataSourceScanExec
+
+  /**
+   * Create a new [[CodegenSparkFallback]] with the given child.
+   */
+  def newCodegenSparkFallback(child: SparkPlan, session: SnappySession): CodegenSparkFallback
+
+  /**
+   * Create a new [[LogicalDStreamPlan]] with the given parameters.
+   */
+  def newLogicalDStreamPlan(output: Seq[Attribute], stream: DStream[InternalRow],
+      streamingSnappy: SnappyStreamingContext): LogicalDStreamPlan
 
   /**
    * Create a new CatalogDatabase given the parameters. Newer Spark releases require a URI

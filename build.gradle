@@ -107,7 +107,7 @@ allprojects {
 
     sparkOldVersion = '2.1.1'
     sparkOldDistName = "spark-${sparkOldVersion}-bin-hadoop2.7"
-    sparkCurrentVersion = '2.3.2'
+    sparkCurrentVersion = '2.4.0'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'

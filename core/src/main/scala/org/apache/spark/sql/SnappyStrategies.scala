@@ -798,7 +798,7 @@ case class CollapseCollocatedPlans(session: SparkSession)
  * like parameterized literals.
  */
 case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
-    extends Rule[SparkPlan] {
+    extends Rule[SparkPlan] with SparkSupport {
   private def addFallback(plan: SparkPlan): SparkPlan = {
     // skip fallback plan when optimizations are already disabled,
     // or if the plan is not a top-level one e.g. a subquery or inside
@@ -808,7 +808,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
-      case _ => CodegenSparkFallback(plan, session)
+      case _ => internals.newCodegenSparkFallback(plan, session)
     }
   }
 

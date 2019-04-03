@@ -18,26 +18,22 @@ package org.apache.spark.sql.streaming
 
 import scala.collection.immutable
 
+import org.apache.spark.sql.SparkSupport
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation
 import org.apache.spark.sql.catalyst.expressions.Attribute
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Statistics}
+import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.streaming.SnappyStreamingContext
 import org.apache.spark.streaming.dstream.DStream
 
-
-case class LogicalDStreamPlan(output: Seq[Attribute],
+abstract case class LogicalDStreamPlan(output: Seq[Attribute],
     stream: DStream[InternalRow])
     (val streamingSnappy: SnappyStreamingContext)
-    extends LogicalPlan with MultiInstanceRelation {
+    extends LogicalPlan with MultiInstanceRelation with SparkSupport {
 
   def newInstance(): LogicalDStreamPlan =
-    LogicalDStreamPlan(output.map(_.newInstance()),
-      stream)(streamingSnappy).asInstanceOf[this.type]
-
-  @transient override lazy val statistics = Statistics(
-    sizeInBytes = BigInt(streamingSnappy.snappySession.sessionState.conf.defaultSizeInBytes)
-  )
+    internals.newLogicalDStreamPlan(output.map(_.newInstance()),
+      stream, streamingSnappy).asInstanceOf[this.type]
 
   def children: immutable.Nil.type = Nil
 }
