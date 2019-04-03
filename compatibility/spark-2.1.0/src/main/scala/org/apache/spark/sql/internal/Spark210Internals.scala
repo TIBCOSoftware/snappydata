@@ -44,17 +44,19 @@ import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, UnknownPartit
 import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, SQLBuilder, TableIdentifier}
+import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchange}
 import org.apache.spark.sql.execution.ui.{SQLTab, SnappySQLListener}
-import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec, aggregate}
 import org.apache.spark.sql.hive.{SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
 import org.apache.spark.sql.sources.{BaseRelation, Filter, PutIntoTable, ResolveQueryHints}
-import org.apache.spark.sql.streaming.StreamingQueryManager
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.SnappyStreamingContext
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.{SparkConf, SparkContext, SparkException}
 
 /**
@@ -402,6 +404,16 @@ class Spark210Internals extends SparkInternals {
       UnknownPartitioning(0), metadata, tableIdentifier)
   }
 
+  override def newCodegenSparkFallback(child: SparkPlan,
+      session: SnappySession): CodegenSparkFallback = {
+    new CodegenSparkFallbackImpl(child, session)
+  }
+
+  override def newLogicalDStreamPlan(output: Seq[Attribute], stream: DStream[InternalRow],
+      streamingSnappy: SnappyStreamingContext): LogicalDStreamPlan = {
+    new LogicalDStreamPlanImpl(output, stream)(streamingSnappy)
+  }
+
   override def newCatalogDatabase(name: String, description: String,
       locationUri: String, properties: Map[String, String]): CatalogDatabase = {
     CatalogDatabase(name, description, locationUri, properties)
@@ -499,7 +511,7 @@ class Spark210Internals extends SparkInternals {
       functionRegistry: FunctionRegistry, conf: SQLConf,
       hadoopConf: Configuration): SnappySessionCatalog = {
     new SnappySessionCatalogImpl(sessionState.snappySession, externalCatalog, globalTempViewManager,
-      sessionState.functionResourceLoader, functionRegistry, sessionState.sqlParser,
+      sessionState.functionResourceLoader, functionRegistry, sessionState.snappySqlParser,
       conf, hadoopConf)
   }
 
@@ -607,6 +619,11 @@ class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
 
   override protected def baseRenameTable(schema: String, oldName: String, newName: String): Unit =
     super.renameTable(schema, oldName, newName)
+
+  override protected def baseLoadDynamicPartitions(schema: String, table: String, loadPath: String,
+      partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
+    super.loadDynamicPartitions(schema, table, loadPath, partition, replace, numDP, holdDDLTime)
+  }
 
   override protected def baseCreateFunction(schema: String,
       funcDefinition: CatalogFunction): Unit = super.createFunction(schema, funcDefinition)
@@ -789,11 +806,11 @@ class SnappySessionStateImpl(override val snappySession: SnappySession)
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
 
-  override val conf: SnappyConf = new SnappyConf(snappySession)
+  override lazy val conf: SnappyConf = new SnappyConf(snappySession)
 
-  override val sqlParser: SnappySqlParser = contextFunctions.newSQLParser(snappySession)
+  override lazy val sqlParser: SnappySqlParser = contextFunctions.newSQLParser(snappySession)
 
-  override val streamingQueryManager: StreamingQueryManager = {
+  override lazy val streamingQueryManager: StreamingQueryManager = {
     // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
     // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
     // implies that Snappydata aggregation optimisation will be turned off for any usage of
@@ -824,4 +841,22 @@ class SnappySessionStateImpl(override val snappySession: SnappySession)
     }
   }
 
+}
+
+final class CodegenSparkFallbackImpl(child: SparkPlan,
+    session: SnappySession) extends CodegenSparkFallback(child, session) {
+
+  override def generateTreeString(depth: Int, lastChildren: Seq[Boolean], builder: StringBuilder,
+      verbose: Boolean, prefix: String): StringBuilder = {
+    child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
+  }
+}
+
+final class LogicalDStreamPlanImpl(output: Seq[Attribute],
+    stream: DStream[InternalRow])(streamingSnappy: SnappyStreamingContext)
+    extends LogicalDStreamPlan(output, stream)(streamingSnappy) {
+
+  @transient override lazy val statistics: Statistics = Statistics(
+    sizeInBytes = BigInt(streamingSnappy.snappySession.sessionState.conf.defaultSizeInBytes)
+  )
 }

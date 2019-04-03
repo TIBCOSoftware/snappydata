@@ -35,7 +35,7 @@ import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMo
  * Catch exceptions in code generation of SnappyData plans and fallback
  * to Spark plans as last resort (including non-code generated paths).
  */
-case class CodegenSparkFallback(var child: SparkPlan,
+abstract case class CodegenSparkFallback(var child: SparkPlan,
     @transient session: SnappySession) extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
@@ -185,10 +185,6 @@ case class CodegenSparkFallback(var child: SparkPlan,
 
   def execute(plan: SparkPlan): RDD[InternalRow] =
     executeWithFallback(_.execute(), plan)
-
-  override def generateTreeString(depth: Int, lastChildren: Seq[Boolean],
-      builder: StringBuilder, verbose: Boolean, prefix: String): StringBuilder =
-    child.generateTreeString(depth, lastChildren, builder, verbose, prefix)
 
   // override def children: Seq[SparkPlan] = child.children
 

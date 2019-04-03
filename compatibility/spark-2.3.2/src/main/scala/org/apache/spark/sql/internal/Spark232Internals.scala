@@ -47,11 +47,14 @@ import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunction
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
-import org.apache.spark.sql.execution.{CacheManager, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
+import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
+import org.apache.spark.streaming.SnappyStreamingContext
+import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.util.Utils
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -322,6 +325,16 @@ class Spark232Internals extends SparkInternals {
 
   private def toURI(uri: String): URI = {
     if (uri.contains("://")) new URI(uri) else new URI("file://" + Paths.get(uri).toAbsolutePath)
+  }
+
+  override def newCodegenSparkFallback(child: SparkPlan,
+      session: SnappySession): CodegenSparkFallback = {
+    new CodegenSparkFallbackImpl(child, session)
+  }
+
+  override def newLogicalDStreamPlan(output: Seq[Attribute], stream: DStream[InternalRow],
+      streamingSnappy: SnappyStreamingContext): LogicalDStreamPlan = {
+    new LogicalDStreamPlanImpl(output, stream)(streamingSnappy)
   }
 
   override def newCatalogDatabase(name: String, description: String,
@@ -700,4 +713,22 @@ final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
     }
     functionRegistry.registerFunction(func, info, builder)
   }
+}
+
+final class CodegenSparkFallbackImpl(child: SparkPlan,
+    session: SnappySession) extends CodegenSparkFallback(child, session) {
+
+  override def generateTreeString(depth: Int, lastChildren: Seq[Boolean], builder: StringBuilder,
+      verbose: Boolean, prefix: String, addSuffix: Boolean): StringBuilder = {
+    child.generateTreeString(depth, lastChildren, builder, verbose, prefix, addSuffix)
+  }
+}
+
+final class LogicalDStreamPlanImpl(output: Seq[Attribute],
+    stream: DStream[InternalRow])(streamingSnappy: SnappyStreamingContext)
+    extends LogicalDStreamPlan(output, stream)(streamingSnappy) {
+
+  override def stats: Statistics = Statistics(
+    sizeInBytes = BigInt(streamingSnappy.snappySession.sessionState.conf.defaultSizeInBytes)
+  )
 }

@@ -158,7 +158,8 @@ public final class SnappySharedState extends SharedState {
   @Override
   public ExternalCatalog externalCatalog() {
     if (this.initialized) {
-      return this.embedCatalog;
+      // noinspection RedundantCast
+      return (ExternalCatalog)this.embedCatalog;
     } else {
       // in super constructor, no harm in returning super's value at this point
       return super.externalCatalog();
