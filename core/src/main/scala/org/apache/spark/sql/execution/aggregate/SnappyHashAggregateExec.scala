@@ -49,7 +49,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.types.{ArrayType, BinaryType, DataType, MapType, StringType, StructType, TypeUtilities}
+import org.apache.spark.sql.types.{ArrayType, BinaryType, MapType, StringType, StructType, TypeUtilities}
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
@@ -72,7 +72,7 @@ case class SnappyHashAggregateExec(
     hasDistinct: Boolean)
     extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
-  val isFixedWidthAggregate = aggregateBufferAttributes.forall( attr =>
+  val isFixedWidthAggregate: Boolean = aggregateBufferAttributes.forall( attr =>
     TypeUtilities.isFixedWidth(attr.dataType))
 
   override def nodeName: String = "SnappyHashAggregate"
@@ -558,7 +558,7 @@ case class SnappyHashAggregateExec(
   private def doProduceWithKeysForSHAMap(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
     ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
-     // Create a name for iterator from HashMap
+    // Create a name for iterator from HashMap
     val mapCounter = ctx.freshName("mapCounter")
     ctx.addMutableState("int", mapCounter, s"$mapCounter = 0;")
 
@@ -570,7 +570,7 @@ case class SnappyHashAggregateExec(
     val numBytesForNullKeyBits = this.groupingAttributes.length / 8 +
       (if (this.groupingAttributes.length % 8 > 0) 1 else 0)
 
-    if ( numBytesForNullKeyBits > 8) {
+    if (numBytesForNullKeyBits > 8) {
       ctx.addMutableState("byte[]", nullKeysBitsetTerm,
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullKeyBits];")
     }
@@ -588,12 +588,12 @@ case class SnappyHashAggregateExec(
     val vdBaseObjectTerm = ctx.freshName("vdBaseObjectTerm")
     val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
     // generate variable names for holding data from the Map buffer
-    val aggregateBufferVars = for (i <- 0 until aggregateExpressions.length) yield {
-      ctx.freshName(s"buffer_${i}")
+    val aggregateBufferVars = for (i <- aggregateExpressions.indices) yield {
+      ctx.freshName(s"buffer_$i")
     }
 
-    val KeyBufferVars = for (i <- 0 until groupingExpressions.length) yield {
-      ctx.freshName(s"key_${i}")
+    val KeyBufferVars = for (i <- groupingExpressions.indices) yield {
+      ctx.freshName(s"key_$i")
     }
 
     val keysDataType = this.groupingAttributes.map(_.dataType)
@@ -607,10 +607,10 @@ case class SnappyHashAggregateExec(
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val numKeyBytesTerm = (ctx.freshName("numKeyBytes"))
+    val numKeyBytesTerm = ctx.freshName("numKeyBytes")
     byteBufferAccessor = ByteBufferHashMapAccessor(session, ctx, groupingExpressions,
-        aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-         this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
+      aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
+      this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
       currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm)
 
@@ -618,7 +618,7 @@ case class SnappyHashAggregateExec(
 
     val bbDataClass = classOf[ByteBufferData].getName
 
-    val numKeyColumns = groupingExpressions.length
+
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
         (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4)
@@ -633,7 +633,7 @@ case class SnappyHashAggregateExec(
           $bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
           Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
           long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-          ${allocatorClass} ${allocatorTerm} = ${gfeCacheImplClass}.
+          $allocatorClass $allocatorTerm = $gfeCacheImplClass.
                getCurrentBufferAllocator();
           $childProduce
 
@@ -642,9 +642,9 @@ case class SnappyHashAggregateExec(
        """)
 
     // generate code for output
-  /*  val keyBufferTerm = ctx.freshName("keyBuffer")
-    val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
-      keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
+    /*  val keyBufferTerm = ctx.freshName("keyBuffer")
+      val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
+        keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
 
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
       iterValueOffsetTerm, true)
@@ -667,12 +667,12 @@ case class SnappyHashAggregateExec(
         $doAgg();
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
       }
-      ${allocatorClass} ${allocatorTerm} = ${gfeCacheImplClass}.
+      $allocatorClass $allocatorTerm = $gfeCacheImplClass.
                       getCurrentBufferAllocator();
       ${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
       ${byteBufferAccessor.initKeyOrBufferVal(keysDataType, KeyBufferVars)}
       // output the result
-      ${bbDataClass}  ${valueDataTerm} = ${hashMapTerm}.getValueData();
+      $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
       long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
 
@@ -800,8 +800,8 @@ case class SnappyHashAggregateExec(
       }
     }
     // generate variable names for holding data from the Map buffer
-    val aggregateBufferVars = for (i <- 0 until aggregateExpressions.length) yield {
-      ctx.freshName(s"buffer_${i}")
+    val aggregateBufferVars = for (i <- aggregateExpressions.indices) yield {
+      ctx.freshName(s"buffer_$i")
     }
     val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
@@ -813,7 +813,6 @@ case class SnappyHashAggregateExec(
     val initCode = evaluateVariables(initVars)
     val keysDataType = this.groupingAttributes.map(_.dataType)
     val aggBuffDataTypes = this.aggregateBufferAttributesForGroup.map(_.dataType)
-
 
 
     // if aggregate expressions uses some of the key variables then signal those
@@ -867,10 +866,8 @@ case class SnappyHashAggregateExec(
        |${evaluateVariables(updateEvals)}
        |
        |// update generated class object fields
-       |${byteBufferAccessor.generateUpdate( bufferVars, aggBuffDataTypes, updateEvals)}
-
+       |${byteBufferAccessor.generateUpdate(bufferVars, aggBuffDataTypes, updateEvals)}
       """.stripMargin
-
   }
 
   private def doConsumeWithKeys(ctx: CodegenContext,
