@@ -30,7 +30,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
-case class ByteBufferHashMapAccessor(@transient session: SnappySession,
+case class SHAMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
   @transient valueExprs: Seq[Expression], classPrefix: String,
   hashMapTerm: String, @transient consumer: CodegenSupport,
@@ -642,7 +642,7 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
   }
 }
 
-object ByteBufferHashMapAccessor {
+object SHAMapAccessor {
 
   def getPartialFunctionForWriting(baseObjectVar: String, offsetVar: String):
   PartialFunction[(DataType, String), String] = {

@@ -445,7 +445,7 @@ case class SnappyHashAggregateExec(
 
   // utility to generate class for optimized map, and hash map access methods
   @transient private var keyBufferAccessor: ObjectHashMapAccessor = _
-  @transient private var byteBufferAccessor: ByteBufferHashMapAccessor = _
+  @transient private var byteBufferAccessor: SHAMapAccessor = _
   @transient private var mapDataTerm: String = _
   @transient private var maskTerm: String = _
   @transient private var dictionaryArrayTerm: String = _
@@ -608,7 +608,7 @@ case class SnappyHashAggregateExec(
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
-    byteBufferAccessor = ByteBufferHashMapAccessor(session, ctx, groupingExpressions,
+    byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
       this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
       currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
