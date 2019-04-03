@@ -122,7 +122,7 @@ object SingleNodeTest {
       }
 
       val scanRDD = plan.map(_.dataRDD).
-        getOrElse(throw new AssertionError("Expecting ColumnTable Scan"))
+          getOrElse(throw new AssertionError("Expecting ColumnTable Scan"))
       val partitions = scanRDD.partitions
       assert(plan.get.outputPartitioning == SinglePartition)
       assert(partitions.length == 1, {
@@ -142,17 +142,17 @@ object SingleNodeTest {
       assert(bstr.forall(_.toInt == bucketId), s"Expected $bucketId, found $bstr")
 
       val metrics = df.queryExecution.executedPlan.collectLeaves().head
-        .metrics
-        .filterKeys(k =>
-          k.equals("columnBatchesSeen") ||
-            k.equals("columnBatchesSkipped")
-        ).toList
+          .metrics
+          .filterKeys(k =>
+            k.equals("columnBatchesSeen") ||
+                k.equals("columnBatchesSkipped")
+          ).toList
 
       assert(metrics.head._2.value - metrics(1)._2.value == 1,
         s"Stats Predicate filter not applied during scan ? \n" +
-          s" difference between" +
-          s" ${metrics.map(a => s"${a._2.value} (${a._1})").mkString(" and ")}" +
-          s" is expected to be exactly 1.")
+            s" difference between" +
+            s" ${metrics.map(a => s"${a._2.value} (${a._1})").mkString(" and ")}" +
+            s" is expected to be exactly 1.")
     }
 
     validateSinglePartition(executeQuery(snc, query1 + 1, 1), 4)
