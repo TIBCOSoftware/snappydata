@@ -25,7 +25,6 @@ import org.scalatest.BeforeAndAfterAll
 import org.junit.Assert._
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
-import org.apache.spark.sql.SnappySession
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
