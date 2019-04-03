@@ -42,11 +42,12 @@ import org.apache.spark.unsafe.types.UTF8String
 case class ByteBufferHashMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
   @transient valueExprs: Seq[Expression], classPrefix: String,
-  hashMapTerm: String, dataTerm: String, @transient consumer: CodegenSupport,
+  hashMapTerm: String, @transient consumer: CodegenSupport,
   @transient cParent: CodegenSupport, override val child: SparkPlan,
   valueOffsetTerm: String, numKeyBytesTerm: String,
   currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
-  vdBaseObjectTerm: String, vdBaseOffsetTerm: String)
+  vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
+  nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int, allocatorTerm: String)
   extends UnaryExecNode with CodegenSupport {
 
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
@@ -65,33 +66,57 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     row: ExprCode): String = {
     throw new UnsupportedOperationException("unexpected invocation")
   }
+
   def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
     currentValueOffsetTerm: String, isKey: Boolean):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
-    dataTypes.zip(varNames).map { case (dt, varName) => {
+
+    val allocatorClass = classOf[BufferAllocator].getName
+    val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
+    val byteBufferClass = classOf[ByteBuffer].getName
+    val nullKeyBitsReadCode = if (isKey) {
+      readNullKeyBitsCode(currentValueOffsetTerm)
+    } else {
+      ""
+    }
+    dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) => {
       val nullVar = ctx.freshName("isNull")
-      dt match {
+      val nullVarCode = if (isKey) {
+        if (numBytesForNullKeyBits <= 8) {
+          s"""
+            boolean $nullVar = ($nullKeysBitsetTerm & (0x01 << ${i})) == 0;
+        """.stripMargin
+        } else {
+          val remainder = i % 8
+          val index = i / 8 +
+            (if (remainder > 0) 1 else 0)
+          s"""
+            boolean $nullVar = ($nullKeysBitsetTerm[$index] & (0x01 << ${remainder})) == 0; \n
+        """.stripMargin
+        }
+      } else {
+        s"boolean $nullVar = false;"
+      }
+
+      val evaluationCode = dt match {
         case StringType => {
-          val allocator = ctx.freshName("allocator")
+
           val holder = ctx.freshName("holder")
           val holderBaseObject = ctx.freshName("holderBaseObject")
           val holderBaseOffset = ctx.freshName("holderBaseOffset")
-          val allocatorClass = classOf[BufferAllocator].getName
-          val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
-          val byteBufferClass = classOf[ByteBuffer].getName
-          val plaformClass = classOf[Platform].getName
+
+
           val len = ctx.freshName("len")
-          ExprCode(
+
             s"""
             int $len = $plaformClass.getInt($vdBaseObjectTerm,
           $vdBaseOffsetTerm + $currentValueOffsetTerm);
-          ${allocatorClass} ${allocator} = ${gfeCacheImplClass}.
-            getCurrentBufferAllocator();
-          ${byteBufferClass} ${holder} =  ${allocator}.
+
+          ${byteBufferClass} ${holder} =  ${allocatorTerm}.
             allocate($len, "SHA");
-          Object $holderBaseObject = $allocator.baseObject($holder);
-          long $holderBaseOffset = $allocator.baseOffset($holder);
+          Object $holderBaseObject = $allocatorTerm.baseObject($holder);
+          long $holderBaseOffset = $allocatorTerm.baseOffset($holder);
            $currentValueOffsetTerm += 4;
            $plaformClass.copyMemory($vdBaseObjectTerm,
             $vdBaseOffsetTerm + $currentValueOffsetTerm,
@@ -99,11 +124,10 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
            $varName = ${classOf[UTF8String].getName}.
            fromAddress($holderBaseObject, $holderBaseOffset, $len);
              $currentValueOffsetTerm += $len;
-           boolean $nullVar = false;
-          """.stripMargin, nullVar, varName)
+          """.stripMargin
         }
         case x =>
-          ExprCode(s"$varName = ${
+         s"$varName = ${
             x match {
               case ByteType => s"$plaformClass.getByte($vdBaseObjectTerm, " +
                 s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
@@ -120,15 +144,59 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
             }
           }; " +
             s"""
-                \n $currentValueOffsetTerm += ${dt.defaultSize}; \n boolean $nullVar = false;
+                \n $currentValueOffsetTerm += ${dt.defaultSize}; \n
             // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
-             """,
-            nullVar, varName)
-
+             """
       }
+      val exprCode =
+        s"""
+            $nullKeyBitsReadCode
+            ${nullVarCode}
+           if (!$nullVar) {
+             $evaluationCode
+           }
+         """.stripMargin
+      ExprCode(exprCode, nullVar, varName)
+
     }
 
     }
+  }
+
+  def readNullKeyBitsCode(currentValueOffsetTerm: String): String = {
+    val plaformClass = classOf[Platform].getName
+      if (numBytesForNullKeyBits  == 1) {
+        s"""
+            byte $nullKeysBitsetTerm = ${plaformClass}.getByte($vdBaseObjectTerm,
+          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $currentValueOffsetTerm += 1; \n
+          """.stripMargin
+      } else if (numBytesForNullKeyBits == 2) {
+        s"""
+            short $nullKeysBitsetTerm = ${plaformClass}.getShort($vdBaseObjectTerm,
+          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $currentValueOffsetTerm += 2; \n
+          """.stripMargin
+      } else if (numBytesForNullKeyBits <= 4) {
+        s"""
+          int $nullKeysBitsetTerm = ${plaformClass}.getInt($vdBaseObjectTerm,
+          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $currentValueOffsetTerm += 4; \n
+          """.stripMargin
+      } else if (numBytesForNullKeyBits <= 8) {
+        s"""
+          long $nullKeysBitsetTerm = ${plaformClass}.getLong($vdBaseObjectTerm,
+          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $currentValueOffsetTerm += 8; \n
+          """.stripMargin
+      } else {
+        s"""
+           $plaformClass.copyMemory($vdBaseObjectTerm,
+          $vdBaseOffsetTerm + $currentValueOffsetTerm, $nullKeysBitsetTerm,
+           ${Platform.BYTE_ARRAY_OFFSET}, $numBytesForNullKeyBits); \n
+           $currentValueOffsetTerm += $numBytesForNullKeyBits; \n
+         """.stripMargin
+      }
   }
 
 
@@ -159,11 +227,10 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
 
     val keyBytesHolder = (ctx.freshName("keyBytesHolder"))
     val numValueBytes = (ctx.freshName("numValueBytes"))
-    val allocator = ctx.freshName("allocator")
-    val allocatorClass = classOf[BufferAllocator].getName
+
     val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
     val baseKeyoffset = ctx.freshName("baseKeyoffset")
-    val baseObject = ctx.freshName("baseObject")
+    val baseKeyObject = ctx.freshName("baseKeyObject")
 
     val valueInit = valueInitCode + '\n'
     val numAggBytes = aggregateDataTypes.foldLeft(0)( _ + _.defaultSize)
@@ -174,30 +241,104 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
         val inputEvals = evaluateVariables(input)
 
         s"""
-           ${allocatorClass} ${allocator} = ${gfeCacheImplClass}.
-                   getCurrentBufferAllocator();
-          // evaluate the key expressions
+           ${initNullKeyBitsetCode}
+
+          // evaluate input row vars
           $inputEvals
+
+           // evaluate key vars
           ${evaluateVariables(keyVars)}
+
+           // evaluate null key bits
+          ${evaluateNullKeyBits(keyVars)}
+
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
-        //  System.out.println("hash code for key = " +${hashVar(0)});
+
+          //  System.out.println("hash code for key = " +${hashVar(0)});
+          // get key size code
           int ${numKeyBytesTerm} = 0;
           ${generateKeySizeCode(keyVars, keysDataType, numKeyBytesTerm)}
+
           int ${numValueBytes} = ${numAggBytes};
           ${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
-      keysDataType, aggregateDataTypes, allocator, baseObject, baseKeyoffset)}
+      keysDataType, aggregateDataTypes, baseKeyObject, baseKeyoffset)}
            // insert or lookup
-          int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseObject, $baseKeyoffset,
+          int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
-          // read key bytes length & position the offset to start of aggregate value
+          // position the offset to start of aggregate value
           $valueOffsetTerm += $numKeyBytesTerm;
-       // ${classOf[ColumnEncoding].getName}.getInt($vdBaseObjectTerm, $vdBaseOffsetTerm + $valueOffsetTerm - 4) ;
           long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
-
          """
 
   }
+
+  def initNullKeyBitsetCode: String = if (numBytesForNullKeyBits == 1) {
+    s"byte $nullKeysBitsetTerm = 0;"
+  } else if (numBytesForNullKeyBits == 2) {
+    s"short $nullKeysBitsetTerm = 0;"
+  } else if (numBytesForNullKeyBits <= 4) {
+    s"int $nullKeysBitsetTerm = 0;"
+  } else if (numBytesForNullKeyBits <= 8) {
+    s"long $nullKeysBitsetTerm = 0l;"
+  } else {
+    s"""
+       for( int i = 0 ; i < $numBytesForNullKeyBits; ++i) {
+         $nullKeysBitsetTerm[i] = 0;
+       }
+     """.stripMargin
+  }
+
+
+   def evaluateNullKeyBits(keyVars: Seq[ExprCode]): String = {
+     val castTerm = if (numBytesForNullKeyBits == 1) {
+       "byte"
+     } else if (numBytesForNullKeyBits == 2) {
+       "short"
+     } else if (numBytesForNullKeyBits <= 4) {
+       "int"
+     } else {
+       "long"
+     }
+     keyVars.zipWithIndex.map {
+       case (expr, i) => {
+         val nullVar = expr.isNull
+         if (numBytesForNullKeyBits > 8) {
+           val remainder = i % 8
+           val index = i / 8 +
+             (if (remainder > 0) 1 else 0)
+
+           if (nullVar.isEmpty || nullVar == "false") {
+             s"""
+            $nullKeysBitsetTerm[$index] |= ($castTerm)((0x01 << ${remainder}));
+          """.stripMargin
+           } else {
+             s"""
+            if (!$nullVar) {
+              $nullKeysBitsetTerm[$index] |= ($castTerm)((0x01 << ${remainder}));
+            }
+          """.stripMargin
+           }
+         }
+        else {
+
+         if (nullVar.isEmpty || nullVar == "false") {
+           s"""
+            $nullKeysBitsetTerm |= ($castTerm)((0x01 << ${i}));
+          """.stripMargin
+         } else {
+           s"""
+            if (!$nullVar) {
+              $nullKeysBitsetTerm |= ($castTerm)((0x01 << ${i}));
+            }
+          """.stripMargin
+           }
+         }
+       }
+
+     }.mkString("\n")
+     }
+
 
 
   def generateUpdate(columnVars: Seq[ExprCode], aggBufferDataType: Seq[DataType],
@@ -272,55 +413,83 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
     }.mkString("\n") */
   }
 
-  def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String, keyBytesHolderVar: String,
-    keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    aggregatesDataType: Seq[DataType], allocatorTerm: String, baseObjectTerm: String, baseKeyoffsetTerm: String): String = {
+  def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String,
+    keyBytesHolderVar: String, keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
+    aggregatesDataType: Seq[DataType], baseKeyObject: String, baseKeyoffsetTerm: String): String = {
 
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = (ctx.freshName("currentOffset"))
     val plaformClass = classOf[Platform].getName
-   val writer = ByteBufferHashMapAccessor.getPartialFunctionForWriting(baseObjectTerm, currentOffset)
+   /*
+   val writer = ByteBufferHashMapAccessor.getPartialFunctionForWriting(
+     baseObjectTerm, currentOffset)
+     */
     s"""
-
-
         ${byteBufferClass} ${keyBytesHolderVar} =  ${allocatorTerm}.
         allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
-        Object $baseObjectTerm = $allocatorTerm.baseObject($keyBytesHolderVar);
+        Object $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVar);
         long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
         long $currentOffset = $baseKeyoffsetTerm;
-        ${keysDataType.zip(keyVars.map(_.value)).foldLeft(""){
-      case (code, (dt, variable)) => {
+        ${writeNullKeyBits(baseKeyObject, currentOffset)}
+
+        ${keysDataType.zip(keyVars).foldLeft(""){
+      case (code, (dt, expr)) => {
+        val variable = expr.value
+        val isNull = expr.isNull
         var codex = code
         codex = codex  + (dt match {
-          case x: AtomicType => typeOf(x.tag) match {
-            case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObjectTerm," +
-              s" $currentOffset, $variable); " +
-              s"\n $currentOffset += 1; \n"
-            case t if t =:= typeOf[Short] => s"\n ${plaformClass}.putShort($baseObjectTerm," +
-              s"$currentOffset, $variable); " +
-              s"\n $currentOffset += 2; \n"
-            case t if t =:= typeOf[Int] => s"\n ${plaformClass}.putInt($baseObjectTerm, " +
-              s"$currentOffset, $variable); " +
-              s"\n $currentOffset += 4; \n"
-            case t if t =:= typeOf[Long] => s"\n ${plaformClass}.putLong($baseObjectTerm," +
-              s" $currentOffset, $variable); " +
-              s"\n $currentOffset += 8; \n"
-            case t if t =:= typeOf[Float] => s"\n ${plaformClass}.putFloat($baseObjectTerm," +
-              s"$currentOffset, $variable); " +
-              s"\n $currentOffset += 4; \n"
-            case t if t =:= typeOf[Double] => s"\n ${plaformClass}.putDouble(" +
-              s"$baseObjectTerm, $currentOffset, $variable); " +
-              s"\n $currentOffset += 8; \n"
+          case x: AtomicType => {
+            val snippet = typeOf(x.tag) match {
+            case t if t =:= typeOf[Byte] =>
+                s"""
+                   ${plaformClass}.putByte($baseKeyObject, $currentOffset,
+                   $variable); \n
+                   $currentOffset += 1; \n
+                """.stripMargin
+            case t if t =:= typeOf[Short] =>
+              s"""
+              ${plaformClass}.putShort($baseKeyObject,
+              $currentOffset, $variable);\n
+              $currentOffset += 2;\n
+              """.stripMargin
+            case t if t =:= typeOf[Int] =>
+              s"""
+                  ${plaformClass}.putInt($baseKeyObject, $currentOffset, $variable);\n
+                 $currentOffset += 4; \n
+                 """.stripMargin
+            case t if t =:= typeOf[Long] => s"""
+               ${plaformClass}.putLong($baseKeyObject, $currentOffset, $variable);\n
+               $currentOffset += 8; \n
+               """
+            case t if t =:= typeOf[Float] => s"""
+              ${plaformClass}.putFloat($baseKeyObject, $currentOffset, $variable);\n
+               $currentOffset += 4; \n
+               """.stripMargin
+            case t if t =:= typeOf[Double] => s"""
+              ${plaformClass}.putDouble($baseKeyObject, $currentOffset, $variable);\n
+               $currentOffset += 8; \n
+               """.stripMargin
             case t if t =:= typeOf[Decimal] =>
               throw new UnsupportedOperationException("implement decimal")
-            case t if t =:= typeOf[UTF8String]  =>  s"\n ${plaformClass}.putInt($baseObjectTerm, $currentOffset, " +
-              s"$variable.numBytes());" +
-              s"\n $currentOffset += 4; \n   $variable.writeToMemory($baseObjectTerm, $currentOffset);" +
-              s"\n $currentOffset += $variable.numBytes(); \n"
+            case t if t =:= typeOf[UTF8String] => s"""
+              ${plaformClass}.putInt($baseKeyObject, $currentOffset,$variable.numBytes());\n
+               $currentOffset += 4; \n
+               $variable.writeToMemory($baseKeyObject, $currentOffset);\n
+               $currentOffset += $variable.numBytes();\n
+               """
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }
-          case _ => throw new UnsupportedOperationException("unknown type " + dt)
-
+          if (isNull.isEmpty || isNull == "false") {
+            snippet
+          } else {
+            s"""
+               if (!$isNull) {
+                 $snippet
+               }
+             """.stripMargin
+          }
+        }
+        case _ => throw new UnsupportedOperationException("unknown type " + dt)
         })
         codex
     }}.mkString("")}
@@ -329,23 +498,23 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
       var codex = code
       codex = codex  + (dt match {
         case x: AtomicType => typeOf(x.tag) match {
-          case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseObjectTerm," +
+          case t if t =:= typeOf[Byte] => s"\n ${plaformClass}.putByte($baseKeyObject," +
             s" $currentOffset, 0); " +
             s"\n $currentOffset += 1; \n"
-          case t if t =:= typeOf[Short] => s"\n ${plaformClass}.putShort($baseObjectTerm," +
+          case t if t =:= typeOf[Short] => s"\n ${plaformClass}.putShort($baseKeyObject," +
             s"$currentOffset, 0); " +
             s"\n $currentOffset += 2; \n"
-          case t if t =:= typeOf[Int] => s"\n ${plaformClass}.putInt($baseObjectTerm, " +
+          case t if t =:= typeOf[Int] => s"\n ${plaformClass}.putInt($baseKeyObject, " +
             s"$currentOffset, 0); " +
             s"\n $currentOffset += 4; \n"
-          case t if t =:= typeOf[Long] => s"\n ${plaformClass}.putLong($baseObjectTerm," +
+          case t if t =:= typeOf[Long] => s"\n ${plaformClass}.putLong($baseKeyObject," +
             s" $currentOffset, 0l); " +
             s"\n $currentOffset += 8; \n"
-          case t if t =:= typeOf[Float] => s"\n ${plaformClass}.putFloat($baseObjectTerm," +
+          case t if t =:= typeOf[Float] => s"\n ${plaformClass}.putFloat($baseKeyObject," +
             s"$currentOffset, 0f); " +
             s"\n $currentOffset += 4; \n"
           case t if t =:= typeOf[Double] => s"\n ${plaformClass}.putDouble(" +
-            s"$baseObjectTerm, $currentOffset, 0); " +
+            s"$baseKeyObject, $currentOffset, 0); " +
             s"\n $currentOffset += 8; \n"
           case t if t =:= typeOf[Decimal] =>
             throw new UnsupportedOperationException("implement decimal")
@@ -358,27 +527,56 @@ case class ByteBufferHashMapAccessor(@transient session: SnappySession,
          """
   }
 
+  def writeNullKeyBits(baseObjectTerm: String, currentOffsetTerm: String): String = {
+    val plaformClass = classOf[Platform].getName
+    if (numBytesForNullKeyBits == 1) {
+      s"\n ${plaformClass}.putByte($baseObjectTerm," +
+        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
+        s"\n $currentOffsetTerm += 1; \n"
+    } else if (numBytesForNullKeyBits == 2) {
+      s"\n ${plaformClass}.putShort($baseObjectTerm," +
+        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
+        s"\n $currentOffsetTerm += 2; \n"
+    } else if (numBytesForNullKeyBits <= 4) {
+      s"\n ${plaformClass}.putInt($baseObjectTerm," +
+        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
+        s"\n $currentOffsetTerm += 4; \n"
+    } else if (numBytesForNullKeyBits <= 8) {
+      s"\n ${plaformClass}.putLong($baseObjectTerm," +
+        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
+        s"\n $currentOffsetTerm += 8; \n"
+    } else {
+      s"\n ${plaformClass}.copyMemory($nullKeysBitsetTerm, ${Platform.BYTE_ARRAY_OFFSET}," +
+        s" $baseObjectTerm, $currentOffsetTerm}, $numBytesForNullKeyBits)" +
+        s"\n $currentOffsetTerm += $numBytesForNullKeyBits; \n"
+    }
+  }
+
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
     numKeyBytesVar: String): String = {
-
-    s"""
-         ${keysDataType.zipWithIndex.foldLeft(s"${numKeyBytesVar} = " ){case (expr, (dt, i)) => {
-      var rs = expr
-      if (i > 0) {
-        rs = rs + " + "
-      }
-      if (TypeUtilities.isFixedWidth(dt)) {
-        rs = rs + dt.defaultSize.toString + ";"
+     s"${numKeyBytesVar} = " +
+       (keysDataType.zip(keyVars).zipWithIndex.map{ case ((dt, expr), i) => {
+      val nullVar = expr.isNull
+      val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
+        dt.defaultSize.toString
       } else {
-        rs = rs + s"${keyVars(i).value}.numBytes() + 4;"
+        s" (${keyVars(i).value}.numBytes() + 4) "
       }
-      rs
+      if (nullVar.isEmpty || nullVar == "false") {
+         notNullSizeExpr
+       } else {
+         s" ($nullVar? 0 : $notNullSizeExpr)"
+       }
     }
-
-
-    }}
-
-         """
+    }.mkString(" + ")
+    ) + (
+    if (numBytesForNullKeyBits  < 3 || numBytesForNullKeyBits > 8) {
+      s" + ${numBytesForNullKeyBits}; \n"
+    } else if (numBytesForNullKeyBits <= 4) {
+      s" + 4; \n"
+    } else {
+      s" + 8; \n"
+    })
   }
   /**
    * Generate code to calculate the hash code for given column variables that
