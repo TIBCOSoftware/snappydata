@@ -667,6 +667,9 @@ case class SnappyHashAggregateExec(
         $doAgg();
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
       }
+      if ($hashMapTerm == null) {
+         return;
+      }
       $allocatorClass $allocatorTerm = $gfeCacheImplClass.
                       getCurrentBufferAllocator();
       ${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
@@ -688,8 +691,14 @@ case class SnappyHashAggregateExec(
         $numOutput.${metricAdd("1")};
         // skip the key length
         $iterValueOffsetTerm += 4;
+       ${byteBufferAccessor.readNullKeyBitsCode(iterValueOffsetTerm)}
         $outputCode
         ++$mapCounter;
+        if ($mapCounter == $sizeTerm) {
+           $hashMapTerm.release();
+           $hashMapTerm = null;
+        }
+
         if (shouldStop()) return;
       }
     """
