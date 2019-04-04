@@ -16,6 +16,8 @@ Snappy>create region --name=regionName --type=PARTITION_PERSISTENT_OVERFLOW
 
 **For non-secured cluster**
 
+## Description
+
 The following table describes the options used for `snappy modify-disk-store`:
 
 | Items | Description |
@@ -26,8 +28,6 @@ The following table describes the options used for `snappy modify-disk-store`:
 
 !!! Note
 	The name of the disk store, the directories its files are stored in, and the region to target are all required arguments.
-
-## Description
 
 ## Examples 
 

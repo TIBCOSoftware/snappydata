@@ -75,7 +75,7 @@ val df = session.createDataFrame(rdd, ds.schema)
 df.write.format("column").saveAsTable("columnTable")
 ```
 
-## Importing Data using JDBC from Rrelational DB
+## Importing Data using JDBC from Relational DB
 
 !!! Note
 	Before you begin, you must install the corresponding JDBC driver. To do so, copy the JDBC driver jar file in **/jars** directory located in the home directory and then restart the cluster.
