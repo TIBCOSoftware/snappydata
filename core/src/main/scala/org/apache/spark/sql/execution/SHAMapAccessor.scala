@@ -64,11 +64,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val plaformClass = classOf[Platform].getName
 
     val byteBufferClass = classOf[ByteBuffer].getName
-    val nullKeyBitsReadCode = if (isKey) {
-      readNullKeyBitsCode(currentValueOffsetTerm)
-    } else {
-      ""
-    }
+
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = ctx.freshName("isNull")
       val nullVarCode = if (isKey) {
@@ -137,7 +133,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }
       val exprCode =
         s"""
-            $nullKeyBitsReadCode
             $nullVarCode
            if (!$nullVar) {
              $evaluationCode
