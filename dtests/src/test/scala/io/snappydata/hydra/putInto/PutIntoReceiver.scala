@@ -113,7 +113,7 @@ class PutIntoReceiver extends SnappyStreamingJob {
             })
             .writeStream
             .format("snappysink")
-            .queryName(s"USERS_$testId")
+            .queryName("USERS_"+tableName)
             .trigger(ProcessingTime("1 seconds"))
             .option("tableName", tableName)
             .option("streamQueryId", "Query_" + tableName)

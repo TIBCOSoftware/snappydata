@@ -65,7 +65,7 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
     runMode = always
     threadGroups = snappyInitThread;
 
-hydra.Prms-totalTaskTimeSec           = 600;
+hydra.Prms-totalTaskTimeSec           = 259200;
 hydra.Prms-maxResultWaitSec           = 3600;
 
 hydra.Prms-maxCloseTaskResultWaitSec  = 3600;
