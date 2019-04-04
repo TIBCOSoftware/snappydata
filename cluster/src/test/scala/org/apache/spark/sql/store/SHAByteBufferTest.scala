@@ -201,7 +201,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       (for (i <- 3 until numKeyCols + 3) yield s"col$i string").mkString(",") + ")"
 
     snc.sql(s" $createTableStr using column ")
-    val range = 200
+    val range = 20
     val groupingDivisor = 10
     val insertStr = "insert into test1 values(?, ?," +
       (for (i <- 0 until numKeyCols ) yield "?").mkString(",") + ")"
@@ -211,7 +211,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.setInt(2, i * 2)
       for (j <- 3 until numKeyCols + 3) {
         if (j == i % numKeyCols) {
-          insertPs.setNull(j, Types.VARCHAR)
+         // insertPs.setNull(j, Types.VARCHAR)
+          insertPs.setString(j, s"col$j-${i % groupingDivisor}")
         } else {
           insertPs.setString(j, s"col$j-${i % groupingDivisor}")
         }
@@ -221,7 +222,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     insertPs.executeBatch()
 
-    for(i <- 3 until numKeyCols + 3) {
+    for(i <- 35 until numKeyCols + 3) {
       println(s"executing query number ${i -2} ")
       val groupingCols = (for (j <- 3 to i ) yield s"col$j").mkString(", ")
       val sqlStr = s"select sum(num1) as summ1, sum(num2) as summ2, $groupingCols " +
@@ -234,8 +235,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
 
 
-
-    for(i <- 3 until numKeyCols + 3) {
+/*
+    for(i <- 35 until numKeyCols + 3) {
       println(s"executing query number ${i -2} ")
       snc.sql("delete from test1")
       // insert 100 rows with num1 as 1 and num2 as 2
@@ -310,7 +311,186 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       }
       assert(foundNullKey)
 
+    } */
+
+    snc.dropTable("test1")
+  }
+
+  test("temp") {
+    val numKeyCols = 100
+    snc
+    var conn = getSqlConnection
+
+    snc.sql("drop table if exists test1")
+
+    val createTableStr = "create table test1 ( num1 int, num2 int," +
+      (for (i <- 3 until numKeyCols + 3) yield s"col$i string").mkString(",") + ")"
+
+    snc.sql(s" $createTableStr using column ")
+    val range = numKeyCols
+    val groupingDivisor = 10
+    val groupingCols = (for (j <- 3 to 35 ) yield s"col$j").mkString(", ")
+    val sqlStr = s"select sum(num1) as summ1, sum(num2) as summ2, $groupingCols " +
+      s" from test1 group by $groupingCols"
+    val insertStr = "insert into test1 values(?, ?," +
+      (for (i <- 0 until numKeyCols ) yield "?").mkString(",") + ")"
+    val insertPs = conn.prepareStatement(insertStr)
+    for (i <- 3 until range) {
+      println(s"executing query making ${i -2} grouping column as null")
+      insertPs.setInt(1, i)
+      insertPs.setInt(2, i * 2)
+      for (j <- 3 until numKeyCols + 3) {
+        if (j == i ) {
+          insertPs.setNull(j, Types.VARCHAR)
+
+        } else {
+          insertPs.setString(j, s"col$j")
+        }
+      }
+      insertPs.addBatch()
+      insertPs.executeBatch()
+      // now query
+      val rs = snc.sql(sqlStr)
+      // import org.apache.spark.sql.execution.debug._
+      // rs.debugCodegen()
+      val results = rs.collect()
+      assertEquals(1, results.length)
+      for (j <- 2 until numKeyCols + 2) {
+        if (j + 1 == i ) {
+          assertTrue(results(0).isNullAt(j))
+        } else {
+          assertEquals(s"col${j + 1}", results(0).getString(j))
+        }
+      }
+      snc.sql("delete from test1")
     }
+
+
+
+    snc.dropTable("test1")
+  }
+
+  test("backup") {
+    val numKeyCols = 100
+    snc
+    var conn = getSqlConnection
+
+    snc.sql("drop table if exists test1")
+
+    val createTableStr = "create table test1 ( num1 int, num2 int," +
+      (for (i <- 3 until numKeyCols + 3) yield s"col$i string").mkString(",") + ")"
+
+    snc.sql(s" $createTableStr using column ")
+    val range = 20
+    val groupingDivisor = 10
+    val insertStr = "insert into test1 values(?, ?," +
+      (for (i <- 0 until numKeyCols ) yield "?").mkString(",") + ")"
+    val insertPs = conn.prepareStatement(insertStr)
+    for (i <- 0 until range) {
+      insertPs.setInt(1, i)
+      insertPs.setInt(2, i * 2)
+      for (j <- 3 until numKeyCols + 3) {
+        if (j == i % numKeyCols) {
+          insertPs.setNull(j, Types.VARCHAR)
+        } else {
+          insertPs.setString(j, s"col$j-${i % groupingDivisor}")
+        }
+      }
+      insertPs.addBatch()
+    }
+
+    insertPs.executeBatch()
+
+    for(i <- 35 until numKeyCols + 3) {
+      println(s"executing query number ${i -2} ")
+      val groupingCols = (for (j <- 3 to i ) yield s"col$j").mkString(", ")
+      val sqlStr = s"select sum(num1) as summ1, sum(num2) as summ2, $groupingCols " +
+        s" from test1 group by $groupingCols"
+      val rs = snc.sql(sqlStr)
+      // import org.apache.spark.sql.execution.debug._
+      // rs.debugCodegen()
+      val results = rs.collect()
+      assertTrue(results.length > 0)
+    }
+
+
+    /*
+        for(i <- 35 until numKeyCols + 3) {
+          println(s"executing query number ${i -2} ")
+          snc.sql("delete from test1")
+          // insert 100 rows with num1 as 1 and num2 as 2
+          // string cols as col-n & rest as null
+          val numRowsInBatch = 100
+          val const1 = 1
+          val const2 = 2
+          val const4 = 4
+          val const8 = 8
+          for(j <- 0 until numRowsInBatch) {
+            insertPs.setInt(1, const1)
+            insertPs.setInt(2, const2)
+             for(k <- 3 to i) {
+               insertPs.setString(k, s"col-$k")
+             }
+            for(p <- i + 1 until numKeyCols + 3) {
+              insertPs.setNull(p, Types.VARCHAR)
+            }
+            insertPs.addBatch()
+          }
+
+          // insert 100 rows with num1 as 4 and num2 as 8
+          // string cols as col-n for n - 1 cols, & the nth col as null
+
+          for(j <- 0 until numRowsInBatch) {
+            insertPs.setInt(1, const4)
+            insertPs.setInt(2, const8)
+            for(k <- 3 until i ) {
+              insertPs.setString(k, s"col-$k")
+            }
+            for(p <- i until numKeyCols + 3) {
+              insertPs.setNull(p, Types.VARCHAR)
+            }
+            insertPs.addBatch()
+          }
+          insertPs.executeBatch()
+
+          val groupingCols = (for (j <- 3 to i ) yield s"col$j").mkString(", ")
+          val sqlStr = s"select sum(num1) as summ1, sum(num2) as summ2, $groupingCols " +
+            s" from test1 group by $groupingCols"
+          val rs = snc.sql(sqlStr)
+
+          val results = rs.collect()
+          assertEquals(2, results.length)
+          val row1 = results(0)
+          val row2 = results(1)
+          var foundNullKey = false
+          if (row1.isNullAt(i - 1)) {
+            foundNullKey = true
+            assertEquals(numRowsInBatch * const4, row1.getLong(0))
+            for (j <- 2 until i - 1) {
+              assertEquals(s"col-${j + 1}", row1.getString(j))
+            }
+          } else {
+            assertEquals(numRowsInBatch * const1, row1.getLong(0))
+            for (j <- 2 until i) {
+              assertEquals(s"col-${j + 1}", row1.getString(j))
+            }
+          }
+
+          if (row2.isNullAt(i - 1)) {
+            foundNullKey = true
+            assertEquals(numRowsInBatch * const4, row2.getLong(0))
+            for (j <- 2 until i - 1) {
+              assertEquals(s"col-${j + 1}", row2.getString(j))
+            }
+          } else {
+            assertEquals(numRowsInBatch * const1, row2.getLong(0))
+            for (j <- 2 until i) {
+              assertEquals(s"col-${j + 1}", row2.getString(j))
+            }
+          }
+          assert(foundNullKey)
+
+        } */
 
     snc.dropTable("test1")
   }
