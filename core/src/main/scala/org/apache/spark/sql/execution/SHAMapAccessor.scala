@@ -243,6 +243,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         keysDataType, aggregateDataTypes, baseKeyObject, baseKeyoffset)
     }
            // insert or lookup
+           System.out.println("executing putIfAbsent of KeyBytes Holder");
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
           // position the offset to start of aggregate value
@@ -330,8 +331,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
             s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
           case IntegerType => s"$plaformClass.putInt($vdBaseObjectTerm, " +
             s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
-          case LongType => s"$plaformClass.putLong($vdBaseObjectTerm, " +
-            s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
+          case LongType => s""" System.out.println("putting updated long");
+                      $plaformClass.putLong($vdBaseObjectTerm,
+            $vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); """
           case FloatType => s"$plaformClass.putFloat($vdBaseObjectTerm, " +
             s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
           case DoubleType => s"$plaformClass.putDouble($vdBaseObjectTerm, " +

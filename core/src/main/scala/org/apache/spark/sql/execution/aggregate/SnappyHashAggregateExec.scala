@@ -51,6 +51,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.{ArrayType, BinaryType, MapType, StringType, StructType, TypeUtilities}
 import org.apache.spark.sql.{SnappySession, collection}
+import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.Utils
 
 /**
@@ -661,6 +662,7 @@ case class SnappyHashAggregateExec(
     val beforeAgg = ctx.freshName("beforeAgg")
 
     s"""
+    //  ${classOf[Platform].getName}.fflag = true;
       if (!$initAgg) {
         $initAgg = true;
         long $beforeAgg = System.nanoTime();
@@ -695,8 +697,8 @@ case class SnappyHashAggregateExec(
         $outputCode
         ++$mapCounter;
         if ($mapCounter == $sizeTerm) {
-           $hashMapTerm.release();
-           $hashMapTerm = null;
+          // $hashMapTerm.release();
+          // $hashMapTerm = null;
         }
 
         if (shouldStop()) return;
