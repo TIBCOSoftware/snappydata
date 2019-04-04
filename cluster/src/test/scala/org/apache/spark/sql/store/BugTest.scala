@@ -21,13 +21,14 @@ import java.sql.{DriverManager, SQLException}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.TestUtil
-import io.snappydata.SnappyFunSuite
-import org.scalatest.BeforeAndAfterAll
+import io.snappydata.{Property, SnappyFunSuite}
 import org.junit.Assert._
+import org.scalatest.BeforeAndAfterAll
 
-
-import org.apache.spark.sql.{Row, SaveMode, SparkSession}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -534,6 +535,67 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     stmt.execute("drop table if exists portfolio")
   }
 
+  test("Bug SNAP-2890") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    val numCols = 132
+    snappy.conf.set(Property.ColumnBatchSize.name, "256")
+    snappy.sql("drop table if exists test1")
+    val sb = new StringBuilder
+    for(i <- 1 until numCols + 1) {
+      sb.append(s"col$i string,")
+    }
+    sb.deleteCharAt(sb.length -1)
+
+    snappy.sql(s"create table test1 (${sb.toString()}) " +
+      "using column ")
+    val params = Array.fill(numCols)('?').mkString(",")
+    val insertStr = s"insert into test1 values (${params})"
+    val ps = conn.prepareStatement(insertStr)
+    for (i <- 0 until 1000) {
+      for (j <- 1 until numCols + 1) {
+        ps.setString(j, j.toString)
+      }
+      ps.addBatch()
+    }
+    ps.executeBatch()
+    snappy.sql(s"create table test2 using column as ( select * from test1)")
+    for(i <- 1 until numCols + 1) {
+      snappy.sql(s"select col${i} from test1").collect().foreach(r =>
+        assert(r.getString(0).toInt == i) )
+    }
+    for(i <- 1 until (numCols + 1)/2) {
+      snappy.sql(s"select col${i}, col${numCols - i + 1} from test1").collect().foreach(r =>
+        {
+          assert(r.getString(0).toInt == i)
+          assert(r.getString(1).toInt == numCols -i + 1)
+        } )
+    }
+    for(i <- 1 until numCols + 1) {
+      val projSeq = for (j <- 1 until i + 1) yield {
+        s"col${j}"
+      }
+      val projectionStr = projSeq.mkString(",")
+
+      snappy.sql(s"select $projectionStr from test1 limit 10").collect().foreach(r =>
+        for (j <- 1 until i + 1 ) {
+          assert(r.getString(j -1).toInt == j)
+        })
+    }
+    snappy.sql("select col126 from test2").collect()
+    snappy.sql("select col128 from test2").collect()
+    snappy.sql("select col127 from test2").collect()
+    snappy.sql("select col130 from test2").collect()
+    snappy.sql("select col129 from test2").collect()
+    snc.sql("drop table if exists test1")
+    snc.sql("drop table if exists test2")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
   test("SNAP-2718") {
     snc
     val path1 = getClass.getResource("/patients1000.csv").getPath
@@ -657,5 +719,55 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("select lower(col1_2) as x, sum(col1_1) as summ from test1 " +
       "group by x").collect
     snc.dropTable("test1")
+  }
+
+  test("Verify number of tasks for limit query") {
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    snc.sql(s"CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet options(path '$hfile')")
+    var numTasks = 0
+    snc.sparkContext.addSparkListener( new SparkListener {
+      override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = numTasks += 1
+    })
+    snc.sql(s"select * from STAGING_AIRLINE limit 1").collect()
+    // num tasks should be 1 as only 1 partition needs to be scanned to get 1 row
+    assert(numTasks == 1, s"numTasks should be 1. numTasks is $numTasks")
+
+    snc.sql(s"CREATE TABLE T1 (COL1 INT) using column options ('buckets' '3')")
+    snc.sql(s"INSERT INTO T1 VALUES (1)")
+    snc.sql(s"INSERT INTO T1 VALUES (2)")
+    snc.sql(s"INSERT INTO T1 VALUES (3)")
+    snc.sql(s"INSERT INTO T1 VALUES (4)")
+    snc.sql(s"INSERT INTO T1 VALUES (5)")
+    snc.sql(s"INSERT INTO T1 VALUES (6)")
+    numTasks = 0
+    snc.sql(s"select * from T1 limit 1").collect()
+    // num tasks should be 1 as only 1 partition needs to be scanned to get 1 row
+    assert(numTasks == 1, s"numTasks should be 1. numTasks is $numTasks")
+    snc.sql(s"drop table STAGING_AIRLINE")
+    snc.sql(s"drop table T1")
+  }
+
+  test("multi-partition limit") {
+    val snappy = snc.snappySession
+    snappy.sql("create table testLimit (id long, data string, data2 string) using column " +
+        "options (partition_by 'id', buckets '128') as " +
+        "select id, 'someTestData_' || id, 'someOtherData_' || id from range(10000)")
+    val schema = snappy.table("testLimit").schema
+    val port = TestUtil.startNetserverAndReturnPort()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$port")
+    val stmt = conn.createStatement()
+    val rows = Utils.resultSetToSparkInternalRows(
+      stmt.executeQuery("select * from testLimit limit 5000"), schema)
+    assert(rows.length === 5000)
+    val res = snappy.sql("select * from testLimit limit 10000")
+    val expected = snappy.sql("select * from testLimit").collect()
+    checkAnswer(res, expected)
+    val res2 = SnappyFunSuite.resultSetToDataset(
+      snappy, stmt)("select * from testLimit limit 10000")
+    checkAnswer(res2, expected)
+
+    conn.close()
+    snappy.sql("drop table testLimit")
+    TestUtil.stopNetServer()
   }
 }
