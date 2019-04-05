@@ -36,11 +36,8 @@ class ArrayTypeAPI1 extends SnappySQLJob{
       val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), true))
       val printDFContent : Boolean = false
 
-//      val sncReadDF : DataFrame = snc.read.json(dataLocation)
-//      val sparkReadDF : DataFrame = spark.read.json(dataLocation)
-
-      val sncReadDF : DataFrame = snc.read.json("/home/cbhatt/ComplexDataSource/ArrayType")
-      val sparkReadDF : DataFrame = spark.read.json("/home/cbhatt/ComplexDataSource/ArrayType")
+      val sncReadDF : DataFrame = snc.read.json(dataLocation)
+      val sparkReadDF : DataFrame = spark.read.json(dataLocation)
 
       println("Started the ArrayType Query 1....")
       val sncSelectDF : DataFrame = sncReadDF.select("*")
