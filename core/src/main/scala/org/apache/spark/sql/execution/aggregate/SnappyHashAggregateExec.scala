@@ -830,8 +830,8 @@ case class SnappyHashAggregateExec(
     // to be materialized explicitly for the dictionary optimization case (AQP-292)
     val updateAttrs = AttributeSet(updateExpr)
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
-    val mapCode = byteBufferAccessor.generateMapGetOrInsert(aggregateBufferVars,
-      initVars, initCode, input, keysExpr, keysDataType, aggBuffDataTypes)
+    val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, input,
+      keysExpr, keysDataType, aggBuffDataTypes)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, byteBufferAccessor.currentOffSetForMapLookupUpdt, false)
