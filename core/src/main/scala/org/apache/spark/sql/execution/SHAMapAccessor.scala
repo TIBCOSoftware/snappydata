@@ -179,26 +179,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
 
-  def initKeyOrBufferVal(aggregateDataTypes: Seq[DataType], aggVarNames: Seq[String]):
-  String = {
-    aggregateDataTypes.zip(aggVarNames).map { case (dt, varName) =>
-      dt match {
-        case ByteType => s"byte $varName = 0;"
-        case ShortType => s"short $varName = 0;"
-        case IntegerType => s"int $varName = 0;"
-        case LongType => s"long $varName = 0;"
-        case FloatType => s"float $varName = 0;"
-        case DoubleType => s"double $varName = 0;"
-        case StringType => s"${classOf[UTF8String].getName} $varName = null;"
-      }
-    }.mkString("\n")
-  }
+  def initKeyOrBufferVal(dataTypes: Seq[DataType], varNames: Seq[String]):
+  String = dataTypes.zip(varNames).map { case (dt, varName) =>
+      s"${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};"
+  }.mkString("\n")
+
 
 
   /**
    * Generate code to lookup the map or insert a new key, value if not found.
    */
-  def generateMapGetOrInsert(aggregateBufferVars: Seq[String], valueInitVars: Seq[ExprCode],
+  def generateMapGetOrInsert(valueInitVars: Seq[ExprCode],
     valueInitCode: String, input: Seq[ExprCode], keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
