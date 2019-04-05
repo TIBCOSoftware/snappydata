@@ -28,6 +28,10 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = i
             runMode = always
             threadGroups = snappyThreads, snappySingleThread, snappyClientAThreads;
 
+INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = createViewsAndDependantTablesForStabilityTest
+            threadGroups = snappySingleThread;
+
+
 hydra.Prms-totalTaskTimeSec           = 259200;
 hydra.Prms-maxResultWaitSec           = 266400;
 
