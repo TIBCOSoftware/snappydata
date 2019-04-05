@@ -172,6 +172,89 @@ public class SnappyConcurrencyTest extends SnappyTest {
     closeConnection(conn);
   }
 
+  public static void createViewsAndDependantTablesForStabilityTest() throws SQLException {
+    Connection conn = getLocatorConnection();
+    String query;
+    query = "set snappydata.sql.hashAggregateSize=-1";
+    conn.createStatement().executeUpdate(query);
+    query = "set spark.driver.maxResultSize=6g";
+    conn.createStatement().executeUpdate(query);
+    query = "create or replace temporary view revenue as select  l_suppkey as supplier_no, " +
+        "sum(l_extendedprice * (1 - l_discount)) as total_revenue from LINEITEM where l_shipdate >= '1993-02-01'" +
+        " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR replace VIEW review_count_GT_10 AS SELECT * FROM (SELECT COUNT(*) AS " +
+        "review_count,PRODUCT_ID FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count > 10";
+    conn.createStatement().executeUpdate(query);
+    query = " CREATE OR REPLACE VIEW REVIEW_count_rating_GT_3 AS SELECT COUNT(*) AS review_count ," +
+        "PRODUCT_ID FROM (SELECT PRODUCT_ID FROM REVIEWS WHERE STAR_RATING > 3) GROUP BY PRODUCT_ID";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR REPLACE VIEW REVIE_RANKINGS AS SELECT PRODUCT_ID,STAR_RATING,RANK() OVER" +
+        " (PARTITION BY PRODUCT_ID ORDER BY REVIEW_DATE) AS REVIEW_NUMBER FROM REVIEWS";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR REPLACE VIEW COUNT_PER_RATING_REVIEW_NUMBER AS SELECT COUNT(*) COUNT," +
+        "REVIEW_NUMBER,STAR_RATING FROM REVIE_RANKINGS GROUP BY REVIEW_NUMBER,STAR_RATING ORDER BY REVIEW_NUMBER";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR REPLACE VIEW COUNT_PER_REVIEW_NUMBER AS SELECT COUNT(*) COUNT," +
+        "REVIEW_NUMBER FROM REVIE_RANKINGS GROUP BY REVIEW_NUMBER ORDER BY REVIEW_NUMBER";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR replace VIEW votes_by_category_and_marketplace AS SELECT CUSTOMER_ID,MARKETPLACE," +
+        "product_category,TOTAL_VOTES,RANK() OVER (PARTITION BY MARKETPLACE,product_category ORDER BY " +
+        "TOTAL_VOTES DESC) AS RANK FROM (SELECT CUSTOMER_ID,MARKETPLACE,product_category,SUM(TOTAL_VOTES) " +
+        "AS TOTAL_VOTES FROM REVIEWS GROUP BY CUSTOMER_ID,MARKETPLACE,product_category)";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR REPLACE VIEW total_customers_per_marketplace_and_category AS SELECT " +
+        "COUNT(customer_id) AS COUNT,marketplace,product_category FROM votes_by_category_and_marketplace " +
+        "GROUP BY marketplace,product_category";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR REPLACE VIEW product_ratings AS SELECT MARKETPLACE,PRODUCT_ID,AVG(STAR_RATING)" +
+        " AS avg_rating FROM REVIEWS GROUP BY MARKETPLACE,PRODUCT_ID";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR replace VIEW products_with_votes_lt_50 AS (SELECT * FROM (SELECT PRODUCT_ID, " +
+        "COUNT(*) review_count FROM REVIEWS GROUP BY PRODUCT_ID) WHERE review_count < 50)";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE OR replace VIEW rating_gt_3_count AS SELECT PRODUCT_ID, COUNT(*) AS review_count " +
+        "FROM (SELECT * FROM REVIEWS WHERE STAR_RATING > 3) GROUP BY PRODUCT_ID";
+    conn.createStatement().executeUpdate(query);
+    query = "create table IF NOT EXISTS weak_hearts using column as select patient from " +
+        "(select patient, case when description = 'Major depression  single episode' then 1 else 0 end as " +
+        "attack_once, case when description = 'Major depression disorder' then 1 else 0 end as attacked " +
+        "from conditions) c group by patient having sum(attack_once) = 0 and sum(attacked) > 0";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE VIEW IF NOT EXISTS depression_patients_group_by_ethnicity  AS SELECT" +
+        " p.ethnicity,COUNT(1)  AS COUNT FROM conditions c  JOIN patients p ON p.id = c.patient  " +
+        "WHERE description LIKE '%Major depression disorder%' GROUP BY p.ethnicity";
+    conn.createStatement().executeUpdate(query);
+    query = "create view IF NOT EXISTS hview as select p.id, p.ETHNICITY from " +
+        "patients p, conditions c  where p.id = c.patient and c.description = 'Hypertension'";
+    conn.createStatement().executeUpdate(query);
+    query = "create view IF NOT EXISTS hviewethgroup as select count(*) cnt, ETHNICITY  " +
+        "from hview  group by ETHNICITY order by cnt desc";
+    conn.createStatement().executeUpdate(query);
+    query = "create view IF NOT EXISTS ethnicity_count_with_major_depression  as " +
+        "select p.ETHNICITY, count(1) as count from PATIENTS as p, CONDITIONS as c " +
+        "where p.ID = c.PATIENT and c.DESCRIPTION like 'Major depression disorder' group by 1";
+    conn.createStatement().executeUpdate(query);
+    query = "create view IF NOT EXISTS ethnicity_without_single_episode  " +
+        "as select distinct(p2.ETHNICITY) from PATIENTS as p2, CONDITIONS as c2 where " +
+        "p2.ID = c2.PATIENT and c2.DESCRIPTION not like 'Major depression  single episode'";
+    conn.createStatement().executeUpdate(query);
+    query = "create table IF NOT EXISTS q using column as select patient " +
+        "from (select  *, case when description in " +
+        "('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+        "'Major depressive disorder clinical management plan') then 1 else 0 end " +
+        " as coverage from careplans) c group by patient having sum(coverage) = 0";
+    conn.createStatement().executeUpdate(query);
+    query = "CREATE VIEW IF NOT EXISTS patient_expenses AS SELECT concat(p.first, ' ', p.LAST) AS " +
+        "name, p.city,m.total_cost AS expenses  FROM patients p  JOIN (SELECT patient, " +
+        "SUM(cost) AS total_cost  FROM ((SELECT patient, totalcost AS cost FROM medications) " +
+        "UNION ALL  (SELECT patient, cost FROM immunizations ) UNION ALL  (SELECT patient, cost " +
+        "FROM encounters)  UNION ALL (SELECT patient,cost FROM procedures))  GROUP BY patient ) m " +
+        "ON p.id = m.patient";
+    conn.createStatement().executeUpdate(query);
+    closeConnection(conn);
+  }
+
   public static void validateNumQueriesExecuted() throws SQLException {
     int numQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numQueriesExecuted);
     int numpointLookUpQueriesExecuted = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB
