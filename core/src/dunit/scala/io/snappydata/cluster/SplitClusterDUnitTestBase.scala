@@ -69,7 +69,7 @@ trait SplitClusterDUnitTestBase extends Logging {
 
   protected def props: Map[String, String] = testObject.props
 
-  protected def sparkOldProductDir: String
+  protected def sparkProductDir: String
 
   protected def locatorClientPort: Int
 

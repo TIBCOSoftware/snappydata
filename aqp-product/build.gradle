@@ -1,0 +1,14 @@
+
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDirs = [ '../aqp/gemfire-core/src/main/java', '../aqp/src/main/scala' ]
+sourceSets.main.java.srcDirs = []
+
+dependencies {
+  compileOnly 'org.scala-lang:scala-library:' + scalaVersion
+  compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
+
+  compile project(':snappy-core-product_' + scalaBinaryVersion)
+}

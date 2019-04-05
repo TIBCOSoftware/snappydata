@@ -83,13 +83,13 @@ class SnappySinkProviderDUnitTest(s: String)
 
     (snappyProductDir + "/sbin/snappy-start-all.sh").!!
 
-    vm.invoke(getClass, "startSparkCluster", sparkOldProductDir)
+    vm.invoke(getClass, "startSparkCluster", sparkProductDir)
 
   }
 
   override def afterClass(): Unit = {
     super.afterClass()
-    vm.invoke(getClass, "stopSparkCluster", sparkOldProductDir)
+    vm.invoke(getClass, "stopSparkCluster", sparkProductDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     (snappyProductDir + "/sbin/snappy-stop-all.sh").!!
@@ -100,7 +100,7 @@ class SnappySinkProviderDUnitTest(s: String)
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
 
-  private val sparkOldProductDir = getEnvironmentVariable("APACHE_SPARK_OLD_HOME")
+  private val sparkProductDir = getEnvironmentVariable("APACHE_SPARK_HOME")
 
   def testStructuredStreaming(): Unit = {
     vm.invoke(getClass, "doTestStructuredStreaming",

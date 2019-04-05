@@ -25,6 +25,9 @@ sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala', 'src/dunit/
 sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = [ ]
 
+String coreProjectName = sparkVersion == sparkConnectorVersion
+    ? ':snappy-core_' + scalaBinaryVersion : ':snappy-core-product_' + scalaBinaryVersion
+
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -34,7 +37,7 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
-  compile (project(':snappy-core_' + scalaBinaryVersion)) {
+  compile (project(coreProjectName)) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -46,7 +49,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
-  compile (project(":compatibility:spark${sparkOldVersion}_${scalaBinaryVersion}")) {
+  compile (project(":compatibility:spark${sparkVersion}_${scalaBinaryVersion}")) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
