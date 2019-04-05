@@ -20,23 +20,23 @@ apply plugin: 'scala'
 compileScala.options.encoding = 'UTF-8'
 
 ext {
-  sparkVersion = '2.1.0'
+  spark210Version = '2.1.0'
 }
 
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compile 'org.slf4j:slf4j-api:' + slf4jVersion
-  compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-  compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
-  compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
+  compileOnly 'org.slf4j:slf4j-api:' + slf4jVersion
+  compileOnly 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+  compileOnly 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
+  compileOnly 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
-  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
-  compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
-  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}")
-  compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}")
+  compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-hive_${scalaBinaryVersion}:${spark210Version}")
+  compileOnly("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${spark210Version}")
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
@@ -51,10 +51,6 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
-
-  compile project(':snappy-store:snappydata-store-client')
-  compile project(':snappy-store:snappydata-store-core')
-  compile project(':snappy-store:snappydata-store-tools')
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
@@ -68,7 +64,7 @@ if (rootProject.hasProperty('enablePublish')) {
 }
 
 
-archivesBaseName = "snappydata-core-spark${sparkVersion}_${scalaBinaryVersion}"
+archivesBaseName = "snappydata-spark${spark210Version}_${scalaBinaryVersion}"
 shadowJar {
   zip64 = true
   // avoid conflict with the 0.9.2 version in stock Spark
@@ -98,7 +94,7 @@ shadowJar {
 }
 
 // write the POM for spark-package
-String sparkPackageName = "snappydata-${version}_${sparkVersion}-s_${scalaBinaryVersion}"
+String sparkPackageName = "snappydata-${version}_${spark210Version}-s_${scalaBinaryVersion}"
 
 task sparkPackagePom(dependsOn: shadowJar) { doLast {
   file("${rootProject.buildDir}/distributions").mkdirs()

@@ -120,8 +120,8 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   private val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
-  override protected val sparkOldProductDir: String =
-    testObject.getEnvironmentVariable("APACHE_SPARK_OLD_HOME")
+  override protected val sparkProductDir: String =
+    testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
 
   protected val currentProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_CURRENT_HOME")
@@ -159,7 +159,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           |""".stripMargin, s"$confDir/servers")
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
 
-    SplitClusterDUnitSecurityTest.startSparkCluster(sparkOldProductDir)
+    SplitClusterDUnitSecurityTest.startSparkCluster(sparkProductDir)
   }
 
   def getLdapConf: String = {
@@ -175,7 +175,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   override def afterClass(): Unit = {
     super.afterClass()
-    SplitClusterDUnitSecurityTest.stopSparkCluster(sparkOldProductDir)
+    SplitClusterDUnitSecurityTest.stopSparkCluster(sparkProductDir)
 
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -212,7 +212,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, sparkOldProductDir,
+    SplitClusterDUnitTest.invokeSparkShell(snappyProductDir, sparkProductDir,
       locatorClientPort, props)
   }
 
@@ -221,7 +221,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     val props = new Properties()
     props.setProperty(Attribute.USERNAME_ATTR, jdbcUser1)
     props.setProperty(Attribute.PASSWORD_ATTR, jdbcUser1)
-    SplitClusterDUnitTest.invokeSparkShellCurrent(snappyProductDir, sparkOldProductDir,
+    SplitClusterDUnitTest.invokeSparkShellCurrent(snappyProductDir, sparkProductDir,
       currentProductDir, locatorClientPort, props, vm = null /* SparkContext in current VM */)
   }
 

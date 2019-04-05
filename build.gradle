@@ -101,12 +101,12 @@ allprojects {
     vendorName = 'SnappyData, Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
-    sparkVersion = rootProject.hasProperty('spark.connector.version')
-        ? rootProject.property('spark.connector.version') : '2.3.2'
+    sparkVersion = '2.1.1'
+    sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
+        ? rootProject.property('spark.connector.version') : sparkVersion
     snappySparkVersion = '2.1.1.4'
 
-    sparkOldVersion = '2.1.1'
-    sparkOldDistName = "spark-${sparkOldVersion}-bin-hadoop2.7"
+    sparkConnectorDistName = "spark-${sparkConnectorVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.4.0'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
@@ -172,7 +172,7 @@ allprojects {
     buildIdPrefix = System.env.USER + ' '
 
     sparkDistDir = "${project.gradle.gradleUserHomeDir}/sparkDist"
-    sparkOldProductDir = "${sparkDistDir}/${sparkOldDistName}"
+    sparkConnectorProductDir = "${sparkDistDir}/${sparkConnectorDistName}"
     sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
@@ -187,13 +187,54 @@ allprojects {
   }
   if (rootProject.hasProperty('sparkDistDir')) {
     sparkDistDir = rootProject.property('sparkDistDir')
-    sparkOldProductDir = "${sparkDistDir}/${sparkOldDistName}"
+    sparkConnectorProductDir = "${sparkDistDir}/${sparkConnectorDistName}"
     sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
+
+    // common libraries used in core and core-product modules
+    coreLibraries = [
+      common: [
+        "org.slf4j:slf4j-api:${slf4jVersion}",
+        "org.slf4j:slf4j-log4j12:${slf4jVersion}",
+        "org.slf4j:jcl-over-slf4j:${slf4jVersion}",
+        "org.slf4j:jul-to-slf4j:${slf4jVersion}",
+        "org.codehaus.janino:janino:${janinoVersion}",
+        "org.apache.tomcat:tomcat-juli:${tomcatJdbcVersion}",
+        "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}",
+        "com.zaxxer:HikariCP:${hikariCPVersion}",
+        "org.twitter4j:twitter4j-stream:${twitter4jVersion}",
+        "org.objenesis:objenesis:${objenesisVersion}",
+        "com.esotericsoftware:kryo-shaded:${kryoVersion}",
+        "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}",
+        "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
+      ],
+      spark: [
+        "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkConnectorVersion}",
+        "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+      ],
+      sparkProduct: [
+        "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}",
+        "org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}",
+        "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+      ]
+    ]
   }
 
   // force same output directory for IDEA and gradle
@@ -285,7 +326,7 @@ task cleanDUnit { doLast {
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkOldProductDir}/work", "${sparkOldProductDir}/logs"
+  delete "${sparkConnectorProductDir}/work", "${sparkConnectorProductDir}/logs"
   delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanSecurityDUnit { doLast {
@@ -294,7 +335,7 @@ task cleanSecurityDUnit { doLast {
   file(workingDir).mkdirs()
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
-  delete "${sparkOldProductDir}/work", "${sparkOldProductDir}/logs"
+  delete "${sparkConnectorProductDir}/work", "${sparkConnectorProductDir}/logs"
   delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanAllReports { doLast {
@@ -738,7 +779,7 @@ gradle.taskGraph.whenReady { graph ->
         }
 
         environment 'SNAPPY_HOME': snappyProductDir,
-          'APACHE_SPARK_OLD_HOME': sparkOldProductDir,
+          'APACHE_SPARK_HOME': sparkConnectorProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
@@ -1165,18 +1206,20 @@ task jdbcJar {
   }
 }
 
+String connectorProjectName = ":compatibility:spark${sparkConnectorVersion}_${scalaBinaryVersion}"
+
 task copyShadowJars {
   dependsOn jdbcJar
-  dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
+  dependsOn connectorProjectName + ':shadowJar'
 
   doLast {
-    def coreProject = project(":snappy-core_${scalaBinaryVersion}")
-    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
+    def connectorProject = project(connectorProjectName)
+    String connectorName = "snappydata-spark${sparkConnectorVersion}_${scalaBinaryVersion}-${version}.jar"
     copy {
-      from coreProject.shadowJar.destinationDir
+      from connectorProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
-      include coreProject.shadowJar.archiveName
-      rename { filename -> coreName }
+      include connectorProject.shadowJar.archiveName
+      rename { filename -> connectorName }
     }
   }
 }

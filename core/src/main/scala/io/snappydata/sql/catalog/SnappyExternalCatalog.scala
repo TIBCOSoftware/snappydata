@@ -112,7 +112,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
     }
   }
 
-  def getTableOption(schema: String, table: String): Option[CatalogTable] = {
+  override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
     try {
       Some(getTable(schema, table))
     } catch {
