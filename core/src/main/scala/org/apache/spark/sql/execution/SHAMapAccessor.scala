@@ -68,16 +68,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = ctx.freshName("isNull")
       val nullVarCode = if (isKey) {
+        val castTerm = getKeyNullBitsCastTerm
         if (numBytesForNullKeyBits <= 8) {
           s"""
-            boolean $nullVar = ($nullKeysBitsetTerm & (0x01 << $i)) == 0;
+            boolean $nullVar = ($nullKeysBitsetTerm & ( (($castTerm)0x01) << $i)) == 0;
         """.stripMargin
         } else {
           val remainder = i % 8
-          val index = i / 8 +
-            (if (remainder > 0) 1 else 0)
+          val index = i / 8
           s"""
-            boolean $nullVar = ($nullKeysBitsetTerm[$index] & (0x01 << $remainder)) == 0; \n
+            boolean $nullVar = ($nullKeysBitsetTerm[$index] & (0x01 << $remainder)) == 0;\n
         """.stripMargin
         }
       } else {
@@ -147,25 +147,25 @@ case class SHAMapAccessor(@transient session: SnappySession,
     if (numBytesForNullKeyBits == 1) {
       s"""
           byte $nullKeysBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm,
-          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 1; \n
           """.stripMargin
     } else if (numBytesForNullKeyBits == 2) {
       s"""
           short $nullKeysBitsetTerm = $plaformClass.getShort($vdBaseObjectTerm,
-          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 2; \n
           """.stripMargin
     } else if (numBytesForNullKeyBits <= 4) {
       s"""
           int $nullKeysBitsetTerm = $plaformClass.getInt($vdBaseObjectTerm,
-          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 4; \n
           """.stripMargin
     } else if (numBytesForNullKeyBits <= 8) {
       s"""
           long $nullKeysBitsetTerm = $plaformClass.getLong($vdBaseObjectTerm,
-          $vdBaseOffsetTerm +$currentValueOffsetTerm);\n
+          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 8; \n
           """.stripMargin
     } else {
@@ -243,7 +243,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
         keysDataType, aggregateDataTypes, baseKeyObject, baseKeyoffset)
     }
            // insert or lookup
-           System.out.println("executing putIfAbsent of KeyBytes Holder");
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
           // position the offset to start of aggregate value
@@ -271,31 +270,22 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 
   def evaluateNullKeyBits(keyVars: Seq[ExprCode]): String = {
-    val castTerm = if (numBytesForNullKeyBits == 1) {
-      "byte"
-    } else if (numBytesForNullKeyBits == 2) {
-      "short"
-    } else if (numBytesForNullKeyBits <= 4) {
-      "int"
-    } else {
-      "long"
-    }
+    val castTerm = getKeyNullBitsCastTerm
     keyVars.zipWithIndex.map {
       case (expr, i) =>
         val nullVar = expr.isNull
         if (numBytesForNullKeyBits > 8) {
           val remainder = i % 8
-          val index = i / 8 +
-            (if (remainder > 0) 1 else 0)
+          val index = i / 8
 
           if (nullVar.isEmpty || nullVar == "false") {
             s"""
-            $nullKeysBitsetTerm[$index] |= ($castTerm)((0x01 << $remainder));
+            $nullKeysBitsetTerm[$index] |= (byte)((0x01 << $remainder));
           """.stripMargin
           } else {
             s"""
             if (!$nullVar) {
-              $nullKeysBitsetTerm[$index] |= ($castTerm)((0x01 << $remainder));
+              $nullKeysBitsetTerm[$index] |= (byte)((0x01 << $remainder));
             }
           """.stripMargin
           }
@@ -304,18 +294,29 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
           if (nullVar.isEmpty || nullVar == "false") {
             s"""
-            $nullKeysBitsetTerm|= ($castTerm)((0x01 << $i));
+            $nullKeysBitsetTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
           """.stripMargin
           } else {
             s"""
             if (!$nullVar) {
-              $nullKeysBitsetTerm|= ($castTerm)((0x01 << $i));
+              $nullKeysBitsetTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
             }
           """.stripMargin
           }
         }
     }.mkString("\n")
   }
+
+
+  private def getKeyNullBitsCastTerm = if (numBytesForNullKeyBits == 1) {
+      "byte"
+    } else if (numBytesForNullKeyBits == 2) {
+      "short"
+    } else if (numBytesForNullKeyBits <= 4) {
+      "int"
+    } else {
+      "long"
+    }
 
 
   def generateUpdate(columnVars: Seq[ExprCode], aggBufferDataType: Seq[DataType],
@@ -331,9 +332,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
             s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
           case IntegerType => s"$plaformClass.putInt($vdBaseObjectTerm, " +
             s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
-          case LongType => s""" System.out.println("putting updated long");
-                      $plaformClass.putLong($vdBaseObjectTerm,
-            $vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); """
+          case LongType => s" $plaformClass.putLong($vdBaseObjectTerm," +
+            s" $vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
           case FloatType => s"$plaformClass.putFloat($vdBaseObjectTerm, " +
             s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
           case DoubleType => s"$plaformClass.putDouble($vdBaseObjectTerm, " +
@@ -474,12 +474,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
         s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
         s"\n $currentOffsetTerm += 4; \n"
     } else if (numBytesForNullKeyBits <= 8) {
-      s"\n $plaformClass.putLong($baseObjectTerm," +
-        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
-        s"\n $currentOffsetTerm += 8; \n"
+      s"$plaformClass.putLong($baseObjectTerm, $currentOffsetTerm, " +
+        s"$nullKeysBitsetTerm);\n" +
+        s"$currentOffsetTerm += 8; \n"
     } else {
       s"\n $plaformClass.copyMemory($nullKeysBitsetTerm, ${Platform.BYTE_ARRAY_OFFSET}," +
-        s" $baseObjectTerm, $currentOffsetTerm}, $numBytesForNullKeyBits)" +
+        s" $baseObjectTerm, $currentOffsetTerm, $numBytesForNullKeyBits);" +
         s"\n $currentOffsetTerm += $numBytesForNullKeyBits; \n"
     }
   }

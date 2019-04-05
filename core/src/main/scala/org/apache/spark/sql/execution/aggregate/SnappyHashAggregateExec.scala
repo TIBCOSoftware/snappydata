@@ -697,8 +697,8 @@ case class SnappyHashAggregateExec(
         $outputCode
         ++$mapCounter;
         if ($mapCounter == $sizeTerm) {
-          // $hashMapTerm.release();
-          // $hashMapTerm = null;
+           $hashMapTerm.release();
+           $hashMapTerm = null;
         }
 
         if (shouldStop()) return;
