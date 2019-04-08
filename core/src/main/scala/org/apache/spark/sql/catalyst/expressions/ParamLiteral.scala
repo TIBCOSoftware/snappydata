@@ -403,6 +403,13 @@ object TokenLiteral {
 
   def isConstant(expression: Expression): Boolean = expression match {
     case _: DynamicReplacableConstant | _: Literal => true
+    case Cast(child, dataType) => {
+      val isConstant = child match {
+        case _: DynamicReplacableConstant | _: Literal => true
+        case _ => false
+      }
+      isConstant & dataType.isInstanceOf[AtomicType]
+    }
     case _ => false
   }
 

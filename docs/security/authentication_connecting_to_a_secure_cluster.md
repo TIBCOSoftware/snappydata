@@ -24,6 +24,7 @@ val conn = DriverManager.getConnection(url, props)
 ```pre
 connect client 'localhost:1527;user=user1;password=user123';
 ```
+For more information, refer [How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md).
 
 ## Using ODBC Driver
 

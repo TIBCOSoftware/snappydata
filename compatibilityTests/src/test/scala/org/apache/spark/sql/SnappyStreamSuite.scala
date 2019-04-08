@@ -21,8 +21,4 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 
 class SnappyStreamSuite extends StreamSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "sql queries"
-  )
 }
