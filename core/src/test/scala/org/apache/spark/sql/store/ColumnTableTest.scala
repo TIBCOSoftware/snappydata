@@ -1524,7 +1524,7 @@ class ColumnTableTest
 
   private def getTableType(table: String, session: SnappySession): String = {
     CatalogObjectType.getTableType(session.externalCatalog.getTable(
-      session.getCurrentSchema, table)).toString
+      session.getCurrentSchema, session.sessionCatalog.formatTableName(table))).toString
   }
 }
 

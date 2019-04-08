@@ -32,11 +32,11 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Property, SnappyTableStatsProviderService}
 
+import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
-import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
@@ -46,14 +46,13 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowDatabasesCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
-import org.apache.spark.{SparkContext, SparkEnv}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -407,14 +406,18 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
     else {
-      AttributeReference("database", StringType, nullable = false)() ::
+      AttributeReference("schemaName", StringType, nullable = false)() ::
           AttributeReference("tableName", StringType, nullable = false)() ::
           AttributeReference("isTemporary", BooleanType, nullable = false)() :: Nil
     }
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (!hiveCompatible) return super.run(sparkSession).map(r => Row(r.getString(0).toLowerCase, r.getString(1).toLowerCase, r.getBoolean(2)))
+    if (!hiveCompatible) {
+      // current schema name will be upper-case so convert all to lower-case for consistency
+      return super.run(sparkSession).map(r => Row(Utils.toLowerCase(r.getString(0)),
+        r.getString(1), r.getBoolean(2)))
+    }
 
     val catalog = sparkSession.sessionState.catalog
     val schemaName = schemaOpt match {
@@ -429,14 +432,6 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
   }
 }
 
-class ShowSchemasCommand(schemaOpt: Option[String]) extends ShowDatabasesCommand(schemaOpt) {
-
-  override def run(sparkSession: SparkSession): Seq[Row] = {
-    super.run(sparkSession).map(r => Row(r.getString(0).toLowerCase))
-  }
-}
-
-
 case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     viewPattern: Option[String]) extends RunnableCommand {
 
@@ -446,7 +441,7 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("viewName", StringType, nullable = false)() :: Nil
     else {
-      AttributeReference("database", StringType, nullable = false)() ::
+      AttributeReference("schemaName", StringType, nullable = false)() ::
           AttributeReference("viewName", StringType, nullable = false)() ::
           AttributeReference("isTemporary", BooleanType, nullable = false)() ::
           AttributeReference("isGlobal", BooleanType, nullable = false)() :: Nil
@@ -475,7 +470,13 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     tables.map(tableIdent => tableIdent -> getViewType(tableIdent, session)).collect {
       case (viewIdent, Some((isTemp, isGlobalTemp))) =>
         if (hiveCompatible) Row(viewIdent.table)
-        else Row(viewIdent.database.getOrElse(""), viewIdent.table, isTemp, isGlobalTemp)
+        else {
+          val viewSchema = viewIdent.database match {
+            case None => ""
+            case Some(s) => Utils.toLowerCase(s)
+          }
+          Row(viewSchema, Utils.toLowerCase(viewIdent.table), isTemp, isGlobalTemp)
+        }
     }
   }
 }
