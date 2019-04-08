@@ -63,8 +63,8 @@ object MemberDetails {
     val logFile = memberDetails.getLogFile
     val processId = memberDetails.getProcessId
 
-    // val distStoreUUID = memberDetails.getDiskStoreUUID
-    // val distStoreName = memberDetails.getDiskStoreName
+    val distStoreUUID = memberDetails.getDiskStoreUUID
+    val distStoreName = memberDetails.getDiskStoreName
 
     val isLead: Boolean = memberDetails.isLead
     val isActiveLead: Boolean = memberDetails.isLeadActive
@@ -127,7 +127,8 @@ object MemberDetails {
       MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE);
 
     new MemberSummary(memberId, nameOrId.toString, host, shortDirName, fullDirName,
-      logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead, cores,
+      logFile, processId, distStoreUUID, distStoreName, status, memberType, isLocator,
+      isDataServer, isLead, isActiveLead, cores,
       cpuActive, clients, jvmHeapMax, jvmHeapUsed, jvmHeapTotal, jvmHeapFree, heapStoragePoolUsed,
       heapStoragePoolSize, heapExecutionPoolUsed, heapExecutionPoolSize, heapMemorySize,
       heapMemoryUsed, offHeapStoragePoolUsed, offHeapStoragePoolSize, offHeapExecutionPoolUsed,
