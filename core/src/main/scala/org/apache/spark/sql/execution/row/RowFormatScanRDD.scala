@@ -23,12 +23,12 @@ import java.util.GregorianCalendar
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
@@ -36,16 +36,16 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.Authorizer
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 import com.zaxxer.hikari.pool.ProxyResultSet
-
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.collection.MultiBucketExecutorPartition
+import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
 import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateToFilter
 import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
 
 /**
@@ -61,7 +61,8 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     protected var connProperties: ConnectionProperties,
     @transient private[sql] val filters: Array[Expression] = Array.empty[Expression],
     @transient protected val partitionEvaluator: () => Array[Partition] = () =>
-      Array.empty[Partition], protected var commitTx: Boolean,
+      Array.empty[Partition], protected val partitionPruner: () => Int = () => -1,
+    protected var commitTx: Boolean,
     protected var delayRollover: Boolean, protected var projection: Array[Int],
     @transient protected val region: Option[LocalRegion])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
@@ -331,7 +332,14 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     // (updated values in ParamLiteral will take care of updating filters)
     evaluateWhereClause()
     // use incoming partitions if provided (e.g. for collocated tables)
-    val parts = partitionEvaluator()
+    var parts = partitionEvaluator()
+    if (parts != null && parts.length > 0) {
+      return parts
+    }
+
+    // In the case of Direct Row scan, partitionEvaluator will be always empty.
+    // So, evaluating partition here again..
+    parts = evaluatePartitions()
     if (parts != null && parts.length > 0) {
       return parts
     }
@@ -341,6 +349,19 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       case Some(dr: CacheDistributionAdvisee) => session.sessionState.getTablePartitions(dr)
       // system table/VTI is shown as a replicated table having a single partition
       case _ => Array(new MultiBucketExecutorPartition(0, null, 0, Nil))
+    }
+  }
+
+  private def evaluatePartitions(): Array[Partition] = {
+    partitionPruner() match {
+      case -1 =>
+        Array.empty[Partition]
+      case bucketId: Int =>
+        if (!session.partitionPruning) {
+          Array.empty[Partition]
+        } else {
+          Utils.getPartitions(region.get, bucketId)
+        }
     }
   }
 
