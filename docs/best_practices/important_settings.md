@@ -43,9 +43,17 @@ This attribute is set in the [configuration files](../configuring_cluster/config
 
 SnappyData writes table data on disk.  By default, the disk location that SnappyData uses is the directory specified using `-dir` option, while starting the member. 
 SnappyData also uses temporary storage for storing intermediate data. The amount of intermediate data depends on the type of query and can be in the range of the actual data size. </br>
-To achieve better performance, it is recommended to store temporary data on a different disk (preferably SSD) than the table data. This can be done by setting the `spark.local.dir` parameter.
+To achieve better performance, it is recommended to store temporary data on a different disk (preferably using SSD storage) than the table data. This can be done by setting the `spark.local.dir` property to a location with enough space. For example, ~2X of the data size, in case of single thread execution. In case of concurrent thread execution, the requirement for temp space is approximately data size * number of threads. For example, if the data size in the cluster is 100 GB and three threads are executing concurrent ad hoc analytical queries in the cluster, then the temp space should be ~3X of the data size. This property is set in [**conf/leads**](../configuring_cluster/configuring_cluster.md#lead) as follows:
 
-This attribute is set in the [leads configuration files](../configuring_cluster/configuring_cluster.md#lead) **conf/leads**.
+```
+localhost -spark.local.dir=/path/to/local-directory 
+```
+
+The path specified is inherited by all servers. The temporary data defaults to **/tmp**. In case different paths are required on each of the servers, then remove the property from **conf/leads** and instead set as system property in each of the **conf/servers** file as follows:
+
+```
+localhost ... -J-Dspark.local.dir=/path/to/local-directory1
+```
 
 <a id="os_setting"></a>
 ##  Operating System Settings 
@@ -88,14 +96,19 @@ These settings lower the OS cache buffer sizes which reduce the long GC pauses d
 
 **Swap File** </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
-It is recommended to set swap space on your system using the following commands.
+It is recommended to set swap space on your system using the following commands:
 
 ```
 # sets a swap space of 32 GB
-sudo dd if=/dev/zero of=/var/swapfile.1 bs=1M count=32768
-sudo chmod 600 /var/swapfile.1
-sudo mkswap /var/swapfile.1
-sudo swapon /var/swapfile.1
+
+## If fallocate is available, run the following command: 
+sudo sh -c "fallocate -l 32G /var/swapfile && chmod 0600 /var/swapfile && mkswap /var/swapfile && swapon /var/swapfile"
+## fallocate is recommended since it is much faster, although not supported by some filesystems such as ext3 and zfs.
+## In case fallocate is not available, use dd:
+sudo dd if=/dev/zero of=/var/swapfile bs=1M count=32768
+sudo chmod 600 /var/swapfile
+sudo mkswap /var/swapfile
+sudo swapon /var/swapfile
 ```
 
 <a id="smartconnector-local-settings"></a>
