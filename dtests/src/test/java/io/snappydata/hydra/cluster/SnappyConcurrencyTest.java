@@ -179,7 +179,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
     conn.createStatement().executeUpdate(query);
     query = "set spark.driver.maxResultSize=6g";
     conn.createStatement().executeUpdate(query);
-    query = "create or replace temporary view revenue as select  l_suppkey as supplier_no, " +
+    query = "create or replace view revenue as select  l_suppkey as supplier_no, " +
         "sum(l_extendedprice * (1 - l_discount)) as total_revenue from LINEITEM where l_shipdate >= '1993-02-01'" +
         " and l_shipdate <  add_months('1996-01-01',3) group by l_suppkey";
     conn.createStatement().executeUpdate(query);
