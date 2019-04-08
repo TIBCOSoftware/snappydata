@@ -38,7 +38,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
   valueOffsetTerm: String, numKeyBytesTerm: String,
   currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
   vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
-  nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int, allocatorTerm: String)
+  nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int,
+  allocatorTerm: String, numBytesForNullAggBits: Int,
+  nullAggsBitsetTerm: String)
   extends UnaryExecNode with CodegenSupport {
 
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
@@ -68,7 +70,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = ctx.freshName("isNull")
       val nullVarCode = if (isKey) {
-        val castTerm = getKeyNullBitsCastTerm
+        val castTerm = getNullBitsCastTerm
         if (numBytesForNullKeyBits <= 8) {
           s"""
             boolean $nullVar = ($nullKeysBitsetTerm & ( (($castTerm)0x01) << $i)) == 0;
@@ -142,7 +144,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
   }
 
-  def readNullKeyBitsCode(currentValueOffsetTerm: String): String = {
+  def readNullBitsCode(currentValueOffsetTerm: String): String = {
     val plaformClass = classOf[Platform].getName
     if (numBytesForNullKeyBits == 1) {
       s"""
@@ -201,7 +203,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val baseKeyObject = ctx.freshName("baseKeyObject")
 
     // val valueInit = valueInitCode + '\n'
-    val numAggBytes = aggregateDataTypes.foldLeft(0)(_ + _.defaultSize)
+    val numAggBytes = aggregateDataTypes.foldLeft(0)(_ + _.defaultSize) +
+      sizeForNullBits(numBytesForNullAggBits)
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
 
@@ -209,8 +212,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val inputEvals = evaluateVariables(input)
 
     s"""
-           $initNullKeyBitsetCode
-
+           $valueInitCode
+           ${initNullBitsetCode (nullKeysBitsetTerm, numBytesForNullKeyBits)}
+           ${initNullBitsetCode (nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
           $inputEvals
 
@@ -218,7 +222,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           ${evaluateVariables(keyVars)}
 
            // evaluate null key bits
-          ${evaluateNullKeyBits(keyVars)}
+          ${evaluateNullBits(keyVars, numBytesForNullKeyBits, nullKeysBitsetTerm)}
+          ${evaluateNullBits(valueInitVars, numBytesForNullAggBits, nullAggsBitsetTerm)}
 
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
@@ -243,40 +248,42 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   }
 
-  def initNullKeyBitsetCode: String = if (numBytesForNullKeyBits == 1) {
-    s"byte $nullKeysBitsetTerm = 0;"
-  } else if (numBytesForNullKeyBits == 2) {
-    s"short $nullKeysBitsetTerm = 0;"
-  } else if (numBytesForNullKeyBits <= 4) {
-    s"int $nullKeysBitsetTerm = 0;"
-  } else if (numBytesForNullKeyBits <= 8) {
-    s"long $nullKeysBitsetTerm = 0l;"
+  def initNullBitsetCode(nullBitsetTerm: String,
+    numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
+    s"byte $nullBitsetTerm = 0;"
+  } else if (numBytesForNullBits == 2) {
+    s"short $nullBitsetTerm = 0;"
+  } else if (numBytesForNullBits <= 4) {
+    s"int $nullBitsetTerm = 0;"
+  } else if (numBytesForNullBits <= 8) {
+    s"long $nullBitsetTerm = 0l;"
   } else {
     s"""
-       for( int i = 0 ; i < $numBytesForNullKeyBits; ++i) {
-         $nullKeysBitsetTerm[i] = 0;
+       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
+         $nullBitsetTerm[i] = 0;
        }
      """.stripMargin
   }
 
 
-  def evaluateNullKeyBits(keyVars: Seq[ExprCode]): String = {
-    val castTerm = getKeyNullBitsCastTerm
-    keyVars.zipWithIndex.map {
+  def evaluateNullBits(vars: Seq[ExprCode], numBytesForNullBits: Int,
+    nullBitsTerm: String): String = {
+    val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+    vars.zipWithIndex.map {
       case (expr, i) =>
         val nullVar = expr.isNull
-        if (numBytesForNullKeyBits > 8) {
+        if (numBytesForNullBits > 8) {
           val remainder = i % 8
           val index = i / 8
 
           if (nullVar.isEmpty || nullVar == "false") {
             s"""
-            $nullKeysBitsetTerm[$index] |= (byte)((0x01 << $remainder));
+            $nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
           """.stripMargin
           } else {
             s"""
             if (!$nullVar) {
-              $nullKeysBitsetTerm[$index] |= (byte)((0x01 << $remainder));
+              $nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
             }
           """.stripMargin
           }
@@ -285,12 +292,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
           if (nullVar.isEmpty || nullVar == "false") {
             s"""
-            $nullKeysBitsetTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+            $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
           """.stripMargin
           } else {
             s"""
             if (!$nullVar) {
-              $nullKeysBitsetTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+              $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
             }
           """.stripMargin
           }
@@ -299,11 +306,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
 
-  private def getKeyNullBitsCastTerm = if (numBytesForNullKeyBits == 1) {
+  private def getNullBitsCastTerm(numBytesForNullBits: Int) = if (numBytesForNullBits == 1) {
       "byte"
-    } else if (numBytesForNullKeyBits == 2) {
+    } else if (numBytesForNullBits == 2) {
       "short"
-    } else if (numBytesForNullKeyBits <= 4) {
+    } else if (numBytesForNullBits <= 4) {
       "int"
     } else {
       "long"
@@ -350,7 +357,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         Object $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVar);
         long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
         long $currentOffset = $baseKeyoffsetTerm;
-        ${writeNullKeyBits(baseKeyObject, currentOffset)}
+        ${writeNullBits(baseKeyObject, currentOffset)}
 
         ${
       keysDataType.zip(keyVars).foldLeft("") {
@@ -415,6 +422,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }.mkString("")
     }
        // now add values
+       // start here by putting nullbit for value
+       ${x}
        ${
       aggregatesDataType.foldLeft("")((code, dt) => {
         var codex = code
@@ -450,7 +459,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
          """
   }
 
-  def writeNullKeyBits(baseObjectTerm: String, currentOffsetTerm: String): String = {
+  def writeNullBits(baseObjectTerm: String, currentOffsetTerm: String): String = {
     val plaformClass = classOf[Platform].getName
     if (numBytesForNullKeyBits == 1) {
       s"\n $plaformClass.putByte($baseObjectTerm," +
@@ -490,15 +499,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
         } else {
           s" ($nullVar? 0 : $notNullSizeExpr)"
         }
-      }.mkString(" + ") + (
-      if (numBytesForNullKeyBits < 3 || numBytesForNullKeyBits > 8) {
-        s" + $numBytesForNullKeyBits; \n"
-      } else if (numBytesForNullKeyBits <= 4) {
-        s" + 4; \n"
-      } else {
-        s" + 8; \n"
-      })
+      }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullKeyBits)}; \n"
   }
+
+  def sizeForNullBits(numBytesForNullBits: Int): Int =
+    if (numBytesForNullBits < 3 || numBytesForNullBits > 8) {
+      numBytesForNullBits
+    } else if (numBytesForNullBits <= 4) {
+      4
+    } else {
+      8
+    }
 
   /**
    * Generate code to calculate the hash code for given column variables that
