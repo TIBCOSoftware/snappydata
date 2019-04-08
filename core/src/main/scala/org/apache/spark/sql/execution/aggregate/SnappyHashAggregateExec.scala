@@ -567,13 +567,22 @@ case class SnappyHashAggregateExec(
     ctx.addMutableState("int", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
 
     val nullKeysBitsetTerm = ctx.freshName("nullKeysBitset")
+    val nullAggsBitsetTerm = ctx.freshName("nullAggsBitset")
 
     val numBytesForNullKeyBits = this.groupingAttributes.length / 8 +
       (if (this.groupingAttributes.length % 8 > 0) 1 else 0)
 
+    val numBytesForNullAggsBits = this.aggregateBufferAttributesForGroup.length / 8 +
+      (if (this.aggregateBufferAttributesForGroup.length % 8 > 0) 1 else 0)
+
     if (numBytesForNullKeyBits > 8) {
       ctx.addMutableState("byte[]", nullKeysBitsetTerm,
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullKeyBits];")
+    }
+
+    if (numBytesForNullAggsBits > 8) {
+      ctx.addMutableState("byte[]", nullAggsBitsetTerm,
+        s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
     }
 
     val valueOffsetTerm = ctx.freshName("valueOffset")
@@ -613,7 +622,8 @@ case class SnappyHashAggregateExec(
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
       this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
       currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
-      nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm)
+      nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
+      numBytesForNullAggsBits, nullAggsBitsetTerm)
 
     val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
 
@@ -693,7 +703,7 @@ case class SnappyHashAggregateExec(
         $numOutput.${metricAdd("1")};
         // skip the key length
         $iterValueOffsetTerm += 4;
-       ${byteBufferAccessor.readNullKeyBitsCode(iterValueOffsetTerm)}
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm)}
         $outputCode
         ++$mapCounter;
         if ($mapCounter == $sizeTerm) {
