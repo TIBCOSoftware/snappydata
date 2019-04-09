@@ -23,16 +23,16 @@ import org.apache.spark.sql.functions._
 import java.io.{File, FileOutputStream, PrintWriter}
 import io.snappydata.hydra.SnappyTestUtils
 
-class ArrayTypeAPI1 extends SnappySQLJob{
+class ArrayTypeAPI extends SnappySQLJob{
     override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
       // scalastyle:off println
-      println("Query ArrayType Via API job started...")
+      println("Query ArrayType Via API, job started...")
       val snc : SnappyContext = snappySession.sqlContext
       val spark : SparkSession = SparkSession.builder().getOrCreate()
       val sqlContext = SQLContext.getOrCreate(spark.sparkContext)
       val dataLocation = jobConfig.getString("dataFilesLocation")
       def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
-      val outputFile = "ValidateComplexType_Via_API_" +  System.currentTimeMillis()
+      val outputFile = "ValidateArrayType_Via_API_" +  System.currentTimeMillis()
       val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), true))
       val printDFContent : Boolean = false
 
@@ -131,7 +131,7 @@ class ArrayTypeAPI1 extends SnappySQLJob{
       println("Finished the ArrayType Query 5....")
 
       pw.close()
-      println("Query ArrayType Via API job finished...")
+      println("Query ArrayType Via API, job finished...")
     }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
