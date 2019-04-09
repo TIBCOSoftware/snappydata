@@ -38,6 +38,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.junit.Assert._
 
 /**
   * Tests for column tables in GFXD.
@@ -1525,6 +1526,28 @@ class ColumnTableTest
   private def getTableType(table: String, session: SnappySession): String = {
     CatalogObjectType.getTableType(session.externalCatalog.getTable(
       session.getCurrentSchema, table)).toString
+  }
+
+  test("Test for SNAP-2860") {
+    snc.sql("drop table if exists t1")
+    snc.sql("create table t1(id integer, str string) using column options(key_columns 'id')")
+    snc.sql("put into t1 select 1, 'aa'")
+    snc.sql("put into t1 select 2, 'aa' union all select 3, 'bb'")
+    snc.sql("put into t1 select 1, 'cc'")
+    val rows = snc.sql("select * from t1")
+    assert(rows.count() == 3)
+    val row1 = snc.sql("select str from t1 where id = 1").collect()
+    for (row <- row1) {
+      assertEquals("cc", row.getAs[String]("STR"))
+    }
+    val row2 = snc.sql("select str from t1 where id = 2").collect()
+    for (row <- row2) {
+      assertEquals("aa", row.getAs[String]("STR"))
+    }
+    val row3 = snc.sql("select str from t1 where id = 3").collect()
+    for (row <- row3) {
+      assertEquals("bb", row.getAs[String]("STR"))
+    }
   }
 }
 
