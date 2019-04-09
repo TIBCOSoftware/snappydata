@@ -202,10 +202,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     })(conn)
   }
 
-
   def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
@@ -218,10 +217,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               ps.setString(1, if (txId ne null) txId else "")
               ps.executeUpdate()
               logDebug(s"The transaction ID being rolled back is $txId")
+              ps.close()
             }, () => {
-              if (ps ne null) ps.close()
               SmartConnectorHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
+              if (!conn.isClosed) conn.close()
             })
         }
       }

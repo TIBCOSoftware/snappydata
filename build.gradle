@@ -1116,6 +1116,8 @@ distTar {
   dependsOn ':packageVSD'
   dependsOn ':packageZeppelinInterpreter'
   classifier 'bin'
+  compression = Compression.GZIP
+  extension = 'tar.gz'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
