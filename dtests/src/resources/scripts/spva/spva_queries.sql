@@ -148,7 +148,7 @@ select description, count(1) as uses from medications where reasondescription = 
 
 SELECT code, description, SUM(dispenses) AS dispenses  FROM MEDICATIONS  WHERE reasondescription = 'Hypertension'  GROUP BY code, description ORDER BY DISPENSES LIMIT 10;
 
-create table q as select patient from
+create table q using column as select patient from
 (select  *, case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', 'Major depressive disorder clinical management plan') then 1 else 0 end  as coverage
 from careplans) c
 group by patient having sum(coverage) = 0;
