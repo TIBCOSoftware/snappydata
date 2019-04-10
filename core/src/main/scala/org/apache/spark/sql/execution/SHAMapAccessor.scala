@@ -126,7 +126,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }; " +
             s"""
                 \n $currentValueOffsetTerm += ${dt.defaultSize}; \n
-            // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+             System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
              """
       }
       val exprCode =
