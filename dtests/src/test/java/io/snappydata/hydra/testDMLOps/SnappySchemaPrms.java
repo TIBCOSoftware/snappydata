@@ -78,6 +78,13 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long numPartsForDataFiles;
 
+  public static Long isSingleBucket;
+
+  public static boolean getIsSingleBucket(){
+    Long key = isSingleBucket;
+    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+  }
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
@@ -224,7 +231,6 @@ public class SnappySchemaPrms extends SnappyPrms {
     }
     return strArr;
   }
-
 
   public static boolean getLoadDataInParts(){
     Long key = loadDataInParts;

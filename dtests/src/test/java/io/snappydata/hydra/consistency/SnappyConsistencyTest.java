@@ -131,18 +131,23 @@ public class SnappyConsistencyTest extends SnappyTest {
   public void executeSelect() {
     Connection conn = null;
     int tid = getDMLThread();
-    String dmlOp = getOperationForDMLThr(tid);
-    Log.getLogWriter().info("DML op is : " + dmlOp);
+    String dmlOp = "";
     String query = "";
-    if (dmlOp.equalsIgnoreCase("insert") || dmlOp.equalsIgnoreCase("delete"))
+    if(!SnappySchemaPrms.getIsSingleBucket()) {
+      dmlOp = getOperationForDMLThr(tid);
+      Log.getLogWriter().info("DML op is : " + dmlOp);
+      if (dmlOp.equalsIgnoreCase("insert") || dmlOp.equalsIgnoreCase("delete"))
+        query = selectStmt[0];
+      else
+        query = selectStmt[1];
+      if (SnappySchemaPrms.isTestUniqueKeys()) {
+        if (!query.contains("where"))
+          query = query + " where ";
+        else query = query + " and ";
+        query = query + " tid = " + tid;
+      }
+    } else {
       query = selectStmt[0];
-    else
-      query = selectStmt[1];
-    if(SnappySchemaPrms.isTestUniqueKeys()){
-      if(!query.contains("where"))
-        query = query + " where ";
-      else query = query + " and ";
-      query = query + " tid = " +  tid;
     }
     try {
       conn = getLocatorConnection();
@@ -188,11 +193,22 @@ public class SnappyConsistencyTest extends SnappyTest {
   }
 
   public static boolean verifyAtomicity(int rs_before, int rs_after, String op) {
-    Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
-        "after DML start : " + rs_after);
-    if((rs_before == rs_after) || (rs_before %1000 == 0))
-      return true;
-    return false;
+    if(op.isEmpty()){
+      return false;
+    } else {
+      if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("delete")) {
+        Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
+            "after DML start : " + rs_after);
+        if (rs_after % 1000 == 0)
+          return true;
+      } else if (op.equalsIgnoreCase("update")) {
+        Log.getLogWriter().info("Avg before update: " + rs_before + " and Avg after update " +
+            "started  : " + rs_after);
+        if (rs_after % 5 == 0)
+          return true;
+      }
+      return false;
+    }
   }
 
   public enum DMLOp {
@@ -272,15 +288,18 @@ public class SnappyConsistencyTest extends SnappyTest {
       if (SnappyBB.getBB().getSharedMap().containsKey("dmlThreads"))
         dmlThreads = (ArrayList<Integer>) SnappyBB.getBB().getSharedMap().get("dmlThreads");
       tid = dmlThreads.get(new Random().nextInt(dmlThreads.size()));
+      Log.getLogWriter().info("tid is : " + tid);
     }
-    Connection dConn = derbyTestUtils.getDerbyConnection();
     try {
       ResultSet rs = conn.createStatement().executeQuery(query);
       while(rs.next()) {
         maxID = rs.getInt(1);
       }
       PreparedStatement ps = conn.prepareStatement(insertStmt[0]);
+
+      Connection dConn = derbyTestUtils.getDerbyConnection();
       PreparedStatement psDerby = dConn.prepareStatement(insertStmt[0]);
+
       for(int i = 0; i<batchSize ; i++) {
         ps.setInt(1, maxID++);
         ps.setString(2,"name" + maxID);
@@ -310,12 +329,18 @@ public class SnappyConsistencyTest extends SnappyTest {
   public void performBatchUpdate(Connection conn) {
     String query = updateStmt[0];
     int tid = getMyTid();
-    Connection dConn = derbyTestUtils.getDerbyConnection();
+    if(SnappySchemaPrms.isTestUniqueKeys()){
+      if(!query.contains("where"))
+        query = query + " where ";
+      else query = query + " and ";
+      query = query + " tid = " +  tid;
+    }
     Log.getLogWriter().info("Performing batch update in snappy..");
     waitForBarrier("" + tid,2);
     try {
       conn.createStatement().execute(query);
       Log.getLogWriter().info("Performing batch update in derby..");
+      Connection dConn = derbyTestUtils.getDerbyConnection();
       dConn.createStatement().execute(query);
       derbyTestUtils.closeDiscConnection(dConn, true);
     } catch (SQLException se) {
@@ -328,12 +353,18 @@ public class SnappyConsistencyTest extends SnappyTest {
   public void performBulkDelete(Connection conn) {
     String query = deleteStmt[0];
     int tid = getMyTid();
-    Connection dConn = derbyTestUtils.getDerbyConnection();
+    if(SnappySchemaPrms.isTestUniqueKeys()){
+      if(!query.contains("where"))
+        query = query + " where ";
+      else query = query + " and ";
+      query = query + " tid = " +  tid;
+    }
     Log.getLogWriter().info("Performing delete in snappy..");
     waitForBarrier("" + tid,2);
     try {
       conn.createStatement().execute(query);
       Log.getLogWriter().info("Performing delete in derby..");
+      Connection dConn = derbyTestUtils.getDerbyConnection();
       dConn.createStatement().execute(query);
       derbyTestUtils.closeDiscConnection(dConn, true);
     } catch (SQLException se) {
@@ -354,9 +385,12 @@ public class SnappyConsistencyTest extends SnappyTest {
   }*/
 
   protected void waitForBarrier(String barrierName, int numThreads) {
-    AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, barrierName);
-    Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier");
-    barrier.await();
+    if(!SnappySchemaPrms.getIsSingleBucket()) {
+      AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, barrierName);
+      Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier");
+      barrier.await();
+      Log.getLogWriter().info("Wait Completed...");
+    }
   }
 
 
