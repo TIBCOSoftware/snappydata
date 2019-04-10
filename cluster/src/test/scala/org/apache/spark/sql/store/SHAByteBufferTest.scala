@@ -382,6 +382,23 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
+
+  test("aggregate functions & grouping on each of spark data type. missing types = struct type, maptype,userdefinedtype, hivestringtype, array type") {
+
+    snc
+    var conn = getSqlConnection
+
+    snc.sql("drop table if exists test1")
+
+    val createTableStr = "create table test1 ( col0 int, col1 byte, col2 short, col3 int," +
+    "col4 long, col5 float, col6 double, col7 decimal(12, 25), col8 decimal(24, 25)," +
+      "col9 timestamp, col10 string, col11 boolean, col12 date, col13 binary, " +
+      "col14 calendarinterval)"
+
+
+    snc.dropTable("test1")
+  }
+
   def getSqlConnection: Connection =
     DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
 

@@ -16,11 +16,13 @@
  */
 package org.apache.spark.sql.execution
 
+import java.math.BigInteger
 import java.nio.ByteBuffer
 
 import scala.reflect.runtime.universe._
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -64,6 +66,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     currentValueOffsetTerm: String, isKey: Boolean):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
+    val decimalClass = classOf[Decimal]
+    val bigDecimalClass = classOf[java.math.BigDecimal]
+    val bigIntegerClass = classOf[java.math.BigInteger]
     val byteBufferClass = classOf[ByteBuffer].getName
     val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
     val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
@@ -82,7 +87,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
             boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;\n
         """.stripMargin
         }
-
 
       val evaluationCode = dt match {
         case StringType =>
@@ -107,28 +111,54 @@ case class SHAMapAccessor(@transient session: SnappySession,
            fromAddress($holderBaseObject, $holderBaseOffset, $len);
              $currentValueOffsetTerm += $len;
           """.stripMargin
-        case x =>
-          s"$varName = ${
-            x match {
-              case ByteType => s"$plaformClass.getByte($vdBaseObjectTerm, " +
-                s"$currentValueOffsetTerm); "
-              case ShortType => s"$plaformClass.getShort($vdBaseObjectTerm, " +
-                s"$currentValueOffsetTerm);"
-              case IntegerType => s"$plaformClass.getInt($vdBaseObjectTerm, " +
-                s"$currentValueOffsetTerm); "
-              case LongType => s"$plaformClass.getLong($vdBaseObjectTerm, " +
-                s" $currentValueOffsetTerm); "
-              case FloatType => s"$plaformClass.getFloat($vdBaseObjectTerm, " +
-                s" $currentValueOffsetTerm); "
-              case DoubleType => s"$plaformClass.getDouble($vdBaseObjectTerm, " +
-                s" $currentValueOffsetTerm); "
-            }
-          }; " +
+        case x: AtomicType => {
+            typeOf(x.tag) match {
+              case t if t =:= typeOf[Byte] => s"$varName = $plaformClass.getByte(" +
+                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+              case t if t =:= typeOf[Short] => s"$varName = $plaformClass.getShort(" +
+                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+              case t if t =:= typeOf[Int] => s"$varName = $plaformClass.getInt(" +
+                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+              case t if t =:= typeOf[Long] => s"$varName = $plaformClass.getLong(" +
+                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+              case t if t =:= typeOf[Float] => s"$varName = $plaformClass.getFloat(" +
+                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+              case t if t =:= typeOf[Double] => s"$varName = $plaformClass.getDouble(" +
+                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+              case t if t =:= typeOf[Decimal] =>
+                if (dt.defaultSize <= Decimal.MAX_LONG_DIGITS) {
+                  s"""
+                     $varName = new $decimalClass().set(
+                    $plaformClass.getLong($vdBaseObjectTerm,
+                       $currentValueOffsetTerm),${dt.asInstanceOf[DecimalType].precision},
+                    ${dt.asInstanceOf[DecimalType].scale})\n;
+                     """.stripMargin
+                } else {
+                  val tempByteArrayTerm = ctx.freshName("tempByteArray")
+                  val len = ctx.freshName("len")
+                  s"""
+                      int $len = $plaformClass.getByte($vdBaseObjectTerm,
+                    $currentValueOffsetTerm); \n
+                      $currentValueOffsetTerm += 1;
+                      byte[] $tempByteArrayTerm = new byte[$len];
+                      $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+                    $tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $len);
+                      $varName = $decimalClass.apply(new $bigDecimalClass(
+                      new $bigIntegerClass($tempByteArrayTerm),
+                    ${dt.asInstanceOf[DecimalType].scale}),
+                    ${dt.asInstanceOf[DecimalType].precision},
+                    ${dt.asInstanceOf[DecimalType].scale});
+                    """.stripMargin
+                  }
+              case _ => throw new UnsupportedOperationException("unknown type " + dt)
+                }
+            } +
             s"""
                 \n $currentValueOffsetTerm += ${dt.defaultSize}; \n
            //  System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
              """
       }
+
       val exprCode =
         s"""
             $nullVarCode
@@ -209,8 +239,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val baseKeyObject = ctx.freshName("baseKeyObject")
 
     // val valueInit = valueInitCode + '\n'
-    val numAggBytes = aggregateDataTypes.foldLeft(0)(_ + _.defaultSize) +
-      sizeForNullBits(numBytesForNullAggBits)
+    val numAggBytes = getSizeOfValueBytes(aggregateDataTypes)
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
 
@@ -311,6 +340,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     // Move the offset at the end of num Null Bytes space, we will fill that space later
     // store the starting value of offset
     val startingOffsetTerm = ctx.freshName("startingOffset")
+    val tempBigDecArrayTerm = ctx.freshName("tempBigDecArray")
     val plaformClass = classOf[Platform].getName
     s"""
        long $startingOffsetTerm = $offsetTerm;
@@ -352,7 +382,25 @@ case class SHAMapAccessor(@transient session: SnappySession,
                $offsetTerm += ${dt.defaultSize};\n
                """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
-                  throw new UnsupportedOperationException("implement decimal")
+                  if (dt.defaultSize <= Decimal.MAX_LONG_DIGITS) {
+                    s"""
+                      $plaformClass.putLong($baseObjectTerm, $offsetTerm,
+                       $variable.toUnscaledLong());\n
+                      $offsetTerm += ${dt.defaultSize};\n
+                     """.stripMargin
+                  } else {
+                    s"""
+                      byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
+                       unscaledValue().toByteArray();
+                      assert (($tempBigDecArrayTerm.length <= 16))
+                      $plaformClass.putByte($baseObjectTerm, $offsetTerm,
+                       (byte)$tempBigDecArrayTerm.length);\n
+                      $plaformClass.copyMemory($tempBigDecArrayTerm,
+                       $plaformClass.BYTE_ARRAY_OFFSET,
+                       $baseObjectTerm, $offsetTerm + 1, $tempBigDecArrayTerm.length);\n
+                      $offsetTerm += ${dt.defaultSize} + 1;\n
+                    """.stripMargin
+                  }
                 case t if t =:= typeOf[UTF8String] => s"""
               $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());\n
                $offsetTerm += 4;\n
@@ -372,7 +420,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
           if (numBytesForNullBits > 8) {
             val remainder = i % 8
             val index = i / 8
-
             if (nullVar.isEmpty || nullVar == "false") {
               s"""
                   $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
@@ -496,13 +543,24 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
   }
 
+  def getSizeOfValueBytes(aggDataTypes: Seq[DataType]): Int = {
+    aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize + (dt match {
+      case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
+      case _ => 0
+    })
+    ) + sizeForNullBits(numBytesForNullAggBits)
+  }
+
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
     numKeyBytesVar: String): String = {
     s"$numKeyBytesVar = " +
       keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
         val nullVar = expr.isNull
         val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
-          dt.defaultSize.toString
+          dt.defaultSize.toString + (dt match {
+            case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => " + 1"
+            case _ => ""
+          })
         } else {
           s" (${keyVars(i).value}.numBytes() + 4) "
         }
