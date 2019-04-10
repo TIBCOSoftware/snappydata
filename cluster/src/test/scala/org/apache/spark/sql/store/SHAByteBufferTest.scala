@@ -473,7 +473,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     var q = s"select sum(${colName(2)}), ${colName(11)} from test1 group by ${colName(11)} "
     var expectedResult = mutable.Map[Any, Any]("col0" -> 10L, "col1" -> 35L)
-    var rows = snc.sql(q).collect
+    var rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    var rows = rs.collect
     assertEquals(2, rows.length)
     rows.foreach(row => {
       assertEquals(expectedResult(row.getString(1)), row.getLong(0))
@@ -490,7 +492,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     q = s"select sum(${colName(3)}), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> 10L, "col1" -> 35L)
-    rows = snc.sql(q).collect
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
     assertEquals(2, rows.length)
     rows.foreach(row => {
       assertEquals(expectedResult(row.getString(1)), row.getLong(0))
@@ -507,7 +511,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     q = s"select sum(${colName(5)}), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> 10L, "col1" -> 35L)
-    rows = snc.sql(q).collect
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
     assertEquals(2, rows.length)
     rows.foreach(row => {
       assertEquals(expectedResult(row.getString(1)), row.getLong(0))
@@ -525,7 +531,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     q = s"select sum(${colName(6)}), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> 10.toDouble, "col1" -> 35.toDouble)
-    rows = snc.sql(q).collect
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
     assertEquals(2, rows.length)
     rows.foreach(row => {
       assertEquals(expectedResult(row.getString(1)), row.getDouble(0))
@@ -543,10 +551,33 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     q = s"select sum(${colName(7)}), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> 10.toDouble, "col1" -> 35.toDouble)
-    rows = snc.sql(q).collect
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
     assertEquals(2, rows.length)
     rows.foreach(row => {
       assertEquals(expectedResult(row.getString(1)), row.getDouble(0))
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of Big Decimal as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${.3*i}"),
+        11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(8)}_1), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> new java.math.BigDecimal(s"${.3 * 10}"),
+      "col1" -> new java.math.BigDecimal(s"${.3 * 35}"))
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(row.getString(1)), row.getDecimal(0))
       expectedResult.remove(row.getString(1))
     })
     assertTrue(expectedResult.isEmpty)

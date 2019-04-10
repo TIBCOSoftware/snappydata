@@ -66,9 +66,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     currentValueOffsetTerm: String, isKey: Boolean):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
-    val decimalClass = classOf[Decimal]
-    val bigDecimalClass = classOf[java.math.BigDecimal]
-    val bigIntegerClass = classOf[java.math.BigInteger]
+    val decimalClass = classOf[Decimal].getName
+    val bigDecimalClass = classOf[java.math.BigDecimal].getName
+    val bigIntegerClass = classOf[java.math.BigInteger].getName
     val byteBufferClass = classOf[ByteBuffer].getName
     val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
     val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
