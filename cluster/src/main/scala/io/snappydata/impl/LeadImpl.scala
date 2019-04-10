@@ -142,6 +142,10 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.setProperty(serverGroupsProp, groups)
     bootProperties.setProperty(STORE_PREFIX + Attribute.GFXD_HOST_DATA, "false")
     bootProperties.setProperty(STORE_PREFIX + Attribute.GFXD_PERSIST_DD, "false")
+    // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
+    if (bootProperties.getProperty("spark.sql.files.maxPartitionBytes") == null) {
+      bootProperties.setProperty("spark.sql.files.maxPartitionBytes", "33554432")
+    }
 
     // copy store related properties into a separate properties bag
     // to be used by store boot while original will be used by SparkConf
