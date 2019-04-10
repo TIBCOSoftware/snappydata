@@ -126,7 +126,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }; " +
             s"""
                 \n $currentValueOffsetTerm += ${dt.defaultSize}; \n
-             System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+           //  System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
              """
       }
       val exprCode =
@@ -134,15 +134,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
             $nullVarCode
            if (!$nullVar) {
              $evaluationCode
-           }${ if (!isKey) {
-          s"""
+           }${
+          if (!isKey) {
+            s"""
              else {
                $currentValueOffsetTerm += ${dt.defaultSize};\n
              }
            """.stripMargin
-        } else {
-          ""
-        }
+          } else {
+            ""
+          }
         }
          """.stripMargin
       ExprCode(exprCode, nullVar, varName)
@@ -189,9 +190,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def initKeyOrBufferVal(dataTypes: Seq[DataType], varNames: Seq[String]):
   String = dataTypes.zip(varNames).map { case (dt, varName) =>
-      s"${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};"
+    s"${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};"
   }.mkString("\n")
-
 
 
   /**
@@ -219,8 +219,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
     s"""
            $valueInitCode
-           ${initNullBitsetCode (nullKeysBitsetTerm, numBytesForNullKeyBits)}
-           ${initNullBitsetCode (nullAggsBitsetTerm, numBytesForNullAggBits)}
+           ${initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
+           ${initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
           $inputEvals
 
@@ -280,27 +280,26 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
 
-
-
-
   private def getNullBitsCastTerm(numBytesForNullBits: Int) = if (numBytesForNullBits == 1) {
-      "byte"
-    } else if (numBytesForNullBits == 2) {
-      "short"
-    } else if (numBytesForNullBits <= 4) {
-      "int"
-    } else {
-      "long"
-    }
+    "byte"
+  } else if (numBytesForNullBits == 2) {
+    "short"
+  } else if (numBytesForNullBits <= 4) {
+    "int"
+  } else {
+    "long"
+  }
 
 
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
     val plaformClass = classOf[Platform].getName
     s"""
       ${resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
-      ${writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
-            aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
-            false)}
+      ${
+      writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
+        aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
+        false)
+    }
     """.stripMargin
 
   }
@@ -319,111 +318,128 @@ case class SHAMapAccessor(@transient session: SnappySession,
        $offsetTerm += ${sizeForNullBits(numBytesForNullBits)};
        ${
       dataTypes.zip(varsToWrite).zipWithIndex.map {
-      case ((dt, expr), i) =>
-        val variable = expr.value
-        val writingCode = dt match {
-          case x: AtomicType =>
-            val snippet = typeOf(x.tag) match {
-              case t if t =:= typeOf[Byte] => s"""
+        case ((dt, expr), i) =>
+          val variable = expr.value
+          val writingCode = dt match {
+            case x: AtomicType =>
+              val snippet = typeOf(x.tag) match {
+                case t if t =:= typeOf[Byte] => s"""
                    $plaformClass.putByte($baseObjectTerm, $offsetTerm,
                    $variable); \n
                    $offsetTerm += ${dt.defaultSize};\n
                 """.stripMargin
-              case t if t =:= typeOf[Short] =>
-                s"""
+                case t if t =:= typeOf[Short] =>
+                  s"""
               $plaformClass.putShort($baseObjectTerm,
               $offsetTerm, $variable);\n
               $offsetTerm += ${dt.defaultSize};\n
               """.stripMargin
-              case t if t =:= typeOf[Int] =>
-                s"""
+                case t if t =:= typeOf[Int] =>
+                  s"""
                   $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);\n
                  $offsetTerm += ${dt.defaultSize}; \n
                  """.stripMargin
-              case t if t =:= typeOf[Long] => s"""
+                case t if t =:= typeOf[Long] => s"""
                $plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);\n
                $offsetTerm += ${dt.defaultSize};\n
                """
-              case t if t =:= typeOf[Float] => s"""
+                case t if t =:= typeOf[Float] => s"""
               $plaformClass.putFloat($baseObjectTerm, $offsetTerm, $variable);\n
                $offsetTerm += ${dt.defaultSize};\n
                """.stripMargin
-              case t if t =:= typeOf[Double] => s"""
+                case t if t =:= typeOf[Double] => s"""
               $plaformClass.putDouble($baseObjectTerm, $offsetTerm, $variable);\n
                $offsetTerm += ${dt.defaultSize};\n
                """.stripMargin
-              case t if t =:= typeOf[Decimal] =>
-                throw new UnsupportedOperationException("implement decimal")
-              case t if t =:= typeOf[UTF8String] => s"""
+                case t if t =:= typeOf[Decimal] =>
+                  throw new UnsupportedOperationException("implement decimal")
+                case t if t =:= typeOf[UTF8String] => s"""
               $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());\n
                $offsetTerm += 4;\n
                $variable.writeToMemory($baseObjectTerm, $offsetTerm);\n
                $offsetTerm += $variable.numBytes();\n
                """
-              case _ => throw new UnsupportedOperationException("unknown type " + dt)
-            }
-            snippet
+                case _ => throw new UnsupportedOperationException("unknown type " + dt)
+              }
+              snippet
 
-          case _ => throw new UnsupportedOperationException("unknown type " + dt)
-        }
+            case _ => throw new UnsupportedOperationException("unknown type " + dt)
+          }
 
-        // Now do the actual writing based on whether the variable is null or not
-        val castTerm = getNullBitsCastTerm(numBytesForNullBits)
-        val nullVar = expr.isNull
-        if (numBytesForNullBits > 8) {
-              val remainder = i % 8
-              val index = i / 8
+          // Now do the actual writing based on whether the variable is null or not
+          val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+          val nullVar = expr.isNull
+          if (numBytesForNullBits > 8) {
+            val remainder = i % 8
+            val index = i / 8
 
-              if (nullVar.isEmpty || nullVar == "false") {
-                s"""
+            if (nullVar.isEmpty || nullVar == "false") {
+              s"""
                   $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
                   $writingCode \n
                 """.stripMargin
+            } else if (nullVar == "true") {
+              if (!isKey) {
+                s"$offsetTerm += ${dt.defaultSize};\n"
               } else {
-                s"""
-                  if (!$nullVar) {
-                    $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
-                    $writingCode \n
-                  }${ if (!isKey) {
-                    s"""
-                       else {
-                         $offsetTerm += ${dt.defaultSize};\n
-                       }
-                    """.stripMargin
-                  } else ""
-                }
-                """.stripMargin
+                ""
               }
             }
             else {
-
-              if (nullVar.isEmpty || nullVar == "false") {
-                s"""
-                  $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i)); \n
-                  $writingCode \n
-                """.stripMargin
-              } else {
-                s"""
+              s"""
                   if (!$nullVar) {
-                    $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i)); \n
+                    $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
                     $writingCode \n
                   }${
-                  if (!isKey) {
-                    s"""
+                if (!isKey) {
+                  s"""
                        else {
                          $offsetTerm += ${dt.defaultSize};\n
                        }
                     """.stripMargin
-                  } else ""
-                }
-                """.stripMargin
+                } else ""
               }
+                """.stripMargin
+            }
+          }
+          else {
+
+            if (nullVar.isEmpty || nullVar == "false") {
+              s"""
+                  $nullBitsTerm|= ($castTerm)(( (($castTerm)0x01) << $i)); \n
+                  $writingCode \n
+                """.stripMargin
+            } else if (nullVar == "true") {
+              if (!isKey) {
+                s"$offsetTerm += ${dt.defaultSize};\n"
+              } else {
+                ""
+              }
+            } else {
+              s"""
+                  if (!$nullVar) {
+                    $nullBitsTerm|= ($castTerm)(( (($castTerm)0x01) << $i)); \n
+                    $writingCode \n
+                  }${
+                if (!isKey) {
+                  s"""
+                       else {
+                         $offsetTerm += ${dt.defaultSize};\n
+                       }
+                    """.stripMargin
+                } else ""
+              }
+                """.stripMargin
+            }
           }
 
-    }.mkString("\n")}
+      }.mkString("\n")
+    }
      // now write the nullBitsTerm
-     ${writeNullBitsAt(baseObjectTerm, startingOffsetTerm, nullBitsTerm,
-      numBytesForNullBits)}
+     ${
+      writeNullBitsAt(baseObjectTerm, startingOffsetTerm, nullBitsTerm,
+        numBytesForNullBits)
+    }
      """.stripMargin
 
   }
@@ -447,11 +463,15 @@ case class SHAMapAccessor(@transient session: SnappySession,
         long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
         long $currentOffset = $baseKeyoffsetTerm;
         // first write key data
-        ${writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
-      nullKeysBitsetTerm, numBytesForNullKeyBits, true)}
+        ${
+      writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
+        nullKeysBitsetTerm, numBytesForNullKeyBits, true)
+    }
         //write value data
-       ${ writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
-      nullAggsBitsetTerm, numBytesForNullAggBits, false)}
+       ${
+      writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
+        nullAggsBitsetTerm, numBytesForNullAggBits, false)
+    }
     """
   }
 

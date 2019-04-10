@@ -668,8 +668,7 @@ case class SnappyHashAggregateExec(
           $allocatorClass $allocatorTerm = $gfeCacheImplClass.
                getCurrentBufferAllocator();
           $childProduce
-
-           System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
+          // System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
         }
        """)
 
@@ -719,12 +718,12 @@ case class SnappyHashAggregateExec(
 
       int $sizeTerm = $hashMapTerm.size();
     //  if (${modes.contains(Final)}) {
-         System.out.println("Num elements in hashmap when producing= " + $sizeTerm );
+       //  System.out.println("Num elements in hashmap when producing= " + $sizeTerm );
     //   }
       for (; $mapCounter < $sizeTerm; ) {
        if (${modes.contains(Final)}) {
          //   System.out.println("iterating for counter position when producing= " + $mapCounter );
-              }
+       }
 
         $numOutput.${metricAdd("1")};
         // skip the key length
@@ -899,8 +898,10 @@ case class SnappyHashAggregateExec(
        |
        |
        |// initialization for buffer fields from the hashmap
-       |${byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
-      currentOffSetForMapLookupUpdt, false)}
+       |${
+      byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
+        currentOffSetForMapLookupUpdt, false)
+    }
        |$bufferEval
 
        | // reset the  offset position to start of values for writing update
