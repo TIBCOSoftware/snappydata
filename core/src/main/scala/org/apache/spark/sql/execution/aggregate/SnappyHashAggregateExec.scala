@@ -507,7 +507,8 @@ case class SnappyHashAggregateExec(
   }
 
   private def generateResultCodeForSHAMap(
-    ctx: CodegenContext, keyBufferVars: Seq[ExprCode], aggBufferVars: Seq[ExprCode]): String = {
+    ctx: CodegenContext, keyBufferVars: Seq[ExprCode],
+    aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String): String = {
     if (modes.contains(Final) || modes.contains(Complete)) {
       // generate output extracting from ExprCodes
       ctx.INPUT_ROW = null
@@ -535,7 +536,9 @@ case class SnappyHashAggregateExec(
         BindReferences.bindReference(e, inputAttrs).genCode(ctx)
       }
       s"""
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm, true)}
        $evaluateKeyVars
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm, false)}
        $evaluateBufferVars
        $evaluateAggResults
        ${consume(ctx, resultVars)}
@@ -661,7 +664,7 @@ case class SnappyHashAggregateExec(
       iterValueOffsetTerm, true)
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, iterValueOffsetTerm, false)
-    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr)
+    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, iterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
     // The child could change `copyResult` to true, but we had already
@@ -678,6 +681,10 @@ case class SnappyHashAggregateExec(
         long $beforeAgg = System.nanoTime();
         $doAgg();
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
+        $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
+        Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+        long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+        $iterValueOffsetTerm += $vdBaseOffsetTerm;
       }
       if ($hashMapTerm == null) {
          return;
@@ -686,10 +693,11 @@ case class SnappyHashAggregateExec(
                       getCurrentBufferAllocator();
       ${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
       ${byteBufferAccessor.initKeyOrBufferVal(keysDataType, KeyBufferVars)}
+      ${byteBufferAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
+      ${byteBufferAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
       // output the result
       $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-      long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
 
       int $sizeTerm = $hashMapTerm.size();
       if (${modes.contains(Final)}) {
@@ -703,7 +711,6 @@ case class SnappyHashAggregateExec(
         $numOutput.${metricAdd("1")};
         // skip the key length
         $iterValueOffsetTerm += 4;
-       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm)}
         $outputCode
         ++$mapCounter;
         if ($mapCounter == $sizeTerm) {
@@ -872,11 +879,12 @@ case class SnappyHashAggregateExec(
        |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
        |$mapCode
        |
-       |// -- Update the buffer with new aggregate results --
        |
-       |// initialization for buffer fields
-       |
+       |// initialization for buffer fields from the hashmap
+       |${byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
+      currentOffSetForMapLookupUpdt, false)}
        |$bufferEval
+
        | // reset the  offset position to start of values for writing update
        |${byteBufferAccessor.currentOffSetForMapLookupUpdt} = ${byteBufferAccessor.valueOffsetTerm};
        | // common sub-expressions
@@ -885,9 +893,7 @@ case class SnappyHashAggregateExec(
        |
        |// evaluate aggregate functions
        |${evaluateVariables(updateEvals)}
-       |
-       |// update generated class object fields
-       |${byteBufferAccessor.generateUpdate(bufferVars, aggBuffDataTypes, updateEvals)}
+       |${byteBufferAccessor.generateUpdate(bufferVars, aggBuffDataTypes)}
       """.stripMargin
   }
 

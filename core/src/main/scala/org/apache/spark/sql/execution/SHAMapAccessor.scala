@@ -64,27 +64,25 @@ case class SHAMapAccessor(@transient session: SnappySession,
     currentValueOffsetTerm: String, isKey: Boolean):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
-
     val byteBufferClass = classOf[ByteBuffer].getName
-
+    val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
+    val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
+    val castTerm = getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = ctx.freshName("isNull")
-      val nullVarCode = if (isKey) {
-        val castTerm = getNullBitsCastTerm
-        if (numBytesForNullKeyBits <= 8) {
+      val nullVarCode =
+        if (numBytesForNullBits <= 8) {
           s"""
-            boolean $nullVar = ($nullKeysBitsetTerm & ( (($castTerm)0x01) << $i)) == 0;
+            boolean $nullVar = ($nullBitTerm & ( (($castTerm)0x01) << $i)) == 0;\n
         """.stripMargin
         } else {
           val remainder = i % 8
           val index = i / 8
           s"""
-            boolean $nullVar = ($nullKeysBitsetTerm[$index] & (0x01 << $remainder)) == 0;\n
+            boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;\n
         """.stripMargin
         }
-      } else {
-        s"boolean $nullVar = false;"
-      }
+
 
       val evaluationCode = dt match {
         case StringType =>
@@ -96,8 +94,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val len = ctx.freshName("len")
 
           s"""
-            int $len = $plaformClass.getInt($vdBaseObjectTerm,
-          $vdBaseOffsetTerm + $currentValueOffsetTerm);
+            int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
 
           $byteBufferClass $holder =  $allocatorTerm.
             allocate($len, "SHA");
@@ -105,8 +102,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           long $holderBaseOffset = $allocatorTerm.baseOffset($holder);
            $currentValueOffsetTerm += 4;
            $plaformClass.copyMemory($vdBaseObjectTerm,
-            $vdBaseOffsetTerm + $currentValueOffsetTerm,
-              $holderBaseObject, $holderBaseOffset , $len);
+            $currentValueOffsetTerm, $holderBaseObject, $holderBaseOffset , $len);
            $varName = ${classOf[UTF8String].getName}.
            fromAddress($holderBaseObject, $holderBaseOffset, $len);
              $currentValueOffsetTerm += $len;
@@ -115,17 +111,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"$varName = ${
             x match {
               case ByteType => s"$plaformClass.getByte($vdBaseObjectTerm, " +
-                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+                s"$currentValueOffsetTerm); "
               case ShortType => s"$plaformClass.getShort($vdBaseObjectTerm, " +
-                s"$vdBaseOffsetTerm + $currentValueOffsetTerm);"
+                s"$currentValueOffsetTerm);"
               case IntegerType => s"$plaformClass.getInt($vdBaseObjectTerm, " +
-                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+                s"$currentValueOffsetTerm); "
               case LongType => s"$plaformClass.getLong($vdBaseObjectTerm, " +
-                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+                s" $currentValueOffsetTerm); "
               case FloatType => s"$plaformClass.getFloat($vdBaseObjectTerm, " +
-                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+                s" $currentValueOffsetTerm); "
               case DoubleType => s"$plaformClass.getDouble($vdBaseObjectTerm, " +
-                s"$vdBaseOffsetTerm + $currentValueOffsetTerm); "
+                s" $currentValueOffsetTerm); "
             }
           }; " +
             s"""
@@ -138,44 +134,54 @@ case class SHAMapAccessor(@transient session: SnappySession,
             $nullVarCode
            if (!$nullVar) {
              $evaluationCode
-           }
+           }${ if (!isKey) {
+          s"""
+             else {
+               $currentValueOffsetTerm += ${dt.defaultSize};\n
+             }
+           """.stripMargin
+        } else {
+          ""
+        }
+        }
          """.stripMargin
       ExprCode(exprCode, nullVar, varName)
     }
   }
 
-  def readNullBitsCode(currentValueOffsetTerm: String): String = {
+  def readNullBitsCode(currentValueOffsetTerm: String, isKey: Boolean): String = {
     val plaformClass = classOf[Platform].getName
-    if (numBytesForNullKeyBits == 1) {
+    val (nullBitsetTerm, numBytesForNullBits) = if (isKey) {
+      (nullKeysBitsetTerm, numBytesForNullKeyBits)
+    } else {
+      (nullAggsBitsetTerm, numBytesForNullAggBits)
+    }
+
+    if (numBytesForNullBits == 1) {
       s"""
-          byte $nullKeysBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm,
-          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
+          $nullBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 1; \n
           """.stripMargin
-    } else if (numBytesForNullKeyBits == 2) {
+    } else if (numBytesForNullBits == 2) {
       s"""
-          short $nullKeysBitsetTerm = $plaformClass.getShort($vdBaseObjectTerm,
-          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
+          $nullBitsetTerm = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 2; \n
           """.stripMargin
-    } else if (numBytesForNullKeyBits <= 4) {
+    } else if (numBytesForNullBits <= 4) {
       s"""
-          int $nullKeysBitsetTerm = $plaformClass.getInt($vdBaseObjectTerm,
-          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
+          $nullBitsetTerm = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 4; \n
           """.stripMargin
-    } else if (numBytesForNullKeyBits <= 8) {
+    } else if (numBytesForNullBits <= 8) {
       s"""
-          long $nullKeysBitsetTerm = $plaformClass.getLong($vdBaseObjectTerm,
-          $vdBaseOffsetTerm + $currentValueOffsetTerm);\n
+          $nullBitsetTerm = $plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm);\n
           $currentValueOffsetTerm += 8; \n
           """.stripMargin
     } else {
       s"""
-           $plaformClass.copyMemory($vdBaseObjectTerm,
-          $vdBaseOffsetTerm + $currentValueOffsetTerm, $nullKeysBitsetTerm,
-           ${Platform.BYTE_ARRAY_OFFSET}, $numBytesForNullKeyBits); \n
-           $currentValueOffsetTerm += $numBytesForNullKeyBits; \n
+           $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm, $nullBitsetTerm,
+           ${Platform.BYTE_ARRAY_OFFSET}, $numBytesForNullBits); \n
+           $currentValueOffsetTerm += $numBytesForNullBits; \n
          """.stripMargin
     }
   }
@@ -221,10 +227,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
            // evaluate key vars
           ${evaluateVariables(keyVars)}
 
-           // evaluate null key bits
-          ${evaluateNullBits(keyVars, numBytesForNullKeyBits, nullKeysBitsetTerm)}
-          ${evaluateNullBits(valueInitVars, numBytesForNullAggBits, nullAggsBitsetTerm)}
-
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
 
@@ -236,13 +238,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
           int $numValueBytes = $numAggBytes;
           ${
       generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
-        keysDataType, aggregateDataTypes, baseKeyObject, baseKeyoffset)
+        keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject, baseKeyoffset)
     }
            // insert or lookup
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
           // position the offset to start of aggregate value
-          $valueOffsetTerm += $numKeyBytesTerm;
+          $valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
           long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
          """
 
@@ -265,45 +267,20 @@ case class SHAMapAccessor(@transient session: SnappySession,
      """.stripMargin
   }
 
+  def resetNullBitsetCode(nullBitsetTerm: String,
+    numBytesForNullBits: Int): String = if (numBytesForNullBits <= 8) {
+    s"$nullBitsetTerm = 0; \n"
+  } else {
+    s"""
+       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
+         $nullBitsetTerm[i] = 0;
+       }
 
-  def evaluateNullBits(vars: Seq[ExprCode], numBytesForNullBits: Int,
-    nullBitsTerm: String): String = {
-    val castTerm = getNullBitsCastTerm(numBytesForNullBits)
-    vars.zipWithIndex.map {
-      case (expr, i) =>
-        val nullVar = expr.isNull
-        if (numBytesForNullBits > 8) {
-          val remainder = i % 8
-          val index = i / 8
-
-          if (nullVar.isEmpty || nullVar == "false") {
-            s"""
-            $nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
-          """.stripMargin
-          } else {
-            s"""
-            if (!$nullVar) {
-              $nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
-            }
-          """.stripMargin
-          }
-        }
-        else {
-
-          if (nullVar.isEmpty || nullVar == "false") {
-            s"""
-            $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
-          """.stripMargin
-          } else {
-            s"""
-            if (!$nullVar) {
-              $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
-            }
-          """.stripMargin
-          }
-        }
-    }.mkString("\n")
+     """.stripMargin
   }
+
+
+
 
 
   private def getNullBitsCastTerm(numBytesForNullBits: Int) = if (numBytesForNullBits == 1) {
@@ -317,32 +294,144 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
 
 
-  def generateUpdate(columnVars: Seq[ExprCode], aggBufferDataType: Seq[DataType],
-    resultVars: Seq[ExprCode]): String = {
+  def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
     val plaformClass = classOf[Platform].getName
+    s"""
+      ${resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
+      ${writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
+            aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
+            false)}
+    """.stripMargin
 
-    resultVars.zip(aggBufferDataType).
-      map { case (expr, dt) =>
-        (dt match {
-          case ByteType => s"$plaformClass.putByte($vdBaseObjectTerm," +
-            s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
-          case ShortType => s"$plaformClass.putShort($vdBaseObjectTerm," +
-            s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
-          case IntegerType => s"$plaformClass.putInt($vdBaseObjectTerm, " +
-            s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
-          case LongType => s" $plaformClass.putLong($vdBaseObjectTerm," +
-            s" $vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value});"
-          case FloatType => s"$plaformClass.putFloat($vdBaseObjectTerm, " +
-            s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
-          case DoubleType => s"$plaformClass.putDouble($vdBaseObjectTerm, " +
-            s"$vdBaseOffsetTerm + $currentOffSetForMapLookupUpdt, ${expr.value}); "
-        }) + s"\n $currentOffSetForMapLookupUpdt += ${dt.defaultSize}; \n "
-      }.mkString("")
+  }
+
+
+  def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
+    dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
+    numBytesForNullBits: Int, isKey: Boolean): String = {
+    // Move the offset at the end of num Null Bytes space, we will fill that space later
+    // store the starting value of offset
+    val startingOffsetTerm = ctx.freshName("startingOffset")
+    val plaformClass = classOf[Platform].getName
+    s"""
+       long $startingOffsetTerm = $offsetTerm;
+       // move current offset to end of null bits
+       $offsetTerm += ${sizeForNullBits(numBytesForNullBits)};
+       ${
+      dataTypes.zip(varsToWrite).zipWithIndex.map {
+      case ((dt, expr), i) =>
+        val variable = expr.value
+        val writingCode = dt match {
+          case x: AtomicType =>
+            val snippet = typeOf(x.tag) match {
+              case t if t =:= typeOf[Byte] => s"""
+                   $plaformClass.putByte($baseObjectTerm, $offsetTerm,
+                   $variable); \n
+                   $offsetTerm += ${dt.defaultSize};\n
+                """.stripMargin
+              case t if t =:= typeOf[Short] =>
+                s"""
+              $plaformClass.putShort($baseObjectTerm,
+              $offsetTerm, $variable);\n
+              $offsetTerm += ${dt.defaultSize};\n
+              """.stripMargin
+              case t if t =:= typeOf[Int] =>
+                s"""
+                  $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);\n
+                 $offsetTerm += ${dt.defaultSize}; \n
+                 """.stripMargin
+              case t if t =:= typeOf[Long] => s"""
+               $plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);\n
+               $offsetTerm += ${dt.defaultSize};\n
+               """
+              case t if t =:= typeOf[Float] => s"""
+              $plaformClass.putFloat($baseObjectTerm, $offsetTerm, $variable);\n
+               $offsetTerm += ${dt.defaultSize};\n
+               """.stripMargin
+              case t if t =:= typeOf[Double] => s"""
+              $plaformClass.putDouble($baseObjectTerm, $offsetTerm, $variable);\n
+               $offsetTerm += ${dt.defaultSize};\n
+               """.stripMargin
+              case t if t =:= typeOf[Decimal] =>
+                throw new UnsupportedOperationException("implement decimal")
+              case t if t =:= typeOf[UTF8String] => s"""
+              $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());\n
+               $offsetTerm += 4;\n
+               $variable.writeToMemory($baseObjectTerm, $offsetTerm);\n
+               $offsetTerm += $variable.numBytes();\n
+               """
+              case _ => throw new UnsupportedOperationException("unknown type " + dt)
+            }
+            snippet
+
+          case _ => throw new UnsupportedOperationException("unknown type " + dt)
+        }
+
+        // Now do the actual writing based on whether the variable is null or not
+        val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+        val nullVar = expr.isNull
+        if (numBytesForNullBits > 8) {
+              val remainder = i % 8
+              val index = i / 8
+
+              if (nullVar.isEmpty || nullVar == "false") {
+                s"""
+                  $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
+                  $writingCode \n
+                """.stripMargin
+              } else {
+                s"""
+                  if (!$nullVar) {
+                    $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
+                    $writingCode \n
+                  }${ if (!isKey) {
+                    s"""
+                       else {
+                         $offsetTerm += ${dt.defaultSize};\n
+                       }
+                    """.stripMargin
+                  } else ""
+                }
+                """.stripMargin
+              }
+            }
+            else {
+
+              if (nullVar.isEmpty || nullVar == "false") {
+                s"""
+                  $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i)); \n
+                  $writingCode \n
+                """.stripMargin
+              } else {
+                s"""
+                  if (!$nullVar) {
+                    $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i)); \n
+                    $writingCode \n
+                  }${
+                  if (!isKey) {
+                    s"""
+                       else {
+                         $offsetTerm += ${dt.defaultSize};\n
+                       }
+                    """.stripMargin
+                  } else ""
+                }
+                """.stripMargin
+              }
+          }
+
+    }.mkString("\n")}
+     // now write the nullBitsTerm
+     ${writeNullBitsAt(baseObjectTerm, startingOffsetTerm, nullBitsTerm,
+      numBytesForNullBits)}
+     """.stripMargin
+
   }
 
   def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String,
     keyBytesHolderVar: String, keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    aggregatesDataType: Seq[DataType], baseKeyObject: String, baseKeyoffsetTerm: String): String = {
+    aggregatesDataType: Seq[DataType], valueInitVars: Seq[ExprCode],
+    baseKeyObject: String, baseKeyoffsetTerm: String): String = {
 
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = ctx.freshName("currentOffset")
@@ -357,130 +446,33 @@ case class SHAMapAccessor(@transient session: SnappySession,
         Object $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVar);
         long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
         long $currentOffset = $baseKeyoffsetTerm;
-        ${writeNullBits(baseKeyObject, currentOffset)}
-
-        ${
-      keysDataType.zip(keyVars).foldLeft("") {
-        case (code, (dt, expr)) =>
-          val variable = expr.value
-          val isNull = expr.isNull
-          var codex = code
-          codex += (dt match {
-            case x: AtomicType =>
-              val snippet = typeOf(x.tag) match {
-                case t if t =:= typeOf[Byte] =>
-                  s"""
-                   $plaformClass.putByte($baseKeyObject, $currentOffset,
-                   $variable); \n
-                   $currentOffset += 1; \n
-                """.stripMargin
-                case t if t =:= typeOf[Short] =>
-                  s"""
-              $plaformClass.putShort($baseKeyObject,
-              $currentOffset, $variable);\n
-              $currentOffset += 2;\n
-              """.stripMargin
-                case t if t =:= typeOf[Int] =>
-                  s"""
-                  $plaformClass.putInt($baseKeyObject, $currentOffset, $variable);\n
-                 $currentOffset += 4; \n
-                 """.stripMargin
-                case t if t =:= typeOf[Long] => s"""
-               $plaformClass.putLong($baseKeyObject, $currentOffset, $variable);\n
-               $currentOffset += 8; \n
-               """
-                case t if t =:= typeOf[Float] => s"""
-              $plaformClass.putFloat($baseKeyObject, $currentOffset, $variable);\n
-               $currentOffset += 4; \n
-               """.stripMargin
-                case t if t =:= typeOf[Double] => s"""
-              $plaformClass.putDouble($baseKeyObject, $currentOffset, $variable);\n
-               $currentOffset += 8; \n
-               """.stripMargin
-                case t if t =:= typeOf[Decimal] =>
-                  throw new UnsupportedOperationException("implement decimal")
-                case t if t =:= typeOf[UTF8String] => s"""
-              $plaformClass.putInt($baseKeyObject, $currentOffset, $variable.numBytes());\n
-               $currentOffset += 4; \n
-               $variable.writeToMemory($baseKeyObject, $currentOffset);\n
-               $currentOffset += $variable.numBytes();\n
-               """
-                case _ => throw new UnsupportedOperationException("unknown type " + dt)
-              }
-              if (isNull.isEmpty || isNull == "false") {
-                snippet
-              } else {
-                s"""
-               if (!$isNull) {
-                 $snippet
-               }
-             """.stripMargin
-              }
-            case _ => throw new UnsupportedOperationException("unknown type " + dt)
-          })
-          codex
-      }.mkString("")
-    }
-       // now add values
-       // start here by putting nullbit for value
-       ${x}
-       ${
-      aggregatesDataType.foldLeft("")((code, dt) => {
-        var codex = code
-        codex += (dt match {
-          case x: AtomicType => typeOf(x.tag) match {
-            case t if t =:= typeOf[Byte] => s"\n $plaformClass.putByte($baseKeyObject," +
-              s" $currentOffset, 0); " +
-              s"\n $currentOffset += 1; \n"
-            case t if t =:= typeOf[Short] => s"\n $plaformClass.putShort($baseKeyObject," +
-              s"$currentOffset, 0); " +
-              s"\n $currentOffset += 2; \n"
-            case t if t =:= typeOf[Int] => s"\n $plaformClass.putInt($baseKeyObject, " +
-              s"$currentOffset, 0); " +
-              s"\n $currentOffset += 4; \n"
-            case t if t =:= typeOf[Long] => s"\n $plaformClass.putLong($baseKeyObject," +
-              s" $currentOffset, 0l); " +
-              s"\n $currentOffset += 8; \n"
-            case t if t =:= typeOf[Float] => s"\n $plaformClass.putFloat($baseKeyObject," +
-              s"$currentOffset, 0f); " +
-              s"\n $currentOffset += 4; \n"
-            case t if t =:= typeOf[Double] => s"\n $plaformClass.putDouble(" +
-              s"$baseKeyObject, $currentOffset, 0d); " +
-              s"\n $currentOffset += 8; \n"
-            case t if t =:= typeOf[Decimal] =>
-              throw new UnsupportedOperationException("implement decimal")
-            case _ => throw new UnsupportedOperationException("unknown type" + dt)
-          }
-        })
-        codex
-      }).mkString("")
-    }
-
-         """
+        // first write key data
+        ${writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
+      nullKeysBitsetTerm, numBytesForNullKeyBits, true)}
+        //write value data
+       ${ writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
+      nullAggsBitsetTerm, numBytesForNullAggBits, false)}
+    """
   }
 
-  def writeNullBits(baseObjectTerm: String, currentOffsetTerm: String): String = {
+  def writeNullBitsAt(baseObjectTerm: String, offsetToWriteTerm: String,
+    nullBitsTerm: String, numBytesForNullBits: Int): String = {
     val plaformClass = classOf[Platform].getName
-    if (numBytesForNullKeyBits == 1) {
+    if (numBytesForNullBits == 1) {
       s"\n $plaformClass.putByte($baseObjectTerm," +
-        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
-        s"\n $currentOffsetTerm += 1; \n"
-    } else if (numBytesForNullKeyBits == 2) {
+        s" $offsetToWriteTerm, $nullBitsTerm);\n"
+    } else if (numBytesForNullBits == 2) {
       s"\n $plaformClass.putShort($baseObjectTerm," +
-        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
-        s"\n $currentOffsetTerm += 2; \n"
-    } else if (numBytesForNullKeyBits <= 4) {
+        s" $offsetToWriteTerm, $nullBitsTerm);\n"
+    } else if (numBytesForNullBits <= 4) {
       s"\n $plaformClass.putInt($baseObjectTerm," +
-        s" $currentOffsetTerm, $nullKeysBitsetTerm); " +
-        s"\n $currentOffsetTerm += 4; \n"
-    } else if (numBytesForNullKeyBits <= 8) {
-      s"$plaformClass.putLong($baseObjectTerm, $currentOffsetTerm, " +
-        s"$nullKeysBitsetTerm);\n" +
-        s"$currentOffsetTerm += 8; \n"
+        s" $offsetToWriteTerm, $nullBitsTerm);\n"
+    } else if (numBytesForNullBits <= 8) {
+      s"$plaformClass.putLong($baseObjectTerm, $offsetToWriteTerm," +
+        s"$nullBitsTerm);\n"
     } else {
-      s"\n $plaformClass.copyMemory($nullKeysBitsetTerm, ${Platform.BYTE_ARRAY_OFFSET}," +
-        s" $baseObjectTerm, $currentOffsetTerm, $numBytesForNullKeyBits);" +
-        s"\n $currentOffsetTerm += $numBytesForNullKeyBits; \n"
+      s"\n $plaformClass.copyMemory($nullBitsTerm, ${Platform.BYTE_ARRAY_OFFSET}," +
+        s" $baseObjectTerm, $offsetToWriteTerm, $numBytesForNullBits);\n"
     }
   }
 
