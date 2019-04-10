@@ -16,7 +16,9 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.{Connection, DriverManager, SQLException, SQLType, Types}
+import java.sql.{Connection, Date, DriverManager, SQLException, SQLType, Timestamp, Types}
+
+import scala.collection.mutable
 
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import com.pivotal.gemfirexd.security.SecurityTestUtils
@@ -383,18 +385,172 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
-  test("aggregate functions & grouping on each of spark data type. missing types = struct type, maptype,userdefinedtype, hivestringtype, array type") {
+  // missing types = struct type, maptype,userdefinedtype, hivestringtype,
+  // array type, calendarinterval
+  test("aggregate functions & grouping on each of spark data type") {
 
     snc
     var conn = getSqlConnection
 
+    type DataMap = Map[Int, Any]
+
     snc.sql("drop table if exists test1")
 
-    val createTableStr = "create table test1 ( col0 int, col1 byte, col2 short, col3 int," +
-    "col4 long, col5 float, col6 double, col7 decimal(12, 25), col8 decimal(24, 25)," +
-      "col9 timestamp, col10 string, col11 boolean, col12 date, col13 binary, " +
-      "col14 calendarinterval)"
+    val numCols = 14
 
+    val createTableStr = s"create table test1 ( col000 int, " +
+      s"col${Types.TINYINT.toString.replaceAll("-", "_")} byte," +
+      s" col${Types.SMALLINT.toString.replaceAll("-", "_")} short, " +
+      s"col${Types.INTEGER.toString.replaceAll("-", "_")} int," +
+    s"col${Types.BIGINT.toString.replaceAll("-", "_")} long, " +
+      s"col${Types.FLOAT.toString.replaceAll("-", "_")} float, " +
+      s"col${Types.DOUBLE.toString.replaceAll("-", "_")} double, " +
+      s"col${Types.DECIMAL.toString.replaceAll("-", "_")}_1 decimal(12, 5)," +
+      s" col${Types.DECIMAL.toString.replaceAll("-", "_")}_2 decimal(28, 25)," +
+     s"col${Types.TIMESTAMP.toString.replaceAll("-", "_")} timestamp," +
+      s" col${Types.VARCHAR.toString.replaceAll("-", "_")} string, " +
+      s"col${Types.BOOLEAN.toString.replaceAll("-", "_")} boolean, " +
+      s"col${Types.DATE.toString.replaceAll("-", "_")} date, " +
+      s"col${Types.BINARY.toString.replaceAll("-", "_")} binary) using column"
+
+
+    snc.sql(createTableStr)
+
+
+
+    val insertStr = s"insert into test1 " +
+      s"values (${(for ( i <- Range(0, numCols, 1)) yield "?").mkString(",")} )"
+
+    val insertPs = conn.prepareStatement(insertStr)
+
+    val posToTypeMapping = Map[Int, Int](
+      1 -> Types.INTEGER, 2 -> Types.TINYINT, 3 -> Types.SMALLINT,
+      4 -> Types.INTEGER, 5 -> Types.BIGINT, 6 -> Types.FLOAT,
+      7 -> Types.DOUBLE, 8 -> Types.DECIMAL, 9 -> Types.DECIMAL, 10 -> Types.TIMESTAMP,
+      11 -> Types.VARCHAR, 12 -> Types.BOOLEAN, 13 -> Types.DATE, 14 -> Types.BINARY
+    )
+
+    val typeMapping: Map[Int, (Int, Any) => Unit] =
+      Map(
+        Types.TINYINT -> ((i: Int, o: Any) => insertPs.setByte(i, o.asInstanceOf[Byte])),
+        Types.SMALLINT -> ((i: Int, o: Any) => insertPs.setShort(i, o.asInstanceOf[Short])),
+        Types.INTEGER -> ((i: Int, o: Any) => insertPs.setInt(i, o.asInstanceOf[Int])),
+        Types.BIGINT -> ((i: Int, o: Any) => insertPs.setLong(i, o.asInstanceOf[Long])),
+        Types.FLOAT -> ((i: Int, o: Any) => insertPs.setFloat(i, o.asInstanceOf[Float])),
+        Types.DOUBLE -> ((i: Int, o: Any) => insertPs.setDouble(i, o.asInstanceOf[Double])),
+        Types.DECIMAL -> ((i: Int, o: Any) =>
+          insertPs.setBigDecimal(i, o.asInstanceOf[java.math.BigDecimal])),
+        Types.TIMESTAMP -> ((i: Int, o: Any) =>
+          insertPs.setTimestamp(i, o.asInstanceOf[Timestamp])),
+        Types.VARCHAR -> ((i: Int, o: Any) => insertPs.setString(i, o.asInstanceOf[String])),
+        Types.BOOLEAN -> ((i: Int, o: Any) => insertPs.setBoolean(i, o.asInstanceOf[Boolean])),
+        Types.DATE -> ((i: Int, o: Any) => insertPs.setDate(i, o.asInstanceOf[Date])),
+        Types.BINARY -> ((i: Int, o: Any) => insertPs.setBytes(i, o.asInstanceOf[Array[Byte]]))
+      )
+
+    def setInInsertStatement(dataMap: Map[Int, Any]): Unit = {
+      for (entry <- dataMap) {
+        val pos = entry._1
+        val value = entry._2
+        typeMapping(posToTypeMapping(pos))(pos, value)
+      }
+
+      for(i <- 1 until numCols +1) {
+        if (!dataMap.contains(i)) {
+          insertPs.setNull(i, posToTypeMapping(i))
+        }
+      }
+    }
+
+    def colName(pos: Int): String =
+      s"col${posToTypeMapping(pos).toString.replaceAll("-", "_")}"
+
+    // check behaviour of byte as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 2 -> i.toByte, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    var q = s"select sum(${colName(2)}), ${colName(11)} from test1 group by ${colName(11)} "
+    var expectedResult = mutable.Map[Any, Any]("col0" -> 10L, "col1" -> 35L)
+    var rows = snc.sql(q).collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(row.getString(1)), row.getLong(0))
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of short as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 3 -> i.toShort, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(3)}), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> 10L, "col1" -> 35L)
+    rows = snc.sql(q).collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(row.getString(1)), row.getLong(0))
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of long as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 5 -> i.toLong, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(5)}), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> 10L, "col1" -> 35L)
+    rows = snc.sql(q).collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(row.getString(1)), row.getLong(0))
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+
+    // check behaviour of float as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 6 -> i.toFloat, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(6)}), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> 10.toDouble, "col1" -> 35.toDouble)
+    rows = snc.sql(q).collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(row.getString(1)), row.getDouble(0))
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+
+    // check behaviour of double as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 7 -> i.toDouble, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(7)}), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> 10.toDouble, "col1" -> 35.toDouble)
+    rows = snc.sql(q).collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(row.getString(1)), row.getDouble(0))
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
 
     snc.dropTable("test1")
   }
