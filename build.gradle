@@ -1027,6 +1027,27 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
+
+    if (rootProject.hasProperty('R.enable') &&
+        rootProject.property("R.enable").toString().equalsIgnoreCase("true")) {
+      def targetRDir = "${snappyProductDir}/R"
+      copy {
+        from("${project(":snappy-spark").projectDir}/R")
+        into targetRDir
+      }
+
+      exec {
+        environment "SPARK_HOME", snappyProductDir
+        environment "NO_TESTS", "1"
+        environment "CLEAN_INSTALL", "1"
+        workingDir targetRDir
+        commandLine "${targetRDir}/check-cran.sh"
+      }
+      
+      Arrays.stream(new File(targetRDir).list()).forEach {
+        f -> if (f != "lib") delete  "${targetRDir}/${f}"
+      }
+    }
   }
 }
 
