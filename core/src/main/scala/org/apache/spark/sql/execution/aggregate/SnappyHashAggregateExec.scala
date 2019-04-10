@@ -546,7 +546,25 @@ case class SnappyHashAggregateExec(
 
     } else if (modes.contains(Partial) || modes.contains(PartialMerge)) {
       // Combined grouping keys and aggregate values in buffer
-      consume(ctx, keyBufferVars ++ aggBufferVars)
+      ctx.INPUT_ROW = null
+      ctx.currentVars = keyBufferVars
+      val keyVars = groupingExpressions.zipWithIndex.map {
+        case (e, i) => BoundReference(i, e.dataType, e.nullable).genCode(ctx)
+      }
+      val evaluateKeyVars = evaluateVariables(keyVars)
+      ctx.currentVars = aggBufferVars
+      val bufferVars = aggregateBufferAttributesForGroup.zipWithIndex.map {
+        case (e, i) => BoundReference(i, e.dataType, e.nullable).genCode(ctx)
+      }
+      val evaluateBufferVars = evaluateVariables(bufferVars)
+      s"""
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm, true)}
+       $evaluateKeyVars
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm, false)}
+       $evaluateBufferVars
+       ${consume(ctx, keyBufferVars ++ aggBufferVars)}
+       """
+
 
     } else {
       // generate result based on grouping key
@@ -651,7 +669,7 @@ case class SnappyHashAggregateExec(
                getCurrentBufferAllocator();
           $childProduce
 
-          // System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
+           System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
         }
        """)
 
@@ -700,9 +718,9 @@ case class SnappyHashAggregateExec(
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
 
       int $sizeTerm = $hashMapTerm.size();
-      if (${modes.contains(Final)}) {
-     // System.out.println("Num elements in hashmap when producing= " + $sizeTerm );
-       }
+    //  if (${modes.contains(Final)}) {
+         System.out.println("Num elements in hashmap when producing= " + $sizeTerm );
+    //   }
       for (; $mapCounter < $sizeTerm; ) {
        if (${modes.contains(Final)}) {
          //   System.out.println("iterating for counter position when producing= " + $mapCounter );
@@ -893,7 +911,7 @@ case class SnappyHashAggregateExec(
        |
        |// evaluate aggregate functions
        |${evaluateVariables(updateEvals)}
-       |${byteBufferAccessor.generateUpdate(bufferVars, aggBuffDataTypes)}
+       |${byteBufferAccessor.generateUpdate(updateEvals, aggBuffDataTypes)}
       """.stripMargin
   }
 
