@@ -41,7 +41,7 @@ if [ -z "$SNAPPY_ENV_LOADED" ]; then
   fi
 
   if [ -z "$MALLOC_MMAP_MAX_" ]; then
-    export MALLOC_MMAP_MAX_=41943040
+    export MALLOC_MMAP_MAX_=2147483647
   fi
 
   user_conf_dir="${SPARK_CONF_DIR:-"$parent_dir"/conf}"
