@@ -27,8 +27,10 @@ import org.scalatest.BeforeAndAfterAll
 import org.junit.Assert._
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.{Row, SaveMode}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.{SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 
 class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -750,7 +752,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(6)} from test1 group by ${colName(6)} "
-    expectedResult = mutable.Map(0 -> 10L,.7f -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L, .7f -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -774,7 +776,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(7)} from test1 group by ${colName(7)} "
-    expectedResult = mutable.Map(0 -> 10L,.7D -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L, .7D -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -813,6 +815,28 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     })
     assertTrue(expectedResult.isEmpty)
     snc.sql("delete from test1")
+
+    snc.dropTable("test1")
+  }
+
+
+  test("simple aggregate query with struct type as grouping key") {
+    snc
+    snc.sql("drop table if exists test1")
+    val data = for (i <- 0 until 15) yield {
+      Row(i, Row(s"col${i/5}", i/5))
+    }
+    val strucType1 = StructType(Seq(StructField("col2_1", StringType, true),
+      StructField("col2_2", IntegerType, true)))
+    val structType = StructType(Seq(StructField("col1", IntegerType, true),
+      StructField("col2", strucType1, true)))
+    val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
+    df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
+
+    val rs = snc.sql("select col2, sum(col1) as summ1 from test1 group by col2")
+    val results = rs.collect()
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+
 
     snc.dropTable("test1")
   }
