@@ -17,17 +17,17 @@
 package org.apache.spark.sql.execution.row
 
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.SnappyExternalCatalog
-
 import org.apache.spark.Partition
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualNullSafe, EqualTo, Expression, In, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
+import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -37,6 +37,7 @@ import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.CodeGeneration
+import org.apache.spark.sql.types.StructType
 
 /**
  * A LogicalPlan implementation for an Snappy row table whose contents
@@ -116,6 +117,7 @@ class RowFormatRelation(
     val handledFilters = filters.flatMap(ExternalStoreUtils.handledFilter(_, indexedColumns
       ++ pushdownPKColumns(filters)) )
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
         val region = schemaName match {
@@ -132,6 +134,9 @@ class RowFormatRelation(
           useResultSet = pushProjections,
           connProperties,
           handledFilters,
+          partitionPruner = () => Utils.getPrunedPartition(partitionColumns,
+            filters, schema,
+            numBuckets, relationInfo.partitioningCols.length),
           commitTx = true, delayRollover = false,
           projection = Array.emptyIntArray, region = region)
 
@@ -144,6 +149,9 @@ class RowFormatRelation(
           connProperties,
           handledFilters,
           _partEval = () => relationInfo.partitions,
+          () => Utils.getPrunedPartition(partitionColumns,
+          filters, schema,
+          numBuckets, relationInfo.partitioningCols.length),
           relationInfo.catalogSchemaVersion,
           _commitTx = true, _delayRollover = false)
     }

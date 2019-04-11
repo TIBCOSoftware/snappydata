@@ -365,7 +365,8 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
       executedPlan match {
         case plan: CollectLimitExec =>
-          CachedDataFrame.executeTake(getExecRDD, plan.limit, processPartition,
+          val takeRDD = if (isCached) cachedRDD else plan.child.execute()
+          CachedDataFrame.executeTake(takeRDD, plan.limit, processPartition,
             resultHandler, decodeResult, schema, snappySession)
 
         case plan: CollectAggregateExec =>
@@ -702,8 +703,8 @@ object CachedDataFrame
       decodeResult: R => Iterator[InternalRow]): Iterator[R] = {
     val takeResults = new ArrayBuffer[R](n)
     var numRows = 0
-    results.indices.foreach { index =>
-      val r = results(index)
+    results.indices.foreach { partitionId =>
+      val r = results(partitionId)
       if ((r ne null) && r._1 != null) {
         if (numRows + r._2 <= n) {
           takeResults += r._1
@@ -712,7 +713,7 @@ object CachedDataFrame
           // need to split this partition result to take only remaining rows
           val decoded = decodeResult(r._1).take(n - numRows)
           // encode back and add
-          takeResults += resultHandler(index,
+          takeResults += resultHandler(partitionId,
             processPartition(TaskContext.get(), decoded)._1)
           return takeResults.iterator
         }
@@ -764,7 +765,7 @@ object CachedDataFrame
         totalParts).toInt)
       val sc = session.sparkContext
       sc.runJob(takeRDD, processPartition, p, (index: Int, r: (U, Int)) => {
-        results(partsScanned + index) = (resultHandler(index, r._1), r._2)
+        results(partsScanned + index) = (resultHandler(partsScanned + index, r._1), r._2)
         numResults += r._2
       })
 

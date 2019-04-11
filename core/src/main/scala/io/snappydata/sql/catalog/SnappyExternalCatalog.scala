@@ -36,6 +36,7 @@ import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFor
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.Utils.{toUpperCase => upper}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.HiveExternalCatalog
 import org.apache.spark.sql.internal.SnappySharedState
@@ -234,17 +235,17 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }) match {
       case None => None
       case Some(t) =>
-        if (t.indexOf('.') != -1) Some(Utils.toUpperCase(t))
-        else Some(tableDefinition.database + '.' + Utils.toUpperCase(t))
+        if (t.indexOf('.') != -1) Some(upper(t))
+        else Some(upper(tableDefinition.database) + '.' + upper(t))
     }
   }
 
   protected def getTableWithBaseTable(table: CatalogTable): Seq[(String, String)] = {
-    var tableWithBase = (table.database -> table.identifier.table) :: Nil
+    var tableWithBase = (upper(table.database) -> upper(table.identifier.table)) :: Nil
     getBaseTable(table) match {
       case None =>
       case Some(baseTable) =>
-        val withSchema = getTableWithSchema(baseTable, table.database)
+        val withSchema = getTableWithSchema(baseTable, upper(table.database))
         // add base table to the list of relations to be invalidated
         tableWithBase = withSchema :: tableWithBase
     }
@@ -331,8 +332,11 @@ object SnappyExternalCatalog {
    */
   def getAllTables(catalog: ExternalCatalog, skipSchemas: Seq[String]): Seq[CatalogTable] = {
     catalog.listDatabases().flatMap(schema =>
-      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
+      if (skipSchemas.nonEmpty && skipSchemas.contains(upper(schema))) Nil
+      else {
+        catalog.listTables(schema).flatMap(table =>
+          catalog.getTableOption(upper(schema), upper(table)))
+      })
   }
 }
 
