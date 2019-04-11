@@ -134,8 +134,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     val rs = snc.sql("select col4, sum(col1) as summ1, sum(col2) as summ2 " +
       " from test1 group by col4")
-   // import org.apache.spark.sql.execution.debug._
-   // rs.debugCodegen()
+    // import org.apache.spark.sql.execution.debug._
+    // rs.debugCodegen()
     val results = rs.collect()
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     assertEquals(groupingDivisor, results.length)
@@ -403,12 +403,12 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       s"col${Types.TINYINT.toString.replaceAll("-", "_")} byte," +
       s" col${Types.SMALLINT.toString.replaceAll("-", "_")} short, " +
       s"col${Types.INTEGER.toString.replaceAll("-", "_")} int," +
-    s"col${Types.BIGINT.toString.replaceAll("-", "_")} long, " +
+      s"col${Types.BIGINT.toString.replaceAll("-", "_")} long, " +
       s"col${Types.FLOAT.toString.replaceAll("-", "_")} float, " +
       s"col${Types.DOUBLE.toString.replaceAll("-", "_")} double, " +
       s"col${Types.DECIMAL.toString.replaceAll("-", "_")}_1 decimal(12, 5)," +
       s" col${Types.DECIMAL.toString.replaceAll("-", "_")}_2 decimal(28, 25)," +
-     s"col${Types.TIMESTAMP.toString.replaceAll("-", "_")} timestamp," +
+      s"col${Types.TIMESTAMP.toString.replaceAll("-", "_")} timestamp," +
       s" col${Types.VARCHAR.toString.replaceAll("-", "_")} string, " +
       s"col${Types.BOOLEAN.toString.replaceAll("-", "_")} boolean, " +
       s"col${Types.DATE.toString.replaceAll("-", "_")} date, " +
@@ -418,9 +418,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql(createTableStr)
 
 
-
     val insertStr = s"insert into test1 " +
-      s"values (${(for ( i <- Range(0, numCols, 1)) yield "?").mkString(",")} )"
+      s"values (${(for (i <- Range(0, numCols, 1)) yield "?").mkString(",")} )"
 
     val insertPs = conn.prepareStatement(insertStr)
 
@@ -456,7 +455,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
         typeMapping(posToTypeMapping(pos))(pos, value)
       }
 
-      for(i <- 1 until numCols +1) {
+      for (i <- 1 until numCols + 1) {
         if (!dataMap.contains(i)) {
           insertPs.setNull(i, posToTypeMapping(i))
         }
@@ -464,13 +463,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
 
     def colName(pos: Int): String = if (pos == 1) "col000"
-     else s"col${posToTypeMapping(pos).toString.replaceAll("-", "_")}"
+    else s"col${posToTypeMapping(pos).toString.replaceAll("-", "_")}"
 
     var expectedResult: mutable.Map[Any, Any] = null
 
     // check behaviour of byte as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 2 -> i.toByte, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 2 -> i.toByte, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -488,8 +487,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of short as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 3 -> i.toShort, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 3 -> i.toShort, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -507,8 +506,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of long as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 5 -> i.toLong, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 5 -> i.toLong, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -527,8 +526,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
 
     // check behaviour of float as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 6 -> i.toFloat, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 6 -> i.toFloat, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -547,8 +546,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
 
     // check behaviour of double as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 7 -> i.toDouble, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 7 -> i.toDouble, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -566,13 +565,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of Big Decimal with precision < 18 as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${.3*i}"),
-        11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${.3 * i}"),
+        11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-   q = s"select sum(${colName(8)}_1), ${colName(11)} from test1 group by ${colName(11)} "
+    q = s"select sum(${colName(8)}_1), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> new java.math.BigDecimal(s"${.3 * 10}"),
       "col1" -> new java.math.BigDecimal(s"${.3 * 35}"))
     rs = snc.sql(q)
@@ -589,9 +588,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of Big Decimal with precision > 18 as aggregate column
-   for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 9 -> new java.math.BigDecimal(s"${.3*i}"),
-        11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 9 -> new java.math.BigDecimal(s"${.3 * i}"),
+        11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -613,19 +612,19 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
 
     // check behaviour of Timestamp as aggregate column
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 10 -> new Timestamp(1234567*i),
-        11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 10 -> new Timestamp(1234567 * i),
+        11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
     val expected1 = (for (i <- 0 until 5) yield {
-       DateTimeUtils.fromJavaTimestamp(new Timestamp(1234567*i))
-    }).foldLeft(0L)(_ + _)/1000000d
+      DateTimeUtils.fromJavaTimestamp(new Timestamp(1234567 * i))
+    }).foldLeft(0L)(_ + _) / 1000000d
 
     val expected2 = (for (i <- 5 until 10) yield {
-      DateTimeUtils.fromJavaTimestamp(new Timestamp(1234567*i))
-    }).foldLeft(0L)(_ + _)/1000000d
+      DateTimeUtils.fromJavaTimestamp(new Timestamp(1234567 * i))
+    }).foldLeft(0L)(_ + _) / 1000000d
 
     q = s"select sum(${colName(10)}), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> expected1,
@@ -636,7 +635,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertEquals(2, rows.length)
     rows.foreach(row => {
       assertTrue(Math.abs(expectedResult(
-        row.getString(1)).asInstanceOf[Double] -row.getDouble(0)) < 1)
+        row.getString(1)).asInstanceOf[Double] - row.getDouble(0)) < 1)
       expectedResult.remove(row.getString(1))
     })
     assertTrue(expectedResult.isEmpty)
@@ -644,13 +643,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
 
     // check behaviour of byte as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 2 -> (i/5).toByte, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 2 -> (i / 5).toByte, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -668,13 +667,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of short as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 3 -> (i/5).toShort, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 3 -> (i / 5).toShort, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -692,13 +691,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of int as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 4 -> (i/5), 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 4 -> (i / 5), 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -716,13 +715,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of long as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 5 -> (i/5).toLong, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 5 -> (i / 5).toLong, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
@@ -740,18 +739,18 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of float as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 6 -> (i/5)*.7F, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 6 -> (i / 5) * .7F, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(6)} from test1 group by ${colName(6)} "
-    expectedResult = mutable.Map(0 -> 10L, .7f -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L,.7f -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -764,18 +763,18 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of double as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 7 -> (i/5)*.7D, 11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 7 -> (i / 5) * .7D, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(7)} from test1 group by ${colName(7)} "
-    expectedResult = mutable.Map(0 -> 10L, .7D -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L,.7D -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -789,20 +788,20 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("delete from test1")
 
     // check behaviour of BigDecimal as grouping column with null & two not nulls
-    for(i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${12.3E+3 + i/5 + 1 }"),
-        11 -> s"col${i/5}")
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${12.3E+3 + i / 5 + 1}"),
+        11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    for(i <- 10 until 15) {
-      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(8)}_1 from test1 group by ${colName(8)}_1 "
-    expectedResult = mutable.Map(new java.math.BigDecimal(s"${12.3E+3 + 1 }").doubleValue() -> 10L,
-      new java.math.BigDecimal(s"${12.3E+3 + 2 }").doubleValue() -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(new java.math.BigDecimal(s"${12.3E+3 + 1}").doubleValue() -> 10L,
+      new java.math.BigDecimal(s"${12.3E+3 + 2}").doubleValue() -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
