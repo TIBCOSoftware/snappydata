@@ -18,7 +18,7 @@ object SnappySampleJob extends SnappySQLJob {
 
 **Java**
 ```pre
-class SnappySampleJob extends SnappySQLJob {
+class SnappySampleJob extends JavaSnappySQLJob {
   /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
   public Object runSnappyJob(SnappySession snappy, Config jobConfig) {//Implementation}
 
@@ -70,7 +70,7 @@ The following command submits [CreateAndLoadAirlineDataJob](https://github.com/S
 
 !!! Note
 	When submitting concurrent jobs user must ensure that the `--app-name` parameter is different for each concurrent job. If two applications with the same name are submitted concurrently, the job fails and an error is reported, as the job server maintains a map of the application names and jar files used for that application.
-    
+
 The program must be compiled and bundled as a jar file and submitted to jobs server as shown below:
 
 ```pre
@@ -79,7 +79,6 @@ $ ./bin/snappy-job.sh submit  \
     --app-name airlineApp \
     --class  io.snappydata.examples.CreateAndLoadAirlineDataJob \
     --app-jar $SNAPPY_HOME/examples/jars/quickstart.jar
-    --packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.7
 ```
 
 The utility `snappy-job.sh` submits the job and returns a JSON that has a Job Id of this job.

@@ -41,7 +41,8 @@ class MetadataTest extends SnappyFunSuite {
 
   test("DESCRIBE, SHOW and EXPLAIN") {
     val session = this.snc.snappySession
-    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false)
+    val planCaching = io.snappydata.Property.PlanCaching.get(session.sessionState.conf)
+    MetadataTest.testDescribeShowAndExplain(session.sql, usingJDBC = false, planCaching)
   }
 
   test("DSID joins with SYS tables") {
@@ -365,7 +366,7 @@ object MetadataTest extends Assertions {
   }
 
   def testDescribeShowAndExplain(executeSQL: String => Dataset[Row],
-      usingJDBC: Boolean): Unit = {
+      usingJDBC: Boolean, planCachingEnabled: Boolean): Unit = {
     var ds: Dataset[Row] = null
     var expectedColumns: List[String] = null
     var rs: Array[Row] = null
@@ -645,8 +646,19 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* > ParamLiteral:0,[0-9#]*,10.*"))
+
+    def literalString(value: String): String = {
+      if (planCachingEnabled || usingJDBC) {
+        s"ParamLiteral:0,[0-9#]*,$value"
+      } else {
+        value
+      }
+    }
+
+    var expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
+        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* > " + literalString("10") + ".*"
+
+    assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for row tables no routing -----
 
@@ -662,8 +674,9 @@ object MetadataTest extends Assertions {
       assert(plan.contains("REGION-GET"))
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
-      assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-          ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* = ParamLiteral:0,[0-9#]*,10.*"))
+      expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
+          ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* = " + literalString("10") + ".*"
+      assert(matches(plan, expectedPattern))
     }
     // explain extended will route with JDBC since its not supported by store
     ds = executeSQL("explain extended select * from rowTable1 where id = 10")
@@ -676,12 +689,13 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Parsed Logical Plan.*Filter.*ID = ParamLiteral:0,[0-9#]*,10" +
-        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,10" +
-        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,10" +
+    expectedPattern = s".*Parsed Logical Plan.*Filter.*ID = " + literalString("10") + "" +
+        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = " + literalString("10") +
+        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = " + literalString("10") +
         ".*RowFormatRelation\\[APP.ROWTABLE1\\].*Physical Plan.*Partitioned Scan" +
         " RowFormatRelation\\[APP.ROWTABLE1\\].*numBuckets = 1 numPartitions = 1" +
-        ".*ID.* = ParamLiteral:0,[0-9#]*,10.*"))
+        ".*ID.* = " + literalString("10") + ".*"
+    assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for column tables -----
 
@@ -695,9 +709,10 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
+    expectedPattern = ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
-        ".*ID#[0-9]*L = DynExpr\\(ParamLiteral:0,[0-9#]*,10\\).*"))
+        s".*ID#[0-9]*L = DynExpr\\(" + literalString("10") + "\\).*"
+    assert(matches(plan, expectedPattern))
 
     ds = executeSQL("explain extended select * from columnTable2 where id > 20")
     rs = ds.collect()
@@ -709,12 +724,13 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Parsed Logical Plan.*Filter.*ID > ParamLiteral:0,[0-9#]*,20" +
-        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]*L > cast\\(ParamLiteral:0,[0-9#]*,20 as bigint" +
-        ".*Optimized Logical Plan.*Filter.*ID#[0-9]*L > DynExpr\\(ParamLiteral:0,[0-9#]*,20\\)" +
+    expectedPattern = s".*Parsed Logical Plan.*Filter.*ID > ${literalString("20")}" +
+        s".*Analyzed Logical Plan.*Filter.*ID#[0-9]*L > cast\\(${literalString("20")} as bigint" +
+        s".*Optimized Logical Plan.*Filter.*ID#[0-9]*L > DynExpr\\(${literalString("20")}\\)" +
         ".*ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*Physical Plan.*Partitioned Scan" +
         " ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
-        ".*ID#[0-9]*L > DynExpr\\(ParamLiteral:0,[0-9#]*,20\\).*"))
+        s".*ID#[0-9]*L > DynExpr\\(${literalString("20")}\\).*"
+    assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for DDLs -----
 
@@ -820,9 +836,10 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
+    expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
         "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
-        ".*ID.* > ParamLiteral:0,[0-9#]*,10.*"))
+        ".*ID.* > " + literalString("10") + ".*"
+    assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for row tables no routing -----
 
@@ -839,9 +856,10 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
       // no pruning for row tables yet
-      assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
+      expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
           "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
-          ".*ID.* = ParamLiteral:0,[0-9#]*,15.*"))
+          ".*ID.* = " + literalString("15") + ".*"
+      assert(matches(plan, expectedPattern))
     }
 
     // ----- check EXPLAIN for column tables -----
@@ -858,7 +876,7 @@ object MetadataTest extends Assertions {
     }
     assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
-        ".*ID#[0-9]* = ParamLiteral:0,[0-9#]*,15.*"))
+        ".*ID#[0-9]* = " + literalString("15") + ".*"))
 
     ds = executeSQL("explain extended select * from schema1.columnTable1 where id = 20")
     rs = ds.collect()
@@ -870,13 +888,14 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
+
     // should prune to a single partition
-    assert(matches(plan, ".*Parsed Logical Plan.*Filter.*ID = ParamLiteral:0,[0-9#]*,20" +
-        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,20" +
-        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = ParamLiteral:0,[0-9#]*,20" +
+    assert(matches(plan, s".*Parsed Logical Plan.*Filter.*ID = ${literalString("20")}" +
+        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = " + literalString("20") +
+        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = " + literalString("20") +
         ".*ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*Physical Plan.*Partitioned Scan" +
         " ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
-        ".*ID#[0-9]* = ParamLiteral:0,[0-9#]*,20.*"))
+        ".*ID#[0-9]* = " + literalString("20") + ".*"))
 
     // ----- cleanup -----
 

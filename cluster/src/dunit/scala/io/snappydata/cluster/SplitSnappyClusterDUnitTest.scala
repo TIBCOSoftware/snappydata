@@ -548,6 +548,9 @@ object SplitSnappyClusterDUnitTest
         .set("spark.testing.reservedMemory", "0")
         .set("spark.sql.autoBroadcastJoinThreshold", "-1")
         .set("snappydata.connection", connectionURL)
+        .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
+
+    logInfo("Spark conf:" + conf.getAll.toString)
 
     val sc = SparkContext.getOrCreate(conf)
     //      sc.setLogLevel("DEBUG")

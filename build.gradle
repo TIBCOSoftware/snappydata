@@ -70,7 +70,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.0.2.1'
+  version = '1.0.2.2'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -118,7 +118,7 @@ allprojects {
     thriftVersion = '0.9.3'
     metricsVersion = '4.0.3'
     metrics2Version = '2.2.0'
-    janinoVersion = '3.0.11'
+    janinoVersion = '3.0.8'
     derbyVersion = '10.14.2.0'
     parboiledVersion = '2.1.5'
     tomcatJdbcVersion = '8.5.37'
@@ -1391,7 +1391,7 @@ task deleteDocsDir(type: Delete) {
 task docs(type: ScalaDoc) {
   apply plugin: 'scala'
 
-  scalaDocOptions.additionalParameters = [ '-J-Xmx2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
+  scalaDocOptions.additionalParameters = [ '-J-Xmx7g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
 
   dependsOn deleteDocsDir
   Set<String> allSource = []
@@ -1409,6 +1409,7 @@ task docs(type: ScalaDoc) {
             !project.name.contains('gemfire-examples') &&
             !project.name.contains('trove') &&
             !project.name.contains('kafka') &&
+            !project.name.contains('encoders') &&
             // exclude tests
             !project.name.contains('tests')) {
       allSource.addAll(project.sourceSets.main.allJava.findAll {
@@ -1418,7 +1419,8 @@ task docs(type: ScalaDoc) {
       if (project.plugins.hasPlugin('scala')) {
         allSource.addAll(project.sourceSets.main.allScala.findAll {
           !it.getPath().matches('.*org/apache/spark/sql/execution/joins/HashedRelation.*') &&
-          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*')
+          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*') &&
+          !it.getPath().matches('.*org/apache/spark/sql/store/CodeGeneration.*')
         })
       }
       [ project ]

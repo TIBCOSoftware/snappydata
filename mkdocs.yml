@@ -1,4 +1,4 @@
-site_name: SnappyData Documentation<br/><sub>v.1.0.2.1</sub>
+site_name: SnappyData Documentation v.1.0.2.1
 site_url: http://www.snappydata.io
 site_description: Project documentation for SnappyData
 site_author: SnappyData Team
@@ -54,7 +54,8 @@ pages:
     - 'How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc)': 'howto/load_data_from_external_data_stores.md'
     - 'How to Perform a Colocated Join': 'howto/perform_a_colocated_join.md'
     - 'How to Connect using JDBC Driver': 'howto/connect_using_jdbc_driver.md'
-#    - 'How to Connect using JDBC Client Pool Driver': 'howto/connect_jdbc_client_pool_driver.md'
+    - 'How to use SnappyData for any Spark Distribution': 'howto/using_snappydata_for_any_spark_dist.md'
+    - 'How to Store and Retrieve Complex Data Types in JDBC Programs': 'howto/store_retrieve_complex_datatypes_JDBC.md'
     - 'How to Store and Query JSON Objects': 'howto/store_and_query_json_objects.md'
     - 'How to Store and Query Objects': 'howto/store_and_query_objects.md'
     - 'How to use Stream Processing with SnappyData': 'howto/use_stream_processing_with_snappydata.md'
@@ -90,6 +91,7 @@ pages:
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
+    - 'Accessing SnappyData Tables from any Spark (2.1+) Cluster': 'programming_guide/spark_jdbc_connector.md'
     - 'Multiple Language Binding using Thrift Protocol': 'programming_guide/multiple_language_binding_using_thrift_protocol.md'
     - 'Building SnappyData Applications using Spark API': 'programming_guide/building_snappydata_applications_using_spark_api.md'
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
@@ -129,7 +131,6 @@ pages:
     - 'Deploying Third Party Connectors': 'connectors/deployment_dependency_jar.md'  
     - 'Using the SnappyData GemFire Connector': 'connectors/gemfire_connector.md'  
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
-    - 'Using the Spark JDBC Connector': 'connectors/spark_jdbc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
     - 'SnappyData Pulse': 'monitoring/monitoring.md'
@@ -145,7 +146,7 @@ pages:
     - 'Authorization': 'security/authorization.md'
     - 'Implementing Row Level Security': 'security/row_level_security.md'
     - 'Configuring Network Encryption and Authentication using SSL': 'security/configuring_network_encryption_and_authentication_using_ssl.md'
-    - 'SSL Setup for Client-Server': 'configuring_cluster/ssl_setup.md'
+    - 'Enabling SSL Encryption in Different Socket Endpoints of SnappyData': 'configuring_cluster/ssl_setup.md'
     - 'Securing SnappyData Pulse UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
 - 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
@@ -283,7 +284,10 @@ pages:
         - 'gemfirexd.query-timeout': 'reference/configuration_parameters/snappydata.query-timeout.md'
 #        - 'snappydata.storage.tempDirectory': 'reference/configuration_parameters/snappydata.storage.tempDirectory.md'
 #        - 'snappydata.system.home': 'reference/configuration_parameters/snappydata.system.home.md'
-        - 'ssl': 'reference/configuration_parameters/ssl.md'
+        - 'ssl-enabled': 'reference/configuration_parameters/ssl_enabled.md'
+        - 'ssl-protocols': 'reference/configuration_parameters/ssl_protocols.md'
+        - 'ssl-ciphers': 'reference/configuration_parameters/ssl_ciphers.md'
+        - 'ssl-require-authentication': 'reference/configuration_parameters/ssl_require_auth.md'
         - 'start-locator': 'reference/configuration_parameters/start-locator.md'
         - 'statistic-archive-file': 'reference/configuration_parameters/statistic-archive-file.md'
         - 'statistic-sample-rate': 'reference/configuration_parameters/statistic-sample-rate.md'
@@ -297,7 +301,7 @@ pages:
 #    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
-    - 'Setting Up SnappyData JDBC Driver and QlikView': 'setting_up_jdbc_driver_qlikview.md'
+    - 'Setting Up SnappyData JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
 - 'Troubleshooting Common Problems': 'troubleshooting/troubleshooting.md'
 - 'Troubleshooting Common Problems':
     - 'Member Startup Problems': 'troubleshooting/member_startup_problems.md'

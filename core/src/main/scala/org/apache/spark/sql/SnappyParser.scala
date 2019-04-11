@@ -208,26 +208,17 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  protected final def booleanLiteral: Rule1[Expression] = rule {
-    TRUE ~> (() => newTokenizedLiteral(true, BooleanType)) |
-    FALSE ~> (() => newTokenizedLiteral(false, BooleanType))
-  }
-
   protected final def numeric: Rule1[String] = rule {
     capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
         plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
         Consts.numericSuffix.?) ~ delimiter
   }
 
-  protected final def numericLiteral: Rule1[Expression] = rule {
-    numeric ~> ((s: String) => toNumericLiteral(s))
-  }
-
   protected final def literal: Rule1[Expression] = rule {
     stringLiteral. + ~> ((s: Seq[String]) => newTokenizedLiteral(
       UTF8String.fromString(if (s.length == 1) s.head else s.mkString), StringType)) |
-    numericLiteral |
-    booleanLiteral |
+    numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
+    booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
     NULL ~> (() => Literal(null, NullType)) | // no tokenization for nulls
     DATE ~ stringLiteral ~> ((s: String) => newTokenizedLiteral(
       DateTimeUtils.fromJavaDate(java.sql.Date.valueOf(s)), DateType)) |

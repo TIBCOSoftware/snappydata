@@ -167,25 +167,6 @@ object Utils {
     resolveQCS(matchOption("qcs", options).map(_._2), fieldNames, module)
   }
 
-  // maximum power of 2 less than Integer.MAX_VALUE
-  private val MAX_HASH_CAPACITY = 1 << 30
-
-  def checkCapacity(capacity: Int): Int = {
-    if (capacity > 0 && capacity <= MAX_HASH_CAPACITY) {
-      capacity
-    } else if (capacity == 0) {
-      2
-    } else {
-      throw new IllegalStateException("Capacity (" + capacity +
-          ") can't be more than " + MAX_HASH_CAPACITY + " elements or negative")
-    }
-  }
-
-  def nextPowerOf2(n: Int): Int = {
-    val highBit = Integer.highestOneBit(if (n > 0) n else 2)
-    checkCapacity(if (highBit == n) n else highBit << 1)
-  }
-
   def parseInteger(v: Any, module: String, option: String, min: Int = 1,
       max: Int = Int.MaxValue): Int = {
     val vl: Long = v match {
@@ -722,10 +703,8 @@ object Utils {
     conf
   }
 
-  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader = {
-    val parentLoader = org.apache.spark.util.Utils.getContextOrSparkClassLoader
-    new MutableURLClassLoader(urls, parentLoader)
-  }
+  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader =
+    SharedUtils.newMutableURLClassLoader(urls)
 
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
@@ -866,6 +845,9 @@ object Utils {
   }
 
   def getActiveSession: Option[SparkSession] = SparkSession.getActiveSession
+
+  def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
+    snappy.sqInternal(sqlText)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1077,42 +1059,6 @@ private[spark] class CoGroupExecutorLocalPartition(
     s"CoGroupExecutorLocalPartition($index, $blockId)"
 
   override def hashCode(): Int = idx
-}
-
-final class SmartExecutorBucketPartition(private var _index: Int, private var _bucketId: Int,
-    var hostList: Seq[(String, String)])
-    extends Partition with KryoSerializable {
-
-  override def index: Int = _index
-
-  def bucketId: Int = _bucketId
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    output.writeVarInt(_index, true)
-    output.writeVarInt(_bucketId, true)
-    val numHosts = hostList.length
-    output.writeVarInt(numHosts, true)
-    for ((host, url) <- hostList) {
-      output.writeString(host)
-      output.writeString(url)
-    }
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    _index = input.readVarInt(true)
-    _bucketId = input.readVarInt(true)
-    val numHosts = input.readVarInt(true)
-    val hostList = new mutable.ArrayBuffer[(String, String)](numHosts)
-    for (_ <- 0 until numHosts) {
-      val host = input.readString()
-      val url = input.readString()
-      hostList += host -> url
-    }
-    this.hostList = hostList
-  }
-
-  override def toString: String =
-    s"SmartExecutorBucketPartition($index, $bucketId, $hostList)"
 }
 
 object ToolsCallbackInit extends Logging {

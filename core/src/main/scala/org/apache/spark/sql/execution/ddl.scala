@@ -31,6 +31,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.util.ServiceUtils
 import io.snappydata.{Property, SnappyTableStatsProviderService}
 
 import org.apache.spark.deploy.SparkSubmitUtils
@@ -153,11 +154,11 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
 }
 
 case class AlterTableAddDropColumnCommand(tableIdent: TableIdentifier,
-    column: StructField, isAdd: Boolean) extends RunnableCommand {
+    column: StructField, isAdd: Boolean, defaultValue: Option[String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
-    snappySession.alterTable(tableIdent, isAdd, column)
+    snappySession.alterTable(tableIdent, isAdd, column, defaultValue)
     Nil
   }
 }
@@ -302,23 +303,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
         df.createTempView(tableIdent.quotedString)
         df
     }
-    val isOffHeap = {
-      { // avoids indentation change
-        SnappyContext.getClusterMode(sparkSession.sparkContext) match {
-          case _: ThinClientConnectorMode =>
-            SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
-          case _ =>
-            try {
-              SnappyTableStatsProviderService.getService.getMembersStatsFromService.
-                  values.forall(member => !member.isDataServer ||
-                  (member.getOffHeapMemorySize > 0))
-            }
-            catch {
-              case _: Throwable => false
-            }
-        }
-      }
-    }
+
+    val isOffHeap = ServiceUtils.isOffHeapStorageAvailable(session)
 
     if (isLazy) {
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()

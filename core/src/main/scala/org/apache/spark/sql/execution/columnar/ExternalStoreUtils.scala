@@ -19,21 +19,23 @@ package org.apache.spark.sql.execution.columnar
 import java.sql.{Connection, PreparedStatement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
+import javax.naming.NameNotFoundException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.auth.callback.UserAuthenticator
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
+import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.{AuthenticationServiceBase, LDAPAuthenticationSchemeImpl}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
@@ -48,7 +50,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -84,7 +86,6 @@ object ExternalStoreUtils {
   final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
   final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
   final val COMPRESSION_CODEC = "COMPRESSION"
-  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   // inbuilt basic table properties
   final val PARTITION_BY = "PARTITION_BY"
@@ -92,9 +93,10 @@ object ExternalStoreUtils {
   final val BUCKETS = "BUCKETS"
   final val KEY_COLUMNS = "KEY_COLUMNS"
 
-  // these two are obsolete column table properties only for backward compatibility
+  // these three are obsolete column table properties only for backward compatibility
   final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
   final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
+  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
@@ -208,6 +210,18 @@ object ExternalStoreUtils {
       }
     })
     new CaseInsensitiveMap(optMap.toMap)
+  }
+
+  def getLdapGroupsForUser(userId: String): Array[String] = {
+    val auth = Misc.getMemStoreBooting.getDatabase.getAuthenticationService.
+      asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
+
+    auth match {
+      case x: LDAPAuthenticationSchemeImpl => x.getLdapGroupsOfUser(userId).
+        toArray[String](Array.empty)
+      case _ => throw new NameNotFoundException("Require LDAP authentication scheme for " +
+        "LDAP group support but is " + auth)
+    }
   }
 
   def getExpandedGranteesIterator(grantees: Seq[String]): Iterator[String] = {

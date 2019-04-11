@@ -55,7 +55,8 @@ sql(sqlText : String)
 |Parameter	 | Description |
 |--------|--------|
 | sqlText | The SQL string required to execute.  |
-|Returns| Dataframe|
+|Returns |Dataframe|
+
 
 **Example** 
 
@@ -78,13 +79,13 @@ sqlUncached(sqlText : String)
 
 |Parameter	 | Description |
 |--------|--------|
-| sqlText  |The SQL string required to execute.| 
+| sqlText  |The SQL string required to execute.|
 |Returns |Dataframe|
 
 **Example **
 
 ```pre
-snappySession.sql(“select * from t1”)
+snappySession.sqlUncached(“select * from t1”)
 ```
 <a id= createtableapi> </a>
 ### createTable
@@ -111,6 +112,7 @@ createTable(
 |schema   | The table schema.|
 |  options | Properties for table creation. For example, partition_by, buckets etc.|
 | allowExisting |When set to **true**, tables with the same name are ignored, else an **AnalysisException** is thrown stating that the table already exists. |
+|Returns |Dataframe |
 
 **Example**
 
@@ -187,6 +189,7 @@ truncateTable(tableName: String, ifExists: Boolean = false)
 |--------|--------|
 |     tableName   |       Name of the table.  | 
 |ifExists |Attempt truncate only if the table exists.|
+|Returns|Dataframe|
 
 **Example **
 
@@ -211,6 +214,7 @@ dropTable(tableName: String, ifExists: Boolean = false)
 |--------|--------|
 | tableName       |     Name of the table.    | 
 |ifExists |Attempts drop only if the table exists.|
+|Returns|Unit|
 
 **Example **
 
@@ -243,6 +247,7 @@ createSampleTable(tableName: String,
 |baseTable |The base table of the sample table, if any.|
 | samplingOptions |sampling options such as QCS, reservoir size etc.|
 |allowExisting|When set to **true**,  tables with the same name are ignored, else a **table exist** exception is shown.|
+|Returns |Dataframe |
 
 
 **Example **
@@ -272,7 +277,8 @@ createApproxTSTopK(topKName: String, baseTable: Option[String],  keyColumnName: 
 | keyColumnName ||
 |inputDataSchema| |
 |topkOptions| |
-|allowExisting| |When set to **true**,  tables with the same name are ignored, else a **table exist** exception is shown.|
+|allowExisting |When set to **true**,  tables with the same name are ignored, else a **table exist** exception is shown.|
+|Returns |Dataframe |
 
 
 **Example **
@@ -298,6 +304,7 @@ setSchema(schemaName: String)
 |Parameter	 | Description |
 |--------|--------|
 | schemaName| schema name which goes into the catalog. | 
+|Returns|Unit|
 
 **Example **
 
@@ -323,6 +330,10 @@ getCurrentSchema
 snappySession.getCurrentSchema
 ```
 
+**Returns**
+
+String
+
 <a id= insertapi> </a>
 ### insert
 
@@ -342,6 +353,7 @@ insert(tableName: String, rows: Row*)
 |--------|--------|
 | tableName| Table name for the insert operation.|
 |Rows|List of rows to be inserted into the table.|
+|Returns|Int|
 
 **Example **
 
@@ -368,6 +380,7 @@ put(tableName: String, rows: Row*)
 |--------|--------|
 | tableName       | Table name for the put operation | 
 |rows| List of rows to be put into the table.|
+|Returns|Int|
 
 **Example **
 
@@ -394,6 +407,7 @@ update(tableName: String, filterExpr: String, newColumnValues: Row,  updateColum
 |filterExpr| SQL WHERE criteria to select rows that will be updated.| 
 |newColumnValues| A single row containing all the updated column values. They MUST match the **updateColumn: list passed**.|
 |updateColumns| List of all column names that are updated.|
+|Returns|Int|
 
 
 **Example **
@@ -420,6 +434,7 @@ delete(tableName: String, filterExpr: String)
 |--------|--------|
 | tableName      | Name of the table. |
 |filterExpr|  SSQL WHERE criteria to select rows that will be updated. | 
+|Returns|Int|
 
 **Example **
 
@@ -449,6 +464,7 @@ queryApproxTSTopK(topKName: String,
 |startTime|  Start time as string in the format **yyyy-mm-dd hh:mm:ss**.  If passed as **null**, the oldest interval is considered as the start interval.| 
 |endTime| End time as string in the format **yyyy-mm-dd hh:mm:ss**. If passed as **null**, the newest interval is considered as the last interval.|
 |k| Optional. The number of elements to be queried. This is to be passed only for stream summary|
+|Returns|Dataframe|
 
 
 
@@ -458,6 +474,7 @@ queryApproxTSTopK(topKName: String,
 snappySession.queryApproxTSTopK("topktable")
 ```
 
+<a id= dataframewriter> </a>
 ## DataFrameWriter APIs
 The following APIs are available for DataFrameWriter:
 
@@ -481,7 +498,8 @@ putInto(tableName: String)
 
 |Parameter	 | Description |
 |--------|--------|
-| tableName      |    Name of the table.|
+| tableName      |Name of the table.|
+|Returns|Unit|
 
 
 **Example **
@@ -510,6 +528,7 @@ deleteFrom(tableName: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName      |    Name of the table.|
+|Returns|Unit|
 
 **Example **
 
