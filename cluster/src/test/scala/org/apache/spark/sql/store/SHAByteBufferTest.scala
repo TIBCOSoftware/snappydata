@@ -465,6 +465,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     def colName(pos: Int): String =
       s"col${posToTypeMapping(pos).toString.replaceAll("-", "_")}"
 
+    var expectedResult: mutable.Map[Any, Any] = null
+
     // check behaviour of byte as aggregate column
     for(i <- 0 until 10) {
       val dataMap: DataMap = Map(1 -> i, 2 -> i.toByte, 11 -> s"col${i/5}")
@@ -472,7 +474,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     var q = s"select sum(${colName(2)}), ${colName(11)} from test1 group by ${colName(11)} "
-    var expectedResult = mutable.Map[Any, Any]("col0" -> 10L, "col1" -> 35L)
+    expectedResult = mutable.Map[Any, Any]("col0" -> 10L, "col1" -> 35L)
     var rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     var rows = rs.collect
@@ -569,7 +571,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
     }
-    q = s"select sum(${colName(8)}_1), ${colName(11)} from test1 group by ${colName(11)} "
+   q = s"select sum(${colName(8)}_1), ${colName(11)} from test1 group by ${colName(11)} "
     expectedResult = mutable.Map("col0" -> new java.math.BigDecimal(s"${.3 * 10}"),
       "col1" -> new java.math.BigDecimal(s"${.3 * 35}"))
     rs = snc.sql(q)
@@ -577,7 +579,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     rows = rs.collect
     assertEquals(2, rows.length)
     rows.foreach(row => {
-      assertEquals(expectedResult(row.getString(1)), row.getDecimal(0))
+      assertTrue(
+        Math.abs(expectedResult(row.getString(1)).asInstanceOf[java.math.BigDecimal].
+          subtract(row.getDecimal(0)).doubleValue()) < .1)
       expectedResult.remove(row.getString(1))
     })
     assertTrue(expectedResult.isEmpty)

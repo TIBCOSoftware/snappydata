@@ -88,31 +88,27 @@ case class SHAMapAccessor(@transient session: SnappySession,
         """.stripMargin
         }
 
-      val evaluationCode = dt match {
+      val evaluationCode = (dt match {
         case StringType =>
           val holder = ctx.freshName("holder")
           val holderBaseObject = ctx.freshName("holderBaseObject")
           val holderBaseOffset = ctx.freshName("holderBaseOffset")
-
-
           val len = ctx.freshName("len")
-
           s"""
-            int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
-
-          $byteBufferClass $holder =  $allocatorTerm.
-            allocate($len, "SHA");
-          Object $holderBaseObject = $allocatorTerm.baseObject($holder);
-          long $holderBaseOffset = $allocatorTerm.baseOffset($holder);
-           $currentValueOffsetTerm += 4;
+            int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+            $byteBufferClass $holder =  $allocatorTerm.
+            allocate($len, "SHA");\n
+          Object $holderBaseObject = $allocatorTerm.baseObject($holder);\n
+          long $holderBaseOffset = $allocatorTerm.baseOffset($holder);\n
+           $currentValueOffsetTerm += 4;\n
            $plaformClass.copyMemory($vdBaseObjectTerm,
-            $currentValueOffsetTerm, $holderBaseObject, $holderBaseOffset , $len);
+            $currentValueOffsetTerm, $holderBaseObject, $holderBaseOffset , $len);\n
            $varName = ${classOf[UTF8String].getName}.
-           fromAddress($holderBaseObject, $holderBaseOffset, $len);
-             $currentValueOffsetTerm += $len;
+           fromAddress($holderBaseObject, $holderBaseOffset, $len);\n
+             $currentValueOffsetTerm += $len;\n
           """.stripMargin
         case x: AtomicType => {
-            typeOf(x.tag) match {
+          (typeOf(x.tag) match {
               case t if t =:= typeOf[Byte] => s"$varName = $plaformClass.getByte(" +
                 s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
               case t if t =:= typeOf[Short] => s"$varName = $plaformClass.getShort(" +
@@ -126,7 +122,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               case t if t =:= typeOf[Double] => s"$varName = $plaformClass.getDouble(" +
                 s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
               case t if t =:= typeOf[Decimal] =>
-                if (dt.defaultSize <= Decimal.MAX_LONG_DIGITS) {
+                if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                   s"""
                      $varName = new $decimalClass().set(
                     $plaformClass.getLong($vdBaseObjectTerm,
@@ -147,17 +143,19 @@ case class SHAMapAccessor(@transient session: SnappySession,
                       new $bigIntegerClass($tempByteArrayTerm),
                     ${dt.asInstanceOf[DecimalType].scale}),
                     ${dt.asInstanceOf[DecimalType].precision},
-                    ${dt.asInstanceOf[DecimalType].scale});
+                    ${dt.asInstanceOf[DecimalType].scale});\n
                     """.stripMargin
                   }
               case _ => throw new UnsupportedOperationException("unknown type " + dt)
-                }
-            } +
+                }) +
             s"""
-                \n $currentValueOffsetTerm += ${dt.defaultSize}; \n
-           //  System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+            $currentValueOffsetTerm += ${dt.defaultSize};\n
              """
-      }
+            }
+      }) +
+      s"""
+       // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+      """
 
       val exprCode =
         s"""
@@ -168,7 +166,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
           if (!isKey) {
             s"""
              else {
-               $currentValueOffsetTerm += ${dt.defaultSize};\n
+               $currentValueOffsetTerm += ${dt.defaultSize + (dt match {
+              case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+              case _ => 0
+            })};\n
              }
            """.stripMargin
           } else {
@@ -382,7 +383,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                $offsetTerm += ${dt.defaultSize};\n
                """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
-                  if (dt.defaultSize <= Decimal.MAX_LONG_DIGITS) {
+                  if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                     s"""
                       $plaformClass.putLong($baseObjectTerm, $offsetTerm,
                        $variable.toUnscaledLong());\n
@@ -392,7 +393,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                     s"""
                       byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
                        unscaledValue().toByteArray();
-                      assert (($tempBigDecArrayTerm.length <= 16))
+                      assert ($tempBigDecArrayTerm.length <= 16);
                       $plaformClass.putByte($baseObjectTerm, $offsetTerm,
                        (byte)$tempBigDecArrayTerm.length);\n
                       $plaformClass.copyMemory($tempBigDecArrayTerm,
@@ -427,7 +428,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 """.stripMargin
             } else if (nullVar == "true") {
               if (!isKey) {
-                s"$offsetTerm += ${dt.defaultSize};\n"
+                s"""
+                   $offsetTerm += ${dt.defaultSize + (dt match {
+                  case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+                  case _ => 0
+                })
+                };\n
+                """
               } else {
                 ""
               }
@@ -441,7 +448,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 if (!isKey) {
                   s"""
                        else {
-                         $offsetTerm += ${dt.defaultSize};\n
+                         $offsetTerm += ${dt.defaultSize + (dt match {
+                    case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+                    case _ => 0
+                  })};\n
                        }
                     """.stripMargin
                 } else ""
@@ -458,7 +468,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 """.stripMargin
             } else if (nullVar == "true") {
               if (!isKey) {
-                s"$offsetTerm += ${dt.defaultSize};\n"
+                s"$offsetTerm += ${dt.defaultSize + (dt match {
+                  case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+                  case _ => 0
+                })};\n"
               } else {
                 ""
               }
@@ -471,7 +484,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 if (!isKey) {
                   s"""
                        else {
-                         $offsetTerm += ${dt.defaultSize};\n
+                         $offsetTerm += ${dt.defaultSize + (dt match {
+                    case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+                    case _ => 0
+                  })};\n
                        }
                     """.stripMargin
                 } else ""
