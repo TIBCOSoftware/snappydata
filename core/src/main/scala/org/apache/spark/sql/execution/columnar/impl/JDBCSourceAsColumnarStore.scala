@@ -202,10 +202,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     })(conn)
   }
 
-
   def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
@@ -218,10 +217,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               ps.setString(1, if (txId ne null) txId else "")
               ps.executeUpdate()
               logDebug(s"The transaction ID being rolled back is $txId")
+              ps.close()
             }, () => {
-              if (ps ne null) ps.close()
               SmartConnectorHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
+              if (!conn.isClosed) conn.close()
             })
         }
       }
@@ -674,15 +674,7 @@ final class ColumnarStorePartitionedRDD(
             region.asInstanceOf[PartitionedRegion])
           allPartitions
         } else {
-          val pr = region.asInstanceOf[PartitionedRegion]
-          val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
-          val prefNodes = new ArrayBuffer[String](2)
-          distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
-            case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
-            case _ =>
-          })
-          Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
-            pr.getTotalNumberOfBuckets, prefNodes))
+          Utils.getPartitions(region, bucketId)
         }
     }
   }
@@ -877,11 +869,13 @@ class SmartConnectorRowRDD(_session: SnappySession,
     _connProperties: ConnectionProperties,
     _filters: Array[Expression],
     _partEval: () => Array[Partition],
+    _partitionPruner: () => Int = () => -1,
     private var catalogSchemaVersion: Long,
     _commitTx: Boolean, _delayRollover: Boolean)
     extends RowFormatScanRDD(_session, _tableName, _isPartitioned, _columns,
       pushProjections = true, useResultSet = true, _connProperties,
-    _filters, _partEval, _commitTx, _delayRollover, projection = Array.emptyIntArray, None) {
+    _filters, _partEval, _partitionPruner, _commitTx, _delayRollover,
+    projection = Array.emptyIntArray, None) {
 
   private var preferHostName = SmartConnectorHelper.preferHostName(session)
 
@@ -1001,8 +995,20 @@ class SmartConnectorRowRDD(_session: SnappySession,
     // (updated values in ParamLiteral will take care of updating filters)
     evaluateWhereClause()
     val parts = partitionEvaluator()
+    if(parts.length == _partEval().length){
+      return getPartitionEvaluator
+    }
     logDebug(s"$toString.getPartitions: $tableName partitions ${parts.mkString("; ")}")
     parts
+  }
+
+  def getPartitionEvaluator: Array[Partition] = {
+    partitionPruner() match {
+      case -1 => _partEval()
+      case bucketId =>
+        val part = _partEval()(bucketId).asInstanceOf[SmartExecutorBucketPartition]
+        Array(new SmartExecutorBucketPartition(0, bucketId, part.hostList))
+    }
   }
 
   def getSQLStatement(resolvedTableName: String,

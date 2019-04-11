@@ -118,7 +118,7 @@ object ViewTest extends Assertions {
     checkAnswer(executeSQL(s"describe $rowTable"), tableMeta)
 
     val expected = getExpectedResult
-    val showResult = Seq(Row("", "VIEWONTABLE", true, false))
+    val showResult = Seq(Row("", "viewontable", true, false))
 
     // check temporary view and its meta-data for column table
     executeSQL(s"create temporary view viewOnTable as $viewQuery from $columnTable")
@@ -155,13 +155,13 @@ object ViewTest extends Assertions {
   def testGlobalTemporaryView(executeSQL: String => Dataset[Row],
       newExecution: () => String => Dataset[Row]): Unit = {
     val expected = getExpectedResult
-    val showResult = Seq(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true))
+    val showResult = Seq(Row("global_temp", "viewontable", true, true))
 
     // check temporary view and its meta-data for column table
     executeSQL(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
 
     assert(executeSQL("show views in global_temp").collect() ===
-        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+        Array(Row("global_temp", "viewontable", true, true)))
     checkAnswer(executeSQL("describe global_temp.viewOnTable"), viewTempMeta)
     checkAnswer(executeSQL("select * from viewOnTable"), expected)
     checkAnswer(executeSQL("show views"), Nil)
@@ -171,7 +171,7 @@ object ViewTest extends Assertions {
     // should be visible from another session
     val executeSQL2 = newExecution()
     assert(executeSQL2("show views in global_temp").collect() ===
-        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+        Array(Row("global_temp", "viewontable", true, true)))
     checkAnswer(executeSQL2("describe global_temp.viewOnTable"), viewTempMeta)
     checkAnswer(executeSQL2("select * from viewOnTable"), expected)
 
@@ -184,12 +184,12 @@ object ViewTest extends Assertions {
     executeSQL(s"create global temporary view viewOnTable as $viewQuery from $columnTable")
 
     assert(executeSQL("show views in global_temp").collect() ===
-        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+        Array(Row("global_temp", "viewontable", true, true)))
     checkAnswer(executeSQL("describe global_temp.viewOnTable"), viewTempMeta)
     checkAnswer(executeSQL("select * from viewOnTable"), expected)
 
     assert(executeSQL2("show views in global_temp").collect() ===
-        Array(Row("GLOBAL_TEMP", "VIEWONTABLE", true, true)))
+        Array(Row("global_temp", "viewontable", true, true)))
     checkAnswer(executeSQL2("describe global_temp.viewOnTable"), viewTempMeta)
     checkAnswer(executeSQL2("select * from viewOnTable"), expected)
 
@@ -235,7 +235,7 @@ object ViewTest extends Assertions {
     val airlineView = executeSQL("select * from airlineView limit 1")
 
     assert(executeSQL("show views in global_temp").collect() ===
-        Array(Row("GLOBAL_TEMP", "AIRLINEVIEW", true, true)))
+        Array(Row("global_temp", "airlineview", true, true)))
     assert(airlineView.schema === airline.schema)
     checkAnswer(executeSQL("select count(*) from airlineView"),
       executeSQL("select count(*) from airlineTemp").collect())
@@ -243,7 +243,7 @@ object ViewTest extends Assertions {
     // should be visible from another session
     val executeSQL2 = newExecution()
     assert(executeSQL2("show views in global_temp").collect() ===
-        Array(Row("GLOBAL_TEMP", "AIRLINEVIEW", true, true)))
+        Array(Row("global_temp", "airlineview", true, true)))
     checkAnswer(executeSQL2("select count(*) from airlineView"),
       executeSQL("select count(*) from airlineTemp").collect())
 
@@ -275,7 +275,7 @@ object ViewTest extends Assertions {
 
     val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null),
       Row("RANK", "int", null))
-    val showResult = Seq(Row("APP", "VIEWONTABLE", false, false))
+    val showResult = Seq(Row("app", "viewontable", false, false))
 
     assert(tableExists(executeSQL, "viewOnTable") === true)
     checkAnswer(executeSQL("describe viewOnTable"), viewMeta)
