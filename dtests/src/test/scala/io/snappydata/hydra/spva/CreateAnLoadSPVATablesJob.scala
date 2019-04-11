@@ -14,24 +14,22 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.northwind
+package io.snappydata.hydra.spva
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
-import io.snappydata.hydra.northwind
-import org.apache.spark.sql._
+import io.snappydata.hydra.northwind.NWTestJob
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 import scala.util.{Failure, Success, Try}
 
-class CreateAndLoadNWTablesJob extends SnappySQLJob {
+class CreateAnLoadSPVATablesJob extends SnappySQLJob {
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
-    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
+    val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadSPVATablesJob.out"), true));
     Try {
       val snc = snSession.sqlContext
-     // snc.sql("set spark.sql.shuffle.partitions=23")
       // scalastyle:off println
-      println("jobConfig.entrySet().size() : " + jobConfig.entrySet().size())
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")
       pw.println(s"dataFilesLocation is : ${dataFilesLocation}")
       println(s"dataFilesLocation is : ${dataFilesLocation}")
@@ -39,32 +37,25 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
       pw.println(s"tableType : " + tableType)
       println(s"tableType : " + tableType)
       snc.setConf("dataFilesLocation", dataFilesLocation)
-      val createLargeOrderTable = jobConfig.getString("createLargeOrderTable").toBoolean
-      northwind.NWQueries.snc = snc
-      NWQueries.dataFilesLocation = dataFilesLocation
-      NWTestUtil.dropTables(snc)
+      SPVAQueries.snc = snc
+      SPVAQueries.dataFilesLocation = dataFilesLocation
+      SPVATestUtil.dropTables(snc)
       pw.println(s"Create and load ${tableType} tables Test started at : " + System
           .currentTimeMillis)
+      // snc.sql("CREATE SCHEMA IF NOT EXISTS SPD")
       tableType match {
-        case "ReplicatedRow" => NWTestUtil.createAndLoadReplicatedTables(snc)
-        case "PartitionedRow" =>
-          NWTestUtil.createAndLoadPartitionedTables(snc, createLargeOrderTable)
-        case "Column" => NWTestUtil.createAndLoadColumnTables(snc, createLargeOrderTable)
-        case "Colocated" => NWTestUtil.createAndLoadColocatedTables(snc)
+        case "ReplicatedRow" => SPVATestUtil.createAndLoadReplicatedTables(snc)
+        case "PartitionedRow" => SPVATestUtil.createAndLoadPartitionedTables(snc)
+        case "Column" => SPVATestUtil.createAndLoadColumnTables(snc)
         case _ => // the default, catch-all
       }
       pw.println(s"Create and load ${tableType} tables Test completed successfully at : " +
           System.currentTimeMillis)
       pw.flush()
-      if (createLargeOrderTable) {
-        NWTestUtil.ingestMoreData(snc, 10)
-      }
-      pw.println(s"Loaded more data successfully at : " +
-          System.currentTimeMillis)
       pw.close()
     } match {
       case Success(v) => pw.close()
-        s"See ${NWTestJob.getCurrentDirectory}/CreateAndLoadNWTablesJob.out"
+        s"See ${NWTestJob.getCurrentDirectory}/CreateAndLoadSPVATablesJob.out"
       case Failure(e) => pw.close();
         throw e;
     }
@@ -72,4 +63,3 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
-
