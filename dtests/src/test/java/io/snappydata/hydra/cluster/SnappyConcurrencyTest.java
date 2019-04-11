@@ -103,7 +103,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         long queryExecutionEndTime = System.currentTimeMillis();
         long queryExecutionTime = queryExecutionEndTime - startTime;
         if (isStabilityTest) {
-          Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
+          Log.getLogWriter().info("QueryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
         }
       } catch (SQLException se) {
         throw new TestException("Got exception while executing Analytical query:" + query, se);
@@ -121,7 +121,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         long queryExecutionEndTime = System.currentTimeMillis();
         long queryExecutionTime = queryExecutionEndTime - startTime;
         if (isStabilityTest) {
-          Log.getLogWriter().info("SS - queryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
+          Log.getLogWriter().info("QueryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
         }
         SnappyBB.getBB().getSharedMap().put(queryNum + "_" + query + "_" + System.currentTimeMillis(), queryExecutionTime);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
