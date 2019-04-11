@@ -27,6 +27,7 @@ import org.scalatest.BeforeAndAfterAll
 import org.junit.Assert._
 
 import org.apache.spark.SparkConf
+import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.{SparkPlan, WholeStageCodegenExec}
 
 class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
@@ -462,8 +463,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       }
     }
 
-    def colName(pos: Int): String =
-      s"col${posToTypeMapping(pos).toString.replaceAll("-", "_")}"
+    def colName(pos: Int): String = if (pos == 1) "col000"
+     else s"col${posToTypeMapping(pos).toString.replaceAll("-", "_")}"
 
     var expectedResult: mutable.Map[Any, Any] = null
 
@@ -564,7 +565,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertTrue(expectedResult.isEmpty)
     snc.sql("delete from test1")
 
-    // check behaviour of Big Decimal as aggregate column
+    // check behaviour of Big Decimal with precision < 18 as aggregate column
     for(i <- 0 until 10) {
       val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${.3*i}"),
         11 -> s"col${i/5}")
@@ -583,6 +584,233 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
         Math.abs(expectedResult(row.getString(1)).asInstanceOf[java.math.BigDecimal].
           subtract(row.getDecimal(0)).doubleValue()) < .1)
       expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of Big Decimal with precision > 18 as aggregate column
+   for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 9 -> new java.math.BigDecimal(s"${.3*i}"),
+        11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(9)}_2), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> new java.math.BigDecimal(s"${.3 * 10}"),
+      "col1" -> new java.math.BigDecimal(s"${.3 * 35}"))
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertTrue(
+        Math.abs(expectedResult(row.getString(1)).asInstanceOf[java.math.BigDecimal].
+          subtract(row.getDecimal(0)).doubleValue()) < .1)
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+
+    // check behaviour of Timestamp as aggregate column
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 10 -> new Timestamp(1234567*i),
+        11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    val expected1 = (for (i <- 0 until 5) yield {
+       DateTimeUtils.fromJavaTimestamp(new Timestamp(1234567*i))
+    }).foldLeft(0L)(_ + _)/1000000d
+
+    val expected2 = (for (i <- 5 until 10) yield {
+      DateTimeUtils.fromJavaTimestamp(new Timestamp(1234567*i))
+    }).foldLeft(0L)(_ + _)/1000000d
+
+    q = s"select sum(${colName(10)}), ${colName(11)} from test1 group by ${colName(11)} "
+    expectedResult = mutable.Map("col0" -> expected1,
+      "col1" -> expected2)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(2, rows.length)
+    rows.foreach(row => {
+      assertTrue(Math.abs(expectedResult(
+        row.getString(1)).asInstanceOf[Double] -row.getDouble(0)) < 1)
+      expectedResult.remove(row.getString(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+
+    // check behaviour of byte as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 2 -> (i/5).toByte, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(2)} from test1 group by ${colName(2)} "
+    expectedResult = mutable.Map(0 -> 10L, 1 -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getByte(1)), row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getByte(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of short as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 3 -> (i/5).toShort, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(3)} from test1 group by ${colName(3)} "
+    expectedResult = mutable.Map(0 -> 10L, 1 -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getShort(1)), row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getShort(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of int as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 4 -> (i/5), 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(4)} from test1 group by ${colName(4)} "
+    expectedResult = mutable.Map(0 -> 10L, 1 -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getInt(1)), row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getInt(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of long as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 5 -> (i/5).toLong, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(5)} from test1 group by ${colName(5)} "
+    expectedResult = mutable.Map(0 -> 10L, 1 -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getLong(1)), row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getLong(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of float as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 6 -> (i/5)*.7F, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(6)} from test1 group by ${colName(6)} "
+    expectedResult = mutable.Map(0 -> 10L, .7f -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getFloat(1)), row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getFloat(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of double as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 7 -> (i/5)*.7D, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(7)} from test1 group by ${colName(7)} "
+    expectedResult = mutable.Map(0 -> 10L, .7D -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getDouble(1)),
+        row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getDouble(1))
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
+    // check behaviour of BigDecimal as grouping column with null & two not nulls
+    for(i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 8 -> new java.math.BigDecimal(s"${12.3E+3 + i/5 + 1 }"),
+        11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for(i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i/5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(8)}_1 from test1 group by ${colName(8)}_1 "
+    expectedResult = mutable.Map(new java.math.BigDecimal(s"${12.3E+3 + 1 }").doubleValue() -> 10L,
+      new java.math.BigDecimal(s"${12.3E+3 + 2 }").doubleValue() -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(if (row.isNullAt(1)) "null" else row.getDecimal(1).doubleValue()),
+        row.getLong(0))
+      expectedResult.remove(if (row.isNullAt(1)) "null" else row.getDecimal(1).doubleValue())
     })
     assertTrue(expectedResult.isEmpty)
     snc.sql("delete from test1")
