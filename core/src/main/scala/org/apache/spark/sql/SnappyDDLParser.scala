@@ -30,6 +30,10 @@ import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, FunctionResource, FunctionResourceType}
+import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
+import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
+import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -131,6 +135,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def CONSTRAINT: Rule0 = rule { keyword(Consts.CONSTRAINT) }
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
+  final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
   final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
@@ -319,6 +324,30 @@ abstract class SnappyDDLParser(session: SnappySession)
     CREATE ~ TABLE ~ ifNotExists ~ tableIdentifier ~ LIKE ~ tableIdentifier ~>
         ((allowExisting: Boolean, targetTable: TableIdentifier, sourceTable: TableIdentifier) =>
           CreateTableLikeCommand(targetTable, sourceTable, allowExisting))
+  }
+
+  protected final def booleanLiteral: Rule1[Boolean] = rule {
+    TRUE ~> (() => true) | FALSE ~> (() => false)
+  }
+
+  protected final def numericLiteral: Rule1[String] = rule {
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
+        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
+        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => s)
+  }
+
+  protected final def defaultLiteral: Rule1[Option[String]] = rule {
+    stringLiteral ~> ((s: String) => Option(s)) |
+    numericLiteral ~> ((s: String) => Option(s)) |
+    booleanLiteral ~> ((b: Boolean) => Option(b.toString)) |
+    NULL ~> (() => None)
+  }
+
+  protected final def defaultVal: Rule1[Option[String]] = rule {
+    (DEFAULT ~ defaultLiteral ~ ws).?  ~> ((value: Any) => value match {
+        case Some(v) => v.asInstanceOf[Option[String]]
+        case None => None
+      })
   }
 
   protected final def policyFor: Rule1[String] = rule {
@@ -560,7 +589,8 @@ abstract class SnappyDDLParser(session: SnappySession)
             (CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. + ~ EOI ~>
                 ((table: TableIdentifier, _: Boolean) =>
                   AlterTableMiscCommand(table, input.sliceString(0, input.length))) |
-            COLUMN.? ~ (column | identifier) ~> { (t: TableIdentifier, isAdd: Boolean, c: Any) =>
+            COLUMN.? ~ (column | identifier) ~ defaultVal ~> { (t: TableIdentifier,
+              isAdd: Boolean, c: Any, d: Any) =>
               val col = c match {
                 case s: String => if (isAdd) throw new ParseException(
                   s"ALTER TABLE ADD COLUMN needs column definition but got '$c'")
@@ -569,7 +599,7 @@ abstract class SnappyDDLParser(session: SnappySession)
                   s"ALTER TABLE DROP COLUMN needs column name but got '$c'")
                   f
               }
-              AlterTableAddDropColumnCommand(t, col, isAdd)
+              AlterTableAddDropColumnCommand(t, col, isAdd, d.asInstanceOf[Option[String]])
             }
         ) |
         // other store ALTER statements which don't effect the snappydata catalog

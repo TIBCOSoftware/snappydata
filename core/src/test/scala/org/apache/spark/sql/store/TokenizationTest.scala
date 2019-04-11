@@ -19,7 +19,7 @@ package org.apache.spark.sql.store
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{Data, TestData2}
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -39,11 +39,14 @@ class TokenizationTest
   val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
+  var planCaching : Boolean = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
+    planCaching = Property.PlanCaching.get(snc.sessionState.conf)
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
@@ -51,6 +54,7 @@ class TokenizationTest
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
+    Property.PlanCaching.set(snc.sessionState.conf, planCaching)
     super.afterAll()
   }
 
@@ -397,7 +401,6 @@ class TokenizationTest
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 1)
-
       newSession.sql(s"set snappydata.sql.planCaching=false").collect()
       assert(cacheMap.size() == 1)
 
@@ -425,10 +428,8 @@ class TokenizationTest
       }
       assert(cacheMap.size() == 0)
 
-      cacheMap.clear()
-
       val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
-
+      Property.PlanCaching.set(newSession2.sessionState.conf, true)
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -439,14 +440,14 @@ class TokenizationTest
         })
       }
 
-      assert(cacheMap.size() == 1)
+      assert(SnappySession.getPlanCache.asMap().size() == 1)
       newSession.clear()
       newSession2.clear()
       cacheMap.clear()
 
       val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
       newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
-
+      Property.PlanCaching.set(newSession3.sessionState.conf, true)
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>

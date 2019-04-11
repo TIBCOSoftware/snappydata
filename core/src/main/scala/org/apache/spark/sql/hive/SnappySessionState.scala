@@ -30,7 +30,7 @@ import org.apache.spark.Partition
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedAttribute, UnresolvedOrdinal, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -158,6 +158,7 @@ class SnappySessionState(val snappySession: SnappySession)
         AnalyzeCreateTable(snappySession) ::
         new PreprocessTable(this) ::
         ResolveRelationsExtended ::
+        ResolveAliasInGroupBy ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
@@ -450,6 +451,23 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
+  object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+      case p if !p.childrenResolved => p
+      case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
+        groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
+        val newGroups = groups.map {
+          case u@UnresolvedAttribute(nameParts) if nameParts.length == 1 =>
+            aggs.collectFirst {
+              case Alias(exp, name) if name.equalsIgnoreCase(nameParts.head) =>
+                exp
+            }.getOrElse(u)
+          case x => x
+        }
+        Aggregate(newGroups, aggs, child)
+      case o => o
+    }
+  }
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
     // Y combinator

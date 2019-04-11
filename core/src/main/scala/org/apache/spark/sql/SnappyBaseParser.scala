@@ -492,6 +492,7 @@ object SnappyParserConsts extends Logging {
   final val COMMENT: Keyword = nonReservedKeyword("comment")
   final val CROSS: Keyword = nonReservedKeyword("cross")
   final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
+  final val DEFAULT: Keyword = nonReservedKeyword("default")
   final val DEPLOY: Keyword = nonReservedKeyword("deploy")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
   final val DISABLE: Keyword = nonReservedKeyword("disable")
