@@ -166,10 +166,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           if (!isKey) {
             s"""
              else {
-               $currentValueOffsetTerm += ${dt.defaultSize + (dt match {
-              case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
-              case _ => 0
-            })};\n
+               ${getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
              }
            """.stripMargin
           } else {
@@ -334,12 +331,23 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   }
 
+  def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
+    s"""
+        $offsetTerm += ${dt.defaultSize + (dt match {
+      case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+      case _ => 0
+    })
+    };\n
+      """
+  }
 
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
     dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
     numBytesForNullBits: Int, isKey: Boolean): String = {
     // Move the offset at the end of num Null Bytes space, we will fill that space later
     // store the starting value of offset
+
+
     val startingOffsetTerm = ctx.freshName("startingOffset")
     val tempBigDecArrayTerm = ctx.freshName("tempBigDecArray")
     val plaformClass = classOf[Platform].getName
@@ -428,13 +436,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 """.stripMargin
             } else if (nullVar == "true") {
               if (!isKey) {
-                s"""
-                   $offsetTerm += ${dt.defaultSize + (dt match {
-                  case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
-                  case _ => 0
-                })
-                };\n
-                """
+                getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
               } else {
                 ""
               }
@@ -447,11 +449,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   }${
                 if (!isKey) {
                   s"""
-                       else {
-                         $offsetTerm += ${dt.defaultSize + (dt match {
-                    case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
-                    case _ => 0
-                  })};\n
+                      else {
+                         ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
                        }
                     """.stripMargin
                 } else ""
@@ -468,10 +467,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 """.stripMargin
             } else if (nullVar == "true") {
               if (!isKey) {
-                s"$offsetTerm += ${dt.defaultSize + (dt match {
-                  case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
-                  case _ => 0
-                })};\n"
+                getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
               } else {
                 ""
               }
@@ -483,12 +479,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   }${
                 if (!isKey) {
                   s"""
-                       else {
-                         $offsetTerm += ${dt.defaultSize + (dt match {
-                    case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
-                    case _ => 0
-                  })};\n
-                       }
+                     else {
+                      ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
+                     }
                     """.stripMargin
                 } else ""
               }
@@ -578,7 +571,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
             case _ => ""
           })
         } else {
-          s" (${keyVars(i).value}.numBytes() + 4) "
+          dt match {
+            case _: StringType => s" (${keyVars(i).value}.numBytes() + 4) "
+            case st: StructType => throw new UnsupportedOperationException("not implemented")
+          }
+
+
         }
         if (nullVar.isEmpty || nullVar == "false") {
           notNullSizeExpr
