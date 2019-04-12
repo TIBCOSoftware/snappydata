@@ -335,7 +335,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
       String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
           " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
-          APP_PROPS + " --stream ";
+          APP_PROPS;
+      //if(!useStreamingSink)
+      //  snappyJobCommand += " --stream ";
       String dest = getCurrentDirPath() + File.separator + logFileName;
       Log.getLogWriter().info("Executing command:" + snappyJobCommand);
       logFile = new File(dest);
