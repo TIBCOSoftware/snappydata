@@ -29,9 +29,9 @@ import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 import scala.util.control.NonFatal
-
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -39,7 +39,6 @@ import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark._
 import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
@@ -49,10 +48,10 @@ import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, Expression, GenericRow, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, EqualNullSafe, EqualTo, Expression, GenericRow, SpecificInternalRow, TokenLiteral, UnsafeProjection, UnsafeRow}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
-import org.apache.spark.sql.catalyst.plans.physical.{Partitioning, PartitioningCollection}
+import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, PartitioningCollection}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis}
 import org.apache.spark.sql.execution.SQLExecution
@@ -61,6 +60,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, DriverWr
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.{CastLongTime, JdbcExtendedUtils}
+import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
@@ -68,6 +68,8 @@ import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
+
+import scala.collection.mutable.ArrayBuffer
 
 object Utils {
 
@@ -848,6 +850,54 @@ object Utils {
 
   def sqlInternal(snappy: SnappySession, sqlText: String): CachedDataFrame =
     snappy.sqInternal(sqlText)
+
+  def getPartitions(region: Any, bucketId: Int): Array[Partition] = {
+    val pr = region.asInstanceOf[PartitionedRegion]
+    val distMembers = StoreUtils.getBucketOwnersForRead(bucketId, pr)
+    val prefNodes = new ArrayBuffer[String](2)
+    distMembers.foreach(m => SnappyContext.getBlockId(m.canonicalString()) match {
+      case Some(b) => prefNodes += Utils.getHostExecutorId(b.blockId)
+      case _ =>
+    })
+    Array(new MultiBucketExecutorPartition(0, ArrayBuffer(bucketId),
+      pr.getTotalNumberOfBuckets, prefNodes))
+  }
+
+  def getPrunedPartition(partitionColumns: Seq[String],
+                         filters: Array[Expression], schema: StructType,
+                         numBuckets: Int, partitionColumnCount: Int): Int = {
+
+    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
+    // RDDs needn't have to care for orderless hashing scheme at invocation point.
+    val (pruningExpressions, fields) = partitionColumns.map { pc =>
+      filters.collectFirst {
+        case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+        case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
+          pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
+      }
+    }.filter(_.nonEmpty).map(_.get).unzip
+
+    val pcFields = StructType(fields).toAttributes
+    val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
+    val bucketIdGeneration = UnsafeProjection.create(
+      HashPartitioning(pcFields, numBuckets)
+        .partitionIdExpression :: Nil, pcFields)
+    if (pruningExpressions.nonEmpty &&
+      // verify all the partition columns are provided as filters
+      pruningExpressions.length == partitionColumnCount) {
+      pruningExpressions.zipWithIndex.foreach { case (e, i) =>
+        mutableRow(i) = e.eval(null)
+      }
+      bucketIdGeneration(mutableRow).getInt(0)
+    } else {
+      -1
+    }
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
