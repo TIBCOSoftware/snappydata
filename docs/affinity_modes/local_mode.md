@@ -1,7 +1,7 @@
 <a id="localmode"></a>
 # Local Mode
 
-In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using SnappyData, as you do not require a cluster, and the  executor threads are launched locally for processing.
+In this mode, you can execute all the components (client application, executors, and data store) locally in the application's JVM. It is the simplest way to start testing and using TIBCO ComputeDB™, as you do not require a cluster, and the  executor threads are launched locally for processing.
 
 **Key Points**
 
@@ -11,15 +11,15 @@ In this mode, you can execute all the components (client application, executors,
 
 * Launches executor threads locally for processing
 
-* Embeds the SnappyData in-memory store in-process
+* Embeds the TIBCO ComputeDB in-memory store in-process
 
 * For development purposes only
  
 ![Local Mode](../Images/SnappyLocalMode.png)
 
-**Example: Using the Local mode for developing SnappyData programs**
+**Example: Using the Local mode for developing TIBCO ComputeDB programs**
 
-You can use an IDE of your choice, and provide the below dependency to get SnappyData binaries:
+You can use an IDE of your choice, and provide the below dependency to get TIBCO ComputeDB binaries:
 
 **Example: Maven dependency**
 
@@ -51,9 +51,9 @@ val workaround = {
 
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
-**Create SnappySession**:
+**Create Snappy Session**:
 
-To start SnappyData store you need to create a SnappySession in your program:
+To start TIBCO ComputeDB store you need to create a Snappy Session in your program:
 
 ```pre
  val spark: SparkSession = SparkSession
@@ -66,9 +66,9 @@ To start SnappyData store you need to create a SnappySession in your program:
   
   
   
-**Example**: **Launch Apache Spark shell and provide SnappyData dependency as a Spark package**:
+**Example**: **Launch Apache Spark shell and provide TIBCO ComputeDB dependency as a Spark package**:
 
-If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the SnappyData binaries.
+If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the TIBCO ComputeDB binaries.
 
 ```pre
 ./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11"
