@@ -1043,10 +1043,8 @@ task product(type: Zip) {
         workingDir targetRDir
         commandLine "${targetRDir}/check-cran.sh"
       }
-      
-      Arrays.stream(new File(targetRDir).list()).forEach {
-        f -> if (f != "lib") delete  "${targetRDir}/${f}"
-      }
+
+      fileTree(targetRDir).exclude('lib').visit { delete it.file }
     }
   }
 }
