@@ -96,7 +96,7 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.remove("isTest")
     val authSpecified = Misc.checkLDAPAuthProvider(bootProperties)
 
-    ServiceUtils.setCommonBootDefaults(bootProperties, false)
+    ServiceUtils.setCommonBootDefaults(bootProperties, forLocator = false)
 
     // prefix all store properties with "snappydata.store" for SparkConf
 
