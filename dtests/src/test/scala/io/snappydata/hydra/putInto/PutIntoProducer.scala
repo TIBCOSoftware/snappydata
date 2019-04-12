@@ -64,7 +64,7 @@ object PutIntoProducer {
       val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer,i))
       thread.start()
       threads(i) = thread
-      Thread.sleep(60000)
+      Thread.sleep(30000)
     }
     threads.foreach(_.join())
     pw.println(getCurrTimeAsString + s"Done sending $eventCount Kafka messages of topic $topic")
@@ -145,6 +145,9 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
       val data = new ProducerRecord[String, String](topic, id, row + s",${eventType}")
       producer.send(data)
       i += 1
+      if((i%1000000) == 0)
+         Thread.sleep(300000)
+
     }
 
     PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + "Done producing " +
