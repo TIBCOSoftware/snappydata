@@ -40,13 +40,13 @@ Column tables are not suitable for OLTP scenarios. In this case, row tables are 
 <a id="partition-replicate"></a>
 ## Using Partitioned Versus Replicated Row Table
 
-In SnappyData, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas dimension tables can be replicated.
+In TIBCO ComputeDB™, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas dimension tables can be replicated.
 
-The SnappyData architecture encourages you to denormalize “dimension” tables into fact tables when possible, and then replicate remaining dimension tables to all data stores in the distributed system.
+The TIBCO ComputeDB architecture encourages you to denormalize “dimension” tables into fact tables when possible, and then replicate remaining dimension tables to all data stores in the distributed system.
 
 Most databases follow the [star schema](http://en.wikipedia.org/wiki/Star_schema) design pattern where large “fact” tables store key information about the events in a system or a business process. For example, a fact table would store rows for events like product sales or bank transactions. Each fact table generally has foreign key relationships to multiple “dimension” tables, which describe further aspects of each row in the fact table.
 
-When designing a database schema for SnappyData, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.
+When designing a database schema for TIBCO ComputeDB, the main goal with a typical star schema database is to partition the entities in fact tables. Slow-changing dimension tables should then be replicated on each data store that hosts a partitioned fact table. In this way, a join between the fact table and any number of its dimension tables can be executed concurrently on each partition, without requiring multiple network hops to other members in the distributed system.
 
 <a id="partition-scheme"></a>
 ## Applying Partitioning Scheme
@@ -54,14 +54,14 @@ When designing a database schema for SnappyData, the main goal with a typical st
 <a id="colocated-joins"></a>
 ### Colocated Joins
 In SQL, a JOIN clause is used to combine data from two or more tables, based on a related column between them. JOINS have traditionally been expensive in distributed systems because the data for the tables involved in the JOIN may reside on different physical nodes and the operation has first to move/shuffle the relevant data to one node and perform the operation. </br>
-SnappyData offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same SnappyData member. Therefore, in a join query, the join operation is performed on each node's local data. Eliminating data shuffling improves performance significantly.</br>
+TIBCO ComputeDB offers a way to declaratively "co-locate" tables to prevent or reduce shuffling to execute JOINS. When two tables are partitioned on columns and colocated, it forces partitions having the same values for those columns in both tables to be located on the same TIBCO ComputeDB member. Therefore, in a join query, the join operation is performed on each node's local data. Eliminating data shuffling improves performance significantly.</br>
 For examples refer to, [How to colocate tables for doing a colocated join](../howto/perform_a_colocated_join.md).
 
 <a id="buckets"></a>
 ### Buckets
-A bucket is the smallest unit of in-memory storage for SnappyData tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to [BUCKETS](important_settings.md#buckets).</br>
+A bucket is the smallest unit of in-memory storage for TIBCO ComputeDB tables. Data in a table is distributed evenly across all the buckets. For more information on BUCKETS, refer to [BUCKETS](important_settings.md#buckets).</br>
 
-The default number of buckets in SnappyData cluster mode is 128. In the local mode, it is cores x 2, subject to a maximum of 64 buckets and a minimum of 8 buckets.
+The default number of buckets in TIBCO ComputeDB cluster mode is 128. In the local mode, it is cores x 2, subject to a maximum of 64 buckets and a minimum of 8 buckets.
 
 The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 Before deciding the total number of buckets in a table, you must consider the size of the largest bucket required for a table. The total time taken by a query is greater than the scheduling delay combined with the time needed to scan the largest bucket by a thread. In the case of high concurrency, scheduling delay can be more even if the time to scan the bucket is less. In case of an extremely large bucket, even if the scheduling delay is less, the time to scan the bucket can be large.
@@ -84,16 +84,16 @@ If only a single partition is active and is used mainly by queries (especially c
 <a id="redundancy"></a>
 ## Using Redundancy
 
-REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the SnappyData members fails or shuts down. 
+REDUNDANCY clause of [CREATE TABLE](../reference/sql_reference/create-table.md) specifies the number of secondary copies you want to maintain for your partitioned table. This allows the table data to be highly available even if one of the TIBCO ComputeDB members fails or shuts down. 
 
 A REDUNDANCY value of 1 is recommended to maintain a secondary copy of the table data. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage.
 
-For an example on the REDUNDANCY clause refer to [Tables in SnappyData](../programming_guide/tables_in_snappydata.md).
+For an example on the REDUNDANCY clause refer to [Tables in TIBCO ComputeDB](../programming_guide/tables_in_snappydata.md).
 
 <a id="overflow"></a>
 ## Overflow Configuration
 
-In SnappyData, row and column tables by default overflow to disk (which is equivalent to setting OVERFLOW to 'true'), based on EVICTION_BY criteria. Users cannot set OVERFLOW to 'false', except when EVICTION_BY is not set, in which case it disables the eviction.
+In TIBCO ComputeDB, row and column tables by default overflow to disk (which is equivalent to setting OVERFLOW to 'true'), based on EVICTION_BY criteria. Users cannot set OVERFLOW to 'false', except when EVICTION_BY is not set, in which case it disables the eviction.
 
 For example, setting EVICTION_BY to `LRUHEAPPERCENT` allows table data to be evicted to disk based on the current memory consumption of the server.
 

@@ -1,5 +1,5 @@
 <a id="snappydata-jobs"></a>
-# SnappyData Jobs
+# Snappy Jobs
 
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. The structure of a job looks as below:
  
