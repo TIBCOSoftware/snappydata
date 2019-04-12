@@ -1028,8 +1028,7 @@ task product(type: Zip) {
       into "${snappyProductDir}/benchmark"
     }
 
-    if (rootProject.hasProperty('R.enable') &&
-        rootProject.property("R.enable").toString().equalsIgnoreCase("true")) {
+    if (rootProject.hasProperty('R.enable')) {
       def targetRDir = "${snappyProductDir}/R"
       copy {
         from("${project(":snappy-spark").projectDir}/R")
