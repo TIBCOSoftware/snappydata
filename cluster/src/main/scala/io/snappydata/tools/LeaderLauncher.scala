@@ -16,7 +16,6 @@
  */
 package io.snappydata.tools
 
-import java.util
 import java.util.Properties
 
 import scala.collection.mutable.ArrayBuffer
