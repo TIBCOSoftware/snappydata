@@ -135,19 +135,9 @@ class LeaderLauncher(baseName: String) extends GfxdServerLauncher(baseName) {
 
   override protected def getBaseName(name: String) = "snappyleader"
 
-  override protected def setDefaultVMArgs(option: util.Map[String, AnyRef],
-                                          hostData: Boolean, vmArgs: util.List[String]) {
-    super.setDefaultVMArgs(option, hostData, vmArgs)
-    vmArgs.add("-D" + LeaderLauncher.DEFAULT_LEADER_MEMBER_WEIGHT_NAME +
-      '=' + LeaderLauncher.DEFAULT_LEADER_MEMBER_WEIGHT)
-  }
-
 } // end of class
 
 object LeaderLauncher {
-
-  val DEFAULT_LEADER_MEMBER_WEIGHT_NAME = "gemfire.member-weight"
-  val DEFAULT_LEADER_MEMBER_WEIGHT = 17
 
   def main(args: Array[String]): Unit = {
     val launcher = new LeaderLauncher("SnappyData Leader")
