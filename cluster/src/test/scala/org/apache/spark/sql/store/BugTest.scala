@@ -800,11 +800,11 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     assert(res === Array(Row(2L, "name2")))
 
     stmt.execute("insert into default.t2 values (1, 'name1'), (2, 'name2')")
-    res = resultSetToDataset(session, stmt)("select * from default.t1 order by id").collect()
+    res = resultSetToDataset(session, stmt)("select * from default.t2 order by id").collect()
     assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
-    res = resultSetToDataset(session, stmt)("select * from default.t1 where id = 1").collect()
+    res = resultSetToDataset(session, stmt)("select * from default.t2 where id = 1").collect()
     assert(res === Array(Row(1L, "name1")))
-    res = resultSetToDataset(session, stmt)("select * from `DEFAULT`.t1 where id = 2").collect()
+    res = resultSetToDataset(session, stmt)("select * from `DEFAULT`.t2 where id = 2").collect()
     assert(res === Array(Row(2L, "name2")))
 
     // check ALTER TABLE
