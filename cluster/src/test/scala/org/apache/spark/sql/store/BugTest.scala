@@ -21,11 +21,13 @@ import java.sql.{DriverManager, SQLException}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.{Property, SnappyFunSuite}
 import org.junit.Assert._
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
+import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
@@ -768,6 +770,52 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     conn.close()
     snappy.sql("drop table testLimit")
+    TestUtil.stopNetServer()
+  }
+
+  test("support for 'default' schema without explicit quotes") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    session.sql("create table default.t1(id bigint primary key, name varchar(10))")
+    var keys = session.sessionCatalog.getKeyColumns("default.t1")
+    assert(keys.length === 1)
+    assert(keys.head.toString === new Column("ID", null, "bigint", false, false, false).toString)
+
+    // also test from JDBC
+    val stmt = conn.createStatement()
+    stmt.execute("create table default.t2(id bigint not null primary key, name varchar(10))")
+    keys = session.sessionCatalog.getKeyColumns("default.t2")
+    assert(keys.length === 1)
+    assert(keys.head.toString === new Column("ID", null, "bigint", false, false, false).toString)
+
+    session.sql("insert into default.t1 values (1, 'name1'), (2, 'name2')")
+    var res = session.sql("select * from default.t1 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
+    res = session.sql("select * from default.t1 where id = 1").collect()
+    assert(res === Array(Row(1L, "name1")))
+    res = session.sql("select * from `DEFAULT`.t1 where id = 2").collect()
+    assert(res === Array(Row(2L, "name2")))
+
+    stmt.execute("insert into default.t2 values (1, 'name1'), (2, 'name2')")
+    res = resultSetToDataset(session, stmt)("select * from default.t1 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
+    res = resultSetToDataset(session, stmt)("select * from default.t1 where id = 1").collect()
+    assert(res === Array(Row(1L, "name1")))
+    res = resultSetToDataset(session, stmt)("select * from `DEFAULT`.t1 where id = 2").collect()
+    assert(res === Array(Row(2L, "name2")))
+
+    // check ALTER TABLE
+    session.sql("alter table default.t1 set eviction maxsize 1000")
+    session.sql("alter table `DEFAULT`.t2 set eviction maxsize 1000")
+    stmt.execute("alter table default.t1 set eviction maxsize 500")
+    stmt.execute("alter table \"DEFAULT\".\"T2\" set eviction maxsize 500")
+
+    stmt.close()
+    conn.close()
+
     TestUtil.stopNetServer()
   }
 }
