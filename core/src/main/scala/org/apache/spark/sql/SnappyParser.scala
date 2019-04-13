@@ -1110,9 +1110,9 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    (INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
-        ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
-        UnresolvedRelation(r), input.sliceString(0, input.length)))
+    capture(INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
+        capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
+        UnresolvedRelation(r), s"$c ${r.quotedString} $s"))
   }
 
   // It can be the following patterns:
