@@ -145,9 +145,12 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
       val data = new ProducerRecord[String, String](topic, id, row + s",${eventType}")
       producer.send(data)
       i += 1
-      if((i%1000000) == 0)
+      /*
+       if(((i%50000) == 0) && (eventType == 1))
          Thread.sleep(300000)
-
+      if(((i%1005000) == 0) && (eventType == 0))
+         Thread.sleep(180000)
+      */
     }
 
     PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + "Done producing " +
