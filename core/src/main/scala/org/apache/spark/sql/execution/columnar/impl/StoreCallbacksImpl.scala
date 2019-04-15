@@ -52,7 +52,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
@@ -288,8 +288,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           if (batchIterator.currentVal.remaining() == 0) batchIterator.moveNext()
           else if (filterPredicate ne null) {
             // first check the full stats
-            val statsRow = Utils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
-            val deltaStatsRow = Utils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
+            val statsRow = SharedUtils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
+            val deltaStatsRow = SharedUtils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
               numColumnsInStatBlob)
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
