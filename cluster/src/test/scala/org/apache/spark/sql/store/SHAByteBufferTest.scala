@@ -820,7 +820,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
-  test("simple aggregate query with struct type as grouping key") {
+  ignore("simple aggregate query with struct type as grouping key") {
     snc
     snc.sql("drop table if exists test1")
     val data = for (i <- 0 until 15) yield {

@@ -111,6 +111,7 @@ object TypeUtilities {
   def isFixedWidth(dataType: DataType): Boolean = {
     dataType match {
       case x: AtomicType => typeOf(x.tag) match {
+        case t if t =:= typeOf[Boolean] => true
         case t if t =:= typeOf[Byte] => true
         case t if t =:= typeOf[Short] => true
         case t if t =:= typeOf[Int] => true
