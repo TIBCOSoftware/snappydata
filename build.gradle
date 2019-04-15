@@ -70,7 +70,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.0.2.1'
+  version = '1.0.2.2'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -1027,6 +1027,24 @@ task product(type: Zip) {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
     }
+
+    if (rootProject.hasProperty('R.enable')) {
+      def targetRDir = "${snappyProductDir}/R"
+      copy {
+        from("${project(":snappy-spark").projectDir}/R")
+        into targetRDir
+      }
+
+      exec {
+        environment "SPARK_HOME", snappyProductDir
+        environment "NO_TESTS", "1"
+        environment "CLEAN_INSTALL", "1"
+        workingDir targetRDir
+        commandLine "${targetRDir}/check-cran.sh"
+      }
+
+      fileTree(targetRDir).exclude('lib').visit { delete it.file }
+    }
   }
 }
 
@@ -1116,6 +1134,8 @@ distTar {
   dependsOn ':packageVSD'
   dependsOn ':packageZeppelinInterpreter'
   classifier 'bin'
+  compression = Compression.GZIP
+  extension = 'tar.gz'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
