@@ -510,7 +510,8 @@ abstract class SnappyDDLParser(session: SparkSession)
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
         capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
-          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedNormalizedId(r)} $s")))
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedNormalizedId(r)} $s"))
+    )
   }
 
   protected def createStream: Rule1[LogicalPlan] = rule {
