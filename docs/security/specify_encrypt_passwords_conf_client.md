@@ -30,7 +30,7 @@ Enter password for user1: user123 (atual password is not shown on the console)
 Re-enter password for user1: user123 (atual password is not shown on the console)
 Enter password for AUTH_LDAP_SEARCH_PW: admin123 (atual password is not shown on the console)
 Re-enter password for AUTH_LDAP_SEARCH_PW: admin123 (atual password is not shown on the console)
-Logs generated in /home/shirishd/snappyData/repo3/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 2379 status: running
   Distributed system now has 1 members.
   Started DRDA server on: localhost/127.0.0.1[1527]

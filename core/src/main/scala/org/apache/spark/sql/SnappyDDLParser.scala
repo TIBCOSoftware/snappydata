@@ -132,6 +132,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
+  final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }

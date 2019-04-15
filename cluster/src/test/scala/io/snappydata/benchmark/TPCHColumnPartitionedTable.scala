@@ -121,7 +121,7 @@ object TPCHColumnPartitionedTable {
       buckets: String = "128", loadPerfPrintStream: PrintStream = null, redundancy : String = "0",
       persistence: Boolean = false, persistence_type: String = "", numberOfLoadingStages : Int = 1,
       isParquet : Boolean = false, createParquet : Boolean = false,
-      trace : Boolean = false, cacheTables : Boolean = true) : Unit = {
+      trace : Boolean = false, cacheTables : Boolean = true, provider: String = "column") : Unit = {
     val sc = sqlContext.sparkContext
     val startTime = System.currentTimeMillis()
     var orderDF: DataFrame = null
@@ -171,7 +171,7 @@ object TPCHColumnPartitionedTable {
 
           val startCreateTableTime = System.currentTimeMillis()
           snappyContext.dropTable("ORDERS", ifExists = true)
-          snappyContext.createTable("ORDERS", "column", newSchema, p1)
+          snappyContext.createTable("ORDERS", provider, newSchema, p1)
           val endCreateTableTime = System.currentTimeMillis()
           if (trace && loadPerfPrintStream != null) {
             loadPerfPrintStream.println(s"TRACE_ORDERS_CREATE_TABLE, " +

@@ -21,10 +21,12 @@ import java.net.InetAddress
 import scala.math._
 import scala.util.Random
 
-import org.apache.spark.sql.{Row, SnappyContext}
-import org.apache.spark.{SparkConf, SparkContext}
+import com.gemstone.gemfire.cache.LowMemoryException
 
-class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+import org.apache.spark.sql.{Row, SnappyContext}
+import org.apache.spark.{Logging, SparkConf, SparkContext}
+
+class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging {
 
   import ClusterMgrDUnitTest._
 
@@ -65,6 +67,28 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     startSparkJob()
   }
 
+  def testNonFatalOOMException(): Unit = {
+    try {
+      throwNonFatalOOMException
+    } catch {
+      case e: org.apache.spark.SparkException =>
+        var t: Throwable = e
+        var foundExpectedError = false
+        while (t != null && !foundExpectedError) {
+          t match {
+            case l: LowMemoryException =>
+              foundExpectedError = true
+              logInfo("Received expected LowMemoryException exception")
+            case _ => t = t.getCause
+          }
+        }
+        // throw if this is not an expected exception
+        if (!foundExpectedError) throw e
+    }
+    // run a spark job to make sure that cluster is available
+    startSparkJob()
+  }
+
   def testUncaughtExceptionInExecutorthread(): Unit = {
     vm2.invoke(getClass, "failAThread")
     vm1.invoke(getClass, "failAThread")
@@ -101,6 +125,14 @@ object ClusterMgrDUnitTest {
   def failTheExecutors: Unit = {
     sc.parallelize(1 until 100, 5).map { i =>
       throw new OutOfMemoryError("Some message")
+    }.collect()
+  }
+
+  def throwNonFatalOOMException: Unit = {
+    sc.parallelize(1 until 100, 5).map { i =>
+      // the message in exception should match one of
+      // the ignored messages in SystemFailure.isJVMFailureError
+      throw new OutOfMemoryError("Unable to acquire")
     }.collect()
   }
 
