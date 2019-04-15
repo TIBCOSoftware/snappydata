@@ -1112,7 +1112,8 @@ class SnappyParser(session: SnappySession)
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     capture(INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
         capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
-        UnresolvedRelation(r), s"$c ${r.quotedString} $s"))
+        UnresolvedRelation(r), s"$c ${r.copy(table = Utils.toUpperCase(r.table),
+        database = r.database.map(Utils.toUpperCase)).quotedString} $s"))
   }
 
   // It can be the following patterns:

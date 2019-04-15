@@ -510,7 +510,9 @@ abstract class SnappyDDLParser(session: SparkSession)
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
         capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
-          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${r.quotedString} $s"))
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE " +
+              s"${r.copy(table = Utils.toUpperCase(r.table),
+                database = r.database.map(Utils.toUpperCase)).quotedString} $s"))
     )
   }
 
