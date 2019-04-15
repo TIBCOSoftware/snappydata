@@ -23,13 +23,12 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import io.snappydata.{Constant, Property}
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
-import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
