@@ -109,6 +109,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           """.stripMargin
         case x: AtomicType => {
           (typeOf(x.tag) match {
+            case t if t =:= typeOf[Boolean] => s"$varName = $plaformClass.getBoolean(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
               case t if t =:= typeOf[Byte] => s"$varName = $plaformClass.getByte(" +
                 s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
               case t if t =:= typeOf[Short] => s"$varName = $plaformClass.getShort(" +
@@ -253,6 +255,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
            // evaluate key vars
           ${evaluateVariables(keyVars)}
+          ${keyVars.zip(keysDataType).filter(_._2 match {
+              case x: StructType => true
+              case _ => false
+            }).map {
+                case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
+                  dt.asInstanceOf[StructType])
+              }.mkString("\n")
+          }
 
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
@@ -260,13 +270,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
           //  System.out.println("hash code for key = " +${hashVar(0)});
           // get key size code
           int $numKeyBytesTerm = 0;
-          ${generateKeySizeCode(keyVars, keysDataType, numKeyBytesTerm)}
+          $numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType)}
 
           int $numValueBytes = $numAggBytes;
-          ${
-      generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
-        keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject, baseKeyoffset)
-    }
+          ${ generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
+            keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject, baseKeyoffset)
+           }
            // insert or lookup
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
@@ -276,6 +285,67 @@ case class SHAMapAccessor(@transient session: SnappySession,
          """
 
   }
+
+  // handle arraydata , map , object
+  def explodeStruct(structVarName: String, structNullVarName: String, structType: StructType,
+    parentNestingLevel: Int = 0): String = {
+    structType.zipWithIndex.map{ case(sf, index) =>
+      sf.dataType match {
+        case _: StructType => (sf.dataType, index,
+          generateExplodedStructFieldVars(structVarName, parentNestingLevel))
+        case _ => (sf.dataType, index,
+          generateExplodedStructFieldVars(structVarName, parentNestingLevel, index))
+      }
+  }.map { case (dt, index, (varName, nullVarName)) =>
+      val valueExtractCode = dt match {
+        case x: AtomicType => typeOf(x.tag) match {
+          case t if t =:= typeOf[Boolean] => s"$structVarName.getBoolean($index); \n"
+          case t if t =:= typeOf[Byte] => s"$structVarName.getByte($index); \n"
+          case t if t =:= typeOf[Short] => s"$structVarName.getShort($index); \n"
+          case t if t =:= typeOf[Int] => s"$structVarName.getInt($index); \n"
+          case t if t =:= typeOf[Long] => s"$structVarName.getLong($index); \n"
+          case t if t =:= typeOf[Float] => s"$structVarName.getFloat$index); \n"
+          case t if t =:= typeOf[Double] => s"$structVarName.getDouble($index); \n"
+          case t if t =:= typeOf[Decimal] => s"$structVarName.getDecimal($index, " +
+            s"${dt.asInstanceOf[DecimalType].precision}," +
+            s"${dt.asInstanceOf[DecimalType].scale}); \n"
+          case t if t =:= typeOf[UTF8String] => s"$structVarName.getUTF8String($index); \n"
+          case _ => throw new UnsupportedOperationException("unknown type " + dt)
+        }
+        case BinaryType => s"$structVarName.getBinary($index); \n"
+        case CalendarIntervalType => s"$structVarName.getInterval($index); \n"
+        case st: StructType => s"$structVarName.getStruct($index, ${st.length}); \n"
+
+        case _ => throw new UnsupportedOperationException("unknown type " + dt)
+      }
+      val snippet = s"""
+             boolean $nullVarName = $structNullVarName || $structVarName.isNullAt($index);
+             ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};"
+             if (!$nullVarName) {
+               $varName = $valueExtractCode;
+             }
+           """.stripMargin
+
+      snippet + (dt match {
+        case st: StructType => st.map(sf => explodeStruct(varName, nullVarName,
+          st, parentNestingLevel + 1)). mkString("\n")
+        case _ => ""
+      })
+    }.mkString("\n")
+
+  }
+
+  def generateExplodedStructFieldVars(parentVar: String,
+    parentNestingLevel: Int, leafIndex: Int = -1): (String, String) = {
+   val varName = s"${parentVar}_$parentNestingLevel" +
+     (if (leafIndex != -1) s"_l$leafIndex" else "")
+    val isNullVarName = s"${varName}_isNull"
+    (varName, isNullVarName)
+
+  }
+
+
+
 
   def initNullBitsetCode(nullBitsetTerm: String,
     numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
@@ -362,6 +432,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val writingCode = dt match {
             case x: AtomicType =>
               val snippet = typeOf(x.tag) match {
+                case t if t =:= typeOf[Boolean] => s"""
+                   $plaformClass.putBoolean($baseObjectTerm, $offsetTerm,
+                   $variable); \n
+                   $offsetTerm += ${dt.defaultSize};\n
+                """.stripMargin
                 case t if t =:= typeOf[Byte] => s"""
                    $plaformClass.putByte($baseObjectTerm, $offsetTerm,
                    $variable); \n
@@ -561,8 +636,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    numKeyBytesVar: String): String = {
-    s"$numKeyBytesVar = " +
+    nestingLevel: Int = 0): String = {
+
       keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
         val nullVar = expr.isNull
         val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
@@ -572,11 +647,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
           })
         } else {
           dt match {
-            case _: StringType => s" (${keyVars(i).value}.numBytes() + 4) "
-            case st: StructType => throw new UnsupportedOperationException("not implemented")
+            case _: StringType => s" (${expr.value}.numBytes() + 4) "
+            case st: StructType => val childExprsAndDataType = st.zipWithIndex.map {
+              case(sf, index) => sf.dataType match {
+                case _: StructType => val (varName, nullVarName) = generateExplodedStructFieldVars(
+                    expr.value, nestingLevel)
+                  ExprCode("", nullVarName, varName) -> sf.dataType
+                case _ => val (varName, nullVarName) = generateExplodedStructFieldVars(expr.value,
+                  nestingLevel, index)
+                  ExprCode("", nullVarName, varName) -> sf.dataType
+
+            }
+            }
+            val (childKeysVars, childDataTypes) = childExprsAndDataType.unzip
+            generateKeySizeCode(childKeysVars, childDataTypes, nestingLevel + 1)
           }
-
-
         }
         if (nullVar.isEmpty || nullVar == "false") {
           notNullSizeExpr
