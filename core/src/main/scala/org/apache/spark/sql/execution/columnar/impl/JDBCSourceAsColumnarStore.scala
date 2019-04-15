@@ -21,7 +21,6 @@ import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
-import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 import scala.util.control.NonFatal
 
@@ -51,9 +50,9 @@ import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateT
 import org.apache.spark.sql.execution.{BufferedRowIterator, ConnectionPool, RDDKryo, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources.{ConnectionProperties, JdbcExtendedUtils}
-import org.apache.spark.sql.store.{CodeGeneration, StoreUtils}
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{SnappyContext, SnappySession, SparkSession}
+import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.util.TaskCompletionListener
 import org.apache.spark.{Partition, TaskContext, TaskKilledException}
 
@@ -202,10 +201,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     })(conn)
   }
 
-
   def rollbackTx(txId: String, conn: Option[Connection]): Unit = {
     // noinspection RedundantDefaultArgument
-    tryExecute(tableName, closeOnSuccessOrFailure = true, onExecutor = true) {
+    tryExecute(tableName, closeOnSuccessOrFailure = false, onExecutor = true) {
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
@@ -218,10 +216,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               ps.setString(1, if (txId ne null) txId else "")
               ps.executeUpdate()
               logDebug(s"The transaction ID being rolled back is $txId")
+              ps.close()
             }, () => {
-              if (ps ne null) ps.close()
               SmartConnectorHelper.snapshotTxIdForWrite.set(null)
               logDebug(s"Rolled back $txId the transaction on server ")
+              if (!conn.isClosed) conn.close()
             })
         }
       }
@@ -367,7 +366,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       // add the stats row
       val key = new ColumnFormatKey(batchId, partitionId, statRowIndex)
       val allocator = Misc.getGemFireCache.getBufferAllocator
-      val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
+      val statsBuffer = SharedUtils.createStatsBuffer(batch.statsData, allocator)
       val value = if (deltaUpdate) {
         new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
       } else new ColumnFormatValue(statsBuffer, compressionCodecId, isCompressed = false)
@@ -430,7 +429,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
           stmt.setInt(2, partitionId)
           stmt.setInt(3, statRowIndex)
           val allocator = GemFireCacheImpl.getCurrentBufferAllocator
-          val statsBuffer = Utils.createStatsBuffer(batch.statsData, allocator)
+          val statsBuffer = SharedUtils.createStatsBuffer(batch.statsData, allocator)
           // wrap in ColumnFormatValue to compress transparently in socket write if required
           val value = if (deltaUpdate) {
             new ColumnDelta(statsBuffer, compressionCodecId, isCompressed = false)
