@@ -1,7 +1,7 @@
-site_name: SnappyData Documentation v.1.0.2.1
+site_name: ComputeDB™ 1.1.0
 site_url: http://www.snappydata.io
-site_description: Project documentation for SnappyData
-site_author: SnappyData Team
+site_description: Project documentation for TIBCO ComputeDB™
+site_author: TIBCO ComputeDB™ Team
 site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
@@ -10,7 +10,6 @@ pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
 - Overview: index.md
-# - Introduction: snappyIntroduction.md
 - 'Getting Started in 5 minutes or Less': 'quickstart.md'
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
@@ -341,4 +340,5 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright &copy; 2018 SnappyData Inc.
+copyright: Copyright © 2016-2019 TIBCO Software Inc. All rights reserved. 
+

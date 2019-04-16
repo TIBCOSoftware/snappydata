@@ -56,7 +56,7 @@ a.expander.top-level,
   padding-right: 0;
   z-index: 10;
   background: none;
-  color: #019117;
+  color: #ffffff;
   font-size: 18px;	
 }
 
@@ -76,14 +76,14 @@ a.expander.top-level,
 
 /*Left navigation colour */
 .wy-nav-side {
-  background: #e3e3e3;
+  background: #10203f;
 /*  width: 100px; 	*/
 }
 
 /*heading level-1 in left nav*/
 .wy-menu-vertical li{
   font-size: 12px;
-  color: #000000;	
+  color: #ffffff;	
 /*  font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
   text-transform: capitalize;	*/
 /*  font-weight: bold;*/
@@ -92,7 +92,7 @@ a.expander.top-level,
 .wy-menu-vertical li ul li a{
   /*color of the Level 2 menu item*/
   font-size: 12px;
-  color: #000000;	
+  color: #ffffff;	
   font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
 /*  text-transform: capitalize;*/
 }
@@ -123,7 +123,7 @@ a.expander.top-level,
 .wy-menu-vertical a
 /*colour for the text in the nav bar*/	
 {
-	color:#000000;
+	color:#ffffff;
 	font-size:100%;
 	display:inline-block
 	font-weight: italics;	
