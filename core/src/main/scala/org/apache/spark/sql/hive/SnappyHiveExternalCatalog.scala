@@ -217,7 +217,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
-    if (schema == SYS_SCHEMA) throw new AnalysisException(s"$schema is a system reserved schema")
+    if (schema.equalsIgnoreCase(SYS_SCHEMA)) throw new AnalysisException(s"$schema is a system reserved schema")
     withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
   }
 
@@ -226,7 +226,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
   override def getDatabase(schema: String): CatalogDatabase = {
     try {
-      if (schema == SYS_SCHEMA) systemSchemaDefinition
+      if (schema.equalsIgnoreCase(SYS_SCHEMA)) systemSchemaDefinition
       else withHiveExceptionHandling(super.getDatabase(schema).copy(name = schema))
     } catch {
       case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
@@ -234,7 +234,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def databaseExists(schema: String): Boolean = {
-    schema == SYS_SCHEMA || withHiveExceptionHandling(super.databaseExists(schema))
+    schema.equalsIgnoreCase(SYS_SCHEMA) || withHiveExceptionHandling(super.databaseExists(schema))
   }
 
   override def listDatabases(): Seq[String] = {
