@@ -590,11 +590,11 @@ case class SnappyHashAggregateExec(
     val nullKeysBitsetTerm = ctx.freshName("nullKeysBitset")
     val nullAggsBitsetTerm = ctx.freshName("nullAggsBitset")
 
-    val numBytesForNullKeyBits = this.groupingAttributes.length / 8 +
-      (if (this.groupingAttributes.length % 8 > 0) 1 else 0)
+    val numBytesForNullKeyBits = SHAMapAccessor.calculateNumberOfBytesForNullBits(
+      this.groupingAttributes.length)
 
-    val numBytesForNullAggsBits = this.aggregateBufferAttributesForGroup.length / 8 +
-      (if (this.aggregateBufferAttributesForGroup.length % 8 > 0) 1 else 0)
+    val numBytesForNullAggsBits = SHAMapAccessor.calculateNumberOfBytesForNullBits(
+      this.aggregateBufferAttributesForGroup.length)
 
     if (numBytesForNullKeyBits > 8) {
       ctx.addMutableState("byte[]", nullKeysBitsetTerm,
