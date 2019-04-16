@@ -31,15 +31,15 @@ Navigate to the SnappyData product root directory to start the cluster. Run the 
 ```pre
 $./sbin/snappy-start-all.sh
 
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9086 status: running
   Distributed system now has 1 members.
   Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1/snappyserver.log
+Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 9220 status: running
   Distributed system now has 2 members.
   Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-lead-1/snappyleader.log
+Logs generated in /home/xyz/<snappydata_install_dir>/snappy/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 9370 status: running
   Distributed system now has 3 members.
   Starting job server on: 0.0.0.0[8090]
@@ -281,7 +281,7 @@ NULL
 
 You can add more than one server to a cluster. To add a new server, do the following:
 
-1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
+1.	Go to SnappyData home directory.</br>`cd <snappydata_install_dir>`
 2.	Create a configuration file named **servers** in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
 3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
 4. From the SnappyData home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Pulse UI. 
@@ -292,7 +292,7 @@ You can add more than one server to a cluster. To add a new server, do the follo
 Further, you can distribute the data among the servers in the cluster. This ensures that each server carries almost equal data.
 To balance the data equally on the servers, do the following:
 
-1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
+1.	Go to SnappyData home directory.</br>`cd <snappydata_install_dir>`
 2.	[Connect to snappy shell](#connectsnappyshell) and obtain the jdbc client connection.
 3.	Run the rebalance command.</br> `call sys.rebalance_all_buckets();`
 4.	On SnappyData Pulse UI, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.

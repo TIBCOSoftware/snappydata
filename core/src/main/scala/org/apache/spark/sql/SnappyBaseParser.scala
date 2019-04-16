@@ -25,8 +25,9 @@ import org.eclipse.collections.impl.set.mutable.UnifiedSet
 import org.parboiled2._
 
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
+import org.apache.spark.sql.catalyst.{FunctionIdentifier, IdentifierWithDatabase, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.collection.Utils.{toUpperCase => upper}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 
@@ -157,7 +158,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected final def identifier: Rule1[String] = rule {
     unquotedIdentifier ~> { (s: String) =>
-      val ucase = Utils.toUpperCase(s)
+      val ucase = upper(s)
       test(!Consts.reservedKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
@@ -180,11 +181,18 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    */
   protected final def strictIdentifier: Rule1[String] = rule {
     unquotedIdentifier ~> { (s: String) =>
-      val ucase = Utils.toUpperCase(s)
+      val ucase = upper(s)
       test(!Consts.allKeywords.contains(ucase)) ~
           push(if (caseSensitive) s else ucase)
     } |
     quotedIdentifier
+  }
+
+  private def quoteIdentifier(name: String): String = name.replace("`", "``")
+
+  protected final def quotedNormalizedId(id: IdentifierWithDatabase): String = id.database match {
+    case None => s"`${upper(quoteIdentifier(id.identifier))}`"
+    case Some(d) => s"`${upper(quoteIdentifier(d))}`.`${upper(quoteIdentifier(id.identifier))}`"
   }
 
   // DataTypes
