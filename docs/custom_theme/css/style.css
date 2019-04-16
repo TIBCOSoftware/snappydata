@@ -1,16 +1,16 @@
 .wy-side-nav-search {
- /* background-color: #3ca980;*/
-  background: #48bd90;	
+ /* background-color: #0081cb;*/
+  background: #0081cb;	
 }
 
 .wy-side-nav-search > a:hover, .wy-side-nav-search .wy-dropdown > a:hover {
-    background: #48bd90;
+    background: #0081cb;
 }
 
 a.icon.icon-home:before {
   background:url('../../Images/logo.png');
-  width: 208px;
-  height: 59px;
+  width: 250px;
+  height: 100px;
   content: '';
   background-repeat: no-repeat;
 }
@@ -23,8 +23,8 @@ a.icon.icon-home {
 }
 
 div.section blockquote {
-  line-height: 20px;
-  background: #f8f8f8;
+  line-height: 16px;
+  background: #F8F8F8;
   padding: 9px;
   border: 1px solid #eee;
   border-left: 5px solid #eee;
