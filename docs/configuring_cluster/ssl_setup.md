@@ -1,31 +1,31 @@
-# Enabling SSL Encryption in Different Socket Endpoints of SnappyData
+# Enabling SSL Encryption in Different Socket Endpoints of TIBCO ComputeDB™
 
-SnappyData supports SSL encryption for the following:
+TIBCO ComputeDB supports SSL encryption for the following:
 
 *	[Client-server](#clientserversetup)
 *	[Peer-to-peer (P2P)](#p2psetup)
 *	[Spark layer](#sparksetup)
 
-SSL encryption for the three socket endpoints (P2P, client-server, and Spark) must be [configured individually](#configureseparate), and the corresponding configuration must be added in configuration files of the respective SnappyData cluster members.
+SSL encryption for the three socket endpoints (P2P, client-server, and Spark) must be [configured individually](#configureseparate), and the corresponding configuration must be added in configuration files of the respective TIBCO ComputeDB cluster members.
 
 !!! Note
 	Properties that begin with `thrift` is for client-server, `javax.net.ssl` is for P2P, and `spark` is for Spark layer SSL settings.
 
 <a id= contogether> </a>
-## Enabling SSL Encryption Simultaneously for all the Socket Endpoints in SnappyData Cluster
+## Enabling SSL Encryption Simultaneously for all the Socket Endpoints in TIBCO ComputeDB Cluster
 
-Using the following configuration files, you can simultaneously enable SSL encryption for all the three socket endpoints (P2P, client-server, and Spark layer SSL encryption) in a SnappyData cluster.
+Using the following configuration files, you can simultaneously enable SSL encryption for all the three socket endpoints (P2P, client-server, and Spark layer SSL encryption) in a TIBCO ComputeDB cluster.
 
 !!! Note
-	Currently, you must configure the SSL encryption for all the socket endpoints separately. SnappyData intends to integrate Spark and P2P endpoints in a future release.
+	Currently, you must configure the SSL encryption for all the socket endpoints separately. TIBCO ComputeDB intends to integrate Spark and P2P endpoints in a future release.
 
-In the following configuration files, a two-node SnappyData cluster setup is done using the physical hosts.
+In the following configuration files, a two-node TIBCO ComputeDB cluster setup is done using the physical hosts.
 
-All examples given here includes one locator, one server, and one lead member in a SnappyData cluster configuration.
+All examples given here includes one locator, one server, and one lead member in a TIBCO ComputeDB cluster configuration.
 
 If you want to configure multiple locators, servers and lead members in a cluster, then ensure to copy all the SSL properties for each member configuration into the respective configuration files.
 
-For more information about each of these properties mentioned in the respective conf files, as well as for details on configuring multiple locators, servers, and lead members in a cluster,  refer to [SnappyData Configuration](configuring_cluster.md).
+For more information about each of these properties mentioned in the respective conf files, as well as for details on configuring multiple locators, servers, and lead members in a cluster,  refer to [TIBCO ComputeDB Configuration](configuring_cluster.md).
 
 ### Locator Configuration File (conf/locators)
 
@@ -50,9 +50,9 @@ dev14 -locators=dev15:10334 -ssl-enabled=true  -J-Djavax.net.ssl.keyStoreType=jk
 ```
 
 <a id= configureseparate> </a>
-## Configuring SSL Encryption for Different Socket Endpoints in SnappyData Cluster
+## Configuring SSL Encryption for Different Socket Endpoints in TIBCO ComputeDB Cluster
 
-You can individually configure the SnappyData socket endpoints as per your requirements. This section provides the instructions to configure each of the socket endpoints.
+You can individually configure the TIBCO ComputeDB socket endpoints as per your requirements. This section provides the instructions to configure each of the socket endpoints.
 
 *	[Configuring SSL encryption for client-server](#clientserversetup)
 *	[Configuring SSL encryption for p2p](#p2psetup)
@@ -62,12 +62,12 @@ You can individually configure the SnappyData socket endpoints as per your requi
 <a id= clientserversetup> </a>
 ### Configuring SSL Encryption for Client-server
 
-SnappyData store supports the Thrift protocol that provides the functionality that is equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by SnappyData. In the command-line, SnappyData locators and servers accept the `-thrift-server-address` and `-thrift-server-port` arguments to start a Thrift server.
-The Thrift servers use the **Thrift Compact Protocol** by default which is not SSL enabled. When using the `snappy-start-all.sh` script, these properties can be specified in the **conf/locators** and **conf/servers** files in the product directory like any other locator/server properties. For more information, refer to [SnappyData Configuration](configuring_cluster.md).
+TIBCO ComputeDB store supports the Thrift protocol that provides the functionality that is equivalent to JDBC/ODBC protocols and can be used to access the store from other languages that are not yet supported directly by TIBCO ComputeDB. In the command-line, TIBCO ComputeDB locators and servers accept the `-thrift-server-address` and `-thrift-server-port` arguments to start a Thrift server.
+The Thrift servers use the **Thrift Compact Protocol** by default which is not SSL enabled. When using the `snappy-start-all.sh` script, these properties can be specified in the **conf/locators** and **conf/servers** files in the product directory like any other locator/server properties. For more information, refer to [TIBCO ComputeDB Configuration](configuring_cluster.md).
 
-In the **conf/locators** and **conf/servers** files, you need to add `-thrift-ssl` and the required SSL setup in `-thrift-ssl-properties`. Refer to the [SnappyData thrift properties](../configuring_cluster/property_description.md#thrift-properties) section for more information.
+In the **conf/locators** and **conf/servers** files, you need to add `-thrift-ssl` and the required SSL setup in `-thrift-ssl-properties`. Refer to the [TIBCO ComputeDB thrift properties](../configuring_cluster/property_description.md#thrift-properties) section for more information.
 
-In the following example, the SSL configuration for client-server is demonstrated along with the startup of SnappyData members with SSL encryption. 
+In the following example, the SSL configuration for client-server is demonstrated along with the startup of TIBCO ComputeDB members with SSL encryption. 
 
 #### Requirements
 
@@ -84,12 +84,12 @@ keytool -export -alias myserverkey -keystore serverKeyStoreRSA.jks  -rfc -file m
 keytool -import -alias myserverkey -file myServerRSA.cert -keystore trustStore.key
 ```
 
-The same keystore is used for SnappyData locator and server members as well as for client connection. You can enable SSL encryption for client-server connections by specifying the properties as the startup options for locator and server members. In the following example, the SSL encryption is enabled for communication between client-server.
+The same keystore is used for TIBCO ComputeDB locator and server members as well as for client connection. You can enable SSL encryption for client-server connections by specifying the properties as the startup options for locator and server members. In the following example, the SSL encryption is enabled for communication between client-server.
 
 #### Locator Configuration File (conf/locators)
 
 ```
-# hostname locators <ssl properties for configuring SSL for SnappyData client-server connections>
+# hostname locators <ssl properties for configuring SSL for TIBCO ComputeDB client-server connections>
  
 localhost -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 
@@ -98,12 +98,12 @@ localhost -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeySto
 #### Server Configuration File (conf/servers)
 
 ```
-# hostname locators <ssl properties for configuring SSL for SnappyData client-server connections>
+# hostname locators <ssl properties for configuring SSL for TIBCO ComputeDB client-server connections>
  
 localhost -thrift-ssl=true -thrift-ssl-properties=keystore=<path-to-serverKeyStoreRSA.jks file>,keystore-password=<password>,truststore=<path-to-trustStore.key file>,truststore-password=<password>,protocol=TLS,enabled-protocols=TLSv1:TLSv1.1:TLSv1.2,cipher-suites=TLS_RSA_WITH_AES_128_CBC_SHA:TLS_RSA_WITH_AES_256_CBC_SHA:TLS_RSA_WITH_AES_128_CBC_SHA256:TLS_RSA_WITH_AES_256_CBC_SHA256
 
 ```
-Start the SnappyData cluster using `snappy-start-all.sh` script and perform operations either by using SnappyData shell or through JDBC connection. You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for the same. 
+Start the TIBCO ComputeDB cluster using `snappy-start-all.sh` script and perform operations either by using Snappy shell or through JDBC connection. You can run the TIBCO ComputeDB quickstart example scripts for this. Refer to [TIBCO ComputeDB Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for the same. 
 
 Use the protocol/ciphers as per requirement. The corresponding setup on client-side can appear as follows:
 
@@ -114,23 +114,23 @@ snappy> connect client 'localhost:1527;ssl=true;ssl-properties=truststore=<path-
 
 <a id= p2psetup> </a>
 ### Configuring SSL Encryption for P2P
-In addition to using SSL for client-server connections, you can optionally configure SnappyData members to use SSL encryption and authorization for peer-to-peer(P2P) connections in the distributed system.
+In addition to using SSL for client-server connections, you can optionally configure TIBCO ComputeDB members to use SSL encryption and authorization for peer-to-peer(P2P) connections in the distributed system.
 
-Peer SSL configuration is managed using `javax.net.ssl` system properties and the following SnappyData boot properties:
+Peer SSL configuration is managed using `javax.net.ssl` system properties and the following TIBCO ComputeDB boot properties:
 
 *	[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md)
 *	[ssl-protocols](../reference/configuration_parameters/ssl_protocols.md)
 *	[ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md)
 *	[ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md) 
 
-The following sections provide an example of P2P connections encryption that demonstrates the configuration and startup of SnappyData members with SSL encryption.
+The following sections provide an example of P2P connections encryption that demonstrates the configuration and startup of TIBCO ComputeDB members with SSL encryption.
 
 #### Requirements
 
-To configure SSL for SnappyData peer connections:
+To configure SSL for TIBCO ComputeDB peer connections:
 
-*	Configure SSL keypairs and certificates as needed for each SnappyData member. Refer to the following example.  
-*	Ensure that all SnappyData members use the same SSL boot parameters at startup.
+*	Configure SSL keypairs and certificates as needed for each TIBCO ComputeDB member. Refer to the following example.  
+*	Ensure that all TIBCO ComputeDB members use the same SSL boot parameters at startup.
 
 #### Provider-Specific Configuration Files
 This example uses keystores created by the Java keytool application to provide the proper credentials to the provider.
@@ -184,14 +184,14 @@ In the following example, SSL encryption is enabled for communication between th
 #### Locator Configuration File (conf/locators)
 
 ```
-# hostname locators <ssl properties for configuring SSL for SnappyData P2P connections>
+# hostname locators <ssl properties for configuring SSL for TIBCO ComputeDB P2P connections>
 localhost -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password>
 ```
 
 #### Server Configuration File (conf/servers)
 
 ```
-# hostname locators <ssl properties for configuring SSL for #SnappyData P2P connections>
+# hostname locators <ssl properties for configuring SSL for #TIBCO ComputeDB P2P connections>
  
 localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-serverKeyStore.keyfile>  -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password> -client-port=1528
 
@@ -199,18 +199,18 @@ localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStore
 #### Lead Configuration File (conf/leads)
 
 ```
-# hostname locators <ssl properties for configuring SSL for #SnappyData P2P connections>
+# hostname locators <ssl properties for configuring SSL for #TIBCO ComputeDB P2P connections>
  
 localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-leadKeyStore.key file>  -J-Djavax.net.ssl.trustStorePassword=<password> -client-port=1529
 
 ```
 
-Start the SnappyData cluster using `snappy-start-all.sh` script and perform operations using the SnappyData shell, SnappyData job, and Smart Connector mode. You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.
+Start the TIBCO ComputeDB cluster using `snappy-start-all.sh` script and perform operations using the Snappy shell, TIBCO ComputeDB job, and Smart Connector mode. You can run the TIBCO ComputeDB quickstart example scripts for this. Refer to [TIBCO ComputeDB Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.
 
 <a id= sparksetup> </a>
 ### Configuring SSL Encryption for Spark layer
 
-Spark layer  SSL configuration is managed using the following SnappyData boot properties:
+Spark layer  SSL configuration is managed using the following TIBCO ComputeDB boot properties:
 
 *	[spark.ssl.enabled](property_description.md#ssl_spark_enabled)
 *	[spark.ssl.keyPassword](property_description.md#ssl_spark_password)
@@ -220,14 +220,14 @@ Spark layer  SSL configuration is managed using the following SnappyData boot pr
 *	[spark.ssl.trustStorePassword](property_description.md#truststorepassword)
 *	[spark.ssl.protocol](property_description.md#ssl_spark_ssl_protocol)
 
-The following sections provide a simple example that demonstrates the configuration and startup of SnappyData members for enabling Spark layer for Wire Encryption.
+The following sections provide a simple example that demonstrates the configuration and startup of TIBCO ComputeDB members for enabling Spark layer for Wire Encryption.
 
 #### Requirements
 
 To configure SSL for Spark layer:
 
-*	Configure SSL keypairs and certificates as needed for each SnappyData member.
-*	Ensure that SnappyData locator, server, and lead members use the same SSL boot parameters at startup.
+*	Configure SSL keypairs and certificates as needed for each TIBCO ComputeDB member.
+*	Ensure that TIBCO ComputeDB locator, server, and lead members use the same SSL boot parameters at startup.
 
 !!! Note
 	For enabling Spark layer SSL encryption, you must first enable the P2P encryption for SSL.
@@ -279,7 +279,7 @@ You can enable SSL encryption for Spark layer by specifying the properties as th
 #### Locator Configuration File (conf/locators)
 
 ```
-# hostname locators <ssl properties for configuring SSL for SnappyData Spark layer>
+# hostname locators <ssl properties for configuring SSL for TIBCO ComputeDB Spark layer>
 localhost -ssl-enabled=true -spark.ssl.enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-locatorKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password> 
 -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-locatorKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=<path-to-locatorKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS 
 ```
@@ -287,7 +287,7 @@ localhost -ssl-enabled=true -spark.ssl.enabled=true -J-Djavax.net.ssl.keyStoreTy
 #### Server Configuration File (conf/servers)
 
 ```
-# hostname locators <ssl properties for configuring SSL for #SnappyData spark layer>
+# hostname locators <ssl properties for configuring SSL for #TIBCO ComputeDB spark layer>
  
 localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-serverKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password>
 -spark.ssl.enabled=true -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-serverKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=<path-to-serverKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS 
@@ -296,10 +296,10 @@ localhost -locators=localhost:10334 -ssl-enabled=true -J-Djavax.net.ssl.keyStore
 #### Lead Configuration File (conf/leads)
 
 ```
-# hostname locators <ssl properties for configuring SSL for #SnappyData spark layer>
+# hostname locators <ssl properties for configuring SSL for #TIBCO ComputeDB spark layer>
 localhost -locators=localhost:10334  -ssl-enabled=true -J-Djavax.net.ssl.keyStoreType=jks -J-Djavax.net.ssl.keyStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.keyStorePassword=<password> -J-Djavax.net.ssl.trustStore=<path-to-leadKeyStore.key file> -J-Djavax.net.ssl.trustStorePassword=<password>
 -spark.ssl.enabled=true -spark.ssl.keyPassword=<password> -spark.ssl.keyStore=<path-to-leadKeyStore.key file> -spark.ssl.keyStorePassword=<password> -spark.ssl.trustStore=/<path-to-leadKeyStore.key file> -spark.ssl.trustStorePassword=<password> -spark.ssl.protocol=TLS 
-Start the SnappyData cluster using snappy-start-all.sh script and perform operations using SnappyData shell, SnappyData  job, and Smart Connector mode.
+Start the TIBCO ComputeDB cluster using snappy-start-all.sh script and perform operations using TIBCO ComputeDB shell, TIBCO ComputeDB  job, and Smart Connector mode.
 ```
 
-You can run the SnappyData quickstart example scripts for this. Refer to [SnappyData Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.
+You can run the TIBCO ComputeDB quickstart example scripts for this. Refer to [TIBCO ComputeDB Cluster SQL Tutorial](../quickstart/snappydataquick_start.md) for more information.

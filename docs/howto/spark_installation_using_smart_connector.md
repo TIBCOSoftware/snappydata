@@ -1,9 +1,9 @@
 <a id="howto-splitmode"></a>
-# How to Access SnappyData Store from an existing Spark Installation using Smart Connector
+# How to Access TIBCO ComputeDB™ Store from an existing Spark Installation using Smart Connector
 
-SnappyData comes with a Smart Connector that enables Spark applications to work with the SnappyData cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.1.1). The Spark cluster executes in its own independent JVM processes and connects to SnappyData as a Spark data source. This is similar to how Spark applications today work with stores like Cassandra, Redis, etc.
+TIBCO ComputeDB comes with a Smart Connector that enables Spark applications to work with the TIBCO ComputeDB cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.1.1). The Spark cluster executes in its own independent JVM processes and connects to TIBCO ComputeDB as a Spark data source. This is similar to how Spark applications today work with stores like Cassandra, Redis, etc.
 
-For more information on the various modes, refer to the [SnappyData Smart Connector](../affinity_modes/connector_mode.md) section of the documentation.
+For more information on the various modes, refer to the [TIBCO ComputeDB Smart Connector](../affinity_modes/connector_mode.md) section of the documentation.
 
 ## Code Example
 The code example for this mode is in [SmartConnectorExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
@@ -17,7 +17,7 @@ val spark: SparkSession = SparkSession
     .appName("SmartConnectorExample")
     // It can be any master URL
     .master("local[4]")
-    // snappydata.connection property enables the application to interact with SnappyData store
+    // snappydata.connection property enables the application to interact with TIBCO ComputeDB store
     .config("snappydata.connection", "localhost:1527")
     .getOrCreate
 
@@ -25,7 +25,7 @@ val snSession = new SnappySession(spark.sparkContext)
 ```
 
 **Create Table and Run Queries**: 
-You can now create tables and run queries in SnappyData store using your Apache Spark program.
+You can now create tables and run queries in TIBCO ComputeDB store using your Apache Spark program.
 
 ```pre
 // reading an already created SnappyStore table SNAPPY_COL_TABLE
@@ -45,13 +45,13 @@ dataFrame.write.insertInto("TestColumnTable")
 
 ## Running a Smart Connector Application
 
-Start a SnappyData cluster and create a table.
+Start a TIBCO ComputeDB cluster and create a table.
 
 ```pre
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
-SnappyData version 1.0.2.1
+TIBCO ComputeDB version 1.1.0
 snappy>  connect client 'localhost:1527';
 Using CONNECTION0
 snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -62,22 +62,22 @@ snappy> insert into SNAPPY_COL_TABLE VALUES(2,2);
 exit;
 ```
 
-The Smart Connector Application can now connect to this SnappyData cluster. </br>
+The Smart Connector Application can now connect to this TIBCO ComputeDB cluster. </br>
 
-The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the SnappyData cluster. </br>SnappyData package has to be specified along with the application jar to run the Smart Connector application.
+The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside the TIBCO ComputeDB cluster. </br>TIBCO ComputeDB package has to be specified along with the application jar to run the Smart Connector application.
 
 ```pre
 $ ./bin/spark-submit --master local[*] --conf snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample --packages SnappyDataInc:snappydata:1.0.2.1-s_2.11       $SNAPPY_HOME/examples/jars/quickstart.jar
 ```
 
 ## Execute a Smart Connector Application
-Start a SnappyData cluster and create a table inside it.
+Start a TIBCO ComputeDB cluster and create a table inside it.
 
 ```pre
 $ ./sbin/snappy-start-all.sh
 
 $ ./bin/snappy
-SnappyData version 1.0.2.1
+TIBCO ComputeDB version 1.1.0
 snappy>  connect client 'localhost:1527';
 Using CONNECTION0
 snappy> CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;
@@ -88,7 +88,7 @@ snappy> insert into SNAPPY_COL_TABLE VALUES(2,2);
 exit;
 ```
 
-A Smart Connector Application can now connect to this SnappyData cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside SnappyData cluster. SnappyData package has to be specified along with the application jar to run the Smart Connector application. 
+A Smart Connector Application can now connect to this TIBCO ComputeDB cluster. The following command executes an example that queries SNAPPY_COL_TABLE and creates a new table inside TIBCO ComputeDB cluster. TIBCO ComputeDB package has to be specified along with the application jar to run the Smart Connector application. 
 
 ```pre
 $ ./bin/spark-submit --master local[*] --conf spark.snappydata.connection=localhost:1527  --class org.apache.spark.examples.snappydata.SmartConnectorExample   --packages SnappyDataInc:snappydata:1.0.2.1-s_2.11 $SNAPPY_HOME/examples/jars/quickstart.jar
