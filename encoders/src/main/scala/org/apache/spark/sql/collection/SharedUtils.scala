@@ -23,18 +23,15 @@ import java.nio.ByteBuffer
 import scala.collection.mutable
 import scala.language.existentials
 
-import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.esotericsoftware.kryo.io.{Input, Output}
+import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.gemstone.gemfire.internal.snappy.UMMMemoryTracker
 
 import org.apache.spark._
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode, TaskMemoryManager}
-import org.apache.spark.scheduler.TaskLocation
-import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql.catalyst.expressions.UnsafeRow
-import org.apache.spark.storage.BlockManagerId
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.MutableURLClassLoader
 
@@ -81,16 +78,6 @@ object SharedUtils {
     row
   }
 
-  def getAllExecutorsMemoryStatus(
-      sc: SparkContext): Map[BlockManagerId, (Long, Long)] = {
-    val memoryStatus = sc.env.blockManager.master.getMemoryStatus
-    // no filtering for local backend
-    if (isLoner(sc)) memoryStatus else memoryStatus.filter(!_._1.isDriver)
-  }
-
-  def getHostExecutorId(blockId: BlockManagerId): String =
-    TaskLocation.executorLocationTag + blockId.host + '_' + blockId.executorId
-
   def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
     // need to create a copy since underlying Array[Byte] can be re-used
     val statsLen = statsData.length
@@ -99,9 +86,6 @@ object SharedUtils {
     statsBuffer.rewind()
     statsBuffer
   }
-
-  final def isLoner(sc: SparkContext): Boolean =
-    (sc ne null) && sc.schedulerBackend.isInstanceOf[LocalSchedulerBackend]
 
   def acquireStorageMemory(objectName: String, numBytes: Long,
       buffer: UMMMemoryTracker, shouldEvict: Boolean, offHeap: Boolean): Boolean = {
@@ -129,8 +113,6 @@ object SharedUtils {
 
   /**
    * For V2 connector filters are pushed in java serialized format
-   * @param value
-   * @return
    */
   def deserialize(value: Array[Byte]): Any = {
     val bais: ByteArrayInputStream = new ByteArrayInputStream(value)
