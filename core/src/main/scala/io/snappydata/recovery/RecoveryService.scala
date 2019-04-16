@@ -206,11 +206,10 @@ object RecoveryService extends Logging {
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
     val regionToConsider =
       nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
-    logInfo(s"Hive region to consider = $regionToConsider")
+    logInfo(s"Non Hive region to consider = $regionToConsider")
     val regionView = regionViewSortedSet(regionToConsider).lastKey
     val memberToConsider = regionView.getMember
     memberObject = persistentObjectMemberMap(memberToConsider)
-
 
     logInfo(s"For Hive memberToConsiderForHiveCatalog = $memberToConsiderForHiveCatalog")
     for ((k, v) <- persistentObjectMemberMap) {
@@ -260,7 +259,16 @@ object RecoveryService extends Logging {
   }
 
   def getProvider(tableName: String): String = {
-    logInfo(s"RecoveryService.getProvider called with tablename $tableName")
+    logInfo(s"RecoveryService.getProvider called with tablename $tableName and size of cto="
+        + mostRecentMemberObject.getCatalogObjects.size())
+    mostRecentMemberObject.getCatalogObjects.asScala.foreach(x => {
+      if (x.isInstanceOf[CatalogTableObject]) {
+        val cbo = x.asInstanceOf[CatalogTableObject]
+        val fqtn = s"${cbo.getSchemaName}.${cbo.getTableName}"
+        logInfo(s"RecoveryService.getProvider fqtn $fqtn")
+        fqtn.equalsIgnoreCase(tableName)
+      }
+    })
     val res = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
       x.isInstanceOf[CatalogTableObject] && {
         val cbo = x.asInstanceOf[CatalogTableObject]
