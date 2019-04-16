@@ -270,7 +270,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           //  System.out.println("hash code for key = " +${hashVar(0)});
           // get key size code
           int $numKeyBytesTerm = 0;
-          $numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType)}
+          $numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)}
 
           int $numValueBytes = $numAggBytes;
           ${ generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
@@ -289,7 +289,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   // handle arraydata , map , object
   def explodeStruct(structVarName: String, structNullVarName: String, structType: StructType,
     parentNestingLevel: Int = 0): String = {
-    structType.zipWithIndex.map{ case(sf, index) =>
+    val explodedStructCode = structType.zipWithIndex.map{ case(sf, index) =>
       sf.dataType match {
         case _: StructType => (sf.dataType, index,
           generateExplodedStructFieldVars(structVarName, parentNestingLevel))
@@ -332,6 +332,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case _ => ""
       })
     }.mkString("\n")
+    s"""
+    ${initNullBitsetCode(generateNullKeysBitTermForStruct(structNullVarName,
+      parentNestingLevel), SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length))}
+    $explodedStructCode
+     """.stripMargin
+
 
   }
 
@@ -341,8 +347,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
      (if (leafIndex != -1) s"_l$leafIndex" else "")
     val isNullVarName = s"${varName}_isNull"
     (varName, isNullVarName)
-
   }
+
+  def generateNullKeysBitTermForStruct(parentVar: String,
+    parentNestingLevel: Int): String = s"${parentVar}_${parentNestingLevel}_nullKeysBitset"
+
 
 
 
@@ -413,7 +422,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
     dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
-    numBytesForNullBits: Int, isKey: Boolean): String = {
+    numBytesForNullBits: Int, isKey: Boolean, nestingLevel: Int = 0): String = {
     // Move the offset at the end of num Null Bytes space, we will fill that space later
     // store the starting value of offset
 
@@ -494,6 +503,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 case _ => throw new UnsupportedOperationException("unknown type " + dt)
               }
               snippet
+            case st: StructType => val(childExprCodes, childDataTypes) =
+              getExplodedExprCodeAndDataTypeForStruct(variable, st, nestingLevel)
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }
@@ -636,7 +647,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    nestingLevel: Int = 0): String = {
+    numBytesForNullBits: Int, nestingLevel: Int = 0): String = {
 
       keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
         val nullVar = expr.isNull
@@ -659,8 +670,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
             }
             }
-            val (childKeysVars, childDataTypes) = childExprsAndDataType.unzip
-            generateKeySizeCode(childKeysVars, childDataTypes, nestingLevel + 1)
+            val (childKeysVars, childDataTypes) = getExplodedExprCodeAndDataTypeForStruct(
+              expr.value, st, nestingLevel)
+            generateKeySizeCode(childKeysVars, childDataTypes,
+              SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
           }
         }
         if (nullVar.isEmpty || nullVar == "false") {
@@ -668,8 +681,23 @@ case class SHAMapAccessor(@transient session: SnappySession,
         } else {
           s" ($nullVar? 0 : $notNullSizeExpr)"
         }
-      }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullKeyBits)}; \n"
+      }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullBits)}; \n"
   }
+
+  def getExplodedExprCodeAndDataTypeForStruct(parentStructVarName: String, st: StructType,
+    nestingLevel: Int): (Seq[ExprCode], Seq[DataType]) = st.zipWithIndex.map {
+    case(sf, index) => sf.dataType match {
+      case _: StructType => val (varName, nullVarName) = generateExplodedStructFieldVars(
+        parentStructVarName, nestingLevel)
+        ExprCode("", nullVarName, varName) -> sf.dataType
+      case _ => val (varName, nullVarName) = generateExplodedStructFieldVars(parentStructVarName,
+        nestingLevel, index)
+        ExprCode("", nullVarName, varName) -> sf.dataType
+
+    }
+  }.unzip
+
+
 
   def sizeForNullBits(numBytesForNullBits: Int): Int =
     if (numBytesForNullBits < 3 || numBytesForNullBits > 8) {
@@ -811,6 +839,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
 }
 
 object SHAMapAccessor {
+
+  def calculateNumberOfBytesForNullBits(numAttributes: Int): Int = numAttributes / 8 +
+    (if (numAttributes % 8 > 0) 1 else 0)
 
   def getPartialFunctionForWriting(baseObjectVar: String, offsetVar: String):
   PartialFunction[(DataType, String), String] = {
