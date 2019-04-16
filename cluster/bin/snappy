@@ -73,6 +73,7 @@ elif [ -z "$SNAPPY_NO_QUICK_LAUNCH" -a $# -ge 2 \
   fi
 
   . "${SPARK_HOME}"/bin/load-spark-env.sh
+  . "${SPARK_HOME}"/bin/load-snappy-env.sh
 
   HOSTNAME_FOR_CLIENTS=
   if [ "$2" = "start" ]; then

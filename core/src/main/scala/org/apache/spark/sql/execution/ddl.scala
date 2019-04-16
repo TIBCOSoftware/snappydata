@@ -32,11 +32,11 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.iapi.reference.{Property => GemXDProperty}
 import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
-import io.snappydata.{Property, SnappyTableStatsProviderService}
 
+import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
-import org.apache.spark.memory.MemoryMode
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTableType
@@ -53,7 +53,6 @@ import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
-import org.apache.spark.{SparkContext, SparkEnv}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -413,7 +412,11 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (!hiveCompatible) return super.run(sparkSession)
+    if (!hiveCompatible) {
+      // current schema name will be upper-case so convert all to lower-case for consistency
+      return super.run(sparkSession).map(r => Row(Utils.toLowerCase(r.getString(0)),
+        r.getString(1), r.getBoolean(2)))
+    }
 
     val catalog = sparkSession.sessionState.catalog
     val schemaName = schemaOpt match {
@@ -466,7 +469,13 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     tables.map(tableIdent => tableIdent -> getViewType(tableIdent, session)).collect {
       case (viewIdent, Some((isTemp, isGlobalTemp))) =>
         if (hiveCompatible) Row(viewIdent.table)
-        else Row(viewIdent.database.getOrElse(""), viewIdent.table, isTemp, isGlobalTemp)
+        else {
+          val viewSchema = viewIdent.database match {
+            case None => ""
+            case Some(s) => Utils.toLowerCase(s)
+          }
+          Row(viewSchema, Utils.toLowerCase(viewIdent.table), isTemp, isGlobalTemp)
+        }
     }
   }
 }
