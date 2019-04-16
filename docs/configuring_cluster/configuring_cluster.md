@@ -1,6 +1,6 @@
 # Configuration
 
-Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
+Configuration files for locator, lead, and server should be created in the **conf** folder located in the TIBCO ComputeDB™ home directory with names **locators**, **leads**, and **servers**.
 
 To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
@@ -8,38 +8,38 @@ These files should contain the hostnames of the nodes (one per line) where you i
 !!! Tip
 	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
 
-    - Instead of starting the SnappyData cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
+    - Instead of starting the TIBCO ComputeDB cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
 
 <a id="locator"></a>
 ## Configuring Locators
 
 Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](../architecture.md) section for more information on the core components.
 
-It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_SnappyData_home_>/conf** directory. 
+It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_TIBCO ComputeDB_home_>/conf** directory. 
 
 In this file, you can specify:
 
-* The hostname on which a SnappyData locator is started.
+* The hostname on which a TIBCO ComputeDB locator is started.
 
 * The startup directory where the logs and configuration files for that locator instance are located.
 
-* SnappyData specific properties that can be passed.
+* TIBCO ComputeDB specific properties that can be passed.
 
 You can refer to the **conf/locators.template** file for some examples.
 
 ### List of Locator Properties
 
-Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+Refer to the [List of properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
 
 |Property|Description|
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
-|-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-classpath|Location of user classes required by the TIBCO ComputeDB server.</br>This path is appended to the current classpath.|
 |-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
-|-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them.|
-|-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
-|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true, then the Smart Connector access to SnappyData fails.|
+|-dir|The working directory of the server that contains the TIBCO ComputeDB server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
+|-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using TIBCO ComputeDB default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default TIBCO ComputeDB sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>TIBCO ComputeDB also sets resource management properties for eviction and garbage collection if the JVM supports them.|
+|-J|JVM option passed to the spawned TIBCO ComputeDB server JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
+|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true, then the Smart Connector access to TIBCO ComputeDB fails.|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
 |-log-file|Path of the file to which this member writes log messages. The default is **snappylocator.log** in the working directory. In case logging is set via log4j, the default log file is **snappydata.log**.|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
@@ -59,33 +59,33 @@ node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locator
 <a id="lead"></a>
 ## Configuring Leads
 
-Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples. 
+Lead Nodes primarily runs the TIBCO ComputeDB managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples. 
 
-Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
+Create the configuration file (**leads**) for leads in the **<_TIBCO ComputeDB_home_>/conf** directory.
 
 !!! Note
-	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.
+	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing TIBCO ComputeDB UI from outside the network.
 
 ### List of Lead Properties
-Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+Refer to the [TIBCO ComputeDB properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
 
 |Property|Description</br>|
 |-|-|
 |-bind-address|IP address on which the lead is bound. The default behavior is to bind to all local addresses.|
-|-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-classpath|Location of user classes required by the TIBCO ComputeDB Server.</br>This path is appended to the current classpath.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
-|-dir|The working directory of the lead that contains the SnappyData Lead status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
+|-dir|The working directory of the lead that contains the TIBCO ComputeDB Lead status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).|
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager uses to evict data from the heap. By default, the eviction threshold is 85.5% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
-|-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, `-heap-size=8g` </br> It is recommended to allocate minimum 6-8 GB of heap size per lead node. If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them. |
-|-J|JVM option passed to the spawned SnappyData Lead JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
-|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|
+|-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using TIBCO ComputeDB default resource manager settings. </br>For example, `-heap-size=8g` </br> It is recommended to allocate minimum 6-8 GB of heap size per lead node. If you use the `-heap-size` option, by default TIBCO ComputeDB sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>TIBCO ComputeDB also sets resource management properties for eviction and garbage collection if the JVM supports them. |
+|-J|JVM option passed to the spawned TIBCO ComputeDB Lead JVM. </br>For example, use -J-Xmx1024m to set the JVM heap to 1GB.|
+|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to TIBCO ComputeDB fails.|
 |-J-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false. |
 |jobserver.waitForInitialization|When this property is set to true, the cluster startup waits for the Spark jobserver to be fully initialized before marking the lead node as **RUNNING**. The default is false.|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
 |-log-file|Path of the file to which this member writes log messages. The default **snappyleader.log** in the working directory. In case logging is set via log4j, the default log file is **snappydata.log**.|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. However, lead member do not need off-heap memory.  You can configure the off-heap memory for leads only when you are planning to increase the broadcast limit to a large value. This is generally not recommended and you must preferably limit the broadcast to a smaller value. The default off-heap size for leads is 0.|
-|-snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store. The default value is 24M.|
+|-snappydata.column.batchSize|The default size of blocks to use for storage in the TIBCO ComputeDB column store. The default value is 24M.|
 |spark.context-settings.num-cpu-cores| The number of cores that can be allocated. The default is 4. |
 |spark.context-settings.memory-per-node| The executor memory per node (-Xmx style. For example: 512m, 1G). The default is 512m. |
 |spark.context-settings.streaming.batch_interval| The batch interval for Spark Streaming contexts in milliseconds. The default is 1000.|
@@ -97,17 +97,17 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-spark.jobserver.bind-address|The address on which the jobserver listens. Default address is 0.0.0.|
 |-spark.jobserver.job-result-cache-size|The number of job results to keep per JobResultActor/context. The default is 5000.|
 |-spark.jobserver.max-jobs-per-context|The number of jobs that can be run simultaneously in the context. The default is 8.|
-|-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
+|-spark.local.dir|Directory to use for *scratch* space in TIBCO ComputeDB, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
 |-spark.network.timeout|The default timeout for all network interactions while running queries. |
-|-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache that is used by Spark, in the  SnappyData Spark distribution, and by SnappyData. The default is 2000.|
+|-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache that is used by Spark, in the  TIBCO ComputeDB Spark distribution, and by TIBCO ComputeDB. The default is 2000.|
 |-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false.|
 |-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store.|
 |-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|
 |-spark.ssl.keyStorePassword<a id="ssl_spark_keystorpass"></a>|The password used to access the keystore. |Lead|
-|-spark.ssl.trustStore<a id="ssl_spark_trustore"></a>|Path to the trust store file. The path can be absolute or relative to the directory in which the process is started.|
+|-spark.ssl.trustStore<a id="ssl_spark_trustore"></a>|Path to the trust store file. The path can be absolute or relative to the directory inTIBCO ComputeDB which the process is started.|
 |-spark.ssl.trustStorePassword<a id="truststorepassword"></a>|The password used to access the truststore.|
 |-spark.ssl.protocol<a id="ssl_spark_ssl_protocol"></a>|The protocol that must be supported by JVM. For example, TLS.|
-|-spark.ui.port|Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050.|
+|-spark.ui.port|Port for your TIBCO ComputeDB UI, which shows tables, memory and workload data. The default is 5050.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md). </br> These properties need not be added to  the Lead members in case of a client-server connection.|
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
@@ -137,32 +137,32 @@ In this example, two leads (one on node-l1 and another on node-l2) are configure
 ## Configuring Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than the Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 
 
-Create the configuration file (**servers**) for data servers in the **<_SnappyData_home_>/conf** directory. 
+Create the configuration file (**servers**) for data servers in the **<_TIBCO ComputeDB_home_>/conf** directory. 
 
 ### List of Server Properties
-Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+Refer to the [TIBCO ComputeDB properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
 
 |Property|Description</br>|
 |-|-|
 |-bind-address|IP address on which the server is bound. The default behavior is to bind to all local addresses.|
-|-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|
+|-classpath|Location of user classes required by the TIBCO ComputeDB server.</br>This path is appended to the current classpath.|
 |-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|
 |-critical-heap-percentage|Sets the Resource Manager's critical heap threshold in percentage of the old generation heap, 0-100. </br>If you set `-heap-size`, the default value for `critical-heap-percentage` is set to 95% of the heap size. </br>Use this switch to override the default.</br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of memory.|
 |-critical-off-heap-percentage|Sets the critical threshold for off-heap memory usage in percentage, 0-100. </br>When this limit is breached, the system starts canceling memory-intensive queries, throws low memory exceptions for new SQL statements, and so forth, to avoid running out of off-heap memory.
-|-dir|The working directory of the server that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). **work** is the default current working directory. |
+|-dir|The working directory of the server that contains the TIBCO ComputeDB Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory). **work** is the default current working directory. |
 |-eviction-heap-percentage|Sets the memory usage percentage threshold (0-100) that the Resource Manager will use to start evicting data from the heap. By default, the eviction threshold is 85.5% of whatever is set for `-critical-heap-percentage`.</br>Use this switch to override the default.</br>|
 |-eviction-off-heap-percentage|Sets the off-heap memory usage percentage threshold, 0-100, that the Resource Manager uses to start evicting data from off-heap memory. </br>By default, the eviction threshold is 85.5% of the value that is set for `-critical-off-heap-percentage`. </br>Use this switch to override the default.|
-|-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using SnappyData default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default SnappyData sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>SnappyData also sets resource management properties for eviction and garbage collection if the JVM supports them. |
+|-heap-size|<a id="heap-size"></a> Sets the maximum heap size for the Java VM, using TIBCO ComputeDB default resource manager settings. </br>For example, -heap-size=1024m. </br>If you use the `-heap-size` option, by default TIBCO ComputeDB sets the critical-heap-percentage to 95% of the heap size, and the `eviction-heap-percentage` to 85.5% of the `critical-heap-percentage`. </br>TIBCO ComputeDB also sets resource management properties for eviction and garbage collection if the JVM supports them. |
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. The default value is either 0 or it gets auto-configured in [specific scenarios](../configuring_cluster/configuring_cluster.md#autoconfigur_offheap).|
-|-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use **-J-XX:+PrintGCDetails** to print the GC details in JVM logs.|
+|-J|JVM option passed to the spawned TIBCO ComputeDB server JVM. </br>For example, use **-J-XX:+PrintGCDetails** to print the GC details in JVM logs.|
 |-J-Dgemfirexd.hostname-for-clients|The IP address or host name that this server/locator sends to the JDBC/ODBC/thrift clients to use for the connection. The default value causes the `client-bind-address` to be given to clients. </br> This value can be different from `client-bind-address` for cases where the servers/locators are behind a NAT firewall (AWS for example) where `client-bind-address` needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases, this is handled by the hostname translation itself, that is, the hostname used in `client-bind-address` resolves to the internal IP address from inside and to the public IP address from outside, but for other cases, this property is required|
-|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to SnappyData fails.|
+|-J-Dsnappydata.enable-rls|Enables the system for row level security when set to true.  By default, this is off. If this property is set to true,  then the Smart Connector access to TIBCO ComputeDB fails.|
 |-J-Dsnappydata.RESTRICT_TABLE_CREATION|Applicable when security is enabled in the cluster. If true, users cannot execute queries (including DDLs and DMLs) even in their default or own schema unless cluster admin explicitly grants them the required permissions using GRANT command. The default is false.|
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
 |-log-file|Path of the file to which this member writes log messages. The default is **snappyserver.log** in the working directory. In case logging is set via log4j, the default log file is **snappydata.log**.|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
 |-rebalance<a id="rebalance"></a>|Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option. Usually rebalancing is triggered when the overall capacity is increased or reduced through member startup, shut down, or failure.|
-|-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
+|-spark.local.dir|Directory to use for "scratch" space in TIBCO ComputeDB, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md).|
 |-thrift-ssl<a id="thrift-properties"></a>|Specifies if you want to enable or disable SSL. Values: true or false|
 |-thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: path to key store file </br>`keystore-type`: the type of key-store (default "JKS") </br>`keystore-password`: password for the key store file</br>`keymanager-type`: the type of key manager factory </br>`truststore`: path to trust store file</br>`truststore-type`: the type of trust-store (default "JKS")</br>`truststore-password`: password for the trust store file </br>`trustmanager-type`: the type of trust manager factory </br> |
@@ -177,7 +177,7 @@ node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8
 ```
 ## Specifying Configuration Properties using Environment Variables
 
-SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, and LEAD_STARTUP_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
+TIBCO ComputeDB configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, and LEAD_STARTUP_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when TIBCO ComputeDB system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
 
 For example:
 ```pre
@@ -199,13 +199,13 @@ LEAD_STARTUP_OPTIONS=”$SECURITY_ARGS”
 
 ```
 <a id="configure-smart-connector"></a>
-## Configuring SnappyData Smart Connector  
+## Configuring TIBCO ComputeDB Smart Connector  
 
-Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to SnappyData cluster to store and process data. SnappyData currently works with Spark version 2.1.1. To work with SnappyData cluster, a Spark application must set the `snappydata.connection` property while starting.   
+Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program). In Smart connector mode, a Spark application connects to TIBCO ComputeDB cluster to store and process data. TIBCO ComputeDB currently works with Spark version 2.1.1. To work with TIBCO ComputeDB cluster, a Spark application must set the `snappydata.connection` property while starting.   
 
 | Property |Description |
 |--------|--------|
-| snappydata.connection        |SnappyData cluster's locator host and JDBC client port on which locator listens for connections. Has to be specified while starting a Spark application.|
+| snappydata.connection        |TIBCO ComputeDB cluster's locator host and JDBC client port on which locator listens for connections. Has to be specified while starting a Spark application.|
 
 **Example**:
 
@@ -217,12 +217,12 @@ $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass
 <a id="environment"></a>
 ## Environment Settings
 
-Any Spark or SnappyData specific environment settings can be done by creating a **snappy-env.sh** or **spark-env.sh** in **SNAPPY_HOME/conf**.
+Any Spark or TIBCO ComputeDB specific environment settings can be done by creating a **snappy-env.sh** or **spark-env.sh** in **SNAPPY_HOME/conf**.
 
 <a id="hadoop-setting"></a>
 ### Hadoop Provided Settings
 
-If you want to run SnappyData with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.
+If you want to run TIBCO ComputeDB with an already existing custom Hadoop cluster like MapR or Cloudera you should download Snappy without Hadoop from the download link. This allows you to provide Hadoop at runtime.
 
 To do this, you need to put an entry in $SNAPPY-HOME/conf/spark-env.sh as below:
 
@@ -233,7 +233,7 @@ export SPARK_DIST_CLASSPATH=$($OTHER_HADOOP_HOME/bin/hadoop classpath)
 <a id="logging"></a>
 ## Logging 
 
-Currently, log files for SnappyData components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
+Currently, log files for TIBCO ComputeDB components go inside the working directory. To change the log file directory, you can specify a property _-log-file_ as the path of the directory. </br>
 The logging levels can be modified by adding a *conf/log4j.properties* file in the product directory. 
 
 ```pre

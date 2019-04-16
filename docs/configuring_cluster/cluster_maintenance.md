@@ -2,7 +2,7 @@
 
 To perform maintenance of your cluster you may need to manage on the components of your cluster, you may need to stop or start services running on that cluster, modify allocated resources, or stop certain components while the service is still running.
 
-SnappyData provides a variety of methods for performing system maintenance.
+TIBCO ComputeDB™ provides a variety of methods for performing system maintenance.
 
 Cluster maintenance involves:
 
