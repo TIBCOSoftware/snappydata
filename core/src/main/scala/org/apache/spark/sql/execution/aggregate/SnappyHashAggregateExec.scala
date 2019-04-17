@@ -596,15 +596,17 @@ case class SnappyHashAggregateExec(
     val numBytesForNullAggsBits = SHAMapAccessor.calculateNumberOfBytesForNullBits(
       this.aggregateBufferAttributesForGroup.length)
 
-    if (numBytesForNullKeyBits > 8) {
+    if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullKeyBits)) {
       ctx.addMutableState("byte[]", nullKeysBitsetTerm,
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullKeyBits];")
     }
 
-    if (numBytesForNullAggsBits > 8) {
+    if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullAggsBits)) {
       ctx.addMutableState("byte[]", nullAggsBitsetTerm,
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
     }
+
+
 
     val valueOffsetTerm = ctx.freshName("valueOffset")
     val currentValueOffSetTerm = ctx.freshName("currentValueOffSet")
@@ -628,6 +630,64 @@ case class SnappyHashAggregateExec(
     }
 
     val keysDataType = this.groupingAttributes.map(_.dataType)
+    // declare nullbitset terms for nested structs if required
+    val nestedStructNullBitsTermCreator: ((String, StructType, Int) => Any) => (String, StructType, Int) => Any =
+      (f: (String, StructType, Int) => Any) =>
+        (parentStructVarName: String, structType: StructType, nestingLevel: Int) => {
+          val numBytesForNullBits = SHAMapAccessor.
+            calculateNumberOfBytesForNullBits(structType.length)
+          if (SHAMapAccessor.isByteArrayNeededForNullBits(numBytesForNullBits)) {
+            val nullBitTerm = SHAMapAccessor.
+              generateNullKeysBitTermForStruct(parentStructVarName, nestingLevel)
+            ctx.addMutableState("byte[]", nullBitTerm,
+              s"$nullBitTerm = new byte[$numBytesForNullBits];")
+          }
+          structType.zipWithIndex.foreach{case (sf, index) => sf.dataType match {
+            case stt: StructType => val structVarName = SHAMapAccessor.
+              generateExplodedStructFieldVars(parentStructVarName, nestingLevel + 1, index)._1
+              f(structVarName, stt, nestingLevel + 1)
+              null
+            case _ => null
+          }
+
+          }
+        }
+    val nestedStructNullBitsTermInitializer: ((String, StructType, Int) => Any) =>
+      (String, StructType, Int) => Any =
+      (f: (String, StructType, Int) => Any) =>
+        (parentStructVarName: String, structType: StructType, nestingLevel: Int) => {
+          val numBytesForNullBits = SHAMapAccessor.
+            calculateNumberOfBytesForNullBits(structType.length)
+          val nullBitTerm = SHAMapAccessor.
+            generateNullKeysBitTermForStruct(parentStructVarName, nestingLevel)
+          val snippet1 = SHAMapAccessor.initNullBitsetCode(nullBitTerm, numBytesForNullBits)
+
+          val snippet2 = structType.zipWithIndex.map{case (sf, index) => sf.dataType match {
+            case stt: StructType => val structVarName = SHAMapAccessor.
+              generateExplodedStructFieldVars(parentStructVarName, nestingLevel + 1, index)._1
+              f(structVarName, stt, nestingLevel + 1).toString
+            case _ => ""
+          }
+          }.mkString("\n")
+          s"""
+             ${snippet1}
+             $snippet2
+           """.stripMargin
+        }
+
+    def recursiveApply(f:
+    ((String, StructType, Int) => Any) => (String, StructType, Int) => Any):
+    (String, StructType, Int) => Any = f(recursiveApply(f))(_, _, _)
+
+    // Now create nullBitTerms
+    KeyBufferVars.zip(keysDataType).foreach {
+      case (varName, dataType) => dataType match {
+        case st: StructType => recursiveApply(
+          nestedStructNullBitsTermCreator)(varName, st, 0)
+        case _ =>
+      }
+    }
+
     val aggBuffDataTypes = this.aggregateBufferAttributesForGroup.map(_.dataType)
     val allocatorTerm = ctx.freshName("bufferAllocator")
     val allocatorClass = classOf[BufferAllocator].getName
@@ -710,8 +770,15 @@ case class SnappyHashAggregateExec(
                       getCurrentBufferAllocator();
       ${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
       ${byteBufferAccessor.initKeyOrBufferVal(keysDataType, KeyBufferVars)}
-      ${byteBufferAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
-      ${byteBufferAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
+      ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
+      ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
+      ${KeyBufferVars.zip(keysDataType).map {
+      case (varName, dataType) => dataType match {
+        case st: StructType => recursiveApply(
+          nestedStructNullBitsTermInitializer)(varName, st, 0).toString
+        case _ => ""
+      }
+    }.mkString("\n")}
       // output the result
       $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();

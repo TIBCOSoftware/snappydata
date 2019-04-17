@@ -434,8 +434,8 @@ class SnappySessionState(val snappySession: SnappySession)
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
     // Y combinator
-    val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
-      (f: (Expression => Boolean)) =>
+    val conditionEvaluator: (Expression => Boolean) => Expression => Boolean =
+      (f: Expression => Boolean) =>
         (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
             (exp match {
               case And(left, _) => f(left)
@@ -445,7 +445,7 @@ class SnappySessionState(val snappySession: SnappySession)
             })
 
 
-    def rlsConditionChecker(f: (Expression => Boolean) => (Expression => Boolean)):
+    def rlsConditionChecker(f: (Expression => Boolean) => Expression => Boolean):
     Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
