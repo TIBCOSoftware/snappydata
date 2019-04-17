@@ -148,6 +148,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                     ${dt.asInstanceOf[DecimalType].scale});\n
                     """.stripMargin
                   }
+              case st: StructType => throw new UnsupportedOperationException("unknown type " + dt)
               case _ => throw new UnsupportedOperationException("unknown type " + dt)
                 }) +
             s"""
@@ -248,8 +249,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
     s"""
            $valueInitCode
-           ${initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
-           ${initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
+           ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
+           ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
           $inputEvals
 
@@ -288,14 +289,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   // handle arraydata , map , object
   def explodeStruct(structVarName: String, structNullVarName: String, structType: StructType,
-    parentNestingLevel: Int = 0): String = {
+    nestingLevel: Int = 0): String = {
     val explodedStructCode = structType.zipWithIndex.map{ case(sf, index) =>
-      sf.dataType match {
-        case _: StructType => (sf.dataType, index,
-          generateExplodedStructFieldVars(structVarName, parentNestingLevel))
-        case _ => (sf.dataType, index,
-          generateExplodedStructFieldVars(structVarName, parentNestingLevel, index))
-      }
+      (sf.dataType, index, SHAMapAccessor.generateExplodedStructFieldVars(structVarName,
+        nestingLevel, index))
   }.map { case (dt, index, (varName, nullVarName)) =>
       val valueExtractCode = dt match {
         case x: AtomicType => typeOf(x.tag) match {
@@ -328,62 +325,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
       snippet + (dt match {
         case st: StructType => st.map(sf => explodeStruct(varName, nullVarName,
-          st, parentNestingLevel + 1)). mkString("\n")
+          st, nestingLevel + 1)). mkString("\n")
         case _ => ""
       })
     }.mkString("\n")
     s"""
-    ${initNullBitsetCode(generateNullKeysBitTermForStruct(structNullVarName,
-      parentNestingLevel), SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length))}
+    ${SHAMapAccessor.initNullBitsetCode(
+      SHAMapAccessor.generateNullKeysBitTermForStruct(structNullVarName,
+      nestingLevel), SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length))}
     $explodedStructCode
      """.stripMargin
 
-
   }
 
-  def generateExplodedStructFieldVars(parentVar: String,
-    parentNestingLevel: Int, leafIndex: Int = -1): (String, String) = {
-   val varName = s"${parentVar}_$parentNestingLevel" +
-     (if (leafIndex != -1) s"_l$leafIndex" else "")
-    val isNullVarName = s"${varName}_isNull"
-    (varName, isNullVarName)
-  }
-
-  def generateNullKeysBitTermForStruct(parentVar: String,
-    parentNestingLevel: Int): String = s"${parentVar}_${parentNestingLevel}_nullKeysBitset"
 
 
-
-
-
-  def initNullBitsetCode(nullBitsetTerm: String,
-    numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
-    s"byte $nullBitsetTerm = 0;"
-  } else if (numBytesForNullBits == 2) {
-    s"short $nullBitsetTerm = 0;"
-  } else if (numBytesForNullBits <= 4) {
-    s"int $nullBitsetTerm = 0;"
-  } else if (numBytesForNullBits <= 8) {
-    s"long $nullBitsetTerm = 0l;"
-  } else {
-    s"""
-       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
-         $nullBitsetTerm[i] = 0;
-       }
-     """.stripMargin
-  }
-
-  def resetNullBitsetCode(nullBitsetTerm: String,
-    numBytesForNullBits: Int): String = if (numBytesForNullBits <= 8) {
-    s"$nullBitsetTerm = 0; \n"
-  } else {
-    s"""
-       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
-         $nullBitsetTerm[i] = 0;
-       }
-
-     """.stripMargin
-  }
 
 
   private def getNullBitsCastTerm(numBytesForNullBits: Int) = if (numBytesForNullBits == 1) {
@@ -400,7 +356,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
     val plaformClass = classOf[Platform].getName
     s"""
-      ${resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
+      ${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
       ${
       writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
         aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
@@ -505,6 +461,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
               snippet
             case st: StructType => val(childExprCodes, childDataTypes) =
               getExplodedExprCodeAndDataTypeForStruct(variable, st, nestingLevel)
+              val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable,
+                nestingLevel)
+              val newNumBytesForNullBits = SHAMapAccessor.
+                calculateNumberOfBytesForNullBits(st.length)
+              writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
+                newNullBitTerm, newNumBytesForNullBits, true, nestingLevel + 1)
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }
@@ -659,19 +621,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         } else {
           dt match {
             case _: StringType => s" (${expr.value}.numBytes() + 4) "
-            case st: StructType => val childExprsAndDataType = st.zipWithIndex.map {
-              case(sf, index) => sf.dataType match {
-                case _: StructType => val (varName, nullVarName) = generateExplodedStructFieldVars(
-                    expr.value, nestingLevel)
-                  ExprCode("", nullVarName, varName) -> sf.dataType
-                case _ => val (varName, nullVarName) = generateExplodedStructFieldVars(expr.value,
-                  nestingLevel, index)
-                  ExprCode("", nullVarName, varName) -> sf.dataType
-
-            }
-            }
-            val (childKeysVars, childDataTypes) = getExplodedExprCodeAndDataTypeForStruct(
-              expr.value, st, nestingLevel)
+            case st: StructType => val (childKeysVars, childDataTypes) =
+              getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
             generateKeySizeCode(childKeysVars, childDataTypes,
               SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
           }
@@ -686,15 +637,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def getExplodedExprCodeAndDataTypeForStruct(parentStructVarName: String, st: StructType,
     nestingLevel: Int): (Seq[ExprCode], Seq[DataType]) = st.zipWithIndex.map {
-    case(sf, index) => sf.dataType match {
-      case _: StructType => val (varName, nullVarName) = generateExplodedStructFieldVars(
-        parentStructVarName, nestingLevel)
-        ExprCode("", nullVarName, varName) -> sf.dataType
-      case _ => val (varName, nullVarName) = generateExplodedStructFieldVars(parentStructVarName,
-        nestingLevel, index)
-        ExprCode("", nullVarName, varName) -> sf.dataType
-
-    }
+    case(sf, index) => val (varName, nullVarName) =
+      SHAMapAccessor.generateExplodedStructFieldVars(parentStructVarName, nestingLevel, index)
+      ExprCode("", nullVarName, varName) -> sf.dataType
   }.unzip
 
 
@@ -840,8 +785,49 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 object SHAMapAccessor {
 
+  def initNullBitsetCode(nullBitsetTerm: String,
+    numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
+    s"byte $nullBitsetTerm = 0;"
+  } else if (numBytesForNullBits == 2) {
+    s"short $nullBitsetTerm = 0;"
+  } else if (numBytesForNullBits <= 4) {
+    s"int $nullBitsetTerm = 0;"
+  } else if (numBytesForNullBits <= 8) {
+    s"long $nullBitsetTerm = 0l;"
+  } else {
+    s"""
+       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
+         $nullBitsetTerm[i] = 0;
+       }
+     """.stripMargin
+  }
+
+  def resetNullBitsetCode(nullBitsetTerm: String,
+    numBytesForNullBits: Int): String = if (numBytesForNullBits <= 8) {
+    s"$nullBitsetTerm = 0; \n"
+  } else {
+    s"""
+       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
+         $nullBitsetTerm[i] = 0;
+       }
+
+     """.stripMargin
+  }
+
   def calculateNumberOfBytesForNullBits(numAttributes: Int): Int = numAttributes / 8 +
     (if (numAttributes % 8 > 0) 1 else 0)
+
+  def generateNullKeysBitTermForStruct(parentVar: String,
+    nestingLevel: Int): String = s"${parentVar}_${nestingLevel}_nullKeysBitset"
+
+  def generateExplodedStructFieldVars(parentVar: String,
+    nestingLevel: Int, index: Int): (String, String) = {
+    val varName = s"${parentVar}_${nestingLevel}_$index"
+    val isNullVarName = s"${varName}_isNull"
+    (varName, isNullVarName)
+  }
+
+  def isByteArrayNeededForNullBits(numBytes: Int): Boolean = numBytes > 8
 
   def getPartialFunctionForWriting(baseObjectVar: String, offsetVar: String):
   PartialFunction[(DataType, String), String] = {
