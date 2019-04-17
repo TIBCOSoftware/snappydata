@@ -27,7 +27,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -63,15 +63,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
   def getBufferVars(dataTypes: Seq[DataType], varNames: Seq[String],
-    currentValueOffsetTerm: String, isKey: Boolean):
+    currentValueOffsetTerm: String, isKey: Boolean, nullBitTerm: String,
+    numBytesForNullBits: Int, nestingLevel: Int = 0):
   Seq[ExprCode] = {
     val plaformClass = classOf[Platform].getName
     val decimalClass = classOf[Decimal].getName
     val bigDecimalClass = classOf[java.math.BigDecimal].getName
     val bigIntegerClass = classOf[java.math.BigInteger].getName
     val byteBufferClass = classOf[ByteBuffer].getName
-    val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
-    val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
+    // val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
+    // val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
     val castTerm = getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = ctx.freshName("isNull")
@@ -111,30 +112,30 @@ case class SHAMapAccessor(@transient session: SnappySession,
           (typeOf(x.tag) match {
             case t if t =:= typeOf[Boolean] => s"$varName = $plaformClass.getBoolean(" +
               s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Byte] => s"$varName = $plaformClass.getByte(" +
-                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Short] => s"$varName = $plaformClass.getShort(" +
-                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Int] => s"$varName = $plaformClass.getInt(" +
-                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Long] => s"$varName = $plaformClass.getLong(" +
-                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Float] => s"$varName = $plaformClass.getFloat(" +
-                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Double] => s"$varName = $plaformClass.getDouble(" +
-                s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-              case t if t =:= typeOf[Decimal] =>
-                if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
-                  s"""
+            case t if t =:= typeOf[Byte] => s"$varName = $plaformClass.getByte(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Short] => s"$varName = $plaformClass.getShort(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Int] => s"$varName = $plaformClass.getInt(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Long] => s"$varName = $plaformClass.getLong(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Float] => s"$varName = $plaformClass.getFloat(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Double] => s"$varName = $plaformClass.getDouble(" +
+              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Decimal] =>
+              if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
+                s"""
                      $varName = new $decimalClass().set(
                     $plaformClass.getLong($vdBaseObjectTerm,
                        $currentValueOffsetTerm),${dt.asInstanceOf[DecimalType].precision},
                     ${dt.asInstanceOf[DecimalType].scale})\n;
                      """.stripMargin
-                } else {
-                  val tempByteArrayTerm = ctx.freshName("tempByteArray")
-                  val len = ctx.freshName("len")
-                  s"""
+              } else {
+                val tempByteArrayTerm = ctx.freshName("tempByteArray")
+                val len = ctx.freshName("len")
+                s"""
                       int $len = $plaformClass.getByte($vdBaseObjectTerm,
                     $currentValueOffsetTerm); \n
                       $currentValueOffsetTerm += 1;
@@ -147,16 +148,42 @@ case class SHAMapAccessor(@transient session: SnappySession,
                     ${dt.asInstanceOf[DecimalType].precision},
                     ${dt.asInstanceOf[DecimalType].scale});\n
                     """.stripMargin
-                  }
-              case st: StructType => throw new UnsupportedOperationException("unknown type " + dt)
-              case _ => throw new UnsupportedOperationException("unknown type " + dt)
-                }) +
+              }
+
+            case _ => throw new UnsupportedOperationException("unknown type " + dt)
+          }) +
             s"""
             $currentValueOffsetTerm += ${dt.defaultSize};\n
              """
-            }
+        }
+        case st: StructType =>
+          val objectArrayName = SHAMapAccessor.generateVarNameForStruct(varName,
+            nestingLevel, i)
+
+          val newNullBitSetTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(
+            varName)
+          val newNumNullKeyBytes = SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length)
+          val genericInternalRowClass = classOf[GenericInternalRow].getName
+          val objectClass = classOf[Object].getName
+          val keyVarNames = Array.tabulate[String](st.length)(i =>
+            s"$objectArrayName[$i]")
+          // ${SHAMapAccessor.initNullBitsetCode(newNullBitSetTerm, newNumNullKeyBytes)}
+          s"""
+                   ${
+            readNullBitsCode(currentValueOffsetTerm, newNullBitSetTerm,
+              newNumNullKeyBytes)
+          }
+                   $objectClass[] $objectArrayName = new $objectClass[${st.length}];
+
+                   $varName = new $genericInternalRowClass($objectArrayName);
+
+                  ${
+            getBufferVars(st.map(_.dataType), keyVarNames, currentValueOffsetTerm,
+              true, newNullBitSetTerm, newNumNullKeyBytes, nestingLevel + 1).
+              map(_.code).mkString("\n")
+          }""".stripMargin
       }) +
-      s"""
+        s"""
        // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
       """
 
@@ -181,14 +208,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
   }
 
-  def readNullBitsCode(currentValueOffsetTerm: String, isKey: Boolean): String = {
+  def readNullBitsCode(currentValueOffsetTerm: String, nullBitsetTerm: String,
+    numBytesForNullBits: Int): String = {
     val plaformClass = classOf[Platform].getName
-    val (nullBitsetTerm, numBytesForNullBits) = if (isKey) {
-      (nullKeysBitsetTerm, numBytesForNullKeyBits)
-    } else {
-      (nullAggsBitsetTerm, numBytesForNullAggBits)
-    }
-
     if (numBytesForNullBits == 1) {
       s"""
           $nullBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);\n
@@ -256,14 +278,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
            // evaluate key vars
           ${evaluateVariables(keyVars)}
-          ${keyVars.zip(keysDataType).filter(_._2 match {
-              case x: StructType => true
-              case _ => false
-            }).map {
-                case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
-                  dt.asInstanceOf[StructType])
-              }.mkString("\n")
-          }
+
+          ${
+      keyVars.zip(keysDataType).filter(_._2 match {
+        case x: StructType => true
+        case _ => false
+      }).map {
+        case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
+          dt.asInstanceOf[StructType])
+      }.mkString("\n")
+    }
 
           // evaluate hash code of the lookup key
           ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
@@ -271,12 +295,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
           //  System.out.println("hash code for key = " +${hashVar(0)});
           // get key size code
           int $numKeyBytesTerm = 0;
-          $numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)}
+          $numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
 
           int $numValueBytes = $numAggBytes;
-          ${ generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
-            keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject, baseKeyoffset)
-           }
+          ${
+      generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
+        keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject, baseKeyoffset)
+    }
            // insert or lookup
           int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
       $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
@@ -290,10 +315,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
   // handle arraydata , map , object
   def explodeStruct(structVarName: String, structNullVarName: String, structType: StructType,
     nestingLevel: Int = 0): String = {
-    val explodedStructCode = structType.zipWithIndex.map{ case(sf, index) =>
+    val explodedStructCode = structType.zipWithIndex.map { case (sf, index) =>
       (sf.dataType, index, SHAMapAccessor.generateExplodedStructFieldVars(structVarName,
         nestingLevel, index))
-  }.map { case (dt, index, (varName, nullVarName)) =>
+    }.map { case (dt, index, (varName, nullVarName)) =>
       val valueExtractCode = dt match {
         case x: AtomicType => typeOf(x.tag) match {
           case t if t =:= typeOf[Boolean] => s"$structVarName.getBoolean($index); \n"
@@ -315,9 +340,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
         case _ => throw new UnsupportedOperationException("unknown type " + dt)
       }
-      val snippet = s"""
-             boolean $nullVarName = $structNullVarName || $structVarName.isNullAt($index);
-             ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};"
+      val snippet =
+        s"""
+             boolean $nullVarName = $structNullVarName|| $structVarName.isNullAt($index);
+             ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
              if (!$nullVarName) {
                $varName = $valueExtractCode;
              }
@@ -325,21 +351,20 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
       snippet + (dt match {
         case st: StructType => st.map(sf => explodeStruct(varName, nullVarName,
-          st, nestingLevel + 1)). mkString("\n")
+          st, nestingLevel + 1)).mkString("\n")
         case _ => ""
       })
     }.mkString("\n")
     s"""
-    ${SHAMapAccessor.initNullBitsetCode(
-      SHAMapAccessor.generateNullKeysBitTermForStruct(structNullVarName,
-      nestingLevel), SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length))}
+    ${
+      SHAMapAccessor.initNullBitsetCode(
+        SHAMapAccessor.generateNullKeysBitTermForStruct(structVarName),
+        SHAMapAccessor.calculateNumberOfBytesForNullBits(structType.length))
+    }
     $explodedStructCode
      """.stripMargin
 
   }
-
-
-
 
 
   private def getNullBitsCastTerm(numBytesForNullBits: Int) = if (numBytesForNullBits == 1) {
@@ -368,10 +393,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
     s"""
-        $offsetTerm += ${dt.defaultSize + (dt match {
-      case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
-      case _ => 0
-    })
+        $offsetTerm += ${
+      dt.defaultSize + (dt match {
+        case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
+        case _ => 0
+      })
     };\n
       """
   }
@@ -459,10 +485,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 case _ => throw new UnsupportedOperationException("unknown type " + dt)
               }
               snippet
-            case st: StructType => val(childExprCodes, childDataTypes) =
+            case st: StructType => val (childExprCodes, childDataTypes) =
               getExplodedExprCodeAndDataTypeForStruct(variable, st, nestingLevel)
-              val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable,
-                nestingLevel)
+              val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable)
               val newNumBytesForNullBits = SHAMapAccessor.
                 calculateNumberOfBytesForNullBits(st.length)
               writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
@@ -611,37 +636,36 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
     numBytesForNullBits: Int, nestingLevel: Int = 0): String = {
 
-      keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
-        val nullVar = expr.isNull
-        val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
-          dt.defaultSize.toString + (dt match {
-            case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => " + 1"
-            case _ => ""
-          })
-        } else {
-          dt match {
-            case _: StringType => s" (${expr.value}.numBytes() + 4) "
-            case st: StructType => val (childKeysVars, childDataTypes) =
-              getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
+    keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
+      val nullVar = expr.isNull
+      val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
+        dt.defaultSize.toString + (dt match {
+          case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => " + 1"
+          case _ => ""
+        })
+      } else {
+        dt match {
+          case _: StringType => s" (${expr.value}.numBytes() + 4) "
+          case st: StructType => val (childKeysVars, childDataTypes) =
+            getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
             generateKeySizeCode(childKeysVars, childDataTypes,
               SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
-          }
         }
-        if (nullVar.isEmpty || nullVar == "false") {
-          notNullSizeExpr
-        } else {
-          s" ($nullVar? 0 : $notNullSizeExpr)"
-        }
-      }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullBits)}; \n"
+      }
+      if (nullVar.isEmpty || nullVar == "false") {
+        notNullSizeExpr
+      } else {
+        s" ($nullVar? 0 : $notNullSizeExpr)"
+      }
+    }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullBits)}"
   }
 
   def getExplodedExprCodeAndDataTypeForStruct(parentStructVarName: String, st: StructType,
     nestingLevel: Int): (Seq[ExprCode], Seq[DataType]) = st.zipWithIndex.map {
-    case(sf, index) => val (varName, nullVarName) =
+    case (sf, index) => val (varName, nullVarName) =
       SHAMapAccessor.generateExplodedStructFieldVars(parentStructVarName, nestingLevel, index)
       ExprCode("", nullVarName, varName) -> sf.dataType
   }.unzip
-
 
 
   def sizeForNullBits(numBytesForNullBits: Int): Int =
@@ -817,8 +841,10 @@ object SHAMapAccessor {
   def calculateNumberOfBytesForNullBits(numAttributes: Int): Int = numAttributes / 8 +
     (if (numAttributes % 8 > 0) 1 else 0)
 
-  def generateNullKeysBitTermForStruct(parentVar: String,
-    nestingLevel: Int): String = s"${parentVar}_${nestingLevel}_nullKeysBitset"
+  def generateNullKeysBitTermForStruct(structName: String): String = s"${structName}_nullKeysBitset"
+
+  def generateVarNameForStruct(parentVar: String,
+    nestingLevel: Int, index: Int): String = s"${parentVar}_${nestingLevel}_$index"
 
   def generateExplodedStructFieldVars(parentVar: String,
     nestingLevel: Int, index: Int): (String, String) = {

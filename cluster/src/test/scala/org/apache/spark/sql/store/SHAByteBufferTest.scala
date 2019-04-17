@@ -752,7 +752,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(6)} from test1 group by ${colName(6)} "
-    expectedResult = mutable.Map(0 -> 10L, .7f -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L,.7f -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -776,7 +776,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(7)} from test1 group by ${colName(7)} "
-    expectedResult = mutable.Map(0 -> 10L, .7D -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L,.7D -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -820,11 +820,11 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
-  ignore("simple aggregate query with struct type as grouping key") {
+  test("simple aggregate query with struct type as grouping key") {
     snc
     snc.sql("drop table if exists test1")
     val data = for (i <- 0 until 15) yield {
-      Row(i, Row(s"col${i/5}", i/5))
+      Row(i, Row(s"col${i / 5}", i / 5))
     }
     val strucType1 = StructType(Seq(StructField("col2_1", StringType, true),
       StructField("col2_2", IntegerType, true)))
