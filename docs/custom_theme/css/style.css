@@ -10,9 +10,11 @@
 a.icon.icon-home:before {
   background:url('../../Images/logo.png');
   width: 250px;
-  height: 120px;
+  height: 100px;
   content: '';
   background-repeat: no-repeat;
+  background-position: center;
+  background-size: 175px;
 }
 
 a.icon.icon-home {
