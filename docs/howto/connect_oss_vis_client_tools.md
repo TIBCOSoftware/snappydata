@@ -7,7 +7,7 @@ You can use any of the following SQL client tools to access TIBCO ComputeDB:
 
 <a id= dbvis> </a>
 ## DbVisualizer
-DbVisualizer is a universal database tool that can be used to access databases. To access TIBCO ComputeDB from DbVisualizer, you must create a database connection using a database driver. 
+DbVisualizer is a universal database tool that can be used to access databases. To access TIBCO ComputeDB from DbVisualizer, you must create a database connection using a database driver.
 
 To access TIBCO ComputeDB from DbVisualizer, do the following:
 
@@ -17,10 +17,7 @@ To access TIBCO ComputeDB from DbVisualizer, do the following:
 2.	Enter the following details:
 	*	Name: Provide a name for the driver.
     *	URL Format: Specify the URL format as *jdbc:snappydata://server:port/*
-	*	Driver Class: Specify the driver class as io.snappydata.jdbc.ClientDriver.
-3.	From the **Driver Files Paths**, click **User Specified** and choose the folder icon.
-4.	Select the client jar.
-	For TIBCO ComputeDB, this jar is located in the **build-artifacts/scala-2.11/distributions/** folder.
+	*	Driver Class: Choose the driver class as **io.snappydata.jdbc.ClientDriver**. From the **Driver jar Files**, click the folder icon and select the client jar. Only after you select the client jar, the **io.snappydata.jdbc.ClientDriver** class is listed as an option in Driver Class. For TIBCO ComputeDB, this jar is located in the **build-artifacts/scala-2.11/distributions/** folder.
 
 ### Create a Database Connection
 
@@ -32,6 +29,9 @@ To access TIBCO ComputeDB from DbVisualizer, do the following:
 6. Enter the UserID and password.
 7. Select Auto Commit if you want to enable auto-commit in the SQL Commander.
 8. Click **Finish**.<br>You can open the SQL Commander and run your queries. 
+
+!!! Note
+	The steps provided here are specific to DbVisualizer 10.0.20 version. The steps can slightly vary in other versions.
 
 <a id= sqlworkbenchj> </a>
 ## SQL Workbench/J
