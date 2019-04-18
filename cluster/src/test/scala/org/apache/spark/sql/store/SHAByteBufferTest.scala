@@ -22,12 +22,12 @@ import scala.collection.mutable
 
 import com.pivotal.gemfirexd.{Attribute, TestUtil}
 import com.pivotal.gemfirexd.security.SecurityTestUtils
-import io.snappydata.{Constant, SnappyFunSuite}
+import io.snappydata.{Constant, Property, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterAll
 import org.junit.Assert._
 
 import org.apache.spark.SparkConf
-import org.apache.spark.sql.{Row, SaveMode}
+import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.{SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
@@ -820,8 +820,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
+
   test("simple aggregate query with struct type as grouping key") {
-    snc
+
     snc.sql("drop table if exists test1")
     val data = for (i <- 0 until 15) yield {
       Row(i, Row(s"col${i / 5}", i / 5))
@@ -833,12 +834,31 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
     df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
 
-    val rs = snc.sql("select col2, sum(col1) as summ1 from test1 group by col2")
-    val results = rs.collect()
-    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    def runTest(session: SnappyContext): Unit = {
+      val rs = session.sql("select col2, sum(col1) as summ1 from test1 group by col2")
+      val results = rs.collect()
+      assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+      val expectedResult = mutable.Map[(String, Int), Int](("col0", 0) -> 10,
+        ("col1", 1) -> 35, ("col2", 2) -> 60 )
+      assertEquals(expectedResult.size, results.length)
+      results.foreach(row => {
+        val str = row.getStruct(0)
+        val key = (str.getString(0), str.getInt(1))
+        assertEquals(expectedResult.getOrElse(key, fail("key does not exist")), row.getLong(1))
+        expectedResult.remove(key)
+      })
+      assertTrue(expectedResult.isEmpty)
+    }
+    val newSession1 = snc.newSession()
+    newSession1.setConf(Property.TestExplodeStructInSHA.name, true.toString)
+    runTest(newSession1)
 
+    val newSession2 = snc.newSession()
+    newSession2.setConf(Property.TestExplodeStructInSHA.name, false.toString)
+    runTest(newSession2)
 
     snc.dropTable("test1")
+
   }
 
   def getSqlConnection: Connection =
