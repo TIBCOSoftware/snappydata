@@ -263,6 +263,10 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
     "Explodes the Struct Field in Group By Keys even if the struct object is UnsafeRow",
     Some(false))
+  val TestDisableByteBufferMapInSHA: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.disableBBMapInSHA",
+    "disables the use of ByteBufferMap based SnappyHashAggregateExec",
+    Some(false))
 }
 
 // extractors for properties
