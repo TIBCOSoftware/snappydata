@@ -1,16 +1,16 @@
 .wy-side-nav-search {
  /* background-color: #0081cb;*/
-  background: #0081cb;	
+  background: #FFFFFF;	
 }
 
 .wy-side-nav-search > a:hover, .wy-side-nav-search .wy-dropdown > a:hover {
-    background: #0081cb;
+    background: #FFFFFF;
 }
 
 a.icon.icon-home:before {
   background:url('../../Images/logo.png');
   width: 250px;
-  height: 100px;
+  height: 120px;
   content: '';
   background-repeat: no-repeat;
 }
@@ -19,7 +19,7 @@ a.icon.icon-home {
   font-size: 16px;
   text-align: center;	
   margin-bottom: 0;
-  color: #FFFFFF;
+  color: #0081cb;
 }
 
 div.section blockquote {
