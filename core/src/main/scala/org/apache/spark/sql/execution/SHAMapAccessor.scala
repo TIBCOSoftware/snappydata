@@ -160,13 +160,18 @@ case class SHAMapAccessor(@transient session: SnappySession,
              """
         }
         case st: StructType =>
-          val objectArrayName = SHAMapAccessor.generateVarNameForStruct(varName,
+          val correctedVarName = if (nestingLevel == 0) {
+            varName
+          } else {
+            varName.substring(0, varName.indexOf('['))
+          }
+          val objectArrayName = SHAMapAccessor.generateVarNameForStruct(correctedVarName,
             nestingLevel, i)
           val byteBufferClass = classOf[ByteBuffer].getName
           val currentOffset = ctx.freshName("currentOffset")
 
           val newNullBitSetTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(
-            varName)
+            correctedVarName)
           val newNumNullKeyBytes = SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length)
           val genericInternalRowClass = classOf[GenericInternalRow].getName
           val objectClass = classOf[Object].getName
@@ -383,8 +388,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
            """.stripMargin
 
       snippet + (dt match {
-        case st: StructType => st.map(sf => explodeStruct(varName, nullVarName,
-          st, nestingLevel + 1)).mkString("\n")
+        case st: StructType => explodeStruct(varName, nullVarName,
+          st, nestingLevel + 1)
         case _ => ""
       })
     }.mkString("\n")
