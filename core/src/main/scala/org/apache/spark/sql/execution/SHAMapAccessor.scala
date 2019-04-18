@@ -862,6 +862,18 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 object SHAMapAccessor {
 
+  val supportedDataTypes: DataType => Boolean = dt =>
+    dt match {
+      case _: AtomicType => true
+      case CalendarIntervalType => false
+      case _: MapType => false
+      case _: UserDefinedType[_] => false
+      case NullType => false
+      case _: ArrayType => false
+      case _: ObjectType => false
+      case st: StructType => true
+    }
+
   def initNullBitsetCode(nullBitsetTerm: String,
     numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
     s"byte $nullBitsetTerm = 0;"

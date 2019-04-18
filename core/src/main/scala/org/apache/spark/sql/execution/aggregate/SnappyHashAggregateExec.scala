@@ -39,6 +39,7 @@ package org.apache.spark.sql.execution.aggregate
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
+import io.snappydata.Property
 import io.snappydata.collection.{ByteBufferData, ObjectHashSet, SHAMap}
 
 import org.apache.spark.rdd.RDD
@@ -49,7 +50,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
-import org.apache.spark.sql.types.{ArrayType, BinaryType, MapType, StringType, StructType, TypeUtilities}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.util.Utils
@@ -73,8 +74,14 @@ case class SnappyHashAggregateExec(
     hasDistinct: Boolean)
     extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
-  val isFixedWidthAggregate: Boolean = aggregateBufferAttributes.forall( attr =>
-    TypeUtilities.isFixedWidth(attr.dataType))
+  val useByteBufferMapBasedAggregation: Boolean = aggregateBufferAttributes.forall( attr =>
+      TypeUtilities.isFixedWidth(attr.dataType)) &&
+     !Property.TestDisableByteBufferMapInSHA.get(
+       sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
+    groupingExpressions.forall(_.dataType.
+      existsRecursively(SHAMapAccessor.supportedDataTypes))
+
+
 
   override def nodeName: String = "SnappyHashAggregate"
 
@@ -209,7 +216,7 @@ case class SnappyHashAggregateExec(
     if (groupingExpressions.isEmpty) {
       doProduceWithoutKeys(ctx)
     } else {
-      if (isFixedWidthAggregate) {
+      if (useByteBufferMapBasedAggregation) {
         doProduceWithKeysForSHAMap(ctx)
       } else {
         doProduceWithKeys(ctx)
@@ -222,7 +229,7 @@ case class SnappyHashAggregateExec(
     if (groupingExpressions.isEmpty) {
       doConsumeWithoutKeys(ctx, input)
     } else {
-      if (isFixedWidthAggregate) {
+      if (useByteBufferMapBasedAggregation) {
         doConsumeWithKeysForSHAMap(ctx, input)
       } else {
         doConsumeWithKeys(ctx, input)
@@ -235,7 +242,7 @@ case class SnappyHashAggregateExec(
     // check for possible optimized dictionary code path;
     // below is a loose search while actual decision will be taken as per
     // availability of ExprCodeEx with DictionaryCode in doConsume
-   if (isFixedWidthAggregate) {
+   if (useByteBufferMapBasedAggregation) {
      true
    } else {
      DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
@@ -245,7 +252,7 @@ case class SnappyHashAggregateExec(
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
-    if (groupingExpressions.isEmpty || !canConsume(plan) || isFixedWidthAggregate) ""
+    if (groupingExpressions.isEmpty || !canConsume(plan) || useByteBufferMapBasedAggregation) ""
     else {
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
@@ -560,11 +567,11 @@ case class SnappyHashAggregateExec(
       }
       val evaluateBufferVars = evaluateVariables(bufferVars)
       s"""
-       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm, byteBufferAccessor.nullKeysBitsetTerm,
-        byteBufferAccessor.numBytesForNullKeyBits)}
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
+        byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
        $evaluateKeyVars
-       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm, byteBufferAccessor.nullAggsBitsetTerm,
-        byteBufferAccessor.numBytesForNullAggBits)}
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
+        byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
        $evaluateBufferVars
        ${consume(ctx, keyBufferVars ++ aggBufferVars)}
        """
