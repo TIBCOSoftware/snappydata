@@ -22,12 +22,13 @@ import java.nio.ByteBuffer
 import scala.reflect.runtime.universe._
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import io.snappydata.Property
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow, UnsafeRow}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -45,6 +46,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   nullAggsBitsetTerm: String)
   extends UnaryExecNode with CodegenSupport {
 
+  private val alwaysExplode = Property.TestExplodeStructInSHA.get(session.sessionState.conf)
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
 
   override def output: Seq[Attribute] = child.output
@@ -71,6 +73,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val bigDecimalClass = classOf[java.math.BigDecimal].getName
     val bigIntegerClass = classOf[java.math.BigInteger].getName
     val byteBufferClass = classOf[ByteBuffer].getName
+    val unsafeClass = classOf[UnsafeRow].getName
     // val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
     // val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
     val castTerm = getNullBitsCastTerm(numBytesForNullBits)
@@ -159,6 +162,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case st: StructType =>
           val objectArrayName = SHAMapAccessor.generateVarNameForStruct(varName,
             nestingLevel, i)
+          val byteBufferClass = classOf[ByteBuffer].getName
+          val currentOffset = ctx.freshName("currentOffset")
 
           val newNullBitSetTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(
             varName)
@@ -167,21 +172,45 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val objectClass = classOf[Object].getName
           val keyVarNames = Array.tabulate[String](st.length)(i =>
             s"$objectArrayName[$i]")
+          val isUnsafeRow = ctx.freshName("isUnsafeRow")
+          val unsafeRowLength = ctx.freshName("unsafeRowLength")
+          val holder = ctx.freshName("holder")
           // ${SHAMapAccessor.initNullBitsetCode(newNullBitSetTerm, newNumNullKeyBytes)}
           s"""
-                   ${
-            readNullBitsCode(currentValueOffsetTerm, newNullBitSetTerm,
-              newNumNullKeyBytes)
+          boolean $isUnsafeRow = $plaformClass.getBoolean($vdBaseObjectTerm,
+             $currentValueOffsetTerm);
+          ++$currentValueOffsetTerm;
+          if ($isUnsafeRow) {
+             int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm,
+             $currentValueOffsetTerm);
+             $currentValueOffsetTerm += 4;
+
+             $byteBufferClass $holder = $allocatorTerm.allocate($unsafeRowLength, "SHA");
+             $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+                $allocatorTerm.baseObject($holder),
+                $allocatorTerm.baseOffset($holder),$unsafeRowLength);
+             $currentValueOffsetTerm += $unsafeRowLength;
+             $varName = new $unsafeClass(${st.length});
+             (($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
+              $allocatorTerm.baseOffset($holder), $unsafeRowLength);
+
           }
-                   $objectClass[] $objectArrayName = new $objectClass[${st.length}];
+          else {
+            ${
+              readNullBitsCode(currentValueOffsetTerm, newNullBitSetTerm,
+              newNumNullKeyBytes)
+            }
+            $objectClass[] $objectArrayName = new $objectClass[${st.length}];
 
-                   $varName = new $genericInternalRowClass($objectArrayName);
+            $varName = new $genericInternalRowClass($objectArrayName);
 
-                  ${
-            getBufferVars(st.map(_.dataType), keyVarNames, currentValueOffsetTerm,
+            ${
+              getBufferVars(st.map(_.dataType), keyVarNames, currentValueOffsetTerm,
               true, newNullBitSetTerm, newNumNullKeyBytes, nestingLevel + 1).
               map(_.code).mkString("\n")
-          }""".stripMargin
+            }
+          }
+          """.stripMargin
       }) +
         s"""
        // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
@@ -315,6 +344,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   // handle arraydata , map , object
   def explodeStruct(structVarName: String, structNullVarName: String, structType: StructType,
     nestingLevel: Int = 0): String = {
+    val unsafeRowClass = classOf[UnsafeRow].getName
     val explodedStructCode = structType.zipWithIndex.map { case (sf, index) =>
       (sf.dataType, index, SHAMapAccessor.generateExplodedStructFieldVars(structVarName,
         nestingLevel, index))
@@ -340,12 +370,15 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
         case _ => throw new UnsupportedOperationException("unknown type " + dt)
       }
+
       val snippet =
         s"""
              boolean $nullVarName = $structNullVarName|| $structVarName.isNullAt($index);
              ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
-             if (!$nullVarName) {
-               $varName = $valueExtractCode;
+             if ($alwaysExplode || !($structVarName instanceof $unsafeRowClass)) {
+               if (!$nullVarName) {
+                 $varName = $valueExtractCode;
+               }
              }
            """.stripMargin
 
@@ -408,7 +441,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     // Move the offset at the end of num Null Bytes space, we will fill that space later
     // store the starting value of offset
 
-
+    val unsafeRowClass = classOf[UnsafeRow].getName
     val startingOffsetTerm = ctx.freshName("startingOffset")
     val tempBigDecArrayTerm = ctx.freshName("tempBigDecArray")
     val plaformClass = classOf[Platform].getName
@@ -490,8 +523,23 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable)
               val newNumBytesForNullBits = SHAMapAccessor.
                 calculateNumberOfBytesForNullBits(st.length)
-              writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
-                newNullBitTerm, newNumBytesForNullBits, true, nestingLevel + 1)
+              s"""
+                 if ($alwaysExplode || !($variable instanceof $unsafeRowClass)) {
+                    $plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+                    $offsetTerm += 1;
+                    ${writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
+                    newNullBitTerm, newNumBytesForNullBits, true, nestingLevel + 1)}
+                 } else {
+                   $plaformClass.putBoolean($baseObjectTerm, $offsetTerm,true);
+                   $offsetTerm += 1;
+                   $plaformClass.putInt($baseObjectTerm, $offsetTerm,
+                    (($unsafeRowClass)$variable).getSizeInBytes());
+                   $offsetTerm += 4;
+                   (($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+                   $offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
+                 }
+               """.stripMargin
+
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }
@@ -635,7 +683,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
     numBytesForNullBits: Int, nestingLevel: Int = 0): String = {
-
+    val unsafeRowClass = classOf[UnsafeRow].getName
     keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
       val nullVar = expr.isNull
       val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
@@ -648,8 +696,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
           case _: StringType => s" (${expr.value}.numBytes() + 4) "
           case st: StructType => val (childKeysVars, childDataTypes) =
             getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
-            generateKeySizeCode(childKeysVars, childDataTypes,
-              SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
+            s"""
+             1 + (($alwaysExplode || !(${expr.value} instanceof $unsafeRowClass)) ?
+             (${generateKeySizeCode(childKeysVars, childDataTypes,
+              SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)}) :
+               (($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4)
+            """.stripMargin
+
         }
       }
       if (nullVar.isEmpty || nullVar == "false") {
