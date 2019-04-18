@@ -822,7 +822,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
 
   test("simple aggregate query with struct type as grouping key") {
-
     snc.sql("drop table if exists test1")
     val data = for (i <- 0 until 15) yield {
       Row(i, Row(s"col${i / 5}", i / 5))
@@ -856,7 +855,51 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val newSession2 = snc.newSession()
     newSession2.setConf(Property.TestExplodeStructInSHA.name, false.toString)
     runTest(newSession2)
+    snc.dropTable("test1")
 
+  }
+
+  test("aggregate query with nested struct type as grouping key") {
+    snc.sql("drop table if exists test1")
+    val structType2 = StructType(Seq(StructField("wife", StringType, true),
+      StructField("numOffsprings", IntegerType, true)))
+    val strucType1 = StructType(Seq(StructField("name", StringType, true),
+      StructField("zip", IntegerType, true), StructField("family", structType2, true)))
+    val structType = StructType(Seq(StructField("id", IntegerType, true),
+      StructField("details", strucType1, true)))
+
+    val data = for (i <- 0 until 15) yield {
+      val num = i/5
+      Row(i, Row(s"name$num", num, Row(s"spouse$num", num)))
+    }
+
+    val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
+    df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
+
+    def runTest(session: SnappyContext): Unit = {
+      val rs = session.sql("select details, sum(id) as summ1 from test1 group by details")
+      val results = rs.collect()
+      assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+      val expectedResult = mutable.Map[(String, Int, (String, Int)), Int](
+        ("name0", 0, ("wife0", 0)) -> 10,
+        ("name1", 1, ("wife1", 1)) -> 35, ("name2", 2, ("wife2", 2)) -> 60)
+      assertEquals(expectedResult.size, results.length)
+      results.foreach(row => {
+        val str1 = row.getStruct(0)
+        val str2 = row.getStruct(2)
+        val key = (str1.getString(0), str1.getInt(1), (str2.getString(0), str2.getInt(1)))
+        assertEquals(expectedResult.getOrElse(key, fail("key does not exist")), row.getLong(1))
+        expectedResult.remove(key)
+      })
+      assertTrue(expectedResult.isEmpty)
+    }
+    val newSession1 = snc.newSession()
+    newSession1.setConf(Property.TestExplodeStructInSHA.name, true.toString)
+    runTest(newSession1)
+
+    val newSession2 = snc.newSession()
+    newSession2.setConf(Property.TestExplodeStructInSHA.name, false.toString)
+    runTest(newSession2)
     snc.dropTable("test1")
 
   }
