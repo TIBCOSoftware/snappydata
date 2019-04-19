@@ -154,6 +154,7 @@ allprojects {
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
     osName = org.gradle.internal.os.OperatingSystem.current()
+    osFamilyName = osName.getFamilyName().replace(' ', '').toLowerCase()
     osVersion = System.getProperty('os.version')
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
@@ -1133,9 +1134,9 @@ buildDeb {
 }
 
 distTar {
-  archiveName = 'TIB_compute-ce_' + version + '_linux.tar.gz'
+  archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
   if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute_' + version + '_linux.tar.gz'
+    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.tar.gz'
   }
   dependsOn product
   // also package VSD
@@ -1152,9 +1153,9 @@ distTar {
 }
 
 distZip {
-  archiveName = 'TIB_compute-ce' + '_' + version + '_linux' + '.zip'
+  archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
   if (isEnterpriseProduct) {
-    archiveName = 'TIB_compute' + '_' + version + '_linux' + '.zip'
+    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.zip'
   }
   dependsOn product
   // also package VSD
