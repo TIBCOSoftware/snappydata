@@ -72,7 +72,15 @@ To connect TIBCO ComputeDB from SQL Workbench/J, do the following:
 
 <a id= dbeaver> </a>
 ## DBeaver
-Before you connect TIBCO ComputeDB from DBeaver, you must start the LDAP server.
+DBeaver is a graphical database management tool. You can access TIBCO ComputeDB from DBeaver. Download and install DBeaver, start the LDAP server and print the LDAP conf, and then connect to TIBCO ComputeDB from DBeaver.
+
+### Download and Install DBeaver
+
+To download and install DBeaver, do the following:
+
+1.	Go to the [Download page](https://dbeaver.io/download/) of DBeaver.
+2.	Choose an appropriate installer for the corresponding operating system. For example, for Linux Debian package, download from [this link](https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb).
+3.	Run the corresponding commands that are specified in the **Install** section on the Download page.
 
 ### Starting the LDAP Server
 
@@ -85,12 +93,6 @@ To start the LDAP server, do the following:
 4.	Start the TIBCO ComputeDB cluster.
 
 ### Connecting to TIBCO ComputeDB from DBeaver
-
-To connect TIBCO ComputeDB from DBeaver, do the following:
-
-1.	Go to the [Download page](https://dbeaver.io/download/) of DBeaver.
-2.	Choose an appropriate installer for the corresponding operating system. For example, for Linux Debian package, download from [this link](https://dbeaver.io/files/dbeaver-ce_latest_amd64.deb).
-3.	Run the corresponding commands that are specified in the **Install** section on the Download page.
 4.	Launch DBeaver and click **New database connection**. 
 5.	Select **Hadoop / Big Data** section from the left. 
 6.	Select TIBCO ComputeDB from the available list of databases and provide the following details:
@@ -100,35 +102,38 @@ To connect TIBCO ComputeDB from DBeaver, do the following:
 7.	Test the connection and finish the setup of the database source.
 
 <a id= squirrel> </a>
-## Squirrel
+## SQuirreL SQL Client
 
-Before you connect TIBCO ComputeDB from Squirrel, you must start the LDAP server.
+The SQuirreL SQL Client client is a database administration tool that let you explore and interact with databases using a JDBC driver. You can access TIBCO ComputeDB from SQuirreL SQL. Download and install SQuirreL SQL Client, start the LDAP server and print the LDAP conf, and then connect to TIBCO ComputeDB from DBeaver.
 
+
+### Download and Install SQuirrel
+
+To download and install SQuirrel, do the following:
+
+1.	[Download](https://sourceforge.net/projects/squirrel-sql/) SQuirreL SQL Client.
+2.	Go to the folder where the SQuirreL SQL Client jar is downloaded and run the following command to install SQuirreL SQL Client:<br>
+	`java -jar <downloaded squirrel jar>`
+3.	Go to the SQuirreL SQL Client installation folder and run the following command:<br> 
+	`./squirrel-sql.sh`
+    
 ### Starting the LDAP Server
 
 To start the LDAP server, do the following:
 
 1.	From the terminal, go to the location of ldap-test-server: <br> `cd $SNAPPY_HOME/store/ldap-test-server`
-2.	Run the following command to build: <br>`./gradlew build`
-3.	Run the script: <br>`./start-ldap-server.sh auth.ldif`
-	This starts the LDAP server and prints the LDAP conf. The printed LDAP conf contains username and password of LDAP that should be used to connect from Squirrel. Copy this into all the conf files of TIBCO ComputeDB.
+2.	Run the following command: <br>`./gradlew build`
+3.	Run the following script: <br>`./start-ldap-server.sh auth.ldif`
+	This starts the LDAP server and prints the LDAP conf. The printed LDAP conf contains username and password of LDAP that should be used to connect from SQuirreL SQL Client. Copy this into all the conf files of TIBCO ComputeDB.
 4.	Start TIBCO ComputeDB cluster.
 
-### Download and Install Squirrel
 
-To download and install Squirrel, do the following:
+### Connecting to TIBCO ComputeDB from SQuirreL SQL Client	
 
-1.	[Download](https://sourceforge.net/projects/squirrel-sql/) Squirrel.
-2.	Go to the folder where Squirrel jar is downloaded and run the following command to install Squirrel:<br>
-	`java -jar <downloaded squirrel jar>`
-3.	Go to the Squirrel installation folder and run the following command:<br> 
-	`./squirrel-sql.sh`
+To connect TIBCO ComputeDB from SQuirreL SQL Client, do the following:
 
-### Connecting to TIBCO ComputeDB from Squirrel	
-
-To connect TIBCO ComputeDB from Squirrel, do the following:
-
-1.	In the **Drivers** tab on the left side, click **+** sign to add a new driver. 
+1.	Launch SQuirreL SQL Client.
+2.	In the **Drivers** tab on the left side, click **+** sign to add a new driver. 
 2.	Provide the following details:
 	*	Name
 	*	Example URL(connection string)
