@@ -675,7 +675,7 @@ case class SnappyHashAggregateExec(
 
           val snippet2 = structType.zipWithIndex.map { case (sf, index) => sf.dataType match {
             case stt: StructType => val structtVarName = SHAMapAccessor.
-              generateExplodedStructFieldVars(structVarName, nestingLevel + 1, index)._1
+              generateVarNameForStructField(structVarName, nestingLevel , index)
               f(structtVarName, stt, nestingLevel + 1).toString
             case _ => ""
           }

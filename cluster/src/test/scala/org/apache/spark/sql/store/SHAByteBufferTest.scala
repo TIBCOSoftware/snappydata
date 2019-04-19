@@ -880,13 +880,13 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val rs = session.sql("select details, sum(id) as summ1 from test1 group by details")
       val results = rs.collect()
       assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
-      val expectedResult = mutable.Map[(String, Int, (String, Int)), Int](
-        ("name0", 0, ("wife0", 0)) -> 10,
-        ("name1", 1, ("wife1", 1)) -> 35, ("name2", 2, ("wife2", 2)) -> 60)
+      var expectedResult = mutable.Map[(String, Int, (String, Int)), Int](
+        ("name0", 0, ("spouse0", 0)) -> 10,
+        ("name1", 1, ("spouse1", 1)) -> 35, ("name2", 2, ("spouse2", 2)) -> 60)
       assertEquals(expectedResult.size, results.length)
       results.foreach(row => {
         val str1 = row.getStruct(0)
-        val str2 = row.getStruct(2)
+        val str2 = str1.getStruct(2)
         val key = (str1.getString(0), str1.getInt(1), (str2.getString(0), str2.getInt(1)))
         assertEquals(expectedResult.getOrElse(key, fail("key does not exist")), row.getLong(1))
         expectedResult.remove(key)

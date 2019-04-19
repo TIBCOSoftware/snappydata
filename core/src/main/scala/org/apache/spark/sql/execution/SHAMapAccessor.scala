@@ -160,23 +160,25 @@ case class SHAMapAccessor(@transient session: SnappySession,
              """
         }
         case st: StructType =>
-          val correctedVarName = if (nestingLevel == 0) {
-            varName
-          } else {
-            varName.substring(0, varName.indexOf('['))
-          }
-          val objectArrayName = SHAMapAccessor.generateVarNameForStruct(correctedVarName,
-            nestingLevel, i)
+          val objectArray = ctx.freshName("objectArray")
+
           val byteBufferClass = classOf[ByteBuffer].getName
           val currentOffset = ctx.freshName("currentOffset")
 
-          val newNullBitSetTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(
-            correctedVarName)
-          val newNumNullKeyBytes = SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length)
+          val nullBitSetTermForStruct = SHAMapAccessor.generateNullKeysBitTermForStruct(
+            varName)
+          val numNullKeyBytesForStruct = SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length)
           val genericInternalRowClass = classOf[GenericInternalRow].getName
+          val internalRowClass = classOf[InternalRow].getName
           val objectClass = classOf[Object].getName
-          val keyVarNames = Array.tabulate[String](st.length)(i =>
-            s"$objectArrayName[$i]")
+          val keyVarNamesWithStructFlags = st.zipWithIndex.map { case (sf, indx) =>
+            sf.dataType match {
+              case _: StructType => SHAMapAccessor.generateVarNameForStructField(varName,
+                nestingLevel, indx) -> true
+              case _ => s"$objectArray[$indx]" -> false
+            }
+          }
+
           val isUnsafeRow = ctx.freshName("isUnsafeRow")
           val unsafeRowLength = ctx.freshName("unsafeRowLength")
           val holder = ctx.freshName("holder")
@@ -202,18 +204,34 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
           else {
             ${
-              readNullBitsCode(currentValueOffsetTerm, newNullBitSetTerm,
-              newNumNullKeyBytes)
-            }
-            $objectClass[] $objectArrayName = new $objectClass[${st.length}];
+            readNullBitsCode(currentValueOffsetTerm, nullBitSetTermForStruct,
+              numNullKeyBytesForStruct)
+          }
+            $objectClass[] $objectArray = new $objectClass[${st.length}];
 
-            $varName = new $genericInternalRowClass($objectArrayName);
+            $varName = new $genericInternalRowClass($objectArray);
+            // declare child struct variables
+            ${
+            keyVarNamesWithStructFlags.filter(_._2).
+              map { case (name, _) => s"$internalRowClass $name = null;" }.mkString("\n")
+          }
 
             ${
-              getBufferVars(st.map(_.dataType), keyVarNames, currentValueOffsetTerm,
-              true, newNullBitSetTerm, newNumNullKeyBytes, nestingLevel + 1).
+            getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
+              currentValueOffsetTerm,
+              true, nullBitSetTermForStruct, numNullKeyBytesForStruct, nestingLevel + 1).
               map(_.code).mkString("\n")
-            }
+          }
+            //add child Internal Rows to parent struct's object array
+            ${
+            keyVarNamesWithStructFlags.zipWithIndex.map { case ((name, isStruct), indx) =>
+              if (isStruct) {
+                s"$objectArray[$indx] = $name;"
+              } else {
+                ""
+              }
+            }.mkString("\n")
+          }
           }
           """.stripMargin
       }) +
@@ -378,9 +396,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
       val snippet =
         s"""
-             boolean $nullVarName = $structNullVarName|| $structVarName.isNullAt($index);
+             boolean $nullVarName = $structNullVarName||
+             (!$alwaysExplode && $structVarName instanceof $unsafeRowClass) ||
+          $structVarName.isNullAt($index);
              ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
-             if ($alwaysExplode || !($structVarName instanceof $unsafeRowClass)) {
+             if ($alwaysExplode|| !($structVarName instanceof $unsafeRowClass)) {
                if (!$nullVarName) {
                  $varName = $valueExtractCode;
                }
@@ -529,11 +549,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val newNumBytesForNullBits = SHAMapAccessor.
                 calculateNumberOfBytesForNullBits(st.length)
               s"""
-                 if ($alwaysExplode || !($variable instanceof $unsafeRowClass)) {
+                 if ($alwaysExplode|| !($variable instanceof $unsafeRowClass)) {
                     $plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
                     $offsetTerm += 1;
-                    ${writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
-                    newNullBitTerm, newNumBytesForNullBits, true, nestingLevel + 1)}
+                    ${
+                writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
+                  newNullBitTerm, newNumBytesForNullBits, true, nestingLevel + 1)
+              }
                  } else {
                    $plaformClass.putBoolean($baseObjectTerm, $offsetTerm,true);
                    $offsetTerm += 1;
@@ -702,9 +724,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
           case st: StructType => val (childKeysVars, childDataTypes) =
             getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
             s"""
-             1 + (($alwaysExplode || !(${expr.value} instanceof $unsafeRowClass)) ?
-             (${generateKeySizeCode(childKeysVars, childDataTypes,
-              SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)}) :
+             1 + (($alwaysExplode|| !(${expr.value} instanceof $unsafeRowClass)) ?
+             (${
+              generateKeySizeCode(childKeysVars, childDataTypes,
+                SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
+            }) :
                (($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4)
             """.stripMargin
 
@@ -913,12 +937,12 @@ object SHAMapAccessor {
 
   def generateNullKeysBitTermForStruct(structName: String): String = s"${structName}_nullKeysBitset"
 
-  def generateVarNameForStruct(parentVar: String,
+  def generateVarNameForStructField(parentVar: String,
     nestingLevel: Int, index: Int): String = s"${parentVar}_${nestingLevel}_$index"
 
   def generateExplodedStructFieldVars(parentVar: String,
     nestingLevel: Int, index: Int): (String, String) = {
-    val varName = s"${parentVar}_${nestingLevel}_$index"
+    val varName = generateVarNameForStructField(parentVar, nestingLevel, index)
     val isNullVarName = s"${varName}_isNull"
     (varName, isNullVarName)
   }
