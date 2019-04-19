@@ -61,6 +61,10 @@ class LeadImpl extends ServerImpl with Lead
 
   self =>
 
+  val DEFAULT_LEADER_MEMBER_WEIGHT_NAME = "gemfire.member-weight"
+
+  val DEFAULT_LEADER_MEMBER_WEIGHT = "17"
+
   private val LOCK_SERVICE_NAME = "__PRIMARY_LEADER_LS"
 
   private val bootProperties = new Properties()
@@ -91,6 +95,8 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.remove("isTest")
     val authSpecified = Misc.checkLDAPAuthProvider(bootProperties)
 
+    ServiceUtils.setCommonBootDefaults(bootProperties, forLocator = false)
+
     // prefix all store properties with "snappydata.store" for SparkConf
 
     // first the passed in bootProperties
@@ -115,6 +121,11 @@ class LeadImpl extends ServerImpl with Lead
     // next the system properties that cannot override above
     val sysProps = System.getProperties
     val sysPropNames = sysProps.stringPropertyNames().iterator()
+    // check if user has set gemfire.member-weight property
+    if (System.getProperty(DEFAULT_LEADER_MEMBER_WEIGHT_NAME) eq null) {
+      System.setProperty(DEFAULT_LEADER_MEMBER_WEIGHT_NAME, DEFAULT_LEADER_MEMBER_WEIGHT)
+    }
+
     while (sysPropNames.hasNext) {
       val sysPropName = sysPropNames.next()
       if (sysPropName.startsWith(SPARK_PREFIX)) {
@@ -154,7 +165,7 @@ class LeadImpl extends ServerImpl with Lead
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
-          setAppName("SnappyData").
+          setAppName("TIBCO ComputeDB").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",

@@ -26,6 +26,7 @@ import io.snappydata.SnappyFunSuite
 import org.scalatest.Assertions
 
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, Dataset, Row}
@@ -375,9 +376,9 @@ object MetadataTest extends Assertions {
     // ----- check SHOW SCHEMAS -----
 
     rs = executeSQL("show schemas").collect()
-    assert(rs === Array(Row("APP"), Row("DEFAULT"), Row("SYS")))
+    assert(rs === Array(Row("app"), Row("default"), Row("sys")))
     rs = executeSQL("show schemas like 'a*|s*'").collect()
-    assert(rs === Array(Row("APP"), Row("SYS")))
+    assert(rs === Array(Row("app"), Row("sys")))
 
     // ----- check DESCRIBE for schema-----
 
@@ -389,7 +390,7 @@ object MetadataTest extends Assertions {
       Row("Location", "SYS"), Row("Properties", "")))
 
     // ----- check SHOW TABLES variants -----
-    val allSYSTables = (expectedSYSTables ++ expectedVTIs).sorted
+    val allSYSTables = (expectedSYSTables ++ expectedVTIs).map(Utils.toLowerCase).sorted
 
     rs = executeSQL("show tables").collect()
     assert(rs.length === 0)
@@ -398,13 +399,13 @@ object MetadataTest extends Assertions {
 
     rs = executeSQL("show tables from sys").collect()
     assert(rs.length === allSYSTables.length)
-    assert(rs.sortBy(_.getString(1)) === allSYSTables.map(n => Row("SYS", n, false)))
+    assert(rs.sortBy(_.getString(1)) === allSYSTables.map(n => Row("sys", n, false)))
 
     rs = executeSQL("show tables in sys like '[m-s]*'").collect()
     val filtered = (expectedSYSTables ++ expectedVTIs)
-        .filter(n => n.charAt(0) >= 'M' && n.charAt(0) <= 'S').sorted
+        .filter(n => n.charAt(0) >= 'M' && n.charAt(0) <= 'S').map(Utils.toLowerCase).sorted
     assert(rs.length === filtered.length)
-    assert(rs.sortBy(_.getString(1)) === filtered.map(n => Row("SYS", n, false)))
+    assert(rs.sortBy(_.getString(1)) === filtered.map(n => Row("sys", n, false)))
 
     // also check hive compatible output
     executeSQL("set snappydata.sql.hiveCompatible=true")
@@ -562,19 +563,19 @@ object MetadataTest extends Assertions {
     // ----- check SHOW SCHEMAS for user tables -----
 
     rs = executeSQL("show schemas").collect()
-    assert(rs === Array(Row("APP"), Row("DEFAULT"), Row("SYS")))
+    assert(rs === Array(Row("app"), Row("default"), Row("sys")))
 
     // ----- check SHOW TABLES for user tables -----
 
     rs = executeSQL("show tables").collect()
     assert(rs.length === 2)
     assert(rs.sortBy(_.getString(1)) === Array(
-      Row("APP", "COLUMNTABLE2", false), Row("APP", "ROWTABLE1", false)))
+      Row("app", "columntable2", false), Row("app", "rowtable1", false)))
 
     rs = executeSQL("show tables in App").collect()
     assert(rs.length === 2)
     assert(rs.sortBy(_.getString(1)) === Array(
-      Row("APP", "COLUMNTABLE2", false), Row("APP", "ROWTABLE1", false)))
+      Row("app", "columntable2", false), Row("app", "rowtable1", false)))
 
     // also check hive compatible output
     executeSQL("set snappydata.sql.hiveCompatible=true")
@@ -582,12 +583,12 @@ object MetadataTest extends Assertions {
     rs = executeSQL("show tables").collect()
     assert(rs.length === 2)
     assert(rs.sortBy(_.getString(0)) === Array(
-      Row("COLUMNTABLE2"), Row("ROWTABLE1")))
+      Row("columntable2"), Row("rowtable1")))
 
     rs = executeSQL("show tables in App").collect()
     assert(rs.length === 2)
     assert(rs.sortBy(_.getString(0)) === Array(
-      Row("COLUMNTABLE2"), Row("ROWTABLE1")))
+      Row("columntable2"), Row("rowtable1")))
 
     executeSQL("set snappydata.sql.hiveCompatible=false")
 
@@ -759,26 +760,26 @@ object MetadataTest extends Assertions {
     // ----- check SHOW SCHEMAS for user tables -----
 
     rs = executeSQL("show schemas").collect()
-    assert(rs === Array(Row("APP"), Row("DEFAULT"), Row("SCHEMA1"), Row("SCHEMA2"), Row("SYS")))
+    assert(rs === Array(Row("app"), Row("default"), Row("schema1"), Row("schema2"), Row("sys")))
 
     // ----- check SHOW TABLES for user tables -----
 
     rs = executeSQL("show tables in schema1").collect()
     assert(rs.length === 1)
-    assert(rs(0) === Row("SCHEMA1", "COLUMNTABLE1", false))
+    assert(rs(0) === Row("schema1", "columntable1", false))
     rs = executeSQL("show tables in schema2").collect()
     assert(rs.length === 1)
-    assert(rs(0) === Row("SCHEMA2", "ROWTABLE2", false))
+    assert(rs(0) === Row("schema2", "rowtable2", false))
 
     // also check hive compatible output
     executeSQL("set snappydata.sql.hiveCompatible=true")
 
     rs = executeSQL("show tables in schema1").collect()
     assert(rs.length === 1)
-    assert(rs(0) === Row("COLUMNTABLE1"))
+    assert(rs(0) === Row("columntable1"))
     rs = executeSQL("show tables in schema2").collect()
     assert(rs.length === 1)
-    assert(rs(0) === Row("ROWTABLE2"))
+    assert(rs(0) === Row("rowtable2"))
 
     executeSQL("set snappydata.sql.hiveCompatible=false")
 

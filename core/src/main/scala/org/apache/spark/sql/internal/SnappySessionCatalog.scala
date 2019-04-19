@@ -358,18 +358,23 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (cascade) {
       // drop all the tables in order first, dependents followed by others
       val allTables = externalCatalog.listTables(schemaName).flatMap(
-        table => externalCatalog.getTableOption(schemaName, table))
+        table => externalCatalog.getTableOption(schemaName, formatTableName(table)))
+      // keep dropping leaves until empty
       if (allTables.nonEmpty) {
-        val (dependents, others) = allTables.partition(t => t.tableType ==
-            CatalogTableType.VIEW || externalCatalog.getBaseTable(t).isDefined)
-        dependents.foreach(d => snappySession.dropTable(d.identifier, ifExists = true,
-          d.tableType == CatalogTableType.VIEW))
-        // drop streams at last
-        val (streams, tables) = others.partition(getTableType(_) == CatalogObjectType.Stream)
-        tables.foreach(t => snappySession.dropTable(t.identifier.unquotedString, ifExists = true))
+        // drop streams at the end
+        val (streams, others) = allTables.partition(getTableType(_) == CatalogObjectType.Stream)
+        var tables = others
+        while (tables.nonEmpty) {
+          val (leaves, remaining) = tables.partition(t => t.tableType == CatalogTableType.VIEW ||
+              externalCatalog.getDependents(formatDatabaseName(t.database), formatTableName(
+                t.identifier.table), t, Nil, CatalogObjectType.Policy :: Nil).isEmpty)
+          leaves.foreach(t => snappySession.dropTable(t.identifier, ifExists = true,
+            t.tableType == CatalogTableType.VIEW))
+          tables = remaining
+        }
         if (streams.nonEmpty) {
           streams.foreach(s => snappySession.dropTable(
-            s.identifier.unquotedString, ifExists = true))
+            s.identifier, ifExists = true, isView = false))
         }
       }
 
@@ -403,8 +408,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   override def listDatabases(): Seq[String] = synchronized {
     if (skipDefaultSchemas) {
-      super.listDatabases().filter(s => s != SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA &&
-          s != SnappyExternalCatalog.SYS_SCHEMA && s != defaultSchemaName)
+      super.listDatabases().filter(s =>
+        !s.equalsIgnoreCase(SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA) &&
+            !s.equalsIgnoreCase(SnappyExternalCatalog.SYS_SCHEMA) &&
+            !s.equalsIgnoreCase(defaultSchemaName))
     } else super.listDatabases()
   }
 

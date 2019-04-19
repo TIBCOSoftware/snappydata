@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql
 
-
 import java.io.File
 
 import scala.util.Try
@@ -29,7 +28,6 @@ import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
-import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
@@ -511,8 +509,8 @@ abstract class SnappyDDLParser(session: SparkSession)
     ALTER ~ TABLE ~ tableIdentifier ~ (
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
-        ANY. + ~ EOI ~> ((r: TableIdentifier) =>
-          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
+        capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedNormalizedId(r)} $s"))
     )
   }
 
