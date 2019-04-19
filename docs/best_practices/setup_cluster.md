@@ -3,7 +3,7 @@
 ## Handling Low Latency versus Analytic Jobs
 Unlike Spark, TIBCO ComputeDB™ can distinguish cheap requests (low latency) as compared to requests that require a lot of computational resources (high latency). This is done by a resource scheduler that can balance the needs of many contending users/threads.
 
-For instance, when a SQL client executes a *fetch by primary key *query, there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and the response is directly sent to the requesting client (probably within a few milliseconds). </br>
+For instance, when a SQL client executes a *fetch by primary key* query, there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and the response is directly sent to the requesting client (probably within a few milliseconds). </br>
 In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the TIBCO ComputeDB scheduler. Only Row tables can have primary keys or indexes.
 
 When the above conditions are not met, the request is routed to the Lead node where the Spark plan is generated and jobs are scheduled for execution. The scheduler uses a FAIR scheduling algorithm for higher concurrency. That means all the concurrent jobs are executed in a round-robin manner.
@@ -27,13 +27,21 @@ By default, TIBCO ComputeDB sets spark executor cores to be 2 multiplied by the 
 This is done keeping in mind some threads which do the IO (Input/Output) reads while the other threads can get scheduled by the operating system. However, increasing this number does not improve query performance.
 
 In case you start multiple TIBCO ComputeDB servers on a machine then:
-**Spark executor cores = N x physical cores per server**
-**Thread execution = 2N x physical cores thread of execution**
 
-This can intensely impact thread scheduling and query performance. Also, the heap requirement for each server is constant that is 8/16 GB on larger virtual machines. In the case of off-heap storage, you can use the heap only for some execution and temporary buffers. If you have more servers per machine, more memory should be allocated to the heap and less for the off-heap actual storage of data. This can also lead to more disk reads which further impacts the query performance.
+*	**Spark executor cores = N x physical cores per server**
+*	**Thread execution = 2N x physical cores thread of execution**
 
-Therefore, TIBCO recommends that you maintain only one server per machine so that the total number of threads and amount of memory allocated to the heap is minimum. If more than one server is running on a machine, you can use the `spark.executor.cores` to override the number of cores per server. The cores should be divided accordingly and specified using the `spark.executor.cores` property.
+This can impact thread scheduling and query performance. Also, the heap requirement for each server is suggested to be 8/16 GB on larger virtual machines. In the case of off-heap storage, the heap is only used for some execution and temporary buffers. If you have more servers per machine, more percentage of actual memory would be allocated to the heap and less for the off-heap actual storage of data. This can also lead to more disk reads which further impacts the query performance.
+
+For example, on a machine with 64 GB RAM, you can allocate 8GB to the heap and 40 GB to off-heap.
+If you start 2 serves, then both the servers must have 8 GB heap. This will reduce the off-heap storage to 16 GB each. It will reduce the off-heap storage by 8 GB (40 GB-2*16 GB).
+
+Therefore, it is recommended that you maintain only one server per machine so that the total number of threads and amount of memory allocated to the heap is minimum. If more than one server is running on a machine, you can use the `spark.executor.cores` to override the number of cores per server. The cores should be divided accordingly and specified using the `spark.executor.cores` property.
+
 **Spark executor cores = 2 x total physical cores on a machine / No of servers per machine**
+
+!!! Note
+	We do not recommended to reduce the heap size even if you start multiple servers per machine.
 
 For example, for a cluster with 2 servers running on two different machines with 4 CPU cores each, a maximum number of tasks that can run concurrently is 16. </br> 
 If a table has 16 partitions (buckets, for the row or column tables), a scan query on this table creates 16 tasks. This means, 16 tasks run concurrently and the last task runs when one of these 16 tasks has finished execution.
