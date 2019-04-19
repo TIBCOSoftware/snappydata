@@ -5,7 +5,7 @@ You can use any of the following SQL client tools to access TIBCO ComputeDB:
 *	[DbVisualizer](#dbvis)
 *	[SQL Workbench/J](#sqlworkbenchj)
 *	[DBeaver](#dbeaver)
-*	[Squirrel](#squirrel)
+*	[SQuirreL SQL Client](#squirrel)
 
 <a id= dbvis> </a>
 ## DbVisualizer
@@ -105,7 +105,6 @@ To start the LDAP server, do the following:
 ## SQuirreL SQL Client
 
 The SQuirreL SQL Client client is a database administration tool that let you explore and interact with databases using a JDBC driver. You can access TIBCO ComputeDB from SQuirreL SQL. Download and install SQuirreL SQL Client, start the LDAP server and print the LDAP conf, and then connect to TIBCO ComputeDB from DBeaver.
-
 
 ### Download and Install SQuirrel
 
