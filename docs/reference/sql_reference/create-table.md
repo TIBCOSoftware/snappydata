@@ -131,7 +131,7 @@ Column and row tables support hash partitioning on one or more columns. These ar
 
 <a id="buckets"></a>
 `BUCKETS` </br>
-The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of five nodes and a bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers hosts all the data for this table. If not specified, the number of buckets defaults to 128. See [best practices](../../best_practices/optimizing_query_latency.md#partition-scheme) for more information. 
+The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of five nodes and a bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers hosts all the data for this table. If not specified, the number of buckets defaults to 128. See [best practices](../../best_practices/important_settings.md#buckets) for more information. 
 For row tables, `BUCKETS` must be created with the `PARTITION_BY` clause, else an error is reported.
 
 <a id="compress"></a>
