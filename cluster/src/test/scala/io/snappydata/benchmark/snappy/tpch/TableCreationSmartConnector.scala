@@ -32,6 +32,7 @@ object TableCreationSmartConnector {
 
     val sc: SparkSession = SparkSession
         .builder
+        .appName("TPCH_Spark_SmartConnector")
         .getOrCreate
 
     val tpchDataPath = args(0)

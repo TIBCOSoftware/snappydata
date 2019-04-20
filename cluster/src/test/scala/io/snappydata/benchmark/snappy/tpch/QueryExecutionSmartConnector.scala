@@ -30,6 +30,7 @@ object QueryExecutionSmartConnector {
 
     val sc: SparkSession = SparkSession
         .builder
+
         .getOrCreate
 
     val queries = args(0).split("-")
