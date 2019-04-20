@@ -2,7 +2,8 @@
 source PerfRun.conf
 
 #top master and slaves from master machines
-ssh $master sh $SNAPPY_HOME/sbin/snappy-stop-all.sh
+#ssh $master sh $SNAPPY_HOME/sbin/snappy-stop-all.sh
+$SNAPPY_HOME/sbin/snappy-stop-all.sh
 
 rm -rf $SNAPPY_HOME/conf/leads
 rm -rf $SNAPPY_HOME/conf/locators
