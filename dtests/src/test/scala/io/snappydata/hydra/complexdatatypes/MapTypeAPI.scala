@@ -20,7 +20,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql._
-import org.apache.spark.sql.DataFrame
+import org.apache.spark.sql.functions._
 
 class MapTypeAPI extends SnappySQLJob {
     override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
@@ -52,6 +52,7 @@ class MapTypeAPI extends SnappySQLJob {
 //            sncReadDF("Science").getField("science"), sncReadDF("English").getItem("english"),
 //            sncReadDF("Computer").getItem("computer"), sncReadDF("Music").getField("music"),
 //            sncReadDF("History").getItem("history")).filter(sncReadDF("name")==="JxVJBxYlNT")
+
 //      val sparkMapQuery2DF : DataFrame = sparkReadDF
 //          .select(sparkReadDF("id"), sparkReadDF("name"), sparkReadDF("Maths").getItem("maths"),
 //            sparkReadDF("Science").getField("science"), sparkReadDF("English").getItem("english"),
@@ -63,13 +64,60 @@ class MapTypeAPI extends SnappySQLJob {
 //      }
 
       println("Start the Map Type Query3")
-      val sncMapQuery3DF : DataFrame = sncReadDF
-          .select(sncReadDF.agg(sum()))
-//      println("Finish the Map Type Query3")
+      val snc3DF2 : DataFrame = sncReadDF.select(("id"), ("name"))
+      val snc3DF3 : DataFrame = sncReadDF.select("id",
+        "Maths.maths", "Science.science", "English.english", "History.history",
+        "Music.music", "Computer.computer")
+      val snc3DF4 : DataFrame = snc3DF2.join(snc3DF3, snc3DF2("id") === snc3DF3("id"))
+      val snc3DF5 : DataFrame = snc3DF4.select("name",
+      "maths", "science", "english", "history", "music", "computer")
+      val sncMapQuery3DF : DataFrame = snc3DF5.select("*").groupBy("name")
+        .agg(sum(snc3DF5("maths") + snc3DF5("science") + snc3DF5("english")
+          + snc3DF5("music") + snc3DF5("history") + snc3DF5("computer")).as("Total"))
+       .orderBy(desc("Total"))
+
+      val spark3DF2 : DataFrame = sparkReadDF.select(("id"), ("name"))
+      val spark3DF3 : DataFrame = sparkReadDF.select("id",
+        "Maths.maths", "Science.science", "English.english", "History.history",
+        "Music.music", "Computer.computer")
+      val spark3DF4 : DataFrame = spark3DF2.join(spark3DF3, spark3DF2("id") === spark3DF3("id"))
+      val spark3DF5 : DataFrame = spark3DF4.select("name",
+        "maths", "science", "english", "history", "music", "computer")
+      val sparkMapQuery3DF : DataFrame = spark3DF5.select("*").groupBy("name")
+        .agg(sum(spark3DF5("maths") + spark3DF5("science") + spark3DF5("english")  +
+          spark3DF5("history") + spark3DF5("music") + spark3DF5("computer")).as("Total"))
+        .orderBy(desc("Total"))
+
+
+      println("Start the Map Type Query5")
+      val snc5DF2 : DataFrame = sncReadDF.select(("id"), ("name"))
+      val snc5DF3 : DataFrame = sncReadDF.select("id",
+        "Maths.maths", "Science.science", "English.english", "History.history",
+        "Music.music", "Computer.computer")
+      val snc5DF4 : DataFrame = snc5DF2.join(snc5DF3, snc5DF2("id") === snc5DF3("id"))
+      val snc5DF5 : DataFrame = snc5DF4.select("name",
+        "maths", "science", "english", "history", "music", "computer")
+      val sncMapQuery5DF : DataFrame = snc5DF5.select("*").groupBy("name")
+        .agg((sum(snc5DF5("maths") + snc5DF5("science") + snc5DF5("english") +
+        snc5DF5("music") +  snc5DF5("history") + snc5DF5("computer"))
+        * 100.0/600.0).as("Percentage"))
+        .orderBy(desc("Percentage"))
+
+      val spark5DF2 : DataFrame = sparkReadDF.select(("id"), ("name"))
+      val spark5DF3 : DataFrame = sparkReadDF.select("id",
+        "Maths.maths", "Science.science", "English.english", "History.history",
+        "Music.music", "Computer.computer")
+      val spark5DF4 : DataFrame = spark5DF2.join(spark5DF3, spark5DF2("id") === spark5DF3("id"))
+      val spark5DF5 : DataFrame = spark5DF4.select("name",
+        "maths", "science", "english", "history", "music", "computer")
+      val sparkMapQuery5DF : DataFrame = spark5DF5.select("*").groupBy("name")
+        .agg((sum(spark5DF5("maths") + spark5DF5("science") + spark5DF5("english")  +
+        spark5DF5("history") + spark5DF5("music") + spark5DF5("computer"))
+        * 100.0/600.0).as("Percentage"))
+        .orderBy(desc("Percentage"))
+
 //      println("Start the Map Type Query4")
 //      println("Finish the Map Type Query4")
-//      println("Start the Map Type Query5")
-//      println("Finish the Map Type Query5")
 //      println("Start the Map Type Query6")
 //      println("Finish the Map Type Query6")
 
@@ -79,6 +127,14 @@ class MapTypeAPI extends SnappySQLJob {
 //      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery2DF, sparkMapQuery2DF,
 //      "MapTypeQuery2", "column", pw,sqlContext)
 //      println("Finish the Map Type Query2")
+
+         SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery3DF, sparkMapQuery3DF,
+          "MapTypeQuery3", "column", pw,sqlContext)
+            println("Finish the Map Type Query3")
+
+      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery5DF, sparkMapQuery5DF,
+        "MapTypeQuery5", "column", pw,sqlContext)
+      println("Finish the Map Type Query6")
 
       println("Query MapType Via API, Job Completed....")
     }
