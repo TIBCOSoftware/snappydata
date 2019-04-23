@@ -739,7 +739,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     try {
       // perform some operations through spark-shell using JDBC pool driver API on current Spark
       val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
-        "TIB_compute-jdbc_*.jar")
+        "TIB_compute-jdbc*.jar")
       var securityConf = ""
       if (props.containsKey(Attribute.USERNAME_ATTR)) {
         securityConf = s" --conf spark.snappydata.user=" +
