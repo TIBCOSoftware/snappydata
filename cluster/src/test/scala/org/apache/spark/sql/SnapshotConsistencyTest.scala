@@ -34,7 +34,7 @@ class SnapshotConsistencyTest
     snc.sql(s"drop table if exists $tableName")
   }
 
-  test("test insert atomicity in column table") {
+  ignore("test insert atomicity in column table") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     snc.sql(s"CREATE TABLE $tableName (Col1 INT not null, Col2 INT not null) " +
         "USING column " +
@@ -90,7 +90,7 @@ class SnapshotConsistencyTest
     logInfo("Successful")
   }
 
-  test("test delete atomicity in column table") {
+  ignore("test delete atomicity in column table") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     snc.sql(s"CREATE TABLE $tableName (Col1 INT not null, Col2 INT not null) " +
         "USING column " +
@@ -145,7 +145,7 @@ class SnapshotConsistencyTest
     logInfo("Successful")
   }
 
-  test("test update atomicity in column table") {
+  ignore("test update atomicity in column table") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     snc.sql(s"CREATE TABLE $tableName (Col1 INT not null, Col2 INT not null) " +
         "USING column " +
@@ -206,7 +206,7 @@ class SnapshotConsistencyTest
     logInfo("Successful")
   }
 
-  test("test update atomicity in column table with eviction") {
+  ignore("test update atomicity in column table with eviction") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     snc.sql(s"CREATE TABLE $tableName " +
         s"(Col1 INT not null, Col2 INT not null, Col3 String) " +
@@ -273,7 +273,7 @@ class SnapshotConsistencyTest
   }
 
 
-  test("test update atomicity in column table row buffer") {
+  ignore("test update atomicity in column table row buffer") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT) " +
         "USING column " +
