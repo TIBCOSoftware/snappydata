@@ -252,8 +252,8 @@ class LeadImpl extends ServerImpl with Lead
       var jobServerConfig: Config = null
       var startupString: String = null
       if (Property.JobServerEnabled.get(conf)) {
-        jobServerWait = Property.JobServerWaitForInit.get(conf) ||
-            (!startHiveServerDefault && startHiveServer)
+        jobServerWait = (!startHiveServerDefault && startHiveServer) ||
+            Property.JobServerWaitForInit.get(conf)
         confFile = conf.getOption("jobserver.configFile") match {
           case None => Array[String]()
           case Some(c) => Array(c)
