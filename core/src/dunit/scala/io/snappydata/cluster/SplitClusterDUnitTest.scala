@@ -687,7 +687,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
-      "snappydata-core*.jar")
+      "TIB_compute-core*.jar")
     var securityConf = ""
     if (props.containsKey(Attribute.USERNAME_ATTR)) {
       securityConf = s" --conf spark.snappydata.store.user=${props.getProperty(Attribute
