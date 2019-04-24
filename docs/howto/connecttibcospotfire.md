@@ -8,8 +8,8 @@ To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIB
 Do the following, in the given order, to set up TIBCO ComputeDB and to enable the Hive Thrift server.
 
 1.	Check the [system requirements](/install/system_requirements.md) to install and run TIBCO ComputeDB. 
-2.	Download the Enterprise Edition from SnappyData Release page.
-3.	[Configure the SnappyData Cluster](/configuring_cluster/configuring_cluster.md).
+2.	Download the Enterprise Edition from the Release page.
+3.	[Configure the TIBCO ComputeDB Cluster](/configuring_cluster/configuring_cluster.md).
 4.	In the [Lead Node Configuration](/configuring_cluster/configuring_cluster.md#lead), set the following property to enable the Hive Thrift server:<br>`-snappydata.hiveServer.enabled=true`.
 5.	If you want to securely access the Hive Thrift server using SSL encryption, you must set these additional properties in the [Lead Node Configuration](/configuring_cluster/configuring_cluster.md#lead):
 	*	`-hive.server2.use.SSL=true` 
@@ -26,7 +26,7 @@ Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( 
 
 1.	On the Spotfire® Desktop application, from the left panel, click **Connect to** > **Apache Spark SQL** > **New Connection**. <br> The **Apache Spark SQL Connection** dialog box is displayed.<br> ![images](../Images/spotfire/generaltabspotfire.png)
 3.	In the **General** tab, enter the following details:
-	*	**Server**: Enter the hostname/IP of the Lead node in SnappyData cluster
+	*	**Server**: Enter the hostname/IP of the Lead node in TIBCO ComputeDB cluster
 	*	**Authentication** **Method**: Select **username and password** option.
 	*	**Username/Password**: Provide a username and password. You could choose to use APP/APP for username/password if authentication was not configured in the cluster.
 4.	Select the **Use secure sockets layer** check box if you want to securely access the Hive Thrift server. Else, you can clear the check box.

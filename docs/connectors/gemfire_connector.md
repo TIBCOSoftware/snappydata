@@ -1,21 +1,21 @@
-# SnappyData GemFire Connector
+# TIBCO ComputeDB GemFire Connector
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the TIBCO ComputeDB™ - Enterprise Edition. </br></ent>
 
 ## Overview
-The SnappyData GemFire Connector allows SnappyData/Spark programs to read from data regions as well as write into data regions within GemFire clusters. You can connect the applications to one or more GemFire clusters, expose GemFire regions as SnappyData tables/Spark DataFrames, run complex SQL queries on data stored in GemFire and save SnappyData tables onto GemFire regions. The connector is designed to execute in a highly parallelized manner targeting GemFire partitioned datasets (buckets) for the highest possible performance.
+The TIBCO ComputeDB GemFire Connector allows TIBCO ComputeDB/Spark programs to read from data regions as well as write into data regions within GemFire clusters. You can connect the applications to one or more GemFire clusters, expose GemFire regions as TIBCO ComputeDB tables/Spark DataFrames, run complex SQL queries on data stored in GemFire and save TIBCO ComputeDB tables onto GemFire regions. The connector is designed to execute in a highly parallelized manner targeting GemFire partitioned datasets (buckets) for the highest possible performance.
 
-By exposing GemFire regions as Spark DataFrames, applications can benefit from the analytic features in SnappyData such as, flexible data transformations, analytics and moving data from/into almost all modern data stores.
+By exposing GemFire regions as Spark DataFrames, applications can benefit from the analytic features in TIBCO ComputeDB such as, flexible data transformations, analytics and moving data from/into almost all modern data stores.
 
 ### Features
 
- - Expose GemFire regions as SnappyData external tables
+ - Expose GemFire regions as TIBCO ComputeDB external tables
 
- - Run SQL queries on GemFire regions from SnappyData
+ - Run SQL queries on GemFire regions from TIBCO ComputeDB
 
- - Support joins on GemFire regions from SnappyData
+ - Support joins on GemFire regions from TIBCO ComputeDB
 
- - Save SnappyData tables/DataFrames to GemFire
+ - Save TIBCO ComputeDB tables/DataFrames to GemFire
 
  - Support for POJOs as well as native support for GemFire PDX
 
@@ -25,19 +25,19 @@ By exposing GemFire regions as Spark DataFrames, applications can benefit from t
 
 ### Version and Compatibility
 
-SnappyData GemFire Connector supports Spark 2.1 and has been tested with GemFire 8.2 or later.
+TIBCO ComputeDB GemFire Connector supports Spark 2.1 and has been tested with GemFire 8.2 or later.
 
 ## Quick Start Guide
 
-This Quick Start guide explains, how to start a GemFire cluster, load data onto a partitioned region, access this region as an SQL table, replicate to a SnappyData column table, and then run queries on both GemFire and SnappyData tables.
+This Quick Start guide explains, how to start a GemFire cluster, load data onto a partitioned region, access this region as an SQL table, replicate to a TIBCO ComputeDB column table, and then run queries on both GemFire and TIBCO ComputeDB tables.
 
-*	[Set SnappyData GemFire Connector](#setsnappydatagemfireconnector)
-*	[Configure the SnappyData Cluster for GemFire Connector](#configuresnappydataclustergemfire)
+*	[Set TIBCO ComputeDB GemFire Connector](#setsnappygemfireconnector)
+*	[Configure the TIBCO ComputeDB Cluster for GemFire Connector](#configuresnappyclustergemfire)
 *	[Access GemFire as an SQL Table to Run Queries](#accessgemfireassql>)
-*	[Replicate to SnappyData Table and Running Join Queries](#replicatesnappydatatable)
+*	[Replicate to TIBCO ComputeDB Table and Running Join Queries](#replicatesnappytable)
 
-<a id= setsnappydatagemfireconnector> </a>
-### Setting SnappyData GemFire Connector
+<a id= setsnappygemfireconnector> </a>
+### Setting TIBCO ComputeDB GemFire Connector
 
 The following prerequisites are required for setting up GemFire connector:
 
@@ -46,15 +46,15 @@ The following prerequisites are required for setting up GemFire connector:
 *	Basic knowledge of GemFire
 *	[GemFire version 8.2 or later](https://network.pivotal.io/products/pivotal-gemfire#/releases/4375) installed and running.
 
-The following section provides instructions to get a two-node GemFire cluster running and to deploy the functions required by SnappyData to access GemFire.
+The following section provides instructions to get a two-node GemFire cluster running and to deploy the functions required by TIBCO ComputeDB to access GemFire.
 
-**To start GemFire cluster and deploy SnappyData Connector functions**
+**To start GemFire cluster and deploy TIBCO ComputeDB Connector functions**
 
 1.	Start the GemFire shell.
 
 		$ <GemFire_home>/bin/gfsh
 		gfsh> start locator --name=locator1 --port=55221
-	You need to use a non-default port, as SnappyData uses the same defaults as GemFire.
+	You need to use a non-default port, as TIBCO ComputeDB uses the same defaults as GemFire.
 
 2.	Start two data servers.
 
@@ -76,35 +76,35 @@ The following section provides instructions to get a two-node GemFire cluster ru
 
 5.	Deploy these functions to the GemFire cluster.
 
-		gfsh>deploy --jar=<SnappyData-home>/connectors/gfeFunctions-0.9.jar
+		gfsh>deploy --jar=<TIBCO ComputeDB_home>/connectors/gfeFunctions-0.9.jar
 
 	A two node GemFire cluster is up and running with a region **GemRegion** and the added entries.
 
-<a id= configuresnappydataclustergemfire> </a>
-### Configuring the SnappyData Cluster for GemFire Connector
+<a id= configuresnappyclustergemfire> </a>
+### Configuring the TIBCO ComputeDB Cluster for GemFire Connector
 
-The SnappyData cluster must be configured with details of the GemFire cluster with which the connector interfaces.</br>The configuration details should be provided to both the SnappyData lead and server nodes.
+The TIBCO ComputeDB cluster must be configured with details of the GemFire cluster with which the connector interfaces.</br>The configuration details should be provided to both the TIBCO ComputeDB lead and server nodes.
 
 1.	Modify the server and lead configuration files that are located at:
 
-	* **<_SnappyData-home_>/conf/leads**
-	* **<_SnappyData-home_>/conf/servers**
+	* **<TIBCO ComputeDB_home_>/conf/leads**
+	* **<TIBCO ComputeDB_home_>/conf/servers**
 
 2.	Add the connector jar (connector-0.9.jar) to the classpath and configure the remote GemFire cluster (locators, the servers and lead files) as follows:
 
         localhost -locators=localhost:10334 -client-bind-address=localhost 
-        -classpath= <SnappyData-home>/connectors/connector-0.9.jar
+        -classpath= <TIBCO ComputeDB_home>/connectors/connector-0.9.jar
         -spark.gemfire-grid.\<UniqueID\>=localhost[55221] 
 
 	Here, the UniqueID is a name assigned for the Grid. </br>
 
-	For example, SnappyData GemFire connector can connect to multiple Grids for federated data access.
+	For example, TIBCO ComputeDB GemFire connector can connect to multiple Grids for federated data access.
 
 		-spark.gemfire-grid.gridOne=localhost[55221] -spark.gemfire-grid.gridTwo=localhost[65221]
 
-3.	[Start the SnappyData cluster](../howto/start_snappy_cluster.md) using the following command:
+3.	[Start the TIBCO ComputeDB cluster](../howto/start_snappy_cluster.md) using the following command:
 
-		$ <SnappyData-home>/sbin/snappy-start-all.sh
+		$ <TIBCO ComputeDB_home>/sbin/snappy-start-all.sh
 
 <a id= accessgemfireassql> </a>
 ### Accessing GemFire as an SQL Table to Run Queries
@@ -115,10 +115,10 @@ The following section provides instructions to access GemFire as an SQL table to
 
 1.	Start the Snappy Shell. 
 
-		$<SnappyData-home>/bin/snappy
+		$<TIBCO ComputeDB_home>/bin/snappy
 		snappy> connect client 'localhost:1527';
         
-2.	Register an external table in SnappyData pointing to the GemFire region.
+2.	Register an external table in TIBCO ComputeDB pointing to the GemFire region.
 
 		snappy> create external table GemTable using gemfire options(regionPath 'GemRegion', keyClass 'java.lang.String', valueClass 'java.lang.String') ;
 	
@@ -127,46 +127,46 @@ The following section provides instructions to access GemFire as an SQL table to
 		snappy> describe gemTable;
         snappy> select * from gemTable;
 
-<a id= replicatesnappydatatable> </a>
-### Replicating to SnappyData Table and Running Join Queries
+<a id= replicatesnappytable> </a>
+### Replicating to TIBCO ComputeDB Table and Running Join Queries
 
-You can replicate the data in GemFire SQL table into a SnappyData table and then run join queries.
+You can replicate the data in GemFire SQL table into a TIBCO ComputeDB table and then run join queries.
 
-1.	Create a SnappyData table based on the external table that was created using GemFire. 
+1.	Create a TIBCO ComputeDB table based on the external table that was created using GemFire. 
 
-		snappy> create table SnappyDataTable using column as (select * from gemTable);
-		snappy> select * from SnappyDataTable;
+		snappy> create table TIBCO ComputeDBTable using column as (select * from gemTable);
+		snappy> select * from TIBCO ComputeDBTable;
 
 2.	Run join queries.
 
-		snappy> select t1.key_Column, t1.value_Column, t2.value_Column from GemTable t1, SnappyDataTable t2 where t1.key_Column = t2.key_Column;
+		snappy> select t1.key_Column, t1.value_Column, t2.value_Column from GemTable t1, TIBCO ComputeDBTable t2 where t1.key_Column = t2.key_Column;
 
 <a id= initializegemfireconnector> </a>
 ## Initializing the GemFire Connector
 
-SnappyData uses a set of functions that are deployed in the GemFire cluster, to interact with the cluster, for accessing metadata, runnning queries, and accessing data in GemFire. You must deploy the SnappyData GemFire Connector's jar that is **gemfire-function jar** into the GemFire cluster to enable the connector functionality.
+TIBCO ComputeDB uses a set of functions that are deployed in the GemFire cluster, to interact with the cluster, for accessing metadata, runnning queries, and accessing data in GemFire. You must deploy the TIBCO ComputeDB GemFire Connector's jar that is **gemfire-function jar** into the GemFire cluster to enable the connector functionality.
 
 ### Enabling Connector Functionality
-To enable the connector functionality,  you must deploy the SnappyData GemFire Connector's **gemfire-function** jar.
+To enable the connector functionality,  you must deploy the TIBCO ComputeDB GemFire Connector's **gemfire-function** jar.
 
 Execute the following to deploy the **gemfire-function** jar:
 
 ```
-Deploy SnappyData GemFire Connector's gemfire-function jar (`gfeFunct
+Deploy TIBCO ComputeDB GemFire Connector's gemfire-function jar (`gfeFunct
 ions-0.9.2.1.jar`):
-gfsh>deploy --jar=<SnappyData Product Home>//connectors/gfeFunctions-0.9.2.1.jar
+gfsh>deploy --jar=<TIBCO ComputeDB_Product_Home>//connectors/gfeFunctions-0.9.2.1.jar
 
 
 ```
 
 ### Executing Queries with GemFire Connector
 
-During the query execution, snappydata passes the names of attributes and filter conditions to the GemFire cluster, to prune the data that is fetched from GemFire.
+During the query execution, TIBCO ComputeDB passes the names of attributes and filter conditions to the GemFire cluster, to prune the data that is fetched from GemFire.
 
-For example, if you query for only attribute A from a GemFire Region value and that too of only those Region values which meet the filter condition, then instead of fetching the complete value only the pruned data needs to be sent to SnappyData.
+For example, if you query for only attribute A from a GemFire Region value and that too of only those Region values which meet the filter condition, then instead of fetching the complete value only the pruned data needs to be sent to TIBCO ComputeDB.
 
-For this purpose by default SnappyData relies on OQL of GemFire to prune the data. However, you can write custom **QueryExecutor** to retrieve the pruned data from GemFire. This is done by implementing **QueryExecutor** interface.
-The **QueryExecutor** implementation should be packaged in a jar which is loaded by SnappyData using **ServiceLoader** API of java. As a part of the contract, the jar should include the following file with the path described:</br>**META-INF/services/io.snappydata.spark.gemfire.connector.query.QueryExecutor**</br>This file should contain the fully qualified class name of the custom **QueryExecutor**.
+For this purpose by default TIBCO ComputeDB relies on OQL of GemFire to prune the data. However, you can write custom **QueryExecutor** to retrieve the pruned data from GemFire. This is done by implementing **QueryExecutor** interface.
+The **QueryExecutor** implementation should be packaged in a jar which is loaded by TIBCO ComputeDB using **ServiceLoader** API of java. As a part of the contract, the jar should include the following file with the path described:</br>**META-INF/services/io.snappydata.spark.gemfire.connector.query.QueryExecutor**</br>This file should contain the fully qualified class name of the custom **QueryExecutor**.
 
 !!!Note
 	The name of the file should be **io.snappydata.spark.gemfire.connector.query.QueryExecutor**.
@@ -271,7 +271,7 @@ The working of **QueryExecutor** can be broken as follows:
 
 <a id= convertfilter> </a>
 #### Convert Filter Condition
-During execution, SnappyData checks with the available **QueryExecutor** by invoking the **transformFilter** method, if the filter is present.
+During execution, TIBCO ComputeDB checks with the available **QueryExecutor** by invoking the **transformFilter** method, if the filter is present.
 In case the **QueryExecutor** is capable of handling it, a transformed filter is returned which can be used for data retrieval or else an **UnsupportedOperationException** is shown.
 
 <a id= initializestatefulcontext> </a>
@@ -292,16 +292,16 @@ Next step is invocation of the appropriate method to get Iterator on the pruned 
 	- **executeMultiProjectionQuery***
 
 <a id= configuresnappyforgemfire> </a>
-### Configuring the SnappyData Cluster for GemFire Connector
+### Configuring the TIBCO ComputeDB Cluster for GemFire Connector
 
-The following configurations can be set in SnappyData Cluster for GemFire Connector:
+The following configurations can be set in TIBCO ComputeDB Cluster for GemFire Connector:
 
 -	[Customize DistributedSystem in the cluster with additional attributes](#customize_distributed_system)
 -	[Specify Static Locators](#specifystatlocator)
 -	[Dynamic Discovery of Grid for a Region](#dynamicdiscoverygridregion)
 
 <a id= customize_distributed_system> </a>
-#### Customizing the **DistributedSystem** of SnappyData Cluster at Startup
+#### Customizing the **DistributedSystem** of TIBCO ComputeDB Cluster at Startup
 
 You can configure the **DistributedSystem** with additional attributes by implementing the following interface:
 
@@ -309,7 +309,7 @@ You can configure the **DistributedSystem** with additional attributes by implem
 package io.snappydata.spark.gemfire.connector.dsinit;
 /**
  * @param @link{DSConfig} instance which can be used to configure the DistributedSystem properties at the
- * time of snappydata startup
+ * time of TIBCO ComputeDB startup
  */
 public interface DistributedSystemInitializer {
 
@@ -318,7 +318,7 @@ public interface DistributedSystemInitializer {
 ```
 
 Any required properties of the **DistributedSystem** can be configured via the **DSConfig** instance passed.
-The **DistributedSystemInitializer** implementation needs to be packaged in a jar which is loaded by SnappyData using ServiceLoader API of java. The jar should include the following file along with the path as described:
+The **DistributedSystemInitializer** implementation needs to be packaged in a jar which is loaded by TIBCO ComputeDB using ServiceLoader API of java. The jar should include the following file along with the path as described:
 
 **META-INF/services/io.snappydata.spark.gemfire.connector.dsinit.DistributedSystemInitializer**
 
@@ -327,9 +327,9 @@ This file should contain the fully qualified class name of the custom Distribute
 !!!Note
 	The name of the file should be **io.snappydata.spark.gemfire.connector.dsinit.DistributedSystemInitializer**
 
-The connector interacts with the GemFire cluster. Therefore, you should configure the SnappyData cluster with the details of GemFire cluster. The configuration details must be provided in both the SnappyData lead and server nodes at the following locations:
--	**SnappyData-Home directory/conf/leads**
--	**SnappyData-Home directory/conf/servers **
+The connector interacts with the GemFire cluster. Therefore, you should configure the TIBCO ComputeDB cluster with the details of GemFire cluster. The configuration details must be provided in both the TIBCO ComputeDB lead and server nodes at the following locations:
+-	**TIBCO ComputeDB_Home directory/conf/leads**
+-	**TIBCO ComputeDB_Home directory/conf/servers **
 
 Modify the servers and leads configuration file to add the connector jar (**connector-1.0.0.jar**) and the **person.jar** in the classpath as well as to configure the remote GemFire cluster locator.
 
@@ -345,7 +345,7 @@ Following is a sample from the servers and leads file:
 
 ```
 localhost -locators=localhost:10334 -client-bind-address=localhost -client-port=1528 -heap-size=20g
--classpath=<SnappyData-Product-Home>//connectors/connector_2.11-0.9.2.1.jar:<path-to-jar>/persons.jar
+-classpath=<TIBCO ComputeDB_Home>//connectors/connector_2.11-0.9.2.1.jar:<path-to-jar>/persons.jar
 -snappydata.connector.gemfire-grid.<uniqueIDForGrid>=localhost[55221]
 ```
 
@@ -358,7 +358,7 @@ Instead of specifying the locators via the property, it is possible to provide c
 trait GridResolver {
 
   /**
-    * Optional method to identify the locators and delegate to SnappyData for creating connection 
+    * Optional method to identify the locators and delegate to TIBCO ComputeDB for creating connection 
     * pool using [[GridHelper]]. Invoked once in the lifecycle.
     * @param gfeGridProps
     * @param gridHelper
@@ -383,22 +383,22 @@ trait GridResolver {
   def getUniqueID: String
 }
 ```
-SnappyData attempts to resolve the grid for the region using existing **ConnectionPools**. If it is not successful, it checks with the available resolvers by invoking **getGridForRegion**. The resolver returns null, if it cannot resolve the grid.
+TIBCO ComputeDB attempts to resolve the grid for the region using existing **ConnectionPools**. If it is not successful, it checks with the available resolvers by invoking **getGridForRegion**. The resolver returns null, if it cannot resolve the grid.
 
-The **GridResolver** implementation should be packaged in a jar which is loaded by SnappyData using **ServiceLoader** API of java. The jar should also include the following file along with the described path:</br>**META-INF/services/io.snappydata.spark.gemfire.connector.grids.GridResolver**</br>
+The **GridResolver** implementation should be packaged in a jar which is loaded by TIBCO ComputeDB using **ServiceLoader** API of java. The jar should also include the following file along with the described path:</br>**META-INF/services/io.snappydata.spark.gemfire.connector.grids.GridResolver**</br>
 This file should contain the fully qualified class name of the custom **GridResolver**.
 
 !!!Note
 	The name of the file should be **io.snappydata.spark.gemfire.connector.grids.GridResolver**.
 
-To initialize the GemFire connector and enable its functions in SnappyData, you must include the following import statement before creating the external table:
+To initialize the GemFire connector and enable its functions in TIBCO ComputeDB, you must include the following import statement before creating the external table:
 
 ```
 import io.snappydata.spark.gemfire.connector
 ```
 <a id= accessingdatafromgemfire> </a>
 ## Accessing Data from GemFire
-In SnappyData applications, you can create external tables that represent GemFire regions and run SQL queries against GemFire. For accesing data from GemFire, you must first expose the GemFire regions: 
+In TIBCO ComputeDB applications, you can create external tables that represent GemFire regions and run SQL queries against GemFire. For accesing data from GemFire, you must first expose the GemFire regions: 
 
 You can use any the following options to expose GemFire regions:
 
@@ -409,7 +409,7 @@ You can use any the following options to expose GemFire regions:
 
 <a id= gemfirepdx> </a>
 ### Exposing GemFire PDX Regions as External Tables
-You can create an external table that represents a GemFire region which stores PDX instances. The SnappyData schema for this external table is derived from the PDXType. Here, the GemFire region is already populated with data and SnappyData infers the schema based on the inspection of the PDX types.
+You can create an external table that represents a GemFire region which stores PDX instances. The TIBCO ComputeDB schema for this external table is derived from the PDXType. Here, the GemFire region is already populated with data and TIBCO ComputeDB infers the schema based on the inspection of the PDX types.
 The following syntax creates an external table that represents a GemFire region which stores PDX instances.
 
 ```
@@ -418,7 +418,7 @@ val externalBsegTable = snc.createExternalTable("bsegInGem",
      Map[String, String]("region.path" -> "bseg1", "data.as.pdx" -> "true"))
 ```     
 
-The SnappyData external table schema for the GemFire region can optionally include the GemFire region key as a column in the table. To enable this, the **key.class ** attribute should be set when you create the table as shown in the following example:
+The TIBCO ComputeDB external table schema for the GemFire region can optionally include the GemFire region key as a column in the table. To enable this, the **key.class ** attribute should be set when you create the table as shown in the following example:
 
 ```
 val externalBsegTable = snc.createExternalTable("bsegInGem",
@@ -431,7 +431,7 @@ val externalBsegTable = snc.createExternalTable("bsegInGem",
 <a id= gemfirepojo> </a>
 ### Exposing Regions Containing POJOs as External Tables
 
-In the following example, an external table is created using the getter methods on POJOs as SnappyData column names:
+In the following example, an external table is created using the getter methods on POJOs as TIBCO ComputeDB column names:
 
 ```
 snc.createExternalTable(externalPersonsTable1, "gemfire", 
@@ -460,7 +460,7 @@ bsegDF.write.format("gemfire").
     
 <a id= gemfirerdds> </a>
 ### Expose GemFire Regions as RDDs
-Invoking the **gemfireRegion** method on the SparkContext in SnappyData exposes the full data set of a GemFire region as a Spark RDD.
+Invoking the **gemfireRegion** method on the SparkContext in TIBCO ComputeDB exposes the full data set of a GemFire region as a Spark RDD.
 The same API exposes both replicated and partitioned region as RDDs.
 
 ```
@@ -493,7 +493,7 @@ Based on the requirement, a new StructType which contains fewer columns can be r
 !!!Note
 	The new StructType returned can only have the subset of the columns that are passed. No new columns should be added.
 
-The **ColumnSelector** implemetation needs to be added to the startup classpath of the SnappyDataCluster.
+The **ColumnSelector** implemetation needs to be added to the startup classpath of the TIBCO ComputeDB Cluster.
 At the time of table creation, an option with key = **column.selector** and value as the fully qualified class name of the ColumnSelector implementation class should be passed.
 
 ### Other Optional Configuration Parameters
@@ -502,18 +502,18 @@ At the time of table creation, an option with key = **column.selector** and valu
 |--------|--------|
 |    **max.rows.restrict**    | This parameter is used to restrict the number of rows that are fetched from an external table, when a query of type **select * from external_table** is executed. This restriction, if specified,  is applied to queries without any filter, limit, aggregate function, and projection such that it tends to bring all the rows from the external region. Note that this restriction is not applied in case of DDL statement such as **create table X using row column as select * from external_table**. The default value for is 10,000.       |
 |   **column.selector**     |  This parameter is used to control the columns that must be included in the schema as described [here](#controlschemaofexternaltable).      |
-|    **max.buckets.per.partition**    |   This parameter is used to control the concurrency and number of tasks created to fetch data from an external region. This property is useful only for Partitioned Region. For more details, refer to [Controlling Task Concurrency in SnappyData When Accessing GemFire](#controllingtaskconcurrency).  The default value is 3.  |
+|    **max.buckets.per.partition**    |   This parameter is used to control the concurrency and number of tasks created to fetch data from an external region. This property is useful only for Partitioned Region. For more details, refer to [Controlling Task Concurrency in TIBCO ComputeDB When Accessing GemFire](#controllingtaskconcurrency).  The default value is 3.  |
 |    **security.username**  and **security.password**    |  By default the external table is created and queried using the credential of the current user. For example user X creates external table, and if user Y is querying, then credentials of user Y is fetched from data. But if the parameters **security.username**  and **security.password** are passed then those credentials are used to create external table and for querying the data irrespective of the current user.      |
 |     **pdxtype.maxscan**   |   This parameter determines the maximum number of entries from the region which is scanned to completely determine the schema of the external table from the Pdx instances that is stored in the region. The default value is 100.     |
 
 <a id= controllingtaskconcurrency> </a>
-### Controlling Task Concurrency in SnappyData When Accessing GemFire 
+### Controlling Task Concurrency in TIBCO ComputeDB When Accessing GemFire 
 
 There are two types of regions in GemFire; **replicated** and **partitioned**. All the data for a replicated region is present on every server where the region is defined. A GemFire partitioned region splits the data across the servers that define the partitioned region. 
 
-When operating with replicated regions, there is only a single RDD partition representing the replicated region in SnappyData. Since there is only one data bucket for the replicated region. As compared to this, a GemFire partitioned region can be represented by a configurable number of RDD partitions in SnappyData. 
+When operating with replicated regions, there is only a single RDD partition representing the replicated region in TIBCO ComputeDB. Since there is only one data bucket for the replicated region. As compared to this, a GemFire partitioned region can be represented by a configurable number of RDD partitions in TIBCO ComputeDB. 
 
-Choosing the number of RDD partitions directly controls the task concurrency in SnappyData when you run queries on GemFire regions. By default, the GemFire connector works out the number of buckets per GemFire server, assigns partitions to each server, and uses a default value of maximum three buckets per partition. You can configure the **max.buckets.per.partition** attribute to change this value. 
+Choosing the number of RDD partitions directly controls the task concurrency in TIBCO ComputeDB when you run queries on GemFire regions. By default, the GemFire connector works out the number of buckets per GemFire server, assigns partitions to each server, and uses a default value of maximum three buckets per partition. You can configure the **max.buckets.per.partition** attribute to change this value. 
 
 When queries are executed on an external table, the degree of parallelism in query execution is directly proportional to the number of RDD partitions that represents the table.
 
@@ -539,7 +539,7 @@ You can save data to GemFire Regions using any of the following :
 <a id= savepairrddgemfire> </a>
 ### Saving Pair RDD to GemFire Region
 
-A pair RDD can be saved from SnappyData into a GemFire region as follows: 
+A pair RDD can be saved from TIBCO ComputeDB into a GemFire region as follows: 
 
 1.	Import the implicits as shown:
 
@@ -612,7 +612,7 @@ key | value
 To save a DataFrame, that is dataSet of row objects, into GemFire, use the following API which is available as an implicit definition. The rows of the dataframes are converted into PDX instances for storage in the GemFire's region.
 
 In the following example, it is assumed that there is a column "id1" present in the dataframe's schema. To specify the PDX Identity Fields for the PDX Type, use the option as ("pdx.identity.fields", "Col1, Col2, Col3") to specify one or more columns to be used as PDX Identity fields. 
-SnappyData recommends to define the identity fields for performance during comparison of PDX Instances.
+TIBCO ComputeDB recommends to define the identity fields for performance during comparison of PDX Instances.
 
 ```
 import io.snappydata.spark.gemfire.connector._
@@ -640,9 +640,9 @@ Map[String, String]("pdx.identity.fields" -> "id1, id10")
 ```    
 
 <a id= runoqlqueriesgemfire> </a>
-## Running OQL queries Directly on GemFire from SnappyData
+## Running OQL queries Directly on GemFire from TIBCO ComputeDB
 
-Most applications using SnappyData will choose to run regular SQL queries on GemFire regions. Refer to [Accessing Data From GemFire](#accessingdatafromgemfire) 
+Most applications using TIBCO ComputeDB will choose to run regular SQL queries on GemFire regions. Refer to [Accessing Data From GemFire](#accessingdatafromgemfire) 
 Additionally, you can directly execute OQL queries on GemFire regions using the GemFire connector. In scenarios where the data stored in GemFire regions is neither PDX nor Java bean compliant POJO, you can execute OQL queries and retrieve the data from the server and make it available as a data frame.
 
 An instance of `SQLContext` is required to run OQL query.
