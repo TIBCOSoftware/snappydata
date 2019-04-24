@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution
 
-import java.math.BigInteger
 import java.nio.ByteBuffer
 
 import scala.reflect.runtime.universe._
@@ -30,7 +29,6 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
-import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
@@ -186,7 +184,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               ++$currentValueOffsetTerm;
              if ($isExploded) {
                     int $arraySize = $plaformClass.getInt($vdBaseObjectTerm,
-                                                                 $currentValueOffsetTerm);
+                                                                $currentValueOffsetTerm);
                     $currentValueOffsetTerm += 4;
                     $objectClass[] $objectArray = new $objectClass[$arraySize];
                     if ($containsNull) {
@@ -204,8 +202,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
                         }
 
                     } else {
-
-
                      for (int $counter = 0; $counter < $arraySize; ++$counter )  {
                         ${readingCodeExprs.map(_.code).mkString("\n")}
                      }
@@ -307,7 +303,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           """.stripMargin
       }) +
         s"""
-       // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
+      //  System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
       """
 
       val exprCode = if (skipNullBitsCode) {
@@ -675,12 +671,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
                     $offsetTerm += 4;
 
                     long $varWidthNullBitStartPos = $offsetTerm;
-                    int $varWidthNumNullBytes = $variable.numElements()/8 +
+                    int $varWidthNumNullBytes = $variable.numElements() / 8 +
                                                 ($variable.numElements() % 8 > 0 ? 1 : 0);
                     byte[] $varWidthNullBits = null;
                     if ($containsNull) {
-                      System.out.println("var width null byte array created of size =" + $varWidthNumNullBytes);
-                      System.out.println("num elments in array=" + $variable.numElements());
                       $varWidthNullBits = new byte[$varWidthNumNullBytes];
                       $offsetTerm += $varWidthNumNullBytes;
                     }
@@ -697,7 +691,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                       }
 
                     }
-                    if ($containsNull) {
+                    if ($containsNull ) {
                     $plaformClass.copyMemory($varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET},
                       $baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
                     }

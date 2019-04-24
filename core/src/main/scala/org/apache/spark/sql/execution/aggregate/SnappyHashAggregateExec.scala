@@ -627,9 +627,8 @@ case class SnappyHashAggregateExec(
     ctx.addNewFunction(sizeAndNumNotNullFuncForStringArr,
       s"""
         private long $sizeAndNumNotNullFuncForStringArr($arrayDataClass arrayData, boolean isStringData)  {
-           int size = 0;
+           long size = 0L;
            int numNulls = 0;
-
            for(int i = 0; i < arrayData.numElements(); ++i) {
 
              if (!arrayData.isNullAt(i)) {
