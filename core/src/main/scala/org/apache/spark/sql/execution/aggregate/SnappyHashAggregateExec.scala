@@ -42,17 +42,20 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 import io.snappydata.Property
 import io.snappydata.collection.{ByteBufferData, ObjectHashSet, SHAMap}
 
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.aggregate._
 import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
+import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.util.Utils
 
 /**
@@ -616,6 +619,31 @@ case class SnappyHashAggregateExec(
       ctx.addMutableState("byte[]", nullAggsBitsetTerm,
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
     }
+    val utf8Class = classOf[UTF8String].getName
+
+    val arrayDataClass = classOf[ArrayData].getName
+    val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
+
+    ctx.addNewFunction(sizeAndNumNotNullFuncForStringArr,
+      s"""
+        private long $sizeAndNumNotNullFuncForStringArr($arrayDataClass arrayData, boolean isStringData)  {
+           int size = 0;
+           int numNulls = 0;
+
+           for(int i = 0; i < arrayData.numElements(); ++i) {
+
+             if (!arrayData.isNullAt(i)) {
+               if (isStringData) {
+                 $utf8Class o = arrayData.getUTF8String(i);
+                 size += o.numBytes() + 4;
+               }
+             } else {
+               ++numNulls;
+             }
+           }
+           return  (size << 32L) | ((arrayData.numElements() - numNulls) & 0xffffffffL);
+        }
+       """)
 
 
 
@@ -715,7 +743,8 @@ case class SnappyHashAggregateExec(
       this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
       currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
-      numBytesForNullAggsBits, nullAggsBitsetTerm)
+      numBytesForNullAggsBits, nullAggsBitsetTerm,
+      sizeAndNumNotNullFuncForStringArr)
 
     val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
 
@@ -750,10 +779,10 @@ case class SnappyHashAggregateExec(
 
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
       iterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
-      byteBufferAccessor.numBytesForNullKeyBits)
+      byteBufferAccessor.numBytesForNullKeyBits, false)
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, iterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
-      byteBufferAccessor.numBytesForNullAggBits)
+      byteBufferAccessor.numBytesForNullAggBits, false)
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, iterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
@@ -948,7 +977,7 @@ case class SnappyHashAggregateExec(
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, byteBufferAccessor.currentOffSetForMapLookupUpdt, false,
-      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)
+      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits, false)
     val bufferEval = evaluateVariables(bufferVars)
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr
