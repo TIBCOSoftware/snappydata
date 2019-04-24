@@ -1,20 +1,20 @@
 <a id="howto-consurrent-zeppelin"></a>
-# How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster
+# How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB™ Cluster
 
-Multiple users can concurrently access a secure SnappyData cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a SnappyData cluster.
+Multiple users can concurrently access a secure TIBCO ComputeDB™ cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a TIBCO ComputeDB cluster.
 
 !!! Note
 
-	* Currently, only the `%jdbc` interpreter is supported with a secure SnappyData cluster.
+	* Currently, only the `%jdbc` interpreter is supported with a secure TIBCO ComputeDB cluster.
 
-	* Each user accessing the secure SnappyData cluster should configure the `%jdbc` interpreter in Apache Zeppelin as described in this section.
+	* Each user accessing the secure TIBCO ComputeDB cluster should configure the `%jdbc` interpreter in Apache Zeppelin as described in this section.
 
-## Step 1: Download, Install and Configure SnappyData
-1. [Download and install SnappyData Enterprise Edition](../install.md) </br>
+## Step 1: Download, Install and Configure TIBCO ComputeDB
+1. [Download and install TIBCO ComputeDB Enterprise Edition](../install.md) </br>
 
-2. [Configure the SnappyData cluster with security enabled](../security/security.md).
+2. [Configure the TIBCO ComputeDB cluster with security enabled](../security/security.md).
 
-3. [Start the SnappyData cluster](start_snappy_cluster.md).
+3. [Start the TIBCO ComputeDB cluster](start_snappy_cluster.md).
 
 	- Create a table and load data.
 
@@ -44,21 +44,21 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
 1. Log on to Zeppelin from your web browser and select **Interpreter** from the **Settings** option.
 
 2. Edit the existing `%jdbc` interpreter and configure the interpreter properties.
-	The table lists the properties required for SnappyData:
+	The table lists the properties required for TIBCO ComputeDB:
     
     | Property | Value |Description|
 	|--------|--------|--------|
-	|default.url|jdbc:snappydata://localhost:1527/|Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527`|
-    |default.driver|io.snappydata.jdbc.ClientDriver|Specify the JDBC driver for SnappyData|
+	|default.url|jdbc:snappydata://localhost:1527/|Specify the JDBC URL for TIBCO ComputeDB cluster in the format `jdbc:snappydata://<locator_hostname>:1527`|
+    |default.driver|io.snappydata.jdbc.ClientDriver|Specify the JDBC driver for TIBCO ComputeDB|
     |default.password|user123|The JDBC user password|
     |default.user|user1|The JDBC username|
 
-3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for	 SnappyData. The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.0.2.2.jar) is available on [the release page](https://github.com/SnappyDataInc/snappydata/releases/latest). </br>
-	The SnappyData Client (JDBC) JAR file can also be placed under **<ZEPPELIN_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
+3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for TIBCO ComputeDB. The TIBCO ComputeDB Client (JDBC) JAR file (snappydata-jdbc_2.11-1.0.2.2.jar) is available on [the release page](https://github.com/SnappyDataInc/snappydata/releases/latest). </br>
+	The TIBCO ComputeDB Client (JDBC) JAR file can also be placed under **<ZEPPELIN_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
 
 4. If required, edit other properties, and then click **Save** to apply your changes. 
 
 **See also**
 
-*  [How to Use Apache Zeppelin with SnappyData](use_apache_zeppelin_with_snappydata.md)
+*  [How to Use Apache Zeppelin with TIBCO ComputeDB](use_apache_zeppelin_with_snappydata.md)
 *  [How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md)

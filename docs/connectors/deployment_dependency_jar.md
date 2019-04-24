@@ -1,46 +1,46 @@
 # Deploying Third Party Connectors
 
-A job submitted to SnappyData, the creation of external tables as SQL or through API, the creation of a user-defined function etc. may have an external jar and package dependencies. For example, you may want to create an external table in SnappyData which points to a Cassandra table. For that, you would need the Spark Cassandra connector classes which are available in maven central repository.
+A job submitted to TIBCO ComputeDB, the creation of external tables as SQL or through API, the creation of a user-defined function etc. may have an external jar and package dependencies. For example, you may want to create an external table in TIBCO ComputeDB which points to a Cassandra table. For that, you would need the Spark Cassandra connector classes which are available in maven central repository.
 
 Today, Spark connectors are available to virtually all modern data stores - RDBs, NoSQL, cloud databases like Redshift, Snowflake, S3, etc. Most of these connectors are available as mvn or spark packages or as published jars by the respective vendors. 
-SnappyData’s compatibility with Spark allows SnappyData to work with the same connectors of all the popular data sources.
+TIBCO ComputeDB’s compatibility with Spark allows TIBCO ComputeDB to work with the same connectors of all the popular data sources.
 
-SnappyData’s **deploy** command allows you to deploy these packages by using its maven coordinates. When it is not available, you can simply upload jars into any provisioned SnappyData cluster.
+TIBCO ComputeDB’s **deploy** command allows you to deploy these packages by using its maven coordinates. When it is not available, you can simply upload jars into any provisioned TIBCO ComputeDB cluster.
 
-SnappyData offers the following SQL commands:
+TIBCO ComputeDB offers the following SQL commands:
 
 *	**deploy package** - to deploy maven packages
 *	**deploy jar** - to deploy your application or library Jars
 
-Besides these SQL extensions, support is provided in SnappyData 1.0.2.1 version to deploy packages as part of SnappyData Job submission. This is similar to [Spark’s support](https://spark.apache.org/docs/latest/submitting-applications.html) for **--packages** when submitting Spark jobs.
+Besides these SQL extensions, support is provided in TIBCO ComputeDB to deploy packages as part of Snappy Job submission. This is similar to [Spark’s support](https://spark.apache.org/docs/latest/submitting-applications.html) for **--packages** when submitting Spark jobs.
 
 The following sections are included in this topic:
 
-*	[Deploying Packages in SnappyData](#deploypackages)
-*	[Deploying Jars in SnappyData](#deployjars)
+*	[Deploying Packages in TIBCO ComputeDB](#deploypackages)
+*	[Deploying Jars in TIBCO ComputeDB](#deployjars)
 *	[Viewing the Deployed Jars and Packages](#listjarspackages)
 *	[Removing Deployed Jars](#undeploy)
-*	[Submitting SnappyData Job with Packages](#submitjobpackages)
+*	[Submitting Snappy Job with Packages](#submitjobpackages)
 
 
 <a id= deploypackages> </a>
-## Deploying Packages in SnappyData
+## Deploying Packages in TIBCO ComputeDB
 
-Packages can be deployed in SnappyData using the **DEPLOY PACKAGE** SQL. Execute the `deploy package` command to deploy packages. You can pass the following through this SQL:
+Packages can be deployed in TIBCO ComputeDB using the **DEPLOY PACKAGE** SQL. Execute the `deploy package` command to deploy packages. You can pass the following through this SQL:
 
 *	Name of the package.
 *	Repository where the package is located.
 *	Path to a local cache of jars.
 
 !!!Note
-	SnappyData requires internet connectivity to connect to repositories which are hosted outside the network. Otherwise, the resolution of the package fails.
+	TIBCO ComputeDB requires internet connectivity to connect to repositories which are hosted outside the network. Otherwise, the resolution of the package fails.
 
 For resolving the package, Maven Central and Spark packages, located at [http://dl.bintray.com/spark-packages](http://dl.bintray.com/spark-packages), are searched by default. Hence, you must specify the repository only if the package is not there at **Maven Central** or in the **spark-package** repository.
 
 !!!Tip
 	Use **spark-packages.org** to search for Spark packages. Most of the popular Spark packages are listed here.
 
-### SQL Syntax to Deploy Package Dependencies in SnappyData
+### SQL Syntax to Deploy Package Dependencies in TIBCO ComputeDB
 
 ```pre
 deploy package <unique-alias-name> ‘packages’ [ repos ‘repositories’ ] [ path 'some path to cache resolved jars' ]
@@ -66,17 +66,17 @@ deploy package Sparkredshift 'com.databricks:spark-redshift_2.10:3.0.0-preview1'
 ```
 
 <a id= deployjars> </a>
-## Deploying Jars in SnappyData
+## Deploying Jars in TIBCO ComputeDB
 
-SnappyData provides a method to deploy a jar in a running system through **DEPLOY JAR** SQL. You can execute the `deploy jar` command to deploy dependency jars. 
+TIBCO ComputeDB provides a method to deploy a jar in a running system through **DEPLOY JAR** SQL. You can execute the `deploy jar` command to deploy dependency jars. 
 
-### Syntax for Deploying Jars in SnappyData
+### Syntax for Deploying Jars in TIBCO ComputeDB
 ```pre
 deploy jar <unique-alias-name> ‘jars’
 ```
 *	**unique-alias-name** - A name to identify the jar. This name can be used to remove the jar from the cluster.  You can use alphabets, numbers and underscores to create the name.
 
-*	**jars** - Comma-delimited string of jar paths. These paths are expected to be accessible from all the lead nodes in SnappyData.
+*	**jars** - Comma-delimited string of jar paths. These paths are expected to be accessible from all the lead nodes in TIBCO ComputeDB.
 
 ### Example 
 
@@ -86,7 +86,7 @@ deploy jar <unique-alias-name> ‘jars’
 deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
 ```
 
-All the deployed commands are stored in the SnappyData cluster. In cases where the artifacts of the dependencies are not available in the provided cache path, then during restart, it automatically resolves all the packages and jars again and installs them in the system.
+All the deployed commands are stored in the TIBCO ComputeDB cluster. In cases where the artifacts of the dependencies are not available in the provided cache path, then during restart, it automatically resolves all the packages and jars again and installs them in the system.
 
 
 <a id= listjarspackages> </a>
@@ -143,9 +143,9 @@ undeploy spark_deep_learning_0_3_0;
 	*	Similarly keep the standalone jars also in a path where it is available to all the lead nodes.
 
 <a id= submitjobpackages> </a>
-## Submitting SnappyData Job with Packages
+## Submitting Snappy Job with Packages
 
-You can specify the name of the packages which can be used by a job that is submitted to SnappyData. This package is visible only to the job submitted with this argument. If another job tries to access a class belonging to the jar of this package then it will get ClassNotFoundException.
+You can specify the name of the packages which can be used by a job that is submitted to TIBCO ComputeDB. This package is visible only to the job submitted with this argument. If another job tries to access a class belonging to the jar of this package then it will get ClassNotFoundException.
 
 A **--packages** option is added to the **snappy-job.sh** script where you can specify the packages. Use the following syntax:
 
@@ -153,7 +153,7 @@ A **--packages** option is added to the **snappy-job.sh** script where you can s
 $./snappy-job.sh submit --app-name <app-name> --class <job-class> [--lead <hostname:port>]  [--app-jar <jar-path>] [other existing options]       [--packages <comma separated package-coordinates> ] [--repos <comma separated mvn repositories] [--jarcache <path where resolved jars will be kept>]
 ```
 
-### Example of SnappyData Job Submission with Packages
+### Example of Snappy Job Submission with Packages
 
 ```pre
 ./bin/snappy-job.sh submit --app-name cassconn --class <SnappyJobClassName> --app-jar <app.jar> --lead localhost:8090 --packages com.datastax.spark:spark-cassandra-connector_2.11:2.0.7

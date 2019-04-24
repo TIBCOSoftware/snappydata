@@ -1,21 +1,21 @@
-# Using the SnappyData Change Data Capture (CDC) Connector
+# Using the TIBCO ComputeDB™ Change Data Capture (CDC) Connector
 
-<ent>This feature is available only in the Enterprise version of SnappyData.</ent>
+<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB.</ent>
 
 As data keeps growing rapidly techniques like Change Data Capture (CDC) is crucial for handling and processing the data inflow.
 The CDC technology is used in a database to track changed data so that the identified changes can be used to keep target systems in sync with the changes made to the source systems.
 
-A CDC enabled system (SQL database) automatically captures changes from the source table, these changes are then updated on the target system (SnappyData tables).</br>
-It provides an efficient framework which allows users to capture *individual data changes* like insert, update, and delete in the source tables (instead of dealing with the entire data), and apply them to the SnappyData tables to keep both the source and target tables in sync.
+A CDC enabled system (SQL database) automatically captures changes from the source table, these changes are then updated on the target system (TIBCO ComputeDB tables).</br>
+It provides an efficient framework which allows users to capture *individual data changes* like insert, update, and delete in the source tables (instead of dealing with the entire data), and apply them to the TIBCO ComputeDB tables to keep both the source and target tables in sync.
 
 !!! Info
-	Spark structured streaming and SnappyData mutable APIs are used to keep the source and target tables in sync. For writing a Spark structured streaming application, refer to the Spark documentation.
+	Spark structured streaming and TIBCO ComputeDB mutable APIs are used to keep the source and target tables in sync. For writing a Spark structured streaming application, refer to the Spark documentation.
 
 ![CDC Workflow](../Images/cdc_tables.png)
 
-CDC is supported on both the Smart Connector Mode and the Embedded mode. For more  information on the modes, refer to the documentation on [Smart Connector Mode](../affinity_modes/connector_mode.md) and [Embedded SnappyData Store Mode](../affinity_modes/embedded_mode.md).
+CDC is supported on both the Smart Connector Mode and the Embedded mode. For more  information on the modes, refer to the documentation on [Smart Connector Mode](../affinity_modes/connector_mode.md) and [Embedded TIBCO ComputeDB Store Mode](../affinity_modes/embedded_mode.md).
 
-In this topic, we explain how SnappyData uses the JDBC streaming connector to pull changed data from the SQL database and ingest it into SnappyData tables.
+In this topic, we explain how TIBCO ComputeDB uses the JDBC streaming connector to pull changed data from the SQL database and ingest it into TIBCO ComputeDB tables.
 
 The following image illustrates the data flow for change data capture:</br>
 ![CDC Workflow](../Images/cdc_connector.png)
@@ -26,13 +26,13 @@ The following image illustrates the data flow for change data capture:</br>
 
 - A user account with the required roles and privileges to the database.
 
-- Ensure that a JDBC source to which SnappyData CDC Connector can connect is running and available from the node where CDC connector is running.
+- Ensure that a JDBC source to which TIBCO ComputeDB CDC Connector can connect is running and available from the node where CDC connector is running.
 
 - The **snappydata-jdbc-stream-connector_<version>.jar**, which is available in the **$SNAPPY_HOME/jars** directory. </br>If you are using Maven or Gradle project to develop the streaming application, you need to publish the above jar into a local maven repository.
 
 ## Understanding the Program Structure
 
-The RDB CDC connector ingests data into SnappyData from any CDC enabled JDBC source. We have a custom source with alias “jdbcStream” and a custom Sink with alias “snappystore”. </br>
+The RDB CDC connector ingests data into TIBCO ComputeDB from any CDC enabled JDBC source. We have a custom source with alias **jdbcStream** and a custom Sink with alias **snappystore**. </br>
 *Source* has the capability to read from a JDBC source and *Sink* can perform inserts, updates or deletes based on CDC operations.
 
 ## Configuring the Stream Reader
@@ -121,9 +121,9 @@ Dataset<Row> ds = reader.load();
 ds.filter(<filter_condition>)
 ```
 
-## Writing into SnappyData tables
+## Writing into TIBCO ComputeDB tables
 
-To write into SnappyData tables you need to have a StreamWriter as follows:
+To write into TIBCO ComputeDB tables you need to have a StreamWriter as follows:
 
 ```pre
 ds.writeStream()
@@ -136,7 +136,7 @@ ds.writeStream()
 
 Here, the value of the `.format` parameter is always `snappystore` and is a mandatory.
 
-### SnappyData Stream Writer options
+### TIBCO ComputeDB Stream Writer options
 
 The **sink** option is mandatory for SnappyStore sink. This option is required to give the user control of the obtained data frame. When writing streaming data to the tables, you can also provide any custom option.
 
@@ -146,14 +146,14 @@ The **sink** option is mandatory for SnappyStore sink. This option is required t
 
 **org.apache.spark.sql.streaming.jdbc.SnappyStreamSink**
 
-The above trait contains a single method, which user needs to implement. A user can use SnappyData mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.
+The above trait contains a single method, which user needs to implement. A user can use TIBCO ComputeDB mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.
 
 ```pre
     def process(snappySession: SnappySession, sinkProps: Properties,
         batchId: Long, df: Dataset[Row]): Unit
 ```
 
-The following examples illustrates how you can write into a [SnappyData table](http://snappydatainc.github.io/snappydata/programming_guide/building_snappydata_applications_using_spark_api/#building-snappydata-applications-using-spark-api):
+The following examples illustrates how you can write into a [TIBCO ComputeDB table](/programming_guide/building_snappydata_applications_using_spark_api.md):
 
 ```pre
 package io.snappydata.app;
@@ -211,7 +211,7 @@ public class ProcessEvents implements SnappyStreamSink {
 ## Additional Information
 
 - **Offset Management**: </br>
-	SnappyData keeps a persistent table for offset management (Offset table name for application = SNAPPY_JDBC_STREAM_OFFSET_TABLE). </br>
+	TIBCO ComputeDB keeps a persistent table for offset management (Offset table name for application = SNAPPY_JDBC_STREAM_OFFSET_TABLE). </br>
     The schema of the table is:
 
     |APP_NAME|TABLE_NAME|LAST_OFFSET|
@@ -221,7 +221,7 @@ public class ProcessEvents implements SnappyStreamSink {
     If connector application crashes, it refers to this table on a restart to query further.
 
 - **Idempotency for Streaming application**: </br>
-	If `DELETE` and `PUT INTO` APIs are used, SnappyData ensures idempotent behavior. This is useful when the application restarts after a crash and some of the CDC events are replayed. The PUT INTO API either inserts a record (if not present) or updates the record (if already exists).</br> The existence of the record is checked based on the key columns defined when a table is created. As primary keys are not supported for column tables, you can use `key_columns` instead, to uniquely identify each row/record in a database table. </br> For more information, see [CREATE TABLE](../reference/sql_reference/create-table.md).</br>
+	If `DELETE` and `PUT INTO` APIs are used, TIBCO ComputeDB ensures idempotent behavior. This is useful when the application restarts after a crash and some of the CDC events are replayed. The PUT INTO API either inserts a record (if not present) or updates the record (if already exists).</br> The existence of the record is checked based on the key columns defined when a table is created. As primary keys are not supported for column tables, you can use `key_columns` instead, to uniquely identify each row/record in a database table. </br> For more information, see [CREATE TABLE](../reference/sql_reference/create-table.md).</br>
 
     For example:
 
@@ -231,4 +231,4 @@ public class ProcessEvents implements SnappyStreamSink {
 
 	- Writing data from different tables to a single table is currently not supported as the schema for incoming data frame cannot be changed. 
 
-	- For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in SnappyData.
+	- For every source table that needs to be tracked for changes, ensure that there is a corresponding destination table in TIBCO ComputeDB.

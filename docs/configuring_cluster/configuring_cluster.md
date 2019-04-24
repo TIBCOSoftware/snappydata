@@ -100,6 +100,7 @@ Refer to the [TIBCO ComputeDB properties](property_description.md) for the compl
 |-spark.local.dir|Directory to use for *scratch* space in TIBCO ComputeDB, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
 |-spark.network.timeout|The default timeout for all network interactions while running queries. |
 |-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache that is used by Spark, in the  TIBCO ComputeDB Spark distribution, and by TIBCO ComputeDB. The default is 2000.|
+|spark.sql.files.maxPartitionBytes|Maximum number of bytes to pack into a single partition when reading files. You can modify this setting in **conf/leads** file. This can be used to tune performance and memory requirements for data ingestion tasks when the data is read from a file based source for ingestion into a TIBCO ComputeDB column/row table. In TIBCO ComputeDB, default value for this setting is 33554432 bytes (32 MB).| 
 |-spark.ssl.enabled<a id="ssl_spark_enabled"></a>|Enables or disables Spark layer encryption. The default is false.|
 |-spark.ssl.keyPassword<a id="ssl_spark_password"></a>|The password to the private key in the key store.|
 |-spark.ssl.keyStore<a id="ssl_spark_keystore"></a>|Path to the key store file. The path can be absolute or relative to the directory in which the process is started.|
