@@ -43,7 +43,6 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.tools.LeaderLauncher
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
@@ -166,7 +165,7 @@ class LeadImpl extends ServerImpl with Lead
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
-          setAppName("SnappyData").
+          setAppName("TIBCO ComputeDB").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
