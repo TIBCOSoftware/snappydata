@@ -873,45 +873,60 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
     df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
 
-    def runTest(session: SnappyContext): Unit = {
-      // val rs = session.sql("select stringarray, longarray,  sum(col1) as summ1 from test1 group by stringarray, longarray")
+    def runTest1(session: SnappyContext): Unit = {
       val rs = session.sql("select longarray,  sum(col1) as summ1 from test1 group by longarray")
       val results = rs.collect()
       assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
-     /* val expectedResult = mutable.Map[(Array[String], Array[Long]), Int](
-        (Array.fill[String](10)("col0"), Array.fill[Long](10)(0.toLong)) -> 10,
-        (Array.fill[String](10)("col1"), Array.fill[Long](10)(1.toLong)) -> 35,
-        (Array.fill[String](10)("col2"), Array.fill[Long](10)(2.toLong)) -> 60
-      )*/
 
-      val expectedResult = mutable.Map[Array[Long], Int](
-        Array.fill[Long](10)(0.toLong) -> 10,
-        Array.fill[Long](10)(1.toLong) -> 35,
-        Array.fill[Long](10)(2.toLong) -> 60
-      )
-      assertEquals(expectedResult.size, results.length)
-     /* results.foreach(row => {
-        val key = (row.getAs[Array[String]](0), row.getAs[Array[Long]](1))
-        assertEquals(expectedResult.getOrElse(key, fail("key does not exist")), row.getLong(1))
-        expectedResult.remove(key)
-      }) */
+      val expectedResult1 = mutable.Map[Long, Int](0L -> 10, 1L*10 -> 35, 2L*10 -> 60)
+      assertEquals(expectedResult1.size, results.length)
+
       results.foreach(row => {
-        val key = row.getSeq[Long](0)
-        assertEquals(expectedResult.getOrElse(key.toArray, fail("key does not exist")), row.getLong(1))
-        expectedResult.remove(key.toArray)
+        val key = row.getSeq[Long](0).foldLeft(0L)(_ + _)
+        assertEquals(expectedResult1.getOrElse(key, fail("key does not exist")), row.getLong(1))
+        expectedResult1.remove(key)
       })
-      assertTrue(expectedResult.isEmpty)
+      assertTrue(expectedResult1.isEmpty)
     }
 
     val newSession1 = snc.newSession()
     newSession1.setConf(Property.TestExplodeComplexDataTypeInSHA.name, true.toString)
-    runTest(newSession1)
+    runTest1(newSession1)
 
     val newSession2 = snc.newSession()
     newSession2.setConf(Property.TestExplodeComplexDataTypeInSHA.name, false.toString)
-    runTest(newSession2)
-    snc.dropTable("test1")
+    runTest1(newSession2)
 
+
+    def runTest2(session: SnappyContext): Unit = {
+       val rs = session.sql("select stringarray, longarray," +
+         "  sum(col1) as summ1 from test1 group by stringarray, longarray")
+
+      val results = rs.collect()
+      assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+       val expectedResult2 = mutable.Map[(String, Long), Long](
+         (Array.fill[String](10)("col0").mkString(","), 10 * 0L) -> 10L,
+         (Array.fill[String](10)("col1").mkString(","), 10 * 1L) -> 35L,
+         (Array.fill[String](10)("col2").mkString(","), 10 * 2L) -> 60L
+       )
+
+      assertEquals(expectedResult2.size, results.length)
+       results.foreach(row => {
+         val key = (row.getSeq[String](0).mkString(","), row.getSeq[Long](1).foldLeft(0L)(_ + _))
+         assertEquals(expectedResult2.getOrElse(key, fail("key does not exist")), row.getLong(2))
+         expectedResult2.remove(key)
+       })
+
+      assertTrue(expectedResult2.isEmpty)
+    }
+
+
+    runTest2(newSession1)
+
+
+    runTest2(newSession2)
+
+    snc.dropTable("test1")
   }
 
   test("aggregate query with nested struct type as grouping key") {
