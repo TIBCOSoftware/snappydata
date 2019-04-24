@@ -30,7 +30,8 @@ import org.apache.spark.SparkConf
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.execution.{SparkPlan, WholeStageCodegenExec}
-import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
+import org.apache.spark.sql.types.{ArrayType, CalendarIntervalType, IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.unsafe.types.CalendarInterval
 
 class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
@@ -820,7 +821,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
 
-
   test("simple aggregate query with struct type as grouping key") {
     snc.sql("drop table if exists test1")
     val data = for (i <- 0 until 15) yield {
@@ -838,7 +838,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val results = rs.collect()
       assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
       val expectedResult = mutable.Map[(String, Int), Int](("col0", 0) -> 10,
-        ("col1", 1) -> 35, ("col2", 2) -> 60 )
+        ("col1", 1) -> 35, ("col2", 2) -> 60)
       assertEquals(expectedResult.size, results.length)
       results.foreach(row => {
         val str = row.getStruct(0)
@@ -848,12 +848,67 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       })
       assertTrue(expectedResult.isEmpty)
     }
+
     val newSession1 = snc.newSession()
-    newSession1.setConf(Property.TestExplodeStructInSHA.name, true.toString)
+    newSession1.setConf(Property.TestExplodeComplexDataTypeInSHA.name, true.toString)
     runTest(newSession1)
 
     val newSession2 = snc.newSession()
-    newSession2.setConf(Property.TestExplodeStructInSHA.name, false.toString)
+    newSession2.setConf(Property.TestExplodeComplexDataTypeInSHA.name, false.toString)
+    runTest(newSession2)
+    snc.dropTable("test1")
+
+  }
+
+  test("test array type field as  grouping key") {
+    snc.sql("drop table if exists test1")
+
+    val structType = StructType(Seq(StructField("col1", IntegerType, true),
+      StructField("stringarray", ArrayType(StringType), true),
+      StructField("longarray", ArrayType(LongType), true)))
+    val data = for (i <- 0 until 15) yield {
+      Row(i, Array.fill[String](10)(s"col${i/5}"), Array.fill[Long](10)(i / 5.toLong))
+    }
+
+    val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
+    df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
+
+    def runTest(session: SnappyContext): Unit = {
+      // val rs = session.sql("select stringarray, longarray,  sum(col1) as summ1 from test1 group by stringarray, longarray")
+      val rs = session.sql("select longarray,  sum(col1) as summ1 from test1 group by longarray")
+      val results = rs.collect()
+      assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+     /* val expectedResult = mutable.Map[(Array[String], Array[Long]), Int](
+        (Array.fill[String](10)("col0"), Array.fill[Long](10)(0.toLong)) -> 10,
+        (Array.fill[String](10)("col1"), Array.fill[Long](10)(1.toLong)) -> 35,
+        (Array.fill[String](10)("col2"), Array.fill[Long](10)(2.toLong)) -> 60
+      )*/
+
+      val expectedResult = mutable.Map[Array[Long], Int](
+        Array.fill[Long](10)(0.toLong) -> 10,
+        Array.fill[Long](10)(1.toLong) -> 35,
+        Array.fill[Long](10)(2.toLong) -> 60
+      )
+      assertEquals(expectedResult.size, results.length)
+     /* results.foreach(row => {
+        val key = (row.getAs[Array[String]](0), row.getAs[Array[Long]](1))
+        assertEquals(expectedResult.getOrElse(key, fail("key does not exist")), row.getLong(1))
+        expectedResult.remove(key)
+      }) */
+      results.foreach(row => {
+        val key = row.getSeq[Long](0)
+        assertEquals(expectedResult.getOrElse(key.toArray, fail("key does not exist")), row.getLong(1))
+        expectedResult.remove(key.toArray)
+      })
+      assertTrue(expectedResult.isEmpty)
+    }
+
+    val newSession1 = snc.newSession()
+    newSession1.setConf(Property.TestExplodeComplexDataTypeInSHA.name, true.toString)
+    runTest(newSession1)
+
+    val newSession2 = snc.newSession()
+    newSession2.setConf(Property.TestExplodeComplexDataTypeInSHA.name, false.toString)
     runTest(newSession2)
     snc.dropTable("test1")
 
@@ -869,7 +924,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       StructField("details", strucType1, true)))
 
     val data = for (i <- 0 until 15) yield {
-      val num = i/5
+      val num = i / 5
       Row(i, Row(s"name$num", num, Row(s"spouse$num", num)))
     }
 
@@ -893,15 +948,15 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       })
       assertTrue(expectedResult.isEmpty)
     }
+
     val newSession1 = snc.newSession()
-    newSession1.setConf(Property.TestExplodeStructInSHA.name, true.toString)
+    newSession1.setConf(Property.TestExplodeComplexDataTypeInSHA.name, true.toString)
     runTest(newSession1)
 
     val newSession2 = snc.newSession()
-    newSession2.setConf(Property.TestExplodeStructInSHA.name, false.toString)
+    newSession2.setConf(Property.TestExplodeComplexDataTypeInSHA.name, false.toString)
     runTest(newSession2)
     snc.dropTable("test1")
-
   }
 
   def getSqlConnection: Connection =

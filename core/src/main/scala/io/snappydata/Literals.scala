@@ -259,10 +259,10 @@ object Property extends Enumeration {
           "join with incoming Dataset is of size less " +
           "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
 
-  val TestExplodeStructInSHA: SQLValue[Boolean] = SQLVal[Boolean](
+  val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
-    "Explodes the Struct Field in Group By Keys even if the struct object is UnsafeRow",
-    Some(false))
+    "Explodes the Struct or Array Field in Group By Keys even if the struct object is " +
+      "UnsafeRow or UnsafeArrayData", Some(false))
   val TestDisableByteBufferMapInSHA: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.disableBBMapInSHA",
     "disables the use of ByteBufferMap based SnappyHashAggregateExec",
