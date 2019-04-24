@@ -35,7 +35,7 @@ import io.snappydata.{Constant, Property}
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedAttribute, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
@@ -159,7 +159,7 @@ class SnappySessionState(val snappySession: SnappySession)
     }
 
     override lazy val batches: Seq[Batch] = snappyAnalyzer.batches.map {
-      case batch  if batch.name.equalsIgnoreCase("Resolution") =>
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
         val rules = batch.rules.flatMap {
           // Prepending PreUpdateTypeConversionCheck rule before PromoteString rule
           case PromoteStrings =>
@@ -465,7 +465,7 @@ class SnappySessionState(val snappySession: SnappySession)
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
       case p if !p.childrenResolved => p
       case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
-        groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
+          groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
         val newGroups = groups.map {
           case u@UnresolvedAttribute(nameParts) if nameParts.length == 1 =>
             aggs.collectFirst {
@@ -675,11 +675,26 @@ class SnappySessionState(val snappySession: SnappySession)
               throw new AnalysisException("Cannot update partitioning/key column " +
                   s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
-            if (!attr.dataType.sameType(expr.dataType)) {
-              throw new AnalysisException("Implicit type casting is not performed for update" +
-                  " statements")
+
+            val newExpr = if (attr.dataType.sameType(expr.dataType)) {
+              expr
+            } else {
+              // avoid unnecessary copy+cast when inserting DECIMAL types
+              // into column table
+              expr.dataType match {
+                case dt: DecimalType if attr.dataType.isInstanceOf[DecimalType]
+                    && dt.isTighterThan(attr.dataType) =>
+                    expr
+                case dt: NumericType if !attr.dataType.isInstanceOf[DecimalType]
+                    && numericPrecedence.indexOf(dt) < numericPrecedence.indexOf(attr.dataType) =>
+                  Alias(Cast(expr, attr.dataType), attr.name)()
+                case _: NullType => Alias(Cast(expr, attr.dataType), attr.name)()
+                case dt =>
+                  throw new AnalysisException(s"Data type of expression (${dt}) is not compatible" +
+                      s" with the data type of attribute '${attr.name}' (${attr.dataType})")
+              }
             }
-            (attr, expr)
+            (attr, newExpr)
           }.unzip
           // collect all references and project on them to explicitly eliminate
           // any extra columns
