@@ -90,23 +90,33 @@ class MiscTest extends SnappyFunSuite with Logging {
   }
 
   test("SNAP-2440") {
-    snc.sql(s"create table test(col1 int not null, col2 int not null) using column options()")
-    snc.sql(s"insert into test values (1, 2), (4, 5), (6, 7)")
-    val sz = snc.sql(s"select * from app.test").collect().size
-    val sqlstrs = Seq(s"select app.test.* from app.test",
-      s"select app.test.col1, app.test.col2 from app.test",
-      s"select col1, col2 from app.test",
-      s"select * from app.test",
-      s"select test.* from test")
+    snc.sql("create table test(col1 int not null, col2 int not null) using column")
+    snc.sql("create table emp.test1(col1 int not null, col2 int not null) using column")
+    snc.sql("insert into test values (1, 2), (4, 5), (6, 7)")
+    snc.sql("insert into emp.test1 values (1, 2), (4, 5), (6, 7)")
+    val sz = snc.sql(s"select * from app.test").collect().length
+    val sqlstrs = Seq("select app.test.* from app.test",
+      "select app.test.col1, app.test.col2 from app.test",
+      "select col1, col2 from app.test",
+      "select * from app.test",
+      "select test.* from test",
+      "select emp.test1.* from emp.test1",
+      "select emp.test1.col1, emp.test1.col2 from emp.test1",
+      "select col1, col2 from emp.test1",
+      "select * from emp.test1",
+      "select test1.* from emp.test1")
     sqlstrs.foreach(sqlstr => {
       val res = snc.sql(sqlstr).collect()
-      assert(res.size === 3)
+      assert(res.length === 3)
       assert(res(0).get(0) != res(0).get(1))
     })
 
-    val badsqls = Seq(s"select apppp.test.* from app.test",
-      s"select app.test.col99, app.test.col2 from app.test",
-      s"select testt.* from app.test")
+    val badsqls = Seq("select apppp.test.* from app.test",
+      "select app.test.col99, app.test.col2 from app.test",
+      "select testt.* from app.test",
+      "select apppp.test.* from emp.test1",
+      "select emp.test1.col99, emp.test1.col2 from emp.test1",
+      "select testt.* from emp.test1")
     badsqls.foreach(sqlstr =>
       try {
         snc.sql(sqlstr)
