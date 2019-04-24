@@ -37,7 +37,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedAttribute, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
+import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -102,15 +102,9 @@ class SnappySessionState(val snappySession: SnappySession)
 
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        val rules = batch.rules.filter(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
-            false
-          } else {
-            true
-          }
-          case _ => true
-        }).flatMap(_ match {
-          case PromoteStrings => Seq(StringPromotionCheckForUpdate, PromoteStrings)
+        val rules = batch.rules.flatMap(_ match {
+          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) Nil
+            else StringPromotionCheckForUpdate :: PromoteStrings :: Nil
           case a => Seq(a)
         })
         Batch(batch.name, getStrategy(batch.strategy), rules: _*)
@@ -163,9 +157,9 @@ class SnappySessionState(val snappySession: SnappySession)
         val rules = batch.rules.flatMap {
           // Prepending PreUpdateTypeConversionCheck rule before PromoteString rule
           case PromoteStrings =>
-            Seq(StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]],
-              PromoteStrings)
-          case r => Seq(r)
+            StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] ::
+                PromoteStrings :: Nil
+          case r => r :: Nil
         }
 
         Batch(batch.name, getStrategy(batch.strategy), rules: _*)
@@ -181,13 +175,14 @@ class SnappySessionState(val snappySession: SnappySession)
 
     override def apply(plan: LogicalPlan): LogicalPlan = {
       plan match {
-        case Update(_, _, _, _, _) => plan resolveExpressions {
-          case e if !e.childrenResolved => e
-          case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
-            throw new AnalysisException("Implicit type casting is not performed for update" +
-                " statements")
-          case e => e
-        }
+        case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
+          updateExpressions.foreach {
+            case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
+              throw new AnalysisException("Implicit type casting is not performed for update" +
+                  " statements")
+            case _ => // do nothing
+          }
+          Update(table, child, keyColumns, updateColumns, updateExpressions)
         case _ => plan
       }
     }
@@ -679,15 +674,17 @@ class SnappySessionState(val snappySession: SnappySession)
             val newExpr = if (attr.dataType.sameType(expr.dataType)) {
               expr
             } else {
-              // avoid unnecessary copy+cast when inserting DECIMAL types
-              // into column table
               expr.dataType match {
+                // allowing assignnment of narrower decimal expression to wider decimal attribute
                 case dt: DecimalType if attr.dataType.isInstanceOf[DecimalType]
                     && dt.isTighterThan(attr.dataType) =>
                     expr
+                // allowing assignment of narrower numeric types to wider numeric types as far as
+                // precision is not compromised
                 case dt: NumericType if !attr.dataType.isInstanceOf[DecimalType]
                     && numericPrecedence.indexOf(dt) < numericPrecedence.indexOf(attr.dataType) =>
                   Alias(Cast(expr, attr.dataType), attr.name)()
+                // allowing assignment of null value
                 case _: NullType => Alias(Cast(expr, attr.dataType), attr.name)()
                 case dt =>
                   throw new AnalysisException(s"Data type of expression (${dt}) is not compatible" +

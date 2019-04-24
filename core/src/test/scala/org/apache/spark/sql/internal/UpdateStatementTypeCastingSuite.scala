@@ -70,7 +70,6 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
   test("Arithmetic operator, both operands are numeric") {
     snc.sql("update testTable set int_col = 1 + 500")
     val rows = snc.sql("select * from testTable order by id").collect()
-    print(rows(0)(3).getClass.getCanonicalName)
     assertResult(Array(Row(1, 501, 1, new java.math.BigDecimal("1.20")),
       Row(2, 501, 2, new java.math.BigDecimal("1.20"))))(rows)
   }
@@ -121,7 +120,7 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
       "DEC_COL", DecimalType(5, 2), FloatType)
   }
 
-  test("Plain assignment, assigning string typed numeric literal casted as int") {
+  test("Plain assignment, assigning string typed numeric literal cast as int") {
     snc.sql("update testTable set int_col = cast('300' as int)")
     val rows = snc.sql("select * from testTable order by id").collect()
     assertResult(Array(Row(1, 300, 1, new java.math.BigDecimal("1.20")),
