@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.internal;
 
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog;
 import org.apache.spark.SparkContext;
@@ -139,6 +140,8 @@ public final class SnappySharedState extends SharedState {
     if (clusterMode instanceof ThinClientConnectorMode) {
       this.embedCatalog = null;
     } else {
+      // ensure store catalog is initialized
+      Misc.getMemStoreBooting().getExistingExternalCatalog();
       this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
           sparkContext, sparkContext.conf());
     }
