@@ -32,17 +32,21 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.distributed.internal.InternalDistributedSystem
 import com.gemstone.gemfire.distributed.internal.locks.{DLockService, DistributedMemberLock}
-import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, Status}
+import com.gemstone.gemfire.internal.GemFireVersion
+import com.gemstone.gemfire.internal.cache.{CacheServerLauncher, GemFireCacheImpl, Status}
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.pivotal.gemfirexd.FabricService.State
+import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.ServerGroupUtils
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterface}
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
+import io.snappydata.gemxd.SnappyDataVersion
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
@@ -159,13 +163,26 @@ class LeadImpl extends ServerImpl with Lead
     val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
         .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
+    val productName = {
+      GemFireCacheImpl.setGFXDSystem(true)
+      GemFireVersion.getInstance(classOf[SnappyDataVersion],
+        "io/snappydata/SnappyDataVersion.properties")
+      GemFireVersion.createVersionFile()
+      GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+      if (GemFireVersion.isEnterpriseEdition) {
+        "TIBCO ComputeDB"
+      } else {
+        "SnappyData"
+      }
+    }
+
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
     val initServices = Future {
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
-          setAppName("TIBCO ComputeDB").
+          setAppName(productName).
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
