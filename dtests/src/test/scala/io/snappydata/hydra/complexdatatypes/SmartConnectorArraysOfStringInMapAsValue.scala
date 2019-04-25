@@ -40,7 +40,8 @@ object SmartConnectorArraysOfStringInMapAsValue {
     val dataLocation : String = args(0)
     println("DataLocation : " + dataLocation)
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(
-      new File("ValidateSmartConnectorMapType" + "_" + "column" + System.currentTimeMillis())
+      new File("ValidateSmartConnectorArraysOfStringInMapAsValueType" +
+        "_" + "column" + System.currentTimeMillis())
       , false))
     val printContent : Boolean = false
 
