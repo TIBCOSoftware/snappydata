@@ -505,6 +505,7 @@ object SnappyParserConsts {
   final val FIRST: Keyword = nonReservedKeyword("first")
   final val FN: Keyword = nonReservedKeyword("fn")
   final val FOR: Keyword = nonReservedKeyword("for")
+  final val FORMATTED: Keyword = nonReservedKeyword("formatted")
   final val FULL: Keyword = nonReservedKeyword("full")
   final val FUNCTIONS: Keyword = nonReservedKeyword("functions")
   final val GLOBAL: Keyword = nonReservedKeyword("global")

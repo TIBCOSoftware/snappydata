@@ -23,6 +23,6 @@ class SnappySortSuite extends SortSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "sorting all nulls"
+    // "sorting all nulls"
   )
 }

@@ -776,7 +776,11 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    inlineTable | relationFactor
+    inlineTable | relationFactor |
+    '(' ~ ws ~ relation ~ ')' ~ ws ~ alias.? ~> ((r: LogicalPlan, a: Any) => a match {
+      case None => r
+      case Some(n) => SubqueryAlias(n.asInstanceOf[String], r, None)
+    })
   }
 
   protected final def withHints(plan: LogicalPlan): LogicalPlan = {
@@ -876,21 +880,26 @@ class SnappyParser(session: SnappySession)
             AggregateExpression(Count(Literal(1, IntegerType)),
               mode = Complete, isDistinct = false)
           } else {
-            val n2str = if (n2.isEmpty) "" else s".${n2.get}"
-            throw new ParseException(s"invalid expression $n1$n2str(*)")
+            val fnName = n2 match {
+              case None => new FunctionIdentifier(n1)
+              case Some(f) => new FunctionIdentifier(f, Some(n1))
+            }
+            UnresolvedFunction(fnName, UnresolvedStar(None) :: Nil, isDistinct = false)
           }) |
           (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
-            val f2 = n2.asInstanceOf[Option[String]]
-            val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
+            val fnName = n2.asInstanceOf[Option[String]] match {
+              case None => new FunctionIdentifier(n1)
+              case Some(f) => new FunctionIdentifier(f, Some(n1))
+            }
             val allExprs = e.asInstanceOf[Seq[Expression]]
             val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
-              UnresolvedFunction(udfName, exprs, isDistinct = false)
-            } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
+              UnresolvedFunction(fnName, exprs, isDistinct = false)
+            } else if (fnName.funcName.equalsIgnoreCase("COUNT")) {
               aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
             } else {
-              UnresolvedFunction(udfName, exprs, isDistinct = true)
+              UnresolvedFunction(fnName, exprs, isDistinct = true)
             }
             w.asInstanceOf[Option[WindowSpec]] match {
               case None => function

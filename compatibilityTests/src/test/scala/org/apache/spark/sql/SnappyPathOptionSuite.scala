@@ -23,8 +23,10 @@ class SnappyPathOptionSuite extends PathOptionSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
     override def ignored: Seq[String] = Seq(
+      /*
     "path option always exist",
     "path option also exist for write path",
     "path option always represent the value of table location"
+    */
   )
 }

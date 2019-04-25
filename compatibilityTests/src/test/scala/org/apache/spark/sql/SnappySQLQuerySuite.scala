@@ -65,6 +65,7 @@ class SnappySQLQuerySuite extends SQLQuerySuite with
      )
 
   override def ignored: Seq[String] = Seq(
+    /*
     "describe functions",
     "inner join where, one match per row",
     "inner join, where, multiple matches",
@@ -81,6 +82,7 @@ class SnappySQLQuerySuite extends SQLQuerySuite with
     "Eliminate noop ordinal ORDER BY *** FAILED",
     "check code injection is prevented",
     "Eliminate noop ordinal ORDER BY"
+    */
   )
 
   test("SD:inner join ON, one match per row") {

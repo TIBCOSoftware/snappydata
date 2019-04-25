@@ -19,6 +19,10 @@ package org.apache.spark.sql
 import org.apache.spark.sql.execution.GlobalTempViewSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
+/**
+ * SnappyData allows global temporary views to be addressed without the "global_temp" schema
+ * prefix, so couple of tests have been overridden to expect the same.
+ */
 class SnappyGlobalTempViewSuite extends GlobalTempViewSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
@@ -31,15 +35,9 @@ class SnappyGlobalTempViewSuite extends GlobalTempViewSuite
 
   private var globalTempDB: String = _
 
-  override def ignored: Seq[String] = Seq(
+  override def excluded: Seq[String] = Seq(
     "basic semantic",
     "should lookup global temp view if and only if global temp db is specified"
-    /*
-    "global temp view is shared among all sessions",
-    "global temp view database should be preserved",
-    "CREATE TABLE LIKE should work for global temp view",
-    "list global temp views",
-    */
   )
 
   test("basic snappy semantic") {
@@ -61,7 +59,6 @@ class SnappyGlobalTempViewSuite extends GlobalTempViewSuite
     Seq(1 -> "a").toDF("i", "j").createGlobalTempView("src")
     checkAnswer(spark.table(s"$globalTempDB.src"), Row(1, "a"))
 
-    /* TODO: SW:
     // Use qualified name to rename a global temp view.
     sql(s"ALTER VIEW $globalTempDB.src RENAME TO src2")
     intercept[TableNotFoundException](spark.table(s"$globalTempDB.src"))
@@ -74,7 +71,6 @@ class SnappyGlobalTempViewSuite extends GlobalTempViewSuite
     // We can also use Catalog API to drop global temp view
     spark.catalog.dropGlobalTempView("src2")
     intercept[TableNotFoundException](spark.table(s"$globalTempDB.src2"))
-    */
   }
 
   test("should lookup global temp view if possible") {
