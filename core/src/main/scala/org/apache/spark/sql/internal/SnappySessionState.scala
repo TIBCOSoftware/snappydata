@@ -233,7 +233,8 @@ class SnappySessionState(val snappySession: SnappySession)
           case e if e.foldable => foldExpression(e)
           // Like Spark's OptimizeIn but uses DynamicInSet to allow for tokenized literals
           // to be optimized too.
-          case expr@In(v, l) if !disableStoreOptimizations =>
+          case expr@In(v, l) if !disableStoreOptimizations && l.forall(
+            e => e.isInstanceOf[Literal] || e.isInstanceOf[DynamicReplacableConstant]) =>
             val list = l.collect {
               case e@(_: Literal | _: DynamicReplacableConstant) => e
               case e if e.foldable => foldExpression(e)

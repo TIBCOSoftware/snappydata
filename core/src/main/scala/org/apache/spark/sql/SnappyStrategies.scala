@@ -26,6 +26,7 @@ import io.snappydata.{Constant, Property, QueryHint}
 import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
+import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
 import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -491,10 +492,13 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
     case _ => Nil
   }
 
-  def supportCodegen(aggregateExpressions: Seq[AggregateExpression]): Boolean = {
+  def supportsCodegen(aggregateExpressions: Seq[AggregateExpression],
+      resultExpressions: Seq[NamedExpression]): Boolean = {
     // ImperativeAggregate is not supported right now in code generation.
     !aggregateExpressions.exists(_.aggregateFunction
-        .isInstanceOf[ImperativeAggregate])
+        .isInstanceOf[ImperativeAggregate]) &&
+    // result expressions should be code-generated
+    !resultExpressions.exists(_.find(_.isInstanceOf[CodegenFallback]).isEmpty)
   }
 
   def planAggregateWithoutDistinct(
@@ -505,7 +509,7 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
       isRootPlan: Boolean): Seq[SparkPlan] = {
 
     // Check if we can use SnappyHashAggregateExec.
-    if (!supportCodegen(aggregateExpressions)) {
+    if (!supportsCodegen(aggregateExpressions, resultExpressions)) {
       return AggUtils.planAggregateWithoutDistinct(groupingExpressions,
         aggregateExpressions, resultExpressions, child)
     }
@@ -565,7 +569,7 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
       child: SparkPlan): Seq[SparkPlan] = {
 
     // Check if we can use SnappyHashAggregateExec.
-    if (!supportCodegen(aggregateExpressions)) {
+    if (!supportsCodegen(aggregateExpressions, resultExpressions)) {
       return AggUtils.planAggregateWithOneDistinct(groupingExpressions,
         functionsWithDistinct, functionsWithoutDistinct,
         resultExpressions, child)
