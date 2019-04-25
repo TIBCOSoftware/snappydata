@@ -21,9 +21,4 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 
 class SnappyVariableSubstitutionSuite
     extends VariableSubstitutionSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "environmental variables"
-  )
-}
+        with SharedSnappySessionContext with SnappySparkTestUtil

@@ -297,11 +297,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   protected[sql] def validateSchemaName(schemaName: String, checkForDefault: Boolean): Unit = {
     if (schemaName == globalTempViewManager.database) {
-      throw new AnalysisException(s"$schemaName is a system reserved schema for global " +
+      throw new AnalysisException(s"$schemaName is a system preserved database/schema for global " +
           s"temporary tables. You cannot create, drop or set a schema with this name.")
     }
     if (checkForDefault && schemaName == SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA) {
-      throw new AnalysisException(s"$schemaName is a system reserved schema.")
+      throw new AnalysisException(s"$schemaName is a system preserved database/schema.")
     }
   }
 
@@ -346,7 +346,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   def dropAllSchemaObjects(schemaName: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
     if (schemaName == SnappyExternalCatalog.SYS_SCHEMA) {
-      throw new AnalysisException(s"$schemaName is a system reserved schema")
+      throw new AnalysisException(s"$schemaName is a system preserved database/schema")
     }
 
     if (!externalCatalog.databaseExists(schemaName)) {
@@ -413,6 +413,15 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
             !s.equalsIgnoreCase(SnappyExternalCatalog.SYS_SCHEMA) &&
             !s.equalsIgnoreCase(defaultSchemaName))
     } else super.listDatabases()
+  }
+
+  override def listTables(schema: String, pattern: String): Seq[TableIdentifier] = {
+    // convert to lower-case (for temp tables since hive catalog entries are already lower-case)
+    super.listTables(schema, pattern).map {
+      case TableIdentifier(t, None) => TableIdentifier(Utils.toLowerCase(t), None)
+      case TableIdentifier(t, Some(s)) => TableIdentifier(Utils.toLowerCase(t),
+        Some(Utils.toLowerCase(s)))
+    }
   }
 
   override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {

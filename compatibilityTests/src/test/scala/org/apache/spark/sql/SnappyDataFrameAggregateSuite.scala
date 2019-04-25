@@ -20,9 +20,4 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 
 class SnappyDataFrameAggregateSuite
     extends DataFrameAggregateSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "SPARK-17616: distinct aggregate combined with a non-partial aggregate"
-  )
-}
+        with SharedSnappySessionContext with SnappySparkTestUtil

@@ -847,7 +847,7 @@ class SnappyParser(session: SnappySession)
         session.planCaching = false
         exprs
       case args =>
-        exprs.indices.map(index => exprs(index) match {
+        exprs.indices.map(index => exprs(index).transformUp {
           case l: TokenizedLiteral if (args(0) == -3 && !Ints.contains(args, index)) ||
               (args(0) != -3 && (Ints.contains(args, index) ||
               // all args          // all odd args

@@ -76,7 +76,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     // Check that global temp view schema should be absent
     val globalSchemaName = Utils.toUpperCase(conf.get(GLOBAL_TEMP_DATABASE))
     if (databaseExists(globalSchemaName)) {
-      throw new SparkException(globalSchemaName + " is a system reserved schema. " +
+      throw new SparkException(globalSchemaName + " is a system preserved database/schema. " +
           "Please drop your existing schema to resolve the name conflict, " +
           "or set a different value for " + GLOBAL_TEMP_DATABASE.key +
           ", and start the cluster again.")
@@ -217,7 +217,9 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
-    if (schema == SYS_SCHEMA) throw new AnalysisException(s"$schema is a system reserved schema")
+    if (schema == SYS_SCHEMA) {
+      throw new AnalysisException(s"$schema is a system preserved database/schema")
+    }
     withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
   }
 

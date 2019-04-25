@@ -23,14 +23,14 @@ class SnappyDataFrameReaderWriterSuite
         with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "saveAsTable with mode Append should not fail if the table not exists but a same-name temp view exist",
-    "saveAsTable with mode Append should not fail if the table already exists and a same-name temp view exist",
-    "saveAsTable with mode ErrorIfExists should not fail if the table not exists but a same-name temp view exist",
-    "saveAsTable with mode Overwrite should not drop the temp view if the table not exists but a same-name temp view exist",
-    "saveAsTable with mode Overwrite should not fail if the table already exists and a same-name temp view exist",
-    "saveAsTable with mode Ignore should create the table if the table not exists but a same-name temp view exist",
-    "SPARK-18899: append to a bucketed table using DataFrameWriter with mismatched bucketing",
-    "SPARK-18912: number of columns mismatch for non-file-based data source table",
-    "SPARK-18913: append to a table with special column names"
+    // "saveAsTable with mode Append should not fail if the table not exists but a same-name temp view exist",
+    // "saveAsTable with mode Append should not fail if the table already exists and a same-name temp view exist",
+    // "saveAsTable with mode ErrorIfExists should not fail if the table not exists but a same-name temp view exist",
+    // "saveAsTable with mode Overwrite should not drop the temp view if the table not exists but a same-name temp view exist",
+    // "saveAsTable with mode Overwrite should not fail if the table already exists and a same-name temp view exist",
+    // "saveAsTable with mode Ignore should create the table if the table not exists but a same-name temp view exist",
+    // "SPARK-18899: append to a bucketed table using DataFrameWriter with mismatched bucketing",
+    // "SPARK-18912: number of columns mismatch for non-file-based data source table",
+    // "SPARK-18913: append to a table with special column names"
   )
 }
