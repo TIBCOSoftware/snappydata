@@ -339,15 +339,6 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     super.createDatabase(schemaDefinition, ignoreIfExists)
   }
 
-  def requireSchemaExists(schemaName: String,
-      ignoreIfNotExists: Boolean = false): Boolean = {
-    if (!databaseExists(schemaName)) {
-      if (ignoreIfNotExists) return false
-      else throw new AnalysisException(s"Schema $schemaName not found")
-    }
-    true
-  }
-
   /**
    * Drop all the objects in a schema. The provided schema must already be formatted
    * with a call to [[formatDatabaseName]].
@@ -358,7 +349,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       throw new AnalysisException(s"$schemaName is a system reserved schema")
     }
 
-    if (!requireSchemaExists(schemaName, ignoreIfNotExists)) return
+    if (!externalCatalog.databaseExists(schemaName)) {
+      if (ignoreIfNotExists) return
+      else throw new AnalysisException(s"Schema $schemaName not found")
+    }
     checkSchemaPermission(schemaName, table = "", defaultUser = null, ignoreIfNotExists)
 
     if (cascade) {

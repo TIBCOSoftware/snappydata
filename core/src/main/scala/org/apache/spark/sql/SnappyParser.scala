@@ -904,21 +904,9 @@ class SnappyParser(session: SnappySession)
         '.' ~ ws ~ (identifier. +('.' ~ ws) ~ ('.' ~ ws ~ '*' ~ push(true) ~ ws).? ~> {
           (i1: String, rest: Any, s: Any) =>
             if (s.asInstanceOf[Option[Boolean]].isDefined) {
-              val remaining = rest.asInstanceOf[Seq[String]]
-              val qualifiedStar = if (remaining.isEmpty) i1 :: Nil else {
-                // schema should exist
-                session.sessionCatalog.requireSchemaExists(i1)
-                remaining
-              }
-              UnresolvedStar(Option(qualifiedStar))
+              UnresolvedStar(Option(i1 +: rest.asInstanceOf[Seq[String]]))
             } else {
-              val remaining = rest.asInstanceOf[Seq[String]]
-              val qualifiedName = if (remaining.length > 1) {
-                // schema should exist
-                session.sessionCatalog.requireSchemaExists(i1)
-                remaining
-              } else i1 +: remaining
-              UnresolvedAttribute(qualifiedName)
+              UnresolvedAttribute(i1 +: rest.asInstanceOf[Seq[String]])
             }
         } | '*' ~ ws ~> { (i1: String) => UnresolvedStar(Some(Seq(i1)))
         }) |
