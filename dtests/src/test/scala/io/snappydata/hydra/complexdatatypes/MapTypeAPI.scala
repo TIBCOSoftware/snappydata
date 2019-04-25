@@ -38,32 +38,32 @@ class MapTypeAPI extends SnappySQLJob {
       val sncReadDF : DataFrame = snc.read.json(dataLocation)
       val sparkReadDF : DataFrame = spark.read.json(dataLocation)
 
-//      println("Start the Map Type Query1")
-//      val sncSelectDF : DataFrame = sncReadDF.select("*").orderBy("id")
-//      val sparkSelectDF : DataFrame = sparkReadDF.select("*").orderBy("id")
-//      if(printDFContent) {
-//        println("sncSelectDF count : " + sncSelectDF.count())
-//        println("sparkSelectDF count : " + sparkSelectDF.count())
-//      }
+      println("Start the Map Type Query1")
+      val sncSelectDF : DataFrame = sncReadDF.select("*").orderBy("id")
+      val sparkSelectDF : DataFrame = sparkReadDF.select("*").orderBy("id")
+      if(printDFContent) {
+        println("sncSelectDF count : " + sncSelectDF.count())
+        println("sparkSelectDF count : " + sparkSelectDF.count())
+      }
 
-//      println("Start the Map Type Query2")
-//      val sncMapQuery2DF : DataFrame = sncReadDF
-//          .select(sncReadDF("id"), sncReadDF("name"), sncReadDF("Maths").getItem("maths"),
-//            sncReadDF("Science").getField("science"), sncReadDF("English").getItem("english"),
-//            sncReadDF("Computer").getItem("computer"), sncReadDF("Music").getField("music"),
-//            sncReadDF("History").getItem("history")).filter(sncReadDF("name")==="JxVJBxYlNT")
+      println("Start the Map Type Query2")
+      val sncMapQuery2DF : DataFrame = sncReadDF
+          .select(sncReadDF("id"), sncReadDF("name"), sncReadDF("Maths").getItem("maths"),
+            sncReadDF("Science").getField("science"), sncReadDF("English").getItem("english"),
+            sncReadDF("Computer").getItem("computer"), sncReadDF("Music").getField("music"),
+            sncReadDF("History").getItem("history")).filter(sncReadDF("name")==="JxVJBxYlNT")
 
-//      val sparkMapQuery2DF : DataFrame = sparkReadDF
-//          .select(sparkReadDF("id"), sparkReadDF("name"), sparkReadDF("Maths").getItem("maths"),
-//            sparkReadDF("Science").getField("science"), sparkReadDF("English").getItem("english"),
-//            sparkReadDF("Computer").getItem("computer"), sparkReadDF("Music").getField("music"),
-//            sparkReadDF("History").getItem("history")).where(sparkReadDF("name")==="JxVJBxYlNT")
-//      if(printDFContent) {
-//        println("sncMapQuery2DF count : " + sncMapQuery2DF.count())
-//        println("sncMapQuery2DF count : " + sncMapQuery2DF.count())
-//      }
+      val sparkMapQuery2DF : DataFrame = sparkReadDF
+          .select(sparkReadDF("id"), sparkReadDF("name"), sparkReadDF("Maths").getItem("maths"),
+            sparkReadDF("Science").getField("science"), sparkReadDF("English").getItem("english"),
+            sparkReadDF("Computer").getItem("computer"), sparkReadDF("Music").getField("music"),
+            sparkReadDF("History").getItem("history")).where(sparkReadDF("name")==="JxVJBxYlNT")
+      if(printDFContent) {
+        println("sncMapQuery2DF count : " + sncMapQuery2DF.count())
+        println("sncMapQuery2DF count : " + sncMapQuery2DF.count())
+      }
 
-      println("Start the Map Type Query3")
+      println("Start the Map Type Query3 and Query4")
       val snc3DF2 : DataFrame = sncReadDF.select(("id"), ("name"))
       val snc3DF3 : DataFrame = sncReadDF.select("id",
         "Maths.maths", "Science.science", "English.english", "History.history",
@@ -75,6 +75,13 @@ class MapTypeAPI extends SnappySQLJob {
         .agg(sum(snc3DF5("maths") + snc3DF5("science") + snc3DF5("english")
           + snc3DF5("music") + snc3DF5("history") + snc3DF5("computer")).as("Total"))
        .orderBy(desc("Total"))
+      val sncMapQuery4DF : DataFrame = sncMapQuery3DF.select(sncMapQuery3DF("name"),
+        when(sncMapQuery3DF("Total").geq(500), "A")
+        .when(sncMapQuery3DF("Total").geq(400), "B")
+        .when(sncMapQuery3DF("Total").geq(300), "C")
+        .otherwise("Fail").as("Grade"))
+        .orderBy(desc("Total"))
+
 
       val spark3DF2 : DataFrame = sparkReadDF.select(("id"), ("name"))
       val spark3DF3 : DataFrame = sparkReadDF.select("id",
@@ -86,6 +93,12 @@ class MapTypeAPI extends SnappySQLJob {
       val sparkMapQuery3DF : DataFrame = spark3DF5.select("*").groupBy("name")
         .agg(sum(spark3DF5("maths") + spark3DF5("science") + spark3DF5("english")  +
           spark3DF5("history") + spark3DF5("music") + spark3DF5("computer")).as("Total"))
+        .orderBy(desc("Total"))
+      val sparkMapQuery4DF : DataFrame = sparkMapQuery3DF.select(sparkMapQuery3DF("name"),
+        when(sparkMapQuery3DF("Total").geq(500), "A")
+        .when(sparkMapQuery3DF("Total").geq(400), "B")
+        .when(sparkMapQuery3DF("Total").geq(300), "C")
+        .otherwise("Fail").as("Grade"))
         .orderBy(desc("Total"))
 
 
@@ -116,27 +129,27 @@ class MapTypeAPI extends SnappySQLJob {
         * 100.0/600.0).as("Percentage"))
         .orderBy(desc("Percentage"))
 
-//      println("Start the Map Type Query4")
-//      println("Finish the Map Type Query4")
 //      println("Start the Map Type Query6")
 //      println("Finish the Map Type Query6")
 
-//      SnappyTestUtils.assertQueryFullResultSet(snc, sncSelectDF, sparkSelectDF,
-//      "MapTypeQuery1", "column", pw, sqlContext )
-//      println("Finish the Map Type Query1")
-//      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery2DF, sparkMapQuery2DF,
-//      "MapTypeQuery2", "column", pw,sqlContext)
-//      println("Finish the Map Type Query2")
-
-         SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery3DF, sparkMapQuery3DF,
+     SnappyTestUtils.assertQueryFullResultSet(snc, sncSelectDF, sparkSelectDF,
+      "MapTypeQuery1", "column", pw, sqlContext )
+     println("Finish the Map Type Query1")
+     SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery2DF, sparkMapQuery2DF,
+      "MapTypeQuery2", "column", pw,sqlContext)
+     println("Finish the Map Type Query2")
+     SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery3DF, sparkMapQuery3DF,
           "MapTypeQuery3", "column", pw,sqlContext)
-            println("Finish the Map Type Query3")
+     println("Finish the Map Type Query3")
 
-      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery5DF, sparkMapQuery5DF,
+      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery4DF, sparkMapQuery4DF,
+        "MapTypeQuery4", "column", pw,sqlContext)
+     println("Finish the Map Type Query4")
+     SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery5DF, sparkMapQuery5DF,
         "MapTypeQuery5", "column", pw,sqlContext)
-      println("Finish the Map Type Query6")
+     println("Finish the Map Type Query6")
 
-      println("Query MapType Via API, Job Completed....")
+     println("Query MapType Via API, Job Completed....")
     }
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
