@@ -238,7 +238,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       // println(s"executing query making $i grouping column as null")
       insertPs.setInt(1, i)
       insertPs.setInt(2, i * 2)
-      for (j <- 3 until i ) {
+      for (j <- 3 until i) {
         insertPs.setString(j, s"col$j")
       }
       insertPs.setNull(i, Types.VARCHAR)
@@ -751,7 +751,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(6)} from test1 group by ${colName(6)} "
-    expectedResult = mutable.Map(0 -> 10L, .7f -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L,.7f -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -775,7 +775,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       insertPs.executeUpdate()
     }
     q = s"select sum(${colName(1)}), ${colName(7)} from test1 group by ${colName(7)} "
-    expectedResult = mutable.Map(0 -> 10L, .7D -> 35L, "null" -> 60L)
+    expectedResult = mutable.Map(0 -> 10L,.7D -> 35L, "null" -> 60L)
     rs = snc.sql(q)
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     rows = rs.collect
@@ -853,7 +853,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     // check behaviour of boolean as grouping column with null & two not nulls
     for (i <- 0 until 10) {
-      val dataMap: DataMap = Map(1 -> i, 12 -> (i/5 == 1),
+      val dataMap: DataMap = Map(1 -> i, 12 -> (i / 5 == 1),
         11 -> s"col${i / 5}")
       setInInsertStatement(dataMap)
       insertPs.executeUpdate()
@@ -930,7 +930,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  test("test array type field as  grouping key") {
+  test("test array type field as grouping key") {
     snc.sql("drop table if exists test1")
 
     val structType = StructType(Seq(StructField("col1", IntegerType),
@@ -1038,6 +1038,37 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val newSession2 = snc.newSession()
     newSession2.setConf(Property.TestExplodeComplexDataTypeInSHA.name, false.toString)
     runTest(newSession2)
+    snc.dropTable("test1")
+  }
+
+  test("grouping columns and aggregate with expressions") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1 int, col2 int, col3 int, col4 int, col5 string) " +
+      "using column ")
+    val range = 50
+    val groupingDivisor = 10
+    val insertDF = snc.range(50).selectExpr("id", "id * 2", "id * 3",
+      s"id % $groupingDivisor", s"concat('col_',id % $groupingDivisor)")
+
+    insertDF.write.insertInto("test1")
+    val rs = snc.sql(s"select " +
+      s"concat(Cast((cast(col2 / 2 as int)) % $groupingDivisor as string), col5) as x," +
+      s" col5,  sum(col1) as summ1  from test1 group by x, col5")
+    val results = rs.collect()
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    assertEquals(groupingDivisor, results.length)
+    rs.foreach(row => {
+      val x = row.getString(1)
+      val groupKey = x.substring("col_".length).toInt
+      val n = range / groupingDivisor
+      val sum1 = ((n / 2.0f) * ((2 * groupKey) + (n - 1) * groupingDivisor)).toLong
+      val sumAgg1 = row.getLong(2)
+      val firstCol = s"${groupKey}col_$groupKey"
+      assertEquals(firstCol, row.getString(0))
+      assertEquals(sum1, sumAgg1)
+
+    })
     snc.dropTable("test1")
   }
 
