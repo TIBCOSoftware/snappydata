@@ -190,41 +190,41 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |$currentValueOffsetTerm);
              |++$currentValueOffsetTerm;
              |if ($isExploded) {
-             |int $arraySize = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
-             |$currentValueOffsetTerm += 4;
-             |$objectClass[] $objectArray = new $objectClass[$arraySize];
-             |if ($containsNull) {
-             |int $varWidthNumNullBytes = $arraySize/8 + ($arraySize % 8 > 0 ? 1 : 0);
-             |byte[] $varWidthNullBits = new byte[$varWidthNumNullBytes];
-             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-             | $varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET}, $varWidthNumNullBytes);
-             |$currentValueOffsetTerm += $varWidthNumNullBytes;
-             |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
-             |int $remainder = $counter % 8;
-             |int $indx = $counter / 8;
-             |if ( ($varWidthNullBits[$indx] & (0x01 << $remainder)) != 0) {
-             |${readingCodeExprs.map(_.code).mkString("\n")}
-                    }
-                 }
-                } else {
-             |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
-             |${readingCodeExprs.map(_.code).mkString("\n")}
-                  }
-                }
+               |int $arraySize = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+               |$currentValueOffsetTerm += 4;
+               |$objectClass[] $objectArray = new $objectClass[$arraySize];
+               |if ($containsNull) {
+                 |int $varWidthNumNullBytes = $arraySize/8 + ($arraySize % 8 > 0 ? 1 : 0);
+                 |byte[] $varWidthNullBits = new byte[$varWidthNumNullBytes];
+                 |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+                 | $varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET}, $varWidthNumNullBytes);
+                 |$currentValueOffsetTerm += $varWidthNumNullBytes;
+                 |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
+                   |int $remainder = $counter % 8;
+                   |int $indx = $counter / 8;
+                   |if ( ($varWidthNullBits[$indx] & (0x01 << $remainder)) != 0) {
+                     |${readingCodeExprs.map(_.code).mkString("\n")}
+                   |}
+                 |}
+               |} else {
+                  |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
+                  |${readingCodeExprs.map(_.code).mkString("\n")}
+                 |}
+               |}
 
                $varName = new $genericArrayDataClass($objectArray);
-             } else {
-             |int $arraySize = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
-             |$currentValueOffsetTerm += 4;
-             |$byteBufferClass $holder = $allocatorTerm.allocate($arraySize, "SHA");
-             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-             |$allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),$arraySize);
-             |$currentValueOffsetTerm += $arraySize;
-             |$varName = new $unsafeArrayDataClass();
-             |(($unsafeArrayDataClass)$varName).pointTo($allocatorTerm.baseObject($holder),
-             |$allocatorTerm.baseOffset($holder), $arraySize);
-             |}
-               """.stripMargin
+          |} else {
+            |int $arraySize = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+            |$currentValueOffsetTerm += 4;
+            |$byteBufferClass $holder = $allocatorTerm.allocate($arraySize, "SHA");
+            |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+            |$allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),$arraySize);
+            |$currentValueOffsetTerm += $arraySize;
+            |$varName = new $unsafeArrayDataClass();
+            |(($unsafeArrayDataClass)$varName).pointTo($allocatorTerm.baseObject($holder),
+            |$allocatorTerm.baseOffset($holder), $arraySize);
+          |}
+           """.stripMargin
         case st: StructType =>
           val objectArray = ctx.freshName("objectArray")
           val byteBufferClass = classOf[ByteBuffer].getName
@@ -251,34 +251,33 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |$currentValueOffsetTerm);
              |++$currentValueOffsetTerm;
              |if ($isExploded) {
-             |${
-            readNullBitsCode(currentValueOffsetTerm, nullBitSetTermForStruct,
-              numNullKeyBytesForStruct)
-          }
-             |$objectClass[] $objectArray = new $objectClass[${st.length}];
-             |$varName = new $genericInternalRowClass($objectArray);
+               |${
+                 readNullBitsCode(currentValueOffsetTerm, nullBitSetTermForStruct,
+                 numNullKeyBytesForStruct)
+                }
+                |$objectClass[] $objectArray = new $objectClass[${st.length}];
+                |$varName = new $genericInternalRowClass($objectArray);
                  // declare child struct variables
-             |${
-            keyVarNamesWithStructFlags.filter(_._2).map {
-              case (name, _) => s"$internalRowClass $name = null;"
-            }.mkString("\n")
-          }
+                |${
+                  keyVarNamesWithStructFlags.filter(_._2).map {
+                  case (name, _) => s"$internalRowClass $name = null;"
+                  }.mkString("\n")
+                 }
                  ${
-            getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
-              currentValueOffsetTerm, true, nullBitSetTermForStruct,
-              numNullKeyBytesForStruct, false, nestingLevel + 1).
-              map(_.code).mkString("\n")
-          }
+                   getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
+                   currentValueOffsetTerm, true, nullBitSetTermForStruct,
+                   numNullKeyBytesForStruct, false, nestingLevel + 1).map(_.code).mkString("\n")
+                 }
                 //add child Internal Rows to parent struct's object array
                 ${
-            keyVarNamesWithStructFlags.zipWithIndex.map { case ((name, isStruct), indx) =>
-              if (isStruct) {
-                s"$objectArray[$indx] = $name;"
-              } else {
-                ""
-              }
-            }.mkString("\n")
-          }
+                  keyVarNamesWithStructFlags.zipWithIndex.map { case ((name, isStruct), indx) =>
+                  if (isStruct) {
+                   s"$objectArray[$indx] = $name;"
+                  } else {
+                    ""
+                  }
+                 }.mkString("\n")
+               }
               }
              |else {
                |int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
@@ -452,7 +451,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       }
 
       val snippet = s"""
-           |boolean $nullVarName = $structNullVarName||
+           |boolean $nullVarName = $structNullVarName ||
            | (!$alwaysExplode && $structVarName instanceof $unsafeRowClass) ||
            | $structVarName.isNullAt($index);
            | ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
@@ -614,23 +613,38 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable)
               val newNumBytesForNullBits = SHAMapAccessor.
                 calculateNumberOfBytesForNullBits(st.length)
-              s"""if ($alwaysExplode|| !($variable instanceof $unsafeRowClass)) {
-                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
-                    |$offsetTerm += 1;
-                    |${writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
-                     newNullBitTerm, newNumBytesForNullBits, true, false,
-                     nestingLevel + 1)
-                    }
-                 |} else {
-                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
-                    |$offsetTerm += 1;
-                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
-                    |(($unsafeRowClass)$variable).getSizeInBytes());
-                    |$offsetTerm += 4;
-                    |(($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
-                    |$offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
-                 }
+              val explodeStructSnipet =
+                s"""
+                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+                   |$offsetTerm += 1;
+                   |${
+                      writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
+                      newNullBitTerm, newNumBytesForNullBits, true, false,
+                      nestingLevel + 1)
+                   }
+                 """.stripMargin
+              val unexplodedStructSnippet =
+                s"""
+                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+                   |$offsetTerm += 1;
+                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
+                   |(($unsafeRowClass)$variable).getSizeInBytes());
+                   |$offsetTerm += 4;
+                   |(($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+                   |$offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
+                 """.stripMargin
+              if (alwaysExplode) {
+                explodeStructSnipet
+              } else {
+                s"""if (!($variable instanceof $unsafeRowClass)) {
+                  $explodeStructSnipet
+                } else {
+                  $unexplodedStructSnippet
+                }
                """.stripMargin
+              }
+
+
             case at@ArrayType(elementType, containsNull) =>
               val varWidthNullBitStartPos = ctx.freshName("nullBitBeginPos")
               val varWidthNumNullBytes = ctx.freshName("numNullBytes")
@@ -648,50 +662,60 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val elementWitingCode = writeKeyOrValue(baseObjectTerm, offsetTerm, Seq(elementType),
                 Seq(ExprCode("", "false", arrElement)), "", -1,
                 true, true, nestingLevel)
+              val explodeArraySnippet =
+                s"""
+                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+                   |$offsetTerm += 1;
+                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
+                   |$offsetTerm += 4;
+                   |long $varWidthNullBitStartPos = $offsetTerm;
+                   |int $varWidthNumNullBytes = $variable.numElements() / 8 +
+                   |($variable.numElements() % 8 > 0 ? 1 : 0);
+                   |byte[] $varWidthNullBits = null;
+                   |if ($containsNull) {
+                     |$varWidthNullBits = new byte[$varWidthNumNullBytes];
+                     |$offsetTerm += $varWidthNumNullBytes;
+                   |}
+                   |$dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.
+                   |fromJson("\\"$strippedQuotesJson\\"");
+                   |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
+                     |int $remainder = $counter % 8;
+                     |int $arrIndex = $counter / 8;
+                     |if (!$variable.isNullAt($counter)) {
+                       |${ctx.javaType(elementType)} $arrElement =
+                       |(${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
+                       |$elementWitingCode
+                       |if ($containsNull) {
+                         |$varWidthNullBits[$arrIndex] |= (byte)((0x01 << $remainder));
+                       |}
+                     |}
+                   |}
+                   |if ($containsNull ) {
+                     |$plaformClass.copyMemory($varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET},
+                     |$baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
+                   |}
+                """.stripMargin
+              val unexplodedArraySnippet =
+                s"""
+                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+                   |$offsetTerm += 1;
+                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
+                   |(($unsafeArrayClass)$variable).getSizeInBytes());
+                   |$offsetTerm += 4;
+                   |(($unsafeArrayClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+                   |$offsetTerm += (($unsafeArrayClass)$variable).getSizeInBytes();
+                 """.stripMargin
 
-              s"""|if ($alwaysExplode|| !($variable instanceof $unsafeArrayClass)) {
-                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
-                    |$offsetTerm += 1;
-                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
-                    |$offsetTerm += 4;
-                    |long $varWidthNullBitStartPos = $offsetTerm;
-                    |int $varWidthNumNullBytes = $variable.numElements() / 8 +
-                    |($variable.numElements() % 8 > 0 ? 1 : 0);
-                    |byte[] $varWidthNullBits = null;
-                    |if ($containsNull) {
-                      |$varWidthNullBits = new byte[$varWidthNumNullBytes];
-                      |$offsetTerm += $varWidthNumNullBytes;
+              if (alwaysExplode) {
+                explodeArraySnippet
+              } else {
+                s"""if (!($variable instanceof $unsafeArrayClass)) {
+                       $explodeArraySnippet
+                    |} else {
+                        $unexplodedArraySnippet
                     |}
-                    |$dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.
-                    |fromJson("\\"$strippedQuotesJson\\"");
-                    |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
-                      |int $remainder = $counter % 8;
-                      |int $arrIndex = $counter / 8;
-                      |if (!$variable.isNullAt($counter)) {
-                        |${ctx.javaType(elementType)} $arrElement =
-                        | (${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
-                        | $elementWitingCode
-                        if ($containsNull) {
-                          $varWidthNullBits[$arrIndex] |= (byte)((0x01 << $remainder));
-                        }
-                      }
-                    }
-
-                    |if ($containsNull ) {
-                       $plaformClass.copyMemory($varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET},
-                      $baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
-                    |}
-                 |} else {
-                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
-                    |$offsetTerm += 1;
-                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
-                    |(($unsafeArrayClass)$variable).getSizeInBytes());
-                    |$offsetTerm += 4;
-                    |(($unsafeArrayClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
-                    |$offsetTerm += (($unsafeArrayClass)$variable).getSizeInBytes();
-                 }
                """.stripMargin
-
+              }
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }
 
@@ -857,6 +881,20 @@ case class SHAMapAccessor(@transient session: SnappySession,
           case BinaryType => s" (${expr.value}.length + 4) "
           case st: StructType => val (childKeysVars, childDataTypes) =
             getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
+            val explodedStructSizeCode = generateKeySizeCode(childKeysVars, childDataTypes,
+              SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
+            val unexplodedStructSizeCode = s"(($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4"
+
+            "1 + " + (if (alwaysExplode) {
+              explodedStructSizeCode
+            } else {
+              s"""
+             |(${expr.value} instanceof $unsafeRowClass ? $unexplodedStructSizeCode
+                                                      |: $explodedStructSizeCode)
+            """.stripMargin
+            }
+            )
+            /*
             s"""
              1 + (($alwaysExplode|| !(${expr.value} instanceof $unsafeRowClass)) ?
              (${
@@ -864,7 +902,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
             }) :
                (($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4)
-            """.stripMargin
+            """.stripMargin */
           case at@ArrayType(elementType, containsNull) =>
             // The array serialization format is following
             /**
@@ -892,26 +930,53 @@ case class SHAMapAccessor(@transient session: SnappySession,
               (false, 0)
             }
             val snippetNullBitsSizeCode = s"""
-                   ${expr.value}.numElements()/8 +  (${expr.value}.numElements() % 8 > 0 ? 1 :0)
+                   ${expr.value}.numElements()/8 +  (${expr.value}.numElements() % 8 > 0 ? 1 : 0)
               """.stripMargin
 
             val snippetNotNullFixedWidth = s" 4 + ${expr.value}.numElements() * $unitSize"
             val snippetNotNullVarWidth = s"""
-               4 + ((int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, true) >>> 32L))
+               |4 + (int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, true) >>> 32L)
                """.stripMargin
             val snippetNullVarWidth = s" $snippetNullBitsSizeCode + $snippetNotNullVarWidth"
             val snippetNullFixedWidth = s"""
-                4 + $snippetNullBitsSizeCode +
-                $unitSize * ((int)($sizeAndNumNotNullFuncForStringArr(
-              ${expr.value}, false) & 0xffffffffL))
+               |4 + $snippetNullBitsSizeCode +
+               |$unitSize * (int)($sizeAndNumNotNullFuncForStringArr(
+               |${expr.value}, false) & 0xffffffffL)
             """
+            "( 1 + " + (if (alwaysExplode) {
+              if (isFixedWidth) {
+                if (containsNull) {
+                  snippetNullFixedWidth
+                } else {
+                  snippetNotNullFixedWidth
+                }
+              } else {
+                if (containsNull) {
+                  snippetNullVarWidth
+                } else {
+                  snippetNotNullVarWidth
+                }
+              }
+            } else {
+              s"""
+               |(${expr.value} instanceof $unsafeArrayDataClass ?
+               |(($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4
+               |:$isFixedWidth ? $containsNull ? ($snippetNullFixedWidth)
+                                                  |: ($snippetNotNullFixedWidth)
+                                 |: $containsNull ? ($snippetNullVarWidth)
+                                                  |: ($snippetNotNullVarWidth))
+             """.stripMargin
+
+            }) + ")"
+
+            /*
             s"""
                1 + (($alwaysExplode|| !(${expr.value} instanceof $unsafeArrayDataClass)) ?
                    ( ($isFixedWidth ? ( $containsNull ?($snippetNullFixedWidth):
                    ($snippetNotNullFixedWidth) ):($containsNull ? ($snippetNullVarWidth) :
                     ($snippetNotNullVarWidth) ) )  ) :
                     (($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4)
-             """.stripMargin
+             """.stripMargin */
 
         }
       }
