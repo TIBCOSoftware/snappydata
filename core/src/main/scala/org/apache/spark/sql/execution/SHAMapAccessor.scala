@@ -108,6 +108,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
              | $holderBaseOffset, $len);
              |$currentValueOffsetTerm += $len;
           """.stripMargin
+        case BinaryType =>
+          s"""$varName = new byte[$plaformClass.getInt($vdBaseObjectTerm,
+             | $currentValueOffsetTerm)];
+             |$currentValueOffsetTerm += 4;
+             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+             | $varName, ${Platform.BYTE_ARRAY_OFFSET}, $varName.length);
+             | $currentValueOffsetTerm += $varName.length;
+               """.stripMargin
         case x: AtomicType => {
           (typeOf(x.tag) match {
             case t if t =:= typeOf[Boolean] =>
@@ -148,7 +156,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $len);
                    |$varName = $decimalClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
-                   |${dt.asInstanceOf[DecimalType].scale}), ${dt.asInstanceOf[DecimalType].precision},
+                   |${dt.asInstanceOf[DecimalType].scale}),
+                   |${dt.asInstanceOf[DecimalType].precision},
                    |${dt.asInstanceOf[DecimalType].scale});\n
                     """.stripMargin
               }
@@ -272,16 +281,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
               }
              |else {
-             |int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
-             |$currentValueOffsetTerm += 4;
-             |$byteBufferClass $holder = $allocatorTerm.allocate($unsafeRowLength, "SHA");
-             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-             |$allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),
-             |$unsafeRowLength);
-             |$currentValueOffsetTerm += $unsafeRowLength;
-             |$varName = new $unsafeClass(${st.length});
-             |(($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
-             | $allocatorTerm.baseOffset($holder), $unsafeRowLength);
+               |int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+               |$currentValueOffsetTerm += 4;
+               |$byteBufferClass $holder = $allocatorTerm.allocate($unsafeRowLength, "SHA");
+               |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+               |$allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),
+               |$unsafeRowLength);
+               |$currentValueOffsetTerm += $unsafeRowLength;
+               |$varName = new $unsafeClass(${st.length});
+               |(($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
+               | $allocatorTerm.baseOffset($holder), $unsafeRowLength);
              |}
              """.stripMargin
       }) +
@@ -541,16 +550,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    $offsetTerm += ${dt.defaultSize};\n
                 """.stripMargin
                 case t if t =:= typeOf[Byte] => s"""
-                   $plaformClass.putByte($baseObjectTerm, $offsetTerm,
-                   $variable); \n
+                   $plaformClass.putByte($baseObjectTerm, $offsetTerm, $variable); \n
                    $offsetTerm += ${dt.defaultSize};\n
+                """.stripMargin
+                case t if t =:= typeOf[Array[Byte]] => s"""
+                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.length);
+                   |$offsetTerm += 4;
+                   |$plaformClass.copyMemory($variable, ${Platform.BYTE_ARRAY_OFFSET},
+                   |$baseObjectTerm, $offsetTerm, $variable.length);
+                   |$offsetTerm += $variable.length;
                 """.stripMargin
                 case t if t =:= typeOf[Short] =>
                   s"""
-              $plaformClass.putShort($baseObjectTerm,
-              $offsetTerm, $variable);\n
-              $offsetTerm += ${dt.defaultSize};\n
-              """.stripMargin
+                    |$plaformClass.putShort($baseObjectTerm, $offsetTerm, $variable);
+                    |$offsetTerm += ${dt.defaultSize};\n
+                  """.stripMargin
                 case t if t =:= typeOf[Int] =>
                   s"""
                   $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);\n
@@ -839,7 +853,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         })).toString
       } else {
         dt match {
-          case _: StringType => s" (${expr.value}.numBytes() + 4) "
+          case StringType => s" (${expr.value}.numBytes() + 4) "
+          case BinaryType => s" (${expr.value}.length + 4) "
           case st: StructType => val (childKeysVars, childDataTypes) =
             getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
             s"""
@@ -935,7 +950,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     keyExpressions: Seq[Expression], keysDataType: Seq[DataType], skipDeclaration: Boolean = false,
     register: Boolean = true): String = {
     var hash = hashVar(0)
-    val hashDeclaration = if (skipDeclaration) "" else s"int $hash;\n"
+    val hashDeclaration = if (skipDeclaration) "" else s"int $hash = 0;\n"
     // check if hash has already been generated for keyExpressions
     var doRegister = register
     val vars = keyVars.map(_.value)
@@ -966,6 +981,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         hashSingleLong(colVar, nullVar, hash)
       case FloatType =>
         hashSingleInt(s"Float.floatToIntBits($colVar)", nullVar, hash)
+      case BinaryType =>
+        hashBinary(colVar, nullVar, hash)
       case DoubleType =>
         hashSingleLong(s"Double.doubleToLongBits($colVar)", nullVar, hash)
       case _: DecimalType =>
@@ -983,6 +1000,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           addHashInt(s"${ev.value} ? 1 : 0", ev.isNull, hash)
         case (ByteType | ShortType | IntegerType | DateType, ev) =>
           addHashInt(ev.value, ev.isNull, hash)
+        case (BinaryType, ev) =>
+          hashBinary(ev.value, ev.isNull, hash)
         case (LongType | TimestampType, ev) =>
           addHashLong(ev.value, ev.isNull, hash)
         case (FloatType, ev) =>
@@ -1019,6 +1038,15 @@ case class SHAMapAccessor(@transient session: SnappySession,
       s"$hashVar = $hashingClass.fastHashLong($colVar);\n"
     } else {
       s"$hashVar = ($nullVar) ? -1 : $hashingClass.fastHashLong($colVar);\n"
+    }
+  }
+
+  private def hashBinary(colVar: String, nullVar: String,
+    hashVar: String): String = {
+    if (nullVar.isEmpty || nullVar == "false") {
+      s"$hashVar = $hashingClass.addBytesToHash($colVar, $hashVar);\n"
+    } else {
+      s"$hashVar = ($nullVar) ? -1 : $hashingClass.addBytesToHash($colVar, $hashVar);\n"
     }
   }
 
