@@ -22,6 +22,6 @@ class SnappyGeneratorFunctionSuite extends GeneratorFunctionSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    // "inline on column"
+    "inline on column"
   )
 }

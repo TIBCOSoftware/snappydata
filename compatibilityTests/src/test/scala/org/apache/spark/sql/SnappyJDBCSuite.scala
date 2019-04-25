@@ -20,10 +20,4 @@ import org.apache.spark.sql.jdbc.JDBCSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyJDBCSuite extends JDBCSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "SELECT * WHERE (simple predicates)",
-    "hide credentials in create and describe a persistent/temp table"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

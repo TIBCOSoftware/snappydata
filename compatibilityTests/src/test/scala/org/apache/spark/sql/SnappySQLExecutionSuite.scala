@@ -23,6 +23,6 @@ class SnappySQLExecutionSuite extends SQLExecutionSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "concurrent query execution (SPARK-10548)"
+    // "concurrent query execution (SPARK-10548)"
   )
 }
