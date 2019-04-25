@@ -894,15 +894,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             """.stripMargin
             }
             )
-            /*
-            s"""
-             1 + (($alwaysExplode|| !(${expr.value} instanceof $unsafeRowClass)) ?
-             (${
-              generateKeySizeCode(childKeysVars, childDataTypes,
-                SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length), nestingLevel + 1)
-            }) :
-               (($unsafeRowClass) ${expr.value}).getSizeInBytes() + 4)
-            """.stripMargin */
+
           case at@ArrayType(elementType, containsNull) =>
             // The array serialization format is following
             /**
@@ -968,15 +960,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
              """.stripMargin
 
             }) + ")"
-
-            /*
-            s"""
-               1 + (($alwaysExplode|| !(${expr.value} instanceof $unsafeArrayDataClass)) ?
-                   ( ($isFixedWidth ? ( $containsNull ?($snippetNullFixedWidth):
-                   ($snippetNotNullFixedWidth) ):($containsNull ? ($snippetNullVarWidth) :
-                    ($snippetNotNullVarWidth) ) )  ) :
-                    (($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4)
-             """.stripMargin */
 
         }
       }

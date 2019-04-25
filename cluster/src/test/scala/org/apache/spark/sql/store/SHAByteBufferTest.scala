@@ -851,6 +851,42 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertTrue(expectedResult.isEmpty)
     snc.sql("delete from test1")
 
+    // check behaviour of boolean as grouping column with null & two not nulls
+    for (i <- 0 until 10) {
+      val dataMap: DataMap = Map(1 -> i, 12 -> (i/5 == 1),
+        11 -> s"col${i / 5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    for (i <- 10 until 15) {
+      val dataMap: DataMap = Map(1 -> i, 11 -> s"col${i / 5}")
+      setInInsertStatement(dataMap)
+      insertPs.executeUpdate()
+    }
+    q = s"select sum(${colName(1)}), ${colName(12)} from test1 group by ${colName(12)} "
+    expectedResult = mutable.Map(false -> 10L,
+      true -> 35L, "null" -> 60L)
+    rs = snc.sql(q)
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rows = rs.collect
+    assertEquals(3, rows.length)
+    rows.foreach(row => {
+      assertEquals(expectedResult(
+        if (row.isNullAt(1)) {
+          "null"
+        } else {
+          row.getBoolean(1)
+        }), row.getLong(0))
+      expectedResult.remove(
+        if (row.isNullAt(1)) {
+          "null"
+        } else {
+          row.getBoolean(1)
+        })
+    })
+    assertTrue(expectedResult.isEmpty)
+    snc.sql("delete from test1")
+
     snc.dropTable("test1")
   }
 
