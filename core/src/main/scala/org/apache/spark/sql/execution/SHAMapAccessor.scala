@@ -82,14 +82,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val nullVar = ctx.freshName("isNull")
       val nullVarCode =
         if (numBytesForNullBits <= 8) {
-          s"""
-            boolean $nullVar = ($nullBitTerm & ( (($castTerm)0x01) << $i)) == 0;\n
+          s"""boolean $nullVar = ($nullBitTerm & ( (($castTerm)0x01) << $i)) == 0;\n
         """.stripMargin
         } else {
           val remainder = i % 8
           val index = i / 8
-          s"""
-            boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;\n
+          s"""boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;\n
         """.stripMargin
         }
 
@@ -99,58 +97,59 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val holderBaseObject = ctx.freshName("holderBaseObject")
           val holderBaseOffset = ctx.freshName("holderBaseOffset")
           val len = ctx.freshName("len")
-          s"""
-            int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-            $byteBufferClass $holder =  $allocatorTerm.
-            allocate($len, "SHA");\n
-          Object $holderBaseObject = $allocatorTerm.baseObject($holder);\n
-          long $holderBaseOffset = $allocatorTerm.baseOffset($holder);\n
-           $currentValueOffsetTerm += 4;\n
-           $plaformClass.copyMemory($vdBaseObjectTerm,
-            $currentValueOffsetTerm, $holderBaseObject, $holderBaseOffset , $len);\n
-           $varName = ${classOf[UTF8String].getName}.
-           fromAddress($holderBaseObject, $holderBaseOffset, $len);\n
-             $currentValueOffsetTerm += $len;\n
+          s"""int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+             |$byteBufferClass $holder =  $allocatorTerm.allocate($len, "SHA");
+             |Object $holderBaseObject = $allocatorTerm.baseObject($holder);
+             |long $holderBaseOffset = $allocatorTerm.baseOffset($holder);
+             |$currentValueOffsetTerm += 4;
+             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+             |$holderBaseObject, $holderBaseOffset , $len);
+             |$varName = ${classOf[UTF8String].getName}.fromAddress($holderBaseObject,
+             | $holderBaseOffset, $len);
+             |$currentValueOffsetTerm += $len;
           """.stripMargin
         case x: AtomicType => {
           (typeOf(x.tag) match {
-            case t if t =:= typeOf[Boolean] => s"$varName = $plaformClass.getBoolean(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-            case t if t =:= typeOf[Byte] => s"$varName = $plaformClass.getByte(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-            case t if t =:= typeOf[Short] => s"$varName = $plaformClass.getShort(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-            case t if t =:= typeOf[Int] => s"$varName = $plaformClass.getInt(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-            case t if t =:= typeOf[Long] => s"$varName = $plaformClass.getLong(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-            case t if t =:= typeOf[Float] => s"$varName = $plaformClass.getFloat(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
-            case t if t =:= typeOf[Double] => s"$varName = $plaformClass.getDouble(" +
-              s"$vdBaseObjectTerm, $currentValueOffsetTerm);\n"
+            case t if t =:= typeOf[Boolean] =>
+              s"""$varName = $plaformClass.getBoolean($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              """.stripMargin
+            case t if t =:= typeOf[Byte] =>
+              s"""$varName = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+               """.stripMargin
+            case t if t =:= typeOf[Short] =>
+              s"""$varName = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              """.stripMargin
+            case t if t =:= typeOf[Int] =>
+              s"""$varName = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+               """.stripMargin
+            case t if t =:= typeOf[Long] =>
+              s"""$varName = $plaformClass.getLong($vdBaseObjectTerm,$currentValueOffsetTerm);\n
+              """.stripMargin
+            case t if t =:= typeOf[Float] =>
+              s"""$varName = $plaformClass.getFloat($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              """.stripMargin
+            case t if t =:= typeOf[Double] =>
+              s"""$varName = $plaformClass.getDouble($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              """.stripMargin
             case t if t =:= typeOf[Decimal] =>
               if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
-                s"""
-                     $varName = new $decimalClass().set(
-                    $plaformClass.getLong($vdBaseObjectTerm,
-                       $currentValueOffsetTerm),${dt.asInstanceOf[DecimalType].precision},
-                    ${dt.asInstanceOf[DecimalType].scale})\n;
-                     """.stripMargin
+                s"""$varName = new $decimalClass().set(
+                   |$plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm),
+                   |${dt.asInstanceOf[DecimalType].precision},
+                   |${dt.asInstanceOf[DecimalType].scale})\n;
+                """.stripMargin
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
                 val len = ctx.freshName("len")
-                s"""
-                      int $len = $plaformClass.getByte($vdBaseObjectTerm,
-                    $currentValueOffsetTerm); \n
-                      $currentValueOffsetTerm += 1;
-                      byte[] $tempByteArrayTerm = new byte[$len];
-                      $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-                    $tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $len);
-                      $varName = $decimalClass.apply(new $bigDecimalClass(
-                      new $bigIntegerClass($tempByteArrayTerm),
-                    ${dt.asInstanceOf[DecimalType].scale}),
-                    ${dt.asInstanceOf[DecimalType].precision},
-                    ${dt.asInstanceOf[DecimalType].scale});\n
+                s"""int $len = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm); \n
+                   |$currentValueOffsetTerm += 1;
+                   |byte[] $tempByteArrayTerm = new byte[$len];
+                   |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+                   |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $len);
+                   |$varName = $decimalClass.apply(new $bigDecimalClass(
+                   |new $bigIntegerClass($tempByteArrayTerm),
+                   |${dt.asInstanceOf[DecimalType].scale}), ${dt.asInstanceOf[DecimalType].precision},
+                   |${dt.asInstanceOf[DecimalType].scale});\n
                     """.stripMargin
               }
 
@@ -178,59 +177,49 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val remainder = ctx.freshName("remainder")
           val indx = ctx.freshName("indx")
 
-          s"""
-              boolean $isExploded =  $plaformClass.getBoolean($vdBaseObjectTerm,
-               $currentValueOffsetTerm);
-              ++$currentValueOffsetTerm;
-             if ($isExploded) {
-                    int $arraySize = $plaformClass.getInt($vdBaseObjectTerm,
-                                                                $currentValueOffsetTerm);
-                    $currentValueOffsetTerm += 4;
-                    $objectClass[] $objectArray = new $objectClass[$arraySize];
-                    if ($containsNull) {
-                       int $varWidthNumNullBytes = $arraySize/8 + ($arraySize % 8 > 0 ? 1 : 0);
-                       byte[] $varWidthNullBits = new byte[$varWidthNumNullBytes];
-                       $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm, $varWidthNullBits,
-                        ${Platform.BYTE_ARRAY_OFFSET}, $varWidthNumNullBytes);
-                        $currentValueOffsetTerm += $varWidthNumNullBytes;
-                        for (int $counter = 0; $counter < $arraySize; ++$counter )  {
-                           int $remainder = $counter % 8;
-                           int $indx = $counter / 8;
-                           if ( ($varWidthNullBits[$indx] & (0x01 << $remainder)) != 0) {
-                             ${readingCodeExprs.map(_.code).mkString("\n")}
-                           }
-                        }
-
-                    } else {
-                     for (int $counter = 0; $counter < $arraySize; ++$counter )  {
-                        ${readingCodeExprs.map(_.code).mkString("\n")}
-                     }
-                  }
-
-                    $varName = new $genericArrayDataClass($objectArray);
-                 } else {
-
-                   int $arraySize = $plaformClass.getInt($vdBaseObjectTerm,
-                          $currentValueOffsetTerm);
-                          $currentValueOffsetTerm += 4;
-
-                   $byteBufferClass $holder = $allocatorTerm.allocate($arraySize, "SHA");
-                   $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-                             $allocatorTerm.baseObject($holder),
-                             $allocatorTerm.baseOffset($holder),$arraySize);
-                   $currentValueOffsetTerm += $arraySize;
-                          $varName = new $unsafeArrayDataClass();
-                          (($unsafeArrayDataClass)$varName).pointTo($allocatorTerm.baseObject($holder),
-                           $allocatorTerm.baseOffset($holder), $arraySize);
-
+          s"""boolean $isExploded = $plaformClass.getBoolean($vdBaseObjectTerm,
+             |$currentValueOffsetTerm);
+             |++$currentValueOffsetTerm;
+             |if ($isExploded) {
+             |int $arraySize = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+             |$currentValueOffsetTerm += 4;
+             |$objectClass[] $objectArray = new $objectClass[$arraySize];
+             |if ($containsNull) {
+             |int $varWidthNumNullBytes = $arraySize/8 + ($arraySize % 8 > 0 ? 1 : 0);
+             |byte[] $varWidthNullBits = new byte[$varWidthNumNullBytes];
+             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+             | $varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET}, $varWidthNumNullBytes);
+             |$currentValueOffsetTerm += $varWidthNumNullBytes;
+             |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
+             |int $remainder = $counter % 8;
+             |int $indx = $counter / 8;
+             |if ( ($varWidthNullBits[$indx] & (0x01 << $remainder)) != 0) {
+             |${readingCodeExprs.map(_.code).mkString("\n")}
+                    }
                  }
+                } else {
+             |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
+             |${readingCodeExprs.map(_.code).mkString("\n")}
+                  }
+                }
+
+               $varName = new $genericArrayDataClass($objectArray);
+             } else {
+             |int $arraySize = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+             |$currentValueOffsetTerm += 4;
+             |$byteBufferClass $holder = $allocatorTerm.allocate($arraySize, "SHA");
+             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+             |$allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),$arraySize);
+             |$currentValueOffsetTerm += $arraySize;
+             |$varName = new $unsafeArrayDataClass();
+             |(($unsafeArrayDataClass)$varName).pointTo($allocatorTerm.baseObject($holder),
+             |$allocatorTerm.baseOffset($holder), $arraySize);
+             |}
                """.stripMargin
         case st: StructType =>
           val objectArray = ctx.freshName("objectArray")
-
           val byteBufferClass = classOf[ByteBuffer].getName
           val currentOffset = ctx.freshName("currentOffset")
-
           val nullBitSetTermForStruct = SHAMapAccessor.generateNullKeysBitTermForStruct(
             varName)
           val numNullKeyBytesForStruct = SHAMapAccessor.calculateNumberOfBytesForNullBits(st.length)
@@ -249,66 +238,59 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val unsafeRowLength = ctx.freshName("unsafeRowLength")
           val holder = ctx.freshName("holder")
           // ${SHAMapAccessor.initNullBitsetCode(newNullBitSetTerm, newNumNullKeyBytes)}
-          s"""
-          boolean $isExploded = $plaformClass.getBoolean($vdBaseObjectTerm,
-             $currentValueOffsetTerm);
-          ++$currentValueOffsetTerm;
-          if ($isExploded) {
-             ${
-             readNullBitsCode(currentValueOffsetTerm, nullBitSetTermForStruct,
-               numNullKeyBytesForStruct)
-              }
-             $objectClass[] $objectArray = new $objectClass[${st.length}];
-             $varName = new $genericInternalRowClass($objectArray);
-             // declare child struct variables
-             ${
-             keyVarNamesWithStructFlags.filter(_._2).map {
+          s"""boolean $isExploded = $plaformClass.getBoolean($vdBaseObjectTerm,
+             |$currentValueOffsetTerm);
+             |++$currentValueOffsetTerm;
+             |if ($isExploded) {
+             |${
+            readNullBitsCode(currentValueOffsetTerm, nullBitSetTermForStruct,
+              numNullKeyBytesForStruct)
+          }
+             |$objectClass[] $objectArray = new $objectClass[${st.length}];
+             |$varName = new $genericInternalRowClass($objectArray);
+                 // declare child struct variables
+             |${
+            keyVarNamesWithStructFlags.filter(_._2).map {
               case (name, _) => s"$internalRowClass $name = null;"
-               }.mkString("\n")
-            }
-             ${
-             getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
-               currentValueOffsetTerm, true, nullBitSetTermForStruct,
-               numNullKeyBytesForStruct, false, nestingLevel + 1).
-             map (_.code).mkString("\n")
-             }
-             //add child Internal Rows to parent struct's object array
-             ${
-               keyVarNamesWithStructFlags.zipWithIndex.map { case ((name, isStruct), indx) =>
-                if (isStruct) {
-                  s"$objectArray[$indx] = $name;"
-                } else {
-                  ""
-                }
-              }.mkString("\n")
-           }
-
+            }.mkString("\n")
           }
-          else {
-
-              int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm,
-                        $currentValueOffsetTerm);
-              $currentValueOffsetTerm += 4;
-
-              $byteBufferClass $holder = $allocatorTerm.allocate($unsafeRowLength, "SHA");
-              $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-                 $allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),
-                 $unsafeRowLength);
-              $currentValueOffsetTerm += $unsafeRowLength;
-              $varName = new $unsafeClass(${st.length});
-              (($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
-                $allocatorTerm.baseOffset($holder), $unsafeRowLength);
-
+                 ${
+            getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
+              currentValueOffsetTerm, true, nullBitSetTermForStruct,
+              numNullKeyBytesForStruct, false, nestingLevel + 1).
+              map(_.code).mkString("\n")
           }
-          """.stripMargin
+                //add child Internal Rows to parent struct's object array
+                ${
+            keyVarNamesWithStructFlags.zipWithIndex.map { case ((name, isStruct), indx) =>
+              if (isStruct) {
+                s"$objectArray[$indx] = $name;"
+              } else {
+                ""
+              }
+            }.mkString("\n")
+          }
+              }
+             |else {
+             |int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+             |$currentValueOffsetTerm += 4;
+             |$byteBufferClass $holder = $allocatorTerm.allocate($unsafeRowLength, "SHA");
+             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+             |$allocatorTerm.baseObject($holder), $allocatorTerm.baseOffset($holder),
+             |$unsafeRowLength);
+             |$currentValueOffsetTerm += $unsafeRowLength;
+             |$varName = new $unsafeClass(${st.length});
+             |(($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
+             | $allocatorTerm.baseOffset($holder), $unsafeRowLength);
+             |}
+             """.stripMargin
       }) +
         s"""
       //  System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
       """
-
       val exprCode = if (skipNullBitsCode) {
-            evaluationCode
-        } else {
+        evaluationCode
+      } else {
         s"""
             $nullVarCode
            if (!$nullVar) {
@@ -325,7 +307,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           }
         }
          """.stripMargin
-        }
+      }
       ExprCode(exprCode, nullVar, varName)
     }
   }
@@ -387,50 +369,46 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val numAggBytes = getSizeOfValueBytes(aggregateDataTypes)
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
-
-
     val inputEvals = evaluateVariables(input)
 
     s"""
-           $valueInitCode
-           ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
-           ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
+        |$valueInitCode
+        |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
+        |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
-          $inputEvals
-
+        |$inputEvals
            // evaluate key vars
-          ${evaluateVariables(keyVars)}
+        |${evaluateVariables(keyVars)}
 
-          ${
-      keyVars.zip(keysDataType).filter(_._2 match {
-        case x: StructType => true
-        case _ => false
-      }).map {
-        case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
-          dt.asInstanceOf[StructType])
-      }.mkString("\n")
-    }
+        |${keyVars.zip(keysDataType).filter(_._2 match {
+              case x: StructType => true
+              case _ => false
+            }).map {
+                case (exprCode, dt) => explodeStruct(exprCode.value, exprCode.isNull,
+                  dt.asInstanceOf[StructType])
+              }.mkString("\n")
+        }
 
           // evaluate hash code of the lookup key
-          ${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
+        |${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
 
           //  System.out.println("hash code for key = " +${hashVar(0)});
           // get key size code
-          int $numKeyBytesTerm = 0;
-          $numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
-
-          int $numValueBytes = $numAggBytes;
-          ${
-      generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder, keyVars,
-        keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject, baseKeyoffset)
-    }
+        |int $numKeyBytesTerm = 0;
+        |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType,
+         numBytesForNullKeyBits)};
+        |int $numValueBytes = $numAggBytes;
+        |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder,
+           keyVars, keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject,
+           baseKeyoffset)
+        }
            // insert or lookup
-          int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
-      $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+        |int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
+        |$numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
           // position the offset to start of aggregate value
-          $valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
-          long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
-         """
+        |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
+        |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
+         """.stripMargin
 
   }
 
@@ -464,17 +442,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case _ => throw new UnsupportedOperationException("unknown type " + dt)
       }
 
-      val snippet =
-        s"""
-             boolean $nullVarName = $structNullVarName ||
-             (!$alwaysExplode && $structVarName instanceof $unsafeRowClass) ||
-          $structVarName.isNullAt($index);
-             ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
-             if ($alwaysExplode|| !($structVarName instanceof $unsafeRowClass)) {
-               if (!$nullVarName) {
-                 $varName = $valueExtractCode;
-               }
-             }
+      val snippet = s"""
+           |boolean $nullVarName = $structNullVarName||
+           | (!$alwaysExplode && $structVarName instanceof $unsafeRowClass) ||
+           | $structVarName.isNullAt($index);
+           | ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
+           | if ($alwaysExplode|| !($structVarName instanceof $unsafeRowClass)) {
+               |if (!$nullVarName) {
+                 |$varName = $valueExtractCode;
+               |}
+             |}
            """.stripMargin
 
       snippet + (dt match {
@@ -544,10 +521,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val storeNullBitStartOffsetAndRepositionOffset = if (skipNullEvalCode) {
       ""
     } else {
-      s"""
-       long $startingOffsetTerm = $offsetTerm;
-       // move current offset to end of null bits
-       $offsetTerm += ${sizeForNullBits(numBytesForNullBits)};
+      s"""long $startingOffsetTerm = $offsetTerm;
+          |// move current offset to end of null bits
+          |$offsetTerm += ${sizeForNullBits(numBytesForNullBits)};
        """.stripMargin
     }
     s"""
@@ -594,30 +570,28 @@ case class SHAMapAccessor(@transient session: SnappySession,
                """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
                   if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
-                    s"""
-                      $plaformClass.putLong($baseObjectTerm, $offsetTerm,
-                       $variable.toUnscaledLong());\n
-                      $offsetTerm += ${dt.defaultSize};\n
+                    s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm,
+                       |$variable.toUnscaledLong());
+                       |$offsetTerm += ${dt.defaultSize};
                      """.stripMargin
                   } else {
-                    s"""
-                      byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
-                       unscaledValue().toByteArray();
-                      assert ($tempBigDecArrayTerm.length <= 16);
-                      $plaformClass.putByte($baseObjectTerm, $offsetTerm,
-                       (byte)$tempBigDecArrayTerm.length);\n
-                      $plaformClass.copyMemory($tempBigDecArrayTerm,
-                       $plaformClass.BYTE_ARRAY_OFFSET,
-                       $baseObjectTerm, $offsetTerm + 1, $tempBigDecArrayTerm.length);\n
-                      $offsetTerm += ${dt.defaultSize} + 1;\n
+                    s"""byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
+                       |unscaledValue().toByteArray();
+                       |assert ($tempBigDecArrayTerm.length <= 16);
+                       |$plaformClass.putByte($baseObjectTerm, $offsetTerm,
+                       |(byte)$tempBigDecArrayTerm.length);
+                       |$plaformClass.copyMemory($tempBigDecArrayTerm,
+                       |$plaformClass.BYTE_ARRAY_OFFSET,
+                       |$baseObjectTerm, $offsetTerm + 1, $tempBigDecArrayTerm.length);
+                       |$offsetTerm += ${dt.defaultSize} + 1;
                     """.stripMargin
                   }
-                case t if t =:= typeOf[UTF8String] => s"""
-              $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());\n
-               $offsetTerm += 4;\n
-               $variable.writeToMemory($baseObjectTerm, $offsetTerm);\n
-               $offsetTerm += $variable.numBytes();\n
-               """
+                case t if t =:= typeOf[UTF8String] =>
+                  s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());
+                      $offsetTerm += 4;
+                    $variable.writeToMemory($baseObjectTerm, $offsetTerm);
+                    $offsetTerm += $variable.numBytes();
+               """.stripMargin
                 case _ => throw new UnsupportedOperationException("unknown type " + dt)
               }
               snippet
@@ -626,23 +600,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val newNullBitTerm = SHAMapAccessor.generateNullKeysBitTermForStruct(variable)
               val newNumBytesForNullBits = SHAMapAccessor.
                 calculateNumberOfBytesForNullBits(st.length)
-              s"""
-                 if ($alwaysExplode|| !($variable instanceof $unsafeRowClass)) {
-                    $plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
-                    $offsetTerm += 1;
-                    ${
-                writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
-                  newNullBitTerm, newNumBytesForNullBits, true, false,
-                  nestingLevel + 1)
-              }
-                 } else {
-                   $plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
-                   $offsetTerm += 1;
-                   $plaformClass.putInt($baseObjectTerm, $offsetTerm,
-                    (($unsafeRowClass)$variable).getSizeInBytes());
-                   $offsetTerm += 4;
-                   (($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
-                   $offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
+              s"""if ($alwaysExplode|| !($variable instanceof $unsafeRowClass)) {
+                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+                    |$offsetTerm += 1;
+                    |${writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
+                     newNullBitTerm, newNumBytesForNullBits, true, false,
+                     nestingLevel + 1)
+                    }
+                 |} else {
+                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+                    |$offsetTerm += 1;
+                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
+                    |(($unsafeRowClass)$variable).getSizeInBytes());
+                    |$offsetTerm += 4;
+                    |(($unsafeRowClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+                    |$offsetTerm += (($unsafeRowClass)$variable).getSizeInBytes();
                  }
                """.stripMargin
             case at@ArrayType(elementType, containsNull) =>
@@ -663,47 +635,46 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 Seq(ExprCode("", "false", arrElement)), "", -1,
                 true, true, nestingLevel)
 
-              s"""
-                 if ($alwaysExplode|| !($variable instanceof $unsafeArrayClass)) {
-                    $plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
-                    $offsetTerm += 1;
-                    $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
-                    $offsetTerm += 4;
-
-                    long $varWidthNullBitStartPos = $offsetTerm;
-                    int $varWidthNumNullBytes = $variable.numElements() / 8 +
-                                                ($variable.numElements() % 8 > 0 ? 1 : 0);
-                    byte[] $varWidthNullBits = null;
-                    if ($containsNull) {
-                      $varWidthNullBits = new byte[$varWidthNumNullBytes];
-                      $offsetTerm += $varWidthNumNullBytes;
-                    }
-                    $dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.fromJson("\\"$strippedQuotesJson\\"");
-                    for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
-                     int $remainder = $counter % 8;
-                     int $arrIndex = $counter / 8;
-                      if (!$variable.isNullAt($counter)) {
-                         ${ctx.javaType(elementType)} $arrElement =  (${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
-                         $elementWitingCode
+              s"""|if ($alwaysExplode|| !($variable instanceof $unsafeArrayClass)) {
+                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+                    |$offsetTerm += 1;
+                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
+                    |$offsetTerm += 4;
+                    |long $varWidthNullBitStartPos = $offsetTerm;
+                    |int $varWidthNumNullBytes = $variable.numElements() / 8 +
+                    |($variable.numElements() % 8 > 0 ? 1 : 0);
+                    |byte[] $varWidthNullBits = null;
+                    |if ($containsNull) {
+                      |$varWidthNullBits = new byte[$varWidthNumNullBytes];
+                      |$offsetTerm += $varWidthNumNullBytes;
+                    |}
+                    |$dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.
+                    |fromJson("\\"$strippedQuotesJson\\"");
+                    |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
+                      |int $remainder = $counter % 8;
+                      |int $arrIndex = $counter / 8;
+                      |if (!$variable.isNullAt($counter)) {
+                        |${ctx.javaType(elementType)} $arrElement =
+                        | (${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
+                        | $elementWitingCode
                         if ($containsNull) {
                           $varWidthNullBits[$arrIndex] |= (byte)((0x01 << $remainder));
                         }
                       }
-
                     }
-                    if ($containsNull ) {
-                    $plaformClass.copyMemory($varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET},
+
+                    |if ($containsNull ) {
+                       $plaformClass.copyMemory($varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET},
                       $baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
-                    }
-
-                 } else {
-                   $plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
-                   $offsetTerm += 1;
-                   $plaformClass.putInt($baseObjectTerm, $offsetTerm,
-                    (($unsafeArrayClass)$variable).getSizeInBytes());
-                   $offsetTerm += 4;
-                   (($unsafeArrayClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
-                   $offsetTerm += (($unsafeArrayClass)$variable).getSizeInBytes();
+                    |}
+                 |} else {
+                    |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+                    |$offsetTerm += 1;
+                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
+                    |(($unsafeArrayClass)$variable).getSizeInBytes());
+                    |$offsetTerm += 4;
+                    |(($unsafeArrayClass)$variable).writeToMemory($baseObjectTerm, $offsetTerm);
+                    |$offsetTerm += (($unsafeArrayClass)$variable).getSizeInBytes();
                  }
                """.stripMargin
 
@@ -713,82 +684,82 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
           // Now do the actual writing based on whether the variable is null or not
           if (skipNullEvalCode) {
-             writingCode
+            writingCode
           } else {
-          val castTerm = getNullBitsCastTerm(numBytesForNullBits)
-          val nullVar = expr.isNull
-          if (numBytesForNullBits > 8) {
-            val remainder = i % 8
-            val index = i / 8
-            if (nullVar.isEmpty || nullVar == "false") {
-              s"""
+            val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+            val nullVar = expr.isNull
+            if (numBytesForNullBits > 8) {
+              val remainder = i % 8
+              val index = i / 8
+              if (nullVar.isEmpty || nullVar == "false") {
+                s"""
                   $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
                   $writingCode \n
                 """.stripMargin
-            } else if (nullVar == "true") {
-              if (!isKey) {
-                getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
-              } else {
-                ""
+              } else if (nullVar == "true") {
+                if (!isKey) {
+                  getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+                } else {
+                  ""
+                }
               }
-            }
-            else {
-              s"""
+              else {
+                s"""
                   if (!$nullVar) {
                     $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
                     $writingCode \n
                   }${
-                if (!isKey) {
-                  s"""
+                  if (!isKey) {
+                    s"""
                       else {
                          ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
                        }
                     """.stripMargin
-                } else ""
-              }
+                  } else ""
+                }
                 """.stripMargin
+              }
             }
-          }
-          else {
+            else {
 
-            if (nullVar.isEmpty || nullVar == "false") {
-              s"""
+              if (nullVar.isEmpty || nullVar == "false") {
+                s"""
                   $nullBitsTerm|= ($castTerm)(( (($castTerm)0x01) << $i)); \n
                   $writingCode \n
                 """.stripMargin
-            } else if (nullVar == "true") {
-              if (!isKey) {
-                getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+              } else if (nullVar == "true") {
+                if (!isKey) {
+                  getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+                } else {
+                  ""
+                }
               } else {
-                ""
-              }
-            } else {
-              s"""
+                s"""
                   if (!$nullVar) {
                     $nullBitsTerm|= ($castTerm)(( (($castTerm)0x01) << $i)); \n
                     $writingCode \n
                   }${
-                if (!isKey) {
-                  s"""
+                  if (!isKey) {
+                    s"""
                      else {
                       ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
                      }
                     """.stripMargin
-                } else ""
-              }
+                  } else ""
+                }
                 """.stripMargin
+              }
             }
           }
-       }
 
       }.mkString("\n")
     }
      // now write the nullBitsTerm
      ${
-       if (!skipNullEvalCode) {
-      writeNullBitsAt(baseObjectTerm, startingOffsetTerm, nullBitsTerm,
-        numBytesForNullBits)
-        } else ""
+      if (!skipNullEvalCode) {
+        writeNullBitsAt(baseObjectTerm, startingOffsetTerm, nullBitsTerm,
+          numBytesForNullBits)
+      } else ""
     }
      """.stripMargin
 
@@ -916,7 +887,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
             val snippetNullVarWidth = s" $snippetNullBitsSizeCode + $snippetNotNullVarWidth"
             val snippetNullFixedWidth = s"""
                 4 + $snippetNullBitsSizeCode +
-                $unitSize * ((int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, false) & 0xffffffffL))
+                $unitSize * ((int)($sizeAndNumNotNullFuncForStringArr(
+              ${expr.value}, false) & 0xffffffffL))
             """
             s"""
                1 + (($alwaysExplode|| !(${expr.value} instanceof $unsafeArrayDataClass)) ?
