@@ -82,13 +82,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val nullVar = ctx.freshName("isNull")
       val nullVarCode =
         if (numBytesForNullBits <= 8) {
-          s"""boolean $nullVar = ($nullBitTerm & ( (($castTerm)0x01) << $i)) == 0;\n
-        """.stripMargin
+          s"""boolean $nullVar = ($nullBitTerm & ( (($castTerm)0x01) << $i)) == 0;""".stripMargin
         } else {
           val remainder = i % 8
           val index = i / 8
-          s"""boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;\n
-        """.stripMargin
+          s"""boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;""".stripMargin
         }
 
       val evaluationCode = (dt match {
@@ -119,37 +117,36 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case x: AtomicType => {
           (typeOf(x.tag) match {
             case t if t =:= typeOf[Boolean] =>
-              s"""$varName = $plaformClass.getBoolean($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-              """.stripMargin
+              s"""$varName = $plaformClass.getBoolean($vdBaseObjectTerm, $currentValueOffsetTerm);
+              """
             case t if t =:= typeOf[Byte] =>
-              s"""$varName = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-               """.stripMargin
+              s"""$varName = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
+               """
             case t if t =:= typeOf[Short] =>
-              s"""$varName = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              s"""$varName = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);
               """.stripMargin
             case t if t =:= typeOf[Int] =>
-              s"""$varName = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              s"""$varName = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
                """.stripMargin
             case t if t =:= typeOf[Long] =>
-              s"""$varName = $plaformClass.getLong($vdBaseObjectTerm,$currentValueOffsetTerm);\n
+              s"""$varName = $plaformClass.getLong($vdBaseObjectTerm,$currentValueOffsetTerm);
               """.stripMargin
             case t if t =:= typeOf[Float] =>
-              s"""$varName = $plaformClass.getFloat($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              s"""$varName = $plaformClass.getFloat($vdBaseObjectTerm, $currentValueOffsetTerm);
               """.stripMargin
             case t if t =:= typeOf[Double] =>
-              s"""$varName = $plaformClass.getDouble($vdBaseObjectTerm, $currentValueOffsetTerm);\n
+              s"""$varName = $plaformClass.getDouble($vdBaseObjectTerm, $currentValueOffsetTerm);
               """.stripMargin
             case t if t =:= typeOf[Decimal] =>
               if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                 s"""$varName = new $decimalClass().set(
                    |$plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm),
                    |${dt.asInstanceOf[DecimalType].precision},
-                   |${dt.asInstanceOf[DecimalType].scale})\n;
-                """.stripMargin
+                   |${dt.asInstanceOf[DecimalType].scale});""".stripMargin
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
                 val len = ctx.freshName("len")
-                s"""int $len = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm); \n
+                s"""int $len = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
                    |$currentValueOffsetTerm += 1;
                    |byte[] $tempByteArrayTerm = new byte[$len];
                    |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
@@ -158,15 +155,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |new $bigIntegerClass($tempByteArrayTerm),
                    |${dt.asInstanceOf[DecimalType].scale}),
                    |${dt.asInstanceOf[DecimalType].precision},
-                   |${dt.asInstanceOf[DecimalType].scale});\n
-                    """.stripMargin
+                   |${dt.asInstanceOf[DecimalType].scale});""".stripMargin
               }
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }) +
-            s"""
-            $currentValueOffsetTerm += ${dt.defaultSize};\n
-             """
+            s"""$currentValueOffsetTerm += ${dt.defaultSize};"""
         }
         case ArrayType(elementType, containsNull) =>
           val isExploded = ctx.freshName("isExplodedArray")
@@ -223,8 +217,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             |$varName = new $unsafeArrayDataClass();
             |(($unsafeArrayDataClass)$varName).pointTo($allocatorTerm.baseObject($holder),
             |$allocatorTerm.baseOffset($holder), $arraySize);
-          |}
-           """.stripMargin
+          |}""".stripMargin
         case st: StructType =>
           val objectArray = ctx.freshName("objectArray")
           val byteBufferClass = classOf[ByteBuffer].getName
@@ -280,7 +273,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                }
               }
              |else {
-               |int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+               |int $unsafeRowLength = $plaformClass.getInt($vdBaseObjectTerm,
+               | $currentValueOffsetTerm);
                |$currentValueOffsetTerm += 4;
                |$byteBufferClass $holder = $allocatorTerm.allocate($unsafeRowLength, "SHA");
                |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
@@ -290,17 +284,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
                |$varName = new $unsafeClass(${st.length});
                |(($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
                | $allocatorTerm.baseOffset($holder), $unsafeRowLength);
-             |}
-             """.stripMargin
-      }) +
-        s"""
-      //  System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);\n
-      """
+             |} """.stripMargin
+      }).trim +
+        s"""//System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName); """
       val exprCode = if (skipNullBitsCode) {
         evaluationCode
       } else {
-        s"""
-            $nullVarCode
+        s"""$nullVarCode
            if (!$nullVar) {
              $evaluationCode
            }${
@@ -308,13 +298,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
             s"""
              else {
                ${getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
-             }
-           """.stripMargin
+             } """.stripMargin
           } else {
             ""
           }
-        }
-         """.stripMargin
+        }""".stripMargin
       }
       ExprCode(exprCode, nullVar, varName)
     }
@@ -324,31 +312,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
     numBytesForNullBits: Int): String = {
     val plaformClass = classOf[Platform].getName
     if (numBytesForNullBits == 1) {
-      s"""
-          $nullBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-          $currentValueOffsetTerm += 1; \n
-          """.stripMargin
+      s"""$nullBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
+         |$currentValueOffsetTerm += 1;""".stripMargin
     } else if (numBytesForNullBits == 2) {
-      s"""
-          $nullBitsetTerm = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-          $currentValueOffsetTerm += 2; \n
-          """.stripMargin
+      s"""$nullBitsetTerm = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);
+         |$currentValueOffsetTerm += 2;""".stripMargin
     } else if (numBytesForNullBits <= 4) {
-      s"""
-          $nullBitsetTerm = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-          $currentValueOffsetTerm += 4; \n
-          """.stripMargin
+      s"""|$nullBitsetTerm = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+          |$currentValueOffsetTerm += 4;""".stripMargin
     } else if (numBytesForNullBits <= 8) {
-      s"""
-          $nullBitsetTerm = $plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm);\n
-          $currentValueOffsetTerm += 8; \n
-          """.stripMargin
+      s"""$nullBitsetTerm = $plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm);
+         |$currentValueOffsetTerm += 8;""".stripMargin
     } else {
-      s"""
-           $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm, $nullBitsetTerm,
-           ${Platform.BYTE_ARRAY_OFFSET}, $numBytesForNullBits); \n
-           $currentValueOffsetTerm += $numBytesForNullBits; \n
-         """.stripMargin
+      s"""$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm, $nullBitsetTerm,
+         |${Platform.BYTE_ARRAY_OFFSET}, $numBytesForNullBits);
+         |$currentValueOffsetTerm += $numBytesForNullBits;""".stripMargin
     }
   }
 
@@ -379,15 +357,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
       valueInitVars, forKey = false, doCopy = false) */
     val inputEvals = evaluateVariables(input)
 
-    s"""
-        |$valueInitCode
+    s"""|$valueInitCode
         |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
         |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
         |$inputEvals
            // evaluate key vars
         |${evaluateVariables(keyVars)}
-
         |${keyVars.zip(keysDataType).filter(_._2 match {
               case x: StructType => true
               case _ => false
@@ -396,27 +372,26 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   dt.asInstanceOf[StructType])
               }.mkString("\n")
         }
-
-          // evaluate hash code of the lookup key
+        // evaluate hash code of the lookup key
         |${generateHashCode(hashVar, keyVars, this.keyExprs, keysDataType)}
-
-          //  System.out.println("hash code for key = " +${hashVar(0)});
-          // get key size code
+        |//  System.out.println("hash code for key = " +${hashVar(0)});
+        |// get key size code
         |int $numKeyBytesTerm = 0;
         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType,
          numBytesForNullKeyBits)};
         |int $numValueBytes = $numAggBytes;
+        |
+        |// prepare the key
         |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder,
            keyVars, keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject,
            baseKeyoffset)
-        }
-           // insert or lookup
+          }
+        // insert or lookup
         |int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
         |$numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
-          // position the offset to start of aggregate value
+        |// position the offset to start of aggregate value
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
-        |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;
-         """.stripMargin
+        |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
 
   }
 
@@ -450,8 +425,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case _ => throw new UnsupportedOperationException("unknown type " + dt)
       }
 
-      val snippet = s"""
-           |boolean $nullVarName = $structNullVarName ||
+      val snippet =
+       s"""|boolean $nullVarName = $structNullVarName ||
            | (!$alwaysExplode && $structVarName instanceof $unsafeRowClass) ||
            | $structVarName.isNullAt($index);
            | ${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};
@@ -505,14 +480,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
   def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
-    s"""
-        $offsetTerm += ${
+    s"""$offsetTerm += ${
       dt.defaultSize + (dt match {
         case dec: DecimalType if dec.precision > Decimal.MAX_LONG_DIGITS => 1
         case _ => 0
       })
-    };\n
-      """
+    };"""
   }
 
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
@@ -531,60 +504,55 @@ case class SHAMapAccessor(@transient session: SnappySession,
     } else {
       s"""long $startingOffsetTerm = $offsetTerm;
           |// move current offset to end of null bits
-          |$offsetTerm += ${sizeForNullBits(numBytesForNullBits)};
-       """.stripMargin
+          |$offsetTerm += ${sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
-    s"""
-       $storeNullBitStartOffsetAndRepositionOffset
-       ${
-      dataTypes.zip(varsToWrite).zipWithIndex.map {
-        case ((dt, expr), i) =>
+    s"""$storeNullBitStartOffsetAndRepositionOffset
+       |${dataTypes.zip(varsToWrite).zipWithIndex.map {
+         case ((dt, expr), i) =>
           val variable = expr.value
-          val writingCode = dt match {
+          val writingCode = (dt match {
             case x: AtomicType =>
               val snippet = typeOf(x.tag) match {
-                case t if t =:= typeOf[Boolean] => s"""
-                   $plaformClass.putBoolean($baseObjectTerm, $offsetTerm,
-                   $variable); \n
-                   $offsetTerm += ${dt.defaultSize};\n
+                case t if t =:= typeOf[Boolean] =>
+                s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, $variable);
+                    |$offsetTerm += ${dt.defaultSize};
                 """.stripMargin
-                case t if t =:= typeOf[Byte] => s"""
-                   $plaformClass.putByte($baseObjectTerm, $offsetTerm, $variable); \n
-                   $offsetTerm += ${dt.defaultSize};\n
+                case t if t =:= typeOf[Byte] =>
+                  s"""$plaformClass.putByte($baseObjectTerm, $offsetTerm, $variable);
+                     |$offsetTerm += ${dt.defaultSize};
                 """.stripMargin
-                case t if t =:= typeOf[Array[Byte]] => s"""
-                   |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.length);
-                   |$offsetTerm += 4;
-                   |$plaformClass.copyMemory($variable, ${Platform.BYTE_ARRAY_OFFSET},
-                   |$baseObjectTerm, $offsetTerm, $variable.length);
-                   |$offsetTerm += $variable.length;
+                case t if t =:= typeOf[Array[Byte]] =>
+                  s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.length);
+                     |$offsetTerm += 4;
+                     |$plaformClass.copyMemory($variable, ${Platform.BYTE_ARRAY_OFFSET},
+                     |$baseObjectTerm, $offsetTerm, $variable.length);
+                     |$offsetTerm += $variable.length;
                 """.stripMargin
                 case t if t =:= typeOf[Short] =>
-                  s"""
-                    |$plaformClass.putShort($baseObjectTerm, $offsetTerm, $variable);
-                    |$offsetTerm += ${dt.defaultSize};\n
+                  s"""$plaformClass.putShort($baseObjectTerm, $offsetTerm, $variable);
+                     |$offsetTerm += ${dt.defaultSize};
                   """.stripMargin
                 case t if t =:= typeOf[Int] =>
                   s"""
-                  $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);\n
-                 $offsetTerm += ${dt.defaultSize}; \n
+                  $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);
+                 $offsetTerm += ${dt.defaultSize};
                  """.stripMargin
-                case t if t =:= typeOf[Long] => s"""
-               $plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);\n
-               $offsetTerm += ${dt.defaultSize};\n
-               """
-                case t if t =:= typeOf[Float] => s"""
-              $plaformClass.putFloat($baseObjectTerm, $offsetTerm, $variable);\n
-               $offsetTerm += ${dt.defaultSize};\n
-               """.stripMargin
-                case t if t =:= typeOf[Double] => s"""
-              $plaformClass.putDouble($baseObjectTerm, $offsetTerm, $variable);\n
-               $offsetTerm += ${dt.defaultSize};\n
-               """.stripMargin
+                case t if t =:= typeOf[Long] =>
+                  s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);
+                     |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
+                case t if t =:= typeOf[Float] =>
+                  s"""$plaformClass.putFloat($baseObjectTerm, $offsetTerm, $variable);
+                     |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
+                case t if t =:= typeOf[Double] =>
+                  s"""$plaformClass.putDouble($baseObjectTerm, $offsetTerm, $variable);
+                     |$offsetTerm += ${dt.defaultSize};
+                  """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
                   if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                     s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm,
-                       |$variable.toUnscaledLong());
+                       | $variable.toUnscaledLong());
                        |$offsetTerm += ${dt.defaultSize};
                      """.stripMargin
                   } else {
@@ -601,9 +569,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   }
                 case t if t =:= typeOf[UTF8String] =>
                   s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());
-                      $offsetTerm += 4;
-                    $variable.writeToMemory($baseObjectTerm, $offsetTerm);
-                    $offsetTerm += $variable.numBytes();
+                     |$offsetTerm += 4;
+                     |$variable.writeToMemory($baseObjectTerm, $offsetTerm);
+                     |$offsetTerm += $variable.numBytes();
                """.stripMargin
                 case _ => throw new UnsupportedOperationException("unknown type " + dt)
               }
@@ -614,18 +582,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val newNumBytesForNullBits = SHAMapAccessor.
                 calculateNumberOfBytesForNullBits(st.length)
               val explodeStructSnipet =
-                s"""
-                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+                s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
                    |$offsetTerm += 1;
                    |${
                       writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
                       newNullBitTerm, newNumBytesForNullBits, true, false,
                       nestingLevel + 1)
-                   }
+                    }
                  """.stripMargin
               val unexplodedStructSnippet =
-                s"""
-                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+               s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
                    |$offsetTerm += 1;
                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
                    |(($unsafeRowClass)$variable).getSizeInBytes());
@@ -663,8 +629,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 Seq(ExprCode("", "false", arrElement)), "", -1,
                 true, true, nestingLevel)
               val explodeArraySnippet =
-                s"""
-                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
+               s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
                    |$offsetTerm += 1;
                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numElements());
                    |$offsetTerm += 4;
@@ -704,8 +669,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                      }
                 """.stripMargin
               val unexplodedArraySnippet =
-                s"""
-                   |$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
+                s"""$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, false);
                    |$offsetTerm += 1;
                    |$plaformClass.putInt($baseObjectTerm, $offsetTerm,
                    |(($unsafeArrayClass)$variable).getSizeInBytes());
@@ -725,7 +689,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                """.stripMargin
               }
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
-          }
+          }).trim
 
 
           // Now do the actual writing based on whether the variable is null or not
@@ -738,10 +702,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val remainder = i % 8
               val index = i / 8
               if (nullVar.isEmpty || nullVar == "false") {
-                s"""
-                  $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
-                  $writingCode \n
-                """.stripMargin
+                s"""$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
+                   |$writingCode""".stripMargin
               } else if (nullVar == "true") {
                 if (!isKey) {
                   getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
@@ -750,28 +712,22 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 }
               }
               else {
-                s"""
-                  if (!$nullVar) {
-                    $nullBitsTerm[$index] |= (byte)((0x01 << $remainder)); \n
-                    $writingCode \n
-                  }${
+                s"""if (!$nullVar) {
+                     |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
+                     |$writingCode
+                    }${
                   if (!isKey) {
-                    s"""
-                      else {
-                         ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
-                       }
-                    """.stripMargin
+                    s"""else {
+                          ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
+                        }""".stripMargin
                   } else ""
-                }
-                """.stripMargin
+                }""".stripMargin
               }
             }
             else {
-
               if (nullVar.isEmpty || nullVar == "false") {
-                s"""
-                  $nullBitsTerm|= ($castTerm)(( (($castTerm)0x01) << $i)); \n
-                  $writingCode \n
+                s"""$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+                   |$writingCode
                 """.stripMargin
               } else if (nullVar == "true") {
                 if (!isKey) {
@@ -780,34 +736,27 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   ""
                 }
               } else {
-                s"""
-                  if (!$nullVar) {
-                    $nullBitsTerm|= ($castTerm)(( (($castTerm)0x01) << $i)); \n
-                    $writingCode \n
-                  }${
-                  if (!isKey) {
-                    s"""
-                     else {
-                      ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
-                     }
-                    """.stripMargin
+                s"""if (!$nullVar) {
+                        $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+                        $writingCode
+                    }${if (!isKey) {
+                      s"""else {
+                           ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
+                          }""".stripMargin
                   } else ""
-                }
-                """.stripMargin
+                 }""".stripMargin
               }
             }
           }
 
       }.mkString("\n")
     }
-     // now write the nullBitsTerm
-     ${
-      if (!skipNullEvalCode) {
+    // now write the nullBitsTerm
+    ${if (!skipNullEvalCode) {
         writeNullBitsAt(baseObjectTerm, startingOffsetTerm, nullBitsTerm,
           numBytesForNullBits)
       } else ""
-    }
-     """.stripMargin
+    }"""
 
   }
 
@@ -823,43 +772,36 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val writer = ByteBufferHashMapAccessor.getPartialFunctionForWriting(
       baseObjectTerm, currentOffset)
       */
-    s"""
-        $byteBufferClass $keyBytesHolderVar =  $allocatorTerm.
+    s"""$byteBufferClass $keyBytesHolderVar =  $allocatorTerm.
         allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
         Object $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVar);
         long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
         long $currentOffset = $baseKeyoffsetTerm;
         // first write key data
-        ${
-      writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
-        nullKeysBitsetTerm, numBytesForNullKeyBits, true, false)
-    }
+        ${ writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
+          nullKeysBitsetTerm, numBytesForNullKeyBits, true, false)
+        }
         //write value data
-       ${
-      writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
+       ${ writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
         nullAggsBitsetTerm, numBytesForNullAggBits, false, false)
-    }
-    """
+        }
+    """.stripMargin
   }
 
   def writeNullBitsAt(baseObjectTerm: String, offsetToWriteTerm: String,
     nullBitsTerm: String, numBytesForNullBits: Int): String = {
     val plaformClass = classOf[Platform].getName
     if (numBytesForNullBits == 1) {
-      s"\n $plaformClass.putByte($baseObjectTerm," +
-        s" $offsetToWriteTerm, $nullBitsTerm);\n"
+      s"$plaformClass.putByte($baseObjectTerm, $offsetToWriteTerm, $nullBitsTerm);"
     } else if (numBytesForNullBits == 2) {
-      s"\n $plaformClass.putShort($baseObjectTerm," +
-        s" $offsetToWriteTerm, $nullBitsTerm);\n"
+      s"$plaformClass.putShort($baseObjectTerm, $offsetToWriteTerm, $nullBitsTerm);"
     } else if (numBytesForNullBits <= 4) {
-      s"\n $plaformClass.putInt($baseObjectTerm," +
-        s" $offsetToWriteTerm, $nullBitsTerm);\n"
+      s"$plaformClass.putInt($baseObjectTerm, $offsetToWriteTerm, $nullBitsTerm);"
     } else if (numBytesForNullBits <= 8) {
-      s"$plaformClass.putLong($baseObjectTerm, $offsetToWriteTerm," +
-        s"$nullBitsTerm);\n"
+      s"$plaformClass.putLong($baseObjectTerm, $offsetToWriteTerm, $nullBitsTerm);"
     } else {
-      s"\n $plaformClass.copyMemory($nullBitsTerm, ${Platform.BYTE_ARRAY_OFFSET}," +
-        s" $baseObjectTerm, $offsetToWriteTerm, $numBytesForNullBits);\n"
+      s"$plaformClass.copyMemory($nullBitsTerm, ${Platform.BYTE_ARRAY_OFFSET}," +
+        s" $baseObjectTerm, $offsetToWriteTerm, $numBytesForNullBits);"
     }
   }
 
@@ -885,8 +827,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         })).toString
       } else {
         dt match {
-          case StringType => s" (${expr.value}.numBytes() + 4) "
-          case BinaryType => s" (${expr.value}.length + 4) "
+          case StringType => s"(${expr.value}.numBytes() + 4) "
+          case BinaryType => s"(${expr.value}.length + 4) "
           case st: StructType => val (childKeysVars, childDataTypes) =
             getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)
             val explodedStructSizeCode = generateKeySizeCode(childKeysVars, childDataTypes,
@@ -896,9 +838,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
             "1 + " + (if (alwaysExplode) {
               explodedStructSizeCode
             } else {
-              s"""
-             |(${expr.value} instanceof $unsafeRowClass ? $unexplodedStructSizeCode
-                                                      |: $explodedStructSizeCode)
+              s"""(${expr.value} instanceof $unsafeRowClass ? $unexplodedStructSizeCode
+                                                            |: $explodedStructSizeCode)
             """.stripMargin
             }
             )
@@ -929,20 +870,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
             } else {
               (false, 0)
             }
-            val snippetNullBitsSizeCode = s"""
-                   ${expr.value}.numElements()/8 +  (${expr.value}.numElements() % 8 > 0 ? 1 : 0)
+            val snippetNullBitsSizeCode =
+              s"""${expr.value}.numElements()/8 + (${expr.value}.numElements() % 8 > 0 ? 1 : 0)
               """.stripMargin
 
-            val snippetNotNullFixedWidth = s" 4 + ${expr.value}.numElements() * $unitSize"
-            val snippetNotNullVarWidth = s"""
-               |4 + (int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, true) >>> 32L)
+            val snippetNotNullFixedWidth = s"4 + ${expr.value}.numElements() * $unitSize"
+            val snippetNotNullVarWidth =
+              s"""4 + (int)($sizeAndNumNotNullFuncForStringArr(${expr.value}, true) >>> 32L)
                """.stripMargin
             val snippetNullVarWidth = s" $snippetNullBitsSizeCode + $snippetNotNullVarWidth"
-            val snippetNullFixedWidth = s"""
-               |4 + $snippetNullBitsSizeCode +
-               |$unitSize * (int)($sizeAndNumNotNullFuncForStringArr(
-               |${expr.value}, false) & 0xffffffffL)
-            """
+            val snippetNullFixedWidth =
+              s"""4 + $snippetNullBitsSizeCode +
+                 |$unitSize * (int)($sizeAndNumNotNullFuncForStringArr(
+                 |${expr.value}, false) & 0xffffffffL)
+            """.stripMargin
+
             "( 1 + " + (if (alwaysExplode) {
               if (isFixedWidth) {
                 if (containsNull) {
@@ -958,23 +900,19 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 }
               }
             } else {
-              s"""
-               |(${expr.value} instanceof $unsafeArrayDataClass ?
-               |(($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4
-               |: ${ if (isFixedWidth) {
-                       s"""
-                         |$containsNull ? ($snippetNullFixedWidth)
-                                       |: ($snippetNotNullFixedWidth))
+              s"""(${expr.value} instanceof $unsafeArrayDataClass ?
+                      |(($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4
+                      |: ${ if (isFixedWidth) {
+                       s"""$containsNull ? ($snippetNullFixedWidth)
+                                         |: ($snippetNotNullFixedWidth))
                        """.stripMargin
-                     } else {
-                       s"""
-                         |$containsNull ? ($snippetNullVarWidth)
-                                        |: ($snippetNotNullVarWidth))
+                      } else {
+                       s"""$containsNull ? ($snippetNullVarWidth)
+                                         |: ($snippetNotNullVarWidth))
                        """.stripMargin
                      }
                   }
              """.stripMargin
-
             }) + ")"
 
         }
@@ -982,7 +920,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       if (nullVar.isEmpty || nullVar == "false") {
         notNullSizeExpr
       } else {
-        s" ($nullVar? 0 : $notNullSizeExpr)"
+        s"($nullVar? 0 : $notNullSizeExpr)"
       }
     }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullBits)}"
   }

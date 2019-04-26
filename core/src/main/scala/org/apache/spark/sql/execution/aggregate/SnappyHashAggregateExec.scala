@@ -762,18 +762,15 @@ case class SnappyHashAggregateExec(
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
     ctx.addNewFunction(doAgg,
-      s"""
-        private void $doAgg() throws java.io.IOException {
-          $hashMapTerm = new $hashSetClassName($valueSize);
-          $bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
-          Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-          long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-          $allocatorClass $allocatorTerm = $gfeCacheImplClass.
-               getCurrentBufferAllocator();
-          $childProduce
-          // System.out.println("Num elements in hashmap= " + $hashMapTerm.size() );
-        }
-       """)
+      s"""private void $doAgg() throws java.io.IOException {
+           |$hashMapTerm = new $hashSetClassName($valueSize);
+           |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
+           |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+           |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+           |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
+           |getCurrentBufferAllocator();
+           |$childProduce
+         |}""".stripMargin)
 
     // generate code for output
     /*  val keyBufferTerm = ctx.freshName("keyBuffer")
@@ -1008,14 +1005,12 @@ case class SnappyHashAggregateExec(
     s"""
        |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
        |$mapCode
-       |
-       |
        |// initialization for buffer fields from the hashmap
        |${
-      byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
-        currentOffSetForMapLookupUpdt, byteBufferAccessor.nullAggsBitsetTerm,
-        byteBufferAccessor.numBytesForNullAggBits)
-    }
+          byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
+          currentOffSetForMapLookupUpdt, byteBufferAccessor.nullAggsBitsetTerm,
+          byteBufferAccessor.numBytesForNullAggBits)
+        }
        |$bufferEval
 
        | // reset the  offset position to start of values for writing update
