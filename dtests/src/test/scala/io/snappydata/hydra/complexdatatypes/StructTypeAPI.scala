@@ -40,17 +40,17 @@ class StructTypeAPI extends SnappySQLJob {
     val sncReadDF : DataFrame = snc.read.json(dataLocation)
     val sparkReadDF : DataFrame = spark.read.json(dataLocation)
 
-//    println("Start the StructType Query-1")
-//    val sncStructQuery1DF : DataFrame = sncReadDF.select(sncReadDF("name"),
-//      sncReadDF("TestRecord").getField("Runs").as("Runs"),
-//      sncReadDF("TestRecord").getItem("Avg").as("Avg"))
-//      .orderBy(desc("Runs"))
-//    val sparkStructQuery1DF : DataFrame = sparkReadDF.select(sparkReadDF("name"),
-//      sparkReadDF("TestRecord").getField("Runs").as("Runs"),
-//      sparkReadDF("TestRecord").getItem("Avg").as("Avg"))
-//      .orderBy(desc("Runs"))
+    println("Start the StructType Query-1")
+    val sncStructQuery1DF : DataFrame = sncReadDF.select(sncReadDF("name"),
+      sncReadDF("TestRecord").getField("Runs").as("Runs"),
+      sncReadDF("TestRecord").getItem("Avg").as("Avg"))
+      .orderBy(desc("Runs"))
+    val sparkStructQuery1DF : DataFrame = sparkReadDF.select(sparkReadDF("name"),
+      sparkReadDF("TestRecord").getField("Runs").as("Runs"),
+      sparkReadDF("TestRecord").getItem("Avg").as("Avg"))
+      .orderBy(desc("Runs"))
 
-//    println("Start the StructType Query-2")
+    println("Start the StructType Query-2")
 //    NOTE : as() or alias() produce the syntax error.
 //    val sncStructQuery2DF : DataFrame = sncReadDF.agg(
 //    sum(sncReadDF("TestRecord").getItem("Runs").as("TotalRuns")))
@@ -59,16 +59,16 @@ class StructTypeAPI extends SnappySQLJob {
 //    println("snc show : " + sncStructQuery2DF.show())
 //    println("spark show : " + sparkStructQuery2DF.show())
 
-//    val sncStructQuery2DF : DataFrame = sncReadDF.agg(
-//      sum(sncReadDF("TestRecord").getItem("Runs")))
-//    val sparkStructQuery2DF : DataFrame = sparkReadDF.agg(
-//      sum(sparkReadDF("TestRecord").getField("Runs")))
-//
-//    println("Start the StructType Query-3")
-//    val sncStructQuery3DF : DataFrame = sncReadDF.select(sncReadDF("name"))
-//      .filter(sncReadDF("TestRecord").getItem("batStyle") === "LeftHand")
-//    val sparkStructQuery3DF : DataFrame = sparkReadDF.select(sparkReadDF("name"))
-//        .filter(sparkReadDF("TestRecord").getField("batStyle") === "LeftHand")
+    val sncStructQuery2DF : DataFrame = sncReadDF.agg(
+      sum(sncReadDF("TestRecord").getItem("Runs")))
+    val sparkStructQuery2DF : DataFrame = sparkReadDF.agg(
+      sum(sparkReadDF("TestRecord").getField("Runs")))
+
+    println("Start the StructType Query-3")
+    val sncStructQuery3DF : DataFrame = sncReadDF.select(sncReadDF("name"))
+      .filter(sncReadDF("TestRecord").getItem("batStyle") === "LeftHand")
+    val sparkStructQuery3DF : DataFrame = sparkReadDF.select(sparkReadDF("name"))
+        .filter(sparkReadDF("TestRecord").getField("batStyle") === "LeftHand")
 
     println("Start the StructType Query-4")
     val sncStructQuery4DF : DataFrame = sncReadDF.select(sncReadDF("name"),
@@ -87,24 +87,20 @@ class StructTypeAPI extends SnappySQLJob {
     println("spark count : " + sparkStructQuery4DF.count())
 
 
-//    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery1DF, sparkStructQuery1DF,
-//    "StructTypeQuery1", "column", pw, sqlContext)
-//    println("Finished the StructType Query-1")
-//    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery2DF, sparkStructQuery2DF,
-//      "StructTypeQuery2", "column", pw, sqlContext)
-//    println("Finished the StructType Query-2")
-//    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery3DF, sparkStructQuery3DF,
-//      "StructTypeQuery3", "column", pw, sqlContext)
-//    println("Finished the StructType Query-3")
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery1DF, sparkStructQuery1DF,
+    "StructTypeQuery1", "column", pw, sqlContext)
+    println("Finished the StructType Query-1")
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery2DF, sparkStructQuery2DF,
+      "StructTypeQuery2", "column", pw, sqlContext)
+    println("Finished the StructType Query-2")
+    SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery3DF, sparkStructQuery3DF,
+      "StructTypeQuery3", "column", pw, sqlContext)
+    println("Finished the StructType Query-3")
     SnappyTestUtils.assertQueryFullResultSet(snc, sncStructQuery4DF, sparkStructQuery4DF,
             "StructTypeQuery4", "column", pw, sqlContext)
           println("Finished the StructType Query-4")
 
-
     println("Query StructType Via API, Job completed....")
-
-
-
   }
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }
