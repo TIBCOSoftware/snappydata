@@ -955,6 +955,7 @@ case class SnappyHashAggregateExec(
     val aggregateBufferVars = for (i <- aggregateExpressions.indices) yield {
       ctx.freshName(s"buffer_$i")
     }
+    ctx.currentVars = input
     val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
     // generate class for key, buffer and hash code evaluation of key columns
