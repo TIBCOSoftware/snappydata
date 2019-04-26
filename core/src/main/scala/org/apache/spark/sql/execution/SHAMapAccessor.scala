@@ -953,10 +953,18 @@ case class SHAMapAccessor(@transient session: SnappySession,
               s"""
                |(${expr.value} instanceof $unsafeArrayDataClass ?
                |(($unsafeArrayDataClass) ${expr.value}).getSizeInBytes() + 4
-               |:$isFixedWidth ? $containsNull ? ($snippetNullFixedWidth)
-                                                  |: ($snippetNotNullFixedWidth)
-                                 |: $containsNull ? ($snippetNullVarWidth)
-                                                  |: ($snippetNotNullVarWidth))
+               |: ${ if (isFixedWidth) {
+                       s"""
+                         |$containsNull ? ($snippetNullFixedWidth)
+                                       |: ($snippetNotNullFixedWidth))
+                       """.stripMargin
+                     } else {
+                       s"""
+                         |$containsNull ? ($snippetNullVarWidth)
+                                        |: ($snippetNotNullVarWidth))
+                       """.stripMargin
+                     }
+                  }
              """.stripMargin
 
             }) + ")"

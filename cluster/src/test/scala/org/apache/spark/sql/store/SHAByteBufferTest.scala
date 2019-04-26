@@ -940,7 +940,17 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       Row(i, Array.fill[String](10)(s"col${i / 5}"), Array.fill[Long](10)(i / 5.toLong))
     }
 
-    val df = snc.createDataFrame(snc.sparkContext.parallelize(data), structType)
+    val data1 = for (i <- 15 until 20) yield {
+      Row(i, Array.tabulate[String](7)(indx => if (indx % 2 == 0) null else s"col${i / 5}"),
+        Array.fill[Long](10)(i / 5.toLong))
+    }
+
+    val data2 = for (i <- 20 until 25) yield {
+      Row(i, Array.tabulate[String](100)(indx => if (indx % 2 == 0) null else s"col${i / 5}"),
+        Array.fill[Long](10)(i / 5.toLong))
+    }
+
+    val df = snc.createDataFrame(snc.sparkContext.parallelize(data ++ data1 ++ data2), structType)
     df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("test1")
 
     def runTest1(session: SnappyContext): Unit = {
@@ -948,7 +958,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val results = rs.collect()
       assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
 
-      val expectedResult1 = mutable.Map[Long, Int](0L -> 10, 1L * 10 -> 35, 2L * 10 -> 60)
+      val expectedResult1 = mutable.Map[Long, Int](0L -> 10, 1L * 10 -> 35,
+        2L * 10 -> 60, 3L * 10 -> 85, 4L * 10 -> 110)
       assertEquals(expectedResult1.size, results.length)
 
       results.foreach(row => {
@@ -977,12 +988,17 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val expectedResult2 = mutable.Map[(String, Long), Long](
         (Array.fill[String](10)("col0").mkString(","), 10 * 0L) -> 10L,
         (Array.fill[String](10)("col1").mkString(","), 10 * 1L) -> 35L,
-        (Array.fill[String](10)("col2").mkString(","), 10 * 2L) -> 60L
+        (Array.fill[String](10)("col2").mkString(","), 10 * 2L) -> 60L,
+        (Array.tabulate[String](7)(indx => if (indx % 2 == 0) "null" else "col3").
+          mkString(","), 10 * 3L) -> 85L,
+        (Array.tabulate[String](100)(indx => if (indx % 2 == 0) "null" else "col4").
+          mkString(","), 10 * 4L) -> 110L
       )
 
       assertEquals(expectedResult2.size, results.length)
       results.foreach(row => {
-        val key = (row.getSeq[String](0).mkString(","), row.getSeq[Long](1).foldLeft(0L)(_ + _))
+        val key = (row.getSeq[String](0).map(x => if (x == null) "null" else x).mkString(","),
+          row.getSeq[Long](1).foldLeft(0L)(_ + _))
         assertEquals(expectedResult2.getOrElse(key, fail("key does not exist")), row.getLong(2))
         expectedResult2.remove(key)
       })
@@ -992,6 +1008,8 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     runTest2(newSession1)
     runTest2(newSession2)
+
+
 
     snc.dropTable("test1")
   }
@@ -1067,7 +1085,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
       val firstCol = s"${groupKey}col_$groupKey"
       assertEquals(firstCol, row.getString(0))
       assertEquals(sum1, sumAgg1)
-
     })
     snc.dropTable("test1")
   }
