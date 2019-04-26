@@ -672,10 +672,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |int $varWidthNumNullBytes = $variable.numElements() / 8 +
                    |($variable.numElements() % 8 > 0 ? 1 : 0);
                    |byte[] $varWidthNullBits = null;
-                   |if ($containsNull) {
-                     |$varWidthNullBits = new byte[$varWidthNumNullBytes];
-                     |$offsetTerm += $varWidthNumNullBytes;
-                   |}
+                   |${ if (containsNull) {
+                         s"""
+                          |$varWidthNullBits = new byte[$varWidthNumNullBytes];
+                          |$offsetTerm += $varWidthNumNullBytes;
+                          """.stripMargin
+                       } else ""
+                    }
+
                    |$dataTypeClass $dataType = $dataTypeClass$$.MODULE$$.
                    |fromJson("\\"$strippedQuotesJson\\"");
                    |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
@@ -690,10 +694,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
                        |}
                      |}
                    |}
-                   |if ($containsNull ) {
-                     |$plaformClass.copyMemory($varWidthNullBits, ${Platform.BYTE_ARRAY_OFFSET},
-                     |$baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
-                   |}
+                   |${ if (containsNull ) {
+                         s"""
+                          |$plaformClass.copyMemory($varWidthNullBits,
+                          |${Platform.BYTE_ARRAY_OFFSET},
+                          |$baseObjectTerm, $varWidthNullBitStartPos, $varWidthNumNullBytes);
+                         """.stripMargin
+                        } else ""
+                     }
                 """.stripMargin
               val unexplodedArraySnippet =
                 s"""
