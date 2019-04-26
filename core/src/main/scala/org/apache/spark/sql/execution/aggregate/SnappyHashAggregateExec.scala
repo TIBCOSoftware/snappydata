@@ -623,14 +623,17 @@ case class SnappyHashAggregateExec(
 
     val arrayDataClass = classOf[ArrayData].getName
     val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
-
-    ctx.addNewFunction(sizeAndNumNotNullFuncForStringArr,
-      s"""
-        private long $sizeAndNumNotNullFuncForStringArr($arrayDataClass arrayData, boolean isStringData)  {
+    if (groupingAttributes.exists(attrib => attrib.dataType.existsRecursively(_ match {
+      case ArrayType(StringType, _) | ArrayType(_, true) => true
+      case _ => false
+    }))) {
+      ctx.addNewFunction(sizeAndNumNotNullFuncForStringArr,
+        s"""
+        private long $sizeAndNumNotNullFuncForStringArr($arrayDataClass arrayData,
+         boolean isStringData)  {
            long size = 0L;
            int numNulls = 0;
            for(int i = 0; i < arrayData.numElements(); ++i) {
-
              if (!arrayData.isNullAt(i)) {
                if (isStringData) {
                  $utf8Class o = arrayData.getUTF8String(i);
@@ -643,6 +646,7 @@ case class SnappyHashAggregateExec(
            return  (size << 32L) | ((arrayData.numElements() - numNulls) & 0xffffffffL);
         }
        """)
+    }
 
 
 
