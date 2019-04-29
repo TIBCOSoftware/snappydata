@@ -47,8 +47,8 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     assertForAnalysisException("update testTable set int_col = 'some_string' + 1")
   }
 
-  test("Arithmetic operator, first operand is string type and is a numeric literal") {
-    assertForAnalysisException("update testTable set int_col = '1' + 1")
+  test("Arithmetic operator, operand is string type and is a numeric literal") {
+    assertForAnalysisException("update testTable set int_col = 1 - ('1' + 1)")
   }
 
   test("Arithmetic operator, second operand is string type and is not a numeric literal") {
@@ -72,6 +72,20 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     val rows = snc.sql("select * from testTable order by id").collect()
     assertResult(Array(Row(1, 501, 1, new java.math.BigDecimal("1.20")),
       Row(2, 501, 2, new java.math.BigDecimal("1.20"))))(rows)
+  }
+
+  test("Arithmetic operator in condition part, string promotion is supported") {
+    snc.sql("update testTable set int_col = 100 where id = (1 + '1')")
+    val rows = snc.sql("select * from testTable order by id").collect()
+    assertResult(Array(Row(1, 1, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 100, 2, new java.math.BigDecimal("1.20"))))(rows)
+  }
+
+  test("Arithmetic operator in condition part, string typed operand is not a number") {
+    snc.sql("update testTable set int_col = 100 where id = (1 + 'abc')")
+    val rows = snc.sql("select * from testTable order by id").collect()
+    assertResult(Array(Row(1, 1, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 2, 2, new java.math.BigDecimal("1.20"))))(rows)
   }
 
   test("Plain assignment, assigning string typed non numeric literal") {
