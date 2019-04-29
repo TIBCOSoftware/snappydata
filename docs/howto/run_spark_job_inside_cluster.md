@@ -1,18 +1,18 @@
 <a id="howto-job"></a>
-# How to Run Spark Job inside the Cluster
-Spark program that runs inside a SnappyData cluster is implemented as a SnappyData job.
+# How to Run Spark Job inside the TIBCO ComputeDB Cluster
+Spark program that runs inside a TIBCO ComputeDB cluster is implemented as a Snappy job.
 
 **Implementing a Job**: 
-A SnappyData job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
+A TIBCO ComputeDB job is a class or object that implements SnappySQLJob or SnappyStreamingJob (for streaming applications) trait. In the `runSnappyJob` method of the job, you implement the logic for your Spark program using SnappySession object instance passed to it. You can perform all operations such as create a table, load data, execute queries using the SnappySession. <br/>
 Any of the Spark APIs can be invoked by a SnappyJob.
 
 ```pre
 class CreatePartitionedRowTable extends SnappySQLJob {
-  /** SnappyData uses this as an entry point to execute Snappy jobs. **/
+  /** TIBCO ComputeDB uses this as an entry point to execute Snappy jobs. **/
   def runSnappyJob(sc: SnappySession, jobConfig: Config): Any
 
   /**
-  SnappyData calls this function to validate the job input and reject invalid job requests.
+  TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests.
   You can implement custom validations here, for example, validating the configuration parameters
   **/
   def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation
@@ -20,7 +20,7 @@ class CreatePartitionedRowTable extends SnappySQLJob {
 ```
 
 **Dependencies**:
-To compile your job, use the Maven/SBT dependencies for the latest released version of SnappyData.
+To compile your job, use the Maven/SBT dependencies for the latest released version of TIBCO ComputeDB.
 
 **Example: Maven dependency**:
 
@@ -54,12 +54,12 @@ val workaround = {
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
 **Running the Job**: 
-Once you create a jar file for SnappyData job, use the `./bin/snappy-job.sh` to submit the job in the SnappyData cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
+Once you create a jar file for Snappy job, use the `./bin/snappy-job.sh` to submit the job in the TIBCO ComputeDB cluster, and then run the job. This is similar to `spark-submit` for any Spark application. 
 
 For example, to run the job implemented in [CreatePartitionedRowTable.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/CreatePartitionedRowTable.scala) you can use the following command. The command submits the job and runs it as:
 
 ```pre
- # first change the directory to the SnappyData product directory
+ # first change the directory to the TIBCO ComputeDB product directory
  $ cd $SNAPPY_HOME
  $ ./bin/snappy-job.sh submit
     --app-name CreatePartitionedRowTable
@@ -87,4 +87,4 @@ In the above command, **quickstart.jar** contains the program and is bundled in 
 ./bin/snappy-job.sh status --lead localhost:8090 --job-id 321e5136-4a18-4c4f-b8ab-f3c8f04f0b48
 ```
 
-Refer to the [Building SnappyData applications using Spark API](../programming_guide/building_snappydata_applications_using_spark_api.md) section of the documentation for more details.
+Refer to the [Building TIBCO ComputeDB applications using Spark API](../programming_guide/building_snappydata_applications_using_spark_api.md) section of the documentation for more details.
