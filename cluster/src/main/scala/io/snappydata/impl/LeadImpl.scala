@@ -43,7 +43,6 @@ import com.pivotal.gemfirexd.{Attribute, Constants, FabricService, NetworkInterf
 import com.typesafe.config.{Config, ConfigFactory}
 import io.snappydata.Constant.{SPARK_PREFIX, SPARK_SNAPPY_PREFIX, JOBSERVER_PROPERTY_PREFIX => JOBSERVER_PREFIX, PROPERTY_PREFIX => SNAPPY_PREFIX, STORE_PROPERTY_PREFIX => STORE_PREFIX}
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.tools.LeaderLauncher
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Lead, LocalizedMessages, Property, ProtocolOverrides, ServiceManager, SnappyTableStatsProviderService}
 import org.apache.thrift.transport.TTransportException
@@ -166,7 +165,7 @@ class LeadImpl extends ServerImpl with Lead
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
-          setAppName("SnappyData").
+          setAppName("TIBCO ComputeDB").
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
@@ -243,12 +242,18 @@ class LeadImpl extends ServerImpl with Lead
       ServerGroupUtils.sendUpdateProfile()
 
       val startHiveServer = Property.HiveServerEnabled.get(conf)
+      val startHiveServerDefault = Property.HiveServerEnabled.defaultValue.get &&
+          !conf.contains(Property.HiveServerEnabled.name)
+      val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
+      val hiveSessionKind = if (useHiveSession) "session=hive" else "session=snappy"
+
       var jobServerWait = false
       var confFile: Array[String] = null
       var jobServerConfig: Config = null
       var startupString: String = null
       if (Property.JobServerEnabled.get(conf)) {
-        jobServerWait = startHiveServer || Property.JobServerWaitForInit.get(conf)
+        jobServerWait = (!startHiveServerDefault && startHiveServer) ||
+            Property.JobServerWaitForInit.get(conf)
         confFile = conf.getOption("jobserver.configFile") match {
           case None => Array[String]()
           case Some(c) => Array(c)
@@ -257,6 +262,10 @@ class LeadImpl extends ServerImpl with Lead
         val bindAddress = jobServerConfig.getString("spark.jobserver.bind-address")
         val port = jobServerConfig.getInt("spark.jobserver.port")
         startupString = s"job server on: $bindAddress[$port]"
+      }
+      // add default startup message for hive-thriftserver
+      if (startHiveServerDefault) {
+        addStartupMessage(s"Starting hive thrift server ($hiveSessionKind)")
       }
       if (!jobServerWait) {
         // mark RUNNING (job server and zeppelin will continue to start in background)
@@ -285,13 +294,11 @@ class LeadImpl extends ServerImpl with Lead
       SnappyTableStatsProviderService.start(sc, url = null)
 
       if (startHiveServer) {
-        val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
-        val sessionKind = if (useHiveSession) "session=hive" else "session=snappy"
-        SnappyHiveThriftServer2.getHostPort(hiveService) match {
-          case None => addStartupMessage(s"Started hive thrift server ($sessionKind)")
+        if (jobServerWait) SnappyHiveThriftServer2.getHostPort(hiveService) match {
+          case None => addStartupMessage(s"Started hive thrift server ($hiveSessionKind)")
           case Some((host, port)) =>
-            addStartupMessage(s"Started hive thrift server ($sessionKind) on: $host[$port]")
+            addStartupMessage(s"Started hive thrift server ($hiveSessionKind) on: $host[$port]")
         }
       }
 

@@ -1113,14 +1113,16 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    INSERT ~ INTO ~ tableIdentifier ~ ANY.* ~> ((r: TableIdentifier) => DMLExternalTable(r,
-      UnresolvedRelation(r), input.sliceString(0, input.length)))
+    capture(INSERT ~ INTO) ~ tableIdentifier ~
+        capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
+      UnresolvedRelation(r), s"$c ${quotedNormalizedId(r)} $s"))
   }
 
   protected def putValuesOperation: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ tableIdentifier ~ ('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
-        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws ~>
-        ((r: TableIdentifier, identifiers: Any, valueExpr: Any)
+    capture(PUT ~ INTO) ~ tableIdentifier ~
+        capture(('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
+        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws) ~>
+        ((c: String, r: TableIdentifier, identifiers: Any, valueExpr: Any, s: String)
         => {
           val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
           val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
@@ -1131,7 +1133,7 @@ class SnappyParser(session: SnappySession)
           }
           else {
             DMLExternalTable(r,
-              UnresolvedRelation(r), input.sliceString(0, input.length))
+              UnresolvedRelation(r), s"$c ${quotedNormalizedId(r)} $s")
           }
         })
   }

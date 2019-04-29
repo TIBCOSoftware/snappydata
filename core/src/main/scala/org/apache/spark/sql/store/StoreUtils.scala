@@ -23,6 +23,7 @@ import scala.collection.mutable
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.{CacheDistributionAdvisee, PartitionedRegion}
+import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.internal.engine.{GfxdConstants, Misc}
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
@@ -108,8 +109,8 @@ object StoreUtils {
     Pattern.CASE_INSENSITIVE | Pattern.DOTALL)
 
   /** for testing only (a long convoluted name chosen deliberately) */
-  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
-    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
+  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = SystemProperties.getServerInstance.getBoolean(
+    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT", false)
 
   // private property to indicate One-to-one mapping of partitions to buckets
   // which is enabled per-query using `LinkPartitionsToBuckets` rule
@@ -181,7 +182,7 @@ object StoreUtils {
       preferPrimaries: Boolean): Array[Partition] = {
 
     val callbacks = ToolsCallbackInit.toolsCallback
-    if (!linkBucketsToPartitions && callbacks != null) {
+    if (!linkBucketsToPartitions && callbacks != null && !TEST_RANDOM_BUCKETID_ASSIGNMENT) {
       allocateBucketsToPartitions(session, region, preferPrimaries)
     } else {
       val numPartitions = region.getTotalNumberOfBuckets
