@@ -664,7 +664,7 @@ case class SnappyHashAggregateExec(
     val vdBaseObjectTerm = ctx.freshName("vdBaseObjectTerm")
     val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
     // generate variable names for holding data from the Map buffer
-    val aggregateBufferVars = for (i <- aggregateExpressions.indices) yield {
+    val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
       ctx.freshName(s"buffer_$i")
     }
 
@@ -954,7 +954,7 @@ case class SnappyHashAggregateExec(
       }
     }
     // generate variable names for holding data from the Map buffer
-    val aggregateBufferVars = for (i <- aggregateExpressions.indices) yield {
+    val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
       ctx.freshName(s"buffer_$i")
     }
     ctx.currentVars = input
