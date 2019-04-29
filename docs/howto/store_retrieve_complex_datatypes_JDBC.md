@@ -1,6 +1,6 @@
 # How to Store and Retrieve Complex Data Types in JDBC Programs
 
-If you want to store/retrieve objects for complex data types (Array, Map and Struct) using JDBC programs, SnappyData provides **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** utility class to serialize/deserialize those objects:
+If you want to store/retrieve objects for complex data types (Array, Map and Struct) using JDBC programs, TIBCO ComputeDB provides **com.pivotal.gemfirexd.snappy.ComplexTypeSerializer** utility class to serialize/deserialize those objects:
 
 *	A column of type **ARRAY** can store array of Java objects (Object[]), typed arrays, java.util.Collection, and scala.collection.Seq.
 *	A column of type **MAP** can store java.util.Map or scala.collection.Map.

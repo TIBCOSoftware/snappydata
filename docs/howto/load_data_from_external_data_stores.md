@@ -1,7 +1,7 @@
 <a id="howto-external-source"></a>
 # How to Load Data from External Data Stores (e.g. HDFS, Cassandra, Hive, etc) 
 
-SnappyData comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.
+TIBCO ComputeDB comes bundled with the libraries to access HDFS (Apache compatible). You can load your data using SQL or DataFrame API.
 
 ## Example - Loading data from CSV file using SQL
 
@@ -9,7 +9,7 @@ SnappyData comes bundled with the libraries to access HDFS (Apache compatible). 
 // Create an external table based on CSV file
 CREATE EXTERNAL TABLE CUSTOMER_STAGING_1 USING csv OPTIONS (path '../../quickstart/src/main/resources/customer_with_headers.csv', header 'true', inferSchema 'true');
 
-// Create a SnappyData table and load data into CUSTOMER table
+// Create a table and load data into CUSTOMER table
 CREATE TABLE CUSTOMER using column options() as (select * from CUSTOMER_STAGING_1);
 ```
 
@@ -62,8 +62,8 @@ dataDF.select($"C_CUSTKEY",
 ```
 
 ## Example - Loading from Hive
-As SnappyData manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a SnappySession. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
-Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a SnappySession to store it in a SnappyData Table. 
+As TIBCO ComputeDB manages the catalog at all times and it is not possible to configure an external Hive catalog service like in Spark when using a Snappy session. But, it is still possible to access Hive using the native SparkSession (with **enableHiveSupport** set to **true**). 
+Here is an example using the SparkSession(spark object below) to access a Hive table as a DataFrame, then converted to an RDD so it can be passed to a Snappy session to store it in a TIBCO ComputeDB Table. 
 
 ```pre
 val ds = spark.table("hiveTable")
@@ -119,7 +119,7 @@ The example below demonstrates how to connect to any SQL database using JDBC:
         }
 
 ** Using SQL to access external RDB tables **
-You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from SnappyData as described below:
+You can also use plain SQL to access any external RDB using external tables. Create external table on RDBMS table and query it directly from TIBCO ComputeDB as described below:
 
 ```pre     
 snc.sql("drop table if exists external_table")

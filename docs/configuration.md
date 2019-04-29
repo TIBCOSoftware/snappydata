@@ -3,7 +3,9 @@ SnappyData has three main components - Locator, Server, and Lead.
 
 The Lead node embeds a Spark driver and the Server node embeds a Spark Executor. The server node also embeds a SnappyData store.
 
-SnappyData cluster can be started with the default configurations using script `sbin/snappy-start-all.sh`. This script starts up a locator, one data server, and one lead node. However, SnappyData can be configured to start multiple components on different nodes. </br>
+SnappyData cluster can be started with the default configurations using script `sbin/snappy-start-all.sh`. This script starts up a locator, one data server, one lead node and the Hive Thrift server. However, SnappyData can be configured to start multiple components on different nodes. </br>
+
+
 Also, each component can be configured individually using configuration files. In this section, you can learn how the components can be individually configured and also learn about various other configurations of SnappyData.
 
 The following topics are covered in this section:

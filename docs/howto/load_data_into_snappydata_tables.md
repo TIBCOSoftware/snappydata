@@ -1,11 +1,11 @@
 <a id="howto-load"></a>
-# How to Load Data into SnappyData Tables
+# How to Load Data into TIBCO ComputeDB Tables
 
-SnappyData relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. By integrating the loading mechanism with the Query engine (Catalyst optimizer) it is often possible to push down filters and projections all the way to the data source minimizing data transfer. Here is the list of important features:
+TIBCO ComputeDB relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. By integrating the loading mechanism with the Query engine (Catalyst optimizer) it is often possible to push down filters and projections all the way to the data source minimizing data transfer. Here is the list of important features:
 
 **Support for many Sources** </br>There is built-in support for many data sources as well as data formats. Data can be accessed from S3, file system, HDFS, Hive, RDB, etc. And the loaders have built-in support to handle CSV, Parquet, ORC, Avro, JSON, Java/Scala Objects, etc as the data formats. 
 
-**Access virtually any modern data store**</br> Virtually all major data providers have a native Spark connector that complies with the Data Sources API. For e.g. you can load data from any RDB like Amazon Redshift, Cassandra, Redis, Elastic Search, Neo4J, etc. While these connectors are not built-in, you can easily deploy these connectors as dependencies into a SnappyData cluster. All the connectors are typically registered in spark-packages.org
+**Access virtually any modern data store**</br> Virtually all major data providers have a native Spark connector that complies with the Data Sources API. For e.g. you can load data from any RDB like Amazon Redshift, Cassandra, Redis, Elastic Search, Neo4J, etc. While these connectors are not built-in, you can easily deploy these connectors as dependencies into a TIBCO ComputeDB cluster. All the connectors are typically registered in spark-packages.org
 
 **Avoid Schema wrangling** </br>Spark supports schema inference. Which means, all you need to do is point to the external source in your 'create table' DDL (or Spark SQL API) and schema definition is learned by reading in the data. There is no need to explicitly define each column and type. This is extremely useful when dealing with disparate, complex and wide data sets. 
 
@@ -75,7 +75,7 @@ customerDF.write.insertInto("CUSTOMER")
 
 **Inferring schema from data file**
 
-A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in SnappyData. The schema is automatically defined when the Parquet data files are read. 
+A schema for the table can be inferred from the data file. Data is first introspected to learn the schema (column names and types) without requring this input from the user. The example below illustrates reading a parquet data source and creates a new columnar table in TIBCO ComputeDB. The schema is automatically defined when the Parquet data files are read. 
 
 ```pre
 val customerDF = snSession.read.parquet(s"quickstart/src/main/resources/customerparquet")
@@ -107,4 +107,4 @@ Here is a simple example that loads multiple JSON records that show dealing with
 
 !!! Note
 
-	When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in SnappyData. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3).
+	When loading data from sources like CSV or Parquet the files would need to be accessible from all the cluster members in TIBCO ComputeDB. Make sure it is NFS mounted or made accessible through the Cloud solution (shared storage like S3).

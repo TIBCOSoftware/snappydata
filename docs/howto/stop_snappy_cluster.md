@@ -1,21 +1,21 @@
 <a id="howto-stopcluster"></a>
-# How to Stop a SnappyData Cluster
+# How to Stop a TIBCO ComputeDB Cluster
 
 ## Stopping the Cluster
 You can stop the cluster using the `./sbin/snappy-stop-all.sh` command:
 
 ```pre
 $ ./sbin/snappy-stop-all.sh
-The SnappyData Leader has stopped.
-The SnappyData Server has stopped.
-The SnappyData Locator has stopped.
+The TIBCO ComputeDB Leader has stopped.
+The TIBCO ComputeDB Server has stopped.
+The TIBCO ComputeDB Locator has stopped.
 ```
 !!! Note
 	Ensure that all write operations on column table have finished execution when you stop a cluster, else it can lead to a partial write.
     
 ## Stopping Individual Components
 
-Instead of stopping the SnappyData cluster using the `snappy-stop-all.sh` script, individual components can be stopped on a system locally using the following commands:
+Instead of stopping the TIBCO ComputeDB cluster using the `snappy-stop-all.sh` script, individual components can be stopped on a system locally using the following commands:
 
 !!! Tip
 	All [configuration parameters](../configuring_cluster/configuring_cluster.md) are provided as command line arguments rather than reading from a configuration file.
@@ -28,7 +28,7 @@ $ ./bin/snappy leader stop -dir=/node-c/lead1
 
 <!---## Stopping Individual Components in a Cluster
 
-SnappyData recommends to stop the cluster using the `./sbin/snappy-stop-all.sh` command. However, you can stop individual components in a cluster. 
+TIBCO ComputeDB recommends to stop the cluster using the `./sbin/snappy-stop-all.sh` command. However, you can stop individual components in a cluster. 
 
 To stop individual components, do the following:
 

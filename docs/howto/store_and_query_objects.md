@@ -1,11 +1,11 @@
 <a id="howto-objects"></a>
 # How to Store and Query Objects
 
-You can use domain object to load data into SnappyData tables and select the data by executing queries against the table.
+You can use domain object to load data into TIBCO ComputeDB tables and select the data by executing queries against the table.
 
 **Code Example: Insert Person objects into the column table**
 
-The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating SnappySession, the Person objects are inserted using Spark API and loads into a SnappyData table.
+The code snippet below inserts Person objects into a column table. The source code for this example is located at [WorkingWithObjects.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/WorkingWithObjects.scala). After creating Snappy session, the Person objects are inserted using Spark API and loads into a TIBCO ComputeDB table.
 
 **Get a SnappySession**:
 
@@ -29,7 +29,7 @@ val people = Seq(Person("Tom", Address("Columbus", "Ohio"), Map("frnd1"-> "89987
   , Person("Ned", Address("San Diego", "California"), Map.empty[String,String])).toDS()
 ```
 
-**Create a SnappyData table and insert data into it**:
+**Create a TIBCO ComputeDB table and insert data into it**:
 
 ```pre
 //Drop the table if it exists.

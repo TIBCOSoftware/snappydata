@@ -1,8 +1,8 @@
-# How to Import Data from Hive Table into SnappyData Table
+# How to Import Data from Hive Table into TIBCO ComputeDB Table
 
 **Option 1** 
 
-If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into SnappyData tables.
+If Hive tables have data stored in Apache Parquet format or Optimized Row Columnar (ORC) format the data can be copied directly into TIBCO ComputeDB tables.
 
 For example,
 ```pre
