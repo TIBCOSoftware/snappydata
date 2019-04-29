@@ -98,69 +98,78 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   // below should exactly match ExternalStoreUtils.handledFilter
   private def compileFilter(f: Filter, sb: StringBuilder,
-      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean): Boolean = f match {
     case EqualTo(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" = ?")
+      sb.append('(').append(col).append(" = ?").append(')')
       args += value
+      true
     case LessThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" < ?")
+      sb.append('(').append(col).append(" < ?").append(')')
       args += value
+      true
     case GreaterThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" > ?")
+      sb.append('(').append(col).append(" > ?").append(')')
       args += value
+      true
     case LessThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" <= ?")
+      sb.append('(').append(col).append(" <= ?").append(')')
       args += value
+      true
     case GreaterThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" >= ?")
+      sb.append('(').append(col).append(" >= ?").append(')')
       args += value
+      true
     case StringStartsWith(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(s" LIKE $value%")
+      sb.append('(').append(col).append(s" LIKE $value%").append(')')
+      true
     case In(col, values) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" IN (")
+      sb.append('(').append(col).append(" IN (")
       (1 until values.length).foreach(_ => sb.append("?,"))
-      sb.append("?)")
+      sb.append("?)").append(')')
       args ++= values
+      true
     case And(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
-      sb.append(") AND (")
+      if (compileFilter(left, sb, args, addAnd = false)) {
+        sb.append(" AND ")
+      }
       compileFilter(right, sb, args, addAnd = false)
-      sb.append(')')
+      true
     case Or(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
-      sb.append(") OR (")
+      if (compileFilter(left, sb, args, addAnd = false)) {
+        sb.append(" OR ")
+      }
       compileFilter(right, sb, args, addAnd = false)
-      sb.append(')')
-    case _ => // no filter pushdown
+      true
+    case _ =>
+      false
+     // no filter pushdown
   }
 
   /**
