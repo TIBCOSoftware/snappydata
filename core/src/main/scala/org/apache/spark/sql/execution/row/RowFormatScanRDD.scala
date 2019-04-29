@@ -157,7 +157,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       compileFilter(right, sb, args, addAnd = false)
-      true
     case Or(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
@@ -166,7 +165,6 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" OR ")
       }
       compileFilter(right, sb, args, addAnd = false)
-      true
     case _ =>
       false
      // no filter pushdown
