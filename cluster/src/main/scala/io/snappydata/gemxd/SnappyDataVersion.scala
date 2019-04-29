@@ -133,7 +133,8 @@ object SnappyDataVersion {
   }
 
   def getSnappyDataProductVersion: mutable.HashMap[String, String] = {
-    GemFireVersion.getInstance(classOf[SnappyDataVersion], SNAPPYDATA_VERSION_PROPERTIES)
+    GemFireVersion.getInstance(classOf[GemFireXDVersion], SNAPPYDATA_VERSION_PROPERTIES)
+
     val versionDetails = mutable.HashMap.empty[String, String]
     versionDetails.put("productName", GemFireVersion.getProductName)
     versionDetails.put("productVersion", GemFireVersion.getProductVersion)
@@ -142,6 +143,11 @@ object SnappyDataVersion {
     versionDetails.put("buildPlatform", GemFireVersion.getBuildPlatform)
     versionDetails.put("nativeCodeVersion", GemFireVersion.getNativeCodeVersion)
     versionDetails.put("sourceRevision", GemFireVersion.getSourceRevision)
+
+    GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+    val productEditionType = if (GemFireVersion.isEnterpriseEdition) "Enterprise" else "Community"
+
+    versionDetails.put("editionType", productEditionType)
 
     versionDetails
   }

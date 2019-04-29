@@ -42,7 +42,7 @@ dependencies {
     compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    compileOnly("org.eclipse.jetty:jetty-servlet:${jettyVersion}")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {

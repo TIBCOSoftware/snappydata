@@ -18,37 +18,37 @@ package org.apache.spark.sql.collection
 
 import java.io.ObjectOutputStream
 import java.lang.reflect.Method
-import java.net.{URL, URLClassLoader}
 import java.nio.ByteBuffer
 import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
 import scala.annotation.tailrec
+import scala.collection.mutable.ArrayBuffer
 import scala.collection.{mutable, Map => SMap}
 import scala.language.existentials
 import scala.reflect.ClassTag
 import scala.util.Sorting
 import scala.util.control.NonFatal
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
-import com.gemstone.gemfire.internal.shared.BufferAllocator
 import com.gemstone.gemfire.internal.shared.unsafe.UnsafeHolder
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.jdbc.GemFireXDRuntimeException
 import io.snappydata.{Constant, ToolsCallback}
 import org.apache.commons.math3.distribution.NormalDistribution
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
+
 import org.apache.spark._
 import org.apache.spark.executor.InputMetrics
 import org.apache.spark.io.CompressionCodec
-import org.apache.spark.memory.TaskMemoryManager
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.TaskLocation
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
-import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, EqualNullSafe, EqualTo, Expression, GenericRow, SpecificInternalRow, TokenLiteral, UnsafeProjection, UnsafeRow}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, EqualNullSafe, EqualTo, Expression, GenericRow, SpecificInternalRow, TokenLiteral, UnsafeProjection}
 import org.apache.spark.sql.catalyst.json.{JSONOptions, JacksonGenerator, JacksonUtils}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.catalyst.plans.physical.{HashPartitioning, Partitioning, PartitioningCollection}
@@ -64,12 +64,9 @@ import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.{BlockId, BlockManager, BlockManagerId}
 import org.apache.spark.ui.exec.ExecutorsListener
-import org.apache.spark.unsafe.Platform
+import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
-import org.apache.spark.util.{AccumulatorV2, MutableURLClassLoader}
-
-import scala.collection.mutable.ArrayBuffer
 
 object Utils {
 
@@ -705,9 +702,6 @@ object Utils {
     conf
   }
 
-  def newMutableURLClassLoader(urls: Array[URL]): URLClassLoader =
-    SharedUtils.newMutableURLClassLoader(urls)
-
   def setDefaultConfProperty(conf: SparkConf, name: String,
       default: String): Unit = {
     conf.getOption(name) match {
@@ -796,31 +790,6 @@ object Utils {
       math.max(1, c.partitionings.map(getNumColumns).min)
     case e: Expression => e.children.length
     case _ => 1
-  }
-
-  def taskMemoryManager(context: TaskContext): TaskMemoryManager =
-    context.taskMemoryManager()
-
-  def toUnsafeRow(buffer: ByteBuffer, numColumns: Int): UnsafeRow = {
-    if (buffer eq null) return null
-    val row = new UnsafeRow(numColumns)
-    if (buffer.isDirect) {
-      row.pointTo(null, UnsafeHolder.getDirectBufferAddress(buffer) +
-          buffer.position(), buffer.remaining())
-    } else {
-      row.pointTo(buffer.array(), Platform.BYTE_ARRAY_OFFSET +
-          buffer.arrayOffset() + buffer.position(), buffer.remaining())
-    }
-    row
-  }
-
-  def createStatsBuffer(statsData: Array[Byte], allocator: BufferAllocator): ByteBuffer = {
-    // need to create a copy since underlying Array[Byte] can be re-used
-    val statsLen = statsData.length
-    val statsBuffer = allocator.allocateForStorage(statsLen)
-    statsBuffer.put(statsData, 0, statsLen)
-    statsBuffer.rewind()
-    statsBuffer
   }
 
   def genTaskContextFunction(ctx: CodegenContext): String = {
