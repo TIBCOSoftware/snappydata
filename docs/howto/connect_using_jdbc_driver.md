@@ -28,7 +28,7 @@ You can use the Maven or the SBT dependencies to get the latest released version
 **Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.0.2.2"
+libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
 ```
 
 !!! Note

@@ -70,19 +70,9 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
 
       fetchNextBatch()
 
-      private def releaseCurrentBatch(): Unit = {
-        if (currentBatch ne null) {
-          for ((_, v1, v2) <- currentBatch) {
-            releaseBuffer(v1)
-            releaseBuffer(v2)
-          }
-          currentBatch = null
-        }
-      }
-
       private def fetchNextBatch(): Boolean = {
         if (absoluteIndex >= statsKeys.length) {
-          releaseCurrentBatch()
+          currentBatch = null
           currentBatchIter = Iterator.empty
           return false
         }
@@ -101,8 +91,6 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
           java.util.Arrays.copyOfRange(statsKeys, absoluteIndex, batchLastIndex)).toArray
         absoluteIndex = batchLastIndex
         java.util.Arrays.sort(results.asInstanceOf[Array[AnyRef]], comparator)
-        // release values in old batch
-        releaseCurrentBatch()
         currentBatch = new ArrayBuffer[BatchStatsRows](1000)
         var i = 0
         while (i < results.length) {
@@ -160,6 +148,7 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   }
 
   private var currentStatsKey: ColumnFormatKey = _
+  private var currentStatsValue: AnyRef = _
   private var currentDeltaStats: AnyRef = _
   private val currentValueMap = new IntObjectHashMap[AnyRef](8)
 
@@ -179,29 +168,32 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   }
 
   private def releaseValues(): Unit = {
-    if (currentValueMap.size() > 0) {
+    if (!currentValueMap.isEmpty) {
       currentValueMap.forEachValue(new Procedure[AnyRef] {
         override def value(v: AnyRef): Unit = {
           releaseBuffer(v)
         }
       })
+      currentValueMap.clear()
     }
+    releaseBuffer(currentStatsValue)
+    releaseBuffer(currentDeltaStats)
   }
 
   override def hasNext: Boolean = statsRows.hasNext
 
   override def next(): RegionEntry = {
     releaseValues()
-    currentValueMap.clear()
     val p = statsRows.next()
     currentStatsKey = p._1
+    currentStatsValue = p._2
     currentDeltaStats = p._3
-    NonLocalRegionEntry.newEntry(currentStatsKey, p._2, null, null)
+    NonLocalRegionEntry.newEntry(currentStatsKey, currentStatsValue, null, null)
   }
 
   override def getColumnValue(column: Int): AnyRef = {
     if (column == DELTA_STATROW_COL_INDEX) return currentDeltaStats
-    if (currentValueMap.size() == 0) {
+    if (currentValueMap.isEmpty) {
       // fetch all the projected columns for current batch
       val fetchKeys = fullProjection.map(c =>
         new ColumnFormatKey(currentStatsKey.uuid, currentStatsKey.partitionId, c): AnyRef)
@@ -215,7 +207,6 @@ final class RemoteEntriesIterator(bucketId: Int, projection: Array[Int],
   override def close(): Unit = {
     currentStatsKey = null
     releaseValues()
-    currentValueMap.clear()
   }
 }
 
