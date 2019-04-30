@@ -1,18 +1,18 @@
 # How to use Transactions Isolation Levels
 
-SnappyData supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in SnappyData is set to NONE. This corresponds to the JDBC TRANSACTION_NONE isolation level. At this level writes performed by a single thread are seen by all other threads in the order in which they were issued, but writes from different threads may be seen in a different order by other threads.
+TIBCO ComputeDB supports transaction isolation levels when using JDBC or ODBC connections. The default transaction level in TIBCO ComputeDB is set to NONE. This corresponds to the JDBC TRANSACTION_NONE isolation level. At this level writes performed by a single thread are seen by all other threads in the order in which they were issued, but writes from different threads may be seen in a different order by other threads.
 
-SnappyData also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of the transaction's semantics in SnappyData can be found in the [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md) section.
+TIBCO ComputeDB also supports `READ_COMMITTED` and `REPEATABLE_READ` transaction isolation levels. A detailed description of the transaction's semantics in TIBCO ComputeDB can be found in the [Overview of TIBCO ComputeDB Distributed Transactions](../consistency/transactions_about.md) section.
 
 !!! Note
-	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br> Queries on column tables are supported when isolation level is set to `NONE`. SnappyData internally sets autocommit to `true` in this case.
+	If you set the isolation level to `READ_COMMITTED` or `REPEATABLE_READ`, queries on column table report an error if [autocommit](../reference/interactive_commands/autocommit.md) is set to **off** (**false**). </br> Queries on column tables are supported when isolation level is set to `NONE`. TIBCO ComputeDB internally sets autocommit to `true` in this case.
 
     Queries on row tables are supported when **autocommit** is set to **false** and isolation level is set to other `READ_COMMITTED` or `REPEATABLE_READ`.
 
 ## Examples
 
 !!! Note
-	Before you try these examples, ensure that you have [started the SnappyData cluster](start_snappy_cluster.md).
+	Before you try these examples, ensure that you have [started the TIBCO ComputeDB cluster](start_snappy_cluster.md).
 
 The following examples provide JDBC example code snippets that explain how to use transactions isolation levels.
 
@@ -114,6 +114,6 @@ EXCEPTION: java.sql.SQLException: (SQLState=XJ218 Severity=20000) (Server=localh
 
 **More information**
 
-- [Overview of SnappyData Distributed Transactions](../consistency/transactions_about.md)
+- [Overview of TIBCO ComputeDB Distributed Transactions](../consistency/transactions_about.md)
 
-- [Best Practices for SnappyData Distributed Transactions](../best_practices/transactions_best_practices.md)
+- [Best Practices for TIBCO ComputeDB Distributed Transactions](../best_practices/transactions_best_practices.md)

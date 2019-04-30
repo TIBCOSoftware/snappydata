@@ -66,7 +66,7 @@ pages:
     - 'How to Import Data from Hive Table into TIBCO ComputeDB Table': 'howto/import_from_hive_table.md'    
     - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'   
     - 'How to Access TIBCO ComputeDB from Various SQL Client Tools': 'howto/connect_oss_vis_client_tools.md'
-    - 'How to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB™': 'howto/connecttibcospotfire.md' 
+    - 'How to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB': 'howto/connecttibcospotfire.md' 
     - 'How to Connect Tableau to TIBCO ComputeDB': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with TIBCO ComputeDB': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
