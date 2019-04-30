@@ -1,14 +1,19 @@
 <a id="howto-jdbc"></a>
 # How to Connect using JDBC Driver
 
-You can connect to and execute queries against SnappyData cluster using JDBC driver. The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers.
+You can connect to and execute queries against SnappyData cluster using JDBC driver. 
+The connection URL typically points to one of the locators. The locator passes the information of all available servers, based on which the driver automatically connects to one of the servers.
 
 
 To connect to the SnappyData cluster using JDBC, use URL of the form `jdbc:snappydata://<locatorHostName>:<locatorClientPort>/`
 
 Where the `<locatorHostName>` is the hostname of the node on which the locator is started and `<locatorClientPort>` is the port on which the locator accepts client connections (default 1527).
 
-**Dependencies**: Use the Maven/SBT dependencies for the latest released version of SnappyData.
+You can use Maven or SBT dependencies to get the latest SnappyData JBDC driver which is used for establishing the JDBC connection with SnappyData. Other than this you can also directly download the JDBC driver from the SnappyData release page. 
+
+## Using Maven/SBT Dependencies 
+
+You can use the Maven or the SBT dependencies to get the latest released version of SnappyData JDBC driver.
 
 **Example: Maven dependency**
 ```pre
@@ -16,19 +21,19 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.0.2.1</version>
+    <version>1.0.2.2</version>
 </dependency>
 ```
 
 **Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.0.2.1"
+libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
 ```
 
 !!! Note
 
-	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
+	If your project fails when resolving the above dependency (that is, it fails to download javax.ws.rs#javax.ws.rs-api;2.1), it may be due to an issue with its pom file. </br>As a workaround, add the below code to the **build.sbt**:
 
 ```
 val workaround = {
@@ -39,8 +44,12 @@ val workaround = {
 
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
 
+## Dowloading SnappyData JDBC Driver Jar
 
-**Code Example**
+You can directly [download the SnappyData JDBC driver](https://github.com/SnappyDataInc/snappydata/releases/latest) from the latest SnappyData release page. Scroll down to download the SnappyData JDBC driver jar which is listed in the **Description of download Artifacts** > **Assets** section.
+
+
+## Code Example
 
 **Connect to a SnappyData cluster using JDBC on default client port**
 
