@@ -22,7 +22,7 @@ To create a database driver, do the following:
 
 	*	Name: Provide a name for the driver.
     *	URL Format: Specify the URL format as *jdbc:snappydata://server:port/*
-	*	Driver Class: Choose the driver class as **io.snappydata.jdbc.ClientDriver**. From the **Driver jar Files**, click the folder icon and select the client jar. Only after you select the client jar, the **io.snappydata.jdbc.ClientDriver** class is listed as an option in Driver Class.<br> For TIBCO ComputeDB, this jar is located in the **build-artifacts/scala-2.11/distributions/** folder.
+	*	From the **Driver jar Files**, click the folder icon and select the client jar. Only after you select the client jar, the **io.snappydata.jdbc.ClientDriver** class is listed as an option in **Driver Class** drop-down list.<br> For TIBCO ComputeDB, this jar is located in the **build-artifacts/scala-2.11/distributions/** folder.
 
 ### Connecting to TIBCO ComputeDB from DbVisualizer
 

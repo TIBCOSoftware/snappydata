@@ -20,16 +20,17 @@ For instance, when all cores are available, if a large loading job is scheduled 
 Executing queries or code in TIBCO ComputeDB results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.</br>
 Concurrency in TIBCO ComputeDB is tightly bound with the capacity of the cluster, which means, the number of cores available in the cluster determines the number of concurrent tasks that can be run.
 
-By default, TIBCO ComputeDB sets spark executor cores to be 2 multiplied by the total number of physical cores on a machine.
+By default, TIBCO ComputeDB sets spark executor cores to be 2 multiplied by the total number of physical ccores on a machine.
 
-**Spark executor cores = 2 X total number of physical cores on a machine**
+**spark executor cores = 2 * C** 
+Where **C** = Total number of physical processor cores on a machine.
 
 This is done keeping in mind some threads which do the IO (Input/Output) reads while the other threads can get scheduled by the operating system. However, increasing this number does not improve query performance.
 
-In case you start multiple TIBCO ComputeDB servers on a machine then:
+If you start multiple TIBCO ComputeDB server instances on a machine, then **spark.executor.cores** should be explicitly set using the following formula:
 
-*	**Spark executor cores = N x physical cores per server**
-*	**Thread execution = 2N x physical cores thread of execution**
+**spark executor cores = N * C **
+Where **N** is the number of TIBCO ComputeDB server instaces started on the machine and **C** = Total number of physical processor cores on a machine.
 
 This can impact thread scheduling and query performance. Also, the heap requirement for each server is suggested to be 8/16 GB on larger virtual machines. In the case of off-heap storage, the heap is only used for some execution and temporary buffers. If you have more servers per machine, more percentage of actual memory would be allocated to the heap and less for the off-heap actual storage of data. This can also lead to more disk reads which further impacts the query performance.
 

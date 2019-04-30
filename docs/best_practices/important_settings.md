@@ -163,6 +163,17 @@ Optionally when using the `-XX:+HeapDumpOnOutOfMemoryError` option, you can spec
 *	**For Mac**
 	*agentPath snappyHome/jars/libgemfirexd.dylib*
 
+## Handling the OOM-Killer by OS
+In the enterprise version of the product TIBCO ComputeDB, the data is stored in off-heap i.e native memory. It uses Java's **direct byte buffer** which in turn uses **glibc **as native memory allocator.
+**glibc** has a known problem of fragmentation as it does not release the freed memory to the OS immediately to improve on performance. This fragmentation can grow in a long running cluster where memory requirement is extremely high and the memory is utilized rapidly thereby leading to the process being killed by the OS. This is known as OOM-Killer.
+This issue is faced by all products using **glibc** memory allocator and they overcome this by either having their own memory manager or tuning glibc according to their needs.
+
+To avoid this issuem the following parameters are set by default in the product:
+*	`MALLOC_ARENA_MAX = 4`
+*	`MALLOC_MMAP_THRESHOLD_=131072`
+*	`MALLOC_MMAP_MAX_= 2147483647`
+
+You can overide the values of these default parameters by modifying the `snappy-env.sh` template in the conf directory.
 
 <a id="codegenerationtokenization"></a>
 ## Code Generation and Tokenization
