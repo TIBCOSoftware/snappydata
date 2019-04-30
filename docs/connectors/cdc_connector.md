@@ -149,8 +149,8 @@ The **sink** option is mandatory for SnappyStore sink. This option is required t
 The above trait contains a single method, which user needs to implement. A user can use TIBCO ComputeDB mutable APIs (INSERT, UPDATE, DELETE, PUT INTO) to maintain tables.
 
 ```pre
-    def process(snappySession: SnappySession, sinkProps: Properties,
-        batchId: Long, df: Dataset[Row]): Unit
+    def process(snappySession: SnappySession, sinkProps: Map[String, String],
+      batchId: Long, df: Dataset[Row]): Unit
 ```
 
 The following examples illustrates how you can write into a [TIBCO ComputeDB table](/programming_guide/building_snappydata_applications_using_spark_api.md):
@@ -159,7 +159,6 @@ The following examples illustrates how you can write into a [TIBCO ComputeDB tab
 package io.snappydata.app;
 
 import java.util.List;
-import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.apache.spark.sql.Dataset;
@@ -178,10 +177,10 @@ public class ProcessEvents implements SnappyStreamSink {
       "__$end_lsn", "__$seqval", "__$operation", "__$update_mask", "__$command_id");
 
   @Override
-  public void process(SnappySession snappySession, Properties sinkProps,
-      long batchId, Dataset<Row> df) {
+  public void process(SnappySession snappySession,
+      scala.collection.immutable.Map<String, String> sinkProps, long batchId, Dataset<Row> df) {
 
-    String snappyTable = sinkProps.getProperty("tablename").toUpperCase();
+    String snappyTable = sinkProps.apply("tablename").toUpperCase();
 
     log.info("SB: Processing for " + snappyTable + " batchId " + batchId);
 
@@ -194,7 +193,7 @@ public class ProcessEvents implements SnappyStreamSink {
         // the WHERE clause of the delete operation.
         .drop(metaColumns.toArray(new String[metaColumns.size()]));
 
-    if(snappyCustomerDelete.count() > 0) {
+    if (snappyCustomerDelete.count() > 0) {
       snappyJavaUtil(snappyCustomerDelete.write()).deleteFrom("APP." + snappyTable);
     }
 
@@ -206,6 +205,7 @@ public class ProcessEvents implements SnappyStreamSink {
 
   }
 }
+
 ```
 
 ## Additional Information

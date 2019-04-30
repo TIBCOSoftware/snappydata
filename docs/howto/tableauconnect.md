@@ -10,13 +10,7 @@ Download and install TIBCO ComputeDB Enterprise edition to connect Tableau to TI
 
 Use the following steps to connect Tableau to TIBCO ComputeDB using Thrift Server that is compatible with Apache HiveServer2. This is also fully compatible with Spark's Thrift.
 
-### Step 1: Enable Thrift Server in TIBCO ComputeDB Cluster
-1. Download and Install the TIBCO ComputeDB Enterprise version from the [TIBCO ComputeDB Release page](https://github.com/SnappyDataInc/snappydata/releases). 
-2.	[Configure the TIBCO ComputeDB Cluster](../configuring_cluster/configuring_cluster.md).
-3.	In the [Lead node configuration](../configuring_cluster/configuring_cluster.md#configuring-leads), set the following property:</br>`snappydata.hiveServer.enabled=true`
-4.	Launch the TIBCO ComputeDB cluster. </br>`./sbin/snappy-start-all.sh`
-
-### Step 2: Connect Tableau Desktop to TIBCO ComputeDB
+1.	Check the [system requirements](/install/system_requirements.md), [download and install](/install.md) TIBCO ComputeDB, and then [start the TIBCO ComputeDB cluster](./start_snappy_cluster.md). Thrift server is enabled by default.
 1.	Download and install **Tableau Desktop v2018.3.x** from the [Tableau Download page](https://www.tableau.com/support/releases/online/2018.3). You may also need to register your product.
 2. Open the Tableau Desktop application, on the left panel, from the **To A Server **section, select **Spark SQL connector** option. 
 	![Tableau_desktop](../Images/LocateSparkSQL.png)
