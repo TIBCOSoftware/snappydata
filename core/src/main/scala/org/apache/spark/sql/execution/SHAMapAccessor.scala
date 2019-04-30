@@ -287,7 +287,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
                | $allocatorTerm.baseOffset($holder), $unsafeRowLength);
              |} """.stripMargin
       }).trim +
-        s"""//System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName); """
+        s"""
+         //System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);
+        """
       val exprCode = if (skipNullBitsCode) {
         evaluationCode
       } else {
@@ -395,7 +397,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
         |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
 
-        |// position the offset to start of aggregate value
+        |// position the offset to start of aggregate value        |
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
 
