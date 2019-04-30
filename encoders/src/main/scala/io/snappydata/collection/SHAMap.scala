@@ -30,7 +30,10 @@ final class SHAMap(valueSize: Int) extends ByteBufferHashMap(128, 0.6, 0, valueS
   }
 
   override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+    // Read the value start offset before invoking handleNewInsert which may cause rehash
+    // & make the mayKeyObject & mapKeyOffset invalid
+    val valueOffset = (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
     handleNewInsert()
-    (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
+    valueOffset
   }
 }

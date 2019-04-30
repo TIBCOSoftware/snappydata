@@ -1089,6 +1089,34 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
+
+  test("test large data with rehash of ByteBufferHashMap") {
+    val hfileTaxi: String = getClass.getResource("/trip_fare_ParquetEmptyData").getPath
+    // TODO: Use following with full data
+    // val hfile: String = "../../data/NYC_trip_ParquetData"
+    // val hfile1: String = "../../data/trip_fare_ParquetData"
+
+    val taxiFare = "taxifare"
+    val tripFareDF = snc.read.parquet(hfileTaxi)
+
+    tripFareDF.registerTempTable(taxiFare)
+    tripFareDF.cache()
+
+    var rs = snc.sql(s"SELECT hack_license, sum(fare_amount) as daily_fare_amount" +
+      s" FROM $taxiFare group by hack_license")
+    rs.collect()
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+
+    rs = snc.sql(s"SELECT hack_license, to_date(pickup_datetime) as pickup_date," +
+      s" sum(fare_amount) as daily_fare_amount  FROM $taxiFare " +
+      s"group by hack_license, pickup_date")
+    rs.collect()
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    snc.dropTable(taxiFare, true)
+    tripFareDF.unpersist()
+
+  }
+
   def getSqlConnection: Connection =
     DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
 
