@@ -1,9 +1,9 @@
 <a id="howto-snappyShell"></a>
-# How to Use Snappy SQL shell (snappy-sql)
-The Snappy SQL shell can be used to execute SQL on SnappyData cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
+# How to Use Snappy Shell (snappy-sql)
+The Snappy Shell can be used to execute SQL on TIBCO ComputeDB cluster. In the background, `snappy-sql` uses JDBC connections to execute SQL.
 
-**Connect to a SnappyData Cluster**: </br>
-Use the `snappy-sql` and `connect client` commands on the Snappy SQL shell as follows:
+**Connect to a TIBCO ComputeDB Cluster**: </br>
+Use the `snappy-sql` and `connect client` commands on the Snappy Shell as follows:
 
 ```pre
 $ ./bin/snappy-sql

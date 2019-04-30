@@ -7,7 +7,7 @@ For more information on  SDE, refer to [SDE documentation](../aqp.md).
 **Code Example**:
 The complete code example for SDE is in [SynopsisDataExample.scala](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SynopsisDataExample.scala). The code below creates a sample table and executes queries that run on the sample table.
 
-**Get a SnappySession**:
+**Get a Snappy Session**:
 ```pre
 val spark: SparkSession = SparkSession
     .builder
