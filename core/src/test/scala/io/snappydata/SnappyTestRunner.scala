@@ -113,7 +113,7 @@ with Logging with Retries {
       Some(commandOutput))
 
     if (!out.contains(clusterSuccessString)) {
-      throw new Exception(s"Failed to start Snappy cluster")
+      throw new Exception(s"Failed to start Snappy cluster: " + out)
     }
     executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh", Some(commandOutput))
   }
