@@ -1,5 +1,5 @@
 # Troubleshooting Error Messages
-Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
+Error messages provide information about problems that might occur when setting up the TIBCO ComputeDB cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
 
@@ -32,7 +32,7 @@ The status of the member is displayed as *waiting* in such cases when you [check
 </diagnosis>
 
 <action> **Solution:** </br>
-The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [SnappyData Pulse UI](../monitoring/monitoring.md).
+The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [TIBCO ComputeDB UI](../monitoring/monitoring.md).
 </action>
 
 <!-- --------------------------------------------------------------------------- -->
@@ -113,4 +113,23 @@ In cases where a node fails while a JDBC/ODBC client or job is consuming result 
 
 <action> **Solution:** </br>
 This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
+</action>
+
+<!-- --------------------------------------------------------------------------- -->
+
+<a id="queryfailiterate"></a>
+<error> **Message:** </error> 
+<error-text>
+SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB cluster, this error is logged to prevent unexpected errors due to schema changes.
+</diagnosis>
+
+<action> **Solution:** </br>
+If you are executing queries using **SnappySession.sql()** API, you may see the error logged in the log files or on the console, however the query is retried internally by the product, that is without the user's intervention, by fetching the latest catalog.
+
+If the user application is performing DataFrame/DataSet operations, you will have to recreate the DataFrame/DataSet and retry the operation. In such cases, application can catch an exception of type `org.apache.spark.sql.execution.CatalogStaleException`. If the application receives this exception, it can reconstruct their DataSet/DataFrame and retry the operations. 
 </action>
