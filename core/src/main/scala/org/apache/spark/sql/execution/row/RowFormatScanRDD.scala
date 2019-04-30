@@ -98,7 +98,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
 
   // below should exactly match ExternalStoreUtils.handledFilter
   private def compileFilter(f: Filter, sb: StringBuilder,
-      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean, literal: String = ""): Unit = f match {
     case EqualTo(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
@@ -147,20 +147,21 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "TRUE")
       sb.append(") AND (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "TRUE")
       sb.append(')')
     case Or(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "FALSE")
       sb.append(") OR (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "FALSE")
       sb.append(')')
-    case _ => // no filter pushdown
+    case _ => sb.append(literal)
+     // no filter pushdown
   }
 
   /**
