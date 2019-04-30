@@ -22,6 +22,7 @@ import scala.reflect.runtime.universe._
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import io.snappydata.Property
+import io.snappydata.collection.ByteBufferData
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -350,6 +351,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
     val baseKeyoffset = ctx.freshName("baseKeyoffset")
     val baseKeyObject = ctx.freshName("baseKeyObject")
+    val bbDataClass = classOf[ByteBufferData].getName
 
     // val valueInit = valueInitCode + '\n'
     val numAggBytes = getSizeOfValueBytes(aggregateDataTypes)
@@ -389,6 +391,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
         // insert or lookup
         |int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
         |$numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+        |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
+        |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+        |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+
         |// position the offset to start of aggregate value
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin

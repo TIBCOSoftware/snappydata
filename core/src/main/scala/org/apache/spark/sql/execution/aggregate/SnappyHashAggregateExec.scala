@@ -246,7 +246,7 @@ case class SnappyHashAggregateExec(
     // below is a loose search while actual decision will be taken as per
     // availability of ExprCodeEx with DictionaryCode in doConsume
    if (useByteBufferMapBasedAggregation) {
-     true
+     false
    } else {
      DictionaryOptimizedMapAccessor.canHaveSingleKeyCase(
        keyBufferAccessor.keyExpressions)
@@ -255,7 +255,7 @@ case class SnappyHashAggregateExec(
 
   override def batchConsume(ctx: CodegenContext, plan: SparkPlan,
       input: Seq[ExprCode]): String = {
-    if (groupingExpressions.isEmpty || !canConsume(plan) || useByteBufferMapBasedAggregation) ""
+    if (groupingExpressions.isEmpty || !canConsume(plan) ) ""
     else {
       // create an empty method to populate the dictionary array
       // which will be actually filled with code in consume if the dictionary
@@ -621,7 +621,7 @@ case class SnappyHashAggregateExec(
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
     }
     val utf8Class = classOf[UTF8String].getName
-
+    val bbDataClass = classOf[ByteBufferData].getName
     val arrayDataClass = classOf[ArrayData].getName
     val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
     if (groupingAttributes.exists(attrib => attrib.dataType.existsRecursively(_ match {
@@ -752,7 +752,6 @@ case class SnappyHashAggregateExec(
 
     val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
 
-    val bbDataClass = classOf[ByteBufferData].getName
 
 
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
@@ -765,9 +764,6 @@ case class SnappyHashAggregateExec(
     ctx.addNewFunction(doAgg,
       s"""private void $doAgg() throws java.io.IOException {
            |$hashMapTerm = new $hashSetClassName($valueSize);
-           |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
-           |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-           |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
            |$childProduce
