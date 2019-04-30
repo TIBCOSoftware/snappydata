@@ -19,15 +19,24 @@ package org.apache.spark.sql
 import org.apache.spark.sql.streaming.{FileStreamSourceStressTestSuite, FileStreamSourceSuite}
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
+/**
+ * Following test resources are copied from spark sql module to fix some failing tests
+ * (see [[https://jira.snappydata.io/browse/SNAP-2725 SNAP-2725]] &
+ * [[https://jira.snappydata.io/browse/SNAP-2726 SNAP-2726]]):
+ *
+ *  {{{
+ *  - structured-streaming/file-source-offset-version-2.1.0-long.txt
+ *  - structured-streaming/file-source-offset-version-2.1.0-json.txt
+ *  - structured-streaming/file-source-log-version-2.1.0/2.compact
+ *  - structured-streaming/file-source-log-version-2.1.0/3
+ *  - structured-streaming/file-source-log-version-2.1.0/4
+ *  }}}
+ *
+ * Above mentioned resources may need to be copied again when spark code is updated
+ * with upstream spark.
+ */
 class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "FileStreamSource offset - read Spark 2.1.0 offset json format",
-    "FileStreamSource offset - read Spark 2.1.0 offset long format",
-    "FileStreamSourceLog - read Spark 2.1.0 log format"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
 
 class SnappyFileStreamSourceStressTestSuite extends FileStreamSourceStressTestSuite
     with SharedSnappySessionContext with SnappySparkTestUtil

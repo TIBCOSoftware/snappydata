@@ -18,8 +18,16 @@ package org.apache.spark.sql.execution.streaming
 
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
+/**
+ * Following test resource is copied from spark sql module to fix some failing tests
+ * (see [[https://jira.snappydata.io/browse/SNAP-2726 SNAP-2726]]):
+ *
+ *  {{{
+ *  - structured-streaming/query-metadata-logs-version-2.1.0.txt
+ *  }}}
+ *
+ * Above mentioned resource may need to be copied again when spark code is updated
+ * with upstream spark.
+ */
 class SnappyStreamMetadataSuite extends StreamMetadataSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil{
-
-  override def ignored: Seq[String] = Seq("read Spark 2.1.0 format")
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
