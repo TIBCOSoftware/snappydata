@@ -528,7 +528,8 @@ case class SnappyHashAggregateExec(
      while outer query is going to use only key2. If we do not write the code of materialzing key1,
      the pointer will not move forward, as the outer query is going to try to materialzie only key2,
      but the pointer will not move to key2 unleass key1 has been consumed.
-     We need to resolve this issue.
+     We need to resolve this issue. I suppose we can declare  local variable pointers pointing to start location
+     of each key/aggregate & use those declared pointers in the materialization code for each key
      */
     if (modes.contains(Final) || modes.contains(Complete)) {
       // generate output extracting from ExprCodes
