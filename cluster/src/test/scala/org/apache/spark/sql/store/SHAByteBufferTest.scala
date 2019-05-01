@@ -1114,8 +1114,24 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     snc.dropTable(taxiFare, true)
     tripFareDF.unpersist()
-
   }
+
+  test("bug negative size of string grouping key") {
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val snContext = snc
+    snContext.sql("set spark.sql.shuffle.partitions=6")
+    val airlineTable = "airline"
+    val airlineDF = snContext.read.load(hfile)
+    airlineDF.registerTempTable(airlineTable)
+    val rs = snc.sql(s"select dest from $airlineTable " +
+      s" group by dest having count(*) > 1000000")
+
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    rs.collect()
+    snc.dropTable(airlineTable, true)
+  }
+
+
 
   def getSqlConnection: Connection =
     DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")

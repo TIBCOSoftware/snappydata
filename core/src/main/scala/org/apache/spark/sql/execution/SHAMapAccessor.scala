@@ -381,10 +381,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |//  System.out.println("hash code for key = " +${hashVar(0)});
         |// get key size code
         |int $numKeyBytesTerm = 0;
-        |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType,
-         numBytesForNullKeyBits)};
+        |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
         |int $numValueBytes = $numAggBytes;
-        |
         |// prepare the key
         |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder,
            keyVars, keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject,
