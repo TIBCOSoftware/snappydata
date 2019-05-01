@@ -519,7 +519,7 @@ case class SnappyHashAggregateExec(
 
   private def generateResultCodeForSHAMap(
     ctx: CodegenContext, keyBufferVars: Seq[ExprCode],
-    aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String, mapCounterTerm: String): String = {
+    aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String): String = {
     if (modes.contains(Final) || modes.contains(Complete)) {
       // generate output extracting from ExprCodes
       ctx.INPUT_ROW = null
@@ -554,7 +554,6 @@ case class SnappyHashAggregateExec(
         byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
        $evaluateBufferVars
        $evaluateAggResults
-       ++$mapCounterTerm;
        ${consume(ctx, resultVars)}
        """
 
@@ -578,7 +577,6 @@ case class SnappyHashAggregateExec(
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
        $evaluateBufferVars
-       ++$mapCounterTerm;
        ${consume(ctx, keyBufferVars ++ aggBufferVars)}
        """
 
@@ -587,10 +585,17 @@ case class SnappyHashAggregateExec(
       // generate result based on grouping key
       ctx.INPUT_ROW = null
       ctx.currentVars = keyBufferVars ++ aggBufferVars
+
       val eval = resultExpressions.map { e =>
         BindReferences.bindReference(e, groupingAttributes).genCode(ctx)
       }
-      consume(ctx, eval)
+
+      s"""
+       ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
+        byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${consume(ctx, eval)}
+       """
+
     }
   }
 
@@ -782,8 +787,7 @@ case class SnappyHashAggregateExec(
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, iterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
       byteBufferAccessor.numBytesForNullAggBits, false)
-    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, iterValueOffsetTerm,
-      mapCounter)
+    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, iterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
     // The child could change `copyResult` to true, but we had already
@@ -835,6 +839,7 @@ case class SnappyHashAggregateExec(
 
         $numOutput.${metricAdd("1")};
         // skip the key length
+        ++$mapCounter;
         $iterValueOffsetTerm += 4;
         $outputCode
         if (shouldStop()) return;
