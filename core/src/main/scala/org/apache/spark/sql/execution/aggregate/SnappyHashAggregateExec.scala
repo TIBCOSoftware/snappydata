@@ -520,6 +520,16 @@ case class SnappyHashAggregateExec(
   private def generateResultCodeForSHAMap(
     ctx: CodegenContext, keyBufferVars: Seq[ExprCode],
     aggBufferVars: Seq[ExprCode], iterValueOffsetTerm: String): String = {
+    /* Asif: It appears that we have to put the code of materilization of each grouping column
+    & aggreagte before we can send it to parent. The reason is following:
+    1) In the byte buffer hashmap data is written consecitively i.e key1, key2 agg1 etc.
+    Now the pointer cannot jump arbitrarily to just read key2 without reading key1
+     So suppose we have a nested query such that inner query produces code for outputting key1 , key2,
+     while outer query is going to use only key2. If we do not write the code of materialzing key1,
+     the pointer will not move forward, as the outer query is going to try to materialzie only key2,
+     but the pointer will not move to key2 unleass key1 has been consumed.
+     We need to resolve this issue.
+     */
     if (modes.contains(Final) || modes.contains(Complete)) {
       // generate output extracting from ExprCodes
       ctx.INPUT_ROW = null
@@ -584,18 +594,17 @@ case class SnappyHashAggregateExec(
     } else {
       // generate result based on grouping key
       ctx.INPUT_ROW = null
-      ctx.currentVars = keyBufferVars ++ aggBufferVars
-
-      val eval = resultExpressions.map { e =>
+      ctx.currentVars = keyBufferVars
+      val keyVars = resultExpressions.map { e =>
         BindReferences.bindReference(e, groupingAttributes).genCode(ctx)
       }
-
+      val evaluateKeyVars = evaluateVariables(keyVars)
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
-       ${consume(ctx, eval)}
+       $evaluateKeyVars
+       ${consume(ctx, keyVars)}
        """
-
     }
   }
 

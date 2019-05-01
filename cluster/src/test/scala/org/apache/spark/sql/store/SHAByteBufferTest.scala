@@ -29,6 +29,7 @@ import org.junit.Assert._
 import org.apache.spark.SparkConf
 import org.apache.spark.sql.{Row, SaveMode, SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
+import org.apache.spark.sql.execution.benchmark.ColumnCacheBenchmark
 import org.apache.spark.sql.execution.{SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.types.{ArrayType, CalendarIntervalType, IntegerType, LongType, StringType, StructField, StructType}
 import org.apache.spark.unsafe.types.CalendarInterval
@@ -1154,6 +1155,24 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     assertTrue(expectedResults.isEmpty)
     snc.dropTable("test1")
   }
+
+  test("GITHUB-534") {
+    val session = SnappyContext(sc).snappySession
+    session.sql("CREATE TABLE yes_with(device_id VARCHAR(200), " +
+      "sdk_version VARCHAR(200)) USING COLUMN OPTIONS(PARTITION_BY 'device_id')")
+    session.insert("yes_with", Row("id1", "v1"), Row("id1", "v2"),
+      Row("id2", "v1"), Row("id2", "v1"), Row("id2", "v3"))
+    val rs = session.sql("select sdk_version, count(distinct device_id) from (" +
+      "select sdk_version,device_id from YES_WITH group by sdk_version, " +
+      "device_id) a group by sdk_version")
+  //  assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+
+    ColumnCacheBenchmark.collect(rs,
+      Seq(Row("v1", 2), Row("v2", 1), Row("v3", 1)))
+    snc.dropTable("yes_with")
+
+  }
+
 
   def getSqlConnection: Connection =
     DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
