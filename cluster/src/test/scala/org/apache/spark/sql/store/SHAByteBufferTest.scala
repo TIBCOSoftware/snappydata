@@ -70,7 +70,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val results = rs.collect()
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     assertEquals(groupingDivisor, results.length)
-    rs.foreach(row => {
+    results.foreach(row => {
       val groupKey = row.getInt(0)
       val n = range / groupingDivisor
       val sum1 = ((n / 2.0f) * ((2 * groupKey) + (n - 1) * groupingDivisor)).toLong
@@ -100,7 +100,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val results = rs.collect()
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     assertEquals(groupingDivisor, results.length)
-    rs.foreach(row => {
+    results.foreach(row => {
       val groupKey = row.getString(0).substring("test".length).toInt
       val n = range / groupingDivisor
       val sum1 = ((n / 2.0f) * ((2 * groupKey) + (n - 1) * groupingDivisor)).toLong
@@ -142,7 +142,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val results = rs.collect()
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     assertEquals(groupingDivisor, results.length)
-    rs.foreach(row => {
+    results.foreach(row => {
       val groupKey = if (row.isNullAt(0)) {
         0
       } else {
@@ -195,7 +195,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val results = rs.collect()
     assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
     assertEquals(groupingDivisor1 * groupingDivisor2, results.length)
-    rs.foreach(row => {
+    results.foreach(row => {
       val groupKey = if (row.isNullAt(0)) {
         0
       } else {
@@ -1010,7 +1010,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     runTest2(newSession2)
 
 
-
     snc.dropTable("test1")
   }
 
@@ -1131,7 +1130,30 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable(airlineTable, true)
   }
 
-
+  test("group by query without having aggregate functions") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1 int, col2 int, col3 int, col4 String) " +
+      "using column ")
+    val range = 50
+    val groupingDivisor = 10
+    val insertDF = snc.range(50).selectExpr("id", "id*2", "id * 3",
+      s"Concat( 'test', Cast(id % $groupingDivisor as string) ) ")
+    insertDF.write.insertInto("test1")
+    val rs = snc.sql("select distinct col4 from test1 ")
+    // import org.apache.spark.sql.execution.debug._
+    // rs.debugCodegen()
+    val results = rs.collect()
+    val expectedResults = Array.tabulate[String](groupingDivisor)(i => s"test$i").toBuffer
+    assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    assertEquals(groupingDivisor, results.length)
+    results.foreach(row => {
+      assertTrue(expectedResults.exists(_ == row.getString(0)))
+      expectedResults.remove(expectedResults.indexOf(row.getString(0)))
+    })
+    assertTrue(expectedResults.isEmpty)
+    snc.dropTable("test1")
+  }
 
   def getSqlConnection: Connection =
     DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")

@@ -314,7 +314,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def readNullBitsCode(currentValueOffsetTerm: String, nullBitsetTerm: String,
     numBytesForNullBits: Int): String = {
     val plaformClass = classOf[Platform].getName
-    if (numBytesForNullBits == 1) {
+    if (numBytesForNullBits == 0) {
+      ""
+    } else if (numBytesForNullBits == 1) {
       s"""$nullBitsetTerm = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
          |$currentValueOffsetTerm += 1;""".stripMargin
     } else if (numBytesForNullBits == 2) {
@@ -797,7 +799,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def writeNullBitsAt(baseObjectTerm: String, offsetToWriteTerm: String,
     nullBitsTerm: String, numBytesForNullBits: Int): String = {
     val plaformClass = classOf[Platform].getName
-    if (numBytesForNullBits == 1) {
+    if (numBytesForNullBits == 0) {
+      ""
+    } else if (numBytesForNullBits == 1) {
       s"$plaformClass.putByte($baseObjectTerm, $offsetToWriteTerm, $nullBitsTerm);"
     } else if (numBytesForNullBits == 2) {
       s"$plaformClass.putShort($baseObjectTerm, $offsetToWriteTerm, $nullBitsTerm);"
