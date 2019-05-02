@@ -9,7 +9,7 @@ To access TIBCO ComputeDB Monitoring UI, start your cluster and open [http:`<lea
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file.
 
-![Dashboard](../Images/Dashboard.png)
+![Dashboard](../Images/MonitoringUI/TIBCO-ComputeDB-UI-Dashboard.png)
 
 The following topics are covered in this section:
 
@@ -33,9 +33,9 @@ The following topics are covered in this section:
 !!! Note
 	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
-On the top-right side of the TIBCO ComputeDB Monitoring UI page, you can view the version details of TIBCO ComputeDB Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
+On the top-right side of the TIBCO ComputeDB Monitoring UI page, you can click the help icon to view the details of TIBCO ComputeDB Enterprise edition.
 
-![](../Images/snapshot.png)
+![](../Images/MonitoringUI/TIBCO-ComputeDB-UI-About-Box.png)
 
 <a id="dashboard"></a>
 ## Dashboard
@@ -43,7 +43,7 @@ The Dashboard page graphically presents various cluster-level statistics that ca
 ![](../Images/AutoRefresh-is-ON.png)
 
 You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
-![](../Images/CPU_cores.png)
+![](../Images/MonitoringUI/TotalCpuCores.png)
 
 
 The **Dashboard** page displays the following sections:
@@ -134,7 +134,7 @@ The following columns are displayed in this section:
 The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generated for a cluster member.
 The usage trends and the statistics of a specific member are auto updated periodically after every five seconds. If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner. You can view, on demand, the latest logs by clicking on the **Load New** button provided at the bottom of the logs. You can also click the **Load More** button to view the older logs.
 
-![Member Detail View](../Images/memberdetailview.png)
+![Member Detail View](../Images/MonitoringUI/TIBCO-ComputeDB-UI-MemberDetails.png)
 
 
 <a id="memberstat"></a>
@@ -179,9 +179,6 @@ The following details are included:
 ## SQL
 The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.
 
-
-![](../Images/query_analysis_sql.png)
-
 | Item  | Description |
 |--------|--------|
 |  **Colocated**         |     When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
@@ -221,22 +218,18 @@ The **Jobs** page lists all the Spark jobs. Each Spark action is translated as a
 
 [comment]: <> (Need a brief introduction here.)
 
-![](../Images/query_analysis_job.png)
-
 * **Status**: Displays the status of the job.
 
 * **Stages**: Click on the stage to view its details. The table displays the time taken for the completion of each stage. 
 
 !!! Tip
-	You can cancel a long running job, using the **Kill** option. </br>![kill](../Images/kill_job.png)
+	You can cancel a long running job, using the **Kill** option.
 
 <a id="stages"></a>
 ## Stages
 The **Stages** page displays the stage details of a Spark Job. Each Spark job is segregated into one or more stages. Each stage is an execution boundary where data exchange between nodes is required.
 
 On this page, you can view the total time required for all the tasks in a job to complete. You can also view if any of the tasks got delayed for completion. This may occur in case of uneven data distribution.
-
-![](../Images/query_analysis_stage.png)
 
 * **Scheduler Delay** indicates the waiting period for the task. Delays can be caused if there are too many concurrent jobs.
 

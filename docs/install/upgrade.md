@@ -1,6 +1,6 @@
 # Upgrade Instructions
 
-This guide provides information for upgrading systems running an earlier version of SnappyData. We assume that you have SnappyData already installed, and you are upgrading to the latest version of SnappyData.
+This guide provides information for upgrading systems running an earlier version of TIBCO ComputeDB. It is assumed that you have already installed TIBCO ComputeDB and you are upgrading to the latest version.
 
 Before you begin the upgrade, ensure that you understand the new features and any specific requirements for that release.
 
@@ -8,21 +8,21 @@ Before you begin the upgrade, ensure that you understand the new features and an
 
 1. Confirm that your system meets the hardware and software requirements described in [System Requirements](../install/system_requirements.md) section.
 
-2. Backup the existing environment: </br>Create a backup of the locator, lead, and server configuration files that exist in the **conf** folder located in the SnappyData home directory.
+2. Backup the existing environment: </br>Create a backup of the locator, lead, and server configuration files that exist in the **conf** folder located in the TIBCO ComputeDB home directory.
 
 3. Stop the cluster and verify that all members are stopped: You can shut down the cluster using the `sbin/snappy-stop-all.sh` command. </br>To ensure that all the members have been shut down correctly, use the `sbin/snappy-status-all.sh` command.
 
 4. Create a [backup of the operational disk store files](../reference/command_line_utilities/store-backup.md) for all members in the distributed system.
 
-5. Reinstall SnappyData: After you have stopped the cluster, [install the latest version of SnappyData](../install.md).
+5. Reinstall TIBCO ComputeDB: After you have stopped the cluster, [install the latest version of TIBCO ComputeDB](../install.md).
 
 6. Reconfigure your cluster using the locator, lead, and server configuration files you backed up in step 1.
 
-7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of SnappyData.
+7. To ensure that the restore script (restore.sh) copies files back to their original locations, make sure that the disk files are available at the original location before restarting the cluster with the latest version of TIBCO ComputeDB.
 
-## Upgrading SnappyData Version from 1.0.1 to 1.0.2
+## Upgrading to TIBCO ComputeDB 1.1.0 from Earlier Versions
 
-The following steps must be specifically followed to upgrade to SnappyData version 1.0.2: 
+The following steps should be followed to upgrade from the previous versions (1.0.1, 1.0.2, 1.0.2.1) of the product:
 
 1.	In addition to any existing configuration options, add `-J-Dsnappydata.DISALLOW_METASTORE_ON_LOCATOR=true` property to the **conf/locators** files for each of the locator as shown:
 
@@ -62,7 +62,7 @@ The following steps must be specifically followed to upgrade to SnappyData versi
 7.	Verify the tables and data.
 
 
-## Upgrading from SnappyData Version 1.0.0
+The following steps must be followed to upgrade from version 1.0.0 of the product:
 
 For best performance, it is recommended that you recreate any large column tables after you upgrade from 1.0.0 to 1.0.1/1.0.2. The following two improvements provided in 1.0.1 take effect:
 
