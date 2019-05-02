@@ -391,7 +391,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            baseKeyoffset)
           }
         // insert or lookup
-        |int $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
+        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
         |$numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
         |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
         |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
