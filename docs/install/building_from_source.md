@@ -2,9 +2,9 @@
 # Building from Source
 
 !!! Note
-	Building SnappyData requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
+	Building TIBCO ComputeDB requires JDK 8 installation ([Oracle Java SE](http://www.oracle.com/technetwork/java/javase/downloads/index.html)).
 
-## Build all Components of SnappyData
+## Build all Components of TIBCO ComputeDB
  
 **Latest release branch**
 ```pre
@@ -24,7 +24,7 @@ The product is in **build-artifacts/scala-2.11/snappy**
 
 ## Build only the Top-level Components
 
-Use this option if you want to build only the top-level SnappyData project and pull in jars for other projects (spark, store, spark-jobserver):
+Use this option if you want to build only the top-level TIBCO ComputeDB project and pull in jars for other projects (spark, store, spark-jobserver):
 
 **Latest release branch**
 ```pre
@@ -42,19 +42,19 @@ Use this option if you want to build only the top-level SnappyData project and p
 
 ## Repository Layout
 
-- **core** - Extensions to Apache Spark that should not be dependent on SnappyData Spark additions, job server etc. It is also the bridge between _spark_ and _store_ (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.
+- **core** - Extensions to Apache Spark that should not be dependent on TIBCO ComputeDB Spark additions, job server etc. It is also the bridge between _spark_ and _store_ (GemFireXD). For example, SnappyContext, row and column store, streaming additions etc.
 
-- **cluster** - Provides the SnappyData implementation of cluster manager embedding GemFireXD, query routing, job server initialization etc.
+- **cluster** - Provides the TIBCO ComputeDB implementation of cluster manager embedding GemFireXD, query routing, job server initialization etc.
 
 This component depends on _core_ and _store_. The code in the _cluster_ depends on the _core_ but not the other way round.
 
-- **spark** - _Apache Spark_ code with SnappyData enhancements.
+- **spark** - _Apache Spark_ code with TIBCO ComputeDB enhancements.
 
-- **store** - Fork of gemfirexd-oss with SnappyData additions on the snappy/master branch.
+- **store** - Fork of gemfirexd-oss with TIBCO ComputeDB additions on the snappy/master branch.
 
-- **spark-jobserver** - Fork of _spark-jobserver_ project with some additions to integrate with SnappyData.
+- **spark-jobserver** - Fork of _spark-jobserver_ project with some additions to integrate with TIBCO ComputeDB.
 
-  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective SnappyData repositories and are integrated into the top-level SnappyData project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
+  The _spark_, _store_, and _spark-jobserver_ directories are required to be clones of the respective TIBCO ComputeDB repositories and are integrated into the top-level TIBCO ComputeDB project as git submodules. When working with submodules, updating the repositories follows the normal [git submodules](https://git-scm.com/book/en/v2/Git-Tools-Submodules). One can add some aliases in gitconfig to aid pull/push as follows:
 
 ```pre
 [alias]
@@ -67,11 +67,11 @@ The above aliases can serve as useful shortcuts to pull and push all projects fr
 
 ## Building
 
-Gradle is the build tool used for all the SnappyData projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include the addition of Gradle build scripts to allow building them independently as well as a sub-project of SnappyData. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.
+Gradle is the build tool used for all the TIBCO ComputeDB projects. Changes to _Apache Spark_ and _spark-jobserver_ forks include the addition of Gradle build scripts to allow building them independently as well as a sub-project of TIBCO ComputeDB. The only requirement for the build is a JDK 8 installation. The Gradle wrapper script downloads all the other build dependencies as required.
 
-If you do not want to deal with sub-modules and only work on a SnappyData project, you can clone only the SnappyData repository (without the `--recursive` option) and the build pulls those SnappyData project jar dependencies from Maven central.
+If you do not want to deal with sub-modules and only work on a TIBCO ComputeDB project, you can clone only the TIBCO ComputeDB repository (without the `--recursive` option) and the build pulls those TIBCO ComputeDB project jar dependencies from Maven central.
 
-If working on all the separate projects integrated inside the top-level SnappyData clone, the Gradle build recognizes the same and build those projects too and includes the same in the top-level product distribution jar. The *spark* and *store* submodules can also be built and published independently.
+If working on all the separate projects integrated inside the top-level TIBCO ComputeDB clone, the Gradle build recognizes the same and build those projects too and includes the same in the top-level product distribution jar. The *spark* and *store* submodules can also be built and published independently.
 
 Useful build and test targets:
 
@@ -85,14 +85,14 @@ Useful build and test targets:
 ./gradlew distZip       -  create a zip archive of product distribution
                            (in build-artifacts/scala_2.11/distributions)
 ./gradlew buildAll      -  build all sources, tests, product, packages (all targets above)
-./gradlew checkAll      -  run testsuites of snappydata components
+./gradlew checkAll      -  run testsuites of TIBCO ComputeDB components
 ./gradlew cleanAll      -  clean all build and test output
 ./gradlew runQuickstart -  run the quickstart suite (the "Getting Started" section of docs)
 ./gradlew precheckin    -  cleanAll, buildAll, scalaStyle, build docs,
-                           and run full snappydata testsuite including quickstart
+                           and run full TIBCO ComputeDB testsuite including quickstart
 ./gradlew precheckin -Pstore  -  cleanAll, buildAll, scalaStyle, build docs,
-                           run full snappydata testsuite including quickstart
-                           and also full SnappyData store testsuite
+                           run full TIBCO ComputeDB testsuite including quickstart
+                           and also full TIBCO ComputeDB store testsuite
 ./gradlew buildDtests   -  To build the Distributed tests
 ```
 
@@ -112,8 +112,8 @@ All ScalaTest build targets can be found by running the following command (case 
 
 ## Setting up IntelliJ IDEA with Gradle
 
-IntelliJ IDEA is the IDE commonly used by developers at SnappyData. Users who prefer to use Eclipse can try the Scala-IDE and Gradle support, however, it is recommended to use IntelliJ IDEA. </br>
-Steps required for setting up SnappyData with all its components in IDEA are listed below.
+IntelliJ IDEA is the IDE commonly used by developers at TIBCO ComputeDB. Users who prefer to use Eclipse can try the Scala-IDE and Gradle support, however, it is recommended to use IntelliJ IDEA. </br>
+Steps required for setting up TIBCO ComputeDB with all its components in IDEA are listed below.
 
 To import into IntelliJ IDEA:
 
@@ -125,7 +125,7 @@ To import into IntelliJ IDEA:
 
 * Increase the available JVM heap size for IDEA. Open **bin/idea64.vmoptions** (assuming 64-bit JVM) and increase `-Xmx` option to be something like **-Xmx2g** for comfortable use.
 
-* Select **Import Project**, and then select the SnappyData directory. Use external Gradle import. Click **Next** in the following screen. Clear the **Create separate module per source set** option, while other options can continue with the default. Click **Next** in the following screens.<br/>
+* Select **Import Project**, and then select the TIBCO ComputeDB directory. Use external Gradle import. Click **Next** in the following screen. Clear the **Create separate module per source set** option, while other options can continue with the default. Click **Next** in the following screens.<br/>
     
 	!!! Note
 		
@@ -142,15 +142,15 @@ To import into IntelliJ IDEA:
 
 	3. Click **OK** to apply and close the window. 
 
-	4. Copy **codeStyleSettings.xml** located in the SnappyData top-level directory, to the **.idea** directory created by IDEA. 
+	4. Copy **codeStyleSettings.xml** located in the TIBCO ComputeDB top-level directory, to the **.idea** directory created by IDEA. 
 
 	5. Verify that the settings are now applied in **File> Settings> Editor> Code Style> Java** which should display indent as 2 and continuation indent as 4 (same as Scala).
 
 * If the Gradle tab is not visible immediately, then select it from option available at the bottom-left of IDE. Click on that window list icon for the tabs to be displayed permanently.
 
-* Generate Apache Avro and SnappyData required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The **Run** option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
+* Generate Apache Avro and TIBCO ComputeDB required sources by expanding: **snappydata_2.11> Tasks> other**. Right-click on **generateSources** and run it. The **Run** option may not be available if indexing is still in progress, wait for indexing to complete, and then try again. <br> The first run may take some time to complete, as it downloads the jar files and other required files. This step has to be done the first time, or if **./gradlew clean** has been run, or if you have made changes to **javacc/avro/messages.xml** source files.
 
-* If you get unexpected **Database not found** or **NullPointerException** errors in SnappyData-store/GemFireXD layer, run the **generateSources** target (Gradle tab) again.
+* If you get unexpected **Database not found** or **NullPointerException** errors in Snappy-store/GemFireXD layer, run the **generateSources** target (Gradle tab) again.
 
 * If you get **NullPointerException** error when reading the **spark-version-info.properties** file, right-click and run the **copyResourcesAll** target from **snappydata_2.11> Tasks> other** (Gradle tab) to copy the required resources.
 
@@ -171,7 +171,7 @@ Error:(236, 18) value getByte is not a member of org.apache.spark.unsafe.types.U
 
 ```
 
-Even with the above, running unit tests in IDEA may result in more runtime errors due to unexpected **slf4j** versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the snappy-cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end. 
+Even with the above, running unit tests in IDEA may result in more runtime errors due to unexpected **slf4j** versions. A more comprehensive way to correct, both the compilation and unit test problems in IDEA, is to update the TIBCO ComputeDB cluster or for whichever module unit tests are to be run and have the **TEST** imports at the end. 
 
 The easiest way to do that is to close IDEA, open the module IML file (**.idea/modules/cluster/snappy-cluster_2.11.iml** in this case) in an editor. Search for **scope="TEST"** and move all those lines to the bottom just before `</component>` close tag.
 
@@ -181,6 +181,6 @@ Running Scala/JUnit tests from IntelliJ IDEA is straightforward.
 
 * When selecting a run configuration for JUnit/ScalaTest, avoid selecting the Gradle one (green round icon) otherwise, an external Gradle process is launched that can start building the project again is not cleanly integrated with IDEA. Use the normal JUnit (red+green arrows icon) or ScalaTest (JUnit like with red overlay).
 
-* For JUnit tests, ensure that the working directory is the top-level **\$MODULE_DIR\$/build-artifacts** as mentioned earlier. Otherwise, many SnappyData-store tests fail to find the resource files required in tests. They also pollute the files, so when launched, this allows those to go into **build-artifacts** that are easier to clean. For that reason, it is preferable to do the same for ScalaTests.
+* For JUnit tests, ensure that the working directory is the top-level **\$MODULE_DIR\$/build-artifacts** as mentioned earlier. Otherwise, many Snappy store tests fail to find the resource files required in tests. They also pollute the files, so when launched, this allows those to go into **build-artifacts** that are easier to clean. For that reason, it is preferable to do the same for ScalaTests.
 
 * Some of the tests use data files from the **tests-common** directory. For such tests, run the Gradle task **snappydata_2.11> Tasks> other> copyResourcesAll** to copy the resources in build area where IDEA runs can find it.

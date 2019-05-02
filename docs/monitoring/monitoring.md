@@ -1,10 +1,10 @@
-# SnappyData Pulse
+# TIBCO ComputeDB Monitoring UI
 
-SnappyData Pulse is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+TIBCO ComputeDB Monitoring UI is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data. This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.
 
 
-To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
+To access TIBCO ComputeDB Monitoring UI, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file.
@@ -31,9 +31,9 @@ The following topics are covered in this section:
 
 
 !!! Note
-	When connecting to a SnappyData cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode [here](../affinity_modes/connector_mode.md).
+	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
-On the top-right side of the SnappyData Pulse page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
+On the top-right side of the TIBCO ComputeDB Monitoring UI page, you can view the version details of TIBCO ComputeDB Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
 ![](../Images/snapshot.png)
 

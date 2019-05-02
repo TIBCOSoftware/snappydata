@@ -134,7 +134,7 @@ pages:
     - 'Using the TIBCO ComputeDB CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
-    - 'TIBCO ComputeDB UI': 'monitoring/monitoring.md'
+    - 'TIBCO ComputeDB Monitoring UI': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
     - 'Getting Information from TIBCO ComputeDB System Tables': 'monitoring/monitor-manage.md'    
