@@ -147,7 +147,7 @@ class MapTypeAPI extends SnappySQLJob {
      println("Finish the Map Type Query4")
      SnappyTestUtils.assertQueryFullResultSet(snc, sncMapQuery5DF, sparkMapQuery5DF,
         "MapTypeQuery5", "column", pw,sqlContext)
-     println("Finish the Map Type Query6")
+     println("Finish the Map Type Query5")
 
      println("Query MapType Via API, Job Completed....")
     }
