@@ -70,6 +70,20 @@ object TableCreationSmartConnector {
     snSession.dropTable("LINEITEM", ifExists = true)
     snSession.dropTable("ORDERS", ifExists = true)
 
+    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snSession.sqlContext,
+      tpchDataPath, true, loadPerfPrintStream)
+    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snSession.sqlContext,
+      tpchDataPath, true, loadPerfPrintStream)
+
+    if (isSupplierColumn) {
+      TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snSession.sqlContext, tpchDataPath,
+        true, buckets_Supplier, loadPerfPrintStream, redundancy, persistence, persistence_Type,
+        numberOfLoadStages.toInt, isParquet)
+    } else {
+      TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snSession.sqlContext,
+        tpchDataPath, true, loadPerfPrintStream, numberOfLoadStages.toInt)
+    }
+
     TPCHColumnPartitionedTable.createPopulateOrderTable(snSession.sqlContext, tpchDataPath, true,
       buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_Type,
       numberOfLoadStages.toInt, isParquet)
@@ -86,20 +100,6 @@ object TableCreationSmartConnector {
     TPCHColumnPartitionedTable.createPopulatePartSuppTable(snSession.sqlContext, tpchDataPath, true,
       buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
       numberOfLoadStages.toInt, isParquet)
-
-    TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snSession.sqlContext,
-      tpchDataPath, true, loadPerfPrintStream)
-    TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snSession.sqlContext,
-      tpchDataPath, true, loadPerfPrintStream)
-
-    if (isSupplierColumn) {
-      TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snSession.sqlContext, tpchDataPath,
-        true, buckets_Supplier, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-        numberOfLoadStages.toInt, isParquet)
-    } else {
-      TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snSession.sqlContext,
-        tpchDataPath, true, loadPerfPrintStream, numberOfLoadStages.toInt)
-    }
 
     sc.stop()
 
