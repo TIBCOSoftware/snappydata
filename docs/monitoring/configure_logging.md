@@ -1,8 +1,8 @@
 # Configuring Logging
 
-By default, log files for SnappyData members are created inside the working directory of the member. To change the log file directory, you can specify a property `-log-file` as the path of the directory, while starting a member. 
+By default, log files for TIBCO ComputeDB members are created inside the working directory of the member. To change the log file directory, you can specify a property `-log-file` as the path of the directory, while starting a member. 
 
-SnappyData uses [log4j](http://logging.apache.org/log4j/) for logging.
+TIBCO ComputeDB uses [log4j](http://logging.apache.org/log4j/) for logging.
 You can configure logging by copying the existing template file **log4j.properties.template** to the **conf** directory and renaming it to **log4j.properties**.
 
 For example, the following can be added to the **log4j.properties** file to change the logging level of the classes of Spark scheduler.
@@ -26,7 +26,7 @@ produces
 17/11/07 16:42:05.115 IST serverConnector<tid=0xe> INFO snappystore: GemFire P2P Listener started on  tcp:///192.168.1.6:53116
 ```
 
-This is the recommended PatternLayout to use for SnappyData logging. 
+This is the recommended PatternLayout to use for TIBCO ComputeDB logging. 
 
 When using a custom **log4j.properties**, and the mentioned layout cannot be used or when using AsyncAppender, then a custom appender `ThreadIdAppender` has been provided that can be inserted as the first appender to get the same output.
 
@@ -54,7 +54,7 @@ log4j.appender.file.layout=org.apache.log4j.PatternLayout
 
 ## Setting Log Level at Runtime
 
-The inbuilt procedure `set_log_level` can be used to set the log level of SnappyData classes at runtime. You must execute the procedure as a system user. 
+The inbuilt procedure `set_log_level` can be used to set the log level of TIBCO ComputeDB classes at runtime. You must execute the procedure as a system user. 
 
 Following is the usage of the procedure: 
 ```pre
@@ -75,18 +75,18 @@ snappy> call sys.set_log_level ('org.apache.spark.sql.execution.WholeStageCodege
 snappy> call sys.set_log_level ('org.apache.spark', 'INFO');
 ```
 
-## SnappyData Store logging
+## Snappy Store Logging
 
-The fine-grained log settings are applicable for classes other than the SnappyData store classes. SnappyData store does not honor fine-grained log settings. That is, you can only set the log level for the root category. However, log level of specific features of SnappyData store can be controlled both during the start and during runtime.
+The fine-grained log settings are applicable for classes other than the Snappy Store classes. Snappy Store does not honor fine-grained log settings. That is, you can only set the log level for the root category. However, log level of specific features of TIBCO ComputeDB store can be controlled both during the start and during runtime.
 
-## Using Trace Flags for Advanced Logging For SnappyData Store
+## Using Trace Flags for Advanced Logging For Snappy Store
 
 <a id="trace-flag"></a>
-SnappyData Store provides the following trace flags that you can use with the `snappydata.debug.true` system property to log additional details about specific features:
+Snappy Store provides the following trace flags that you can use with the `snappydata.debug.true` system property to log additional details about specific features:
 
 | Trace flag                 | Enables        |
 |----------------------------|-----------------------------------------------------|
-| QueryDistribution          | Detailed logging for distributed queries and DML statements, including information about message distribution to SnappyData members and scan types that were opened. |
+| QueryDistribution          | Detailed logging for distributed queries and DML statements, including information about message distribution to TIBCO ComputeDB members and scan types that were opened. |
 | StatementMatching          | Logging for optimizations that are related to unprepared statements.             |
 | TraceAuthentication        | Additional logging for authentication.|
 | TraceDBSynchronizer        | DBSynchronizer and WAN distribution logging.       |
@@ -99,7 +99,7 @@ SnappyData Store provides the following trace flags that you can use with the `s
 | TraceLock\_\*              | Locking and unlocking information for all internal locks.|
 | TraceLock\_DD              | Logging for all DataDictionary and table locks that are acquired or released.|
 
-To enable logging of specific features of SnappyData, set the required trace flag in the `snappydata.debug.true` system property. For example, you can add the following setting inside the configuration file of the SnappyData member to enable logging for query distribution and indexing:
+To enable logging of specific features of TIBCO ComputeDB, set the required trace flag in the `snappydata.debug.true` system property. For example, you can add the following setting inside the configuration file of the TIBCO ComputeDB member to enable logging for query distribution and indexing:
 
 ```pre
 localhost -J-Dsnappydata.debug.true=QueryDistribution,TraceIndex

@@ -2,22 +2,22 @@
 # Setting up Cluster on Amazon Web Services (AWS)
 
 Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
-You can set up SnappyData cluster on Amazon Web Services using one of the following options:
+You can set up TIBCO ComputeDB cluster on Amazon Web Services using one of the following options:
 
-*	[SnappyData CloudBuilder](#usingcloudbuiler)
+*	[TIBCO ComputeDB CloudBuilder](#usingcloudbuiler)
 *	[EC2 Scripts](#EC2)	
 *	[AWS Management Console](#usingawsmgmtconsole)
 
 
 <a id="usingcloudbuiler"></a>
-## SnappyData CloudBuilder
-[SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder) is a web based utility that allows you to quickly launch SnappyData cluster on AWS instances. It also launches Apache Zeppelin server that allows you to build notebooks that visually represent key elements of your business.
+## TIBCO ComputeDB CloudBuilder
+[TIBCO ComputeDB CloudBuilder](http://www.snappydata.io/cloudbuilder) is a web based utility that allows you to quickly launch TIBCO ComputeDB cluster on AWS instances. It also launches Apache Zeppelin server that allows you to build notebooks that visually represent key elements of your business.
 
-This method is recommended as the fastest way to deploy SnappyData. All you need is an existing AWS account and login credentials to get started.
+This method is recommended as the fastest way to deploy TIBCO ComputeDB. All you need is an existing AWS account and login credentials to get started.
 
 
 * [Prerequisites](#prerequisitescloudbuiler)
-* [Deploying SnappyData Cloud Cluster Using SnappyData CloudBuilder](#DeployingClusterCloudFormation)
+* [Deploying TIBCO ComputeDB Cloud Cluster Using TIBCO ComputeDB CloudBuilder](#DeployingClusterCloudFormation)
 
 
 
@@ -28,16 +28,16 @@ This method is recommended as the fastest way to deploy SnappyData. All you need
 
 * Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 
-* Create an EC2 Key Pair in the region where you want to launch the SnappyData cluster.
+* Create an EC2 Key Pair in the region where you want to launch the TIBCO ComputeDB cluster.
 
 <a id="DeployingClusterCloudFormation"></a>
-### Deploying SnappyData Cluster with SnappyData CloudBuilder
-SnappyData uses the AWS CloudFormation feature to automatically install, configure and start a SnappyData cluster.
+### Deploying TIBCO ComputeDB Cluster with TIBCO ComputeDB CloudBuilder
+TIBCO ComputeDB uses the AWS CloudFormation feature to automatically install, configure and start a TIBCO ComputeDB cluster.
 
 It is recommended that you select an instance type with higher processing power and more memory for the leads and servers  of the cluster.
 
 
-#### Step 1: Go to [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder) page
+#### Step 1: Go to [TIBCO ComputeDB CloudBuilder](http://www.snappydata.io/cloudbuilder) page
 
 #### Step 2: Define your Cluster
 
@@ -142,7 +142,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 		* **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 
-		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the SnappyData CloudBuilder creation steps.
+		* **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the TIBCO ComputeDB CloudBuilder creation steps.
 
 		* **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.*
 
@@ -152,9 +152,9 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
 
 <a id="EC2"></a>
-## SnappyData EC2 Scripts
+## TIBCO ComputeDB EC2 Scripts
 
-The SnappyData EC2 scripts enable you to quickly launch and manage SnappyData clusters on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via SnappyData configuration files, before launching the cluster.
+The TIBCO ComputeDB EC2 scripts enable you to quickly launch and manage TIBCO ComputeDB clusters on Amazon EC2 instances. They also allow you to provide custom configuration for the cluster via TIBCO ComputeDB configuration files, before launching the cluster.
 
 The `snappy-ec2` script is the entry point for these EC2 scripts and is derived from the `spark-ec2` script available in [Apache Spark 1.6](https://github.com/apache/spark/tree/branch-1.6/ec2).
 
@@ -165,7 +165,7 @@ The scripts are available on GitHub in the [snappy-cloud-tools repository](https
 
 This section covers the following:
 *	[Prerequisites](#EC2prereq)
-*	[Deploying SnappyData Cluster with EC2 Scripts](#launchclusterec2script)
+*	[Deploying TIBCO ComputeDB Cluster with EC2 Scripts](#launchclusterec2script)
 *	[Cluster Management](#clusermanagementec2script)
 *	[Known Limitations](#ec2knownlimit)
 
@@ -174,7 +174,7 @@ This section covers the following:
 
 * Ensure that you have an existing AWS account with required permissions to launch EC2 resources
 
-* Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster
+* Create an EC2 Key Pair in the region where you want to launch the TIBCO ComputeDB Cloud cluster
 <br/>Refer to the Amazon Web Services EC2 documentation for more information on [generating your own EC2 Key Pair](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html).
 
 * Using the AWS Secret Access Key and the Access Key ID, set the two environment variables, `AWS_SECRET_ACCESS_KEY` and `AWS_ACCESS_KEY_ID`. You can find information about generating these keys in the AWS IAM console page.<br/>
@@ -189,10 +189,10 @@ export AWS_ACCESS_KEY_ID=A1B2C3D4E5F6G7H8I9J10
 * Ensure Python v 2.7 or later is installed on your local computer.
 
 <a id="launchclusterec2script"></a>
-### Deploying SnappyData Cluster with EC2 Scripts
+### Deploying TIBCO ComputeDB Cluster with EC2 Scripts
 
 In the command prompt, go to the directory where the **snappydata-ec2-`<version>`.tar.gz** is extracted or to the
-aws/ec2 directory where the [SnappyData cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
+aws/ec2 directory where the [TIBCO ComputeDB cloud tools repository](https://github.com/SnappyDataInc/snappy-cloud-tools) is cloned locally.
 
 **Syntax**
 
@@ -222,7 +222,7 @@ cluster and the region where the EC2 instances should be launched.
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 --with-zeppelin --region=us-west-1 launch my-cluster
 ```
 
-The above example launches a SnappyData cluster named **my-cluster** with 2 stores or servers.
+The above example launches a TIBCO ComputeDB cluster named **my-cluster** with 2 stores or servers.
 The locator is associated with security group named **my-cluster-locator** and the servers are associated with **my-cluster-store** security group.
 
 The cluster is launched in the **N. California (us-west-1)** region on AWS and has an Apache Zeppelin server running on the instance where the lead is running.</br>
@@ -251,14 +251,14 @@ This section covers the following:
 <a id="ec2custombuild"></a>
 #### Using custom build
 
-This script by default uses the SnappyData OSS build available on the GitHub releases page to launch the cluster.
+This script by default uses the TIBCO ComputeDB OSS build available on the GitHub releases page to launch the cluster.
 To select a version of the OSS build available on GitHub, use option `--snappydata-version`.
 
-You can also provide your own SnappyData build to the script to launch the cluster, by using
+You can also provide your own TIBCO ComputeDB build to the script to launch the cluster, by using
 option `--snappydata-tarball` to the `launch` command.
 The build can be present either on a local filesystem or as a resource on the web.
 
-For example, to use **SnappyData Enterprise** build to launch the cluster, download the build tarball from
+For example, to use **TIBCO ComputeDB Enterprise** build to launch the cluster, download the build tarball from
 www.snappydata.io/download on your local machine and give its path as value to above option.
 
 ```pre
@@ -279,7 +279,7 @@ You can specify the configuration for the cluster via command line options. Use 
 configuration properties for all the locators in the cluster. Similarly, `--server-conf` and `--lead-conf` allow you
 to specify the configuration properties for servers and leads in the cluster, respectively.
 
-Following is a sample configuration for all the three processes in a SnappyData cluster:
+Following is a sample configuration for all the three processes in a TIBCO ComputeDB cluster:
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --stores=2 launch my-cluster \
@@ -294,7 +294,7 @@ The utility also reads **snappy-env.sh**, if present in the directory where help
   * The earlier method of specifying the configuration properties by placing the actual
   configuration files in the directory, where helper scripts are available, is discontinued.
   * Ensure that the configuration properties specified are correct. Otherwise, launching the
-  SnappyData cluster may fail but the EC2 instances would still be running.
+  TIBCO ComputeDB cluster may fail but the EC2 instances would still be running.
 
 <a id="ec2stopcluster"></a>
 #### Stopping the Cluster
@@ -308,13 +308,13 @@ However, the data saved on EBS volumes is retained, unless the spot-instances ar
 <a id="ec2resumecluster"></a>
 #### Resuming the Cluster
 
-When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches SnappyData processes on them.
+When you start a cluster, it uses the existing EC2 instances associated with the cluster name and launches TIBCO ComputeDB processes on them.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem start cluster-name
 ```
 !!! Note
-	The `start` command, or `launch` command with `--resume` option, ignores the `--locators`, `--leads`, or `--stores` options and launches the SnappyData cluster on existing instances.
+	The `start` command, or `launch` command with `--resume` option, ignores the `--locators`, `--leads`, or `--stores` options and launches the TIBCO ComputeDB cluster on existing instances.
 	However, if the configuration options are provided, they are read and processed, thus overriding their values that were provided when the cluster was launched or started previously.
 
 <a id="ec2addservertocluster"></a>
@@ -337,7 +337,7 @@ Use the `get-lead` command to get the first lead's hostname.
 
 You can connect to any instance of a cluster with SSH using the login command. It logs you into the first lead instance.
 You can then use SSH to connect to any other member of the cluster without a password. </br>
-The SnappyData product directory is located at **/opt/snappydata/** on all the members.
+The TIBCO ComputeDB product directory is located at **/opt/snappydata/** on all the members.
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem login cluster-name
 ```
@@ -355,7 +355,7 @@ This also deletes the security groups created for this cluster.
 
 Optionally, you can start an instance of Apache Zeppelin server with the cluster.
 [Apache Zeppelin](https://zeppelin.apache.org/) provides a web-based interactive notebook that is pre-configured to
-communicate with the SnappyData cluster. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
+communicate with the TIBCO ComputeDB cluster. The Zeppelin server is launched on the same EC2 instance where the lead node is running.
 
 ```pre
 ./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem --with-zeppelin launch cluster-name
@@ -404,7 +404,7 @@ Options:
                         zone chosen at random)
   -a AMI, --ami=AMI     Amazon Machine Image ID to use
   --snappydata-tarball=SNAPPYDATA_TARBALL
-                        HTTP URL or local file path of the SnappyData
+                        HTTP URL or local file path of the TIBCO ComputeDB
                         distribution tarball with which the cluster will be
                         launched. (default: )
   --locator-conf=LOCATOR_CONF
@@ -414,7 +414,7 @@ Options:
   --lead-conf=LEAD_CONF
                         Configuration properties for leads (default: )
   -v SNAPPYDATA_VERSION, --snappydata-version=SNAPPYDATA_VERSION
-                        Version of SnappyData to use: 'X.Y.Z' (default:
+                        Version of TIBCO ComputeDB to use: 'X.Y.Z' (default:
                         LATEST)
   --with-zeppelin       Launch Apache Zeppelin server with the cluster. It'll
                         be launched on the same instance where lead node will
@@ -433,10 +433,10 @@ Options:
                         (for debugging)
   --root-ebs-vol-size=SIZE
                         Size (in GB) of root EBS volume for servers and leads.
-                        SnappyData is installed on root volume.
+                        TIBCO ComputeDB is installed on root volume.
   --root-ebs-vol-size-locator=SIZE
                         Size (in GB) of root EBS volume for locators.
-                        SnappyData is installed on root volume.
+                        TIBCO ComputeDB is installed on root volume.
   --ebs-vol-size=SIZE   Size (in GB) of each additional EBS volume to be
                         attached.
   --ebs-vol-type=EBS_VOL_TYPE
@@ -495,7 +495,7 @@ Options:
 
 <a id="usingawsmgmtconsole"></a>
 ## AWS Management Console
-You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information
+You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMI provided by TIBCO ComputeDB. For more information
 on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 This section covers the following:
 
@@ -507,8 +507,8 @@ This section covers the following:
 Ensure that you have an existing AWS account with required permissions to launch the EC2 resources.
 
 <a id="launchawsinstance"></a>
-### Deploying SnappyData Cluster with AWS Management Console
-To launch the instance and start the SnappyData cluster:
+### Deploying TIBCO ComputeDB Cluster with AWS Management Console
+To launch the instance and start the TIBCO ComputeDB cluster:
 
 1. Open the [Amazon EC2 console](https://console.aws.amazon.com/ec2/) and sign in using your AWS login credentials.
 
@@ -528,7 +528,7 @@ To launch the instance and start the SnappyData cluster:
 
 		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
 
-		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to Snappy UI).
+		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to TIBCO ComputeDB Monitoring UI).
 
 8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
 
@@ -554,7 +554,7 @@ Refer to the following documentation, for more information on [accessing an EC2 
 
 		* The public hostname/IP address information is available on the EC2 dashboard > **Description** tab. 
 	
-		* The SnappyData product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
+		* The TIBCO ComputeDB product distribution is already downloaded and extracted in the **/opt/snappydata** directory and Java 8 is installed. 
 
 15. Go to the **/opt/snappydata** directory. Run the following command to start a basic cluster with one data node, one lead, and one locator.
 

@@ -1,17 +1,17 @@
 # Managing and Monitoring 
 
-Managing and Monitoring SnappyData describes how to use log files, system tables, and statistical data to understand the behavior of SnappyData deployment.
+Managing and Monitoring TIBCO ComputeDB describes how to use log files, system tables, and statistical data to understand the behavior of TIBCO ComputeDB deployment.
 
-This guide also provides general guidelines for tuning the performance of SnappyData members, applications, and individual queries.
+This guide also provides general guidelines for tuning the performance of TIBCO ComputeDB members, applications, and individual queries.
 
 The following topics are covered in this section:
 
-* [SnappyData Pulse](monitoring.md)
+* [TIBCO ComputeDB Monitoring UI](monitoring.md)
 
 * [Configuring High Availability for a Partitioned Table](configure_high_availability.md)
 
 * [Configuring Logging](configure_logging.md)
 
-* [Securing SnappyData Pulse UI Connections](../configuring_cluster/securinguiconnection.md)
+* [Securing TIBCO ComputeDB Monitoring UI Connections](../configuring_cluster/securinguiconnection.md)
 
-* [Getting Information from SnappyData System Tables](monitor-manage.md)
+* [Getting Information from TIBCO ComputeDB System Tables](monitor-manage.md)

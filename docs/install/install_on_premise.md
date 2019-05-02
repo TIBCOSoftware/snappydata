@@ -1,14 +1,14 @@
 <a id="install-on-premise"></a>
 # Install On-Premise
 
-SnappyData runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, SnappyData is installed and operated from your in-house computing infrastructure.
+TIBCO ComputeDB runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, TIBCO ComputeDB is installed and operated from your in-house computing infrastructure.
 
 <a id="singlehost"></a>
 ## Single-Host Installation
 
 This is the simplest form of deployment and can be used for testing and POCs.
 
-Open the command prompt, go the location of the downloaded SnappyData file, and run the following command to extract the archive file.
+Open the command prompt, go the location of the downloaded TIBCO ComputeDB file, and run the following command to extract the archive file.
 
 ```pre
 $ tar -xzf snappydata-<version-number>bin.tar.gz
@@ -21,14 +21,14 @@ Start a basic cluster with one data node, one lead, and one locator:
 ./sbin/snappy-start-all.sh
 ```
 
-For custom configuration and to start more nodes, refer [configuring the SnappyData cluster](../configuring_cluster/configuring_cluster.md).
+For custom configuration and to start more nodes, refer [configuring the TIBCO ComputeDB cluster](../configuring_cluster/configuring_cluster.md).
 
 <a id="multihost"></a>
 ## Multi-Host Installation
 
-For real-life use cases, you require multiple machines on which SnappyData must be deployed. You can start one or more SnappyData node on a single machine based on your machine size.
+For real-life use cases, you require multiple machines on which TIBCO ComputeDB must be deployed. You can start one or more TIBCO ComputeDB node on a single machine based on your machine size.
 
-Where there are multiple machines involved, you can deploy SnappyData on:
+Where there are multiple machines involved, you can deploy TIBCO ComputeDB on:
 
 *	[Machines With Shared Path](#sharedpath)
 
@@ -42,7 +42,7 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 
 **Prerequisites**
 
-* Ensure that the **/etc/hosts** correctly configures the host and IP address of each SnappyData member machine.
+* Ensure that the **/etc/hosts** correctly configures the host and IP address of each TIBCO ComputeDB member machine.
 
 * Ensure that SSH is supported and you have configured all the machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md). If SSH is not supported then follow the instructions in the [Machines Without Passwordless SSH](#without_passwordless) section.
 
@@ -50,7 +50,7 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 
 1. Copy the downloaded binaries to the shared folder.
 
-2. Extract the downloaded archive file and go to SnappyData home directory.
+2. Extract the downloaded archive file and go to TIBCO ComputeDB home directory.
 
 		$ tar -xzf snappydata-<version-number>-bin.tar.gz
 		$ cd snappydata-<version-number>.-bin/
@@ -61,7 +61,7 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 
 		./sbin/snappy-start-all.sh
 
-	This creates a default folder named **work** and stores all SnappyData member's artifacts separately. The folder is identified by the name of the node.
+	This creates a default folder named **work** and stores all TIBCO ComputeDB member's artifacts separately. The folder is identified by the name of the node.
 
 !!!Tip
 	For optimum performance, configure the **-dir** to a local directory and not to a network directory. When **-dir** property is configured for each member in the cluster, the artifacts of the respective members get created in the  **-dir** folder.
@@ -73,7 +73,7 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 
 **Prerequisites**
 
-*	Ensure that **/etc/hosts** correctly configures the host and IP Address of each SnappyData member machine.
+*	Ensure that **/etc/hosts** correctly configures the host and IP Address of each TIBCO ComputeDB member machine.
 
 *	Ensure that SSH is supported and you have configured all the machines to be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md). If SSH is not supported then follow the instructions in the [Machines without passwordless SSH](#without_passwordless) section.
 
@@ -83,7 +83,7 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 
 2.	Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md). Maintain one node as the controller node, where you can configure your cluster. Usually this is done in the lead node. On that machine, you can edit files such as servers, locators, and leads which are in the **$SNAPPY_HOME/conf/ directory**.
 
-3.	Create a working directory on every machine, for each of the SnappyData member that you want to run. <br> The member's working directory provides a default location for the logs, persistence, and status files of that member. <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
+3.	Create a working directory on every machine, for each of the TIBCO ComputeDB member that you want to run. <br> The member's working directory provides a default location for the logs, persistence, and status files of that member. <br>For example, if you want to run both a locator and server member on the local machine, create separate directories for each member.
 
 4.	Run the `snappy-start-all.sh` script:
 
@@ -93,7 +93,7 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 ### Machines Without Passwordless SSH
 
 
-In case the machines in your cluster do not share a common path as well as cannot be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md), then you can use the following instructions to deploy SnappyData:
+In case the machines in your cluster do not share a common path as well as cannot be accessed by [passwordless SSH](../reference/misc/passwordless_ssh.md), then you can use the following instructions to deploy TIBCO ComputeDB:
 
 **To set up the cluster for machines without passwordless SSH:**
 
