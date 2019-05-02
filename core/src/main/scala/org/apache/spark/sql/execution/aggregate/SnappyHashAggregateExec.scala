@@ -617,7 +617,7 @@ case class SnappyHashAggregateExec(
     ctx.addMutableState("int", mapCounter, s"$mapCounter = 0;")
 
     val iterValueOffsetTerm = ctx.freshName("iterValueOffsetTerm")
-    ctx.addMutableState("int", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
+    ctx.addMutableState("long", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
 
     val nullKeysBitsetTerm = ctx.freshName("nullKeysBitset")
     val nullAggsBitsetTerm = ctx.freshName("nullAggsBitset")
