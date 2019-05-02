@@ -34,4 +34,4 @@ for element in "${servers[@]}";
 echo "******************Created conf/servers******************"
 
 
-$SNAPPY_HOME/sbin/snappy-start-all.sh 
+bash $SNAPPY_HOME/sbin/snappy-start-all.sh 

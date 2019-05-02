@@ -12,16 +12,16 @@ SPARK_HOME=$HOME/opt/spark-2.1.1-bin-hadoop2.7
 # Snappy Spark as SPARK_HOME
 #SPARK_HOME=$SNAPPY_SRC/build-artifacts/scala-2.11/snappy
 
-#Location of snappydata binary (built from source or binary distribution)
+#Location of Snappydata binary (built from source or binary distribution)
 SNAPPY_HOME=$SNAPPY_SRC/build-artifacts/scala-2.11/snappy
 
 #spark Properties specified in lead
 #spark-executor-cores has nothing to do with CPU cores available.
 #sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
-# As specicifed in the docs, the packages parameter is to fetch the Snappydata jars from mavn central repo
+# As specicifed in the docs, the packages parameter is to fetch the Snappydata jars from maven central repo
 #sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --packages SnappyDataInc:snappydata:1.1.0-s_2.11"
 # Alternatively, the --jars parameter is used (instead of --packages) to download an unreleased version in development. 
-# The core jar is built with the mavn target `./gradlew distpRoduct`. The name is different for OSS and enterprise versions. 
+# The core jar is built with the build target `./gradlew distProduct`. The name is different for OSS and enterprise versions.
 #sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --jars $SNAPPY_HOME/../distributions/snappydata-core_2.11-1.1.0.jar"
 sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g --jars $SNAPPY_HOME/../distributions/TIB_compute-core_2.11-1.1.0.jar"
 #sparkProperties="--driver-memory 2g --conf spark.executor.memory=2g"
@@ -77,13 +77,18 @@ Persistence=true
 Persistence_Type=SYNCHRONOUS
 
 #Loading from parquet or csv file
-Parquet=false
+Parquet=true
+
+# Create Parquet files from CSV (tbl) files for future tests
+# When Parquet=true, the table creation job will expect parquet files to already exist in order to load data into Snappy tables.
+# When Parquet=false, one can create parquet files in table creation job for use in query execution if createParquet=true
+createParquet=true
 
 #From how many files data should be loaded in table
 #NumberOfLoadStages=10
 NumberOfLoadStages=1
 
-#represent whether query should use dynamic paramters or static
+#represent whether query should use dynamic parameters or static
 IsDynamic=true
 
 #Whether to collect results.For performance testing this should be false.
@@ -91,12 +96,12 @@ ResultCollection=false
 
 #warmUpIterations
 WarmupRuns=2
-#Actual runs whose average will be taken and repordted as performance
+#Actual runs whose average will be taken and reported as performance
 AverageRuns=3
 
 # location of jar which has TPCH related class files - it is not part of the binary distribution. Build by running the task './$SNAPPY_SRC/gradlew buildAll'
 TPCHJar=$SNAPPY_SRC/cluster/build-artifacts/scala-2.11/libs/snappydata-cluster_2.11-1.1.0-tests.jar
-#Size of the TPCH data. Do not chage format
+#Size of the TPCH data. Do not change format
 #dataSize=1GB_Stages
 dataSize=1GB
 #dataSize=1GB
