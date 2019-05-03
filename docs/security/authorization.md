@@ -1,8 +1,8 @@
 #  Authorization
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB. </br></ent>
 
-Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. SnappyData also supports LDAP group authorization.
+Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. TIBCO ComputeDB also supports LDAP group authorization.
 
 The administrator can manage user permissions in a secure cluster using the [GRANT](../reference/sql_reference/grant.md) and [REVOKE](../reference/sql_reference/revoke.md) SQL statements which allow you to set permission for the user for specific database objects or for specific SQL actions. 
 
@@ -16,7 +16,7 @@ The [GRANT](../reference/sql_reference/grant.md) statement is used to grant spec
 
 ### Adding Restrictions in Default Schema
 
-Users in SnappyData cluster have their own schema by default when they log into the cluster. They have full access within this schema.
+Users in TIBCO ComputeDB cluster have their own schema by default when they log into the cluster. They have full access within this schema.
 But in some cases, cluster administrators may need to ensure controlled use of the cluster resources by its users and may need to enforce restrictions on them.
 
 This can be achieved by setting the system property `snappydata.RESTRICT_TABLE_CREATION` to true in **conf** files at the time of starting the cluster.
@@ -33,8 +33,8 @@ localhost -auth-provider=LDAP -J-Dsnappydata.RESTRICT_TABLE_CREATION=true -user=
           -J-Dgemfirexd.auth-ldap-search-pw=user123
 ```
 
-## LDAP Groups in SnappyData Authorization
-SnappyData extends the SQL GRANT statement to support LDAP Group names as Grantees.
+## LDAP Groups in TIBCO ComputeDB Authorization
+TIBCO ComputeDB extends the SQL GRANT statement to support LDAP Group names as Grantees.
 
 Here is an example SQL to grant privileges to individual users:
 ```pre
@@ -48,8 +48,8 @@ GRANT SELECT ON Table t TO ldapGroup:<groupName>, bob;
 GRANT INSERT ON Table t TO ldapGroup:<groupName>, bob;
 ```
 
-SnappyData fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in SnappyData). </br>
-Similarly, when a REVOKE SQL statement is executed SnappyData removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in SnappyData.
+TIBCO ComputeDB fetches the current list of members for the LDAP Group and grants each member privileges individually (stored in TIBCO ComputeDB). </br>
+Similarly, when a REVOKE SQL statement is executed TIBCO ComputeDB removes the privileges individually for all members that make up a group. To support changes to Group membership within the LDAP Server, there is an additional System procedure to refresh the privileges recorded in TIBCO ComputeDB.
 
 ```pre
 CALL SYS.REFRESH_LDAP_GROUP('<GROUP NAME>');
@@ -69,7 +69,7 @@ gemfirexd.group-ldap-member-attributes
 ```
 
 If no `gemfirexd.group-ldap-search-base` property has been provided then the one used for authentication `gemfirexd.auth-ldap-search-base` is used. </br>
-If no search filter is specified then SnappyData uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
+If no search filter is specified then TIBCO ComputeDB uses the standard objectClass groupOfMembers (rfc2307) or groupOfNames with attribute as member, or objectClass groupOfUniqueMembers with attribute as uniqueMember.
 To be precise, the default search filter is:
 
 ```pre

@@ -1,9 +1,9 @@
-# Accessing SnappyData Tables from any Spark (2.1+) Cluster
+# Accessing TIBCO ComputeDB Tables from any Spark (2.1+) Cluster
 
-Spark applications can be run embedded inside the SnappyData cluster by submitting Jobs using **Snappy-Job.sh** or it can be run using the native [Smart Connector](/howto/spark_installation_using_smart_connector.md). However, from SnappyData 1.0.2 release the connector can only be used from a Spark 2.1 compatible cluster.
-If you are using a Spark version or distribution that is based on a version higher than 2.1 then, you can use the **SnappyData JDBC Extension Connector** as described below. 
+Spark applications can be run embedded inside the TIBCO ComputeDB cluster by submitting Jobs using **Snappy-Job.sh** or it can be run using the native [Smart Connector](/howto/spark_installation_using_smart_connector.md). However, from the 1.0.2 release of the product, the connector can only be used from a Spark 2.1 compatible cluster.
+If you are using a Spark version or distribution that is based on a version higher than 2.1 then, you can use the **TIBCO ComputeDB JDBC Extension Connector** as described below. 
 
-## How can Spark Applications Connect to SnappyData using Spark JDBC? 
+## How can Spark Applications Connect to TIBCO ComputeDB using Spark JDBC? 
 
 Spark SQL supports reading and writing to databases using a built-in **JDBC data source**. Applications can configure and use JDBC like any other Spark data source queries return data frames and can be efficiently processed in Spark SQL or joined with other data sources. The JDBC data source is also easy to use from Java or Python.
 All you need is a JDBC driver from the database vendor. Likewise, applications can use the Spark [DataFrameWriter](/reference/API_Reference/apireference_guide.md#dataframewriter) to insert, append, or replace a dataset in the database.
@@ -20,27 +20,27 @@ val pushdownQuery = "(select x, sum(y), max(z) from largeTable group by x order 
 spark.read.jdbc(jdbcUrl, pushDownQuery, connectionProperties);
 ```
 
-### Deficiencies in the Spark JDBC Connector <!---Advantages of SnappyData JDBC Extension Connector--->
-Unfortunately, there are following limitations with Spark JDBC Connector which we address in the SnappyData JDBC Extension Connector. <!---Following are some advantages of SnappyData JDBC Extension Connector over Spark JDBC Connector--->
+### Deficiencies in the Spark JDBC Connector <!---Advantages of TIBCO ComputeDB JDBC Extension Connector--->
+Unfortunately, there are following limitations with Spark JDBC Connector which we address in the TIBCO ComputeDB JDBC Extension Connector. <!---Following are some advantages of TIBCO ComputeDB JDBC Extension Connector over Spark JDBC Connector--->
 
 *	**Performance**</br>When an entire query is pushed down, Spark runs two queries:
 	*	First it runs the query that is supplied to fetch the result set metadata so that it knows the structure of the data frame that is returned to the application.
 	*	Secondly it runs the actual query.
-The SnappyData connector internally figures out the structure of the result set without having to run multiple queries.
+The TIBCO ComputeDB connector internally figures out the structure of the result set without having to run multiple queries.
 
-*	**Lack of connection pooling**</br> With no built-in support for pooling connections, every time a query is executed against a JDBC database, each of the partition in Spark has to set up a new connection which can be expensive. SnappyData internally uses an efficient pooled implementation with sensible defaults.
+*	**Lack of connection pooling**</br> With no built-in support for pooling connections, every time a query is executed against a JDBC database, each of the partition in Spark has to set up a new connection which can be expensive. TIBCO ComputeDB internally uses an efficient pooled implementation with sensible defaults.
 
-*	**Data manipulation**</br> While the Spark DataFrameWriter API can be used to append/insert a full dataset (dataframe) into the database, it is not simple to run the ad-hoc updates on the database including mass updates. The SnappyData JDBC Extension Connector makes this much simpler. 
-*	**Usability**</br> With the SnappyData JDBC Extension Connector, it is easier to deal with all the connection properties. You need not impair your application with sensitive properties dispersed in your app code.
+*	**Data manipulation**</br> While the Spark DataFrameWriter API can be used to append/insert a full dataset (dataframe) into the database, it is not simple to run the ad-hoc updates on the database including mass updates. The TIBCO ComputeDB JDBC Extension Connector makes this much simpler. 
+*	**Usability**</br> With the TIBCO ComputeDB JDBC Extension Connector, it is easier to deal with all the connection properties. You need not impair your application with sensitive properties dispersed in your app code.
 
-### Connecting to SnappyData using the JDBC Extension Connector
+### Connecting to TIBCO ComputeDB using the JDBC Extension Connector
 Following is a sample of Spark JDBC Extension setup and usage:
 
 1.	Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell: 
 
 			$SPARK_HOME/bin/spark-shell --packages io.snappydata:snappydata-jdbc_2.11:1.0.2.2
   
-2.	Set the session properties.</br> The SnappyData connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in **spark-defaults.conf** along with all the other Spark properties.  You can also set any of these properties in your app code. </br>Overloads of the above methods accepting **user+password** and **host+port **is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the **DataFrameReader.jdbc **method.</br> Following is a sample code of configuring the properties in **SparkConf**:
+2.	Set the session properties.</br> The TIBCO ComputeDB connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in **spark-defaults.conf** along with all the other Spark properties.  You can also set any of these properties in your app code. </br>Overloads of the above methods accepting **user+password** and **host+port **is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the **DataFrameReader.jdbc **method.</br> Following is a sample code of configuring the properties in **SparkConf**:
 
         	$SPARK_HOME/bin/spark-shell --packages io.snappydata:snappydata-jdbc_2.11:1.0.2.2 --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password> 
   
@@ -49,7 +49,7 @@ Following is a sample of Spark JDBC Extension setup and usage:
 			import io.snappydata.sql.implicits._
         
 ## Running Queries 
-Your application must import the SnappyData SQL implicits when using Scala. 
+Your application must import the SQL implicits when using Scala. 
 
 ```
 import io.snappydata.sql.implicits._
@@ -61,7 +61,7 @@ Once the required session properties are set (connection and user/password as sh
 
 ```
 val spark = <create/access your spark session instance here >;
-val dataset = spark.snappyQuery("select x, sum(y), max(z) from largeTable group by x order by x") // query pushed down to SnappyData data cluster
+val dataset = spark.snappyQuery("select x, sum(y), max(z) from largeTable group by x order by x") // query pushed down to TIBCO ComputeDB data cluster
 ```
 
 ### Java Query Example
@@ -70,7 +70,7 @@ val dataset = spark.snappyQuery("select x, sum(y), max(z) from largeTable group 
 import org.apache.spark.sql.*;
 
 JdbcExecute exec = new JdbcExecute(<your SparkSession instance>);
-DataFrame df = exec.snappyQuery("select x, sum(y), max(z) from largeTable group by x order by x") // query pushed down to SnappyData data cluster
+DataFrame df = exec.snappyQuery("select x, sum(y), max(z) from largeTable group by x order by x") // query pushed down to TIBCO ComputeDB data cluster
 ```
 
 !!!Note
@@ -78,11 +78,11 @@ DataFrame df = exec.snappyQuery("select x, sum(y), max(z) from largeTable group 
 
 <!---(IMPORTANT: NEED A LINK TO THE API DOCS ... SUMEDH/NEERAJ ? )--->
 
-### Updating/Writing Data in SnappyData Tables
+### Updating/Writing Data in TIBCO ComputeDB Tables
 
 Your application can use the Spark [DataFrameWriter](/reference/API_Reference/apireference_guide.md#dataframewriter) API to either insert or append data.
 
-Also, for convenience, the connector provides an implicit in scala that is **import io.snappydata.sql.implicits._** for the DataFrameWriter to simplify writing to SnappyData. Hence, there is no need to explicitly set the connection properties. 
+Also, for convenience, the connector provides an implicit in scala that is **import io.snappydata.sql.implicits._** for the DataFrameWriter to simplify writing to TIBCO ComputeDB. Hence, there is no need to explicitly set the connection properties. 
 
 After the required session properties are set (connection and user/password as shown above), then you can fire the required queries/DMLs without any other configuration.
 
@@ -138,10 +138,10 @@ Besides being more verbose, this suffers from the problem of double query execut
 ### API Reference
 The following extensions are used to implement the Spark JDBC Connector:
 
-*	**SparkSession.snappyQuery()**</br>This method creates a wrapper over SparkSession and is similar to **SparkSession.sql() API**. The only difference between the both is that the entire query is pushed down to the SnappyData cluster. Hence, a query cannot have any temporary or external tables/views that are not visible in the SnappyData cluster.
-*	**SparkSession.snappyExecute()**</br> Similarly, with this method, the SQL (assuming it to be a DML) is pushed to SnappyData, using the JDBC API, and returns the update count.
-*	**snappy**</br> An implicit for DataFrameWriter named snappy simplifies the bulk writes. Therefore a write operation such as **session.write.jdbc()** becomes **session.write.snappy()** with the difference that JDBC URL, driver, and connection properties are auto-configured using session properties, if possible.
+*	**SparkSession.snappyQuery()**</br>This method creates a wrapper over SparkSession and is similar to **SparkSession.sql() API**. The only difference between the both is that the entire query is pushed down to the TIBCO ComputeDB cluster. Hence, a query cannot have any temporary or external tables/views that are not visible in the TIBCO ComputeDB cluster.
+*	**SparkSession.snappyExecute()**</br> Similarly, with this method, the SQL (assuming it to be a DML) is pushed to TIBCO ComputeDB, using the JDBC API, and returns the update count.
+*	**snappy**</br> An implicit for DataFrameWriter named **snappy** simplifies the bulk writes. Therefore a write operation such as **session.write.jdbc()** becomes **session.write.snappy()** with the difference that JDBC URL, driver, and connection properties are auto-configured using session properties, if possible.
 
 ## Performance Considerations
 
-It should be noted that using the Spark Data Source Writer or the Snappy Implicit are both much slower as compared to SnappyData embedded job or Smart Connector. If the DataFrame that is to be written is medium or large sized, then it is better to ingest directly in an embedded mode. In case writing an embedded job is not an option, the incoming DataFrame can be dumped to an external table in a location accessible to both Spark and SnappyData clusters. After this, it can be ingested in an embedded mode using **snappyExecute**.
+It should be noted that using the Spark Data Source Writer or the **snappy** Implicit are both much slower as compared to TIBCO ComputeDB embedded job or Smart Connector. If the DataFrame that is to be written is medium or large sized, then it is better to ingest directly in an embedded mode. In case writing an embedded job is not an option, the incoming DataFrame can be dumped to an external table in a location accessible to both Spark and TIBCO ComputeDB clusters. After this, it can be ingested in an embedded mode using **snappyExecute**.

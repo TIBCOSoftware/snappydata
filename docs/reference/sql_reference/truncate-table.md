@@ -1,6 +1,6 @@
 # TRUNCATE TABLE
 
-Remove all content from a table and return it to its initial, empty state. TRUNCATE TABLE clears all in-memory data for the specified table as well as any data that was persisted to SnappyData disk stores. 
+Remove all content from a table and return it to its initial, empty state. TRUNCATE TABLE clears all in-memory data for the specified table as well as any data that was persisted to TIBCO ComputeDB disk stores. 
 
 ```pre
 TRUNCATE TABLE table-name

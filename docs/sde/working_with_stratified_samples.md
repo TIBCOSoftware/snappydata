@@ -1,12 +1,11 @@
 # Working with Stratified Samples
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 ## Create Sample Tables
 
-You can create sample tables on datasets that can be sourced from any source supported in Spark/SnappyData. For instance, these can be SnappyData in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. 
+You can create sample tables on datasets that can be sourced from any source supported in Spark/TIBCO ComputeDB. For instance, these can be TIBCO ComputeDB in-memory tables, Spark DataFrames, or sourced from an external data source such as S3 or HDFS. 
 
-Here is an SQL based example to create a sample on tables locally available in the SnappyData cluster. 
+Here is an SQL based example to create a sample on tables locally available in the TIBCO ComputeDB cluster. 
 
 ```pre
 CREATE SAMPLE TABLE NYCTAXI_PICKUP_SAMPLE ON NYCTAXI 

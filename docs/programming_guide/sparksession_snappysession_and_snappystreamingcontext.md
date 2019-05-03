@@ -1,5 +1,5 @@
 <a id="snappysession"></a>
-# SparkSession, SnappySession and SnappyStreamingContext
+# SparkSession, SnappySession, and SnappyStreamingContext
 
 ## Create a SparkSession
 [Spark Context](https://spark.apache.org/docs/2.1.1/api/java/org/apache/spark/SparkContext.html) is the main entry point for Spark functionality. A SparkContext represents the connection to a Spark cluster and can be used to create RDDs, accumulators and broadcast variables on that cluster.
@@ -22,7 +22,7 @@ SparkSession.builder().getOrCreate()
 ```
 
 ## Create a SnappySession
-[SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for SnappyData extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a SnappyData table and any table can be accessed as a DataFrame.
+[SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession) is the main entry point for TIBCO ComputeDB extensions to Spark. A SnappySession extends Spark's [SparkSession](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SparkSession) to work with Row and Column tables. Any DataFrame can be managed as a TIBCO ComputeDB table and any table can be accessed as a DataFrame.
 
 To create a SnappySession:
 
@@ -62,7 +62,7 @@ To create a SnappySession:
 ```
 
 ## Create a SnappyStreamingContext
-[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for SnappyData extensions to Spark Streaming and it extends Spark's
+[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is an entry point for TIBCO ComputeDB extensions to Spark Streaming and it extends Spark's
 [Streaming Context](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.streaming.StreamingContext).
 
 To create a SnappyStreamingContext:
@@ -104,10 +104,10 @@ To create a SnappyStreamingContext:
  snsc = SnappyStreamingContext(sc, duration)
 ```
 
-Also, SnappyData can be run in three different modes, Local Mode, Embedded Mode and SnappyData Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [Affinity modes](../deployment.md).
+Also, TIBCO ComputeDB can be run in three different modes, Local Mode, Embedded Mode and TIBCO ComputeDB Connector mode. Before proceeding, it is important that you understand these modes. For more information, see [Affinity modes](../deployment.md).
 
-If you are using SnappyData in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
-If you are in the Embedded Mode, applications typically submit jobs to SnappyData and do not explicitly create a SnappySession or SnappyStreamingContext.
-Jobs are the primary mechanism to interact with SnappyData using the Spark API in embedded mode.
+If you are using TIBCO ComputeDB in LocalMode or Connector mode, it is the responsibility of the user to create a SnappySession.
+If you are in the Embedded Mode, applications typically submit jobs to TIBCO ComputeDB and do not explicitly create a SnappySession or SnappyStreamingContext.
+Jobs are the primary mechanism to interact with TIBCO ComputeDB using the Spark API in embedded mode.
 A job implements either SnappySQLJob or SnappyStreamingJob (for streaming applications) trait.
 

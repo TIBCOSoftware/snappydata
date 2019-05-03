@@ -1,19 +1,17 @@
 # Specifying Encrypted Passwords in Conf Files or in Client Connections
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+TIBCO ComputeDB allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the TIBCO ComputeDB cluster in a secure mode.TIBCO ComputeDB provides a utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of TIBCO ComputeDB product installation. 
 
-SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the SnappyData cluster in a secure mode.SnappyData provides a utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of SnappyData product installation. 
+You can generate encrypted passwords before starting the TIBCO ComputeDB cluster and use it in **conf** files of the TIBCO ComputeDB servers, locators and leads. 
 
-You can generate encrypted passwords before starting the SnappyData cluster and use it in **conf** files of the SnappyData servers, locators and leads. 
-
-You can also generate encrypted passwords for JDBC/ODBC client connections when SnappyData cluster is already started. For that case, using the **SYS.ENCRYPT_PASSWORD** system procedure is a preferable approach as mentioned in the following note.
+You can also generate encrypted passwords for JDBC/ODBC client connections when TIBCO ComputeDB cluster is already started. For that case, using the **SYS.ENCRYPT_PASSWORD** system procedure is a preferable approach as mentioned in the following note.
 
 This script accepts list of users as input, prompts for each user’s password and outputs the encrypted password on the console. A special user AUTH_LDAP_SEARCH_PW can be used to generate encrypted password for the LDAP search user, used for looking up the DN indicated by configuration parameter **-J-Dgemfirexd.auth-ldap-search-pw **in SnappyData **conf** files.
 
 !!!Note
 
-	*	Make sure that SnappyData system is not running when this script is run, because this script launches a locator using the parameters specified in user’s conf/locators file. The script connects to the existing cluster to generate the password if locators could not be started. However, this may not work if the user is a LDAP search user who does not have permissions to access Snappydata cluster. It is recommended to directly connect to cluster and then run the SQL `CALL SYS.ENCRYPT_PASSWORD('<user>', '<password>', 'AES', 0)`,  if encrypted password is to be generated after you start the cluster.
-	*	The encrypted secret that is returned is specific to this particular SnappyData distributed system, because the system uses a unique private key to generate the secret. An obfuscated version of the private key is stored in the persistent data dictionary (SnappyData catalog). If  the existing data dictionary is ever deleted and recreated, then you must generate and use a new encrypted secret for use with the new distributed system. Also the encrypted password cannot be used in any other SnappyData installation, even if the user and password is the same. You need to generate the encrypted password separately for every other SnappyData installation.
+	*	Make sure that TIBCO ComputeDB system is not running when this script is run, because this script launches a locator using the parameters specified in user’s conf/locators file. The script connects to the existing cluster to generate the password if locators could not be started. However, this may not work if the user is a LDAP search user who does not have permissions to access TIBCO ComputeDB cluster. It is recommended to directly connect to cluster and then run the SQL `CALL SYS.ENCRYPT_PASSWORD('<user>', '<password>', 'AES', 0)`,  if encrypted password is to be generated after you start the cluster.
+	*	The encrypted secret that is returned is specific to this particular TIBCO ComputeDB distributed system, because the system uses a unique private key to generate the secret. An obfuscated version of the private key is stored in the persistent data dictionary (TIBCO ComputeDB catalog). If  the existing data dictionary is ever deleted and recreated, then you must generate and use a new encrypted secret for use with the new distributed system. Also the encrypted password cannot be used in any other TIBCO ComputeDB installation, even if the user and password is the same. You need to generate the encrypted password separately for every other TIBCO ComputeDB installation.
 
 ## Script Usage 
 
@@ -61,11 +59,11 @@ $ cat conf/locators
 localhost -auth-provider=LDAP -J-Dgemfirexd.auth-ldap-server=ldap://192.168.1.162:389/ -user=user1 -password=v13b607k2j611b8584423b2ea584c970fefd041f77f -J-Dgemfirexd.auth-ldap-search-base=cn=sales-group,ou=sales,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-dn=cn=admin,dc=example,dc=com -J-Dgemfirexd.auth-ldap-search-pw=v13b607k2j65384028e5090a8990e2ce17d43da3de9
 
 ```
-You can then start the SnappyData system.
+You can then start the TIBCO ComputeDB system.
 
 ### Configuring with Environment Variables for Startup Options 
 
-An alternate way to specify the security options is by using the environment variable for  **LOCATOR_STARTUP_OPTIONS**, **SERVER_STARTUP_OPTIONS** and **LEAD_STARTUP_OPTIONS** for locators, servers, and leads respectively. These startup variables can be specified in **conf/spark-env.sh** file. This file is sourced when starting the SnappyData system. A template file (**conf/spark-env.sh.template**) is provided in the **conf** directory for reference. You can copy this file and use it to configure security options. 
+An alternate way to specify the security options is by using the environment variable for  **LOCATOR_STARTUP_OPTIONS**, **SERVER_STARTUP_OPTIONS** and **LEAD_STARTUP_OPTIONS** for locators, servers, and leads respectively. These startup variables can be specified in **conf/spark-env.sh** file. This file is sourced when starting the TIBCO ComputeDB system. A template file (**conf/spark-env.sh.template**) is provided in the **conf** directory for reference. You can copy this file and use it to configure security options. 
 
 For example:
 
@@ -102,7 +100,7 @@ user2 = v13b607k2j6c519cc88605e5e8fa778f46fb8b2b610
 This procedure accepts user id and plain text password as input arguments and outputs the encrypted password. 
 
 !!!Note
-	In the current release of SnappyData, the last two parameters should be “AES” and “0”. 
+	In the current release of TIBCO ComputeDB, the last two parameters should be “AES” and “0”. 
 
 The encrypted password can be used in JDBC/ODBC client connections.  
 

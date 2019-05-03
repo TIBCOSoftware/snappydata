@@ -13,11 +13,11 @@ Refer to these sections for more information on [Creating Table](create-table.md
 
 **EXTERNAL**
 
-External tables point to external data sources. SnappyData supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. The table definition is persisted in the catalog and visible across all sessions. 
+External tables point to external data sources. TIBCO ComputeDB supports all the data sources supported by Spark. You should use external tables to load data in parallel from any of the external sources. The table definition is persisted in the catalog and visible across all sessions. 
 
 **USING <_data source_>**
 
-Specify the file format to use for this table. The data source may be one of TEXT, CSV, JSON, JDBC, PARQUET, ORC, and LIBSVM, or a fully qualified class name of a custom implementation of org.apache.spark.sql.sources.DataSourceRegister. </br>Note that most of the prominent datastores provide an implementation of 'DataSource' and accessible as a table. For instance, you can use the Cassandra spark package to create external tables pointing to Cassandra tables and directly run queries on them. You can mix any external table and SnappyData managed tables in your queries. 
+Specify the file format to use for this table. The data source may be one of TEXT, CSV, JSON, JDBC, PARQUET, ORC, and LIBSVM, or a fully qualified class name of a custom implementation of org.apache.spark.sql.sources.DataSourceRegister. </br>Note that most of the prominent datastores provide an implementation of 'DataSource' and accessible as a table. For instance, you can use the Cassandra spark package to create external tables pointing to Cassandra tables and directly run queries on them. You can mix any external table and TIBCO ComputeDB managed tables in your queries. 
 
 ## Example 
 

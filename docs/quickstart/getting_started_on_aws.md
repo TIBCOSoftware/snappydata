@@ -1,7 +1,7 @@
 <a id="getting-started-on-aws"></a>
 # Getting Started on Amazon Web Services (AWS)
 
-You can quickly create a single host SnappyData cluster (that is, a lead node, a data node and a locator) in a single Amazon Elastic Compute Cloud (EC2) instance through the AWS CloudFormation.
+You can quickly create a single host TIBCO ComputeDB cluster (that is, a lead node, a data node and a locator) in a single Amazon Elastic Compute Cloud (EC2) instance through the AWS CloudFormation.
 
 
 ## Prerequisites
@@ -12,7 +12,7 @@ Before you begin:
 
 * Sign into the AWS console using your AWS account-specific URL. This ensures that the account-specific URL is stored as a cookie in the browser, which then redirects you to the appropriate AWS URL for subsequent logins.
 
-*  Create an EC2 Key Pair in the region where you want to launch the SnappyData Cloud cluster.
+*  Create an EC2 Key Pair in the region where you want to launch the TIBCO ComputeDB Cloud cluster.
 
 ### Launching the cluster from AWS EC2
 [Launch the cluster from EC2](https://console.aws.amazon.com/cloudformation/home#/stacks/new?templateURL=https://zeppelindemo.s3.amazonaws.com/quickstart/snappydata-quickstart.json) and follow the instructions below.
@@ -55,7 +55,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 
 	    * **Insufficient Permissions**: Verify that you have the required permissions for creating a stack (and other AWS resources) on AWS.
 
-	    * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the <!--iSight Cloud-->SnappyData CloudBuilder creation steps.
+	    * **Invalid Keypair**: Verify that the EC2 key pair exists in the region you selected in the <!--iSight Cloud-->TIBCO ComputeDB CloudBuilder creation steps.
 
 	    * **Limit Exceeded**: Verify that you have not exceeded your resource limit. For example, if you exceed the allocated limit of Amazon EC2 instances, the resource creation fails and an error is reported.
 

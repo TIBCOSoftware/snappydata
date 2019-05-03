@@ -5,7 +5,7 @@
 	Before you begin ensure that you have configured SSH login without password.
 
 By default, Secure Socket Shell (SSH) requires a password for authentication on a remote server.
-This setting needs to be modified to allow you to login to the remote host through the SSH protocol, without having to enter your SSH password multiple times when working with SnappyData.
+This setting needs to be modified to allow you to login to the remote host through the SSH protocol, without having to enter your SSH password multiple times when working with TIBCO ComputeDB.
 
 To install and configure SSH, do the following:
 

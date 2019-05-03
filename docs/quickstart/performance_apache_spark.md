@@ -1,9 +1,9 @@
 <a id="start_benchmark"></a>
-# SnappyData Performance: 16x-20x faster than Apache Spark
-In this section, you are walked through a simple benchmark to compare SnappyData's performance to Spark 2.1.1.</br>
-Millions of rows are loaded into a cached Spark DataFrame, some analytic queries measuring its performance are run, and then, the same using SnappyData's column table is repeated.
+# TIBCO ComputeDB Performance: 16x-20x faster than Apache Spark
+In this section, you are walked through a simple benchmark to compare TIBCO ComputeDB's performance to Spark 2.1.1.</br>
+Millions of rows are loaded into a cached Spark DataFrame, some analytic queries measuring its performance are run, and then, the same using TIBCO ComputeDB's column table is repeated.
 
-A simple analytic query that scans a 100 million-row column table shows SnappyData outperforming Apache Spark by 16-20X when both products have all the data in memory.
+A simple analytic query that scans a 100 million-row column table shows TIBCO ComputeDB outperforming Apache Spark by 16-20X when both products have all the data in memory.
 
 !!! Note
 	It is recommended that you should have at least 4GB of RAM reserved for this test. 
@@ -14,13 +14,13 @@ Use any of the options mentioned below to start the Spark shell:
 
 * **If you are using your own Spark distribution that is compatible with version 2.1.1:**
 
-        # Create a directory for SnappyData artifacts
+        # Create a directory for TIBCO ComputeDB artifacts
         $ mkdir quickstartdatadir 
         $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11" --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
-* **If you have downloaded SnappyData**:
+* **If you have downloaded TIBCO ComputeDB**:
 
-        # Create a directory for SnappyData artifacts
+        # Create a directory for TIBCO ComputeDB artifacts
         $ mkdir quickstartdatadir 
         $ ./bin/spark-shell --driver-memory=4g --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log --driver-java-options="-XX:+UseConcMarkSweepGC -XX:+UseParNewGC -XX:+CMSClassUnloadingEnabled -XX:MaxNewSize=1g"
 
@@ -95,4 +95,4 @@ Ensure that you are in a Spark shell, and then follow the instructions below to 
 	    scala> :q // Quit the Spark Shell
 
 !!! Note
-	This benchmark code is tested on a system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. Also, in an AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance SnappyData is approximately 16 to 18 times faster than Spark 2.1.1.
+	This benchmark code is tested on a system with  4 CPUs (Intel(R) Core(TM) i7-5600U CPU @ 2.60GHz) and 16GiB System Memory. Also, in an AWS t2.xlarge (Variable ECUs, 4 vCPUs, 2.4 GHz, Intel Xeon Family, 16 GiB memory, EBS only) instance TIBCO ComputeDB is approximately 16 to 18 times faster than Spark 2.1.1.

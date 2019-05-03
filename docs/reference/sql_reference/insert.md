@@ -16,7 +16,7 @@ The query can be:
 -   a multiple-row VALUES expression
 
 !!! Note
-	SnappyData does not support an INSERT with a subselect query if any subselect query requires aggregation. </p>
+	TIBCO ComputeDB does not support an INSERT with a subselect query if any subselect query requires aggregation. </p>
     
 Single-row and multiple-row lists can include the keyword DEFAULT. Specifying DEFAULT for a column inserts the column's default value into the column. Another way to insert the default value into the column is to omit the column from the column list and only insert values into other columns in the table.
 

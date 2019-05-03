@@ -4,7 +4,7 @@
 
 If you have [downloaded and extracted](../install.md) the TIBCO ComputeDB product distribution, navigate to the TIBCO ComputeDB product root directory.
 
-**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the TIBCO ComputeDB cluster on your single machine using default settings. This starts a lead node, a locator, and a data server.
+**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the TIBCO ComputeDB cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. The Hive Thrift server also starts by default. 
 
 ```pre
 $ ./sbin/snappy-start-all.sh

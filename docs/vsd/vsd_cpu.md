@@ -1,6 +1,6 @@
 # CPU Usage
 
-SnappyData provides host and JVM statistics for examining system load.
+TIBCO ComputeDB provides host and JVM statistics for examining system load.
 
 An example follows the table.
 

@@ -1,6 +1,6 @@
 # Collecting logs, stats and dumps using the collect-debug-artifacts script
 
-This section uses the term 'node' frequently. A node denotes a server or a locator member when a purely SnappyData system is there. In a SnappyData distributed system a node can mean server, locator or lead member.
+This section uses the term 'node' frequently. A node denotes a server or a locator member when a purely TIBCO ComputeDB system is there. In a TIBCO ComputeDB distributed system a node can mean server, locator or lead member.
 
 The script **collect-debug-artifacts** enables you to collect the debug information like logs and stats. It also has an option to dump stacks of the running system. Details of all the options and capabilities of the script can be found below. The main purpose of this is to ease the collection of these information. The script collects all the artifacts node wise and outputs a tar file which contains member wise information.
 
@@ -9,9 +9,9 @@ Pre-requisites for running the script:
 The script assumes certain conditions to be fulfilled before it is invoked. Please ensure that these requirements are fulfilled because the script does not validate these.
 The conditions are:
 
-1. This script is expected to be run by a user who has read and write permissions on the output directories of all the SnappyData nodes.
+1. This script is expected to be run by a user who has read and write permissions on the output directories of all the TIBCO ComputeDB nodes.
 
-2. The user should have one way passwordless ssh setup from one machine to the other machines where the SnappyData nodes are running.
+2. The user should have one way passwordless ssh setup from one machine to the other machines where the TIBCO ComputeDB nodes are running.
 
 Below is the usage of the script
 

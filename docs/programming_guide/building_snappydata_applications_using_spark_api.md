@@ -1,12 +1,12 @@
-# Building SnappyData Applications using Spark API
+# Building TIBCO ComputeDB Applications using Spark API
 
-## SnappySession Usage
+## Snappy Session Usage
 ### Create Columnar Tables using API 
 Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs.
 
 ### Scala
 ```pre
- val props = Map("BUCKETS" -> "8")// Number of partitions to use in the SnappyStore
+ val props = Map("BUCKETS" -> "8")// Number of partitions to use in the Snappy Store
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
 
@@ -94,7 +94,7 @@ print("contents of column table are:")
 results1.select("col1", "col2", "col3"). show()
 ```
 
-The optional BUCKETS attribute specifies the number of partitions or buckets to use. In SnappyStore, when data migrates between nodes (say if the cluster is expanded) a bucket is the smallest unit that can be moved around. 
+The optional BUCKETS attribute specifies the number of partitions or buckets to use. In Snappy Store, when data migrates between nodes (say if the cluster is expanded) a bucket is the smallest unit that can be moved around. 
 For more details about the properties ('props1' map in above example) and `createTable` API refer to the documentation for [row and column tables](#tables-in-snappydata).
 
 ## Create Row Tables using API, Update the Contents of Row Table
@@ -130,8 +130,9 @@ println("contents of row table are after setting col1 = 100 are:")
 results4.foreach(println)
 ```
 
-## SnappyStreamingContext Usage
-SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
+## Using SnappyStreamingContext 
+
+TIBCO ComputeDB extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
 
 
 ### Scala
@@ -237,5 +238,5 @@ snsc.sql("select count(*) from streamingExample").show()
 ```
 
 <!--
-> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and SnappyData stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and SnappyData stores form independent clusters). Refer to the  [deployment](../deployment.md) chapter for all the supported deployment modes and the [configuration](../configuring_cluster/configuring_cluster.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
+> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the TIBCO ComputeDB system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy Stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and TIBCO ComputeDB stores form independent clusters). Refer to the  [deployment](../deployment.md) chapter for all the supported deployment modes and the [configuration](../configuring_cluster/configuring_cluster.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 

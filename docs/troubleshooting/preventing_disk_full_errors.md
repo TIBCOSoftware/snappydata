@@ -1,7 +1,7 @@
 <a id="preventing-disk-full-errors"></a>
 # Preventing Disk Full Errors
 
-It is important to monitor the disk usage of SnappyData members. If a member lacks sufficient disk space for a disk store, the member attempts to shut down the disk store and its associated tables, and logs an error message. After you make sufficient disk space available to the member, you can restart the member. A shutdown due to a member running out of disk space can cause loss of data, data file corruption, log file corruption and other error conditions that can negatively impact your applications.
+It is important to monitor the disk usage of TIBCO ComputeDB members. If a member lacks sufficient disk space for a disk store, the member attempts to shut down the disk store and its associated tables, and logs an error message. After you make sufficient disk space available to the member, you can restart the member. A shutdown due to a member running out of disk space can cause loss of data, data file corruption, log file corruption and other error conditions that can negatively impact your applications.
 
 You can prevent disk file errors using the following techniques:
 
@@ -14,9 +14,9 @@ You can prevent disk file errors using the following techniques:
     -   **Disk store metadata files**— set the `gemfire.preAllocateIF` system property to true (the default).
 
 !!! Note
-	SnappyData recommends using ext4 filesystems on Linux platforms, because ext4 supports pre-allocation which speeds disk startup performance. If you are using ext3 filesystems in latency-sensitive environments with high write throughput, you can improve disk startup performance by setting the `MAXLOGSIZE` property of a disk store to a value lower than the default 1 GB. See [CREATE DISKSTORE](../reference/sql_reference/create-diskstore.md).
+	TIBCO recommends using ext4 filesystems on Linux platforms, because ext4 supports pre-allocation which speeds disk startup performance. If you are using ext3 filesystems in latency-sensitive environments with high write throughput, you can improve disk startup performance by setting the `MAXLOGSIZE` property of a disk store to a value lower than the default 1 GB. See [CREATE DISKSTORE](../reference/sql_reference/create-diskstore.md).
 
--   Monitor SnappyData logs for low disk space warnings. SnappyData logs disk space warnings in the following situations:
+-   Monitor TIBCO ComputeDB logs for low disk space warnings. TIBCO ComputeDB logs disk space warnings in the following situations:
 
     -   **Log file directory**—logs a warning if the available space is less than 100 MB.
 

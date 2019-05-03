@@ -1,6 +1,6 @@
 # DEPLOY PACKAGES
 
-Deploys package in SnappyData.
+Deploys package in TIBCO ComputeDB.
 
 ## Syntax 
 
@@ -17,14 +17,14 @@ deploy package <unique-alias-name> ‘packages’ [ repos ‘repositories’ ] [
 
 ## Description
 
-Packages can be deployed in SnappyData using the **DEPLOY PACKAGE** SQL. You can pass the following through this SQL:
+Packages can be deployed in TIBCO ComputeDB using the **DEPLOY PACKAGE** SQL. You can pass the following through this SQL:
 
 *	Name of the package.
 *	Repository where the package is located.
 *	Path to a local cache of jars.
 
 !!!Note
-	SnappyData requires internet connectivity to connect to repositories which are hosted outside the network. Otherwise the resolution of the package fails.
+	TIBCO ComputeDB requires internet connectivity to connect to repositories which are hosted outside the network. Otherwise the resolution of the package fails.
 
 For resolving the package, Maven Central and Spark packages, located at http://dl.bintray.com/spark-packages, are searched by default. Hence, you must specify the repository only if the package is not there at **Maven Central** or in the **spark-package** repository.
 

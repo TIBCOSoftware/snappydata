@@ -1,10 +1,10 @@
 # Managing Security
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB. </br></ent>
 
-In the current release, SnappyData only supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
+In the current release, TIBCO ComputeDB only supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
 
-SnappyData uses mutual authentication between the SnappyData locator and subsequent SnappyData members that boot and join the distributed system. 
+TIBCO ComputeDB uses mutual authentication between the TIBCO ComputeDB locator and subsequent TIBCO ComputeDB members that boot and join the distributed system. 
 
 !!! Note
 	
@@ -14,7 +14,7 @@ SnappyData uses mutual authentication between the SnappyData locator and subsequ
 
 	* All members of the cluster (leads, locators, and servers) must be started by the same user
 
-<!--	* The Snappy cluster and the Spark cluster (smart connector mode) must be secure-->
+<!--	* The TIBCO ComputeDB cluster and the Spark cluster (smart connector mode) must be secure-->
 Refer to [User Names for Authentication, Authorization, and Membership](user_names_for_authentication_authorization_and_membership.md#user-names) for more information on how user names are treated by each system.
 
 * [Launching the Cluster in Secure Mode](launching_the_cluster_in_secure_mode.md)
@@ -29,7 +29,7 @@ Refer to [User Names for Authentication, Authorization, and Membership](user_nam
 
 * [Configuring Network Encryption and Authentication using SSL](configuring_network_encryption_and_authentication_using_ssl.md)
 
-* [Securing SnappyData Pulse UI Connection](../configuring_cluster/securinguiconnection.md)
+* [Securing TIBCO ComputeDB Monitoring UI Connection](../configuring_cluster/securinguiconnection.md)
 
 * [User Names for Authentication, Authorization, and Membership](user_names_for_authentication_authorization_and_membership.md)
 

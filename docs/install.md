@@ -1,6 +1,6 @@
-# Provisioning SnappyData
+# Provisioning TIBCO ComputeDB
 
-SnappyData offers two editions of the product, SnappyData Community Edition, and SnappyData Enterprise Edition.
+TIBCO ComputeDB offers two editions of the product, SnappyData Community Edition, and TIBCO ComputeDB Enterprise Edition.
 
 The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
 The Enterprise Edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
@@ -17,13 +17,11 @@ For more information on the capabilities of the Community and Enterprise edition
 * [**SnappyData 1.0.2.1 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2.1/snappydata-1.0.2.1-without-hadoop-bin.tar.gz) 
 
 
-<heading2> Download SnappyData Enterprise Edition</heading2> 
+<heading2> Download TIBCO ComputeDB Enterprise Edition</heading2> 
 
-1. Go to the [SnappyData website](http://www.snappydata.io/download).
+1. From the [TIBCO eDelivery website](https://edelivery.tibco.com) go to the **Product Detail** page of TIBCO ComputeDB page. 
 
-2. On this page, enter your email address.
-
-3. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
+2. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
 
 4. Click **Download** to download the installer (**snappydata-1.0.2.1-bin.tar.gz**).
 
@@ -38,13 +36,13 @@ For more information on the capabilities of the Community and Enterprise edition
 	* ODBC INSTALLERS
 
 <a id= provisioningsnappy> </a>
-<heading2>SnappyData Provisioning Options</heading2>
+<heading2>TIBCO ComputeDB Provisioning Options</heading2>
 
 <heading3>Prerequisites</heading3>
 
 Before you start the installation, make sure that Java SE Development Kit 8 is installed, and the *JAVA_HOME* environment variable is set on each computer.
 
-The following options are available for provisioning SnappyData:
+The following options are available for provisioning TIBCO ComputeDB:
 
 * [On-Premise](install/install_on_premise.md) <a id="install-on-premise"></a>
 
@@ -60,7 +58,7 @@ The following options are available for provisioning SnappyData:
 
 On a Linux system, you can set the limit of open files and thread processes in the **/etc/security/limits.conf** file. 
 </br>A minimum of **8192** is recommended for open file descriptors limit and **>128K** is recommended for the number of active threads. 
-</br>A typical configuration used for SnappyData servers and leads can appear as follows:
+</br>A typical configuration used for TIBCO ComputeDB servers and leads can appear as follows:
 
 ```pre
 snappydata          hard    nofile      32768
@@ -70,7 +68,7 @@ snappydata          soft    nproc       524288
 snappydata          hard    sigpending  unlimited
 snappydata          soft    sigpending  524288
 ```
-* `snappydata` is the user running SnappyData.
+* `snappydata` is the user running TIBCO ComputeDB.
 
 Recent linux distributions using systemd (like RHEL/CentOS 7, Ubuntu 18.04) require the **NOFILE** limit to be increased in systemd configuration too. Edit **/etc/systemd/system.conf ** as root, search for **#DefaultLimitNOFILE** under the **[Manager] **section. Uncomment and change it to **DefaultLimitNOFILE=32768**. 
 Reboot for the above changes to be applied. Confirm that the new limits have been applied in a terminal/ssh window with **"ulimit -a -S"** (soft limits) and **"ulimit -a -H"** (hard limits).

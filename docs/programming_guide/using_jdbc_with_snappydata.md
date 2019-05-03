@@ -1,5 +1,5 @@
-# Using JDBC with SnappyData
-SnappyData is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
+# Using JDBC with TIBCO ComputeDB
+TIBCO ComputeDB is shipped with few JDBC drivers. The connection URL typically points to one of the locators. In the background, the driver acquires the endpoints for all the servers in the cluster along with load information and automatically connects clients to one of the data servers directly. The driver provides HA by automatically adjusting underlying physical connections in case the servers fail. 
 
 ```pre
 // 1527 is the default port a Locator or Server uses to listen for thin client connections

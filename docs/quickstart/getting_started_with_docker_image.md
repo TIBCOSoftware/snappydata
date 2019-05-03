@@ -1,7 +1,7 @@
 <a id="getting-started-with-docker-image"></a>
 # Getting Started with Docker Image
 
-SnappyData comes with a pre-configured Docker image. It has binaries for SnappyData, which enables you to try the quick start program and more, with SnappyData.
+TIBCO ComputeDB comes with a pre-configured Docker image. It has binaries for TIBCO ComputeDB, which enables you to try the quick start program and more, with TIBCO ComputeDB.
 
 This section assumes you have already installed and configured Docker properly. Refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
 
@@ -27,4 +27,4 @@ The latest image files start downloading to your local machine. Depending on you
 
 Once you have launched the Spark shell, in the `$ scala>` prompt, follow the steps explained [here](using_spark_scala_apis.md).</br>
 
-For more details about SnappyData Docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).
+For more details about TIBCO ComputeDB Docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).

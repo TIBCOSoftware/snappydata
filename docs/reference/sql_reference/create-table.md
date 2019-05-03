@@ -136,7 +136,7 @@ For row tables, `BUCKETS` must be created with the `PARTITION_BY` clause, else a
 
 <a id="compress"></a>
 `COMPRESSION`</br>
-Column tables use compression of data by default. This reduces the total storage footprint for large tables. SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. By default, compression is on for column tables. To disable data compression, you can set the COMPRESSION option to `none` when you create a table. For example:
+Column tables use compression of data by default. This reduces the total storage footprint for large tables. TIBCO ComputeDB column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. By default, compression is on for column tables. To disable data compression, you can set the COMPRESSION option to `none` when you create a table. For example:
 ```
 CREATE TABLE AIRLINE USING column OPTIONS(compression 'none')  AS (select * from STAGING_AIRLINE);
 ```
@@ -159,17 +159,17 @@ For column tables, the default eviction setting is `LRUHEAPPERCENT` and the defa
 
 <a id="persistence"></a>
 `PERSISTENCE`</br>
-When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member. 
+When you specify the PERSISTENCE keyword, TIBCO ComputeDB persists the in-memory table data to a local TIBCO ComputeDB disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member. 
 
 !!! Note
 
    	* By default, both row and column tables are persistent.
 
-   	* The option `PERSISTENT` has been deprecated as of SnappyData 0.9. Although it does work, it is recommended to use `PERSISTENCE` instead.
+   	* The option `PERSISTENT` has been deprecated. Although it does work, it is recommended to use `PERSISTENCE` instead.
 
 <a id="diskstore"></a>
 `DISKSTORE`</br>
-The disk directories where you want to persist the table data. By default, SnappyData creates a "default" disk store on each member node. You can use this option to control the location where data is stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, refer to [CREATE DISKSTORE](create-diskstore.md).
+The disk directories where you want to persist the table data. By default, TIBCO ComputeDB creates a "default" disk store on each member node. You can use this option to control the location where data is stored. For instance, you may decide to use a network file system or specify multiple disk mount points to uniformly scatter the data across disks. For more information, refer to [CREATE DISKSTORE](create-diskstore.md).
 
 
 <a id="overflow"></a>
@@ -186,7 +186,7 @@ Use the EXPIRE clause with tables to control the SnappyStore memory usage. It ex
 
 <a id="column-batch-size"></a>
 `COLUMN_BATCH_SIZE`</br>
-The default size of blocks to use for storage in the SnappyData column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M).
+The default size of blocks to use for storage in the TIBCO ComputeDB column store. When inserting data into the column storage this is the unit (in bytes) that is used to split the data into chunks for efficient storage and retrieval. The default value is 25165824 (24M).
 
 <a id="column-max-delta-rows"></a>
 `COLUMN_MAX_DELTA_ROWS`</br>
@@ -198,7 +198,7 @@ The maximum number of rows that can be in the delta buffer of a column table for
 	* `snappydata.column.batchSize` - Explicit batch size for this session for bulk insert operations. If a table is created in the session without any explicit `COLUMN_BATCH_SIZE` specification, then this is inherited for that table property.
 	* `snappydata.column.maxDeltaRows` - The maximum limit on rows in the delta buffer for each bucket of column table in this session. If a table is created in the session without any explicit COLUMN_MAX_DELTA_ROWS specification, then this is inherited for that table property.
 
-Tables created using the standard SQL syntax without any of SnappyData specific extensions are created as row-oriented replicated tables. Thus, each data server node in the cluster hosts a consistent replica of the table. All tables are also registered in the Spark catalog and hence visible as DataFrames.
+Tables created using the standard SQL syntax without any of TIBCO ComputeDB specific extensions are created as row-oriented replicated tables. Thus, each data server node in the cluster hosts a consistent replica of the table. All tables are also registered in the Spark catalog and hence visible as DataFrames.
 
 For example, `create table if not exists Table1 (a int)` is equivalent to `create table if not exists Table1 (a int) using row`.
 
@@ -298,14 +298,14 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	- Total bytes used.
 
-	- Percentage of JVM heap used. This uses the SnappyData resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to LRUHEAPPERCENT.
+	- Percentage of JVM heap used. This uses the TIBCO ComputeDB resource manager. When the manager determines that eviction is required, the manager orders the eviction controller to start evicting from all tables where the eviction criterion is set to LRUHEAPPERCENT.
 
 2. Decide what action to take when the limit is reached:
 	- Locally destroy the row (partitioned tables only).
 	
 	- Overflow the row data to disk.
 
-3. If you want to overflow data to disk (or persist the entire table to disk), configure a named disk store to use for the overflow data. If you do not specify a disk store when creating an overflow table, SnappyData stores the overflow data in the default disk store.
+3. If you want to overflow data to disk (or persist the entire table to disk), configure a named disk store to use for the overflow data. If you do not specify a disk store when creating an overflow table, TIBCO ComputeDB stores the overflow data in the default disk store.
 
 4. Create the table with the required eviction configuration.
 
@@ -315,7 +315,7 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	
     To create a table that simply removes evicted data from memory without persisting the evicted data, use the `DESTROY` eviction action. For example:
-    Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
+    Default in TIBCO ComputeDB for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
         CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
 
@@ -336,13 +336,13 @@ Column and table constraints include:
 
 * UNIQUE— Specifies that values in the column must be unique. NULL values are not allowed.
 
-* FOREIGN KEY— Specifies that the values in the columns must correspond to values in the referenced primary key or unique columns or that they are NULL. </br>If the foreign key consists of multiple columns and any column is NULL, then the whole key is considered NULL. SnappyData permits the insert no matter what is in the non-null columns.
+* FOREIGN KEY— Specifies that the values in the columns must correspond to values in the referenced primary key or unique columns or that they are NULL. </br>If the foreign key consists of multiple columns and any column is NULL, then the whole key is considered NULL. TIBCO ComputeDB permits the insert no matter what is in the non-null columns.
 
 * CHECK— Specifies rules for values in a column, or specifies a wide range of rules for values when included as a table constraint. The CHECK constraint has the same format and restrictions for column and table constraints.
 Column constraints and table constraints have the same function; the difference is where you specify them. Table constraints allow you to specify more than one column in a PRIMARY KEY, UNIQUE, CHECK, or FOREIGN KEY constraint definition. 
 
 Column-level constraints (except for check constraints) refer to only one column.
-If you do not specify a name for a column or table constraint, then SnappyData generates a unique name.
+If you do not specify a name for a column or table constraint, then TIBCO ComputeDB generates a unique name.
 
 **Example**: The following example demonstrates how to create a table with `FOREIGN KEY`: </br>
 
@@ -360,9 +360,9 @@ CUSTOMERS           |CID                 |SQL180403162038220  |TRADING          
 <a id="id-columns"></a>
 ### Identity Columns (only for Row Tables)
 <a id="generate"></a>
-SnappyData supports both GENERATED ALWAYS and GENERATED BY DEFAULT identity columns only for BIGINT and INTEGER data types. The START WITH and INCREMENT BY clauses are supported only for GENERATED BY DEFAULT identity columns.
+TIBCO ComputeDB supports both GENERATED ALWAYS and GENERATED BY DEFAULT identity columns only for BIGINT and INTEGER data types. The START WITH and INCREMENT BY clauses are supported only for GENERATED BY DEFAULT identity columns.
 
-For a GENERATED ALWAYS identity column, SnappyData increments the default value on every insertion, and stores the incremented value in the column. You cannot insert a value directly into a GENERATED ALWAYS identity column, and you cannot update a value in a GENERATED ALWAYS identity column. Instead, you must either specify the DEFAULT keyword when inserting data into the table or you must leave the identity column out of the insertion column list.
+For a GENERATED ALWAYS identity column, TIBCO ComputeDB increments the default value on every insertion, and stores the incremented value in the column. You cannot insert a value directly into a GENERATED ALWAYS identity column, and you cannot update a value in a GENERATED ALWAYS identity column. Instead, you must either specify the DEFAULT keyword when inserting data into the table or you must leave the identity column out of the insertion column list.
 
 Consider a table with the following column definition:
 
@@ -380,9 +380,9 @@ insert into greetings values (DEFAULT, 'hello');
 insert into greetings(ch) values ('hi');
 ```
 
-The values that SnappyData automatically generates for a GENERATED ALWAYS identity column are unique.
+The values that TIBCO ComputeDB automatically generates for a GENERATED ALWAYS identity column are unique.
 
-For a GENERATED BY DEFAULT identity column, SnappyData increments and uses a default value for an INSERT only when no explicit value is given. To use the generated default value, either specify the DEFAULT keyword when inserting into the identity column or leave the identity column out of the INSERT column list.
+For a GENERATED BY DEFAULT identity column, TIBCO ComputeDB increments and uses a default value for an INSERT only when no explicit value is given. To use the generated default value, either specify the DEFAULT keyword when inserting into the identity column or leave the identity column out of the INSERT column list.
 
 In contrast to GENERATED ALWAYS identity columns, with a GENERATED BY DEFAULT column you can specify an identity value to use instead of the generated default value. To specify a value, include it in the INSERT statement.
 
@@ -406,7 +406,7 @@ insert into greetings(ch) values ('bye');
 
 Although the automatically-generated values in a GENERATED BY DEFAULT identity column are unique, a GENERATED BY DEFAULT column does not guarantee unique identity values for all rows in the table. For example, in the above statements, the rows containing “hi” and “hello” both have an identity value of “1.” This occurs because the generated column starts at “1” and the user-specified value was also “1.”
 
-To avoid duplicating identity values (for example, during an import operation), you can use the START WITH clause to specify the first identity value that SnappyData should assign and increment. Or, you can use a primary key or a unique constraint on the GENERATED BY DEFAULT identity column to check for and disallow duplicates.
+To avoid duplicating identity values (for example, during an import operation), you can use the START WITH clause to specify the first identity value that TIBCO ComputeDB should assign and increment. Or, you can use a primary key or a unique constraint on the GENERATED BY DEFAULT identity column to check for and disallow duplicates.
 
 By default, the initial value of a GENERATED BY DEFAULT identity column is 1, and the value is incremented by 1 for each INSERT. Use the optional START WITH clause to specify a new initial value. Use the optional INCREMENT BY clause to change the increment value used during each INSERT.
 

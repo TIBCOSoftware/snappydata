@@ -1,12 +1,12 @@
 # Configuration Properties
 
-You use JDBC connection properties, connection boot properties, and Java system properties to configure SnappyData members and connections.
+You use JDBC connection properties, connection boot properties, and Java system properties to configure TIBCO ComputeDB members and connections.
 
 * [Property Types](#property-types)
 
 * [Property Prefixes](#property-prefixes)
 
-* [Using Non-ASCII Strings in SnappyData Property Files](#non-ascii-strings)
+* [Using Non-ASCII Strings in TIBCO ComputeDB Property Files](#non-ascii-strings)
 
 * [List of Property Names](#property-names)
 
@@ -14,22 +14,22 @@ You use JDBC connection properties, connection boot properties, and Java system 
 <a id="property-types"></a>
 ### Property Types
 
-SnappyData configuration properties are divided into the following property types:
+TIBCO ComputeDB configuration properties are divided into the following property types:
 
--   **Connection properties**. Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive SnappyData session). You can also define connection properties in the `gemfirexd.properties` file or as Java system properties. For example, use -J-D*property_name*=*property_value* when you execute a `snappy` utility. Or, use the JAVA_ARGS environment variable to define a Java system property for an interactive `snappy` session (JAVA_ARGS="-D*property_name*=*property_value*"). 
+-   **Connection properties**. Connection properties configure the features of a TIBCO ComputeDB member or a TIBCO ComputeDB client connection when you start or connect to a TIBCO ComputeDB member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive TIBCO ComputeDB session). You can also define connection properties in the `gemfirexd.properties` file or as Java system properties. For example, use -J-D*property_name*=*property_value* when you execute a `snappy` utility. Or, use the JAVA_ARGS environment variable to define a Java system property for an interactive Snappy session (JAVA_ARGS="-D*property_name*=*property_value*"). 
    
 	!!! Note
 		You must add a prefix to certain connection property names in order to specify those properties as Java system properties. See [Property Prefixes](#property-prefixes).
 
     Connection properties can be further categorized as either *boot properties* or *client properties*:
 
-	-   **Boot properties**. A boot connection property configures features of a SnappyData member, and can only be applied along with the first connection that starts a SnappyData member. Boot properties have no effect when they are specified on connections to a member after the member has started. Boot properties have no effect when they are specified on a thin client connection.
+	-   **Boot properties**. A boot connection property configures features of a TIBCO ComputeDB member, and can only be applied along with the first connection that starts a TIBCO ComputeDB member. Boot properties have no effect when they are specified on connections to a member after the member has started. Boot properties have no effect when they are specified on a thin client connection.
 
-	-   **Client properties**. A client connection property configures features of the client connection itself and can be used with the JDBC thin client drive (for example, using a JDBC thin client connection URL or the `connect client` command from an interactive `snappy` session).
+	-   **Client properties**. A client connection property configures features of the client connection itself and can be used with the JDBC thin client drive (for example, using a JDBC thin client connection URL or the `connect client` command from an interactive Snappy session).
 
--   **System properties**. Certain SnappyData configuration properties *must* be specified either as Java system properties (using -J-D*property_name*=*property_value* with a `snappy` utility or setting JAVA_ARGS="-D*property_name*=*property_value*" for an interactive `snappy` session). You cannot define these properties in a JDBC URL connection. Many of SnappyData system properties affect features of the SnappyData member at boot time and can be optionally defined in the gemfirexd.properties file. See the property description to determine whether or not a system property can be defined in gemfirexd.properties.
+-   **System properties**. Certain TIBCO ComputeDB configuration properties *must* be specified either as Java system properties (using -J-D*property_name*=*property_value* with a `snappy` utility or setting JAVA_ARGS="-D*property_name*=*property_value*" for an interactive Snappy session). You cannot define these properties in a JDBC URL connection. Many of TIBCO ComputeDB system properties affect features of the TIBCO ComputeDB member at boot time and can be optionally defined in the gemfirexd.properties file. See the property description to determine whether or not a system property can be defined in gemfirexd.properties.
 
-    The names of SnappyData system properties always include the `snappydata.` prefix. For example, all properties that configure LDAP server information for user authentication must be specified as Java system properties, rather than JDBC properties, when you boot a server.
+    The names of TIBCO ComputeDB system properties always include the `snappydata.` prefix. For example, all properties that configure LDAP server information for user authentication must be specified as Java system properties, rather than JDBC properties, when you boot a server.
 
 Certain properties have additional behaviors or restrictions. See the individual property descriptions for more information.
 
@@ -42,9 +42,9 @@ You must add a prefix to connection and boot property names when you define thos
 If no prefix is specified, use only the indicated property name in all circumstances. For example, use "host-data" whether you define this property in gemfirexd.properties, as a Java system property, or as a property definition for FabricServer.
 
 <a id="non-ascii-strings"></a>
-### Using Non-ASCII Strings in SnappyData Property Files
+### Using Non-ASCII Strings in TIBCO ComputeDB Property Files
 
-You can specify Unicode (non-ASCII) characters in SnappyData property files by using a `\uXXXX` escape sequence. For a supplementary character, you need two escape sequences, one for each of the two UTF-16 code units. The XXXX denotes the 4 hexadecimal digits for the value of the UTF-16 code unit. For example, a properties file might have the following entries:
+You can specify Unicode (non-ASCII) characters in TIBCO ComputeDB property files by using a `\uXXXX` escape sequence. For a supplementary character, you need two escape sequences, one for each of the two UTF-16 code units. The XXXX denotes the 4 hexadecimal digits for the value of the UTF-16 code unit. For example, a properties file might have the following entries:
 
 ```pre
 s1=hello there

@@ -1,6 +1,6 @@
 #  Memory Usage
 
-SnappyData provides statistics for system memory, JVM heap, garbage collection, and table sizes.
+TIBCO ComputeDB provides statistics for system memory, JVM heap, garbage collection, and table sizes.
 
 You can use these statistics to analyze your application's memory usage. An example follows the table.
 

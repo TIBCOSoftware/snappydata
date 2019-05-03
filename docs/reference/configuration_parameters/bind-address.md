@@ -6,7 +6,7 @@
 !!! Note 
 	This setting is relevant only for multi-homed hosts (machines with multiple network interface cards). 
 
-Adapter card the cache binds to for peer-to-peer communication. It also specifies the default location for SnappyData servers to listen on, which is used unless overridden by the `server-bind-address`.
+Adapter card the cache binds to for peer-to-peer communication. It also specifies the default location for TIBCO ComputeDB servers to listen on, which is used unless overridden by the `server-bind-address`.
 
 Specify the IP address, not the hostname, because each network card may not have a unique hostname. An empty string (the default) causes the member to listen on the default card for the machine.
 
