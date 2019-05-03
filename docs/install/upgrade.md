@@ -61,6 +61,7 @@ The following steps should be followed to upgrade from the previous versions (1.
 
 7.	Verify the tables and data.
 
+## Upgrading from Version 1.0.0
 
 The following steps must be followed to upgrade from version 1.0.0 of the product:
 
