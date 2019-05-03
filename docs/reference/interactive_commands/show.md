@@ -99,7 +99,7 @@ SYSIBM              |CLOBGETSUBSTRING              |com.pivotal.gemfire&
 <a id= importedkeys> </a>
 <h4>**SHOW IMPORTEDKEYS**</h4>
 
-Displays all foreign keys in the specified schema or table. If you omit the schema and table clauses, SnappyData displays all foreign keys for all tables in the current schema.
+Displays all foreign keys in the specified schema or table. If you omit the schema and table clauses, TIBCO ComputeDB displays all foreign keys for all tables in the current schema.
 
 **Example**
 

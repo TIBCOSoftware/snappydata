@@ -5,15 +5,15 @@ Start the VSD tool, load statistics files, and maintain the view you want on you
 <a id="install-vsd"></a>
 ## Install VSD
 
-VSD is a free analysis tool and is provided as-is. VSD is distributed with SnappyData. To install VSD, install SnappyData. See [Installing SnappyData](running_vsd.md) for instructions.
+VSD is a free analysis tool and is provided as-is. VSD is distributed with TIBCO ComputeDB. To install VSD, install TIBCO ComputeDB. See [Installing TIBCO ComputeDB](running_vsd.md) for instructions.
 
-After you install SnappyData, you can find VSD in the following location of your installation:
+After you install TIBCO ComputeDB, you can find VSD in the following location of your installation:
 
 ```pre
-<snappydata-installdir>/vsd
+<TIBCO ComputeDB-installdir>/vsd
 ```
 
-Where *snappydata-installdir* corresponds to the location where SnappyData is installed. 
+Where *snappydata-installdir* corresponds to the location where TIBCO ComputeDB is installed. 
 
 The VSD tool installation has the following subdirectories:
 
@@ -66,6 +66,6 @@ If you select the menu item **File** > **Auto Update**, VSD automatically update
 
 The statistics values (Y-axis) are plotted over time (X-axis). This makes it easy to see how statistics are trending, and to correlate different statistics.
 
-Some statistics are cumulative from when the SnappyData system was started. Other statistics are instantaneous values that may change in any way between sample collection.
+Some statistics are cumulative from when the TIBCO ComputeDB system was started. Other statistics are instantaneous values that may change in any way between sample collection.
 
 Cumulative statistics are best charted per second or per sample, so that the VSD chart is readable. Absolute values are best charted as No Filter.

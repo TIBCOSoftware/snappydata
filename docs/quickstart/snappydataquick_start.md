@@ -1,12 +1,12 @@
-# SnappyData Cluster SQL Tutorial
+# TIBCO ComputeDB Cluster SQL Tutorial
  
-In this section, you will get a quick tour to start a SnappyData cluster and try out the basic features and functionalities. The following items are covered in this guide:
+In this section, you will get a quick tour to start a TIBCO ComputeDB cluster and try out the basic features and functionalities. The following items are covered in this guide:
 
-*	[Start SnappyData Cluster](#st_snappy_cluster)
+*	[Start TIBCO ComputeDB Cluster](#st_snappy_cluster)
 
-*	[Check SnappyData Cluster Status](#stats_cluster)
+*	[Check TIBCO ComputeDB Cluster Status](#stats_cluster)
 
-*	[Connect/Disconnect SnappyData Shell](#connectsnappyshell)
+*	[Connect/Disconnect Snappy Shell](#connectsnappyshell)
 
 *	[Create Tables](#create_tab)
 
@@ -24,27 +24,30 @@ In this section, you will get a quick tour to start a SnappyData cluster and try
 
 
 <a id= st_snappy_cluster> </a>
-## Start SnappyData Cluster
+## Start TIBCO ComputeDB Cluster
 
-Navigate to the SnappyData product root directory to start the cluster. Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. 
+Navigate to the TIBCO ComputeDB product root directory to start the cluster. Run the `./sbin/snappy-start-all.sh` script to start the TIBCO ComputeDB cluster on your single machine using default settings. This starts a lead node, a locator, and a data server.  The Hive Thrift server also starts by default. 
 
 ```pre
 $./sbin/snappy-start-all.sh
 
-Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-locator-1/snappylocator.log
-SnappyData Locator pid: 9086 status: running
+```pre
+Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-locator-1/snappylocator.log
+SnappyData Locator pid: 10813 status: running
   Distributed system now has 1 members.
   Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
-Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-server-1/snappyserver.log
-SnappyData Server pid: 9220 status: running
+Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-server-1/snappyserver.log
+SnappyData Server pid: 11018 status: running
   Distributed system now has 2 members.
   Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
-Logs generated in /home/xyz/<snappydata_install_dir>/snappy/work/localhost-lead-1/snappyleader.log
-SnappyData Leader pid: 9370 status: running
+Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-lead-1/snappyleader.log
+SnappyData Leader pid: 11213 status: running
   Distributed system now has 3 members.
+  Starting hive thrift server (session=snappy)
   Starting job server on: 0.0.0.0[8090]
 
 ```
+
 
 You can connect to [Snappy SQL shell](#connectsnappyshell) and run the `select id, kind, netservers from sys.members;` query to view the cluster members.
 
@@ -61,7 +64,7 @@ You can connect to [Snappy SQL shell](#connectsnappyshell) and run the `select i
 In the output, the details of the cluster members are displayed. Here in the KIND column, the member corresponding to **accessor** is the lead node.  In a cluster, you can connect as a client to any member by specifying localhost with the unique port number of the member (the one specified in the NETSERVERS column corresponding to each member). However, connecting to the locator provides basic load balancing by routing the connection request to an available server member.
 
 <a id= stats_cluster> </a>
-## Check SnappyData Cluster Status
+## Check TIBCO ComputeDB Cluster Status
 
 You can check the status of a running cluster using the following command:
 
@@ -73,20 +76,20 @@ SnappyData Server pid: 9887 status: running
 SnappyData Leader pid: 10468 status: running
 ```
 
-Connect to  [Snappy SQL shell](#connectsnappyshell) to perform various SQL operations.
+Connect to  [Snappy Shell](#connectsnappyshell) to perform various SQL operations.
 
 
-Alternatively , you can access the [SnappyData Pulse](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Pulse dashboards, after starting a cluster, you can check the status of each of the cluster member.
+Alternatively, you can access the [TIBCO ComputeDB Monitoring UI](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the dashboards of TIBCO ComputeDB Monitoring UI, after starting a cluster, you can check the status of each of the cluster member.
 
 <a id= connectsnappyshell> </a>
-## Connect/Disconnect to SnappyData Shell
-After starting the SnappyData cluster, run these commands together to start the SnappyData shell:
+## Connect/Disconnect to Snappy Shell
+After starting the TIBCO ComputeDB cluster, run these commands together to start the Snappy shell:
 			
 ```pre
 ./bin/snappy
 connect client '127.0.0.1:1527';
 ```
-Type **exit;** or press **CTRL + C** to disconnect the SnappyData Shell.
+Type **exit;** or press **CTRL + C** to disconnect the Snappy Shell.
 
 <a id= create_tab> </a>
 ## Create Tables
@@ -116,7 +119,7 @@ Create a simple table and insert a few rows. By default, if no options are provi
 
 	2 rows selected
 		
-    # SnappyData replicates the row tables that are created by default onto the data store members. 
+    # TIBCO ComputeDB replicates the row tables that are created by default onto the data store members. 
     # You can validate this using the following query:
 
 	select tablename, datapolicy from sys.systables where tablename='QUICKTABLE';
@@ -129,7 +132,7 @@ Create a simple table and insert a few rows. By default, if no options are provi
 
 <a id= quickstartscript> </a>
 ## Create Tables and Import Data Using quickstart Scripts
-SnappyData contains various quickstart scripts that can be used to run some basic functionalities. </br>For example, you can run the **create_and_load_column_table.sql** script. This script first drops the table if it exists and then  creates an external table named STAGING AIRLINE to load the formatted data from a parquet file. Then a column table is created with only the specified columns from this external table. </br>Connect to SnappyData shell before running these scripts. These script files must be run from within the **quickstart** directory if you are providing the relative path as shown:
+TIBCO ComputeDB contains various quickstart scripts that can be used to run some basic functionalities. </br>For example, you can run the **create_and_load_column_table.sql** script. This script first drops the table if it exists and then  creates an external table named STAGING AIRLINE to load the formatted data from a parquet file. Then a column table is created with only the specified columns from this external table. </br>Connect to Snappy shell before running these scripts. These script files must be run from within the **quickstart** directory if you are providing the relative path as shown:
 			
             ./bin/snappy
 			connect client '127.0.0.1:1527';
@@ -243,7 +246,7 @@ Similarly as the quickstart scripts, you can try to create an external table nam
 
         1 row selected
 
-After running these queries, you can check the table details on the SnappyData Pulse Dashboards. The details of the newly created tables are displayed in the **Tables** section.
+After running these queries, you can check the table details on the dashboards of TIBCO ComputeDB Monitoring UI. The details of the newly created tables are displayed in the **Tables** section.
 
 ![External Table & Tables on Dashboard](../Images/externaltable_scripts.png)
 
@@ -281,10 +284,10 @@ NULL
 
 You can add more than one server to a cluster. To add a new server, do the following:
 
-1.	Go to SnappyData home directory.</br>`cd <snappydata_install_dir>`
-2.	Create a configuration file named **servers** in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
+1.	Go to TIBCO ComputeDB home directory.</br>`cd <TIBCO ComputeDB_install_dir>`
+2.	Create a configuration file named **servers** in the conf folder in the the TIBCO ComputeDB home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
 3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
-4. From the SnappyData home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Pulse UI. 
+4. From the TIBCO ComputeDB home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the TIBCO ComputeDB Monitoring UI. 
 
 <a id= rebalancedataonserver> </a>
 ## Rebalancing Data on Servers
@@ -292,10 +295,10 @@ You can add more than one server to a cluster. To add a new server, do the follo
 Further, you can distribute the data among the servers in the cluster. This ensures that each server carries almost equal data.
 To balance the data equally on the servers, do the following:
 
-1.	Go to SnappyData home directory.</br>`cd <snappydata_install_dir>`
-2.	[Connect to snappy shell](#connectsnappyshell) and obtain the jdbc client connection.
+1.	Go to TIBCO ComputeDB home directory.</br>`cd <TIBCO ComputeDB_install_dir>`
+2.	[Connect to Snappy Shell](#connectsnappyshell) and obtain the jdbc client connection.
 3.	Run the rebalance command.</br> `call sys.rebalance_all_buckets();`
-4.	On SnappyData Pulse UI, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
+4.	On TIBCO ComputeDB Monitoring UI, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
 
 	**Before Rebalance**
     

@@ -9,8 +9,8 @@ An online backup saves the following:
 - A restore script (restore.sh) copies the files back to their original locations.
 
 !!! Note
-	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of the live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
-	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
+	- TIBCO ComputeDB does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of the live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
+	- TIBCO ComputeDB does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
 - [Guidelines](#guidelines)
 
@@ -39,7 +39,7 @@ An online backup saves the following:
 
 * It is recommended to [compact your disk store](store-compact-disk-store.md) before running the backup.
 
-* Make sure that those SnappyData members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members).
+* Make sure that those TIBCO ComputeDB members that host persistent data are running in the distributed system. Offline members cannot back up their disk stores. (A complete backup can still be performed if all table data is available in the running members).
 
 <a id="backup-directory"></a>
 ## Specifying the Backup Directory
@@ -100,9 +100,9 @@ To perform a full backup:
 
 1. [Start the cluster](../../howto/start_snappy_cluster.md).
 
-2. [Start the snappy-shell and connect to the cluster](../../programming_guide/using_snappydata_shell.md).
+2. [Start the Snappy Shell and connect to the cluster](../../programming_guide/using_snappydata_shell.md).
 
-3. Stop all transactions running in your distributed system, and do not execute DML statements during the backup. SnappyData does not support backing up a disk store while live transactions are taking place or when concurrent DML statements are being executed.
+3. Stop all transactions running in your distributed system, and do not execute DML statements during the backup. TIBCO ComputeDB does not support backing up a disk store while live transactions are taking place or when concurrent DML statements are being executed.
 
 2. Run the backup command, providing your backup directory location.
 
@@ -128,7 +128,7 @@ If the operation does not succeed, a message is displayed indicating that the ba
 Offline members leave nothing, so you only have this message from the backup operation itself. Although offline members cannot back up their disk stores, a complete backup can be obtained if at least one copy of the data is available in a running member.
 
 If the cluster is secure, you also need to specify all the security properties as command-line arguments to the backup command. The security properties you need to provide are the same as those mentioned in the configuration files in the **conf** directory (locators, servers or leads) when the cluster is launched.
-The only difference is that any valid user can run this command. That is, the user does not have to be a snappydata cluster administrator to run the backup command.
+The only difference is that any valid user can run this command. That is, the user does not have to be a TIBCO ComputeDB cluster administrator to run the backup command.
 
 For example:
 
@@ -173,9 +173,9 @@ To make additional incremental backups, execute the same backup command describe
 | Option | Description |
 |--------|--------|
 |-baseline|The directory that contains a baseline backup used for comparison during an incremental backup. The baseline directory corresponds to the backup location you specified when the last backup was performed. (For example, a baseline directory can resemble <_fileServerDirectory_>/<_SnappyDataBackupLocation_>.). </br> An incremental backup operation backs up any data that is not already present in the specified `-baseline` directory. If the member cannot find previously backed up data or if the previously backed up data is corrupt, then command performs a full backup on that member. The command also performs a full backup if you omit the `-baseline` option. Optionally, you can provide the directory with the time stamp details, to perform an incremental backup (For example, <_fileServerDirectory_>/<_SnappyDataBackupLocation_>/<_TimeStamp_>).|
-|-target-directory|The directory in which SnappyData stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
+|-target-directory|The directory in which TIBCO ComputeDB stores the backup content. See [Specifying the Backup Directory](#backup-directory).|
 |-locators|List of locators used to discover members of the distributed system. Supply all locators as comma-separated host:port values. The port is the peer-discovery-port used when starting the cluster (default 10334). This is a mandatory field. For example, `-locators=localhost:10334`|
-|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default SnappyData uses the hostname, or localhost if the hostname points to a local loopback address.|
+|-bind-address|The address to which this peer binds for receiving peer-to-peer messages. By default TIBCO ComputeDB uses the hostname, or localhost if the hostname points to a local loopback address.|
 |-J-D=|Sets Java system property. For example: `-J-Dgemfire.ack-wait-threshold=20`|
 |-J|Prefix for any JVM property. For example `-J-Xmx4g`|
 
@@ -212,6 +212,6 @@ To ensure that your backup is successful, you can try the following options:
 
 * Execute the `select count(*) from <TableName>;` query and verify the total number of rows.
 
-* Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
+* Verify the table details in the [TIBCO ComputeDB Monitoring UI](../../monitoring/monitoring.md#table).
 
 * If you have done updates, you can verify to see if those specific updates are available.

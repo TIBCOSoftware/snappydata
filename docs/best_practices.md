@@ -17,4 +17,4 @@ The following topics are covered in this section:
 
 !!! Tip
 
-	SnappyData Pulse is a web UI that displays information that can be used to analyse your query plan. For more details refer to [Snappy Pulse](monitoring/monitoring.md).
+	TIBCO ComputeDB Monitoring UI is a web UI that displays information that can be used to analyse your query plan. For more details refer to [Snappy Pulse](monitoring/monitoring.md).

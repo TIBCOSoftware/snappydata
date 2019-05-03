@@ -1,12 +1,12 @@
 # ALTER TABLE
 
-Use the ALTER TABLE statement to add and drop columns in row tables using SnappyData API or SQL.
+Use the ALTER TABLE statement to add and drop columns in row tables using TIBCO ComputeDB API or SQL.
 
 !!! Note
 
 	* ALTER TABLE is not supported on column, temporary and external tables.
 
-	* For row tables, only adding and dropping a column is supported using Snappy APIs or SQL.
+	* For row tables, only adding and dropping a column is supported using TIBCO ComputeDB APIs or SQL.
 
 ## Syntax
 

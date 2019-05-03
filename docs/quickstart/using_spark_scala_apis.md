@@ -1,7 +1,7 @@
 <a id="getting-started-using-spark-scala-apis"></a>
 # Using Spark Scala APIs
 
-1. **Create a SnappySession**</br>
+1. **Create a Snappy Session**</br>
     SnappySession extends the SparkSession so you can mutate data, get much higher performance, etc.
 
         scala> val snappy = new org.apache.spark.sql.SnappySession(spark.sparkContext)
@@ -23,12 +23,12 @@
 
         // Column tables manage data is columnar form and offer superior performance for analytic class queries.
         scala>  snappy.createTable(tableName = "colTable",
-                  provider = "column", // Create a SnappyData Column table
+                  provider = "column", // Create a TIBCO ComputeDB Column table
                   schema = tableSchema,
                   options = Map.empty[String, String], // Map for options
                   allowExisting = false)
 
-    SnappyData (SnappySession) extends SparkSession, so you can simply use all the Spark's APIs.
+    TIBCO ComputeDB (Snappy Session) extends SparkSession, so you can simply use all the Spark's APIs.
 
 5. **Insert the created DataSet to the column table "colTable"**</br>
 
@@ -37,7 +37,7 @@
         scala>  snappy.table("colTable").count
 
 6. **Create a row object using Spark's API and insert the row into the table**</br>
-	Unlike Spark DataFrames SnappyData column tables are mutable. You can insert new rows to a column table.
+	Unlike Spark DataFrames TIBCO ComputeDB column tables are mutable. You can insert new rows to a column table.
 
         // Insert a new record
         scala>  import org.apache.spark.sql.Row

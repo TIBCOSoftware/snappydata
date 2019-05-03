@@ -1,5 +1,5 @@
 # Setting up Cluster on Kubernetes
-Kubernetes is an open source project designed for container orchestration. SnappyData can be deployed on Kubernetes.
+Kubernetes is an open source project designed for container orchestration. TIBCO ComputeDB can be deployed on Kubernetes.
 
 The following sections are included in this topic:
 
@@ -11,7 +11,7 @@ The following sections are included in this topic:
 
 *	[Setting up PKS Environment for Kubernetes](#pkskubernetes)
 
-*	[Interacting with SnappyData Cluster on Kubernetes](#interactkubernetes)
+*	[Interacting with TIBCO ComputeDB Cluster on Kubernetes](#interactkubernetes)
 
 *	[List of Configuration Parameters for SnappyData Chart](#chartparameters)
 
@@ -23,9 +23,9 @@ The following sections are included in this topic:
 <a id= prerequisites> </a>
 ## Prerequisites
 
-The following prerequisites must be met to deploy SnappyData on Kubernetes:
+The following prerequisites must be met to deploy TIBCO ComputeDB on Kubernetes:
 
-*	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned [here](#pksaccess).
+*	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. TIBCO ComputeDB has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned [here](#pksaccess).
 
 *	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
 
@@ -49,95 +49,95 @@ If you would like to deploy Kubernetes on-premises, you can use any of the follo
 - If you are using Google cloud, you will find instructions for setting up Google Cloud SDK ('gcloud') along with `kubectl` [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
 
 <a id= deploykubernetes> </a>
-## Deploying SnappyData on Kubernetes 
+## Deploying TIBCO ComputeDB on Kubernetes 
 
-**SnappyData Helm **chart is used to deploy SnappyData on Kubernetes.  It uses Kubernetes [statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to launch the locator, lead, and server members. 
+**SnappyData Helm** chart is used to deploy TIBCO ComputeDB on Kubernetes.  It uses Kubernetes [statefulsets](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/) to launch the locator, lead, and server members. 
 
-**To deploy SnappyData on Kubernetes:**
+**To deploy TIBCO ComputeDB on Kubernetes:**
 
 1.	Clone the **spark-on-k8s** repository and change to **charts** directory.</br>
 `git clone https://github.com/SnappyDataInc/spark-on-k8s`</br>
 `cd spark-on-k8s/charts`
 
-3.	Optionally, you can edit the **snappydata > values.yaml**  file to change the default configurations in the SnappyData chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for SnappyData Chart](#chartparameters)
+3.	Optionally, you can edit the **snappydata > values.yaml**  file to change the default configurations in the TIBCO ComputeDB chart. Configurations can be specified in the respective attributes for locators, leaders, and servers in this file. Refer [List of Configuration Parameters for TIBCO ComputeDB Chart](#chartparameters)
 
 4.	Install the **snappydata** chart using the following command:</br>
 `helm install --name snappydata --namespace snappy ./snappydata/`
 
-	The above command installs the SnappyData chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
-    By default, **SnappyData Helm **chart deploys a SnappyData cluster which consists of one locator, one lead, two servers and services to access SnappyData endpoints.
+	The above command installs the **SnappyData** chart in a namespace called *snappy* and displays the Kubernetes objects (service, statefulsets etc.) created by the chart on the console.</br>
+    By default, **SnappyData Helm** chart deploys a TIBCO ComputeDB cluster which consists of one locator, one lead, two servers and services to access TIBCO ComputeDB endpoints.
 
 You can monitor the Kubernetes UI dashboard to check the status of the components as it takes few minutes for all the servers to be online. To access the Kubernetes UI refer to the instructions [here](https://kubernetes.io/docs/tasks/access-application-cluster/web-ui-dashboard/#accessing-the-dashboard-ui). 
 
-SnappyData chart dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
+**SnappyData chart** dynamically provisions volumes for servers, locators, and leads. These volumes and the data in it are retained even after the chart deployment is deleted.
 
 <a id= interactkubernetes> </a>
-## Interacting with SnappyData Cluster on Kubernetes
+## Interacting with TIBCO ComputeDB Cluster on Kubernetes
 
-You can interact with the SnappyData cluster on Kuberenetes in the same manner as you interact with a SnappyData cluster that runs locally or on-premise. All you require is the host IP address of the locator and the lead with their respective ports numbers.
+You can interact with the TIBCO ComputeDB cluster on Kuberenetes in the same manner as you interact with a TIBCO ComputeDB cluster that runs locally or on-premise. All you require is the host IP address of the locator and the lead with their respective ports numbers.
 
-To find the IP addresses and port numbers of the SnappyData processes, use command `kubectl get svc --namespace=snappy`. 
+To find the IP addresses and port numbers of the TIBCO ComputeDB processes, use command `kubectl get svc --namespace=snappy`. 
 In the [output](#output), three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
 
-**snappydata-leader-public** service exposes port **5050** for SnappyData Pulse and port **8090** to accept [SnappyData jobs](#jobkubernetes).</br>
+**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring UI and port **8090** to accept [Snappy jobs](#jobkubernetes).</br>
 **snappydata-locator-public** service exposes port **1527** to accept [JDBC/ODBC connections](#jdbckubernetes).
 
-You can do the following on the SnappyData cluster that is deployed on Kubernetes:
+You can do the following on the TIBCO ComputeDB cluster that is deployed on Kubernetes:
 
-- [Access SnappyData Pulse](#accesskubernetes)
+- [Access TIBCO ComputeDB Monitoring UI](#accesskubernetes)
 
-- [Connect SnappyData using JDBC Driver](#jdbckubernetes)
+- [Connect TIBCO ComputeDB using JDBC Driver](#jdbckubernetes)
 
 - [Execute Queries](#querykubernetes)
 
-- [Submit a SnappyData Job](#jobkubernetes)
+- [Submit a Snappy Job](#jobkubernetes)
 
-- [Stop SnappyData Cluster on Kubernetes](#deletehelm)
+- [Stop TIBCO ComputeDB Cluster on Kubernetes](#deletehelm)
 
 <a id= accesskubernetes> </a>
-### Accessing SnappyData Pulse
+### Accessing TIBCO ComputeDB Monitoring UI
 
-The dashboards on the SnappyData Pulse can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
+The dashboards on the TIBCO ComputeDB Monitoring UI can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
 Replace *externalip* with the external IP address of the **snappydata-leader-public **service.
 
-**To access SnappyData Pulse in Kubernetes:**
+**To access TIBCO ComputeDB Monitoring UI in Kubernetes:**
 
-1. Check the SnappyData services running in the Kubernetes cluster.</br>
+1. Check the TIBCO ComputeDB services running in the Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br> The output displays the external IP address of the **snappydata-leader-public** service as shown in the following image: ![Snappy-Leader-Service](./Images/services_Leader_Public.png)
 
 3. Type [externalIp:5050]() in the browser. Here you must replace *externalip* with the external IP address of the **leader-public** service.</br> For example, 35.232.102.51:5050.
 
 <a id= jdbckubernetes> </a>
-### Connecting SnappyData Using JDBC Driver
+### Connecting TIBCO ComputeDB Using JDBC Driver
 
-For Kubernetes deployments, JDBC clients can connect to SnappyData cluster using the JDBC URL that is derived from the **snappydata-locator-public** service.
+For Kubernetes deployments, JDBC clients can connect to TIBCO ComputeDB cluster using the JDBC URL that is derived from the **snappydata-locator-public** service.
 
-**To connect to SnappyData using JDBC driver in Kubernetes:**
+**To connect to TIBCO ComputeDB using JDBC driver in Kubernetes:**
 
-1.	Check the SnappyData services running in Kubernetes cluster.</br>
+1.	Check the TIBCO ComputeDB services running in Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address  of the *snappydata-locator-public* service and the port number for external connections as shown in the following image:![Snappy-Leader-Service](./Images/services_Locator_Public.png)
 
-2.	Use the external IP address and port of the **snappydata-locator-public** services to connect to SnappyData cluster using JDBC connections. For example, based on the above output, the JDBC URL to be used will be [jdbc:snappydata://104.198.47.162:1527/]()
+2.	Use the external IP address and port of the **snappydata-locator-public** services to connect to TIBCO ComputeDB cluster using JDBC connections. For example, based on the above output, the JDBC URL to be used will be [jdbc:snappydata://104.198.47.162:1527/]()
 
-You can refer to [SnappyData documentation](http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
+You can refer to the [documentation](http://snappydatainc.github.io/snappydata/howto/connect_using_jdbc_driver/) for an example of JDBC program and for instructions on how to obtain JDBC driver using Maven/SBT co-ordinates.
 
 <a id= querykubernetes> </a>
-### Executing Queries Using SnappyData Shell
+### Executing Queries Using Snappy Shell
 
-You  can use SnappyData shell to connect to SnappyData and execute your queries. You can simply connect to one of the pods in the cluster and use the SnappyData Shell. Alternatively, you can download the SnappyData distribution from [SnappyData github releases](https://github.com/SnappyDataInc/snappydata/releases). SnappyData shell need not run within the Kubernetes cluster.
+You  can use Snappy shell to connect to TIBCO ComputeDB and execute your queries. You can simply connect to one of the pods in the cluster and use the Snappy Shell. Alternatively, you can download the TIBCO ComputeDB distribution from TIBCO eDelivery releases. Snappy shell need not run within the Kubernetes cluster.
 
 **To execute queries in Kubernetes deployment:**
 
-1.	Check the SnappyData services running in the Kubernetes cluster.</br>
+1.	Check the TIBCO ComputeDB services running in the Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address of the **snappydata-locator-public** services  and the port number for external connections as shown in the following image:![Snappy-Leader-Service](./Images/services_Locator_Public.png)
 
-2.	Launch SnappyData shell and then create tables and execute queries. </br>Following is an example of executing queries using SnappyData shell.
+2.	Launch Snappy Shell and then create tables and execute queries. </br>Following is an example of executing queries using Snappy Shell.
 
 ```
-# Connect to snappy-shell
+# Connect to Snappy Shell
  bin/snappy
  snappy> connect client '104.198.47.162:1527';
 
@@ -148,21 +148,21 @@ The output displays the external IP address of the **snappydata-locator-public**
 ```
 
 <a id= jobkubernetes> </a>
-### Submitting a SnappyData Job
+### Submitting a TIBCO ComputeDB Job
 
-Refer to the [How Tos section](http://snappydatainc.github.io/snappydata/howto/run_spark_job_inside_cluster/) in SnappyData documentation to understand how to submit SnappyData jobs.
-However, for submitting a SnappyData job in Kubernetes deployment, you need to use the **snappydata-leader-public** service that exposes port **8090** to run the jobs.
+Refer to the How Tos section in the product documentation to understand how to submit Snappy jobs.
+However, for submitting a Snappy job in Kubernetes deployment, you need to use the **snappydata-leader-public** service that exposes port **8090** to run the jobs.
 
-**To submit a SnappyData job in Kubernetes deployment:**
+**To submit a Snappy job in Kubernetes deployment:**
 
-1.	Check the SnappyData services running in Kubernetes cluster.</br>
+1.	Check the TIBCO ComputeDB services running in Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br>
 The output displays the external IP address of **snappydata-leader-public** service which must be noted. ![Snappy-Leader-Service](./Images/services_Leader_Public.png)
 
-3.	Change to SnappyData product directory.</br>
+3.	Change to TIBCO ComputeDB product directory.</br>
 `cd $SNAPPY_HOME`
 
-3.	Submit the job using the external IP of the **snappydata-leader-public** service and the port number **8090** in the **--lead** option.</br> Following is an example of submitting a SnappyData Job:
+3.	Submit the job using the external IP of the **snappydata-leader-public** service and the port number **8090** in the **--lead** option.</br> Following is an example of submitting a Snappy Job:
 
 ```
 bin/snappy-job.sh submit
@@ -172,9 +172,9 @@ bin/snappy-job.sh submit
   --lead 35.232.102.51:8090
 ```
 
-## Stopping the SnappyData Cluster on Kubernetes
+## Stopping the TIBCO ComputeDB Cluster on Kubernetes
 
-To stop the SnappyData cluster on Kubernetes, you must delete the **SnappyData Helm **chart using the `helm delete` command.
+To stop the TIBCO ComputeDB cluster on Kubernetes, you must delete the **SnappyData Helm** chart using the `helm delete` command.
 
 ```
 $ helm delete --purge snappydata
@@ -192,15 +192,15 @@ You can modify the **values.yaml**  file to configure the SnappyData chart. The 
 
 | Parameter| Description | Default |
 | ---------| ------------| --------|
-| `image` |  Docker repo from which the SnappyData Docker image is pulled.    |  `snappydatainc/snappydata`   |
-| `imageTag` |  Tag of the SnappyData Docker image that is pulled. |   |
+| `image` |  Docker repo from which the TIBCO ComputeDB Docker image is pulled.    |  `snappydatainc/snappydata`   |
+| `imageTag` |  Tag of the TIBCO ComputeDB Docker image that is pulled. |   |
 | `imagePullPolicy` | Pull policy for the image.  | `IfNotPresent` |
 | `locators.conf` | List of the configuration options that is passed to the locators. | |
 | `locators.resources` | Resource configuration for the locator Pods. User can configure CPU/memory requests and limit the usage. | `locators.requests.memory` is set to `1024Mi`. |
 | `locators.persistence.storageClass` | Storage class that is used while dynamically provisioning a volume. | Default value is not defined so `default` storage class for the cluster is chosen.  |
 | `locators.persistence.accessMode` | [Access mode](https://kubernetes.io/docs/concepts/storage/persistent-volumes/#access-modes) that is used for the dynamically provisioned volume. | `ReadWriteOnce` |
 | `locators.persistence.size` | Size of the dynamically provisioned volume. | `10Gi` |
-| `servers.replicaCount` | Number of servers that are started in a SnappyData cluster. | `2` |
+| `servers.replicaCount` | Number of servers that are started in a TIBCO ComputeDB cluster. | `2` |
 | `servers.conf` | List of the configuration options that are passed to the servers. | |
 | `servers.resources` | Resource configuration for the server Pods. You can configure CPU/memory requests and limit the usage. | `servers.requests.memory` is set to `4096Mi` |
 | `servers.persistence.storageClass` | Storage class that is used while dynamically provisioning a volume. | Default value is not defined so `default` storage class for the cluster will be chosen.  |
@@ -222,7 +222,7 @@ servers:
   conf: "-heap-size=2048m"
 ```
 
-You can specify SnappyData [configuration parameters](https://snappydatainc.github.io/snappydata/configuring_cluster/configuring_cluster/#configuration-files) in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
+You can specify TIBCO ComputeDB configuration parameters in the **servers.conf**, **locators.conf**, and **leaders.conf** attributes for servers, locators, and leaders respectively.
 
 <a id= kubernetesobjects> </a>
 ## Kubernetes Obects Used in SnappyData Chart
@@ -245,8 +245,8 @@ SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. B
 ### Services that Expose External Endpoints
 
 SnappyData Helm chart creates services to allow you to make JDBC connections, execute Spark jobs, and access
-SnappyData Pulse etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
-To check the service created for SnappyData deployment, use command `kubectl get svc --namespace=snappy`. The following output is displayed:
+TIBCO ComputeDB Monitoring UI etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
+To check the service created for TIBCO ComputeDB deployment, use command `kubectl get svc --namespace=snappy`. The following output is displayed:
 
 <a id= output> </a>
 ```pre
@@ -262,46 +262,46 @@ snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527
 In the above output, three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are created. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
  
-**snappydata-leader-public** service exposes port **5050** for SnappyData Pulse and port **8090** to accept SnappyData jobs.
+**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring UI and port **8090** to accept Snappy jobs.
 **snappydata-locator-public** service exposes port **1527** to accept JDBC connections.
 
 <a id= persistentvolumes> </a>
 ### Persistent Volumes
 
-A pod in a SnappyData deployment has a persistent volume mounted on it. This volume is dynamically provisioned and is used
-to store data directory for SnappyData. On each pod, the persistent volume is mounted on path `/opt/snappydata/work`. These volumes and the data in it is retained even if the chart deployment is deleted.
+A pod in a TIBCO ComputeDB deployment has a persistent volume mounted on it. This volume is dynamically provisioned and is used
+to store data directory for TIBCO ComputeDB. On each pod, the persistent volume is mounted on path `/opt/snappydata/work`. These volumes and the data in it is retained even if the chart deployment is deleted.
 
 <a id= accesslogs> </a>
 ## Accessing Logs
 
-You can access the logs when the [SnappyData cluster is running](#running) as well as when the [SnappyData cluster is not running](#notrunning). 
+You can access the logs when the [TIBCO ComputeDB cluster is running](#running) as well as when the [TIBCO ComputeDB cluster is not running](#notrunning). 
 
 <a id= running> </a>
-### Accessing Logs When SnappyData Cluster is Running
+### Accessing Logs When TIBCO ComputeDB Cluster is Running
 
-When a SnappyData cluster is running, you can open a session for a pod using `kubectl` command and then view the logs.
+When a TIBCO ComputeDB cluster is running, you can open a session for a pod using `kubectl` command and then view the logs.
 The following example shows how to access logs of **snappydata-server-0**:
 
 ```
 # Connect to snappydata-server-0 pod and open a shell.
 $ kubectl exec -it snappydata-server-0 --namespace snappy -- /bin/bash
 
-# Switch to Snappydata work directory and view the logs.
+# Switch to TIBCO ComputeDB work directory and view the logs.
 $ cd /opt/snappydata/work
 $ ls 
 ```
 <a id= notrunning> </a>
-### Accessing Logs When SnappyData Cluster is not Running
+### Accessing Logs When TIBCO ComputeDB Cluster is not Running
 
-When SnappyData cluster is not running, you can access the volumes used in SnappyData with a utility script `snappy-debug-pod.sh` located in the **utils** directory of [Spark on k8s](https://github.com/SnappyDataInc/spark-on-k8s/tree/master/utils) repository.
+When TIBCO ComputeDB cluster is not running, you can access the volumes used in TIBCO ComputeDB with a utility script `snappy-debug-pod.sh` located in the **utils** directory of [Spark on k8s](https://github.com/SnappyDataInc/spark-on-k8s/tree/master/utils) repository.
 This script launches a pod in the Kubernetes cluster with persistent volumes, specified via `--pvc` option, mounted on it and then returns a shell prompt. Volumes are mounted on the path starting with **/data0 (volume1 on /data0 and so on)**.
 
-<!-- The following example shows, how to access the logs when the SnappyData Cluster is not running: -->
+<!-- The following example shows, how to access the logs when the TIBCO ComputeDB Cluster is not running: -->
 In the following example, the names of the persistent volume claims used by the cluster are retrieved and passed to the `snappy-debug-pod.sh` script to be mounted on the pod.
 
 ```
-# Get the names of persistent volume claims used by SnappyData cluster installed in a namespace
-# called *snappy*. The PVCs used by SnappyData are prefixed with 'snappy-disk-claim-'.
+# Get the names of persistent volume claims used by TIBCO ComputeDB cluster installed in a namespace
+# called *snappy*. The PVCs used by TIBCO ComputeDB are prefixed with 'snappy-disk-claim-'.
 
 $ kubectl get  pvc --namespace snappy
 NAME                                     STATUS    VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   AGE

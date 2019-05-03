@@ -1,6 +1,6 @@
 # version
 
-Prints information about the SnappyData product version.
+Prints information about the TIBCO ComputeDB product version.
 
 ## Syntax
 

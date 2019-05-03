@@ -1,6 +1,6 @@
 #  Transaction Performance
 
-SnappyData provides statistics for transaction commits, rollbacks, and failures You can monitor SnappyData transactions with VSD.
+TIBCO ComputeDB provides statistics for transaction commits, rollbacks, and failures You can monitor TIBCO ComputeDB transactions with VSD.
 
 You can use these statistics to see the transaction rate. An example follows the table.
 

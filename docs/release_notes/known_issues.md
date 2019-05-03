@@ -1,5 +1,5 @@
 # Known Issues 
-The following key issues have been registered as bugs in the SnappyData bug tracking system:
+The following key issues have been registered as defects in the TIBCO ComputeDB defect tracking system:
 
 <table align="left">
 <colgroup>
@@ -26,15 +26,15 @@ The following key issues have been registered as bugs in the SnappyData bug trac
 <tr class="odd">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1422">SNAP-1422</a></td>
 <td>Catalog in smart connector inconsistent with servers</td>
-<td>Catalog in smart connector inconsistent with servers|When a table is queried from spark-shell (or from an application that uses smart connector mode) the table metadata is cached on the smart connector side. </br>If this table is dropped from SnappyData embedded cluster (by using snappy-shell, or JDBC application, or a Snappy job), the metadata on the smart connector side stays cached even though catalog has changed (table is dropped). </br>In such cases, the user may see unexpected errors like "org.apache.spark.sql.AnalysisException: Table `SNAPPYTABLE` already exists"  in the smart connector app side for example for `DataFrameWriter.saveAsTable()` API if the same table name that was dropped is used in `saveAsTable()`</td>
+<td>Catalog in smart connector inconsistent with servers|When a table is queried from spark-shell (or from an application that uses smart connector mode) the table metadata is cached on the smart connector side. </br>If this table is dropped from TIBCO ComputeDB embedded cluster (by using Snappy Shell, or JDBC application, or a Snappy job), the metadata on the smart connector side stays cached even though catalog has changed (table is dropped). </br>In such cases, the user may see unexpected errors like "org.apache.spark.sql.AnalysisException: Table `SNAPPYTABLE` already exists"  in the smart connector app side for example for `DataFrameWriter.saveAsTable()` API if the same table name that was dropped is used in `saveAsTable()`</td>
 <td> 
-1. User may either create a new SnappySession in such scenarios </br>OR </br> 
+1. User may either create a new Snappy Session in such scenarios </br>OR </br> 
 2. Invalidate the cache on the Smart Connector mode, for example by calling </br>  `snappy.sessionCatalog.invalidateAll()`</td>
 </tr>
 <tr class="even">
 <td><a href="https://jira.snappydata.io/browse/SNAP-1634">SNAP-1634</a></td>
 <td>Creating a temporary table with the same name as an existing table in any schema should not be allowed</td>
-<td>When creating a temporary table, the SnappyData catalog is not referred, which means, a temporary table with the same name as that of an existing SnappyData table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br></td>
+<td>When creating a temporary table, the TIBCO ComputeDB catalog is not referred, which means, a temporary table with the same name as that of an existing TIBCO ComputeDB table can be created. Two tables with the same name lead to ambiguity during query execution and can either cause the query to fail or return wrong results. </br></td>
 <td> Ensure that you create temporary tables with a unique name. </td>
 </tr>
 <tr class="odd">
@@ -95,7 +95,7 @@ select
 <td><a href="https://jira.snappydata.io/browse/SNAP-2436">SNAP-2436</a></td>
 <td>Data mismatch in queries running on servers coming up after a failure</td>
 <td>Data mismatch is observed in queries which are running when some servers are coming up after a failure. Also, the tables on which the queries are running must have set their redundancy to one or more for the issue to be observed. </td>
-<td>This issue happens due to Spark retry mechanism with SnappyData tables. To avoid this issue, you can stop all the queries when one or more servers are coming up. If that is not feasible, you should configure the lead node with `spark.task.maxFailures = 0`; </td>
+<td>This issue happens due to Spark retry mechanism with TIBCO ComputeDB tables. To avoid this issue, you can stop all the queries when one or more servers are coming up. If that is not feasible, you should configure the lead node with `spark.task.maxFailures = 0`; </td>
 </tr>
 <tr class="even">
 <td><a href="https://jira.snappydata.io/browse/SNAP-2381">SNAP-2381</a></td>

@@ -85,4 +85,4 @@ snappy>CREATE SAMPLE TABLE CUSTOMER_SAMPLE on CUSTOMER_BASE
 ```    
 
 !!! Note
-	Refer to [create sample tables in SDE section](/../../sde/working_with_stratified_samples.md#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/SnappyData.
+	Refer to [create sample tables in SDE section](/../../sde/working_with_stratified_samples.md#create-sample-tables) for more information on creating sample tables on datasets that can be sourced from any source supported in Spark/TIBCO ComputeDB.

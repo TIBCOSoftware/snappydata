@@ -2,7 +2,7 @@
 
 ## Description
 
-Used for configuring SSL encryption between SnappyData members. Boolean indicating whether to require authentication for member connections.
+Used for configuring SSL encryption between TIBCO ComputeDB members. Boolean indicating whether to require authentication for member connections.
 
 ## Default Value
 

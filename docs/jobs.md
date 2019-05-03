@@ -1,12 +1,12 @@
 ## Building Snappy applications using Spark API
 
-SnappyData bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). All SnappyData managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  So, we recommend getting to know the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](rowAndColumnTables.md).
+TIBCO ComputeDB bundles Spark and supports all the Spark APIs. You can create Object based RDDs and run transformations or use the higher level APIs (like Spark ML). All TIBCO ComputeDB managed tables are also accessible as DataFrame and the API extends Spark classes like SQLContext and DataFrames.  So, we recommend getting to know the [concepts in SparkSQL](http://spark.apache.org/docs/latest/sql-programming-guide.html#overview) and the [DataFrame API](http://spark.apache.org/docs/latest/sql-programming-guide.html#dataframes). And, you can store and manage arbitrary RDDs (or even Spark DataSets) through implicit or explicit transformation to a DataFrame. While, the complete SQL support is still evolving, the supported SQL is much richer than SparkSQL. The extension SQL supported by the SnappyStore can be referenced [here](rowAndColumnTables.md).
 
-In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, SnappyData tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but, can also be reliably managed on disk. 
+In Spark SQL, all tables are temporary and cannot be shared across different applications. While you can manage such temporary tables, TIBCO ComputeDB tables are automatically registered to a built-in persistent catalog. This is similar to how Spark SQL uses the Hive catalog to natively work with Hive clusters. Data in tables is primarily managed in-memory with one or more consistent copies across machines or racks, but, can also be reliably managed on disk. 
 
 
 ### SnappyContext
-A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for SnappyData extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as SnappyData tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
+A [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext) is the main entry point for TIBCO ComputeDB extensions to Spark. A SnappyContext extends Spark's [SQLContext](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.SQLContext) to work with Row and Column tables. Any DataFrame can be managed as TIBCO ComputeDB tables and any table can be accessed as a DataFrame. This is similar to [HiveContext](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.hive.HiveContext) - integrates the SQLContext functionality with the Snappy store.
 
 
 #### Using SnappyContext to create table and query data 
@@ -172,7 +172,7 @@ Create row tables using API, update the contents of row table
 
 
 ### SnappyStreamingContext
-SnappyData extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
+TIBCO ComputeDB extends Spark streaming so stream definitions can be declaratively written using SQL and these streams can be analyzed using static and dynamic SQL.
 
 Below example shows how to use the SnappyStreamingContext to apply a schema to existing DStream and then query the SchemaDStream with simple SQL. It also shows the SnappyStreamingContext ability to deal with sql queries.
 
@@ -244,7 +244,7 @@ snsc.sql("select count(*) from streamingExample").show()
 ### Running Spark programs inside the database
 
 <!--
-> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the SnappyData system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
+> Note: Above simple example uses local mode (i.e. development mode) to create tables and update data. In the production environment, users will want to deploy the TIBCO ComputeDB system as a unified cluster (default cluster model that consists of servers that embed colocated Spark executors and Snappy stores, locators, and a job server enabled lead node) or as a split cluster (where Spark executors and Snappy stores form independent clusters). Refer to the  [deployment](deployment.md) chapter for all the supported deployment modes and the [configuration](configuration.md) chapter for configuring the cluster. This mode is supported in both Java and Scala. Support for Python is yet not added.-->
 
 To create a job that can be submitted through the job server, the job must implement the _SnappySQLJob or SnappyStreamingJob_ trait. Your job looks like:
 
@@ -254,7 +254,7 @@ class SnappySampleJob implements SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
   def runSnappyJob(sc: SnappyContext, jobConfig: Config): Any
 
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
 }
 ```
@@ -265,7 +265,7 @@ class SnappySampleJob extends SnappySQLJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
   public Object runSnappyJob(SnappyContext snc, Config jobConfig) {//Implementation}
 
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   public SnappyJobValidation isValidJob(SnappyContext snc, Config config) {//validate}
 }
 
@@ -277,7 +277,7 @@ class SnappyStreamingSampleJob implements SnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
   def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any
 
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   def isValidJob(sc: SnappyContext, config: Config): SnappyJobValidation
 }
 ```
@@ -288,7 +288,7 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
   /** Snappy uses this as an entry point to execute Snappy jobs. **/
   public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
 
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   public SnappyJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig)
   {//validate}
 }
@@ -297,7 +297,7 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 > The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
 • `runSnappyJob` contains the implementation of the Job.
-The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
+The [SnappyContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappyContext)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the TIBCO ComputeDB Leader (which runs an instance of Spark JobServer) and will be provided to the job through this method. This relieves the developer from the boiler-plate configuration management that comes with the creation of a Spark job and allows the Job Server to manage and re-use contexts.
 
 • `isValidJob` allows for an initial validation of the context and any provided configuration.
  If the context and configuration are OK to run the job, returning spark.jobserver.SnappyJobValid
@@ -375,7 +375,7 @@ $ ./bin/spark-submit \
 
 ### Streaming Jobs
 
-An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying `--stream` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as `--context <context-name>` with the submit command.
+An implementation of SnappyStreamingJob can be submitted to the lead node of TIBCO ComputeDB cluster by specifying `--stream` as an option to the submit command. This option will cause creation of a new SnappyStreamingContext before the job is submitted. Alternatively, user may specify the name of an existing/pre-created streaming context as `--context <context-name>` with the submit command.
 
 For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) from the [examples](https://github.com/SnappyDataInc/snappydata/tree/master/examples/src/main/scala/io/snappydata/examples) directory can be submitted as follows. This job creates stream tables on tweet streams, registers continuous queries and prints results of queries such as top 10 hash tags of last two second, top 10 hash tags until now, top 10 popular tweets.
 

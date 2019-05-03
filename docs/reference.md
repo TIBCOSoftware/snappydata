@@ -1,6 +1,6 @@
 ## Reference Guides
 
-The SnappyData Reference provides a list and description of command-line utilities, APIs, and Standard Query Language (SQL) implementation.
+The TIBCO ComputeDB Reference provides a list and description of command-line utilities, APIs, and Standard Query Language (SQL) implementation.
 
 The following topics are covered in this section:
 
@@ -18,4 +18,4 @@ The following topics are covered in this section:
 
 !!! Tip
 
-	SnappyData supports the built-in functions supported by Spark. For more information, refer to the [Apache Spark Documentation](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.functions$).
+	TIBCO ComputeDB supports the built-in functions supported by Spark. For more information, refer to the [Apache Spark Documentation](http://spark.apache.org/docs/2.1.1/api/scala/index.html#org.apache.spark.sql.functions$).

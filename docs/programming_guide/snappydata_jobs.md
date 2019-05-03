@@ -1,4 +1,4 @@
-<a id="snappydata-jobs"></a>
+<a id="TIBCO ComputeDB-jobs"></a>
 # Snappy Jobs
 
 To create a job that can be submitted through the job server, the job must implement the **SnappySQLJob** or **SnappyStreamingJob** trait. The structure of a job looks as below:
@@ -7,10 +7,10 @@ To create a job that can be submitted through the job server, the job must imple
 
 ```pre
 object SnappySampleJob extends SnappySQLJob {
-  /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
+  /** TIBCO ComputeDB uses this as an entry point to execute Snappy jobs. **/
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
 }
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
 }
@@ -19,10 +19,10 @@ object SnappySampleJob extends SnappySQLJob {
 **Java**
 ```pre
 class SnappySampleJob extends JavaSnappySQLJob {
-  /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
+  /** TIBCO ComputeDB uses this as an entry point to execute Snappy jobs. **/
   public Object runSnappyJob(SnappySession snappy, Config jobConfig) {//Implementation}
 
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   public SnappyJobValidation isValidJob(SnappySession snappy, Config config) {//validate}
 }
 
@@ -31,10 +31,10 @@ class SnappySampleJob extends JavaSnappySQLJob {
 **Scala**
 ```pre
 object SnappyStreamingSampleJob extends SnappyStreamingJob {
-  /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
+  /** TIBCO ComputeDB uses this as an entry point to execute Snappy jobs. **/
   override def runSnappyJob(sc: SnappyStreamingContext, jobConfig: Config): Any = {
 }
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   override def isValidJob(sc: SnappyStreamingContext, config: Config): SnappyJobValidation = SnappyJobValid()
 }
 ```
@@ -42,10 +42,10 @@ object SnappyStreamingSampleJob extends SnappyStreamingJob {
 **Java**
 ```pre
 class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
-  /** SnappyData uses this as an entry point to execute SnappyData jobs. **/
+  /** TIBCO ComputeDB uses this as an entry point to execute Snappy jobs. **/
   public Object runSnappyJob(JavaSnappyStreamingContext snsc, Config jobConfig) {//implementation }
 
-  /** SnappyData calls this function to validate the job input and reject invalid job requests **/
+  /** TIBCO ComputeDB calls this function to validate the job input and reject invalid job requests **/
   public SnappyJobValidation isValidJob(JavaSnappyStreamingContext snc, Config jobConfig)
   {//validate}
 }
@@ -55,7 +55,7 @@ class SnappyStreamingSampleJob extends JavaSnappyStreamingJob {
 	The _Job_ traits are simply extensions of the _SparkJob_ implemented by [Spark JobServer](https://github.com/spark-jobserver/spark-jobserver). 
 
 * `runSnappyJob` contains the implementation of the Job.
-The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the SnappyData Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from configuration management that comes with the creation of a Spark job and allows the Job Server to manage and reuse contexts.
+The [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession)/[SnappyStreamingContext](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.streaming.SnappyStreamingContext) is managed by the TIBCO ComputeDB Leader (which runs an instance of Spark JobServer) and is provided to the job through this method. This relieves the developer from configuration management that comes with the creation of a Spark job and allows the Job Server to manage and reuse contexts.
 
 * `isValidJob` allows for an initial validation of the context and any provided configuration.
     If the context and configuration can run the job, returning `spark.jobserver.SnappyJobValid` allows the job to execute, otherwise returning `spark.jobserver.SnappyJobInvalid<reason>` prevents the job from running and provides means to convey the reason for failure. In this case, the call immediately returns an "HTTP/1.1 400 Bad Request" status code. Validate helps you prevent running jobs that eventually fail due to a  missing or wrong configuration, and saves both time and resources.
@@ -157,7 +157,7 @@ compile('io.snappydata:snappydata-cluster_2.11:1.0.2.1') {
 
 ## Running Python Applications
 
-Python users can submit a Python application using `./bin/spark-submit` in the SnappyData Connector mode. Run the following command to submit a Python application:
+Python users can submit a Python application using `./bin/spark-submit` in the TIBCO ComputeDB Smart Connector mode. Run the following command to submit a Python application:
 
 ```pre
 ./bin/spark-submit \
@@ -176,7 +176,7 @@ Python users can submit a Python application using `./bin/spark-submit` in the S
 
 ## Streaming Jobs
 
-An implementation of SnappyStreamingJob can be submitted to the lead node of SnappyData cluster by specifying `--stream` as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
+An implementation of SnappyStreamingJob can be submitted to the lead node of TIBCO ComputeDB cluster by specifying `--stream` as an option to the submit command. This option creates a new SnappyStreamingContext before the job is submitted. 
 Alternatively, you can specify the name of an existing/pre-created streaming context as `--context <context-name>` with the `submit` command.
 
 For example, [TwitterPopularTagsJob](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/io/snappydata/examples/TwitterPopularTagsJob.scala) can be submitted as follows. 

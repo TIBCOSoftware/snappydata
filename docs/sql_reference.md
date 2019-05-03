@@ -1,6 +1,6 @@
 ## SQL Reference Guide
 
-This section provides a complete description of the Structured Query Language (SQL) used to manage information in SnappyData. It includes syntax, usage, keywords, and examples of the SQL statements used on SnappyData.
+This section provides a complete description of the Structured Query Language (SQL) used to manage information in TIBCO ComputeDB. It includes syntax, usage, keywords, and examples of the SQL statements used on TIBCO ComputeDB.
 
 The following topics are covered in this section:
 

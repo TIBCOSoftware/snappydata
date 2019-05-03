@@ -1,8 +1,6 @@
 # High-level Accuracy Contracts (HAC)
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
-
-SnappyData combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), SnappyData offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
+TIBCO ComputeDB combines state-of-the-art approximate query processing techniques and a variety of data synopses to ensure interactive analytics over both, streaming and stored data. Using high-level accuracy contracts (HAC), TIBCO ComputeDB offers end users intuitive means for expressing their accuracy requirements, without overwhelming them with statistical concepts.
 
 When an error constraint is not met, the action to be taken is defined in the behavior clause. 
 
@@ -39,7 +37,7 @@ SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by 
 ```
 
 ## Error Functions
-In addition to this, SnappyData supports error functions that can be specified in the query projection. These error functions are supported for the SUM, AVG and COUNT aggregates in the projection. 
+In addition to this, TIBCO ComputeDB supports error functions that can be specified in the query projection. These error functions are supported for the SUM, AVG and COUNT aggregates in the projection. 
 
 The following four methods are available to be used in query projection when running approximate queries:
 
@@ -75,7 +73,7 @@ snc.table(basetable).groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay),
 ```
 
 ## Reserved Keywords
-Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for SnappyData.
+Keywords are predefined reserved words that have special meanings and cannot be used in a paragraph. Keyword `sample_` is reserved for TIBCO ComputeDB.
 
 If the aggregate function is aliased in the query as `sample_<any string>`, then what you get is true answers on the sample table, and not the estimates of the base table.
 
