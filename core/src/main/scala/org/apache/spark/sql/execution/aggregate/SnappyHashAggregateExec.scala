@@ -596,15 +596,20 @@ case class SnappyHashAggregateExec(
       // generate result based on grouping key
       ctx.INPUT_ROW = null
       ctx.currentVars = keyBufferVars
-      val keyVars = resultExpressions.map { e =>
-        BindReferences.bindReference(e, groupingAttributes).genCode(ctx)
+      val keyVars = groupingExpressions.zipWithIndex.map {
+        case (e, i) => BoundReference(i, e.dataType, e.nullable).genCode(ctx)
       }
       val evaluateKeyVars = evaluateVariables(keyVars)
+      ctx.currentVars = keyVars
+      val resultVars = resultExpressions.map { e =>
+        BindReferences.bindReference(e, groupingAttributes).genCode(ctx)
+      }
+
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
        $evaluateKeyVars
-       ${consume(ctx, keyVars)}
+       ${consume(ctx, resultVars)}
        """
     }
   }
