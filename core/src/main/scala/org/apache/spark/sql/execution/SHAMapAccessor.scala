@@ -140,31 +140,26 @@ case class SHAMapAccessor(@transient session: SnappySession,
               s"""$varName = $plaformClass.getDouble($vdBaseObjectTerm, $currentValueOffsetTerm);
               """.stripMargin
             case t if t =:= typeOf[Decimal] =>
-             // val precisionTerm = ctx.freshName("precision")
-              val scaleTerm = ctx.freshName("scale")
-              s"""
-                 |byte $scaleTerm = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
-                 |$currentValueOffsetTerm += 1;
-               """.stripMargin +
-                (if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
+                if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                 s"""$varName = new $decimalClass().set(
                    |$plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm),
-                   ${dt.asInstanceOf[DecimalType].precision}, $scaleTerm);""".stripMargin
+                   ${dt.asInstanceOf[DecimalType].precision},
+                   ${dt.asInstanceOf[DecimalType].scale});""".stripMargin
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
                 val len = ctx.freshName("len")
-                s"""byte $len = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
+                s"""int $len = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
                    |$currentValueOffsetTerm += 1;
                    |byte[] $tempByteArrayTerm = new byte[$len];
                    |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
                    |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $len);
                    |$varName = $bigDecimalObjectClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
-                   |$scaleTerm),
+                   |${dt.asInstanceOf[DecimalType].scale}),
                    |${dt.asInstanceOf[DecimalType].precision},
-                   |$scaleTerm);
+                   |${dt.asInstanceOf[DecimalType].scale});
                    """.stripMargin
-              })
+              }
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
           }) +
@@ -497,7 +492,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
     s"""$offsetTerm += ${
       dt.defaultSize + (dt match {
-        case dec: DecimalType => 1 + (if (dec.precision > Decimal.MAX_LONG_DIGITS) 1 else 0)
+        case dec: DecimalType  if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
         case _ => 0
       })
     };"""
@@ -566,8 +561,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
                   s"""
-                     |$plaformClass.putByte($baseObjectTerm, $offsetTerm,(byte) $variable.scale());
-                     |$offsetTerm += 1;
+                     |if (!$variable.changePrecision(
+                     |${dt.asInstanceOf[DecimalType].precision},
+                     | ${dt.asInstanceOf[DecimalType].scale})) {
+                     |   throw new AssertionError("Unable to set precision & scale on Decimal");
+                     | }
                    """.stripMargin +
                     (if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                     s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm,
@@ -828,7 +826,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def getSizeOfValueBytes(aggDataTypes: Seq[DataType]): Int = {
     aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize + (dt match {
-      case dec: DecimalType => 1 + (if (dec.precision > Decimal.MAX_LONG_DIGITS) 1 else 0)
+      case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
       case _ => 0
     })
     ) + sizeForNullBits(numBytesForNullAggBits)
@@ -843,7 +841,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val nullVar = expr.isNull
       val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
         (dt.defaultSize + (dt match {
-          case dec: DecimalType => 1 + (if (dec.precision > Decimal.MAX_LONG_DIGITS) 1 else 0)
+          case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
           case _ => 0
         })).toString
       } else {
@@ -884,7 +882,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
              */
             val (isFixedWidth, unitSize) = if (TypeUtilities.isFixedWidth(elementType)) {
               (true, dt.defaultSize + (dt match {
-                case dec: DecimalType => 1 + (if (dec.precision > Decimal.MAX_LONG_DIGITS) 1 else 0)
+                case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
                 case _ => 0
               }))
 
