@@ -310,6 +310,7 @@ pages:
     - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
     - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
     - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
+    - 'Troubleshooting Out-of-Memory (OOM) Error': 'troubleshooting/oom.md'
     - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
     - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
 #- Additional Information: additional_files/additional_docs.md
