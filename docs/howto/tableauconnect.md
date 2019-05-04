@@ -63,7 +63,7 @@ To install Tableau desktop:
 
 ### Step 3: Connect Tableau Desktop to TIBCO ComputeDB Server
 
-When using Tableau with the TIBCO ComputeDB ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **snappydata-odbc-1.0.2.zip**.
+When using Tableau with the TIBCO ComputeDB ODBC Driver for the first time, you must add the **odbc-snappydata.tdc** file that is available in the downloaded **TIB_compute-odbc_1.1.0_win.zip**.
 
 To connect the Tableau Desktop to the TIBCO ComputeDB Server:
 
