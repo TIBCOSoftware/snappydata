@@ -15,6 +15,7 @@ The following topics are covered in this section:
 
 * [ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"](#no-data-store)
 * [Node went down or data no longer available while iterating the results](#queryfailiterate).
+* [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -117,7 +118,7 @@ This is expected behaviour where the product does not retry, since partial resul
 
 <!-- --------------------------------------------------------------------------- -->
 
-<a id="queryfailiterate"></a>
+<a id="smartconnectorcatalog"></a>
 <error> **Message:** </error> 
 <error-text>
 SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
@@ -125,7 +126,7 @@ SmartConnector catalog is not up to date. Please reconstruct the Dataset and ret
 
 <diagnosis> **Diagnosis:**</br>
 In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
-For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB cluster, this error is logged to prevent unexpected errors due to schema changes.
+For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
 </diagnosis>
 
 <action> **Solution:** </br>
