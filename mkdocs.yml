@@ -118,8 +118,8 @@ pages:
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
     - 'TIBCO ComputeDB Distributed Transactions': 'best_practices/transactions_best_practices.md'      
-- 'Synopsis Data Engine (SDE)': 'aqp.md'
-- 'Synopsis Data Engine (SDE)': 
+- 'Approximate Query Processing': 'aqp.md'
+- 'Approximate Query Processing': 
     - 'Key Concepts': 'sde/key_concepts.md'
     - 'Working with Stratified Samples': 'sde/working_with_stratified_samples.md'
     - 'Running Queries': 'sde/running_queries.md'

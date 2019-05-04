@@ -1,7 +1,7 @@
-# Overview of Synopsis Data Engine (SDE)
+# Overview of Approximate Query Processing
 
 !!! Note
-	This is the beta version of the SDE feature which is still undergoing final testing before its official release. 
+	This is the beta version of the SDE feature which is still undergoing final testing before its official release. This feature is not supported in the Smart Connector mode. 
 
 The following topics are covered in this section:
 
