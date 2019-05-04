@@ -9,7 +9,7 @@
 
 1. [Download the TIBCO ComputeDB 1.1.0 Enterprise Edition](install.md#download-snappydata).
 
-2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.2.zip** file.
+2. Click **ODBC INSTALLERS** to download the **TIB_compute-odbc_1.1.0_win.zip** file.
 
 3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the TIBCO ComputeDB ODBC driver.
 
