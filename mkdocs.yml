@@ -10,6 +10,15 @@ pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
 - Overview: index.md
+- 'Provisioning TIBCO ComputeDB': 'install.md'
+- 'Provisioning TIBCO ComputeDB':
+    - 'System Requirements': 'install/system_requirements.md'
+    - 'On-Premise': 'install/install_on_premise.md'
+    - 'Amazon Web Services (AWS)': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Kubernetes': 'kubernetes.md'
+    - 'Docker': 'quickstart/getting_started_with_docker_image.md'
+    - 'Building from Source': 'install/building_from_source.md'
+    - 'Upgrade Instructions': 'install/upgrade.md'
 - 'Getting Started in 5 minutes or Less': 'quickstart.md'
 - 'Getting Started in 5 minutes or Less': 
     - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
@@ -20,15 +29,6 @@ pages:
     - 'TIBCO ComputeDB Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
     - 'TIBCO ComputeDB Cluster SQL Tutorials': 'quickstart/snappydataquick_start.md'
-- 'Provisioning TIBCO ComputeDB': 'install.md'
-- 'Provisioning TIBCO ComputeDB':
-    - 'System Requirements': 'install/system_requirements.md'
-    - 'On-Premise': 'install/install_on_premise.md'
-    - 'Amazon Web Services (AWS)': 'install/setting_up_cluster_on_amazon_web_services.md'
-    - 'Kubernetes': 'kubernetes.md'
-    - 'Docker': 'quickstart/getting_started_with_docker_image.md'
-    - 'Building from Source': 'install/building_from_source.md'
-    - 'Upgrade Instructions': 'install/upgrade.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
