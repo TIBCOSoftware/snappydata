@@ -1,6 +1,6 @@
 <a id="embeddedmode"></a>
 # Embedded TIBCO ComputeDB Store Mode
-In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is an out-of-the-box configuration and suitable for most of the real-time production environments in TIBCO ComputeDB™. You can launch TIBCO ComputeDB servers to bootstrap any data from disk, replicas, or external data sources. Spark executors are dynamically launched when the first Spark Job arrives.
+In this mode, the Spark computations and in-memory data store run colocated in the same JVM. This is an out-of-the-box configuration and suitable for most of the real-time production environments in TIBCO ComputeDB. You can launch TIBCO ComputeDB servers to bootstrap any data from disk, replicas, or external data sources. Spark executors are dynamically launched when the first Spark Job arrives.
 
 **Some of the advantages of this mode are:**
 

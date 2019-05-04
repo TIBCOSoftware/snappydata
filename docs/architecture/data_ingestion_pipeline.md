@@ -3,7 +3,7 @@ The data pipeline involving analytics while streams are being ingested and the s
 
 ![Data Ingestion Pipeline](../DataIngestionPipeline.png)
 
-1. After the TIBCO ComputeDB™ cluster is started and before any live streams can be processed, ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by TIBCO ComputeDB. Immutable batch sources (for example, HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
+1. After the TIBCO ComputeDB cluster is started and before any live streams can be processed, ensure that the historical and reference datasets are readily accessible. The data sets may come from HDFS, enterprise relational databases (RDB), or disks managed by TIBCO ComputeDB. Immutable batch sources (for example, HDFS) can be loaded in parallel into a columnar format table with or without compression. Reference data that is often mutating can be managed as row tables.
 
 1. Spark Streaming’s parallel receivers are relied on to consume data from multiple sources. These receivers produce a DStream, whereby the input is batched over small time intervals and emitted as a stream of RDDs. This batched data is typically transformed, enriched and emitted as one or more additional streams. The raw incoming stream may be persisted into HDFS for batch analytics.
 

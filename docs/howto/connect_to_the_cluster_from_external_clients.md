@@ -1,7 +1,7 @@
 <a id="howto-external-client"></a>
 # How to Connect to the Cluster from External Network
 
-You can also connect to the TIBCO ComputeDB™ cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, to connect to a cluster on AWS from your local machine set the following properties in the *conf/locators* and *conf/servers* files:
+You can also connect to the TIBCO ComputeDB cluster from a different network as a client (DbVisualizer, SQuirreL SQL etc.). </br>For example, to connect to a cluster on AWS from your local machine set the following properties in the *conf/locators* and *conf/servers* files:
 
 * `client-bind-address`: Set the hostname or IP address to which the locator or server listens on, for JDBC/ODBC/thrift client connections.
 

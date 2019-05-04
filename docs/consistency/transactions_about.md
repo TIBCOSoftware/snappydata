@@ -1,6 +1,6 @@
-# Overview of TIBCO ComputeDB™ Distributed Transactions
+# Overview of TIBCO ComputeDB Distributed Transactions
 
-TIBCO ComputeDB™ supports transaction characteristics of isolation and atomicity. Transactions are supported using JDBC/ODBC through statements such as SET [autocommit](../reference/interactive_commands/autocommit.md), [SET Isolation](../reference/sql_reference/set-isolation.md), [COMMIT](../reference/interactive_commands/commit.md), and [ROLLBACK](../reference/interactive_commands/rollback.md).  
+TIBCO ComputeDB supports transaction characteristics of isolation and atomicity. Transactions are supported using JDBC/ODBC through statements such as SET [autocommit](../reference/interactive_commands/autocommit.md), [SET Isolation](../reference/sql_reference/set-isolation.md), [COMMIT](../reference/interactive_commands/commit.md), and [ROLLBACK](../reference/interactive_commands/rollback.md).  
 
 
 !!! Note

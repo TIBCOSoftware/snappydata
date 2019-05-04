@@ -19,7 +19,7 @@ This section provides guidelines for configuring the following important setting
 <a id="buckets"></a>
 ## Buckets
 
-A bucket is the smallest unit of in-memory storage for TIBCO ComputeDB™ tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around to ensure that the data is balanced across the nodes where the table is defined.
+A bucket is the smallest unit of in-memory storage for TIBCO ComputeDB tables. Data in a table is distributed evenly across all the buckets. When a new server joins or an existing server leaves the cluster, buckets are moved around to ensure that the data is balanced across the nodes where the table is defined.
 
 The default number of buckets in the TIBCO ComputeDB cluster mode is 128. In the local mode, it is cores*2, subject to a maximum of 64 buckets and a minimum of 8 buckets.
 

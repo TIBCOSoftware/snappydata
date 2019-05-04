@@ -1,7 +1,7 @@
 <a id="connectormode"></a>
 # TIBCO ComputeDB Smart Connector Mode
 
-In this mode, the Spark cluster executes in its own independent JVM processes and connects to TIBCO ComputeDB™ as a Spark data source. Conceptually, this is similar to how Spark applications work with stores like Cassandra, Redis, etc. The Smart connector mode also implements several performance optimizations as described in this section.
+In this mode, the Spark cluster executes in its own independent JVM processes and connects to TIBCO ComputeDB as a Spark data source. Conceptually, this is similar to how Spark applications work with stores like Cassandra, Redis, etc. The Smart connector mode also implements several performance optimizations as described in this section.
 
 Spark applications run as independent sets of processes on a cluster, coordinated by the SparkContext object in your main program (called the driver program).
 

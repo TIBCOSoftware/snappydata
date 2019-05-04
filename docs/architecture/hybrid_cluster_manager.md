@@ -4,7 +4,7 @@ Spark applications run as independent processes in the cluster, coordinated by t
 
 ![Hybrid Cluster](../Images/hybrid_cluster.png)
 
-While Spark’s approach is appropriate and geared towards compute-heavy tasks that scan large datasets, TIBCO ComputeDB™ must meet the following additional requirements as an operational database.
+While Spark’s approach is appropriate and geared towards compute-heavy tasks that scan large datasets, TIBCO ComputeDB must meet the following additional requirements as an operational database.
 
 1. **High Concurrency**: TIBCO ComputeDB use cases involve a mixture of compute-intensive workloads and low latency (sub-millisecond) OLTP operations such as point lookups (index-based search), and insert/update of a single record. The fair scheduler of Spark is not designed to meet the low latency requirements of such operations.
 

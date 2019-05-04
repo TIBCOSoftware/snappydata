@@ -1,8 +1,8 @@
-# Securing TIBCO ComputeDB™ UI Connection
+# Securing TIBCO ComputeDB Monitoring UI Connection
 
-You can secure the TIBCO ComputeDB UI with SSL authentication so that the UI can be accessed only over HTTPS. The following configurations are needed to set up SSL enabled connections for TIBCO ComputeDB UI:
+You can secure the TIBCO ComputeDB Monitoring UI with SSL authentication so that the UI can be accessed only over HTTPS. The following configurations are needed to set up SSL enabled connections for TIBCO ComputeDB Monitoring UI:
 
-**To set up SSL enabled connections for TIBCO ComputeDB UI:**
+**To set up SSL enabled connections for TIBCO ComputeDB Monitoring UI:**
 
 1. Make sure that you have valid SSL certificate imported into truststore.
 2. Provide the following spark configuration in the conf/lead files:
@@ -15,7 +15,7 @@ You can secure the TIBCO ComputeDB UI with SSL authentication so that the UI can
 
 3.	Launch the Snappy cluster.</br>
 	`./sbin/snappy-start-all.sh` 
-4.	Launch the TIBCO ComputeDB UI on your web browser. You are directed to the HTTPS site.
+4.	Launch the TIBCO ComputeDB Monitoring UI on your web browser. You are directed to the HTTPS site.
 
 !!!Note
-	You are automatically redirected to HTTPS (on port 5450) even if the TIBCO ComputeDB UI is accessed with HTTP protocol.
+	You are automatically redirected to HTTPS (on port 5450) even if the TIBCO ComputeDB Monitoring UI is accessed with HTTP protocol.

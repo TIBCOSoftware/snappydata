@@ -5,8 +5,6 @@ TIBCO ComputeDB offers two editions of the product, SnappyData Community Edition
 The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
 The Enterprise Edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
 
-For more information on the capabilities of the Community and Enterprise editions see [Community Edition (Open Source)/Enterprise Edition Components](additional_files/open_source_components.md).
-
 <a id= download> </a>
 <heading2> Download SnappyData Community Edition</heading2>
 

@@ -8,7 +8,7 @@ As the term suggests, all queries in the system operate on a snapshot view of th
 <a id="snapshot-model"></a>
 ## How the Snapshot Model Works
 
-TIBCO ComputeDB™ maintains a version vector for each of the table on every node. The version information for each row of the table is also maintained.
+TIBCO ComputeDB maintains a version vector for each of the table on every node. The version information for each row of the table is also maintained.
 
 When a user query is executed, a snapshot is taken of the version vector of all the tables on the node on which the query is executed. The write operation modifies the row, increments its version while still maintaining a reference to the older version.
 

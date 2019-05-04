@@ -1,4 +1,4 @@
-# How to Access TIBCO ComputeDB™ from Various SQL Client Tools
+# How to Access TIBCO ComputeDB from Various SQL Client Tools
 
 You can use any of the following SQL client tools to access TIBCO ComputeDB:
 

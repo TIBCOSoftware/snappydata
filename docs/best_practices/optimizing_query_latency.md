@@ -40,7 +40,7 @@ Column tables are not suitable for OLTP scenarios. In this case, row tables are 
 <a id="partition-replicate"></a>
 ## Using Partitioned Versus Replicated Row Table
 
-In TIBCO ComputeDB™, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas dimension tables can be replicated.
+In TIBCO ComputeDB, row tables can be either partitioned across all servers or replicated on every server. For row tables, large fact tables should be partitioned whereas dimension tables can be replicated.
 
 The TIBCO ComputeDB architecture encourages you to denormalize “dimension” tables into fact tables when possible, and then replicate remaining dimension tables to all data stores in the distributed system.
 

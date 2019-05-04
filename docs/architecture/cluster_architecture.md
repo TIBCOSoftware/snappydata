@@ -1,5 +1,5 @@
 # TIBCO ComputeDB Cluster Architecture
-A TIBCO ComputeDB™ cluster is a peer-to-peer (P2P) network that comprises of three distinct types of members which are represented in the following figure:
+A TIBCO ComputeDB cluster is a peer-to-peer (P2P) network that comprises of three distinct types of members which are represented in the following figure:
 
 *	**Locator**: Locator members provide discovery service for the cluster. They inform the new member joining the group about the other existing members. A cluster usually has more than one locator for high availability reasons.
 
