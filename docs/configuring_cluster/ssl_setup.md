@@ -1,4 +1,4 @@
-# Enabling SSL Encryption in Different Socket Endpoints of TIBCO ComputeDB™
+# Enabling SSL Encryption in Different Socket Endpoints of TIBCO ComputeDB
 
 TIBCO ComputeDB supports SSL encryption for the following:
 

@@ -1,7 +1,7 @@
 # High Availability (HA) Considerations
 <a id="ha-consideration"></a> <a id="cores"></a>
 
-High availability options are available for all the TIBCO ComputeDB™ components.
+High availability options are available for all the TIBCO ComputeDB components.
 
 **Lead** </br>
 TIBCO ComputeDB supports secondary lead nodes. If the primary lead becomes unavailable, one of the secondary lead nodes takes over immediately. 

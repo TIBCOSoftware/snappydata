@@ -1,4 +1,4 @@
-# How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB™
+# How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB
 
 TIBCO Spotfire® Desktop allows users to easily author and update ad-hoc analytics, applications, and dashboards. 
 To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIBCO ComputeDB cluster. 

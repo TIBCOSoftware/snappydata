@@ -1,4 +1,4 @@
-# Getting Started with TIBCO ComputeDB™ JDBC Streaming Connector
+# Getting Started with TIBCO ComputeDB JDBC Streaming Connector
 
 Databases like Microsoft SQL Server provide a mechanism to capture changed data. The Change Data Capture (CDC) functionality can be used to source event streams from JDBC sources to TIBCO ComputeDB streaming. Once the data is ingested in TIBCO ComputeDB, it can be used for both real-time analysis and batch analysis. 
 

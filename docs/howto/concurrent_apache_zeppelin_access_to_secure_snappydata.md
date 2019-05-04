@@ -1,7 +1,7 @@
 <a id="howto-consurrent-zeppelin"></a>
-# How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB™ Cluster
+# How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster
 
-Multiple users can concurrently access a secure TIBCO ComputeDB™ cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a TIBCO ComputeDB cluster.
+Multiple users can concurrently access a secure TIBCO ComputeDB cluster by configuring the JDBC interpreter setting in Apache Zeppelin. The JDBC interpreter allows you to create a JDBC connection to a TIBCO ComputeDB cluster.
 
 !!! Note
 

@@ -6,7 +6,7 @@ The TIBCO Product Documentation website is updated frequently and is more curren
 documentation included with the product. To access the latest documentation, visit [https:// docs.tibco.com](https:// docs.tibco.com).
 
 ## Product-Specific Documentation
-Documentation for TIBCO ComputeDB™ is available on the TIBCO ComputeDB™ Product Documentation page.
+Documentation for TIBCO ComputeDB is available on the TIBCO ComputeDB Product Documentation page.
 
 ## How to Contact TIBCO Support
 You can contact TIBCO Support in the following ways:

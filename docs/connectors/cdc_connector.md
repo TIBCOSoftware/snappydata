@@ -1,4 +1,4 @@
-# Using the TIBCO ComputeDB™ Change Data Capture (CDC) Connector
+# Using the TIBCO ComputeDB Change Data Capture (CDC) Connector
 
 <ent>This feature is available only in the Enterprise version of TIBCO ComputeDB.</ent>
 

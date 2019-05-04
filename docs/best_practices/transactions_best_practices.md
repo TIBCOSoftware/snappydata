@@ -1,4 +1,4 @@
-# TIBCO ComputeDB™ Distributed Transactions
+# TIBCO ComputeDB Distributed Transactions
 
 <a id="snapshot-bestpractise"></a>
 ## Using Transactions

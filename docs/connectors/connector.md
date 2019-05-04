@@ -1,6 +1,6 @@
 # Working with External Data Sources
 
-TIBCO ComputeDB™ relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. Any data source or database that supports Spark to load or save state can be accessed from within TIBCO ComputeDB. 
+TIBCO ComputeDB relies on the Spark SQL Data Sources API to parallelly load data from a wide variety of sources. Any data source or database that supports Spark to load or save state can be accessed from within TIBCO ComputeDB. 
 
 There is built-in support for many data sources as well as data formats. You can access data from sources such as S3, file system, HDFS, Hive, and RDB. The loaders have built-in support to handle data formats such as CSV, Parquet, ORC, Avro, JSON, and Java/Scala Objects.
 

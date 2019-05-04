@@ -1,5 +1,5 @@
 <a id="howto-splitmode"></a>
-# How to Access TIBCO ComputeDB™ Store from an existing Spark Installation using Smart Connector
+# How to Access TIBCO ComputeDB Store from an existing Spark Installation using Smart Connector
 
 TIBCO ComputeDB comes with a Smart Connector that enables Spark applications to work with the TIBCO ComputeDB cluster, from any compatible Spark cluster (you can use any distribution that is compatible with Apache Spark 2.1.1). The Spark cluster executes in its own independent JVM processes and connects to TIBCO ComputeDB as a Spark data source. This is similar to how Spark applications today work with stores like Cassandra, Redis, etc.
 

@@ -1,7 +1,7 @@
 # Design Principles of Scalable, Partition-Aware Databases
 <a id="design-schema"></a>
 
-The general strategy for designing a TIBCO ComputeDB™ database is to identify the tables to partition or replicate in the TIBCO ComputeDB cluster and then to determine the correct partitioning key(s) for partitioned tables. Usually, this requires an iterative process to produce the optimal design:
+The general strategy for designing a TIBCO ComputeDB database is to identify the tables to partition or replicate in the TIBCO ComputeDB cluster and then to determine the correct partitioning key(s) for partitioned tables. Usually, this requires an iterative process to produce the optimal design:
 
 1. Read [Identify Entity Groups and Partitioning Keys](#entity_groups) and [Replicate Dimension Tables](optimizing_query_latency.md#partition-replicate) to understand the basic rules for defining partitioned or replicated tables.
 
