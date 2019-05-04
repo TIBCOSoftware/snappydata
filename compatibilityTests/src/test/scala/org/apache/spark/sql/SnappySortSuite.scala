@@ -20,9 +20,4 @@ import org.apache.spark.sql.execution.SortSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappySortSuite extends SortSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    // "sorting all nulls"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

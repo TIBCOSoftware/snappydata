@@ -22,11 +22,11 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 class SnappyPathOptionSuite extends PathOptionSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
-    override def ignored: Seq[String] = Seq(
-      /*
-    "path option always exist",
-    "path option also exist for write path",
+  // TODO: SW: though this does not fail but data is not moved over due to small-case name
+  // used by hive client by default, so will be fixed once the case is all converted to lower-case
+  /*
+  override def ignored: Seq[String] = Seq(
     "path option always represent the value of table location"
-    */
   )
+  */
 }

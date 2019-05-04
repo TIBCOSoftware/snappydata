@@ -44,6 +44,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+import org.apache.spark.util.random.RandomSampler
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) with ParamLiteralHolder {
@@ -583,44 +584,84 @@ class SnappyParser(session: SnappySession)
         })
   }
 
+  /*
+  sample
+    : TABLESAMPLE '('
+      ( (percentage=(INTEGER_VALUE | DECIMAL_VALUE) sampleType=PERCENTLIT)
+      | (expression sampleType=ROWS)
+      | sampleType=BYTELENGTH_LITERAL
+      | (sampleType=BUCKET numerator=INTEGER_VALUE OUT OF denominator=INTEGER_VALUE (ON (identifier | qualifiedName '(' ')'))?))
+      ')'
+   */
+
+  private def createSample(fraction: Double): LogicalPlan => Sample = child => {
+    // The range of fraction accepted by Sample is [0, 1]. Because Hive's block sampling
+    // function takes X PERCENT as the input and the range of X is [0, 100], we need to
+    // adjust the fraction.
+    val eps = RandomSampler.roundingEpsilon
+    if (!(fraction >= 0.0 - eps && fraction <= 1.0 + eps)) {
+      throw new ParseException(s"Sampling fraction ($fraction) must be on interval [0, 1]")
+    }
+    Sample(0.0, fraction, withReplacement = false, (math.random * 1000).toInt, child)(true)
+  }
+
+  protected final def toDouble(s: String): Double =
+    toNumericLiteral(s).eval(EmptyRow).asInstanceOf[Number].doubleValue()
+
+  protected final def sample: Rule1[LogicalPlan => LogicalPlan] = rule {
+    TABLESAMPLE ~ '(' ~ ws ~ (
+        numericLiteral ~ PERCENT ~> ((s: String) => createSample(toDouble(s))) |
+        integral ~ OUT ~ OF ~ integral ~> ((n: String, d: String) =>
+          createSample(toDouble(n) / toDouble(d))) |
+        expression ~ ROWS ~> ((e: Expression) => { child: LogicalPlan => Limit(e, child) })
+    ) ~ ')' ~ ws
+  }
+
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
-    tableIdentifier ~ (
-        '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~ alias.? ~>
-            ((ident: TableIdentifier, e: Any, a: Any) => a.asInstanceOf[Option[String]] match {
-              case None => UnresolvedTableValuedFunction(
-                Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]])
-              case Some(n) => SubqueryAlias(n, UnresolvedTableValuedFunction(
-                Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]]), None)
-            }) |
-        streamWindowOptions.? ~ alias.? ~> ((tableIdent: TableIdentifier,
-            window: Any, alias: Any) => window.asInstanceOf[Option[
-            (Duration, Option[Duration])]] match {
-          case None =>
-            val optAlias = alias.asInstanceOf[Option[String]]
-            updatePerTableQueryHint(tableIdent, optAlias)
-            UnresolvedRelation(tableIdent, optAlias)
-          case Some(win) =>
-            val optAlias = alias.asInstanceOf[Option[String]]
-            updatePerTableQueryHint(tableIdent, optAlias)
-            WindowLogicalPlan(win._1, win._2,
-              UnresolvedRelation(tableIdent, optAlias))
-        })
-    ) |
-    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
-        alias.? ~> { (child: LogicalPlan, w: Any, alias: Any) =>
-      val aliasPlan = alias.asInstanceOf[Option[String]] match {
-        case None => child
-        case Some(name) => SubqueryAlias(name, child, None)
+    relationLeaf ~ sample.? ~ alias.? ~> { (rel: LogicalPlan, s: Any, a: Any) =>
+      val optAlias = a.asInstanceOf[Option[String]]
+      val plan = rel match {
+        case u@UnresolvedRelation(tableIdent, None) =>
+          updatePerTableQueryHint(tableIdent, optAlias)
+          if (optAlias.isEmpty) u else u.copy(alias = optAlias)
+        case w@WindowLogicalPlan(_, _, u@UnresolvedRelation(tableIdent, None), _) =>
+          updatePerTableQueryHint(tableIdent, optAlias)
+          if (optAlias.isDefined) w.child = u.copy(alias = optAlias)
+          w
+        case w@WindowLogicalPlan(_, _, child, _) =>
+          if (optAlias.isDefined) w.child = SubqueryAlias(optAlias.get, child, None)
+          w
+        case _ => if (optAlias.isEmpty) rel else SubqueryAlias(optAlias.get, rel, None)
       }
+      s.asInstanceOf[Option[LogicalPlan => LogicalPlan]] match {
+        case None => plan
+        case Some(cs) => cs(plan)
+      }
+    }
+  }
+
+  protected final def relationLeaf: Rule1[LogicalPlan] = rule {
+    tableIdentifier ~ (
+        '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
+            ((ident: TableIdentifier, e: Any) => UnresolvedTableValuedFunction(
+              Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]])) |
+        streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
+          window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
+            case None => UnresolvedRelation(tableIdent, None)
+            case Some(win) =>
+              WindowLogicalPlan(win._1, win._2, UnresolvedRelation(tableIdent, None))
+          })
+    ) |
+    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~> { (child: LogicalPlan, w: Any) =>
       w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
         case None =>
           assertNoQueryHint(QueryHint.Index,
             s"${QueryHint.Index} cannot be applied to derived table $alias")
-          aliasPlan
+          child
         case Some(win) =>
           assertNoQueryHint(QueryHint.Index,
             s"${QueryHint.Index} cannot be applied to derived table $alias")
-          WindowLogicalPlan(win._1, win._2, aliasPlan)
+          WindowLogicalPlan(win._1, win._2, child)
       }
     }
   }
@@ -1191,6 +1232,31 @@ class SnappyParser(session: SnappySession)
     })
   }
 
+  protected def analyze: Rule1[LogicalPlan] = rule {
+    ANALYZE ~ TABLE ~ tableIdentifier ~ COMPUTE ~ STATISTICS ~
+    (FOR ~ COLUMNS ~ (identifier + commaSep) | identifier).? ~>
+        ((table: TableIdentifier, ids: Any) => ids match {
+          case None => AnalyzeTableCommand(table, noscan = false)
+          case Some(id: String) =>
+            if (id.toLowerCase != "noscan") {
+              throw new ParseException(s"Expected `NOSCAN` instead of `$id`")
+            }
+            AnalyzeTableCommand(table)
+          case Some(cols: Seq[String]) => AnalyzeColumnCommand(table, cols)
+        })
+  }
+
+  protected final def partitionVal: Rule1[(String, Option[String])] = rule {
+    identifier ~ ('=' ~ '='.? ~ ws ~ (stringLiteral | numericLiteral |
+        booleanLiteral ~> ((b: Boolean) => b.toString))).? ~>
+        ((id: String, e: Any) => id -> e.asInstanceOf[Option[String]])
+  }
+
+  protected final def partitionSpec: Rule1[Map[String, Option[String]]] = rule {
+    PARTITION ~ '(' ~ ws ~ (partitionVal + commaSep) ~ ')' ~ ws ~>
+        ((s: Seq[(String, Option[String])]) => s.toMap)
+  }
+
   private var tokenize = false
 
   private var canTokenize = false
@@ -1214,7 +1280,7 @@ class SnappyParser(session: SnappySession)
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
         (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
-            deployPackages | explain))
+            deployPackages | explain | analyze))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],

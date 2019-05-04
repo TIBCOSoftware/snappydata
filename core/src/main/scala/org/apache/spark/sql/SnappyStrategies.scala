@@ -27,7 +27,7 @@ import org.apache.spark.sql.JoinStrategy._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction, Complete, Final, ImperativeAggregate, Partial, PartialMerge}
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, NamedExpression, RowOrdering}
+import org.apache.spark.sql.catalyst.expressions.{Alias, Expression, Literal, NamedExpression, RowOrdering}
 import org.apache.spark.sql.catalyst.planning.{ExtractEquiJoinKeys, PhysicalAggregation}
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, HashPartitioning}
@@ -498,7 +498,8 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
     !aggregateExpressions.exists(_.aggregateFunction
         .isInstanceOf[ImperativeAggregate]) &&
     // result expressions should be code-generated
-    !resultExpressions.exists(_.find(_.isInstanceOf[CodegenFallback]).isEmpty)
+    !resultExpressions.exists(_.find(e => !e.isInstanceOf[Literal] &&
+        !e.foldable && e.isInstanceOf[CodegenFallback]).nonEmpty)
   }
 
   def planAggregateWithoutDistinct(

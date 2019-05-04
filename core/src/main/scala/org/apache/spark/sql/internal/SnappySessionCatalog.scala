@@ -60,7 +60,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
-    hadoopConf: Configuration)
+    val hadoopConf: Configuration)
     extends SessionCatalog(
       externalCatalog,
       globalTempViewManager,

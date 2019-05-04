@@ -28,8 +28,9 @@ import org.apache.spark.sql.test.SharedSnappySessionContext.random
 trait SharedSnappySessionContext extends SharedSQLContext {
 
   override protected def createSparkSession: SnappySession = {
-    val session = new TestSnappySession(sparkConf.set("spark.hadoop.fs.file.impl",
-      classOf[DebugFilesystem].getName).set("snappydata.sql.planCaching.", random.nextBoolean().toString))
+    val session = new TestSnappySession(sparkConf
+        .set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName)
+        .set("snappydata.sql.planCaching.", random.nextBoolean().toString))
     session.setCurrentSchema("default")
     session
   }

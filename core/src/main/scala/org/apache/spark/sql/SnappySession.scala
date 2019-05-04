@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import java.io.IOException
 import java.sql.{SQLException, SQLWarning}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
@@ -27,6 +28,7 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -37,7 +39,9 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
+import org.apache.hadoop.fs.Path
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
@@ -73,7 +77,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
+import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv, SparkException}
 
 
 class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
@@ -1249,10 +1253,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             sessionCatalog.resolveTableIdentifier(tableIdentifier(b)).unquotedString
       }
     }
+    // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
+    val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
+    val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
+        !Utils.toLowerCase(provider).contains("jdbc")) {
+      CatalogTableType.MANAGED
+    } else CatalogTableType.EXTERNAL
     val tableDesc = CatalogTable(
       identifier = resolvedName,
-      tableType = CatalogTableType.EXTERNAL,
-      storage = DataSource.buildStorageFormatFromOptions(fullOptions),
+      tableType = tableType,
+      storage = storage,
       schema = schema,
       provider = Some(provider))
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
