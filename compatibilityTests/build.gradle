@@ -37,7 +37,7 @@ dependencies {
   compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
   compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
   compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
-  compileOnly project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)

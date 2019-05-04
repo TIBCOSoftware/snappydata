@@ -20,13 +20,4 @@ import org.apache.spark.sql.sources.InsertSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyInsertSuite extends InsertSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    /*
-    "INSERT INTO TABLE with Comment in columns",
-    "INSERT INTO TABLE - complex type but different names",
-    "SPARK-15824 - Execute an INSERT wrapped in a WITH statement immediately"
-    */
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

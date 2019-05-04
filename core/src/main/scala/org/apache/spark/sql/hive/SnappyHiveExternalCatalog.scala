@@ -444,8 +444,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(schemaName -> tableName :: Nil)
   }
 
-  override def renameTable(schema: String, oldName: String, newName: String): Unit = {
-    withHiveExceptionHandling(super.renameTable(schema, oldName, newName))
+  override def renameTable(schemaName: String, oldName: String, newName: String): Unit = {
+    withHiveExceptionHandling(super.renameTable(schemaName, oldName, newName))
+
+    registerCatalogSchemaChange(schemaName -> oldName :: schemaName -> newName :: Nil)
   }
 
   /**

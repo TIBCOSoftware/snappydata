@@ -23,14 +23,14 @@ import scala.util.Try
 
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import io.snappydata.sql.catalog.SnappyExternalCatalog
+import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.catalyst.catalog.{CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -50,6 +50,7 @@ import org.apache.spark.streaming._
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
 
+  // reserved keywords
   final def ALL: Rule0 = rule { keyword(Consts.ALL) }
   final def AND: Rule0 = rule { keyword(Consts.AND) }
   final def AS: Rule0 = rule { keyword(Consts.AS) }
@@ -115,6 +116,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   // non-reserved keywords
   final def ADD: Rule0 = rule { keyword(Consts.ADD) }
   final def ALTER: Rule0 = rule { keyword(Consts.ALTER) }
+  final def ANALYZE: Rule0 = rule { keyword(Consts.ANALYZE) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def AUTHORIZATION: Rule0 = rule { keyword(Consts.AUTHORIZATION) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
@@ -126,6 +128,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
+  final def COMPUTE: Rule0 = rule { keyword(Consts.COMPUTE) }
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
@@ -163,15 +166,19 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def LEVEL: Rule0 = rule { keyword(Consts.LEVEL) }
   final def LIMIT: Rule0 = rule { keyword(Consts.LIMIT) }
   final def LIST: Rule0 = rule { keyword(Consts.LIST) }
+  final def LOCATION: Rule0 = rule { keyword(Consts.LOCATION) }
   final def MEMBERS: Rule0 = rule { keyword(Consts.MEMBERS) }
   final def MINUS: Rule0 = rule { keyword(Consts.MINUS) }
   final def NATURAL: Rule0 = rule { keyword(Consts.NATURAL) }
   final def NULLS: Rule0 = rule { keyword(Consts.NULLS) }
+  final def OF: Rule0 = rule { keyword(Consts.OF) }
   final def ONLY: Rule0 = rule { keyword(Consts.ONLY) }
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
+  final def OUT: Rule0 = rule { keyword(Consts.OUT) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
   final def PACKAGES: Rule0 = rule { keyword(Consts.PACKAGES) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
+  final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
@@ -184,18 +191,23 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SCHEMAS: Rule0 = rule { keyword(Consts.SCHEMAS) }
   final def SECURITY: Rule0 = rule { keyword(Consts.SECURITY) }
   final def SEMI: Rule0 = rule { keyword(Consts.SEMI) }
+  final def SERDE: Rule0 = rule { keyword(Consts.SERDE) }
+  final def SERDEPROPERTIES: Rule0 = rule { keyword(Consts.SERDEPROPERTIES) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
   final def SORT: Rule0 = rule { keyword(Consts.SORT) }
   final def START: Rule0 = rule { keyword(Consts.START) }
+  final def STATISTICS: Rule0 = rule { keyword(Consts.STATISTICS) }
   final def STOP: Rule0 = rule { keyword(Consts.STOP) }
   final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
   final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
   final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
+  final def TABLESAMPLE: Rule0 = rule { keyword(Consts.TABLESAMPLE) }
   final def TBLPROPERTIES: Rule0 = rule { keyword(Consts.TBLPROPERTIES) }
   final def TEMP: Rule0 = rule { keyword(Consts.TEMP) }
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
+  final def UNSET: Rule0 = rule { keyword(Consts.UNSET) }
   final def USE: Rule0 = rule { keyword(Consts.USE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
   final def VALUES: Rule0 = rule { keyword(Consts.VALUES) }
@@ -506,6 +518,65 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
+  protected final def canAlter(id: TableIdentifier, op: String,
+      allBuiltins: Boolean = false): TableIdentifier = {
+    val catalogTable = session.sessionState.catalog.getTempViewOrPermanentTableMetadata(id)
+    if (catalogTable.tableType != CatalogTableType.VIEW) {
+      val objectType = CatalogObjectType.getTableType(catalogTable)
+      // may alter commands are not support for tables backed by snappy-store and topK
+      // or all builtin types
+      if ((allBuiltins && !(objectType == CatalogObjectType.External ||
+          objectType == CatalogObjectType.Hive)) ||
+          (!allBuiltins && (CatalogObjectType.isTableBackedByRegion(objectType) ||
+              objectType == CatalogObjectType.TopK))) {
+        throw Utils.analysisException(
+          s"ALTER TABLE... $op for table $id not supported by provider ${catalogTable.provider}")
+      }
+    }
+    id
+  }
+
+  private def toPartSpec(partSpec: Any): Option[Map[String, String]] = {
+    partSpec.asInstanceOf[Option[Map[String, Option[String]]]] match {
+      case None => None
+      case Some(spec) => Some(spec.mapValues {
+        case None => null
+        case Some(v) => v
+      })
+    }
+  }
+
+  private final def alterTableProps: Rule1[LogicalPlan] = rule {
+    ALTER ~ TABLE ~ tableIdentifier ~ partitionSpec.? ~ SET ~ (
+        SERDEPROPERTIES ~ options ~> ((id: TableIdentifier, partSpec: Any,
+            opts: Map[String, String]) => AlterTableSerDePropertiesCommand(canAlter(
+          id, "SET SERDEPROPERTIES"), None, Some(opts), toPartSpec(partSpec))) |
+        SERDE ~ stringLiteral ~ (WITH ~ SERDEPROPERTIES ~ options).? ~>
+            ((id: TableIdentifier, partSpec: Any, name: String, opts: Any) =>
+              AlterTableSerDePropertiesCommand(canAlter(id, "SET SERDE", allBuiltins = true),
+                Some(name), opts.asInstanceOf[Option[Map[String, String]]],
+                toPartSpec(partSpec))) |
+        LOCATION ~ stringLiteral ~> ((id: TableIdentifier, partSpec: Any,
+            path: String) => AlterTableSetLocationCommand(canAlter(
+          id, "SET LOCATION", allBuiltins = true), toPartSpec(partSpec), path))
+    )
+  }
+
+  protected def alterTableOrView: Rule1[LogicalPlan] = rule {
+    ALTER ~ (TABLE ~ push(false) | VIEW ~ push(true)) ~ tableIdentifier ~ (
+        RENAME ~ TO ~ tableIdentifier ~> ((view: Boolean, from: TableIdentifier,
+            to: TableIdentifier) => AlterTableRenameCommand(canAlter(from, "RENAME"), to, view)) |
+        SET ~ TBLPROPERTIES ~ options ~> ((view: Boolean, id: TableIdentifier,
+            opts: Map[String, String]) => AlterTableSetPropertiesCommand(canAlter(
+          id, "SET TBLPROPERTIES"), opts, view)) |
+        UNSET ~ TBLPROPERTIES ~ (IF ~ EXISTS ~ push(true)).? ~
+            '(' ~ ws ~ (optionKey + commaSep) ~ ')' ~ ws ~> ((view: Boolean,
+            id: TableIdentifier, exists: Any, keys: Seq[String]) =>
+          AlterTableUnsetPropertiesCommand(canAlter(id, "UNSET TBLPROPERTIES"), keys,
+            exists.asInstanceOf[Option[Boolean]].isDefined, view))
+    )
+  }
+
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
@@ -804,7 +875,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected final def option: Rule1[(String, String)] = rule {
-    optionKey ~ ('=' ~ ws).? ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
+    optionKey ~ ('=' ~ '='.? ~ ws).? ~ stringLiteral ~ ws ~> ((k: String, v: String) => k -> v)
   }
 
   protected final def options: Rule1[Map[String, String]] = rule {
@@ -816,10 +887,11 @@ abstract class SnappyDDLParser(session: SparkSession)
     createTable | describe | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView | alterView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
-    alterTable | createStream | streamContext |
+    alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | passThrough
   }
 
+  protected def partitionSpec: Rule1[Map[String, Option[String]]]
   protected def query: Rule1[LogicalPlan]
   protected def expression: Rule1[Expression]
   protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T
