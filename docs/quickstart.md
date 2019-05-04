@@ -18,12 +18,14 @@ Depending on your preference, you can try any of the following options:
 
 * [TIBCO ComputeDB on Kubernetes](quickstart/getting_started_on_kubernetes.md)
 
-You can use the following instructions and examples to try out TIBCO ComputeDB in 5 minutes or less:
+Then you can use the following instructions and examples to try out TIBCO ComputeDB in 5 minutes or less:
+
+* [Using SQL](quickstart/using_sql.md)
 
 * [Using Spark Scala APIs](quickstart/using_spark_scala_apis.md)
 
 * [TIBCO ComputeDB performance: 16x-20x faster than Apache Spark](quickstart/performance_apache_spark.md)
 
-* [Using SQL](quickstart/using_sql.md)
+
 
 
