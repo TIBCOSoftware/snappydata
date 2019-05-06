@@ -1,10 +1,10 @@
-# Tuning for Concurrency and Computation
+# Tuning for Concurrency and performance
 
 ## Handling Low Latency versus Analytic Jobs
 Unlike Spark, TIBCO ComputeDB can distinguish cheap requests (low latency) as compared to requests that require a lot of computational resources (high latency). This is done by a resource scheduler that can balance the needs of many contending users/threads.
 
 For instance, when a SQL client executes a *fetch by primary key* query, there is no need to involve any scheduler or spawn many tasks for such a simple request. The request is immediately delegated to the data node (single thread) and the response is directly sent to the requesting client (probably within a few milliseconds). </br>
-In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the TIBCO ComputeDB scheduler. Only Row tables can have primary keys or indexes.
+In the current version of the product, all query requests that filter on a primary key, a set of keys, or can directly filter using an index are executed without routing to the Job scheduler. Only Row tables can have primary keys or indexes.
 
 When the above conditions are not met, the request is routed to the Lead node where the Spark plan is generated and jobs are scheduled for execution. The scheduler uses a FAIR scheduling algorithm for higher concurrency. That means all the concurrent jobs are executed in a round-robin manner.
 
@@ -12,15 +12,19 @@ Each job is made up of one or more stages and the planning phase computes the nu
 A round-robin algorithm picks a task from Job1, a task from Job2 and so on. If more cores are available, the second task from Job1 is picked and the cycle continues. But, there are circumstances a single job can completely consume all cores.</br>
 For instance, when all cores are available, if a large loading job is scheduled it receives all available cores of which, each of the tasks can be long running. During this time, if other concurrent jobs are assigned, none of the executing tasks is preempted.
 
+So, with multiple concurrent users, it is best to avoid running such Jobs using the default high throughput pool. 
+
 !!! Note
 	This above scheduling logic is applicable only when queries are fully managed by the TIBCO ComputeDB cluster. When running your application using the smart connector, each task running in the Spark cluster directly accesses the store partitions.
+	
 
-## Computing the Number of Cores for a Job
 
-Executing queries or code in TIBCO ComputeDB results in the creation of one or more Spark jobs. Each Spark job has multiple tasks. The number of tasks is determined by the number of partitions of the underlying data.</br>
-Concurrency in TIBCO ComputeDB is tightly bound with the capacity of the cluster, which means, the number of cores available in the cluster determines the number of concurrent tasks that can be run.
+### Computing the Number of Cores for a Job
 
-By default, TIBCO ComputeDB sets spark executor cores to be 2 multiplied by the total number of physical ccores on a machine.
+Executing queries or code in TIBCO ComputeDB results in the creation of one or more Spark jobs. Each Spark job first calculates the number of partitions on the underlying dataset and a task is assigned and scheduled for each partition. </br>
+But, the number of concurrent tasks executing is limited by the available core count. If the scheduled task count is larger then they will be executed in a staggered manner. Each task is assigned a single core to execute. 
+
+By default, TIBCO ComputeDB sets total available spark executor cores on any data server to be 2 multiplied by the total number of physical ccores on a machine. 
 
 **spark executor cores = 2 * C** 
 Where **C** = Total number of physical processor cores on a machine.
