@@ -21,7 +21,7 @@
     - In the classpath option, define the location where the TIBCO ComputeDB Interpreter is downloaded by adding</br>
     `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`
 
-    - In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the [TIBCO ComputeDB Monitoring UI](../monitoring/monitoring.md) from outside the network.
+    - In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the [TIBCO ComputeDB Monitoring Console](../monitoring/monitoring.md) from outside the network.
 
 4. [Start the TIBCO ComputeDB cluster](start_snappy_cluster.md).
 

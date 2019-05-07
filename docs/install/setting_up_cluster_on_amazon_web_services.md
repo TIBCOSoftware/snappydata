@@ -528,7 +528,7 @@ To launch the instance and start the TIBCO ComputeDB cluster:
 
 		* You can also continue customizing your instance before you launch the instance. Refer to the AWS documentation for more information.
 
-		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to TIBCO ComputeDB Monitoring UI).
+		*  When configuring the security groups, ensure that you open at least ports 22 (for SSH access to the EC2 instance) and 5050 (for access to TIBCO ComputeDB Monitoring Console).
 
 8. You are directed to the last step **Review Instance Launch**. Check the details of your instance, and click **Launch**.
 

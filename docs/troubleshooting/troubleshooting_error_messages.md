@@ -33,7 +33,7 @@ The status of the member is displayed as *waiting* in such cases when you [check
 </diagnosis>
 
 <action> **Solution:** </br>
-The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [TIBCO ComputeDB Monitoring UI](../monitoring/monitoring.md).
+The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [TIBCO ComputeDB Monitoring Console](../monitoring/monitoring.md).
 </action>
 
 <!-- --------------------------------------------------------------------------- -->

@@ -6,12 +6,12 @@ This guide also provides general guidelines for tuning the performance of TIBCO 
 
 The following topics are covered in this section:
 
-* [TIBCO ComputeDB Monitoring UI](monitoring.md)
+* [TIBCO ComputeDB Monitoring Console](monitoring.md)
 
 * [Configuring High Availability for a Partitioned Table](configure_high_availability.md)
 
 * [Configuring Logging](configure_logging.md)
 
-* [Securing TIBCO ComputeDB Monitoring UI Connections](../configuring_cluster/securinguiconnection.md)
+* [Securing TIBCO ComputeDB Monitoring Console Connections](../configuring_cluster/securinguiconnection.md)
 
 * [Getting Information from TIBCO ComputeDB System Tables](monitor-manage.md)
