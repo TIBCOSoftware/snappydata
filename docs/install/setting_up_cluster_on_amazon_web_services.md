@@ -4,11 +4,11 @@
 Amazon Web Services (AWS) is a comprehensive, evolving cloud computing platform that offers a suite of cloud-computing services. The services provided by this platform that is important for SnappyData are Amazon Elastic Compute Cloud (EC2) and Amazon Simple Storage Service (S3).
 You can set up SnappyData cluster on Amazon Web Services using one of the following options:
 
-*	[SnappyData CloudBuilder](#usingcloudbuiler)
+<!---*	[SnappyData CloudBuilder](#usingcloudbuiler)--->
 *	[EC2 Scripts](#EC2)	
 *	[AWS Management Console](#usingawsmgmtconsole)
 
-
+<!---
 <a id="usingcloudbuiler"></a>
 ## SnappyData CloudBuilder
 [SnappyData CloudBuilder](http://www.snappydata.io/cloudbuilder) is a web based utility that allows you to quickly launch SnappyData cluster on AWS instances. It also launches Apache Zeppelin server that allows you to build notebooks that visually represent key elements of your business.
@@ -149,7 +149,7 @@ When the cluster has started, the status of the stack changes to **CREATE_COMPLE
 !!! Warning
 	To stop incurring charges for the instance, you can either terminate the instance or delete the stack. You cannot connect to or restart an instance after you have terminated it.
 
-For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).
+For more information, refer to the [Apache Zeppelin](#LoggingZeppelin) section or refer to the [Apache Zeppelin documentation](http://zeppelin.apache.org/).--->
 
 <a id="EC2"></a>
 ## SnappyData EC2 Scripts
