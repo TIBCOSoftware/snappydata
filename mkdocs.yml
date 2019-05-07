@@ -1,7 +1,7 @@
-site_name: SnappyData Documentation v.1.0.2.1
+site_name: Project SnappyData™ - Community Edition 1.1.0
 site_url: http://www.snappydata.io
-site_description: Project documentation for SnappyData
-site_author: SnappyData Team
+site_description: Documentation for Project SnappyData™ - Community Edition
+site_author: TIBCO ComputeDB Team
 site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
@@ -65,7 +65,8 @@ pages:
     - 'How to Connect using ODBC Driver': 'howto/connect_using_odbc_driver.md'
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
     - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
-    - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'   
+    - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'
+    - 'How to connect TIBCO Spotfire® Desktop to SnappyData': 'howto/connecttibcospotfire.md'   
     - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
@@ -309,6 +310,7 @@ pages:
     - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
     - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
     - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
+    - 'Troubleshooting Out-of-Memory (OOM) Error': 'troubleshooting/oom.md'
     - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
     - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
 #- Additional Information: additional_files/additional_docs.md
@@ -341,4 +343,4 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright &copy; 2018 SnappyData Inc.
+copyright: Copyright &copy; 2017 - 2019. TIBCO Software Inc. All Rights Reserved.
