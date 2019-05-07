@@ -81,7 +81,8 @@ case class SnappyHashAggregateExec(
       TypeUtilities.isFixedWidth(attr.dataType)) &&
      !Property.TestDisableByteBufferMapInSHA.get(
        sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
-    groupingExpressions.forall(_.dataType.
+     !groupingExpressions.isEmpty &&
+      groupingExpressions.forall(_.dataType.
       existsRecursively(SHAMapAccessor.supportedDataTypes))
 
 
