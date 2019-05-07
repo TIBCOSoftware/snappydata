@@ -806,7 +806,9 @@ class SnappyConf(@transient val session: SnappySession)
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
          Property.HashAggregateSize.name |
-         Property.ForceLinkPartitionsToBuckets.name => session.clearPlanCache(); key
+         Property.ForceLinkPartitionsToBuckets.name =>
+      session.clearPlanCache()
+      key
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
@@ -860,7 +862,9 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
       key
 
-    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache(); key
+    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key =>
+      session.clearPlanCache()
+      key
 
     case Constant.TRIGGER_AUTHENTICATION => value match {
       case Some(boolVal) if boolVal.toString.toBoolean =>
