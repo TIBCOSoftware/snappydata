@@ -767,11 +767,10 @@ case class SnappyHashAggregateExec(
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-      this, this.parent, child, valueOffsetTerm, numKeyBytesTerm,
-      currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
+      valueOffsetTerm, numKeyBytesTerm, currentValueOffSetTerm,
+      valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
-      numBytesForNullAggsBits, nullAggsBitsetTerm,
-      sizeAndNumNotNullFuncForStringArr)
+      numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr)
 
     val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
 
@@ -834,28 +833,21 @@ case class SnappyHashAggregateExec(
       ${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
       ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
       ${KeyBufferVars.zip(keysDataType).map {
-      case (varName, dataType) => dataType match {
-        case st: StructType => recursiveApply(
-          nestedStructNullBitsTermInitializer)(varName, st, 0).toString
-        case _ => ""
-      }
-    }.mkString("\n")}
+          case (varName, dataType) => dataType match {
+          case st: StructType => recursiveApply(nestedStructNullBitsTermInitializer)
+            (varName, st, 0).toString
+          case _ => ""
+        }
+      }.mkString("\n")}
+
       // output the result
       $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-
       int $sizeTerm = $hashMapTerm.size();
-    //  if (${modes.contains(Final)}) {
-       //  System.out.println("Num elements in hashmap when producing= " + $sizeTerm );
-    //   }
       for (; $mapCounter < $sizeTerm; ) {
-       if (${modes.contains(Final)}) {
-         //   System.out.println("iterating for counter position when producing= " + $mapCounter );
-       }
-
         $numOutput.${metricAdd("1")};
-        // skip the key length
         ++$mapCounter;
+        // skip the key length
         $iterValueOffsetTerm += 4;
         $outputCode
         if (shouldStop()) return;

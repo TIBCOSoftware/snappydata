@@ -37,21 +37,20 @@ import org.apache.spark.unsafe.types.UTF8String
 case class SHAMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
   @transient valueExprs: Seq[Expression], classPrefix: String,
-  hashMapTerm: String, @transient consumer: CodegenSupport,
-  @transient cParent: CodegenSupport, override val child: SparkPlan,
-  valueOffsetTerm: String, numKeyBytesTerm: String,
+  hashMapTerm: String, valueOffsetTerm: String, numKeyBytesTerm: String,
   currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
   vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
   nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int,
   allocatorTerm: String, numBytesForNullAggBits: Int,
   nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String)
-  extends UnaryExecNode with CodegenSupport {
+  extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
     get(session.sessionState.conf)
   private[this] val hashingClass = classOf[ClientResolverUtils].getName
 
-  override def output: Seq[Attribute] = child.output
+  override def children: Seq[SparkPlan] = Nil
+  override def output: Seq[Attribute] = Nil
 
   override protected def doExecute(): RDD[InternalRow] =
     throw new UnsupportedOperationException("unexpected invocation")
@@ -77,8 +76,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val bigIntegerClass = classOf[java.math.BigInteger].getName
     val byteBufferClass = classOf[ByteBuffer].getName
     val unsafeClass = classOf[UnsafeRow].getName
-    // val nullBitTerm = if (isKey) nullKeysBitsetTerm else nullAggsBitsetTerm
-    // val numBytesForNullBits = if (isKey) numBytesForNullKeyBits else numBytesForNullAggBits
     val castTerm = getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = ctx.freshName("isNull")
@@ -288,10 +285,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                |(($unsafeClass)$varName).pointTo($allocatorTerm.baseObject($holder),
                | $allocatorTerm.baseOffset($holder), $unsafeRowLength);
              |} """.stripMargin
-      }).trim +
-        s"""
-        // System.out.println(${if (isKey) "\"key = \"" else "\"value = \""} + $varName);
-        """
+      }).trim
+
       val exprCode = if (skipNullBitsCode) {
         evaluationCode
       } else {
@@ -785,10 +780,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = ctx.freshName("currentOffset")
     val plaformClass = classOf[Platform].getName
-    /*
-    val writer = ByteBufferHashMapAccessor.getPartialFunctionForWriting(
-      baseObjectTerm, currentOffset)
-      */
+
     s"""$byteBufferClass $keyBytesHolderVar =  $allocatorTerm.
         allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
         Object $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVar);
@@ -872,9 +864,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
              *   False|                                     | true
              * 4 bytes for num bytes                     ----------
              * all bytes                         no null |           | may be null
-             *                                    allowed                 |   4 bytes for total elements
-             *                                        |                       + num bytes for null bit mask
-             *                                     4 bytes for                +  inidividual not null elements
+             *                                    allowed            | 4 bytes for total elements
+             *                                        |              + num bytes for null bit mask
+             *                                     4 bytes for       + inidividual not null elements
              *                                     num elements
              *                                     + each element
              *                                     serialzied
@@ -968,8 +960,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
    * correspond to the key columns in this class.
    */
   def generateHashCode(hashVar: Array[String], keyVars: Seq[ExprCode],
-    keyExpressions: Seq[Expression], keysDataType: Seq[DataType], skipDeclaration: Boolean = false,
-    register: Boolean = true): String = {
+    keyExpressions: Seq[Expression], keysDataType: Seq[DataType],
+    skipDeclaration: Boolean = false, register: Boolean = true): String = {
     var hash = hashVar(0)
     val hashDeclaration = if (skipDeclaration) "" else s"int $hash = 0;\n"
     // check if hash has already been generated for keyExpressions
@@ -1024,11 +1016,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
         case (BinaryType, ev) =>
           hashBinary(ev.value, ev.isNull, hash)
         case (LongType | TimestampType, ev) =>
-          addHashLong(ev.value, ev.isNull, hash)
+          addHashLong(ctx, ev.value, ev.isNull, hash)
         case (FloatType, ev) =>
           addHashInt(s"Float.floatToIntBits(${ev.value})", ev.isNull, hash)
         case (DoubleType, ev) =>
-          addHashLong(s"Double.doubleToLongBits(${ev.value})", ev.isNull,
+          addHashLong(ctx, s"Double.doubleToLongBits(${ev.value})", ev.isNull,
             hash)
         case (_: DecimalType, ev) =>
           addHashInt(s"${ev.value}.fastHashCode()", ev.isNull, hash)
@@ -1086,7 +1078,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     }
   }
 
-  private def addHashLong(hashExpr: String, nullVar: String,
+  private def addHashLong(ctx: CodegenContext, hashExpr: String, nullVar: String,
     hashVar: String): String = {
     val longVar = ctx.freshName("longVar")
     if (nullVar.isEmpty || nullVar == "false") {
@@ -1104,6 +1096,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       """
     }
   }
+
 }
 
 object SHAMapAccessor {
@@ -1136,10 +1129,9 @@ object SHAMapAccessor {
     s"long $nullBitsetTerm = 0l;"
   } else {
     s"""
-       for( int i = 0 ; i < $numBytesForNullBits; ++i) {
-         $nullBitsetTerm[i] = 0;
-       }
-     """.stripMargin
+        |for( int i = 0 ; i < $numBytesForNullBits; ++i) {
+          |$nullBitsetTerm[i] = 0;
+        |}""".stripMargin
   }
 
   def resetNullBitsetCode(nullBitsetTerm: String,
@@ -1170,39 +1162,5 @@ object SHAMapAccessor {
   }
 
   def isByteArrayNeededForNullBits(numBytes: Int): Boolean = numBytes > 8
-/*
-  def getPartialFunctionForWriting(baseObjectVar: String, offsetVar: String):
-  PartialFunction[(DataType, String), String] = {
-    val platformClass = classOf[Platform].getName
-    val writer: PartialFunction[(DataType, String), String] = {
-      case (x: AtomicType, valueVar) => typeOf(x.tag) match {
-        case t if t =:= typeOf[Byte] => s"\n $platformClass.putByte($baseObjectVar," +
-          s" $offsetVar, $valueVar); " +
-          s"\n $offsetVar += 1; \n"
-        case t if t =:= typeOf[Short] => s"\n $platformClass.putShort($baseObjectVar," +
-          s"$offsetVar, $valueVar); " +
-          s"\n $offsetVar += 2; \n"
-        case t if t =:= typeOf[Int] => s"\n $platformClass.putInt($baseObjectVar, " +
-          s"$offsetVar, $valueVar); " +
-          s"\n $offsetVar += 4; \n"
-        case t if t =:= typeOf[Long] => s"\n $platformClass.putLong($baseObjectVar," +
-          s" $offsetVar, $valueVar); " +
-          s"\n $offsetVar += 8; \n"
-        case t if t =:= typeOf[Float] => s"\n $platformClass.putFloat($baseObjectVar," +
-          s"$offsetVar, $valueVar); " +
-          s"\n $offsetVar += 4; \n"
-        case t if t =:= typeOf[Double] => s"\n $platformClass.putDouble(" +
-          s"$baseObjectVar, $offsetVar, $valueVar); " +
-          s"\n $offsetVar += 8; \n"
-        case t if t =:= typeOf[Decimal] =>
-          throw new UnsupportedOperationException("implement decimal")
-        case _ => throw new UnsupportedOperationException("unknown type" + x)
-      }
-      case (StringType, valueVar) => s"\n $platformClass.putInt($baseObjectVar, $offsetVar, " +
-        s"$valueVar.numBytes());" +
-        s"\n $offsetVar += 4; \n   $valueVar.writeToMemory($baseObjectVar, $offsetVar);" +
-        s"\n $offsetVar += $valueVar.numBytes(); \n"
-    }
-    writer
-  } */
+
 }
