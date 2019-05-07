@@ -82,6 +82,7 @@ scalaTest {
     cleanIntermediateFiles(project.path)
   }
 }
-check.dependsOn test, scalaTest
+check.dependsOn.clear()
+check.dependsOn scalaTest
 
 archivesBaseName = 'snappydata-compatibility-tests_'+ scalaBinaryVersion
