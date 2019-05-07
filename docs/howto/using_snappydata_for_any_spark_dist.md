@@ -1,16 +1,16 @@
 ## How to use SnappyData for any Spark Distribution
 
-The **snappydata-jdbc Spark **package adds extensions to Spark’s inbuilt JDBC data source provider to work better with SnappyData. This allows SnappyData to be treated as a regular JDBC data source with all versions of Spark which are greater or equal to 2.1, while also providing speed to direct SnappyData embedded cluster for many types of queries.
+The **TIB_compute-jdbc Spark **package adds extensions to Spark’s inbuilt JDBC data source provider to work better with SnappyData. This allows SnappyData to be treated as a regular JDBC data source with all versions of Spark which are greater or equal to 2.1, while also providing speed to direct SnappyData embedded cluster for many types of queries.
 
 Following is a sample of Spark JDBC extension setup and usage: 
 
-1. Include the **snappydata-jdbc** package in the Spark job with spark-submit or spark-shell:
+1. Include the **TIB_compute-jdbc** package in the Spark job with spark-submit or spark-shell:
 
-		$SPARK_HOME/bin/spark-shell --packages io.snappydata:snappydata-jdbc_2.11:1.0.2.2
+		$SPARK_HOME/bin/spark-shell --jars TIB_compute-jdbc-2.11_1.1.0.jar
     
 2. Set the session properties.</br>The SnappyData connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in **spark-defaults.conf ** along with all the other Spark properties.</br> Following is a sample code of configuring the properties in **SparkConf**:
 
-		$SPARK_HOME/bin/spark-shell --packages io.snappydata:snappydata-jdbc_2.11:1.0.2.2 --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password>
+		$SPARK_HOME/bin/spark-shell --jars TIB_compute-jdbc-2.11_1.1.0.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=<user> --conf spark.snappydata.password=<password>
 
 	Overloads of the above methods accepting *user+password* and *host+port* is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the **DataFrameReader.jdbc** method.
 
