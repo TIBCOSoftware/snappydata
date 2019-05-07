@@ -157,7 +157,6 @@ Syntax:
 **Example**
 
 ```
-{{{
    val props = Map(
       "url" -> s"jdbc:derby:$path",
       "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
