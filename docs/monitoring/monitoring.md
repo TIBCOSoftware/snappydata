@@ -1,10 +1,10 @@
-# TIBCO ComputeDB Monitoring UI
+# TIBCO ComputeDB Monitoring Console
 
-TIBCO ComputeDB Monitoring UI is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data. This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+TIBCO ComputeDB Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data. This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.
 
 
-To access TIBCO ComputeDB Monitoring UI, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
+To access TIBCO ComputeDB Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file.
@@ -33,7 +33,7 @@ The following topics are covered in this section:
 !!! Note
 	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
-On the top-right side of the TIBCO ComputeDB Monitoring UI page, you can click the help icon to view the details of TIBCO ComputeDB Enterprise edition.
+On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB Enterprise edition.
 
 ![](../Images/MonitoringUI/TIBCO-ComputeDB-UI-About-Box.png)
 

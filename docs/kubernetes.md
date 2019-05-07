@@ -80,12 +80,12 @@ To find the IP addresses and port numbers of the TIBCO ComputeDB processes, use 
 In the [output](#output), three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
 
-**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring UI and port **8090** to accept [Snappy jobs](#jobkubernetes).</br>
+**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring Console and port **8090** to accept [Snappy jobs](#jobkubernetes).</br>
 **snappydata-locator-public** service exposes port **1527** to accept [JDBC/ODBC connections](#jdbckubernetes).
 
 You can do the following on the TIBCO ComputeDB cluster that is deployed on Kubernetes:
 
-- [Access TIBCO ComputeDB Monitoring UI](#accesskubernetes)
+- [Access TIBCO ComputeDB Monitoring Console](#accesskubernetes)
 
 - [Connect TIBCO ComputeDB using JDBC Driver](#jdbckubernetes)
 
@@ -96,12 +96,12 @@ You can do the following on the TIBCO ComputeDB cluster that is deployed on Kube
 - [Stop TIBCO ComputeDB Cluster on Kubernetes](#deletehelm)
 
 <a id= accesskubernetes> </a>
-### Accessing TIBCO ComputeDB Monitoring UI
+### Accessing TIBCO ComputeDB Monitoring Console
 
-The dashboards on the TIBCO ComputeDB Monitoring UI can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
+The dashboards on the TIBCO ComputeDB Monitoring Console can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
 Replace *externalip* with the external IP address of the **snappydata-leader-public **service.
 
-**To access TIBCO ComputeDB Monitoring UI in Kubernetes:**
+**To access TIBCO ComputeDB Monitoring Console in Kubernetes:**
 
 1. Check the TIBCO ComputeDB services running in the Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br> The output displays the external IP address of the **snappydata-leader-public** service as shown in the following image: ![Snappy-Leader-Service](./Images/services_Leader_Public.png)
@@ -245,7 +245,7 @@ SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. B
 ### Services that Expose External Endpoints
 
 SnappyData Helm chart creates services to allow you to make JDBC connections, execute Spark jobs, and access
-TIBCO ComputeDB Monitoring UI etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
+TIBCO ComputeDB Monitoring Console etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
 To check the service created for TIBCO ComputeDB deployment, use command `kubectl get svc --namespace=snappy`. The following output is displayed:
 
 <a id= output> </a>
@@ -262,7 +262,7 @@ snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527
 In the above output, three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are created. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
  
-**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring UI and port **8090** to accept Snappy jobs.
+**snappydata-leader-public** service exposes port **5050** for TIBCO ComputeDB Monitoring Console and port **8090** to accept Snappy jobs.
 **snappydata-locator-public** service exposes port **1527** to accept JDBC connections.
 
 <a id= persistentvolumes> </a>

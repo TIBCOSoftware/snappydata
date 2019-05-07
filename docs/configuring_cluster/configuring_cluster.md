@@ -64,7 +64,7 @@ Lead Nodes primarily runs the TIBCO ComputeDB managed Spark driver. There is one
 Create the configuration file (**leads**) for leads in the **<_TIBCO ComputeDB_home_>/conf** directory.
 
 !!! Note
-	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing TIBCO ComputeDB Monitoring UI from outside the network.
+	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing TIBCO ComputeDB Monitoring Console from outside the network.
 
 ### List of Lead Properties
 Refer to the [TIBCO ComputeDB properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
@@ -109,7 +109,7 @@ Refer to the [TIBCO ComputeDB properties](property_description.md) for the compl
 |-spark.ssl.trustStore<a id="ssl_spark_trustore"></a>|Path to the trust store file. The path can be absolute or relative to the directory inTIBCO ComputeDB which the process is started.|
 |-spark.ssl.trustStorePassword<a id="truststorepassword"></a>|The password used to access the truststore.|
 |-spark.ssl.protocol<a id="ssl_spark_ssl_protocol"></a>|The protocol that must be supported by JVM. For example, TLS.|
-|-spark.ui.port|Port for your TIBCO ComputeDB Monitoring UI, which shows tables, memory and workload data. The default is 5050.|
+|-spark.ui.port|Port for your TIBCO ComputeDB Monitoring Console, which shows tables, memory and workload data. The default is 5050.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md). </br> These properties need not be added to  the Lead members in case of a client-server connection.|
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:

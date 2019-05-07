@@ -79,7 +79,7 @@ SnappyData Leader pid: 10468 status: running
 Connect to  [Snappy Shell](#connectsnappyshell) to perform various SQL operations.
 
 
-Alternatively, you can access the [TIBCO ComputeDB Monitoring UI](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the dashboards of TIBCO ComputeDB Monitoring UI, after starting a cluster, you can check the status of each of the cluster member.
+Alternatively, you can access the [TIBCO ComputeDB Monitoring Console](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the dashboards of TIBCO ComputeDB Monitoring Console, after starting a cluster, you can check the status of each of the cluster member.
 
 <a id= connectsnappyshell> </a>
 ## Connect/Disconnect to Snappy Shell
@@ -246,7 +246,7 @@ Similarly as the quickstart scripts, you can try to create an external table nam
 
         1 row selected
 
-After running these queries, you can check the table details on the dashboards of TIBCO ComputeDB Monitoring UI. The details of the newly created tables are displayed in the **Tables** section.
+After running these queries, you can check the table details on the dashboards of TIBCO ComputeDB Monitoring Console. The details of the newly created tables are displayed in the **Tables** section.
 
 ![External Table & Tables on Dashboard](../Images/externaltable_scripts.png)
 
@@ -287,7 +287,7 @@ You can add more than one server to a cluster. To add a new server, do the follo
 1.	Go to TIBCO ComputeDB home directory.</br>`cd <TIBCO ComputeDB_install_dir>`
 2.	Create a configuration file named **servers** in the conf folder in the the TIBCO ComputeDB home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
 3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
-4. From the TIBCO ComputeDB home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the TIBCO ComputeDB Monitoring UI. 
+4. From the TIBCO ComputeDB home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the TIBCO ComputeDB Monitoring Console. 
 
 <a id= rebalancedataonserver> </a>
 ## Rebalancing Data on Servers
@@ -298,7 +298,7 @@ To balance the data equally on the servers, do the following:
 1.	Go to TIBCO ComputeDB home directory.</br>`cd <TIBCO ComputeDB_install_dir>`
 2.	[Connect to Snappy Shell](#connectsnappyshell) and obtain the jdbc client connection.
 3.	Run the rebalance command.</br> `call sys.rebalance_all_buckets();`
-4.	On TIBCO ComputeDB Monitoring UI, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
+4.	On TIBCO ComputeDB Monitoring Console, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
 
 	**Before Rebalance**
     
