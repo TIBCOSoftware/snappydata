@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import java.io.IOException
 import java.sql.{SQLException, SQLWarning}
 import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
@@ -39,7 +38,6 @@ import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
-import org.apache.hadoop.fs.Path
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -47,7 +45,7 @@ import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
 import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
-import org.apache.spark.sql.catalyst.catalog.{CatalogTable, CatalogTableType}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext
@@ -77,7 +75,7 @@ import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.Time
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.unsafe.types.UTF8String
-import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv, SparkException}
+import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
 
 class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
@@ -1210,11 +1208,23 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       mode: SaveMode,
       options: Map[String, String],
       isBuiltIn: Boolean,
+      partitionColumns: Array[String] = Utils.EMPTY_STRING_ARRAY,
+      bucketSpec: Option[BucketSpec] = None,
       query: Option[LogicalPlan] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
-    if (!isBuiltIn && providerIsBuiltIn) {
-      throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
-          s"used for inbuilt provider '$provider'")
+    if (providerIsBuiltIn) {
+      if (!isBuiltIn) {
+        throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
+            s"used for inbuilt provider '$provider'")
+      }
+      if (partitionColumns.length > 0) {
+        throw new AnalysisException(s"CREATE TABLE ... USING '$provider' does not support " +
+            "PARTITIONED BY clause.")
+      }
+      if (bucketSpec.isDefined) {
+        throw new AnalysisException(s"CREATE TABLE ... USING '$provider' does not support " +
+            s"CLUSTERED BY clause. Use '${ExternalStoreUtils.PARTITION_BY}' as an option.")
+      }
     }
     // check for permissions in the schema which should be done before the session catalog
     // createTable call since store table will be created by that time
@@ -1264,7 +1274,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       tableType = tableType,
       storage = storage,
       schema = schema,
-      provider = Some(provider))
+      provider = Some(provider),
+      partitionColumnNames = partitionColumns,
+      bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
     val df = table(resolvedName)

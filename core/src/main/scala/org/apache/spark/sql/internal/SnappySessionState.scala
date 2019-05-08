@@ -1137,13 +1137,17 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
       val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
       val provider = tableDesc.provider.get
-      // treat saveAsTable with mode=Append as insertInto
-      if (mode == SaveMode.Append && queryOpt.isDefined && state.catalog.tableExists(tableIdent)) {
-        new Insert(table = UnresolvedRelation(tableDesc.identifier),
+      val isBuiltin = SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)
+      // treat saveAsTable with mode=Append as insertInto for builtin tables and "normal" cases
+      // where no explicit bucket/partitioning has been specified
+      if (mode == SaveMode.Append && queryOpt.isDefined && (isBuiltin ||
+          (tableDesc.bucketSpec.isEmpty && tableDesc.partitionColumnNames.isEmpty)) &&
+          state.catalog.tableExists(tableIdent)) {
+        new Insert(table = UnresolvedRelation(tableIdent),
           partition = Map.empty, child = queryOpt.get,
           overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
-      } else if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) {
+      } else if (isBuiltin) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
         if (tableName.indexOf(',') != -1) {

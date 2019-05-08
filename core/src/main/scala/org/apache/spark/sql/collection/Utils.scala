@@ -70,7 +70,7 @@ import org.apache.spark.util.io.ChunkedByteBuffer
 
 object Utils {
 
-  final val EMPTY_STRING_ARRAY = Array.empty[String]
+  final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
   final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
   final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"

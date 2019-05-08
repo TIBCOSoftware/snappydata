@@ -30,7 +30,7 @@ import shapeless.{::, HNil}
 
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
-import org.apache.spark.sql.catalyst.catalog.{CatalogTableType, FunctionResource, FunctionResourceType}
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
@@ -60,13 +60,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CASE: Rule0 = rule { keyword(Consts.CASE) }
   final def CAST: Rule0 = rule { keyword(Consts.CAST) }
   final def CREATE: Rule0 = rule { keyword(Consts.CREATE) }
-  final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
   final def CURRENT: Rule0 = rule { keyword(Consts.CURRENT) }
   final def CURRENT_DATE: Rule0 = rule { keyword(Consts.CURRENT_DATE) }
   final def CURRENT_TIMESTAMP: Rule0 = rule { keyword(Consts.CURRENT_TIMESTAMP) }
   final def DELETE: Rule0 = rule { keyword(Consts.DELETE) }
   final def DESC: Rule0 = rule { keyword(Consts.DESC) }
-  final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DISTINCT: Rule0 = rule { keyword(Consts.DISTINCT) }
   final def DROP: Rule0 = rule { keyword(Consts.DROP) }
   final def ELSE: Rule0 = rule { keyword(Consts.ELSE) }
@@ -92,9 +90,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OR: Rule0 = rule { keyword(Consts.OR) }
   final def ORDER: Rule0 = rule { keyword(Consts.ORDER) }
   final def OUTER: Rule0 = rule { keyword(Consts.OUTER) }
-  final def PACKAGE: Rule0 = rule { keyword(Consts.PACKAGE) }
-  final def PATH: Rule0 = rule { keyword(Consts.PATH) }
-  final def REPOS: Rule0 = rule { keyword(Consts.REPOS) }
   final def REVOKE: Rule0 = rule { keyword(Consts.REVOKE) }
   final def RIGHT: Rule0 = rule { keyword(Consts.RIGHT) }
   final def SCHEMA: Rule0 = rule { keyword(Consts.SCHEMA) }
@@ -104,7 +99,6 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def THEN: Rule0 = rule { keyword(Consts.THEN) }
   final def TO: Rule0 = rule { keyword(Consts.TO) }
   final def TRUE: Rule0 = rule { keyword(Consts.TRUE) }
-  final def UNDEPLOY: Rule0 = rule { keyword(Consts.UNDEPLOY) }
   final def UNION: Rule0 = rule { keyword(Consts.UNION) }
   final def UNIQUE: Rule0 = rule { keyword(Consts.UNIQUE) }
   final def UPDATE: Rule0 = rule { keyword(Consts.UPDATE) }
@@ -119,11 +113,13 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def ANALYZE: Rule0 = rule { keyword(Consts.ANALYZE) }
   final def ANTI: Rule0 = rule { keyword(Consts.ANTI) }
   final def AUTHORIZATION: Rule0 = rule { keyword(Consts.AUTHORIZATION) }
+  final def BUCKETS: Rule0 = rule { keyword(Consts.BUCKETS) }
   final def CACHE: Rule0 = rule { keyword(Consts.CACHE) }
   final def CALL: Rule0 = rule{ keyword(Consts.CALL) }
   final def CASCADE: Rule0 = rule { keyword(Consts.CASCADE) }
   final def CLEAR: Rule0 = rule { keyword(Consts.CLEAR) }
   final def CLUSTER: Rule0 = rule { keyword(Consts.CLUSTER) }
+  final def CLUSTERED: Rule0 = rule { keyword(Consts.CLUSTERED) }
   final def CODEGEN: Rule0 = rule { keyword(Consts.CODEGEN) }
   final def COLUMN: Rule0 = rule { keyword(Consts.COLUMN) }
   final def COLUMNS: Rule0 = rule { keyword(Consts.COLUMNS) }
@@ -132,6 +128,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
   final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
+  final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
   final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
@@ -176,14 +173,20 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def OPTIONS: Rule0 = rule { keyword(Consts.OPTIONS) }
   final def OUT: Rule0 = rule { keyword(Consts.OUT) }
   final def OVERWRITE: Rule0 = rule { keyword(Consts.OVERWRITE) }
+  final def PACKAGE: Rule0 = rule { keyword(Consts.PACKAGE) }
   final def PACKAGES: Rule0 = rule { keyword(Consts.PACKAGES) }
   final def PARTITION: Rule0 = rule { keyword(Consts.PARTITION) }
+  final def PARTITIONED: Rule0 = rule { keyword(Consts.PARTITIONED) }
+  final def PATH: Rule0 = rule { keyword(Consts.PATH) }
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
+  final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
+  final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
   final def REGEXP: Rule0 = rule { keyword(Consts.REGEXP) }
   final def RENAME: Rule0 = rule { keyword(Consts.RENAME) }
   final def REPLACE: Rule0 = rule { keyword(Consts.REPLACE) }
+  final def REPOS: Rule0 = rule { keyword(Consts.REPOS) }
   final def RESET: Rule0 = rule { keyword(Consts.RESET) }
   final def RESTRICT: Rule0 = rule { keyword(Consts.RESTRICT) }
   final def RETURNS: Rule0 = rule { keyword(Consts.RETURNS) }
@@ -195,6 +198,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def SERDEPROPERTIES: Rule0 = rule { keyword(Consts.SERDEPROPERTIES) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
   final def SORT: Rule0 = rule { keyword(Consts.SORT) }
+  final def SORTED: Rule0 = rule { keyword(Consts.SORTED) }
   final def START: Rule0 = rule { keyword(Consts.START) }
   final def STATISTICS: Rule0 = rule { keyword(Consts.STATISTICS) }
   final def STOP: Rule0 = rule { keyword(Consts.STOP) }
@@ -207,6 +211,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def TEMPORARY: Rule0 = rule { keyword(Consts.TEMPORARY) }
   final def TRUNCATE: Rule0 = rule { keyword(Consts.TRUNCATE) }
   final def UNCACHE: Rule0 = rule { keyword(Consts.UNCACHE) }
+  final def UNDEPLOY: Rule0 = rule { keyword(Consts.UNDEPLOY) }
   final def UNSET: Rule0 = rule { keyword(Consts.UNSET) }
   final def USE: Rule0 = rule { keyword(Consts.USE) }
   final def USING: Rule0 = rule { keyword(Consts.USING) }
@@ -251,7 +256,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   // DDLs, SET etc
 
   final type TableEnd = (Option[String], Option[Map[String, String]],
-      Option[LogicalPlan])
+      Array[String], Option[BucketSpec], Option[LogicalPlan])
 
   protected final def ifNotExists: Rule1[Boolean] = rule {
     (IF ~ NOT ~ EXISTS ~ push(true)).? ~> ((o: Any) => o != None)
@@ -292,7 +297,7 @@ abstract class SnappyDDLParser(session: SparkSession)
       // the save mode will be ignore.
       val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
       CreateTableUsingCommand(tableIdent, None, userSpecifiedSchema, schemaDDL,
-        provider, mode, options, remaining._3, external == None)
+        provider, mode, options, remaining._3, remaining._4, remaining._5, external == None)
     }
   }
 
@@ -382,10 +387,27 @@ abstract class SnappyDDLParser(session: SparkSession)
     noneOf("uUoOaA-;/")
   }
 
+  protected final def bucketSpec: Rule1[BucketSpec] = rule {
+    CLUSTERED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~
+        (SORTED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~
+        INTO ~ integral ~ BUCKETS ~> ((cols: Seq[String], sort: Any, buckets: String) =>
+      sort match {
+        case None => BucketSpec(buckets.toInt, cols, Nil)
+        case Some(s) => BucketSpec(buckets.toInt, cols, s.asInstanceOf[Seq[String]])
+      })
+  }
+
   protected final def ddlEnd: Rule1[TableEnd] = rule {
-    ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~ (AS ~ query).? ~
-        ws ~ &((';' ~ ws).* ~ EOI) ~> ((provider: Any, options: Any,
-        asQuery: Any) => (provider, options, asQuery).asInstanceOf[TableEnd])
+    ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~
+        (PARTITIONED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~
+        bucketSpec.? ~ (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
+        ((provider: Any, options: Any, parts: Any, buckets: Any, asQuery: Any) => {
+          val partitions = parts match {
+            case None => Utils.EMPTY_STRING_ARRAY
+            case Some(p) => p.asInstanceOf[Seq[String]].toArray
+          }
+          (provider, options, partitions, buckets, asQuery).asInstanceOf[TableEnd]
+        })
   }
 
   protected final def tableEnd1: Rule[StringBuilder :: HNil,
@@ -476,8 +498,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def dropTable: Rule1[LogicalPlan] = rule {
-    DROP ~ TABLE ~ ifExists ~ tableIdentifier ~> ((exists: Boolean, table: TableIdentifier) =>
-      DropTableOrViewCommand(table, exists, isView = false, purge = false))
+    DROP ~ TABLE ~ ifExists ~ tableIdentifier ~ (PURGE ~ push(true)).? ~>
+        ((exists: Boolean, table: TableIdentifier, purge: Any) =>
+          DropTableOrViewCommand(table, exists, isView = false, purge = purge != None))
   }
 
   protected def dropView: Rule1[LogicalPlan] = rule {
@@ -603,7 +626,8 @@ abstract class SnappyDDLParser(session: SparkSession)
         // for both builtin as well as external implementations
         val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
         CreateTableUsingCommand(streamIdent, None, specifiedSchema, None,
-          provider, mode, opts, None, isBuiltIn = true)
+          provider, mode, opts, partitionColumns = Utils.EMPTY_STRING_ARRAY,
+          bucketSpec = None, query = None, isBuiltIn = true)
     }
   }
 
