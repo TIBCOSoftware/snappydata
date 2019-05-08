@@ -80,7 +80,7 @@ TIBCO ComputeDB extends Apache Spark’s unified API:
 
 	-	Express their accuracy requirements as high-level accuracy contracts (HAC), without overwhelming them with numerous statistical concepts.
 
-## Morphing Apache Spark to support mixed workloads (OLTP, OLAP)
+## Morphing Apache Spark to Support Mixed Workloads (OLTP, OLAP)
 Apache Spark is designed as a computational engine for processing batch jobs. Each Apache Spark application (for example, a Map-reduce job) runs as an independent set of processes (that is, executor JVMs) in the cluster. These JVMs are reused for the lifetime of the application. While, data can be cached and reused in these JVMs for a single application, sharing data across applications or clients require an external storage tier, such as HDFS. TIBCO ComputeDB, on the other hand, targets a real-time, “always-on”, operational design center— clients can connect at will, and share data across any number of concurrent connections. This is similar to any operational database in the market today. Thus, to manage data in the same JVM, our first challenge is to alter the life cycle of these executors so that they are long-lived and decoupled from individual applications.
 
 A second but related challenge is Apache Spark’s design for how user requests (jobs) are handled. A single driver orchestrates all the work done on the executors. Given our need for high concurrency and a hybrid OLTP-OLAP workload, this driver introduces:
