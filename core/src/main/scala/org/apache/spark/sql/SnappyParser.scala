@@ -584,16 +584,6 @@ class SnappyParser(session: SnappySession)
         })
   }
 
-  /*
-  sample
-    : TABLESAMPLE '('
-      ( (percentage=(INTEGER_VALUE | DECIMAL_VALUE) sampleType=PERCENTLIT)
-      | (expression sampleType=ROWS)
-      | sampleType=BYTELENGTH_LITERAL
-      | (sampleType=BUCKET numerator=INTEGER_VALUE OUT OF denominator=INTEGER_VALUE (ON (identifier | qualifiedName '(' ')'))?))
-      ')'
-   */
-
   private def createSample(fraction: Double): LogicalPlan => Sample = child => {
     // The range of fraction accepted by Sample is [0, 1]. Because Hive's block sampling
     // function takes X PERCENT as the input and the range of X is [0, 100], we need to

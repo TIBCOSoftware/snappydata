@@ -39,7 +39,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.CatalogTableType
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -62,6 +62,8 @@ case class CreateTableUsingCommand(
     provider: String,
     mode: SaveMode,
     options: Map[String, String],
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
     isBuiltIn: Boolean) extends RunnableCommand {
 
@@ -69,7 +71,7 @@ case class CreateTableUsingCommand(
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, query)
+      schemaDDL, mode, allOptions, isBuiltIn, partitionColumns, bucketSpec, query)
     Nil
   }
 }
