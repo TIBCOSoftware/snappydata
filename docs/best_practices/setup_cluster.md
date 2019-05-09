@@ -20,7 +20,7 @@ For instance, when all cores are available, if a large loading job is scheduled 
 Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job first calculates the number of partitions on the underlying dataset and a task is assigned and scheduled for each partition. </br>
 But, the number of concurrent tasks executing is limited by the available core count. If the scheduled task count is larger then they will be executed in a staggered manner. Each task is assigned a single core to execute. 
 
-By default, SnappyData sets total available spark executor cores on any data server to be 2 multiplied by the total number of physical ccores on a machine. 
+By default, SnappyData sets total available spark executor cores on any data server to be 2 multiplied by the total number of physical cores on a machine. 
 
 **spark executor cores = 2 * C** 
 Where **C** = Total number of physical processor cores on a machine.
