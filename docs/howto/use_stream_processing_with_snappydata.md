@@ -194,20 +194,34 @@ If the `_eventType` column is not provided as part of source dataframe, then the
 <a id= event_order> </a>
 ### Event Processing Order
 
-Currently, the ordering of events across partitions is NOT supported. Event processing occurs independently in each partition. Hence, your application must ensure that all the events, that are associated with a key, are always delivered on the same partition (shard on the key).</br>If your incoming stream is not partitioned on the key column(s), the application should first repartition the dataframe on the key column(s). You can ignore this requirement, if your incoming streams are continuously appending (For example, time series) or when replacing data where ordering is irrelevant.
+Currently, the ordering of events across partitions is not supported. Event processing occurs independently in each partition. Hence, you must ensure that in your application all the events, that are associated with a key, are always delivered on the same partition (shard on the key).
+
+If your incoming stream is not partitioned on the key column, the application should first repartition the dataframe on the key column. You can ignore this requirement, if your incoming streams are continuously appending. For example, time series or when replacing data where ordering is irrelevant.
+
+<a id= abovementioned> </a>
+The writes occur by grouping the events in the following manner (for performance optimization of the columnar store) and is only applicable when your DataFrame has an **_eventType** column: 
+
+*	Processes all delete events (deletes relevant records from target table)
+*	Processes all insert events (inserts relevant records into the target table
+*	Processes all update events (applies PutInto operation)
+
+If the **_eventType** column is not provided as part of source dataframe, then the events are processed in the following manner:
+*	If key columns/primary keys are defined for the target table, then all the events are treated as update events and **put into** operation is performed for all events.
+*	If key columns/primary keys are not defined for the target table, then all the events are treated as insert events and insert operation is applied for all events.
 
 <a id= conflationpro> </a>
-If `conflation` property is set to `true`, **Snappy Sink** will first conflate the incoming batch independently by each partition. This results in a batch, where there is at most a single entry per key. </br>Then, the writes occur by grouping the events in the following manner (for performance optimization of the columnar store) and is only applicable when your DataFrame has an `_eventType` column:
-     
-*	**Processes all delete events** (deletes relevant records from target table).
-*	**Processes all insert events** (inserts relevant records into the target table).
-*	**Processes all update events **(applies **PutInto** operation).
-	
-This above grouping semantics is followed even when the `conflation` property is set to `false`.  When `_eventType` column is not available, all records are merged into the target table using **PutInto** semantics.
+If `conflation` property is set to `true`, **Snappy Sink** will first conflate the incoming batch independently by each partition. The conflation of events is performed in the following steps:
+*	Group all the events in the given partition by key.
+*	Convert inserts into **put into** operations if the event type of the last event for a key is of insert type and there are more than one events for the same key.
+*	Keep the last event for each key and drop remaining events.
 
-By default the `conflation` property is set to `false`. Therefore, the current ordering semantics only ensures consistency when incoming events in a batch are for unique key column(s).
+This results in a batch, where there is at most a single entry per key. 
 
-**For example:**</br>If an incoming batch contains an **Insert(key1)** event followed by a** Delete(key1)** event, the record for **key1** is shown in the target table after the batch is processed. This is because all the Delete events are processed before Insert events as per the event processing order explained [above](#conflationpro).</br>In such cases, you should enable the Conflation by setting the `conflation` property to `true`. Now, if a batch contains **Insert(key1)** event followed by a **Delete(key1)** event, then ** Snappy Sink** conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.</br>Processing **Delete(key1)** event without processing **Insert(key1)** event do not result in a failure, as Delete events are ignored, if corresponding records do not exist in the target table.
+By default the `conflation` property is set to `false`. Therefore, the event processing semantics only ensures consistency when incoming events in a batch are for the unique key column(s).
+
+**For example:**</br>If an incoming batch contains an **Insert(key1)** event followed by a **Delete(key1)** event, the record for **key1** is shown in the target table after the batch is processed. This is because all the Delete events are processed before Insert events as per the event processing order explained [here](#abovementioned).
+In such cases, you should enable the Conflation by setting the **conflation** property to true. Now, if a batch contains **Insert(key1)** event followed by a Dele**te(key1)** event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.
+Processing **Delete(key1)** event without processing **Insert(key1)** event does not result in a failure, as Delete events are ignored if corresponding records do not exist in the target table.
 
 !!!Note 
 	Applications can override the default **Snappy Sink** semantics by explicitly implementing the [**sinkCallback**](#snappycallback).
