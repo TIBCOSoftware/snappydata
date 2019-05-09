@@ -6,7 +6,7 @@ This guide gives details of Spark extension APIs that are provided by TIBCO Comp
 | SnappySession APIs | DataFrameWriter APIs |SnappySessionCatalog APIs|
 |--------|--------|--------|
 |  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of TIBCO ComputeDB table|
-|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getTableType**](#gettabletypeapi) </br>Get Table Type |
+|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumns) </br>Gets primary key or key columns with their position in the table. |
 |   [**createTable**](#createtableapi)</br>Create TIBCO ComputeDB Managed Table    |        ||
 |     [**createTable**](#createtable1)</br>Create TIBCO ComputeDB Managed JDBC Table |        ||
 |    [**truncateTable**](#truncateapi)</br> Empty Contents of Table    |        ||
@@ -579,26 +579,26 @@ getKeyColumns(tableName: String)
 snappySession.sessionCatalog.getKeyColumns("t1")
 ```
 
-<a id= gettabletypeapi> </a>
-### getTableType
-Gets the table type (row, column etc.) of a TIBCO ComputeDB table. 
-
+<a id= getkeycolumns> </a>
+### getKeyColumnsAndPositions
+Gets primary key or key columns of a SnappyData table along with their position in the table.
 
 **Syntax**
 
 ```
-getTableType(tableName: String)
+getKeyColumnsAndPositions(tableName: String)
 ```
 
 **Parameters**
 
 |Parameter	 | Description |
 |--------|--------|
-| tableName      |    Name of the table.|
-| Returns     |   Type of the table. Row, Column, Index, Stream, External, None etc. |
+| tableName	    |    Name of the table.|
+| Returns     |  Sequence of `scala.Tuple2` containing column name and column's position in the table for each key columns (for column tables) or sequence of primary keys (for row tables).|
 
 **Example **
 
 ```pre
-snappySession.sessionCatalog.getTableType("t1")
+snappySession.sessionCatalog.getKeyColumnsAndPositions("t1")
+
 ```
