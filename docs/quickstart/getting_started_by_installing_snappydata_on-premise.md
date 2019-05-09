@@ -3,8 +3,8 @@
 Download the latest version of TIBCO ComputeDB from the [TIBCO ComputeDB Release Page](https://github.com/SnappyDataInc/snappydata/releases/), which lists the latest and previous releases of TIBCO ComputeDB.
 
 ```pre
-$ tar -xzf snappydata-1.0.2.1-bin.tar.gz
-$ cd snappydata-1.0.2.1-bin/
+$ tar -xzf TIB_compute_1.1.0_linux.tar.gz
+$ cd TIB_compute_1.1.0_linux/
 # Create a directory for TIBCO ComputeDB artifacts
 $ mkdir quickstartdatadir
 $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log
