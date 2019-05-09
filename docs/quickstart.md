@@ -3,12 +3,7 @@
 Welcome to the Getting Started section! <br>
 In this section, multiple options are provided for getting started with TIBCO ComputeDB.
 
-<heading2>Before you begin<heading2>
-
-You must first [download and extract](install.md) the TIBCO ComputeDB product distribution, navigate to the TIBCO ComputeDB product root directory and [start the cluster](howto/start_snappy_cluster.md).
-
 Depending on your preference, you can try any of the following options:
-
 
 * [TIBCO ComputeDB with Spark distribution](quickstart/getting_started_with_your_spark_distribution.md)
 
