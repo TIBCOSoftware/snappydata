@@ -834,8 +834,8 @@ case class SnappyHashAggregateExec(
       ${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
       ${KeyBufferVars.zip(keysDataType).map {
           case (varName, dataType) => dataType match {
-          case st: StructType => recursiveApply(nestedStructNullBitsTermInitializer)
-            (varName, st, 0).toString
+          case st: StructType =>
+            recursiveApply(nestedStructNullBitsTermInitializer)(varName, st, 0).toString
           case _ => ""
         }
       }.mkString("\n")}
