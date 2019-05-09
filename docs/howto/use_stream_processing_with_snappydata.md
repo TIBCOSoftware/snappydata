@@ -206,11 +206,13 @@ The writes occur by grouping the events in the following manner (for performance
 *	Processes all update events (applies PutInto operation)
 
 If the **_eventType** column is not provided as part of source dataframe, then the events are processed in the following manner:
+
 *	If key columns/primary keys are defined for the target table, then all the events are treated as update events and **put into** operation is performed for all events.
 *	If key columns/primary keys are not defined for the target table, then all the events are treated as insert events and insert operation is applied for all events.
 
 <a id= conflationpro> </a>
 If `conflation` property is set to `true`, **Snappy Sink** will first conflate the incoming batch independently by each partition. The conflation of events is performed in the following steps:
+
 *	Group all the events in the given partition by key.
 *	Convert inserts into **put into** operations if the event type of the last event for a key is of insert type and there are more than one events for the same key.
 *	Keep the last event for each key and drop remaining events.
