@@ -1,7 +1,13 @@
-# How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB
+# How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB 
 
 TIBCO Spotfire® Desktop allows users to easily author and update ad-hoc analytics, applications, and dashboards. 
 To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIBCO ComputeDB cluster. 
+
+!!! Note
+The Spark SQL connector based on the Simba ODBC driver in Spotfire has some performance issues. We noticed an overhead of about 5 seconds over the query time in ComputeDB. You can see the query timings in the ComputeDB dashboard. We expect this issue to be resolved before full GA of this feature. 
+
+### Experimental(but faster) Spotfire connector (based on ComputeDB native ODBC)
+An experimental (but much faster) connnector is also available from TIBCO engg and accessible from [here](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb).
 
 <a id= tibcomputsetup> </a>
 ## Download and Launch TIBCO ComputeDB
