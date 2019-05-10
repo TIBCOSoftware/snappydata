@@ -115,9 +115,9 @@ sudo swapon /var/swapfile
 ## TIBCO ComputeDB Smart Connector Mode and Local Mode Settings
 
 ### Managing Executor Memory
-For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. Further, to have better ingestion speed, small internal columnar storage structures are created in the Spark application's cluster itself, which is then directly inserted into the required buckets of the column table in the TIBCO ComputeDB cluster.
+For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. To improve ingestion speeds, small internal columnar storage structures are created in the Spark application's cluster, which are then directly inserted into the required buckets of the column table in the TIBCO ComputeDB cluster.
 These internal structures are in encoded form, and for efficient encoding, some memory space is acquired upfront which is independent of the amount of data to be loaded into the tables. </br>
-For example, if there are 32 cores for the Smart Connector application and the number of buckets of the column table is equal or more than that, then, each of the 32 executor threads can take around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient, and therefore a default of at least 2 GB is recommended in this case.
+For example, if there are 32 cores for the Smart Connector application and there are 32 or more buckets on the column table, then each of the 32 executor threads will consume around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient, and therefore a default of at least 2 GB is recommended in this case.
 
 You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
 
