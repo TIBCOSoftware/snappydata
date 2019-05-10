@@ -508,6 +508,8 @@ case class SnappyHashAggregateExec(
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = ctx.freshName("hashMapMask")
+    val maxMemory = ctx.freshName("maxMemory")
+    val peakMemory = metricTerm(ctx, "peakMemory")
 
     // generate the map accessor to generate key/value class
     // and get map access methods
@@ -532,6 +534,11 @@ case class SnappyHashAggregateExec(
           $childProduce
 
           $iterTerm = $hashMapTerm.iterator();
+          long $maxMemory = $hashMapTerm.maxMemory();
+          $peakMemory.add($maxMemory);
+          if ($hashMapTerm.taskContext() != null) {
+            $hashMapTerm.taskContext().taskMetrics().incPeakExecutionMemory($maxMemory);
+          }
         }
        """)
 
