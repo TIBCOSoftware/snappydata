@@ -26,9 +26,9 @@ pages:
     - 'Getting Started with TIBCO ComputeDB on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
     - 'Getting Started with TIBCO ComputeDB on Docker Image': 'quickstart/getting_started_with_docker_image.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
-    - 'TIBCO ComputeDB Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
+    - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
-    - 'TIBCO ComputeDB Cluster SQL Tutorials': 'quickstart/snappydataquick_start.md'
+    - 'Create TIBCO ComputeDB Cluster': 'quickstart/snappydataquick_start.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
