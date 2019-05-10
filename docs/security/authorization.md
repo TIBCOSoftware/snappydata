@@ -1,7 +1,5 @@
 #  Authorization
 
-<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB. </br></ent>
-
 Authorization is the process of determining what access permissions the authenticated user has. Users are authorized to perform tasks based on their role assignments. TIBCO ComputeDB also supports LDAP group authorization.
 
 The administrator can manage user permissions in a secure cluster using the [GRANT](../reference/sql_reference/grant.md) and [REVOKE](../reference/sql_reference/revoke.md) SQL statements which allow you to set permission for the user for specific database objects or for specific SQL actions. 

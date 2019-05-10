@@ -33,7 +33,7 @@ The following topics are covered in this section:
 !!! Note
 	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
-On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB Enterprise edition.
+On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB.
 
 ![](../Images/MonitoringUI/TIBCO-ComputeDB-UI-About-Box.png)
 

@@ -72,8 +72,8 @@
 
 	| Property | Value | Description |
 	|--------|--------| -------- |
-	|default.url|jdbc:snappydata://localhost:1527/	| Specify the JDBC URL for SnappyData cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
-	|default.driver|io.snappydata.jdbc.ClientDriver| Specify the JDBC driver for SnappyData|
+	|default.url|jdbc:snappydata://localhost:1527/	| Specify the JDBC URL for TIBCO ComputeDB cluster in the format `jdbc:snappydata://<locator_hostname>:1527` |
+	|default.driver|io.snappydata.jdbc.ClientDriver| Specify the JDBC driver for TIBCO ComputeDB|
 	|snappydata.connection|localhost:1527| Specify the `host:clientPort` combination of the locator for the JDBC connection |
 	|master|local[*]| Specify the URI of the spark master (only local/split mode) |
 	|zeppelin.jdbc.concurrent.use|true| Specify the Zeppelin scheduler to be used. </br>Select **True** for Fair and **False** for FIFO | 
