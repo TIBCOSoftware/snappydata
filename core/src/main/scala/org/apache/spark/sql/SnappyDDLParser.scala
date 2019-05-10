@@ -46,6 +46,7 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.apache.spark.sql.execution.InvalidateCachedPlans
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -803,7 +804,11 @@ abstract class SnappyDDLParser(session: SparkSession)
           if (separatorIndex >= 0) {
             val key = rest.substring(0, separatorIndex).trim
             val value = rest.substring(separatorIndex + 1).trim
-            SetCommand(Some(key -> Option(value)))
+            if (key.startsWith("spark.sql.aqp.")) {
+              new SetCommand(Some(key -> Option(value))) with InvalidateCachedPlans
+            } else {
+              SetCommand(Some(key -> Option(value)))
+            }
           } else if (rest.nonEmpty) {
             SetCommand(Some(rest.trim -> None))
           } else {
