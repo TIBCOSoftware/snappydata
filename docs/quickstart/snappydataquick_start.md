@@ -1,4 +1,4 @@
-# TIBCO ComputeDB Cluster SQL Tutorial
+# Create TIBCO ComputeDB Cluster
  
 In this section, you will get a quick tour to start a TIBCO ComputeDB cluster and try out the basic features and functionalities. The following items are covered in this guide:
 
