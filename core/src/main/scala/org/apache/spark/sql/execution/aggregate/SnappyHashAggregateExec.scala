@@ -37,11 +37,12 @@
 package org.apache.spark.sql.execution.aggregate
 
 
+import java.nio.ByteBuffer
+
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import io.snappydata.Property
 import io.snappydata.collection.{ByteBufferData, ObjectHashSet, SHAMap}
-
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -757,6 +758,12 @@ case class SnappyHashAggregateExec(
     val aggBuffDataTypes = this.aggregateBufferAttributesForGroup.map(_.dataType)
     val allocatorTerm = ctx.freshName("bufferAllocator")
     val allocatorClass = classOf[BufferAllocator].getName
+    val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
+    val byteBufferClass = classOf[ByteBuffer].getName
+
+    val keyBytesHolderVar = ctx.freshName("keyBytesHolder")
+    val baseKeyHolderOffset = ctx.freshName("baseKeyHolderOffset")
+    val baseKeyObject = ctx.freshName("baseKeyHolderObject")
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
@@ -770,9 +777,8 @@ case class SnappyHashAggregateExec(
       valueOffsetTerm, numKeyBytesTerm, currentValueOffSetTerm,
       valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
-      numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr)
-
-    val gfeCacheImplClass = classOf[GemFireCacheImpl].getName
+      numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
+      keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset)
 
 
 
@@ -790,6 +796,9 @@ case class SnappyHashAggregateExec(
            |$hashMapTerm = new $hashSetClassName($valueSize);
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
+           |$byteBufferClass $keyBytesHolderVar = null;
+           |Object $baseKeyObject = null;
+           |long $baseKeyHolderOffset = -1L;
            |$childProduce
          |}""".stripMargin)
 
