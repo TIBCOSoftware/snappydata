@@ -12,4 +12,5 @@ $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir 
 
 It opens the Spark shell. All TIBCO ComputeDB metadata, as well as persistent data, is stored in the directory **quickstartdatadir**.
 
-The spark-shell can now be used to work with TIBCO ComputeDB using [Scala APIs](using_spark_scala_apis.md) and [SQL](using_sql.md).
+The spark-shell can now be used to work with TIBCO ComputeDB using [SQL](using_sql.md) and [Scala APIs](using_spark_scala_apis.md).
+ [SQL](using_sql.md)
