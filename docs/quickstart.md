@@ -19,7 +19,10 @@ Then you can use the following instructions and examples to try out TIBCO Comput
 
 * [Using Spark Scala APIs](quickstart/using_spark_scala_apis.md)
 
-* [TIBCO ComputeDB performance: 16x-20x faster than Apache Spark](quickstart/performance_apache_spark.md)
+* [Benchmark 16-20x Faster Performance than Apache Spark](quickstart/performance_apache_spark.md)
+
+* [Create TIBCO ComputeDB Cluster](quickstart/snappydataquick_start.md)
+
 
 
 
