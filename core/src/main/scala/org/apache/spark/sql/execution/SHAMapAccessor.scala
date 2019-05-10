@@ -783,9 +783,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
     s"""
         int $capacity = $numKeyBytesVar + $numValueBytesVar;
         if ($keyBytesHolderVarTerm == null || $keyBytesHolderVarTerm.capacity() < $capacity) {
-          $keyBytesHolderVarTerm =  $allocatorTerm.allocate($capacity, "SHA");
+          $keyBytesHolderVarTerm = $allocatorTerm.allocate($capacity, "SHA");
           $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
-          $baseKeyHolderOffset =  $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
+          $baseKeyHolderOffset = $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
+          // $keyBytesHolderVarTerm = $byteBufferClass.allocate($capacity);
+          // $baseKeyObject = $keyBytesHolderVarTerm.array();
+          // $baseKeyHolderOffset = $plaformClass.BYTE_ARRAY_OFFSET;
         }
 
         long $currentOffset = $baseKeyHolderOffset;

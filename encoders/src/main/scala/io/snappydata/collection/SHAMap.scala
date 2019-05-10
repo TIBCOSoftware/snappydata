@@ -21,7 +21,7 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
-final class SHAMap(valueSize: Int) extends ByteBufferHashMap(32768, 0.5, 0, valueSize,
+final class SHAMap(valueSize: Int) extends ByteBufferHashMap(16384, 0.9, 0, valueSize,
   GemFireCacheImpl.getCurrentBufferAllocator, null, null, 0L) {
 
   override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
