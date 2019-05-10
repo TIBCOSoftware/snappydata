@@ -158,7 +158,7 @@ The following are TIBCO ComputeDB specific options which can be configured for S
 | Options | Description |
 |--------|--------|
 |`tableName`|Name of the TIBCO ComputeDB table where the streaming data is ingested. The property is case-insensitive and is mandatory.|
-|stateTableSchema|Name of the schema under which TIBCO ComputeDB’s internal state table will be created. This table is used to track the progress of the streaming queries and enables snappy sink to behave in an idempotent manner when streaming query is restarted after abrupt failures or planned down time.</br>This is a mandatory property when security is enabled for the TIBCO ComputeDB cluster. When security is disabled, snappy sink uses APP schema by default to store the sink state table.|
+|`stateTableSchema`|Name of the schema under which TIBCO ComputeDB’s internal state table will be created. This table is used to track the progress of the streaming queries and enables snappy sink to behave in an idempotent manner when streaming query is restarted after abrupt failures or planned down time.</br>This is a mandatory property when security is enabled for the TIBCO ComputeDB cluster. When security is disabled, snappy sink uses APP schema by default to store the sink state table.|
 |`conflation`|This is an optional boolean property with the default value set to `false`. Conflation is enabled only when you set this property to `true`. </br>If this property is set to `true` and if the incoming streaming batch contains multiple events on the same key, **Snappy Sink** automatically reduces this to a single operation. This is typically the last operation on any given key for the batch that is being processed. This property is only applicable when the `_eventType` column is available (see [below](#eventypecolumn)) and the target table has Keys defined. For more information, see [here](#conflationpro). |
 |<a id= snappycallback> </a>`sinkCallback`|This is an optional property which is used to override default **Snappy Sink** behavior. To override the default behavior, client codes should implement `SnappySinkCallback` trait and pass the fully qualified name of the implementing class against this property value.|
 
@@ -225,9 +225,6 @@ By default the `conflation` property is set to `false`. Therefore, the event pro
 In such cases, you should enable the Conflation by setting the **conflation** property to true. Now, if a batch contains **Insert(key1)** event followed by a Dele**te(key1)** event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is **Delete(key1)** and only that event is processed for **key1**.
 Processing **Delete(key1)** event without processing **Insert(key1)** event does not result in a failure, as Delete events are ignored if corresponding records do not exist in the target table.
 
-!!!Note 
-	Applications can override the default **Snappy Sink** semantics by explicitly implementing the [**sinkCallback**](#snappycallback).
-
 ## Sink State Table
 
 A replicated row table with name **SNAPPYSYS_INTERNAL____SINK_STATE_TABLE** is created by **Snappy Sink** under schema specified by the **stateTableSchema** option if the table does not exist. If the **stateTableSchema** is not specified then the sink state table is created under the **APP** schema. During the processing of each batch, this state is updated.
@@ -245,7 +242,7 @@ When security is enabled for the cluster, the **stateTableSchema** becomes a man
 
 ### Maintaining Idempotency In Case Of Stream Failures
 
-When stream execution fails, it can be because the streaming batch was half processed. Hence next time whenever the stream is started, Spark picks the half processed batch again for processing. This can lead to extraneous records in the target table if the batch contains insert events. To overcome this, Snappy Sink keeps the state of a stream query execution as part of the Sink State table. 
+When stream execution fails, it is possible that the streaming batch was half processed. Hence next time whenever the stream is started, Spark picks the half processed batch again for processing. This can lead to extraneous records in the target table if the batch contains insert events. To overcome this, Snappy Sink keeps the state of a stream query execution as part of the Sink State table. 
 
 !!! Note
 	The key columns in a column table are merely a hint (used to perform **put into** and **delete** operations) and does not enforce a unique constraint such as a primary key in case of a row table.

@@ -316,9 +316,9 @@ pages:
 #- Additional Information: additional_files/additional_docs.md
 #- About:
 #   - Contributing: about/contributing.md
-- 'Release Notes': 'release_notes/release_notes.md'
-- 'Release Notes': 
-    - 'Known Issues': 'release_notes/known_issues.md'
+#- 'Release Notes': 'release_notes/release_notes.md'
+#- 'Release Notes': 
+#    - 'Known Issues': 'release_notes/known_issues.md'
 - TIBCO Documentation and Support Services: techsupport.md
 - Legal Notices: legalnotices.md
 

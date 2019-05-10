@@ -6,7 +6,7 @@ This guide gives details of Spark extension APIs that are provided by TIBCO Comp
 | SnappySession APIs | DataFrameWriter APIs |SnappySessionCatalog APIs|
 |--------|--------|--------|
 |  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of TIBCO ComputeDB table|
-|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumns) </br>Gets primary key or key columns with their position in the table. |
+|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumnspos) </br>Gets primary key or key columns with their position in the table. |
 |   [**createTable**](#createtableapi)</br>Create TIBCO ComputeDB Managed Table    |        ||
 |     [**createTable**](#createtable1)</br>Create TIBCO ComputeDB Managed JDBC Table |        ||
 |    [**truncateTable**](#truncateapi)</br> Empty Contents of Table    |        ||
@@ -551,7 +551,7 @@ df.write.deleteFrom(“snappy_table”)
 The following APIs are available for SnappySessionCatalog:
 
 *	[**getKeyColumns**](#getkeycolumapi)
-*	[**getKeyColumnsAndPositions**](#getkeycolumns) 
+*	[**getKeyColumnsAndPositions**](#getkeycolumnspos) 
 
 !!! Note
 	These are developer APIs and are subject to change in the future.
@@ -579,8 +579,9 @@ getKeyColumns(tableName: String)
 snappySession.sessionCatalog.getKeyColumns("t1")
 ```
 
-<a id= getkeycolumns> </a>
 ### getKeyColumnsAndPositions
+<a id= getkeycolumnspos> </a>
+
 Gets primary key or key columns of a SnappyData table along with their position in the table.
 
 **Syntax**
