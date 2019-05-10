@@ -1,6 +1,6 @@
 # How to Access TIBCO ComputeDB from Various SQL Client Tools
 
-You can use any of the following SQL client tools to access TIBCO ComputeDB:
+You can use the following SQL client tools to access TIBCO ComputeDB:
 
 *	[DbVisualizer](#dbvis)
 *	[SQL Workbench/J](#sqlworkbenchj)
@@ -9,13 +9,11 @@ You can use any of the following SQL client tools to access TIBCO ComputeDB:
 
 <a id= dbvis> </a>
 ## DbVisualizer
-DbVisualizer is a universal database tool that can be used to access databases. You can access TIBCO ComputeDB from DbVisualizer when you create a database connection using a database driver.
+DbVisualizer is a universal database tool for developers, DBAs and analysts to access databases. You can access TIBCO ComputeDB from DbVisualizer when you create a database connection using a database driver.
 
 To access TIBCO ComputeDB from DbVisualizer, do the following:
 
 ### Create a Database Driver
-
-To create a database driver, do the following:
 
 1.	On the DbVisualizer home page, go to **Tools** > **Driver Manager** and click **+**.
 2.	Enter the following details:
