@@ -28,7 +28,7 @@ final class SHAMap(valueSize: Int) extends ByteBufferHashMap(16384, 0.9, 0, valu
     valueOffset: Int): Int = {
     // Get the valueOffSet
    // (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
-    valueOffset
+    -1 * valueOffset
   }
 
   override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long,
