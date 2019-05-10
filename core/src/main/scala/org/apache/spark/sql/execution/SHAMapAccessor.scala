@@ -42,7 +42,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
   vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
   nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int,
   allocatorTerm: String, numBytesForNullAggBits: Int,
-  nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String)
+  nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String,
+  keyBytesHolderVarTerm: String, baseKeyObject: String,
+  baseKeyHolderOffset: String)
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -347,11 +349,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
 
-    val keyBytesHolder = ctx.freshName("keyBytesHolder")
+
     val numValueBytes = ctx.freshName("numValueBytes")
 
-    val baseKeyoffset = ctx.freshName("baseKeyoffset")
-    val baseKeyObject = ctx.freshName("baseKeyObject")
+
     val bbDataClass = classOf[ByteBufferData].getName
 
     // val valueInit = valueInitCode + '\n'
@@ -383,12 +384,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
         |int $numValueBytes = $numAggBytes;
         |// prepare the key
-        |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyBytesHolder,
-           keyVars, keysDataType, aggregateDataTypes, valueInitVars, baseKeyObject,
-           baseKeyoffset)
+        |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes,
+           keyVars, keysDataType, aggregateDataTypes, valueInitVars)
           }
         // insert or lookup
-        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyoffset,
+        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyHolderOffset,
         |$numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
         |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
         |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
@@ -773,19 +773,22 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
   def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String,
-    keyBytesHolderVar: String, keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    aggregatesDataType: Seq[DataType], valueInitVars: Seq[ExprCode],
-    baseKeyObject: String, baseKeyoffsetTerm: String): String = {
+    keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
+    aggregatesDataType: Seq[DataType], valueInitVars: Seq[ExprCode]): String = {
 
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = ctx.freshName("currentOffset")
     val plaformClass = classOf[Platform].getName
+    val capacity = ctx.freshName("capacity")
+    s"""
+        int $capacity = $numKeyBytesVar + $numValueBytesVar;
+        if ($keyBytesHolderVarTerm == null || $keyBytesHolderVarTerm.capacity() < $capacity) {
+          $keyBytesHolderVarTerm =  $allocatorTerm.allocate($capacity, "SHA");
+          $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
+          $baseKeyHolderOffset =  $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
+        }
 
-    s"""$byteBufferClass $keyBytesHolderVar =  $allocatorTerm.
-        allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
-        Object $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVar);
-        long $baseKeyoffsetTerm = $allocatorTerm.baseOffset($keyBytesHolderVar);
-        long $currentOffset = $baseKeyoffsetTerm;
+        long $currentOffset = $baseKeyHolderOffset;
         // first write key data
         ${ writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
           nullKeysBitsetTerm, numBytesForNullKeyBits, true, false)
