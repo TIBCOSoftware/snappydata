@@ -58,7 +58,7 @@ To connect TIBCO ComputeDB from SQL Workbench/J, do the following:
 4.	Click **Manage Drivers** from the bottom left. The **Manage driver** dialog box is displayed. 
 5.	Enter the following details:
 	*	**Name**: Provide a name for the driver. 
-	*	**Library**: Click the folder icon and select the JDBC Client jar. <br> You must download the JDBC Client jar (snappydata-jdbc_2.11-1.0.2.2.jar) from the TIBCO ComputeDB website to your local machine.
+	*	**Library**: Click the folder icon and select the JDBC Client jar. <br> You must download the JDBC Client jar (snappydata-jdbc_2.11-1.1.0.jar) from the TIBCO ComputeDB website to your local machine.
 	*	**Classname**: **io.snappydata.jdbc.ClientDriver**. 
 	*	**Sample** **URL**: jdbc:snappydata://server:port/
 6.	Click **OK**. The **Select Connection Profile** page is displayed.
@@ -137,7 +137,7 @@ To connect TIBCO ComputeDB from SQuirreL SQL Client, do the following:
 	*	website URL
 3.	Add the downloaded **snappydata jdbc jar** in the extra classpath tab and provide the class name to be used for the connection. <br>
 	```
-jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.0.2.2
+jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.1.0
 	jdbc class: io.snappydata.jdbc.ClientPoolDriver
 ```
 4.	Go to **Aliases** tab and then click **+** to add a new alias. 

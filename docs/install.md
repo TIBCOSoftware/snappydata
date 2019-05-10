@@ -12,8 +12,6 @@ The Enterprise Edition includes several additional capabilities that are closed 
 
 * [**SnappyData 1.1.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.0/snappydata-1.1.0-bin.tar.gz)
 
-* [**SnappyData 1.1.0 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.0/snappydata-1.1.0-without-hadoop-bin.tar.gz) 
-
 
 <heading2> Download TIBCO ComputeDB Enterprise Edition</heading2> 
 
