@@ -365,7 +365,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     valueInitCode: String, input: Seq[ExprCode], keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
-
+    val tempValueData = ctx.freshName("tempValueData")
     val numValueBytes = ctx.freshName("numValueBytes")
 
 
@@ -408,11 +408,15 @@ case class SHAMapAccessor(@transient session: SnappySession,
         | $baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
         |boolean $keyExistedTerm = $valueOffsetTerm < 0;
         |if ($keyExistedTerm) {
-        |  $valueOffsetTerm = -1 * $valueOffsetTerm;
+          |$valueOffsetTerm = -1 * $valueOffsetTerm;
+        |} else {
+          |$bbDataClass $tempValueData = $hashMapTerm.getValueData();
+          |if ($valueDataTerm !=  $tempValueData) {
+             |$valueDataTerm = $tempValueData;
+             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+          |}
         |}
-        |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
-        |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-        |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
 
         |// position the offset to start of aggregate value        |
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
