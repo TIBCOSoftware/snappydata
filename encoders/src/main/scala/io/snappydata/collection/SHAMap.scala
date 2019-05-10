@@ -21,18 +21,21 @@ import com.gemstone.gemfire.internal.shared.BufferAllocator
 
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
-final class SHAMap(valueSize: Int) extends ByteBufferHashMap(128, 0.6, 0, valueSize,
+final class SHAMap(valueSize: Int) extends ByteBufferHashMap(32768, 0.5, 0, valueSize,
   GemFireCacheImpl.getCurrentBufferAllocator, null, null, 0L) {
 
-  override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+  override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
+    valueOffset: Int): Int = {
     // Get the valueOffSet
-    (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
+   // (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
+    valueOffset
   }
 
-  override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+  override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long,
+    valueOffset: Int): Int = {
     // Read the value start offset before invoking handleNewInsert which may cause rehash
     // & make the mayKeyObject & mapKeyOffset invalid
-    val valueOffset = (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
+   // val valueOffset = (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
     handleNewInsert()
     valueOffset
   }

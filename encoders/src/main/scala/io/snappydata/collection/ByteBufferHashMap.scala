@@ -128,9 +128,10 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
       if (mapKey != 0L) {
         // first compare the hash codes followed by "equalsSize" that will
         // include the check for 4 bytes of numKeyBytes itself
-        if (hash == mapKey.toInt && valueData.equalsSize((mapKey >>> 32L).toInt - 4,
+        val valueStartOffset = (mapKey >>> 32L).toInt - 4
+        if (hash == mapKey.toInt && valueData.equalsSize(valueStartOffset,
           baseObject, baseOffset, numKeyBytes)) {
-          return handleExisting(mapKeyObject, mapKeyOffset)
+          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4)
         } else {
           // quadratic probing (increase delta)
           pos = (pos + delta) & mask
@@ -141,7 +142,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
         val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes)
         Platform.putLong(mapKeyObject, mapKeyOffset,
           (relativeOffset << 32L) | (hash & 0xffffffffL))
-        return handleNew(mapKeyObject, mapKeyOffset)
+        return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
       }
     }
     0 // not expected to reach
@@ -162,12 +163,13 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     valueData = null
   }
 
-  protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+  protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
+    valueStartOffset: Int): Int = {
     // 0 indicates existing
     0
   }
 
-  protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
+  protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long, valueStartOffset: Int): Int = {
     handleNewInsert()
     // 1 indicates new insert
     1
