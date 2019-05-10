@@ -44,7 +44,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   allocatorTerm: String, numBytesForNullAggBits: Int,
   nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
-  baseKeyHolderOffset: String)
+  baseKeyHolderOffset: String, keyExistedTerm: String)
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -80,18 +80,25 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val unsafeClass = classOf[UnsafeRow].getName
     val castTerm = getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
-      val nullVar = ctx.freshName("isNull")
+      val nullVar = if (isKey) {
+        ctx.freshName("isNull")
+      } else s"$varName${SHAMapAccessor.nullVarSuffix}"
+      // if it is aggregate value buffer do not declare null var as
+      // they are already declared at start
+      // also aggregate vars cannot be nested in any case.
+      val booleanStr = if (isKey) "boolean" else ""
       val nullVarCode =
         if (numBytesForNullBits <= 8) {
-          s"""boolean $nullVar = ($nullBitTerm & ( (($castTerm)0x01) << $i)) == 0;""".stripMargin
+          s"""$booleanStr $nullVar = ($nullBitTerm & ((($castTerm)0x01) << $i)) == 0;""".stripMargin
         } else {
           val remainder = i % 8
           val index = i / 8
-          s"""boolean $nullVar = ($nullBitTerm[$index] & (0x01 << $remainder)) == 0;""".stripMargin
+          s"""$booleanStr $nullVar =
+             |($nullBitTerm[$index] & (0x01 << $remainder)) == 0;""".stripMargin
         }
 
       val evaluationCode = (dt match {
-        case StringType =>
+       /* case StringType =>
           val holder = ctx.freshName("holder")
           val holderBaseObject = ctx.freshName("holderBaseObject")
           val holderBaseOffset = ctx.freshName("holderBaseOffset")
@@ -105,6 +112,15 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |$holderBaseObject, $holderBaseOffset , $len);
              |$varName = ${classOf[UTF8String].getName}.fromAddress($holderBaseObject,
              | $holderBaseOffset, $len);
+             |$currentValueOffsetTerm += $len;
+          """.stripMargin
+          */
+        case StringType =>
+          val len = ctx.freshName("len")
+          s"""int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+             |$currentValueOffsetTerm += 4;
+             |$varName = ${classOf[UTF8String].getName}.fromAddress($vdBaseObjectTerm,
+             | $currentValueOffsetTerm, $len);
              |$currentValueOffsetTerm += $len;
           """.stripMargin
         case BinaryType =>
@@ -340,7 +356,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     s"${ctx.javaType(dt)} $varName = ${ctx.defaultValue(dt)};"
   }.mkString("\n")
 
-
+  def declareNullVarsForAggBuffer(varNames: Seq[String]): String =
+    varNames.map(varName => s"boolean ${varName}${SHAMapAccessor.nullVarSuffix};").mkString("\n")
   /**
    * Generate code to lookup the map or insert a new key, value if not found.
    */
@@ -348,7 +365,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
     valueInitCode: String, input: Seq[ExprCode], keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
-
 
     val numValueBytes = ctx.freshName("numValueBytes")
 
@@ -388,8 +404,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
            keyVars, keysDataType, aggregateDataTypes, valueInitVars)
           }
         // insert or lookup
-        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject, $baseKeyHolderOffset,
-        |$numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
+        | $baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+        |boolean $keyExistedTerm = $valueOffsetTerm < 0;
+        |if ($keyExistedTerm) {
+        |  $valueOffsetTerm = -1 * $valueOffsetTerm;
+        |}
         |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
         |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
         |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
@@ -783,12 +803,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
     s"""
         int $capacity = $numKeyBytesVar + $numValueBytesVar;
         if ($keyBytesHolderVarTerm == null || $keyBytesHolderVarTerm.capacity() < $capacity) {
-          $keyBytesHolderVarTerm = $allocatorTerm.allocate($capacity, "SHA");
-          $baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
-          $baseKeyHolderOffset = $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
-          // $keyBytesHolderVarTerm = $byteBufferClass.allocate($capacity);
-          // $baseKeyObject = $keyBytesHolderVarTerm.array();
-          // $baseKeyHolderOffset = $plaformClass.BYTE_ARRAY_OFFSET;
+          // $keyBytesHolderVarTerm = $allocatorTerm.allocate($capacity, "SHA");
+          //$baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
+          //$baseKeyHolderOffset = $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
+           $keyBytesHolderVarTerm = $byteBufferClass.allocate($capacity);
+           $baseKeyObject = $keyBytesHolderVarTerm.array();
+           $baseKeyHolderOffset = $plaformClass.BYTE_ARRAY_OFFSET;
         }
 
         long $currentOffset = $baseKeyHolderOffset;
@@ -796,9 +816,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
         ${ writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
           nullKeysBitsetTerm, numBytesForNullKeyBits, true, false)
         }
-        //write value data
-       ${ writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
-        nullAggsBitsetTerm, numBytesForNullAggBits, false, false)
+       // write value data
+       ${"" /* writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
+          nullAggsBitsetTerm, numBytesForNullAggBits, false, false) */
         }
     """.stripMargin
   }
@@ -1107,6 +1127,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
 object SHAMapAccessor {
 
+  val nullVarSuffix = "_isNull"
   val supportedDataTypes: DataType => Boolean = dt =>
     dt match {
       case _: MapType => false

@@ -764,6 +764,7 @@ case class SnappyHashAggregateExec(
     val keyBytesHolderVar = ctx.freshName("keyBytesHolder")
     val baseKeyHolderOffset = ctx.freshName("baseKeyHolderOffset")
     val baseKeyObject = ctx.freshName("baseKeyHolderObject")
+    val keyExistedTerm = ctx.freshName("keyExisted")
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
@@ -778,7 +779,7 @@ case class SnappyHashAggregateExec(
       valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
-      keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset)
+      keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm)
 
 
 
@@ -856,6 +857,7 @@ case class SnappyHashAggregateExec(
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
       int $sizeTerm = $hashMapTerm.size();
       for (; $mapCounter < $sizeTerm; ) {
+        ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
         $numOutput.${metricAdd("1")};
         ++$mapCounter;
         // skip the key length
@@ -1003,6 +1005,14 @@ case class SnappyHashAggregateExec(
       aggregateBufferVars, byteBufferAccessor.currentOffSetForMapLookupUpdt, false,
       byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits, false)
     val bufferEval = evaluateVariables(bufferVars)
+    val bufferVarsFromInitVars = aggregateBufferVars.zip(initVars).map {
+      case (bufferVarName, initExpr) => ExprCode(
+        s"""
+          |$bufferVarName${SHAMapAccessor.nullVarSuffix} = ${initExpr.isNull};
+          |$bufferVarName = ${initExpr.value};""".stripMargin,
+        s"$bufferVarName${SHAMapAccessor.nullVarSuffix}", bufferVarName)
+    }
+    val bufferEvalFromInitVars = evaluateVariables(bufferVarsFromInitVars)
     ctx.currentVars = bufferVars ++ input
     // pre-evaluate input variables used by child expressions and updateExpr
     val inputCodes = evaluateRequiredVariables(child.output,
@@ -1026,16 +1036,20 @@ case class SnappyHashAggregateExec(
     // Finally, sort the spilled aggregate buffers by key, and merge
     // them together for same key.
     s"""
+       |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
        |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
        |$mapCode
        |// initialization for buffer fields from the hashmap
-       |${
-          byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
-          currentOffSetForMapLookupUpdt, byteBufferAccessor.nullAggsBitsetTerm,
-          byteBufferAccessor.numBytesForNullAggBits)
-        }
-       |$bufferEval
-
+       |if (${byteBufferAccessor.keyExistedTerm}) {
+       |  ${
+            byteBufferAccessor.readNullBitsCode(byteBufferAccessor.
+            currentOffSetForMapLookupUpdt, byteBufferAccessor.nullAggsBitsetTerm,
+            byteBufferAccessor.numBytesForNullAggBits)
+          }
+          |$bufferEval
+       |} else {
+       |  $bufferEvalFromInitVars
+       |}
        | // reset the  offset position to start of values for writing update
        |${byteBufferAccessor.currentOffSetForMapLookupUpdt} = ${byteBufferAccessor.valueOffsetTerm};
        | // common sub-expressions
