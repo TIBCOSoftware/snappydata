@@ -17,44 +17,37 @@ So, with multiple concurrent users, it is best to avoid running such Jobs using 
 !!! Note
 	This above scheduling logic is applicable only when queries are fully managed by the TIBCO ComputeDB cluster. When running your application using the smart connector, each task running in the Spark cluster directly accesses the store partitions.
 	
-
-
 ### Computing the Number of Cores for a Job
 
-Executing queries or code in TIBCO ComputeDB results in the creation of one or more Spark jobs. Each Spark job first calculates the number of partitions on the underlying dataset and a task is assigned and scheduled for each partition. </br>
-But, the number of concurrent tasks executing is limited by the available core count. If the scheduled task count is larger then they will be executed in a staggered manner. Each task is assigned a single core to execute. 
+Executing queries or code in TIBCO ComputeDB results in the creation of one or more Spark jobs. Each Spark job first calculates the number of partitions on the underlying dataset and a task is assigned and scheduled for each partition. 
+But, the number of concurrent tasks executing is limited by the available core count. If the scheduled task count is larger then they will be executed in a staggered manner. Each task is assigned a single core to execute.
 
-By default, TIBCO ComputeDB sets total available spark executor cores on any data server to be 2 multiplied by the total number of physical cores on a machine. 
+By default, TIBCO ComputeDB sets total available spark executor cores on any data server to be 2 multiplied by the total number of physical cores on a machine.
 
-**spark executor cores = 2 * C** 
-Where **C** = Total number of physical processor cores on a machine.
+**Spark executor cores = 2 * C** </br>Where **C** = Total number of physical processor cores on a machine.
 
 This is done keeping in mind some threads which do the IO (Input/Output) reads while the other threads can get scheduled by the operating system. However, increasing this number does not improve query performance.
 
 If you start multiple TIBCO ComputeDB server instances on a machine, then **spark.executor.cores** should be explicitly set using the following formula:
 
-**spark executor cores = N * C **
-Where **N** is the number of TIBCO ComputeDB server instaces started on the machine and **C** = Total number of physical processor cores on a machine.
+**spark executor cores = N * C **</br> Where **N** is the number of TIBCO ComputeDB server instaces started on the machine and **C** = Total number of physical processor cores on a machine.
 
-This can impact thread scheduling and query performance. Also, the heap requirement for each server is suggested to be 8/16 GB on larger virtual machines. In the case of off-heap storage, the heap is only used for some execution and temporary buffers. If you have more servers per machine, more percentage of actual memory would be allocated to the heap and less for the off-heap actual storage of data. This can also lead to more disk reads which further impacts the query performance.
+This can impact thread scheduling and query performance. 
 
-For example, on a machine with 64 GB RAM, you can allocate 8GB to the heap and 40 GB to off-heap.
-If you start 2 serves, then both the servers must have 8 GB heap. This will reduce the off-heap storage to 16 GB each. It will reduce the off-heap storage by 8 GB (40 GB-2*16 GB).
-
-Therefore, it is recommended that you maintain only one server per machine so that the total number of threads and amount of memory allocated to the heap is minimum. If more than one server is running on a machine, you can use the `spark.executor.cores` to override the number of cores per server. The cores should be divided accordingly and specified using the `spark.executor.cores` property.
+Therefore, it is recommended that you maintain only one server per machine so that the total number of threads do not exceed more than twice the number of total physical cores. If you want to run more than one server on a machine, you can use the **spark.executor.cores** to override the number of cores per server. The cores should be divided accordingly and specified using the spark.executor.cores property.
 
 **Spark executor cores = 2 x total physical cores on a machine / No of servers per machine**
 
-!!! Note
-	We do not recommended to reduce the heap size even if you start multiple servers per machine.
+!!! Note 
+	It is not recommended to reduce the heap size even if you start multiple servers per machine.
 
-For example, for a cluster with 2 servers running on two different machines with 4 CPU cores each, a maximum number of tasks that can run concurrently is 16. </br> 
+For example, for a cluster with 2 servers running on two different machines with 4 CPU cores each, a maximum number of tasks that can run concurrently is 16. 
 If a table has 16 partitions (buckets, for the row or column tables), a scan query on this table creates 16 tasks. This means, 16 tasks run concurrently and the last task runs when one of these 16 tasks has finished execution.
 
 TIBCO ComputeDB uses an optimization method which joins multiple partitions on a single machine to form a single partition when there are fewer cores available. This reduces the overhead of scheduling partitions.
 
 In TIBCO ComputeDB, multiple queries can be executed concurrently, if they are submitted by different threads or different jobs. For concurrent queries, TIBCO ComputeDB uses fair scheduling to manage the available resources such that all the queries get a fair distribution of resources.
- 
+
 For example, In the following figure, 6 cores are available on 3 systems, and 2 jobs have 4 tasks each. Because of fair scheduling, both jobs get 3 cores and hence three tasks per job execute concurrently.
 
 Pending tasks have to wait for the completion of the current tasks and are assigned to the core that is first available.
@@ -101,4 +94,21 @@ One of the instances, when [TIBCO ComputeDB Smart connector mode](../affinity_mo
 <br>Also, expensive batch jobs can be run in a separate Smart Connector application and it does not impact the performance of the TIBCO ComputeDB cluster. See, [How to Access TIBCO ComputeDB store from an Existing Spark Installation using Smart Connector](../howto/spark_installation_using_smart_connector.md).
 
 
+## Disabling hashJoin/Aggregate for Cluster Stability
 
+TIBCO ComputeDB has its own operator for extremely fast joins/aggregates. One limitation of this operator is that it stores the objects in Java heap. If heap size is small, it has the potential to cause Garbage Collection (GC) problems and eventually Out-of-memory (OOM). Sometimes, even if the heap size is large this can happen if there are many concurrent queries using these operators. If your use case is such that there will be many joins or aggregates with high cardinality then it is recommended to disable that hashJoin/hashAggregates.
+
+To disable hashJoin/hashAggregates for a particular session you can use the following:
+
+```
+set snappydata.sql.hashAggregateSize=-1
+set snappydata.sql.hashJoinSize=-1
+
+```
+
+To disable hashJoin/hashAggregates for every session, provide the same details in **lead.conf** file. 
+For example:
+
+`-snappydata.sql.hashAggregateSize=-1  -snappydata.sql.hashJoinSize=-1`
+
+You must remember that for small dataset the hashJoin operator is much faster than sort merge join. So unless you have a query pattern that can cause high heap usage, it is recommended not to disable hashJoin/hashAggregates.
