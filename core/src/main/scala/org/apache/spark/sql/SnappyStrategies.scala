@@ -494,11 +494,12 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
 
   def supportsCodegen(aggregateExpressions: Seq[AggregateExpression],
       resultExpressions: Seq[NamedExpression]): Boolean = {
-    // ImperativeAggregate is not supported right now in code generation.
+    planner.conf.wholeStageEnabled &&
+    // ImperativeAggregate is not supported in code generation.
     !aggregateExpressions.exists(_.aggregateFunction
         .isInstanceOf[ImperativeAggregate]) &&
-    // result expressions should be code-generated
-    !resultExpressions.exists(_.find(e => !e.isInstanceOf[Literal] &&
+    // aggregate and result expressions should be code-generated
+    !(aggregateExpressions ++ resultExpressions).exists(_.find(e => !e.isInstanceOf[Literal] &&
         !e.foldable && e.isInstanceOf[CodegenFallback]).nonEmpty)
   }
 
