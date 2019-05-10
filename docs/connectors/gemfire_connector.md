@@ -1,7 +1,5 @@
 # TIBCO ComputeDB GemFire Connector
 
-<ent>This feature is available only in the TIBCO ComputeDB - Enterprise Edition. </br></ent>
-
 ## Overview
 The TIBCO ComputeDB GemFire Connector allows TIBCO ComputeDB/Spark programs to read from data regions as well as write into data regions within GemFire clusters. You can connect the applications to one or more GemFire clusters, expose GemFire regions as TIBCO ComputeDB tables/Spark DataFrames, run complex SQL queries on data stored in GemFire and save TIBCO ComputeDB tables onto GemFire regions. The connector is designed to execute in a highly parallelized manner targeting GemFire partitioned datasets (buckets) for the highest possible performance.
 

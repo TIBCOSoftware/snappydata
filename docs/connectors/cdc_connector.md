@@ -1,7 +1,5 @@
 # Using the TIBCO ComputeDB Change Data Capture (CDC) Connector
 
-<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB.</ent>
-
 As data keeps growing rapidly techniques like Change Data Capture (CDC) is crucial for handling and processing the data inflow.
 The CDC technology is used in a database to track changed data so that the identified changes can be used to keep target systems in sync with the changes made to the source systems.
 

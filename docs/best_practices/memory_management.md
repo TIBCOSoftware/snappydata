@@ -103,8 +103,6 @@ Heap_Max_Storage_pool_Size => 17.4 * 0.85 = 14.7 ( 0.85 derived from eviction_he
 <a id="off-heap"></a>
 ## TIBCO ComputeDB Off-Heap Memory 
 
-<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB. </br></ent>
-
 In addition to heap memory, TIBCO ComputeDB can also be configured with off-heap memory. If configured, column table data, as well as many of the execution structures use off-heap memory. For a serious installation, the off-heap setting is recommended. However, several artifacts in the product need heap memory, so some minimum heap size is also required for this.
 
 | Parameter Name | Default Value | Description	 |

@@ -1,7 +1,5 @@
 # Managing Security
 
-<ent>This feature is available only in the Enterprise version of TIBCO ComputeDB. </br></ent>
-
 In the current release, TIBCO ComputeDB only supports LDAP authentication which allows users to authenticate against an existing LDAP directory service in your organization. LDAP (lightweight directory access protocol) provides an open directory access protocol that runs over TCP/IP. </br>This feature provides a secure way for users to use their existing login credentials (usernames and passwords) to access the cluster and data.
 
 TIBCO ComputeDB uses mutual authentication between the TIBCO ComputeDB locator and subsequent TIBCO ComputeDB members that boot and join the distributed system. 
