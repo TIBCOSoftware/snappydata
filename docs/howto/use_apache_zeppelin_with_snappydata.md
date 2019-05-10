@@ -26,7 +26,7 @@
 
 6. Install the TIBCO ComputeDB Zeppelin interpreter in Apache Zeppelin by executing the following command from Zeppelin's bin directory: </br>
 
-        ./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<TIBCO ComputeDB_interpreter_version_number> 
+        ./install-interpreter.sh --name snappydata --artifact io.snappydata:snappydata-zeppelin:<interpreter_version_number> 
 
     Zeppelin interpreter allows the TIBCO ComputeDB interpreter to be plugged into Zeppelin using which, you can run queries.
 
@@ -48,15 +48,15 @@
 
 2. Click **Create** to add an interpreter.</br> ![Create](../Images/create_interpreter.png)	 
 
-3. From the **Interpreter group** drop-down select **TIBCO ComputeDB**.
+3. From the **Interpreter group** drop-down select **SnappyData**.
 	 ![Configure Interpreter](../Images/snappydata_interpreter_properties.png)
 
 	!!! Note
-    	If **TIBCO ComputeDB** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: 
+    	If **SnappyData** is not displayed in the **Interpreter group** drop-down list, try the following options, and then restart Zeppelin daemon: 
 
     	* Delete the **interpreter.json** file located in the **conf** directory (in the Zeppelin home directory).
 
-    	* Delete the **zeppelin-spark_<_version_number_>.jar** file located in the **interpreter/TIBCO ComputeDB** directory (in the Zeppelin home directory).
+    	* Delete the **zeppelin-spark_<_version_number_>.jar** file located in the **interpreter/SnappyData** directory (in the Zeppelin home directory).
 
 
 4. Click the **Connect to existing process** option. The fields **Host** and **Port** are displayed.
