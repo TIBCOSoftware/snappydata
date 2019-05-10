@@ -96,7 +96,7 @@ These settings lower the OS cache buffer sizes which reduce the long GC pauses d
 
 **Swap File** </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
-It is recommended to set swap space on your system of size at least 16 GB or preferably 32 GB. To set swap space use the following commands:
+It is recommended to set the swap space on your system to at least 16 GB or preferably 32 GB. To set swap space use the following commands:
 
 ```
 # sets a swap space of 32 GB
