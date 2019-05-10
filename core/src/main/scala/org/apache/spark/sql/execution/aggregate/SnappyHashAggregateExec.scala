@@ -800,6 +800,9 @@ case class SnappyHashAggregateExec(
            |$byteBufferClass $keyBytesHolderVar = null;
            |Object $baseKeyObject = null;
            |long $baseKeyHolderOffset = -1L;
+           |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
+           |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+           |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |$childProduce
          |}""".stripMargin)
 
