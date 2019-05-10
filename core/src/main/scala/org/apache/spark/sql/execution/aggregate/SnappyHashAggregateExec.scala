@@ -778,8 +778,10 @@ case class SnappyHashAggregateExec(
 
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
-        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4)
-    ) + aggregateExpressions.foldLeft(0)((len, exp) => len + exp.dataType.defaultSize)
+        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 16)) +
+      aggregateExpressions.foldLeft(0)((len, exp) => len + exp.dataType.defaultSize) +
+      + numBytesForNullKeyBits +  numBytesForNullAggsBits
+
 
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
