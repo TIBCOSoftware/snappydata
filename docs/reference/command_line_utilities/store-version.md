@@ -12,9 +12,10 @@ Prints information about the TIBCO ComputeDB product version.
 
 ```pre
 ./bin/snappy version
-SnappyData Platform Version 1.0.2.1
-    SnappyData RowStore 1.6.2.1
-    SnappyData Column Store 1.0.2.1
+TIBCO ComputeDB Platform Version 1.1.0
+    TIBCO ComputeDB RowStore 1.6.3 
+    TIBCO ComputeDB Column Store 1.1.0 
+    TIBCO ComputeDB AQP 1.0.3 
 ```
 
 

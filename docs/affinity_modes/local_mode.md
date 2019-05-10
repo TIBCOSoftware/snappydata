@@ -28,7 +28,7 @@ You can use an IDE of your choice, and provide the below dependency to get TIBCO
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-cluster_2.11</artifactId>
-    <version>1.0.2.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -36,7 +36,7 @@ You can use an IDE of your choice, and provide the below dependency to get TIBCO
 
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-cluster_2.11
-libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.0.2.1"
+libraryDependencies += "io.snappydata" % "snappydata-cluster_2.11" % "1.1.0"
 ```
 
 **Note**:</br>
@@ -53,7 +53,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 
 **Create Snappy Session**:
 
-To start TIBCO ComputeDB store you need to create a Snappy Session in your program:
+To start TIBCO ComputeDB store you need to create a SnappySession in your program:
 
 ```pre
  val spark: SparkSession = SparkSession
@@ -68,8 +68,8 @@ To start TIBCO ComputeDB store you need to create a Snappy Session in your progr
   
 **Example**: **Launch Apache Spark shell and provide TIBCO ComputeDB dependency as a Spark package**:
 
-If you already have Spark2.0 installed in your local machine you can directly use `--packages` option to download the TIBCO ComputeDB binaries.
+If you already have Spark 2.1.1 installed in your local machine you can directly use `--packages` option to download the TIBCO ComputeDB binaries.
 
 ```pre
-./bin/spark-shell --packages "SnappyDataInc:snappydata:1.0.2.1-s_2.11"
+./bin/spark-shell --packages "SnappyDataInc:snappydata:1.1.0-s_2.11"
 ```

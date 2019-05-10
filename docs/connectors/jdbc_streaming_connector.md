@@ -25,7 +25,7 @@ TIBCO ComputeDB core and TIBCO ComputeDB jdbc streaming connector maven dependen
 <dependency>
   <groupId>io.snappydata</groupId>
   <artifactId>snappydata-core_2.11</artifactId>
-  <version>1.0.2.1</version>
+  <version>1.1.0</version>
   <scope>compile</scope>
 </dependency>    
 ```
