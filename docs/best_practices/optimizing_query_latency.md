@@ -64,7 +64,7 @@ A bucket is the smallest unit of in-memory storage for TIBCO ComputeDB tables. D
 The default number of buckets in TIBCO ComputeDB cluster mode is 128. In the local mode, it is cores x 2, subject to a maximum of 64 buckets and a minimum of 8 buckets.
 
 The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
-Before deciding the total number of buckets in a table, you must consider the size of the largest bucket required for a table. The total time taken by a query is greater than the scheduling delay combined with the time needed to scan the largest bucket by a thread. In the case of high concurrency, scheduling delay can be more even if the time to scan the bucket is less. In case of an extremely large bucket, even if the scheduling delay is less, the time to scan the bucket can be large.
+Before deciding the total number of buckets in a table, you must consider the size of the largest bucket required for a table. The total time taken by a query is roughly equal to the scheduling delay plus the time needed to scan the largest bucket for that query. If too many queries are simultaneously executed in the system, scheduling delay can be higher even if the time to scan the bucket is low. In case of an extremely large bucket, the time to scan the bucket will be large even if the query gets scheduled immediately.
 
 The following principles should be considered when you set the total number of buckets for a table:
 *	Ensure that data is evenly distributed among the buckets.
