@@ -3,12 +3,7 @@
 Welcome to the Getting Started section! <br>
 In this section, multiple options are provided for getting started with TIBCO ComputeDB.
 
-<heading2>Before you begin<heading2>
-
-You must first [download and extract](install.md) the TIBCO ComputeDB product distribution, navigate to the TIBCO ComputeDB product root directory and [start the cluster](howto/start_snappy_cluster.md).
-
 Depending on your preference, you can try any of the following options:
-
 
 * [TIBCO ComputeDB with Spark distribution](quickstart/getting_started_with_your_spark_distribution.md)
 
@@ -24,7 +19,10 @@ Then you can use the following instructions and examples to try out TIBCO Comput
 
 * [Using Spark Scala APIs](quickstart/using_spark_scala_apis.md)
 
-* [TIBCO ComputeDB performance: 16x-20x faster than Apache Spark](quickstart/performance_apache_spark.md)
+* [Benchmark 16-20x Faster Performance than Apache Spark](quickstart/performance_apache_spark.md)
+
+* [Create TIBCO ComputeDB Cluster](quickstart/snappydataquick_start.md)
+
 
 
 

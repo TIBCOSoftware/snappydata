@@ -551,7 +551,7 @@ df.write.deleteFrom(“snappy_table”)
 The following APIs are available for SnappySessionCatalog:
 
 *	[**getKeyColumns**](#getkeycolumapi)
-*	[**getTableType**](#gettabletypeapi) 
+*	[**getKeyColumnsAndPositions**](#getkeycolumns) 
 
 !!! Note
 	These are developer APIs and are subject to change in the future.
