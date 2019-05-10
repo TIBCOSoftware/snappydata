@@ -495,7 +495,12 @@ Options:
 
 <a id="usingawsmgmtconsole"></a>
 ## AWS Management Console
-You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMI provided by TIBCO ComputeDB. For more information
+
+	!!! Note
+
+		* TIBCO has not yet made an AMI of TIBCO ComputeDB available on AWS.  This page will be updated once that is available.
+
+You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMIs of earlier version of SnappyData (1.0.2.1). For more information
 on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 This section covers the following:
 
