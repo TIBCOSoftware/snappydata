@@ -42,9 +42,9 @@ class SnappySQLQuerySuite extends SQLQuerySuite with
     SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "SPARK-16644: Aggregate should not put aggregate expressions to constraints",
-    // SnappyData does not support table names starting with number as per SQL standard
-    "SPARK-9511: error with table starting with number"
+    // TODO: these two need to be fixed by moving ParamLiteral conversion after optimization
+    "Eliminate noop ordinal ORDER BY",
+    "SPARK-16644: Aggregate should not put aggregate expressions to constraints"
   )
 
   override protected def testCodeGen(sqlText: String, expectedResults: Seq[Row]): Unit = {

@@ -24,6 +24,7 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
 import org.parboiled2._
 
+import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, IdentifierWithDatabase, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
@@ -129,8 +130,10 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def stringLiteral: Rule1[String] = rule {
-    '\'' ~ capture((noneOf("'") | "''").*) ~ '\'' ~ ws ~> ((s: String) =>
-      if (s.indexOf("''") >= 0) s.replace("''", "'") else s)
+    capture('\'' ~ (noneOf("'\\") | "''" | '\\' ~ ANY).* ~ '\'') ~ ws ~> ((s: String) =>
+      ParserUtils.unescapeSQLString(
+        if (s.indexOf("''") > 0) "'" + s.substring(1, s.length - 1).replace("''", "'") + "'"
+        else s))
   }
 
   final def keyword(k: Keyword): Rule0 = rule {
@@ -298,9 +301,18 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     columnCharType | primitiveType | arrayType | mapType | structType
   }
 
+  protected final def tableIdentifierPart: Rule1[String] = rule {
+    atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
+      val ucase = upper(s)
+      test(!Consts.reservedKeywords.contains(ucase)) ~
+          push(if (caseSensitive) s else ucase)
+    } |
+    quotedIdentifier
+  }
+
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (identifier ~ '.' ~ ws).? ~ identifier ~> ((schema: Any, table: String) =>
+    (tableIdentifierPart ~ '.' ~ ws).? ~ tableIdentifierPart ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 

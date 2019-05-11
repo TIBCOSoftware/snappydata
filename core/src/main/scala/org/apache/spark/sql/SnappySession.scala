@@ -17,9 +17,9 @@
 package org.apache.spark.sql
 
 import java.sql.{SQLException, SQLWarning}
-import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -1911,6 +1911,19 @@ object SnappySession extends Logging {
     case _ => (plan, null)
   }
 
+  private[sql] def setExecutionProperties(localProperties: Properties,
+      executionIdStr: String, queryShortForm: String): Unit = {
+    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
+    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
+    localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+  }
+
+  private[sql] def clearExecutionProperties(localProperties: Properties): Unit = {
+    localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
+    localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
+    localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
+  }
+
   /**
    * Snappy's execution happens in two phases. First phase the plan is executed
    * to create a rdd which is then used to create a CachedDataFrame.
@@ -1934,9 +1947,8 @@ object SnappySession extends Logging {
     val executionIdStr = java.lang.Long.toString(executionId)
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
-    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, sqlShortText)
-    localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+    setExecutionProperties(localProperties, executionIdStr, sqlShortText)
+    var propertiesSet = true
     val start = System.currentTimeMillis()
     try {
       // get below two with original "ParamLiteral(" tokens that will be replaced
@@ -1950,13 +1962,13 @@ object SnappySession extends Logging {
       context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
+      clearExecutionProperties(localProperties)
+      propertiesSet = false
       val rdd = f
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
-      localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
-      localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
-      localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
+      if (propertiesSet) clearExecutionProperties(localProperties)
     }
   }
 

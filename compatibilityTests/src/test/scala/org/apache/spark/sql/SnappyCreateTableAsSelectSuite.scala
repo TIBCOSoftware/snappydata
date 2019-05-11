@@ -24,6 +24,7 @@ class SnappyCreateTableAsSelectSuite
         with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def excluded: Seq[String] = Seq(
+    // SnappyData allows this syntax by design
     "disallows CREATE EXTERNAL TABLE ... USING ... AS query"
   )
 

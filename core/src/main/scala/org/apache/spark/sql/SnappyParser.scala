@@ -18,6 +18,7 @@ package org.apache.spark.sql
 
 import java.util.function.BiConsumer
 
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
@@ -54,6 +55,7 @@ class SnappyParser(session: SnappySession)
   protected final var _questionMarkCounter: Int = _
   protected final var _isPreparePhase: Boolean = _
   protected final var _parameterValueSet: Option[_] = None
+  protected final var _fromRelations: mutable.Stack[LogicalPlan] = new mutable.Stack[LogicalPlan]
 
   override final def input: ParserInput = _input
 
@@ -1008,7 +1010,7 @@ class SnappyParser(session: SnappySession)
         q: LogicalPlan => LogicalPlan) =>
       val base = f match {
         case Some(plan) => plan.asInstanceOf[LogicalPlan]
-        case _ => OneRowRelation
+        case _ => if (_fromRelations.isEmpty) OneRowRelation else _fromRelations.top
       }
       val withFilter = w match {
         case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
@@ -1052,7 +1054,7 @@ class SnappyParser(session: SnappySession)
     select2 | inlineTable | ctes
   }
 
-  protected final def query: Rule1[LogicalPlan] = rule {
+  protected final def select0: Rule1[LogicalPlan] = rule {
     select1.named("select") ~ (
         UNION ~ (
             ALL ~ select1.named("select") ~>
@@ -1066,6 +1068,15 @@ class SnappyParser(session: SnappySession)
             ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
 
     ).*
+  }
+
+  protected final def query: Rule1[LogicalPlan] = rule {
+    select0 |
+    FROM ~ relations ~> (_fromRelations.push(_): Unit) ~
+        (select0 | insert). + ~> { (queries: Seq[LogicalPlan]) =>
+      _fromRelations.pop()
+      if (queries.length == 1) queries.head else Union(queries)
+    }
   }
 
   // TODO: remove once planner allows for null padding for different number
