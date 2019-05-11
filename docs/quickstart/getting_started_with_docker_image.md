@@ -1,10 +1,10 @@
 <a id="getting-started-with-docker-image"></a>
 # Getting Started with Docker Image
 
-Following steps outline how to build a Docker image if one has the binaries of TIBCO ComputeDB.
+The following instructions outline how to build a Docker image if you have the binaries of TIBCO ComputeDB.</br>
 TIBCO ComputeDB does not provide a Docker image.
 
-Before building the Docker image, ensure you have already installed and configured Docker properly. Refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
+Before building the Docker image, ensure that you have already installed and configured the Docker properly. Refer to [Docker documentation](http://docs.docker.com/installation/) for more details.
 
 ## Verify that Docker is Installed</br> 
 In the command prompt run the command:
@@ -17,11 +17,12 @@ $ docker run hello-world
 <a id="build-your-docker"></a>
 ## Build your own Docker image of TIBCO ComputeDB</br>
 
-We have provided a sample Dockerfile which you can use to create your own Docker image of TIBCO ComputeDB.
+A sample Dockerfile is provided which you can use to create your own Docker image of TIBCO ComputeDB.
+
 Download the [Dockerfile](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/Dockerfile) and
 [start](https://github.com/SnappyDataInc/snappy-cloud-tools/blob/master/docker/start) script and place them into a single directory. This Dockerfile uses the SnappyData 1.1.0 build.
 
-Move to that directory and run below commands with appropriate details.
+Move to that directory and run the following commands with appropriate details:
 
     $ docker build -t <your-docker-repo-name>/snappydata:<image-tag> -f Dockerfile .
     $ docker push <your-docker-repo-name>/snappydata:<image-tag>
@@ -34,17 +35,17 @@ Move to that directory and run below commands with appropriate details.
 
 ## Launch TIBCO ComputeDB</br>
 In the command prompt, type the following command to launch the TIBCO ComputeDB cluster in single container.
-This fetches the Docker image from your Docker registry, if the image is not available locally, and launches the cluster in a container and takes you to the Spark shell.
+This fetches the Docker image from your Docker registry, if the image is not available locally, launches the cluster in a container and leads to the Spark shell.
 
 !!! Note
-	Ensure that the Docker containers have access to at least 4GB of RAM on your machine.
+	Ensure that the Docker containers have access to at least 4 GB of RAM on your machine.
 
 ```pre
 $  docker run -it -p 5050:5050 <your-docker-registry>/snappydata bin/spark-shell
 ```
 
-The latest Docker image file starts downloading to your local machine. Depending on your network connection, it may take some time. </br>
+The latest Docker image file starts downloading to your local machine. Depending on your network connection, this may take some time. </br>
 
-Once you have launched the Spark shell, in the `$ scala>` prompt, follow the steps explained [here](using_spark_scala_apis.md).</br>
+After you have launched the Spark shell, in the `$ scala>` prompt, follow the steps explained [here](using_spark_scala_apis.md).</br>
 
 For more details about how you can work with the Docker image see [Snappy Cloud Tools](https://github.com/SnappyDataInc/snappy-cloud-tools/tree/master/docker).

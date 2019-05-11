@@ -249,7 +249,7 @@ This section covers the following:
 *	[More Options](#ec2moreoption)
 
 <a id="ec2custombuild"></a>
-#### Using custom build
+#### Using Custom Build
 
 This script by default uses the SnappyData build available on the GitHub releases page to launch the cluster.
 To select a version of the OSS build available on GitHub, use option `--snappydata-version`.
@@ -496,9 +496,8 @@ Options:
 <a id="usingawsmgmtconsole"></a>
 ## AWS Management Console
 
-	!!! Note
-
-		* TIBCO has not yet made an AMI of TIBCO ComputeDB available on AWS.  This page will be updated once that is available.
+!!! Note
+	TIBCO has not yet made an AMI of TIBCO ComputeDB available on AWS.  This page will be updated after that is made available.
 
 You can launch a TIBCO ComputeDB cluster on Amazon EC2 instance(s) using the AMIs of earlier version of SnappyData (1.0.2.1). For more information
 on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
