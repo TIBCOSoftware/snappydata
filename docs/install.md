@@ -15,7 +15,7 @@ The Enterprise Edition includes several additional capabilities that are closed 
 
 <heading2> Download TIBCO ComputeDB Enterprise Edition</heading2> 
 
-1. From the [TIBCO eDelivery website](https://edelivery.tibco.com), search 'TIBCO ComputeDB' and go to its **Product Detail** page.
+1. From the [TIBCO eDelivery website](https://edelivery.tibco.com), search **TIBCO ComputeDB** and go to its **Product Detail** page.
 
 2. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
 

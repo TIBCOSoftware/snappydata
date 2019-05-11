@@ -1,12 +1,15 @@
 # Memory Management
 
-#### Note: The below description and best practices are ONLY applicable to the data store cluster nodes. i.e. nodes that manage in-memory tables in TIBCO ComputeDB. When running in the "connector" mode, your Spark job runs in isolated JVMs and you will need to estimate its memory requirements. 
+!!! Note
+
+	The following description and best practices are ONLY applicable to the data store cluster nodes that are the nodes that manage in-memory tables in TIBCO ComputeDB. When running in the **connector** mode, your Spark job runs in isolated JVMs and you will need to estimate its memory requirements.
 
 You need to estimate and plan memory/disk for the following objects:
-- In-memory row, column tables 
-- Execution memory for queries, jobs 
-- Shuffle disk space required by queries, jobs 
-- In-memory caching of Spark dataframes, temporary tables 
+
+- In-memory row, column tables. 
+- Execution memory for queries, jobs. 
+- Shuffle disk space required by queries, jobs. 
+- In-memory caching of Spark dataframes, temporary tables. 
 
 Spark executors and TIBCO ComputeDB in-memory store share the same memory space. TIBCO ComputeDB extends the Spark's memory manager providing a unified space for spark storage, execution and TIBCO ComputeDB column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, TIBCO ComputeDB uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes memory utilization to the extent possible.
 
