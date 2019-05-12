@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 import java.sql.DriverManager
 
 import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.Property.PlanCaching
 import io.snappydata.SnappyFunSuite
 
 /**
@@ -59,7 +60,7 @@ class SQLMetadataTest extends SnappyFunSuite {
     try {
       val stmt = conn.createStatement()
       MetadataTest.testDescribeShowAndExplain(SnappyFunSuite.resultSetToDataset(session, stmt),
-        usingJDBC = true)
+        usingJDBC = true, PlanCaching.get(session.sessionState.conf))
       stmt.close()
     } finally {
       conn.close()

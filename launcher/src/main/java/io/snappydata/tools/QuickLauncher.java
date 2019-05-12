@@ -440,7 +440,11 @@ class QuickLauncher extends LauncherBase {
   private void readStatus(boolean emptyForMissing, final Path statusFile) {
     this.status = null;
     if (Files.exists(statusFile)) {
-      this.status = Status.spinRead(baseName, statusFile);
+      // try some number of times if dsMsg is null
+      for (int i = 1; i <= 3; i++) {
+        this.status = Status.spinRead(baseName, statusFile);
+        if (this.status.dsMsg != null) break;
+      }
     }
     if (this.status == null && emptyForMissing) {
       this.status = Status.create(baseName, Status.SHUTDOWN, 0, statusFile);

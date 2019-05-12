@@ -36,7 +36,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 **Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.0.2.1"
+libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
 ```
 
 !!! Note

@@ -249,6 +249,16 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   }
 
+  def testRowTablePruning(): Unit = {
+
+    logInfo("Started the Row Table Partition Pruning In SmartConnector")
+
+    vm3.invoke(classOf[SmartConnectorFunctions],
+      "verifyRowTablePartitionPruning", locatorNetPort)
+
+    logInfo("Finished the Row Table Partition Pruning In SmartConnector")
+  }
+
   private def verifyResultSnap1296_1297(prepStatement: PreparedStatement): Unit = {
     val rs = prepStatement.executeQuery
     val rsmd = rs.getMetaData()

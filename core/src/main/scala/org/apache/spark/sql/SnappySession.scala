@@ -27,7 +27,6 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
@@ -39,12 +38,11 @@ import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatId
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
-import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
@@ -173,8 +171,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
-  override def sql(sqlText: String): CachedDataFrame =
+  override def sql(sqlText: String): DataFrame = {
+    try {
+      sqInternal(sqlText)
+    } catch {
+      // fallback to uncached flow for streaming queries
+      case ae: AnalysisException
+        if ae.message.contains(
+          "Queries with streaming sources must be executed with writeStream.start()"
+        ) => sqlUncached(sqlText)
+    }
+  }
+
+   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+  }
 
   @DeveloperApi
   def sqlUncached(sqlText: String): DataFrame = {
@@ -196,13 +207,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     sessionState.analyzerPrepare.execute(logical)
   }
 
-  private[sql] final def executePlan(plan: LogicalPlan): QueryExecution = {
+  private[sql] final def executePlan(plan: LogicalPlan, retryCnt: Int = 0): QueryExecution = {
     try {
       val execution = sessionState.executePlan(plan)
       execution.assertAnalyzed()
       execution
     } catch {
       case e: AnalysisException =>
+        val unresolvedNodes = plan.expressions.filter(
+          x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
+        if (e.getMessage().contains("cannot resolve") && unresolvedNodes.size > 0) {
+          reAnalyzeForUnresolvedAttribute(plan, e, retryCnt) match {
+            case Some(p) => return executePlan(p, retryCnt + 1)
+            case None => //
+          }
+        }
         // in case of connector mode, exception can be thrown if
         // table form is changed (altered) and we have old table
         // object in SnappyExternalCatalog cache
@@ -224,6 +243,51 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             throw e
         }
     }
+  }
+
+  // Hack to fix SNAP-2440 ( TODO: Will return after 1.1.0 for a better fix )
+  private def reAnalyzeForUnresolvedAttribute(
+    originalPlan: LogicalPlan, e: AnalysisException,
+    retryCount: Int): Option[LogicalPlan] = {
+
+    if (!e.getMessage().contains("cannot resolve")) return None
+    val unresolvedNodes = originalPlan.expressions.filter(
+      x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
+    if (retryCount > unresolvedNodes.size) return None
+
+    val errMsg = e.getMessage().split('\n').map(_.trim.filter(_ >= ' ')).mkString
+    val newPlan = originalPlan transformExpressions {
+      case us@UnresolvedStar(option) if (option.isDefined) =>
+        val targetString = option.get.mkString(".")
+        var matched = false
+        errMsg match {
+          case SnappySession.unresolvedStarRegex(first, schema, table, last) =>
+            if (sessionCatalog.tableExists(tableIdentifier(s"$schema.$table"))) {
+              val qname = s"$schema.$table"
+              if (qname.equalsIgnoreCase(targetString)) {
+                matched = true
+              }
+            }
+          case _ => matched = false
+        }
+        if (matched) UnresolvedStar(None) else us
+
+      case ua@UnresolvedAttribute(nameparts) =>
+        val targetString = nameparts.mkString(".")
+        var uqc = ""
+        var matched = false
+        errMsg match {
+          case SnappySession.unresolvedColRegex(first, schema, table, col, last) =>
+            if (sessionCatalog.tableExists(tableIdentifier(s"$schema.$table"))) {
+              val qname = s"$schema.$table.$col"
+              if (qname.equalsIgnoreCase(targetString)) matched = true
+              uqc = col
+            }
+          case _ => matched = false
+        }
+        if (matched) UnresolvedAttribute(uqc) else ua
+    }
+    if (!newPlan.equals(originalPlan)) Some(newPlan) else None
   }
 
   @transient
@@ -1262,23 +1326,24 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  def alterTable(tableName: String, isAddColumn: Boolean, column: StructField): Unit = {
+  def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
+      defaultValue: Option[String]): Unit = {
     val tableIdent = tableIdentifier(tableName)
     if (sessionCatalog.caseSensitiveAnalysis) {
-      alterTable(tableIdent, isAddColumn, column)
+      alterTable(tableIdent, isAddColumn, column, defaultValue)
     } else {
-      alterTable(tableIdent, isAddColumn, sessionCatalog.normalizeField(column))
+      alterTable(tableIdent, isAddColumn, sessionCatalog.normalizeField(column), defaultValue)
     }
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField): Unit = {
+      column: StructField, defaultValue: Option[String]): Unit = {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
-        ar.alterTable(tableIdent, isAddColumn, column)
+        ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
       case _ =>
@@ -1783,6 +1848,9 @@ object SnappySession extends Logging {
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
+
+  val unresolvedStarRegex = """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
+  val unresolvedColRegex = """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
 
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)

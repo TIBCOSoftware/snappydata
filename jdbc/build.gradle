@@ -42,13 +42,13 @@ dependencies {
     compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}")
-    compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    compileOnly("org.eclipse.jetty:jetty-servlet:${jettyVersion}")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
-    compile project(':snappy-store:snappydata-store-client')
+	compile project(':snappy-store:snappydata-store-client')
   } else {
-    compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
+	compile group: 'io.snappydata', name: 'snappydata-store-client', version: snappyStoreVersion
   }
 }
 
@@ -80,6 +80,7 @@ shadowJar {
 
   // avoid conflict with the 0.9.2 version in stock Spark
   relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
+  relocate 'org.apache.spark.unsafe', 'io.snappydata.org.apache.spark.unsafe'
 
   mergeServiceFiles()
   exclude 'log4j.properties'
