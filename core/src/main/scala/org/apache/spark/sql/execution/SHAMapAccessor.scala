@@ -44,7 +44,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   allocatorTerm: String, numBytesForNullAggBits: Int,
   nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
-  baseKeyHolderOffset: String, keyExistedTerm: String)
+  baseKeyHolderOffset: String, keyExistedTerm: String,
+  skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String)
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -117,8 +118,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
           */
         case StringType =>
           val len = ctx.freshName("len")
-          s"""int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
-             |$currentValueOffsetTerm += 4;
+          val readLenCode = if (nestingLevel == 0 && i == skipLenForAttribIndex) {
+            s"int $len = $codeForLenOfSkippedTerm"
+          } else {
+            s"""int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+               |$currentValueOffsetTerm += 4;
+               """
+          }
+          s"""$readLenCode
              |$varName = ${classOf[UTF8String].getName}.fromAddress($vdBaseObjectTerm,
              | $currentValueOffsetTerm, $len);
              |$currentValueOffsetTerm += $len;
@@ -604,8 +611,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
                     """.stripMargin
                   })
                 case t if t =:= typeOf[UTF8String] =>
-                  s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());
-                     |$offsetTerm += 4;
+                  val lengthWritingPart = if (nestingLevel > 0 || i != skipLenForAttribIndex) {
+                    s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());
+                        |$offsetTerm += 4;""".stripMargin
+                  } else ""
+
+                  s"""$lengthWritingPart
                      |$variable.writeToMemory($baseObjectTerm, $offsetTerm);
                      |$offsetTerm += $variable.numBytes();
                """.stripMargin
@@ -868,7 +879,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
         })).toString
       } else {
         dt match {
-          case StringType => s"(${expr.value}.numBytes() + 4) "
+          case StringType =>
+            val strPart = s"${expr.value}.numBytes()"
+            if (nestingLevel == 0 && i == skipLenForAttribIndex) {
+              strPart
+            } else {
+              s"($strPart + 4)"
+            }
           case BinaryType => s"(${expr.value}.length + 4) "
           case st: StructType => val (childKeysVars, childDataTypes) =
             getExplodedExprCodeAndDataTypeForStruct(expr.value, st, nestingLevel)

@@ -52,6 +52,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.execution._
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappySession, collection}
@@ -623,6 +624,7 @@ case class SnappyHashAggregateExec(
 
     val endIterValueOffset = ctx.freshName("endIterValueOffset")
     val localIterValueOffsetTerm = ctx.freshName("localIterValueOffsetTerm")
+    val localIterValueStartOffsetTerm = ctx.freshName("localIterValueStartOffsetTerm")
     val iterValueOffsetTerm = ctx.freshName("iterValueOffsetTerm")
     ctx.addMutableState("long", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
 
@@ -644,10 +646,23 @@ case class SnappyHashAggregateExec(
       ctx.addMutableState("byte[]", nullAggsBitsetTerm,
         s"$nullKeysBitsetTerm = new byte[$numBytesForNullAggsBits];")
     }
+    val probableSkipLen = this.groupingAttributes.
+      lastIndexWhere(attr => !TypeUtilities.isFixedWidth(attr.dataType))
+
+    val skipLenForAttrib = if (probableSkipLen != - 1 &&
+      this.groupingAttributes(probableSkipLen).dataType == StringType) {
+      probableSkipLen
+    } else -1
+
+    val keyLengthTerm = ctx.freshName("keyLength")
+
     val utf8Class = classOf[UTF8String].getName
     val bbDataClass = classOf[ByteBufferData].getName
     val arrayDataClass = classOf[ArrayData].getName
+    val platformClass = classOf[Platform].getName
+
     val sizeAndNumNotNullFuncForStringArr = ctx.freshName("calculateStringArrSizeAndNumNotNulls")
+
     if (groupingAttributes.exists(attrib => attrib.dataType.existsRecursively(_ match {
       case ArrayType(StringType, _) | ArrayType(_, true) => true
       case _ => false
@@ -766,6 +781,18 @@ case class SnappyHashAggregateExec(
     val baseKeyObject = ctx.freshName("baseKeyHolderObject")
     val keyExistedTerm = ctx.freshName("keyExisted")
 
+    val codeForLenOfSkippedTerm = if (skipLenForAttrib != -1) {
+      val suffixSize = this.groupingAttributes.drop(skipLenForAttrib + 1).foldLeft(0) {
+        case (size, attrib) => size + attrib.dataType.defaultSize + (attrib.dataType match {
+          case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
+          case _ => 0
+        })}
+
+      s"""$keyLengthTerm - (int)($localIterValueOffsetTerm - $localIterValueStartOffsetTerm)
+          ${ if (suffixSize > 0) s" - $suffixSize" else ""};"""
+    } else ""
+
+
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
 
@@ -779,7 +806,8 @@ case class SnappyHashAggregateExec(
       valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
-      keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm)
+      keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
+      skipLenForAttrib, codeForLenOfSkippedTerm)
 
 
 
@@ -827,6 +855,18 @@ case class SnappyHashAggregateExec(
     val aggTime = metricTerm(ctx, "aggTime")
     val beforeAgg = ctx.freshName("beforeAgg")
 
+    val readKeyLengthCode = if (skipLenForAttrib != -1) {
+      if (ColumnEncoding.littleEndian) {
+        s"int $keyLengthTerm = $platformClass.getInt($vdBaseObjectTerm, $localIterValueOffsetTerm);"
+      } else {
+        s"""int $keyLengthTerm = java.lang.Integer.reverseBytes($platformClass.getInt(
+            $vdBaseObjectTerm, $localIterValueOffsetTerm));
+          """
+      }
+    } else ""
+
+
+
     s"""
       if (!$initAgg) {
         $initAgg = true;
@@ -862,8 +902,10 @@ case class SnappyHashAggregateExec(
       for (; $localIterValueOffsetTerm != $endIterValueOffset; ) {
         ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
         $numOutput.${metricAdd("1")};
+        $readKeyLengthCode
         // skip the key length
         $localIterValueOffsetTerm += 4;
+        long $localIterValueStartOffsetTerm = $localIterValueOffsetTerm;
         $outputCode
         if (shouldStop()) {
           $iterValueOffsetTerm = $localIterValueOffsetTerm;
