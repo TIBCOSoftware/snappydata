@@ -10,14 +10,12 @@ For more information on the capabilities of the Community and Enterprise edition
 <a id= download> </a>
 <heading2> Download SnappyData Community Edition</heading2>
 
-[Download the SnappyData 1.0.2.1 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
+[Download the SnappyData 1.1.0 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-* [**SnappyData 1.0.2.1 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2.1/snappydata-1.0.2.1-bin.tar.gz)
-
-* [**SnappyData 1.0.2.1 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2.1/snappydata-1.0.2.1-without-hadoop-bin.tar.gz) 
+* [**SnappyData 1.1.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.0/snappydata-1.1.0-bin.tar.gz)
 
 
-<heading2> Download SnappyData Enterprise Edition</heading2> 
+<heading2> Download TIBCO ComputeDB Enterprise Edition</heading2> 
 
 1. Go to the [SnappyData website](http://www.snappydata.io/download).
 
@@ -25,7 +23,7 @@ For more information on the capabilities of the Community and Enterprise edition
 
 3. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
 
-4. Click **Download** to download the installer (**snappydata-1.0.2.1-bin.tar.gz**).
+4. Click **Download** to download the installer (**snappydata-1.1.0-bin.tar.gz**).
 
 5. You can also download the following additional files by clicking on the links:
 
