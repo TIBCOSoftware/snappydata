@@ -27,9 +27,12 @@ import org.apache.spark.sql.test.SharedSnappySessionContext.random
  */
 trait SharedSnappySessionContext extends SharedSQLContext {
 
+  protected def codegenFallback: Boolean = false
+
   override protected def createSparkSession: SnappySession = {
     val session = new TestSnappySession(sparkConf
         .set("spark.hadoop.fs.file.impl", classOf[DebugFilesystem].getName)
+        .set("spark.sql.codegen.fallback", codegenFallback.toString)
         .set("snappydata.sql.planCaching.", random.nextBoolean().toString))
     session.setCurrentSchema("default")
     session

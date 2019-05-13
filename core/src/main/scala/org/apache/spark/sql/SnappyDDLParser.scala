@@ -302,6 +302,12 @@ abstract class SnappyDDLParser(session: SparkSession)
     }
   }
 
+  protected def createTableLike: Rule1[LogicalPlan] = rule {
+    CREATE ~ TABLE ~ ifNotExists ~ tableIdentifier ~ LIKE ~ tableIdentifier ~>
+        ((allowExisting: Boolean, targetIdent: TableIdentifier, sourceIdent: TableIdentifier) =>
+          CreateTableLikeCommand(targetIdent, sourceIdent, allowExisting))
+  }
+
   protected final def booleanLiteral: Rule1[Boolean] = rule {
     TRUE ~> (() => true) | FALSE ~> (() => false)
   }
@@ -913,7 +919,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTable | describe | refreshTable | dropTable | truncateTable |
+    createTableLike | createTable | describe | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView | alterView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |

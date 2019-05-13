@@ -554,7 +554,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     checkSchemaPermission(newSchemaName, newName.table, defaultUser = null)
 
     // in-built tables don't support rename yet
-    super.getTableMetadataOption(oldName) match {
+    if (externalCatalog.databaseExists(oldSchemaName)) getTableMetadataOption(oldName) match {
       case Some(table) if DDLUtils.isDatasourceTable(table) &&
           SnappyContext.isBuiltInProvider(table.provider.get) =>
         throw new UnsupportedOperationException(
