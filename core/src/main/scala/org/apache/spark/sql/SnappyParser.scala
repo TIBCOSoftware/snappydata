@@ -1236,14 +1236,14 @@ class SnappyParser(session: SnappySession)
   protected def analyze: Rule1[LogicalPlan] = rule {
     ANALYZE ~ TABLE ~ tableIdentifier ~ COMPUTE ~ STATISTICS ~
     (FOR ~ COLUMNS ~ (identifier + commaSep) | identifier).? ~>
-        ((table: TableIdentifier, ids: Any) => ids match {
+        ((table: TableIdentifier, ids: Any) => ids.asInstanceOf[Option[Any]] match {
           case None => AnalyzeTableCommand(table, noscan = false)
           case Some(id: String) =>
             if (id.toLowerCase != "noscan") {
               throw new ParseException(s"Expected `NOSCAN` instead of `$id`")
             }
             AnalyzeTableCommand(table)
-          case Some(cols: Seq[String]) => AnalyzeColumnCommand(table, cols)
+          case Some(cols) => AnalyzeColumnCommand(table, cols.asInstanceOf[Seq[String]])
         })
   }
 
