@@ -1,5 +1,5 @@
 <a id="start_benchmark"></a>
-# SnappyData Performance: 16x-20x faster than Apache Spark
+# Benchmark 16-20x Faster Performance than Apache Spark
 In this section, you are walked through a simple benchmark to compare SnappyData's performance to Spark 2.1.1.</br>
 Millions of rows are loaded into a cached Spark DataFrame, some analytic queries measuring its performance are run, and then, the same using SnappyData's column table is repeated.
 

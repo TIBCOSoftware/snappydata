@@ -1,6 +1,6 @@
 # How to Access SnappyData from Various SQL Client Tools
 
-You can use any of the following SQL client tools to access SnappyData:
+You can use the following SQL client tools to access TIBCO ComputeDB:
 
 *	[DbVisualizer](#dbvis)
 *	[SQL Workbench/J](#sqlworkbenchj)
@@ -9,7 +9,7 @@ You can use any of the following SQL client tools to access SnappyData:
 
 <a id= dbvis> </a>
 ## DbVisualizer
-DbVisualizer is a universal database tool that can be used to access databases. You can access SnappyData from DbVisualizer when you create a database connection using a database driver.
+DbVisualizer is a universal database tool for developers, DBAs and analysts to access databases. You can access TIBCO ComputeDB from DbVisualizer when you create a database connection using a database driver.
 
 To access SnappyData from DbVisualizer, do the following:
 
