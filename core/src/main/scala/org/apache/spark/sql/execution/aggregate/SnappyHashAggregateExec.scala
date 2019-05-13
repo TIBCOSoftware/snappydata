@@ -274,6 +274,8 @@ case class SnappyHashAggregateExec(
     val functions = aggregateExpressions.map(_.aggregateFunction
         .asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
+    ctx.INPUT_ROW = null
+    ctx.currentVars = null
     bufVars = initExpr.map { e =>
       val isNull = ctx.freshName("bufIsNull")
       val value = ctx.freshName("bufValue")
@@ -390,6 +392,7 @@ case class SnappyHashAggregateExec(
         case PartialMerge | Final => aggregate.mergeExpressions
       }
     }
+    ctx.INPUT_ROW = null
     ctx.currentVars = bufVars ++ input
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttrs))
@@ -597,6 +600,8 @@ case class SnappyHashAggregateExec(
     }
 
     // generate class for key, buffer and hash code evaluation of key columns
+    ctx.INPUT_ROW = null
+    ctx.currentVars = null
     val inputAttr = aggregateBufferAttributesForGroup ++ child.output
     val initVars = ctx.generateExpressions(declFunctions.flatMap(
       bufferInitialValuesForGroup(_).map(BindReferences.bindReference(_,

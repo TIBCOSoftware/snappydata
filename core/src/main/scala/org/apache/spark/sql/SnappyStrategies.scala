@@ -556,8 +556,7 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
     val finalAggregate = if (isRootPlan && groupingAttributes.isEmpty) {
       // Special CollectAggregateExec plan for top-level simple aggregations
       // which can be performed on the driver itself rather than an exchange.
-      CollectAggregateExec(basePlan = finalHashAggregate,
-        child = partialAggregate, output = finalHashAggregate.output)
+      CollectAggregateExec(partialAggregate)(finalHashAggregate)
     } else finalHashAggregate
     finalAggregate :: Nil
   }
