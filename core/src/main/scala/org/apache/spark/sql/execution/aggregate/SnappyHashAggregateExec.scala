@@ -620,9 +620,9 @@ case class SnappyHashAggregateExec(
     val initAgg = ctx.freshName("initAgg")
     ctx.addMutableState("boolean", initAgg, s"$initAgg = false;")
     // Create a name for iterator from HashMap
-    val mapCounter = ctx.freshName("mapCounter")
-    ctx.addMutableState("int", mapCounter, s"$mapCounter = 0;")
 
+    val endIterValueOffset = ctx.freshName("endIterValueOffset")
+    val localIterValueOffsetTerm = ctx.freshName("localIterValueOffsetTerm")
     val iterValueOffsetTerm = ctx.freshName("iterValueOffsetTerm")
     ctx.addMutableState("long", iterValueOffsetTerm, s"$iterValueOffsetTerm = 0;")
 
@@ -768,7 +768,7 @@ case class SnappyHashAggregateExec(
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
-    val sizeTerm = ctx.freshName("size")
+
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -812,12 +812,12 @@ case class SnappyHashAggregateExec(
         keyBufferTerm, keyBufferTerm, onlyKeyVars = false, onlyValueVars = false) */
 
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
-      iterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
+      localIterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
       byteBufferAccessor.numBytesForNullKeyBits, false)
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
-      aggregateBufferVars, iterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
+      aggregateBufferVars, localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
       byteBufferAccessor.numBytesForNullAggBits, false)
-    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, iterValueOffsetTerm)
+    val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
     // The child could change `copyResult` to true, but we had already
@@ -835,8 +835,7 @@ case class SnappyHashAggregateExec(
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
         $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
         Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-        long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-        $iterValueOffsetTerm += $vdBaseOffsetTerm;
+        $iterValueOffsetTerm += $valueDataTerm.baseOffset();
       }
       if ($hashMapTerm == null) {
          return;
@@ -858,18 +857,21 @@ case class SnappyHashAggregateExec(
       // output the result
       $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-      int $sizeTerm = $hashMapTerm.size();
-      for (; $mapCounter < $sizeTerm; ) {
+      long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();
+      long $localIterValueOffsetTerm = $iterValueOffsetTerm;
+      for (; $localIterValueOffsetTerm != $endIterValueOffset; ) {
         ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
         $numOutput.${metricAdd("1")};
-        ++$mapCounter;
         // skip the key length
-        $iterValueOffsetTerm += 4;
+        $localIterValueOffsetTerm += 4;
         $outputCode
-        if (shouldStop()) return;
+        if (shouldStop()) {
+          $iterValueOffsetTerm = $localIterValueOffsetTerm;
+          return;
+        }
       }
 
-       if ($mapCounter == $sizeTerm) {
+       if ($localIterValueOffsetTerm == $endIterValueOffset) {
          $hashMapTerm.release();
          $hashMapTerm = null;
        }
