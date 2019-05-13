@@ -1,14 +1,18 @@
-# How to Connect TIBCO Spotfire® Desktop to SnappyData
-
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+# How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB
 
 TIBCO Spotfire® Desktop allows users to easily author and update ad-hoc analytics, applications, and dashboards. 
-To connect TIBCO Spotfire® Desktop to SnappyData, setup and launch the SnappyData cluster. 
+To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIBCO ComputeDB cluster. 
+
+!!! Note
+	The Spark SQL connector based on the Simba ODBC driver in Spotfire has some performance issues. We noticed an overhead of about 5 seconds over the query time in TIBCO ComputeDB. You can see the query timings in the ComputeDB dashboard. We expect this issue to be resolved before full GA of this feature. 
+
+### Experimental (but Faster) Spotfire Connector (based on TIBCO ComputeDB Native ODBC)
+An experimental but much faster connnector is also available from TIBCO Engineering and accessible from [here](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb).
 
 <a id= tibcomputsetup> </a>
-## Download and Launch SnappyData
+## Download and Launch TIBCO ComputeDB
 
-Check the [system requirements](/install/system_requirements.md), [download and install](/install.md) SnappyData, and then [start the SnappyData cluster](./start_snappy_cluster.md). Hive Thrift server is enabled by default. If you want to securely access the Hive Thrift server using SSL encryption, you must set these additional properties in the [Lead Node Configuration](/configuring_cluster/configuring_cluster.md#lead):
+Check the [system requirements](/install/system_requirements.md), [download and install](/install.md) TIBCO ComputeDB, and then [start the TIBCO ComputeDB cluster](./start_snappy_cluster.md). Hive Thrift server is enabled by default. If you want to securely access the Hive Thrift server using SSL encryption, you must set these additional properties in the [Lead Node Configuration](/configuring_cluster/configuring_cluster.md#lead):
 
 *	`-hive.server2.use.SSL=true`
 *	`-hive.server2.keystore.path=<keystore-file-path>` 
@@ -16,14 +20,14 @@ Check the [system requirements](/install/system_requirements.md), [download and 
    
 <!--- For more details about setting the Hive Thrift server, refer to [placeholder]--->
 
-## Connecting Spotfire® Desktop to SnappyData
+## Connecting Spotfire® Desktop to TIBCO ComputeDB
 
-Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( https://edelivery.tibco.com/storefront/eval/tibco-spotfire-desktop/prod10954.html). Follow the setup guidelines to install the product. After installation, you can use the following steps to connect Spotfire® Desktop to SnappyData.
+Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( https://edelivery.tibco.com/storefront/eval/tibco-spotfire-desktop/prod10954.html). Follow the setup guidelines to install the product. After installation, you can use the following steps to connect Spotfire® Desktop to TIBCO ComputeDB.
 
 1.	On the Spotfire® Desktop application, from the left panel, click **Connect to** > **Apache Spark SQL** > **New Connection**. <br> The **Apache Spark SQL Connection** dialog box is displayed.<br> ![images](../Images/spotfire/generaltabspotfire.png)
 2.	In the **General** tab, enter the following details:
 
-	*	**Server**: Enter the hostname/IP of the Lead node in SnappyData cluster
+	*	**Server**: Enter the hostname/IP of the Lead node in TIBCO ComputeDB cluster
 	
     	!!! Note
     		The Hive2 Thrift server uses port 10000 by default. If you have explicitly configured the port number, then you must specify the port number as: `<IP or Hostname>:<port number>`
@@ -34,9 +38,9 @@ Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( 
 3.	Select the **Use secure sockets layer** check box if you want to access the Hive Thrift server securely. Else, you can clear the check box.
 
 	!!! Note
-    	Ensure to configure the lead node with additional properties for securely accessing the Hive Thrift server with SSL encryption. See [Setting SnappyData](#tibcomputsetup). 
+    	Ensure to configure the lead node with additional properties for securely accessing the Hive Thrift server with SSL encryption. See [Setting TIBCO ComputeDB](#tibcomputsetup). 
         
 4.	Click the **Advanced** tab and set the **Thrift transport mode** to **SASL**. <br> ![images](../Images/spotfire/advancetabspotfire.png)
 5.	Go to **General** tab and then click the **Connect** button.
-6.	From the **Database** dropdown, either choose the existing database (schema) **app** or **default** or you can choose a database (schema) that is created in the SnappyData cluster.<br> ![images](../Images/spotfire/generaltabspotfire1.png)  
+6.	From the **Database** dropdown, either choose the existing database (schema) **app** or **default** or you can choose a database (schema) that is created in the TIBCO ComputeDB cluster.<br> ![images](../Images/spotfire/generaltabspotfire1.png)  
 7.	Click **OK**. The **View In Connection (VIC)** box is displayed which lists the tables from the selected database.
