@@ -249,7 +249,7 @@ This section covers the following:
 *	[More Options](#ec2moreoption)
 
 <a id="ec2custombuild"></a>
-#### Using custom build
+#### Using Custom build
 
 This script by default uses the SnappyData OSS build available on the GitHub releases page to launch the cluster.
 To select a version of the OSS build available on GitHub, use option `--snappydata-version`.
@@ -495,6 +495,10 @@ Options:
 
 <a id="usingawsmgmtconsole"></a>
 ## AWS Management Console
+
+!!! Attention
+	The AMI of latest SnappyData release 1.1.0 is not available on AWS.
+
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information
 on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).
 This section covers the following:

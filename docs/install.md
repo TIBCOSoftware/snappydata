@@ -14,8 +14,8 @@ For more information on the capabilities of the Community and Enterprise edition
 
 * [**SnappyData 1.1.0 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.0/snappydata-1.1.0-bin.tar.gz)
 
-
-<heading2> Download TIBCO ComputeDB Enterprise Edition</heading2> 
+<heading2> Download SnappyData Enterprise Edition</heading2> 
+=======
 
 1. Go to the [SnappyData website](http://www.snappydata.io/download).
 
