@@ -1,4 +1,16 @@
 # Memory Management
+
+!!! Attention
+
+	The following description and best practices are ONLY applicable to the data store cluster nodes that are the nodes that manage in-memory tables in SnappyData. When running in the **connector** mode, your Spark job runs in isolated JVMs and you will need to estimate its memory requirements.
+
+You need to estimate and plan memory/disk for the following objects:
+
+- In-memory row, column tables 
+- Execution memory for queries, jobs 
+- Shuffle disk space required by queries, jobs 
+- In-memory caching of Spark dataframes, temporary tables 
+
 Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and SnappyData column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.
 
 SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.

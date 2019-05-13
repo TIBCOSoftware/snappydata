@@ -6,7 +6,7 @@ This guide gives details of Spark extension APIs that are provided by SnappyData
 | SnappySession APIs | DataFrameWriter APIs |SnappySessionCatalog APIs|
 |--------|--------|--------|
 |  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of SnappyData table|
-|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumnspos) </br>Gets primary key or key columns with their position in the table. | |
+|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumnspos) </br>Gets primary key or key columns with their position in the table. |
 |   [**createTable**](#createtableapi)</br>Create SnappyData Managed Table    |        ||
 |     [**createTable**](#createtable1)</br>Create SnappyData Managed JDBC Table |        ||
 |    [**truncateTable**](#truncateapi)</br> Empty Contents of Table    |        ||
