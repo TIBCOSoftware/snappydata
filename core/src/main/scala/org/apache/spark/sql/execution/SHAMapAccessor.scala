@@ -92,7 +92,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
       // they are already declared at start
       // also aggregate vars cannot be nested in any case.
       val booleanStr = if (isKey) "boolean" else ""
-      val nullVarCode =
+      val nullVarCode = if (skipNullBitsCode) {
+        ""
+      } else {
         if (numBytesForNullBits <= 8) {
           s"""$booleanStr $nullVar = ($nullBitTerm & ((($castTerm)0x01) << $i)) == 0;""".stripMargin
         } else {
@@ -101,6 +103,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           s"""$booleanStr $nullVar =
              |($nullBitTerm[$index] & (0x01 << $remainder)) == 0;""".stripMargin
         }
+      }
 
       val evaluationCode = (dt match {
        /* case StringType =>
@@ -1171,7 +1174,9 @@ object SHAMapAccessor {
     }
 
   def initNullBitsetCode(nullBitsetTerm: String,
-    numBytesForNullBits: Int): String = if (numBytesForNullBits <= 1) {
+    numBytesForNullBits: Int): String = if (numBytesForNullBits == 0) {
+    ""
+  } else if (numBytesForNullBits == 1) {
     s"byte $nullBitsetTerm = 0;"
   } else if (numBytesForNullBits == 2) {
     s"short $nullBitsetTerm = 0;"
@@ -1187,7 +1192,9 @@ object SHAMapAccessor {
   }
 
   def resetNullBitsetCode(nullBitsetTerm: String,
-    numBytesForNullBits: Int): String = if (numBytesForNullBits <= 8) {
+    numBytesForNullBits: Int): String = if (numBytesForNullBits == 0) {
+    ""
+  } else if (numBytesForNullBits <= 8) {
     s"$nullBitsetTerm = 0; \n"
   } else {
     s"""
