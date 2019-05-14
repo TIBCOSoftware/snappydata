@@ -183,12 +183,19 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String): Unit = {
+  private final def assertNoQueryHint(plan: LogicalPlan, optAlias: Option[String]): Unit = {
     if (!queryHints.isEmpty) {
-      val hintStr = hint.toString
+      val hintStr = QueryHint.Index.toString
       queryHints.forEach(new BiConsumer[String, String] {
         override def accept(key: String, value: String): Unit = {
-          if (key.startsWith(hintStr)) throw new ParseException(msg)
+          if (key.startsWith(hintStr)) {
+            val tableString = optAlias match {
+              case Some(a) => a
+              case None => plan.treeString(verbose = false)
+            }
+            throw new ParseException(
+              s"Query hint '$hintStr' cannot be applied to derived table: $tableString")
+          }
         }
       })
     }
@@ -621,9 +628,12 @@ class SnappyParser(session: SnappySession)
           if (optAlias.isDefined) w.child = u.copy(alias = optAlias)
           w
         case w@WindowLogicalPlan(_, _, child, _) =>
+          assertNoQueryHint(rel, optAlias)
           if (optAlias.isDefined) w.child = SubqueryAlias(optAlias.get, child, None)
           w
-        case _ => if (optAlias.isEmpty) rel else SubqueryAlias(optAlias.get, rel, None)
+        case _ =>
+          assertNoQueryHint(rel, optAlias)
+          if (optAlias.isEmpty) rel else SubqueryAlias(optAlias.get, rel, None)
       }
       s.asInstanceOf[Option[LogicalPlan => LogicalPlan]] match {
         case None => plan
@@ -646,14 +656,8 @@ class SnappyParser(session: SnappySession)
     ) |
     '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~> { (child: LogicalPlan, w: Any) =>
       w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
-        case None =>
-          assertNoQueryHint(QueryHint.Index,
-            s"${QueryHint.Index} cannot be applied to derived table $alias")
-          child
-        case Some(win) =>
-          assertNoQueryHint(QueryHint.Index,
-            s"${QueryHint.Index} cannot be applied to derived table $alias")
-          WindowLogicalPlan(win._1, win._2, child)
+        case None => child
+        case Some(win) => WindowLogicalPlan(win._1, win._2, child)
       }
     }
   }

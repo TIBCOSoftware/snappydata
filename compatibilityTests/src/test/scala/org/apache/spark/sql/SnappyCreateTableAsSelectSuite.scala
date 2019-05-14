@@ -19,9 +19,8 @@ package org.apache.spark.sql
 import org.apache.spark.sql.sources.CreateTableAsSelectSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyCreateTableAsSelectSuite
-    extends CreateTableAsSelectSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
+class SnappyCreateTableAsSelectSuite extends CreateTableAsSelectSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def excluded: Seq[String] = Seq(
     // SnappyData allows this syntax by design

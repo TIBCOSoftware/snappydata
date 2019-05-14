@@ -18,6 +18,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyStatisticsCollectionSuite
-    extends StatisticsCollectionSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil
+class SnappyStatisticsCollectionSuite extends StatisticsCollectionSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

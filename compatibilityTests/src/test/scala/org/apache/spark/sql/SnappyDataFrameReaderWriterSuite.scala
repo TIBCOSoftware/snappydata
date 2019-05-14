@@ -18,6 +18,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.{DataFrameReaderWriterSuite, SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDataFrameReaderWriterSuite
-    extends DataFrameReaderWriterSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil
+class SnappyDataFrameReaderWriterSuite extends DataFrameReaderWriterSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil
