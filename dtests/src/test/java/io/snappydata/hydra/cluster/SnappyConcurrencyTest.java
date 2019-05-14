@@ -139,6 +139,62 @@ public class SnappyConcurrencyTest extends SnappyTest {
     closeConnection(conn);
   }
 
+  public static void createAndLoadExternalTables(Vector externalTableNames, Vector dataPathList, Connection conn) throws SQLException {
+    String query;
+    for (int k = 0; k < externalTableNames.size(); k++) {
+      String externalTableName = (String) externalTableNames.elementAt(k);
+      String dataPath = (String) dataPathList.elementAt(k);
+      query = "drop table if exists " + externalTableName;
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE EXTERNAL TABLE " + externalTableName + " USING parquet OPTIONS(path '" + dataPath + "')";
+      conn.createStatement().executeUpdate(query);
+    }
+  }
+
+  public static void createAndLoadColumnTables(Vector externalTableNames, Vector columnTableNames, Connection conn) throws SQLException {
+    String query;
+    for (int k = 0; k < externalTableNames.size(); k++) {
+      String tableName = (String) columnTableNames.elementAt(k);
+      String externalTableName = (String) externalTableNames.elementAt(k);
+      query = "drop table if exists " + externalTableName;
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE TABLE " + tableName + " USING column OPTIONS() AS (SELECT * FROM " + externalTableName + ")";
+      conn.createStatement().executeUpdate(query);
+    }
+  }
+
+  public static void createAndLoadTablesForStabilityTest() throws SQLException {
+    Connection conn = getLocatorConnection();
+    String query;
+    Vector tableNames = SnappyPrms.getTableList();
+    Vector insertTableNames = SnappyPrms.getInsertTableList();
+    Vector externalTableNames = SnappyPrms.getExternalTableList();
+    Vector dataPathList = SnappyPrms.getDataPathList();
+    for (int i = 0; i < tableNames.size(); i++) {
+      String tableName = (String) tableNames.elementAt(i);
+      String externalTableName = (String) externalTableNames.elementAt(i);
+      String dataPath = (String) dataPathList.elementAt(i);
+      query = "drop table if exists " + tableName;
+      Log.getLogWriter().info("SS - query: " + query);
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE EXTERNAL TABLE " + tableName + " USING parquet OPTIONS(path '" + dataPath + "')";
+      Log.getLogWriter().info("SS - query: " + query);
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE TABLE " + tableName + " USING column OPTIONS() AS (SELECT * FROM " + externalTableName + ")";
+      Log.getLogWriter().info("SS - query: " + query);
+      conn.createStatement().executeUpdate(query);
+    }
+
+    for (int i = 0; i < insertTableNames.size(); i++) {
+      String insertTableName = (String) insertTableNames.elementAt(i);
+      String externalTableName = (String) externalTableNames.elementAt(i);
+      query = "insert into " + insertTableName + " select * from " + externalTableName;
+      Log.getLogWriter().info("SS - query: " + query);
+      conn.createStatement().executeUpdate(query);
+    }
+    closeConnection(conn);
+  }
+
   public static void createViewsAndDependantTablesForStabilityTest() throws SQLException {
     Connection conn = getLocatorConnection();
     String query;
