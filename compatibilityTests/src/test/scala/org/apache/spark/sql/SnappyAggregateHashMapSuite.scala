@@ -18,6 +18,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyAggregateHashMapSuite
-    extends SingleLevelAggregateHashMapSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil
+class SnappyAggregateHashMapSuite extends SingleLevelAggregateHashMapSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

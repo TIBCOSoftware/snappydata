@@ -132,7 +132,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   protected final def stringLiteral: Rule1[String] = rule {
     capture('\'' ~ (noneOf("'\\") | "''" | '\\' ~ ANY).* ~ '\'') ~ ws ~> ((s: String) =>
       ParserUtils.unescapeSQLString(
-        if (s.indexOf("''") > 0) "'" + s.substring(1, s.length - 1).replace("''", "'") + "'"
+        if (s.indexOf("''") >= 0) "'" + s.substring(1, s.length - 1).replace("''", "\\'") + "'"
         else s))
   }
 

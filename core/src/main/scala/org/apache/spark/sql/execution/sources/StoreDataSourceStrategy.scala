@@ -278,14 +278,14 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
       case expressions.LessThanOrEqual(TokenLiteral(v), a: Attribute) =>
         Some(sources.GreaterThanOrEqual(a.name, v))
 
+      case expressions.InSet(a: Attribute, set) =>
+        val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
+        Some(sources.In(a.name, set.toArray.map(toScala)))
+
       case expressions.DynamicInSet(a: Attribute, set) =>
         val hSet = set.map(e => e.eval(EmptyRow))
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, hSet.toArray.map(toScala)))
-
-      case expressions.InSet(a: Attribute, set) =>
-        val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
-        Some(sources.In(a.name, set.toArray.map(toScala)))
 
       // Because we only convert In to InSet in Optimizer when there are more than certain
       // items. So it is possible we still get an In expression here that needs to be pushed down.
