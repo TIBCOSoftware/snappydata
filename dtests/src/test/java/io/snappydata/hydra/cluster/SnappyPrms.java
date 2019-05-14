@@ -594,6 +594,24 @@ public class SnappyPrms extends BasePrms {
   public static Long tableList;
 
   /**
+   * Parameter used to get the user specified external table List required for table creation.
+   * (VectorsetValues of Strings) A list of values for external table List
+   */
+  public static Long externalTableList;
+
+  /**
+   * Parameter used to get the user specified table List required for loading data from extrenal table into column table.
+   * (VectorsetValues of Strings) A list of values for table List
+   */
+  public static Long insertTableList;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal table.
+   * (VectorsetValues of Strings) A list of values for data path List
+   */
+  public static Long dataPathList;
+
+  /**
    * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
    * while starting the cluster with user specified confs.
    * (VectorsetValues of Strings) A list of values for hostName List
@@ -1043,6 +1061,21 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getTableList() {
     Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getExternalTableList() {
+    Long key = externalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getInsertTableList() {
+    Long key = insertTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathList() {
+    Long key = dataPathList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
