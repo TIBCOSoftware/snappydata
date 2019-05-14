@@ -318,12 +318,10 @@ pages:
 #   - Contributing: about/contributing.md
 - Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
 - 'License Model': 'additional_files/license_model.md'
-- 'Release Notes': 'release_notes/release_notes.md'
-- 'Release Notes': 
-    - 'Known Issues': 'release_notes/known_issues.md'
-- Doc Archives: prev_doc_ver.md
-- Contact and Support: techsupport.md
-- License: LICENSE.md
+- 'Release Notes': 'release_notes/release_notes.md' 
+- 'Doc Archives': prev_doc_ver.md
+- 'Contact and Support': techsupport.md
+- 'License': LICENSE.md
 
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
