@@ -94,7 +94,7 @@ One of the instances, when [SnappyData Smart connector mode](../affinity_modes/c
 
 ## Disabling hashJoin/Aggregate for Cluster Stability
 
-TIBCO ComputeDB has its own operator for extremely fast joins/aggregates. One limitation of this operator is that it stores the objects in Java heap. If heap size is small, it has the potential to cause Garbage Collection (GC) problems and eventually Out-of-memory (OOM). Sometimes, even if the heap size is large this can happen if there are many concurrent queries using these operators. If your use case is such that there will be many joins or aggregates with high cardinality then it is recommended to disable that hashJoin/hashAggregates.
+SnappyData has its own operator for extremely fast joins/aggregates. One limitation of this operator is that it stores the objects in Java heap. If heap size is small, it has the potential to cause Garbage Collection (GC) problems and eventually Out-of-memory (OOM). Sometimes, even if the heap size is large this can happen if there are many concurrent queries using these operators. If your use case is such that there will be many joins or aggregates with high cardinality then it is recommended to disable that hashJoin/hashAggregates.
 
 To disable hashJoin/hashAggregates for a particular session you can use the following:
 

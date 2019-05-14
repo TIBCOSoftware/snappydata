@@ -1,8 +1,8 @@
 # Specifying Encrypted Passwords in Conf Files or in Client Connections
 
-<ent>This feature is available only in the Enterprise version of SnappyData, which is now TIBCO ComputeDB Enterprise Edition </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData </br></ent>
 
-SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the TIBCO ComputeDB cluster in a secure mode. SnappyData provides an utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of SnappyData product installation. 
+SnappyData allows you to specify encrypted passwords, if you do not want to specify plain text passwords, in conf files or in JDBC/ODBC client connections URLs, while launching the SnappyData cluster in a secure mode. SnappyData provides an utility script called **snappy-encrypt-password.sh** to generate encrypted passwords of system users who launch the cluster.  This script is located under **sbin** directory of SnappyData product installation. 
 
 You can generate encrypted passwords before starting the SnappyData cluster and use it in **conf** files of the SnappyData servers, locators and leads. 
 
