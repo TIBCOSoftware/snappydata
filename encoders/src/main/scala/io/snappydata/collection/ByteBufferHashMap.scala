@@ -139,7 +139,42 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
         }
       } else {
         // insert into the map and rehash if required
-        val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes)
+        val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes, false)
+        Platform.putLong(mapKeyObject, mapKeyOffset,
+          (relativeOffset << 32L) | (hash & 0xffffffffL))
+        return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
+      }
+    }
+    0 // not expected to reach
+  }
+
+  final def putBufferIfAbsent(baseObject: AnyRef, baseOffset: Long, numKeyBytes: Int,
+    numBytes: Int, hash: Int, valuePortionMissing: Boolean): Int = {
+    val mapKeyObject = keyData.baseObject
+    val mapKeyBaseOffset = keyData.baseOffset
+    val fixedKeySize = this.fixedKeySize
+    val mask = this.mask
+    var pos = hash & mask
+    var delta = 1
+    while (true) {
+      val mapKeyOffset = mapKeyBaseOffset + fixedKeySize * pos
+      val mapKey = Platform.getLong(mapKeyObject, mapKeyOffset)
+      // offset will at least be 4 so mapKey can never be zero when occupied
+      if (mapKey != 0L) {
+        // first compare the hash codes followed by "equalsSize" that will
+        // include the check for 4 bytes of numKeyBytes itself
+        val valueStartOffset = (mapKey >>> 32L).toInt - 4
+        if (hash == mapKey.toInt && valueData.equalsSize(valueStartOffset,
+          baseObject, baseOffset, numKeyBytes)) {
+          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4)
+        } else {
+          // quadratic probing (increase delta)
+          pos = (pos + delta) & mask
+          delta += 1
+        }
+      } else {
+        // insert into the map and rehash if required
+        val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes, valuePortionMissing)
         Platform.putLong(mapKeyObject, mapKeyOffset,
           (relativeOffset << 32L) | (hash & 0xffffffffL))
         return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
@@ -176,7 +211,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   }
 
   protected final def newInsert(baseObject: AnyRef, baseOffset: Long,
-      numKeyBytes: Int, numBytes: Int): Int = {
+      numKeyBytes: Int, numBytes: Int, valuePortionMissing: Boolean): Int = {
     // write into the valueData ByteBuffer growing it if required
     var position = valueDataPosition
     val dataSize = position - valueData.baseOffset
@@ -188,7 +223,8 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     // write the key size followed by the full key+value bytes
     ColumnEncoding.writeInt(valueBaseObject, position, numKeyBytes)
     position += 4
-    Platform.copyMemory(baseObject, baseOffset, valueBaseObject, position, numBytes)
+    val lengthToWrite = if (valuePortionMissing) numKeyBytes else numBytes
+    Platform.copyMemory(baseObject, baseOffset, valueBaseObject, position, lengthToWrite)
     valueDataPosition = position + numBytes
     // return the relative offset to the start excluding numKeyBytes
     (dataSize + 4).toInt
