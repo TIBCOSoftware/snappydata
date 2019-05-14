@@ -631,8 +631,11 @@ case class SnappyHashAggregateExec(
     val nullKeysBitsetTerm = ctx.freshName("nullKeysBitset")
     val nullAggsBitsetTerm = ctx.freshName("nullAggsBitset")
 
-    val numBytesForNullKeyBits = SHAMapAccessor.calculateNumberOfBytesForNullBits(
-      this.groupingAttributes.length)
+    val numBytesForNullKeyBits = if (this.groupingAttributes.forall(!_.nullable)) {
+      0
+    } else {
+      SHAMapAccessor.calculateNumberOfBytesForNullBits(this.groupingAttributes.length)
+    }
 
     val numBytesForNullAggsBits = SHAMapAccessor.calculateNumberOfBytesForNullBits(
       this.aggregateBufferAttributesForGroup.length)
@@ -841,7 +844,7 @@ case class SnappyHashAggregateExec(
 
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
       localIterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
-      byteBufferAccessor.numBytesForNullKeyBits, false)
+      byteBufferAccessor.numBytesForNullKeyBits, byteBufferAccessor.numBytesForNullKeyBits == 0)
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
       byteBufferAccessor.numBytesForNullAggBits, false)

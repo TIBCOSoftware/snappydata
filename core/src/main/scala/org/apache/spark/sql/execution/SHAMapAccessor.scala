@@ -82,7 +82,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val castTerm = getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = if (isKey) {
-        ctx.freshName("isNull")
+        if (nestingLevel == 0 && skipNullBitsCode) {
+          "false"
+        } else {
+          ctx.freshName("isNull")
+        }
       } else s"$varName${SHAMapAccessor.nullVarSuffix}"
       // if it is aggregate value buffer do not declare null var as
       // they are already declared at start
@@ -829,7 +833,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         long $currentOffset = $baseKeyHolderOffset;
         // first write key data
         ${ writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
-          nullKeysBitsetTerm, numBytesForNullKeyBits, true, false)
+          nullKeysBitsetTerm, numBytesForNullKeyBits, true, numBytesForNullKeyBits == 0)
         }
        // write value data
        ${"" /* writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
@@ -1167,7 +1171,7 @@ object SHAMapAccessor {
     }
 
   def initNullBitsetCode(nullBitsetTerm: String,
-    numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
+    numBytesForNullBits: Int): String = if (numBytesForNullBits <= 1) {
     s"byte $nullBitsetTerm = 0;"
   } else if (numBytesForNullBits == 2) {
     s"short $nullBitsetTerm = 0;"
