@@ -447,8 +447,9 @@ class TokenizationTest
       cacheMap.clear()
 
       val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
-      Property.PlanCaching.set(newSession3.sessionState.conf, true)
+      newSession3.sql(s"set snappydata.sql.tokenize=false")
+      // check that SQLConf property names are case-insensitive
+      newSession3.sql(s"set snappydata.sql.plancaching=true")
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
