@@ -28,13 +28,14 @@ For example:
 
 ```
 # Creating parquet files in older product version 1.0.1 or prior:
-snappy> create external table table1Parquet using parquet options (path '...') as select * from table1;
+snappy> create external table table1Parquet using parquet options (path '<path-to-parquet-file>') as select * from table1;
 snappy> drop table table1;
 snappy> drop table table1Parquet;
 
 # Creating tables from parquet files in SnappyData 1.1.0
-snappy> create extranal table table1_parquet using parquet options (path '...') ;
-snappy> create table table1 using column options () as select * from table1_parquet;
+snappy> create external table table1_parquet using parquet options (path '<path-to-parquet-file>') ;
+snappy> create table table1(...);
+snappy> insert into table1 select * from table1_parquet;
 ```
 Use a path for the Parquet file that has enough space to hold the table data. Once the re-import has completed successfully, make sure that the Parquet files are deleted explicitly.
 
