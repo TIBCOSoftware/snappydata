@@ -17,14 +17,11 @@ For more information on the capabilities of the Community and Enterprise edition
 <heading2> Download SnappyData Enterprise Edition</heading2> 
 =======
 
-1. Go to the [SnappyData website](http://www.snappydata.io/download).
+1. From the [TIBCO eDelivery website](https://edelivery.tibco.com), search **TIBCO ComputeDB** and go to its **Product Detail** page.
 
-2. On this page, enter your email address.
+2. Accept the **END USER LICENSE AGREEMENT**.
 
-3. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
-
-4. Click **Download** to download the installer (**snappydata-1.1.0-bin.tar.gz**).
-
+4. Click **Download** to download the main product tarball (**TIB_compute_1.1.0_linux.tar.gz**).
 5. You can also download the following additional files by clicking on the links:
 
 	* DEBIAN INSTALLER
