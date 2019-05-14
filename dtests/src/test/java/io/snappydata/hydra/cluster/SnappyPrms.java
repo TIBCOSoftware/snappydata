@@ -802,26 +802,40 @@ public class SnappyPrms extends BasePrms {
 
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
-    String leaderLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
-        null));
-    if (leaderLauncherPropList == null) return "";
-    else return leaderLauncherPropList;
+    Vector<String> leaderLauncherPropList = BasePrms.tasktab().vecAt(key,
+        BasePrms.tab().vecAt(key, null));
+    String props = "";
+    if(leaderLauncherPropList != null && !leaderLauncherPropList.isEmpty()){
+      for(int i = 0 ; i< leaderLauncherPropList.size(); i ++)
+        props = props + " " + leaderLauncherPropList.get(i);
+      return props;
+    } else return "";
   }
 
   public static String getServerLauncherProps() {
     Long key = serverLauncherProps;
-    String serverLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> serverLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (serverLauncherPropList == null) return "";
-    else return serverLauncherPropList;
+    String props = "";
+    if(serverLauncherPropList != null && !serverLauncherPropList.isEmpty()){
+      for(int i = 0 ; i< serverLauncherPropList.size(); i ++)
+        props = props + " " + serverLauncherPropList.get(i);
+      return props;
+    }
+    else return "";
   }
 
   public static String getLocatorLauncherProps() {
     Long key = locatorLauncherProps;
-    String locatorLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> locatorLauncherPropList = BasePrms.tasktab().vecAt(key,
+        BasePrms.tab().vecAt(key,
         null));
-    if (locatorLauncherPropList == null) return "";
-    else return locatorLauncherPropList;
+    String props = "";
+    if(locatorLauncherPropList != null && !locatorLauncherPropList.isEmpty()){
+      for(int i = 0 ; i< locatorLauncherPropList.size(); i ++)
+        props = props + " " + locatorLauncherPropList.get(i);
+      return props;
+    } else return "";
   }
 
   public static String getSparkSubmitExtraPrms() {
