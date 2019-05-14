@@ -335,10 +335,10 @@ public class SnappyTest implements Serializable {
   }
 
   protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
-    String secureBootProperties = "";
+    String secureBootProperties = " -server-auth-provider=NONE ";
     boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     if(isSecurityEnabled) {
-      secureBootProperties = SnappySecurityTest.getSecureBootProp();
+      secureBootProperties += SnappySecurityTest.getSecureBootProp();
       Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
     }
     if (logDirExists) return;
