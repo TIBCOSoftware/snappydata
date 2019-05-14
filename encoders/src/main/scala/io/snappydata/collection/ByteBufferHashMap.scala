@@ -183,6 +183,42 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     0 // not expected to reach
   }
 
+  final def putBufferIfAbsent(multiByteSourceWrapper: MultiByteSourceWrapper, numKeyBytes: Int,
+    numBytes: Int, hash: Int): Int = {
+   // assert(multiByteSourceWrapper.assertKeySizeMatch(numKeyBytes))
+    val mapKeyObject = keyData.baseObject
+    val mapKeyBaseOffset = keyData.baseOffset
+    val fixedKeySize = this.fixedKeySize
+    val mask = this.mask
+    var pos = hash & mask
+    var delta = 1
+    while (true) {
+      val mapKeyOffset = mapKeyBaseOffset + fixedKeySize * pos
+      val mapKey = Platform.getLong(mapKeyObject, mapKeyOffset)
+      // offset will at least be 4 so mapKey can never be zero when occupied
+      if (mapKey != 0L) {
+        // first compare the hash codes followed by "equalsSize" that will
+        // include the check for 4 bytes of numKeyBytes itself
+        val valueStartOffset = (mapKey >>> 32L).toInt - 4
+        if (hash == mapKey.toInt && valueData.equalsSize(valueStartOffset,
+          multiByteSourceWrapper, numKeyBytes)) {
+          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4)
+        } else {
+          // quadratic probing (increase delta)
+          pos = (pos + delta) & mask
+          delta += 1
+        }
+      } else {
+        // insert into the map and rehash if required
+        val relativeOffset = newInsert(multiByteSourceWrapper, numKeyBytes, numBytes)
+        Platform.putLong(mapKeyObject, mapKeyOffset,
+          (relativeOffset << 32L) | (hash & 0xffffffffL))
+        return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
+      }
+    }
+    0 // not expected to reach
+  }
+
   final def reset(): Unit = {
     keyData.reset(clearMemory = true)
     // no need to clear valueData since it will be overwritten completely
@@ -226,6 +262,36 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     val lengthToWrite = if (valuePortionMissing) numKeyBytes else numBytes
     Platform.copyMemory(baseObject, baseOffset, valueBaseObject, position, lengthToWrite)
     valueDataPosition = position + numBytes
+    // return the relative offset to the start excluding numKeyBytes
+    (dataSize + 4).toInt
+  }
+
+  protected final def newInsert(multiByteSourceWrapper: MultiByteSourceWrapper,
+    numKeyBytes: Int, numBytes: Int): Int = {
+    // write into the valueData ByteBuffer growing it if required
+    var position = valueDataPosition
+    val dataSize = position - valueData.baseOffset
+    if (position + numBytes + 4 > valueData.endPosition) {
+      valueData = valueData.resize(numBytes + 4, allocator)
+      position = valueData.baseOffset + dataSize
+    }
+    val valueBaseObject = valueData.baseObject
+    // write the key size followed by the full key+value bytes
+    ColumnEncoding.writeInt(valueBaseObject, position, numKeyBytes)
+    position += 4
+    val startPosition = position
+    for(i <- 0 until multiByteSourceWrapper.numArrays) {
+      val len = multiByteSourceWrapper.lengthsArray(i)
+      if (multiByteSourceWrapper.writeLengths(i)) {
+        Platform.putInt(valueBaseObject, position, len)
+        position += 4
+      }
+      Platform.copyMemory(multiByteSourceWrapper.baseObjectsArray(i),
+        multiByteSourceWrapper.baseOffsetsArray(i),
+        valueBaseObject, position, len)
+      position += len
+    }
+    valueDataPosition = startPosition + numBytes
     // return the relative offset to the start excluding numKeyBytes
     (dataSize + 4).toInt
   }
@@ -317,6 +383,17 @@ final class ByteBufferData private(val buffer: ByteBuffer,
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
+  def equalsSize(srcOffset: Int, multiByteSourceWrapper: MultiByteSourceWrapper,
+    size: Int): Boolean = {
+    val baseObject = this.baseObject
+    val offset = this.baseOffset + srcOffset
+    // below is ColumnEncoding.readInt and not Platform.readInt because the
+    // write is using ColumnEncoding.writeUTF8String which writes the size
+    // using former (which respects endianness)
+    ColumnEncoding.readInt(baseObject, offset) == size && MultiByteSourceWrapper
+      .arrayEquals(baseObject, offset + 4, multiByteSourceWrapper, size)
+  }
+
   def resize(required: Int, allocator: BufferAllocator): ByteBufferData = {
     val buffer = allocator.expand(this.buffer, required, "HASHMAP")
     val baseOffset = allocator.baseOffset(buffer)
@@ -341,4 +418,82 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   def release(allocator: BufferAllocator): Unit = {
     allocator.release(buffer)
   }
+}
+
+final class MultiByteSourceWrapper(val numArrays: Int) {
+  val baseObjectsArray = Array.ofDim[Any](numArrays)
+  val baseOffsetsArray = Array.ofDim[Long](numArrays)
+  val lengthsArray = Array.ofDim[Int](numArrays)
+  val writeLengths = Array.ofDim[Boolean](numArrays)
+
+  def assertKeySizeMatch(keySize: Int): Boolean = {
+    val lengthCalc = lengthsArray.reduce(_ + _) + writeLengths.foldLeft(0){
+      case (size, writeLen) => if (writeLen) size + 4 else size
+    }
+    lengthCalc == keySize
+  }
+}
+
+object MultiByteSourceWrapper {
+
+  def arrayEquals(leftBase: Any, leftOffset: Long,
+    multiByteSourceWrapper: MultiByteSourceWrapper, length: Long): Boolean = {
+
+    var currentLeftOffset = leftOffset
+    var endOffset = leftOffset + length
+
+    for (i <- 0 until multiByteSourceWrapper.numArrays) {
+
+      var rightOffset = multiByteSourceWrapper.baseOffsetsArray(i)
+      val rightBase = multiByteSourceWrapper.baseObjectsArray(i)
+      val rightLen = multiByteSourceWrapper.lengthsArray(i)
+      val writeLength = multiByteSourceWrapper.writeLengths(i)
+      if (writeLength) {
+        if (endOffset - currentLeftOffset >= 4) {
+          if (rightLen != Platform.getInt(leftBase, currentLeftOffset)) {
+            return false
+          } else {
+            currentLeftOffset += 4
+          }
+        } else {
+          return false
+        }
+      }
+
+      var endRightOffset = rightOffset + rightLen
+
+      // this will finish off the unaligned comparisons, or do the entire aligned
+      // comparison whichever is needed.
+      while (currentLeftOffset < endOffset && rightOffset < endRightOffset) {
+        if (Platform.getByte(leftBase, currentLeftOffset) !=
+          Platform.getByte(rightBase, rightOffset)) {
+          return false
+        }
+        currentLeftOffset += 1
+        rightOffset += 1
+      }
+      // case 1
+      if (currentLeftOffset == endOffset) {
+        if ( rightOffset < endRightOffset || (i < multiByteSourceWrapper.numArrays - 1 &&
+          (multiByteSourceWrapper.writeLengths(i +1) || multiByteSourceWrapper.lengthsArray(i) > 0))
+           ) {
+          return false
+        } else {
+          return true
+        }
+      } else {
+
+        // rightOffset == endRightOffset
+        if ( i == multiByteSourceWrapper.numArrays - 1){
+          return false
+        }
+      }
+
+    }
+    return true
+
+    }
+
+
+
 }

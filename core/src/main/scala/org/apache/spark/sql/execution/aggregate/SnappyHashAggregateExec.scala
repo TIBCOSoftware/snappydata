@@ -42,7 +42,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import io.snappydata.Property
-import io.snappydata.collection.{ByteBufferData, ObjectHashSet, SHAMap}
+import io.snappydata.collection.{ByteBufferData, MultiByteSourceWrapper, ObjectHashSet, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -798,11 +798,28 @@ case class SnappyHashAggregateExec(
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
+    val multiBytesClass = classOf[MultiByteSourceWrapper].getName
+    val multiBytesWrapperTerm = ctx.freshName("multiBytesWrapper")
+    val multiBytesDeclaration = if (numBytesForNullKeyBits == 0 &&
+      keysDataType.forall(_ == StringType)) {
+      s"""
+         |$multiBytesClass $multiBytesWrapperTerm = new $multiBytesClass(${keysDataType.length});
+         |Object[] ${multiBytesWrapperTerm}_baseObjects = $multiBytesWrapperTerm.baseObjectsArray();
+         |long[] ${multiBytesWrapperTerm}_baseOffsets = $multiBytesWrapperTerm.baseOffsetsArray();
+         |int[] ${multiBytesWrapperTerm}_lengths = $multiBytesWrapperTerm.lengthsArray();
+         |boolean[] ${multiBytesWrapperTerm}_writeLengths = $multiBytesWrapperTerm.writeLengths();
+         |for(int k = 0; k < ${multiBytesWrapperTerm}_writeLengths.length - 1; ++k) {
+         | ${multiBytesWrapperTerm}_writeLengths[k] = true;
+         |}
+         |
+       """.stripMargin
+    } else ""
 
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
+
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
       valueOffsetTerm, numKeyBytesTerm, currentValueOffSetTerm,
@@ -810,7 +827,7 @@ case class SnappyHashAggregateExec(
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
-      skipLenForAttrib, codeForLenOfSkippedTerm)
+      skipLenForAttrib, codeForLenOfSkippedTerm, multiBytesWrapperTerm)
 
 
 
@@ -831,6 +848,7 @@ case class SnappyHashAggregateExec(
            |$byteBufferClass $keyBytesHolderVar = null;
            |Object $baseKeyObject = null;
            |long $baseKeyHolderOffset = -1L;
+           |$multiBytesDeclaration
            |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();

@@ -45,7 +45,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   nullAggsBitsetTerm: String, sizeAndNumNotNullFuncForStringArr: String,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
   baseKeyHolderOffset: String, keyExistedTerm: String,
-  skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String)
+  skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
+  multiBytesWrapperTerm: String)
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -416,7 +417,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |
         |// prepare the key
         |${generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm, numValueBytes,
-      keyVars, keysDataType, hashVar)}
+          keyVars, keysDataType, hashVar)}
         |boolean $keyExistedTerm = $valueOffsetTerm < 0;
         |if ($keyExistedTerm) {
           |$valueOffsetTerm = -1 * $valueOffsetTerm;
@@ -446,6 +447,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
          |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($keyVarName.getBaseObject(),
          |$keyVarName.getBaseOffset(), $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
          | ${hashVar(0)}, true);
+       """.stripMargin
+    } else if (numBytesForNullKeyBits == 0 && keysDataType.forall(_ == StringType)) {
+
+      s"""
+         |${keyVars.map(_.value).zipWithIndex.map{
+               case(varName, i) =>
+                 s"""
+                    |${multiBytesWrapperTerm}_baseObjects[$i] = $varName.getBaseObject();
+                    |${multiBytesWrapperTerm}_baseOffsets[$i] = $varName.getBaseOffset();
+                    |${multiBytesWrapperTerm}_lengths[$i] = $varName.numBytes();
+                  """.stripMargin
+             }.mkString("\n")
+          }
+         |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($multiBytesWrapperTerm,
+            $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
        """.stripMargin
     } else {
       s"""
