@@ -600,6 +600,12 @@ public class SnappyPrms extends BasePrms {
   public static Long externalTableList;
 
   /**
+   * Parameter used to get the user specified external table List required for inserting data into existing column tables.
+   * (VectorsetValues of Strings) A list of values for external table List for insert into operation.
+   */
+  public static Long externalTableListForInsert;
+
+  /**
    * Parameter used to get the user specified table List required for loading data from extrenal table into column table.
    * (VectorsetValues of Strings) A list of values for table List
    */
@@ -1066,6 +1072,11 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getExternalTableList() {
     Long key = externalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getExternalTableListForInsert() {
+    Long key = externalTableListForInsert;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
