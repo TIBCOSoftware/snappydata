@@ -800,6 +800,11 @@ case class SnappyHashAggregateExec(
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
 
 
+    val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
+    val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
+      numBytesForNullAggsBits) && numBytesForNullAggsBits > 0
+
+
     // generate the map accessor to generate key/value class
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -811,7 +816,8 @@ case class SnappyHashAggregateExec(
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
-      skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm)
+      skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
+      if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None)
 
 
 
@@ -836,6 +842,10 @@ case class SnappyHashAggregateExec(
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |int $valueDataCapacityTerm = $valueDataTerm.capacity();
+           |${ if (cacheStoredAggNullBits) {
+                 SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggsBits)
+               } else ""
+            }
            |$childProduce
          |}""".stripMargin)
 
