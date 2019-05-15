@@ -803,15 +803,7 @@ case class SnappyHashAggregateExec(
     val multiBytesDeclaration = if (numBytesForNullKeyBits == 0 &&
       keysDataType.forall(_ == StringType)) {
       s"""
-         |$multiBytesClass $multiBytesWrapperTerm = new $multiBytesClass(${keysDataType.length});
-         |Object[] ${multiBytesWrapperTerm}_baseObjects = $multiBytesWrapperTerm.baseObjectsArray();
-         |long[] ${multiBytesWrapperTerm}_baseOffsets = $multiBytesWrapperTerm.baseOffsetsArray();
-         |int[] ${multiBytesWrapperTerm}_lengths = $multiBytesWrapperTerm.lengthsArray();
-         |boolean[] ${multiBytesWrapperTerm}_writeLengths = $multiBytesWrapperTerm.writeLengths();
-         |for(int k = 0; k < ${multiBytesWrapperTerm}_writeLengths.length - 1; ++k) {
-         | ${multiBytesWrapperTerm}_writeLengths[k] = true;
-         |}
-         |
+         |$utf8Class[] $multiBytesWrapperTerm = new $utf8Class[${keysDataType.length}];
        """.stripMargin
     } else ""
 
@@ -833,7 +825,7 @@ case class SnappyHashAggregateExec(
 
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
-        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 16)) +
+        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 32)) +
       aggregateExpressions.foldLeft(0)((len, exp) => len + exp.dataType.defaultSize) +
       + numBytesForNullKeyBits +  numBytesForNullAggsBits
 
