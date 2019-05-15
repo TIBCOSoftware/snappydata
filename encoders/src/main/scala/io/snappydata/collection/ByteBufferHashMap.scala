@@ -438,6 +438,29 @@ object MultiByteSourceWrapper {
 
   def arrayEquals(leftBase: Any, leftOffset: Long,
     multiByteSourceWrapper: MultiByteSourceWrapper, length: Long): Boolean = {
+    var currentLeftOffset = leftOffset
+    for(i <- 0 until multiByteSourceWrapper.numArrays) {
+      val partLength = multiByteSourceWrapper.lengthsArray(i)
+      if (multiByteSourceWrapper.writeLengths(i)) {
+        if (partLength != Platform.getInt(leftBase, currentLeftOffset)) {
+          return false
+        } else {
+          currentLeftOffset += 4
+        }
+      }
+
+      if (!ByteArrayMethods.arrayEquals(leftBase, currentLeftOffset,
+        multiByteSourceWrapper.baseObjectsArray(i),
+        multiByteSourceWrapper.baseOffsetsArray(i), partLength)) {
+        return false
+      }
+      currentLeftOffset += partLength
+    }
+    return true
+  }
+  /*
+  def arrayEquals(leftBase: Any, leftOffset: Long,
+    multiByteSourceWrapper: MultiByteSourceWrapper, length: Long): Boolean = {
 
     var currentLeftOffset = leftOffset
     var endOffset = leftOffset + length
@@ -492,7 +515,7 @@ object MultiByteSourceWrapper {
     }
     return true
 
-    }
+    } */
 
 
 
