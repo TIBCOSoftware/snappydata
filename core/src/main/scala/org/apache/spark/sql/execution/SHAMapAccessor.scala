@@ -426,18 +426,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
         // insert or lookup
         |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
         | $baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
-        |boolean $keyExistedTerm = $valueOffsetTerm < 0;
-        |if ($keyExistedTerm) {
+        |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
+        |if (!$keyExistedTerm) {
           |$valueOffsetTerm = -1 * $valueOffsetTerm;
-        |} else {
           |$bbDataClass $tempValueData = $hashMapTerm.getValueData();
           |if ($valueDataTerm !=  $tempValueData) {
-             |$valueDataTerm = $tempValueData;
-             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
-             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+            |$valueDataTerm = $tempValueData;
+            |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+            |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
           |}
         |}
-
         |// position the offset to start of aggregate value        |
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin

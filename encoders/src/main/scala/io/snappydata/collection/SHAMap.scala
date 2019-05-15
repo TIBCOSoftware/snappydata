@@ -28,7 +28,7 @@ final class SHAMap(valueSize: Int) extends ByteBufferHashMap(8192, 0.75, 0, valu
     valueOffset: Int): Int = {
     // Get the valueOffSet
    // (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
-    -1 * valueOffset
+    valueOffset
   }
 
   override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long,
@@ -37,6 +37,6 @@ final class SHAMap(valueSize: Int) extends ByteBufferHashMap(8192, 0.75, 0, valu
     // & make the mayKeyObject & mapKeyOffset invalid
    // val valueOffset = (Platform.getLong(mapKeyObject, mapKeyOffset) >>> 32L).toInt
     handleNewInsert()
-    valueOffset
+    -1 * valueOffset
   }
 }
