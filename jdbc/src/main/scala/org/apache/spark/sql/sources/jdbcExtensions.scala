@@ -425,9 +425,9 @@ object JdbcExtendedUtils extends Logging {
     var fieldsLeft = fields.length
     fields.foreach { field =>
       if (escapeQuotes) {
-        sql.append("""\"""").append(field).append("""\"""")
+        sql.append("""\"""").append(toUpperCase(field)).append("""\"""")
       } else {
-        sql.append('"').append(field).append('"')
+        sql.append('"').append(toUpperCase(field)).append('"')
       }
       sql.append("=?")
       if (fieldsLeft > 1) sql.append(separator)

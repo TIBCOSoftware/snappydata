@@ -369,27 +369,27 @@ object SnappyParserConsts {
   // -2 will mean all even arguments. -3 will mean all arguments except those listed after it.
   // Empty argument array means plan caching has to be disabled. Indexes are 0-based.
   final val FOLDABLE_FUNCTIONS: UnifiedMap[String, Array[Int]] = Utils.toOpenHashMap(Map(
-    "ROUND" -> Array(1), "BROUND" -> Array(1), "PERCENTILE" -> Array(1), "STACK" -> Array(0),
-    "NTILE" -> Array(0), "STR_TO_MAP" -> Array(1, 2), "NAMED_STRUCT" -> Array(-2),
-    "REFLECT" -> Array(0, 1), "JAVA_METHOD" -> Array(0, 1), "XPATH" -> Array(1),
-    "XPATH_BOOLEAN" -> Array(1), "XPATH_DOUBLE" -> Array(1),
-    "XPATH_NUMBER" -> Array(1), "XPATH_FLOAT" -> Array(1),
-    "XPATH_INT" -> Array(1), "XPATH_LONG" -> Array(1),
-    "XPATH_SHORT" -> Array(1), "XPATH_STRING" -> Array(1),
-    "PERCENTILE_APPROX" -> Array(1, 2), "APPROX_PERCENTILE" -> Array(1, 2),
-    "TRANSLATE" -> Array(1, 2), "UNIX_TIMESTAMP" -> Array(1),
-    "TO_UNIX_TIMESTAMP" -> Array(1), "FROM_UNIX_TIMESTAMP" -> Array(1),
-    "TO_UTC_TIMESTAMP" -> Array(1), "FROM_UTC_TIMESTAMP" -> Array(1),
-    "FROM_UNIXTIME" -> Array(1), "TRUNC" -> Array(1), "NEXT_DAY" -> Array(1),
-    "GET_JSON_OBJECT" -> Array(1), "JSON_TUPLE" -> Array(-3, 0),
-    "FIRST" -> Array(1), "LAST" -> Array(1),
-    "WINDOW" -> Array(1, 2, 3), "RAND" -> Array(0), "RANDN" -> Array(0),
-    "PARSE_URL" -> Array(0, 1, 2),
-    "LAG" -> Array(1), "LEAD" -> Array(1),
+    "round" -> Array(1), "bround" -> Array(1), "percentile" -> Array(1), "stack" -> Array(0),
+    "ntile" -> Array(0), "str_to_map" -> Array(1, 2), "named_struct" -> Array(-2),
+    "reflect" -> Array(0, 1), "java_method" -> Array(0, 1), "xpath" -> Array(1),
+    "xpath_boolean" -> Array(1), "xpath_double" -> Array(1),
+    "xpath_number" -> Array(1), "xpath_float" -> Array(1),
+    "xpath_int" -> Array(1), "xpath_long" -> Array(1),
+    "xpath_short" -> Array(1), "xpath_string" -> Array(1),
+    "percentile_approx" -> Array(1, 2), "approx_percentile" -> Array(1, 2),
+    "translate" -> Array(1, 2), "unix_timestamp" -> Array(1),
+    "to_unix_timestamp" -> Array(1), "from_unix_timestamp" -> Array(1),
+    "to_utc_timestamp" -> Array(1), "from_utc_timestamp" -> Array(1),
+    "from_unixtime" -> Array(1), "trunc" -> Array(1), "next_day" -> Array(1),
+    "get_json_object" -> Array(1), "json_tuple" -> Array(-3, 0),
+    "first" -> Array(1), "last" -> Array(1),
+    "window" -> Array(1, 2, 3), "rand" -> Array(0), "randn" -> Array(0),
+    "parse_url" -> Array(0, 1, 2),
+    "lag" -> Array(1), "lead" -> Array(1),
     // rand() plans are not to be cached since each run should use different seed
     // and the Spark impls create the seed in constructor rather than in generated code
-    "RAND" -> Array.emptyIntArray, "RANDN" -> Array.emptyIntArray,
-    "LIKE" -> Array(1), "RLIKE" -> Array(1), "APPROX_COUNT_DISTINCT" -> Array(1)))
+    "rand" -> Array.emptyIntArray, "randn" -> Array.emptyIntArray,
+    "like" -> Array(1), "rlike" -> Array(1), "approx_count_distinct" -> Array(1)))
 
   /**
    * Registering a Keyword with this method marks it a reserved keyword,
