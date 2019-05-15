@@ -29,7 +29,7 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.0.2.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
