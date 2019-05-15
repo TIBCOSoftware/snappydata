@@ -46,7 +46,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
-  multiBytesWrapperTerm: String)
+  multiBytesWrapperTerm: String, valueDataCapacityTerm: String)
+
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -428,14 +429,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
         |if (!$keyExistedTerm) {
           |$valueOffsetTerm = -1 * $valueOffsetTerm;
-          |$bbDataClass $tempValueData = $hashMapTerm.getValueData();
-          |if ($valueDataTerm !=  $tempValueData) {
-            |$valueDataTerm = $tempValueData;
+          |// $bbDataClass $tempValueData = $hashMapTerm.getValueData();
+          |// if ($valueDataTerm !=  $tempValueData) {
+          |if ($valueOffsetTerm >=  $valueDataCapacityTerm) {
+            |//$valueDataTerm = $tempValueData;
+            |$valueDataTerm =  $hashMapTerm.getValueData();
             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+            |$valueDataCapacityTerm = $valueDataTerm.capacity();
           |}
         |}
-        |// position the offset to start of aggregate value        |
+        |// position the offset to start of aggregate value
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
 
