@@ -87,6 +87,35 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
+  test("not nullable multiple strings as grouping key") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1 int not null, col2 String not null , " +
+      "col3 int not null, col4 String  not null) using column ")
+    val range = 50
+    val groupingDivisor = 10
+    val groupingDivisor1 = 5
+    val ps = getSqlConnection.prepareStatement("insert into test1 values (?, ?, ?, ?) ")
+    for (i <- 0 until range) {
+      for (j <- 0 until range ) {
+        ps.setInt(1, i * j)
+        ps.setString(2, s"col2_${j % groupingDivisor1}")
+        ps.setInt(3, j)
+        ps.setString(4, s"col4_${i % groupingDivisor}")
+        ps.addBatch()
+      }
+    }
+    ps.executeBatch()
+    val rs = snc.sql("select col4, col2 , sum(col1) as summ1  from test1 group by col4, col2")
+    // import org.apache.spark.sql.execution.debug._
+    // rs.debugCodegen()
+    val results = rs.collect()
+    // assertEquals(2, getNumCodeGenTrees(rs.queryExecution.executedPlan))
+    assertEquals(groupingDivisor * groupingDivisor1, results.length)
+
+    snc.dropTable("test1")
+  }
+
   test("multiple aggregates query") {
     snc
     snc.sql("drop table if exists test1")
