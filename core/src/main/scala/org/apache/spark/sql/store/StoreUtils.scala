@@ -42,19 +42,19 @@ object StoreUtils {
   val REPLICATE: String = ExternalStoreUtils.REPLICATE
   val BUCKETS: String = ExternalStoreUtils.BUCKETS
   val KEY_COLUMNS: String = ExternalStoreUtils.KEY_COLUMNS
-  val PARTITIONER = "PARTITIONER"
-  val COLOCATE_WITH = "COLOCATE_WITH"
-  val REDUNDANCY = "REDUNDANCY"
-  val RECOVERYDELAY = "RECOVERYDELAY"
-  val MAXPARTSIZE = "MAXPARTSIZE"
-  val EVICTION_BY = "EVICTION_BY"
-  val PERSISTENCE = "PERSISTENCE"
-  val PERSISTENT = "PERSISTENT"
-  val DISKSTORE = "DISKSTORE"
-  val SERVER_GROUPS = "SERVER_GROUPS"
-  val EXPIRE = "EXPIRE"
-  val OVERFLOW = "OVERFLOW"
-  val COMPRESSION_CODEC_DEPRECATED = "COMPRESSION_CODEC"
+  val PARTITIONER = "partitioner"
+  val COLOCATE_WITH = "colocate_with"
+  val REDUNDANCY = "redundancy"
+  val RECOVERYDELAY = "recoverydelay"
+  val MAXPARTSIZE = "maxpartsize"
+  val EVICTION_BY = "eviction_by"
+  val PERSISTENCE = "persistence"
+  val PERSISTENT = "persistent"
+  val DISKSTORE = "diskstore"
+  val SERVER_GROUPS = "server_groups"
+  val EXPIRE = "expire"
+  val OVERFLOW = "overflow"
+  val COMPRESSION_CODEC_DEPRECATED = "compression_codec"
 
   val GEM_PARTITION_BY = "PARTITION BY"
   val GEM_BUCKETS = "BUCKETS"
@@ -333,11 +333,8 @@ object StoreUtils {
           case _ =>
             val schemaFields = Utils.schemaFields(schema)
             val cols = v.split(",") map (_.trim)
-            // always use case-insensitive analysis for partitioning columns
-            // since table creation can use case-insensitive in creation
-            val normalizedCols = cols.map(Utils.toUpperCase)
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
-              normalizedCols, columnType = "partition")
+              cols, columnType = "partition")
 
             var includeInPK = true
             for (field <- prunedSchema.fields if includeInPK) {
@@ -534,7 +531,7 @@ object StoreUtils {
 
   def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
     parameters.keys.foreach { v =>
-      val u = Utils.toUpperCase(v)
+      val u = Utils.toLowerCase(v)
       if (!u.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY) &&
           u != SnappyExternalCatalog.BASETABLE_PROPERTY &&
           u != SnappyExternalCatalog.INDEXED_TABLE && !ddlOptions.contains(u)) {

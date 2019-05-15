@@ -35,7 +35,6 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
@@ -646,7 +645,7 @@ class SnappyParser(session: SnappySession)
     tableIdentifier ~ (
         '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
             ((ident: TableIdentifier, e: Any) => UnresolvedTableValuedFunction(
-              Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]])) |
+              ident.unquotedString, e.asInstanceOf[Seq[Expression]])) |
         streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
           window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
             case None => UnresolvedRelation(tableIdent, None)
@@ -1167,7 +1166,7 @@ class SnappyParser(session: SnappySession)
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     capture(INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
         capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
-        UnresolvedRelation(r), s"$c ${quotedNormalizedId(r)} $s"))
+        UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
   }
 
   // It can be the following patterns:

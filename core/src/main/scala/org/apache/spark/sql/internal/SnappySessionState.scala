@@ -615,8 +615,8 @@ class SnappySessionState(val snappySession: SnappySession)
         else {
           // check that partitioning or key columns should not be updated
           val nonUpdatableColumns = (relation.relation.asInstanceOf[MutableRelation]
-              .partitionColumns.map(Utils.toUpperCase) ++
-              keyAttrs.map(k => Utils.toUpperCase(k.name))).toSet
+              .partitionColumns.map(Utils.toLowerCase) ++
+              keyAttrs.map(k => Utils.toLowerCase(k.name))).toSet
           // resolve the columns being updated and cast the expressions if required
           val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
             val attr = analysis.withPosition(relation) {
@@ -624,7 +624,7 @@ class SnappySessionState(val snappySession: SnappySession)
                 c.name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
-            val colName = Utils.toUpperCase(c.name)
+            val colName = Utils.toLowerCase(c.name)
             if (nonUpdatableColumns.contains(colName)) {
               throw new AnalysisException("Cannot update partitioning/key column " +
                   s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")

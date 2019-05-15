@@ -64,8 +64,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): RowFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val schemaString = getSchemaString(options, session.sessionCatalog.normalizeSchema(
-      data.schema), sqlContext.sparkContext)
+    val schemaString = getSchemaString(options, data.schema, sqlContext.sparkContext)
     val relation = createRelation(session, mode, options, schemaString)
     var success = false
     try {

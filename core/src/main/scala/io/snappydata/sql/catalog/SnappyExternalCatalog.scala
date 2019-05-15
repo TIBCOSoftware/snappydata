@@ -32,14 +32,12 @@ import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog}
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog, SessionCatalog}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
-import org.apache.spark.sql.collection.Utils.{toUpperCase => upper}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.HiveExternalCatalog
-import org.apache.spark.sql.internal.SnappySharedState
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.types.StructType
@@ -93,7 +91,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
             tableType = CatalogTableType.EXTERNAL,
             storage = CatalogStorageFormat.empty.copy(
               properties = Map(DBTABLE_PROPERTY -> s"$schema.$table")),
-            schema = StructType(cols),
+            schema = cols,
             provider = Some(SnappyParserConsts.ROW_SOURCE),
             partitionColumnNames = Nil,
             owner = "PUBLIC",
@@ -218,8 +216,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
    */
   def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] = {
     listDatabases().flatMap(schema =>
-      if (skipSchemas.nonEmpty && skipSchemas.contains(upper(schema))) Nil
-      else listTables(schema).flatMap(table => getTableOption(upper(schema), upper(table))))
+      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
+      else listTables(schema).flatMap(table => getTableOption(schema, table)))
   }
 
   /**
@@ -238,17 +236,17 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     }) match {
       case None => None
       case Some(t) =>
-        if (t.indexOf('.') != -1) Some(upper(t))
-        else Some(upper(tableDefinition.database) + '.' + upper(t))
+        if (t.indexOf('.') != -1) Some(t)
+        else Some(tableDefinition.database + '.' + t)
     }
   }
 
   protected def getTableWithBaseTable(table: CatalogTable): Seq[(String, String)] = {
-    var tableWithBase = (upper(table.database) -> upper(table.identifier.table)) :: Nil
+    var tableWithBase = (table.database -> table.identifier.table) :: Nil
     getBaseTable(table) match {
       case None =>
       case Some(baseTable) =>
-        val withSchema = getTableWithSchema(baseTable, upper(table.database))
+        val withSchema = getTableWithSchema(baseTable, table.database)
         // add base table to the list of relations to be invalidated
         tableWithBase = withSchema :: tableWithBase
     }
@@ -265,9 +263,9 @@ trait SnappyExternalCatalog extends ExternalCatalog {
 }
 
 object SnappyExternalCatalog {
-  val SYS_SCHEMA: String = "SYS"
-  val MEMBERS_VTI: String = "MEMBERS"
-  val SPARK_DEFAULT_SCHEMA: String = SnappySharedState.SPARK_DEFAULT_SCHEMA
+  val SYS_SCHEMA: String = "sys"
+  val MEMBERS_VTI: String = "members"
+  val SPARK_DEFAULT_SCHEMA: String = SessionCatalog.DEFAULT_DATABASE
 
   // Table properties below are a mix of CatalogTable.properties and
   // CatalogTable.storage.properties due to backward compatibility reasons
@@ -279,16 +277,17 @@ object SnappyExternalCatalog {
   val SPLIT_VIEW_TEXT_PROPERTY: String = SPLIT_VIEW_PREFIX + "text"
   val SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY: String = SPLIT_VIEW_PREFIX + "originalText"
   // internal properties stored as hive table parameters
-  val DEPENDENT_RELATIONS = "DEPENDENT_RELATIONS"
+  val DEPENDENT_RELATIONS = "dependent_relations"
   // obsolete property used for backward compatibility only during reads
-  val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
+  val TABLETYPE_PROPERTY = "external_snappy"
 
   // -------- Properties that go in CatalogTable.storage.properties --------
-  // "dbtable" lower case since some other code including Spark's depends on the case
   val DBTABLE_PROPERTY = "dbtable"
-  val BASETABLE_PROPERTY = "BASETABLE"
-  val SCHEMADDL_PROPERTY = "SCHEMADDL"
-  val INDEXED_TABLE = "INDEXED_TABLE"
+  val BASETABLE_PROPERTY = "basetable"
+  val SCHEMADDL_PROPERTY = "schemaddl"
+  val INDEXED_TABLE = "indexed_table"
+  // older releases have this property in upper-case
+  val INDEXED_TABLE_OLD = "INDEXED_TABLE"
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
   private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
@@ -353,7 +352,10 @@ object CatalogObjectType extends Enumeration {
     tableType match {
       case CatalogTableType.VIEW.name => View
       case _ =>
-        if (storageProperties.contains(INDEXED_TABLE)) Index
+        if (storageProperties.contains(INDEXED_TABLE) ||
+            storageProperties.contains(INDEXED_TABLE_OLD)) {
+          Index
+        }
         else if (properties.contains(PolicyProperties.policyApplyTo)) Policy
         else provider match {
           case Some(p) => SnappyContext.getProviderType(p)

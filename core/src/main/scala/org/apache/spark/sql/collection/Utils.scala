@@ -93,10 +93,8 @@ object Utils {
     new AnalysisException(msg, None, None, None, cause)
 
   def columnIndex(col: String, cols: Array[String], module: String): Int = {
-    val colT = toUpperCase(col.trim)
     cols.indices.collectFirst {
-      case index if col == cols(index) => index
-      case index if colT == toUpperCase(cols(index)) => index
+      case index if col.equalsIgnoreCase(cols(index)) => index
     }.getOrElse {
       throw analysisException(
         s"""$module: Cannot resolve column name "$col" among
@@ -153,10 +151,9 @@ object Utils {
 
   def matchOption(optName: String,
       options: SMap[String, Any]): Option[(String, Any)] = {
-    val optionName = toLowerCase(optName)
-    options.get(optionName).map((optionName, _)).orElse {
+    options.get(optName).map((optName, _)).orElse {
       options.collectFirst { case (key, value)
-        if toLowerCase(key) == optionName => (key, value)
+        if key.equalsIgnoreCase(optName) => (key, value)
       }
     }
   }
@@ -398,21 +395,9 @@ object Utils {
       (true, Set.empty[String])
     } else {
       val parser = session.snappyParser
-      (false, s.split(',').map(c => Utils.toUpperCase(parser.parseSQLOnly(
+      (false, s.split(',').map(c => Utils.toLowerCase(parser.parseSQLOnly(
         c, parser.parseIdentifier.run()))).toSet)
     }
-  }
-
-  def hasLowerCase(k: String): Boolean = {
-    var index = 0
-    val len = k.length
-    while (index < len) {
-      if (Character.isLowerCase(k.charAt(index))) {
-        return true
-      }
-      index += 1
-    }
-    false
   }
 
   def toLowerCase(k: String): String = JdbcExtendedUtils.toLowerCase(k)
@@ -567,7 +552,7 @@ object Utils {
             // schema representation so normalize the schema
             val tablePlan = catalog.lookupRelation(
               catalog.snappySession.tableIdentifier(baseTable))
-            (catalog.normalizeSchema(tablePlan.schema), Some(tablePlan))
+            (tablePlan.schema, Some(tablePlan))
           } catch {
             case ae: AnalysisException =>
               throw analysisException(s"Base table $baseTable " +

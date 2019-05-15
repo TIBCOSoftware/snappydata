@@ -57,7 +57,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String]): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
-      case None => SnappyExternalCatalog.EMPTY_SCHEMA // table may already exist
+      case None => JdbcExtendedUtils.EMPTY_SCHEMA // table may already exist
       case Some(s) => s
     }
     // table has already been checked for existence by callers if required so here mode is Ignore
@@ -75,7 +75,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], data: DataFrame): BaseColumnFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val schema = getSchema(session, options) match {
-      case None => session.sessionCatalog.normalizeSchema(data.schema)
+      case None => data.schema
       case Some(s) => s
     }
     val relation = createRelation(session, mode, options, schema)

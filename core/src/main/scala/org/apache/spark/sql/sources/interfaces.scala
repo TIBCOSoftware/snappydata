@@ -379,11 +379,11 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
     if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
     _relationInfoAndRegion = null
     if (fetchFromStore) {
-      _schema = JDBCRDD.resolveTable(new JDBCOptions(
-        connProperties.url, table, connProperties.connProps.asScala.toMap))
+      _schema = JdbcExtendedUtils.normalizeSchema(JDBCRDD.resolveTable(new JDBCOptions(
+        connProperties.url, table, connProperties.connProps.asScala.toMap)))
     } else {
       session.externalCatalog.getTableOption(schemaName, tableName) match {
-        case None => _schema = SnappyExternalCatalog.EMPTY_SCHEMA
+        case None => _schema = JdbcExtendedUtils.EMPTY_SCHEMA
         case Some(t) => _schema = t.schema; assert(relationInfoAndRegion ne null)
       }
     }

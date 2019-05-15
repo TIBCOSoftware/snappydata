@@ -546,7 +546,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
   }
 
-  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+  override def checkSchemaPermission(schemaName: String, currentUser: String): String = {
     val ms = Misc.getMemStoreBootingNoThrow
     val userId = IdUtil.getUserAuthorizationId(currentUser)
     if (ms ne null) {
@@ -558,6 +558,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           conn = GemFireXDUtils.getTSSConnection(false, true, false)
           conn.getTR.setupContextStack()
           contextSet = true
+          val schema = Utils.toUpperCase(schemaName)
           val sd = dd.getSchemaDescriptor(
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd eq null) {

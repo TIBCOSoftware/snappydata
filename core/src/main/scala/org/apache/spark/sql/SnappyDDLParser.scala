@@ -336,7 +336,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     (FOR ~ capture(ALL | SELECT | UPDATE | INSERT | DELETE)).? ~> ((forOpt: Any) =>
       forOpt match {
         case Some(v) => v.asInstanceOf[String].trim
-        case None => SnappyParserConsts.SELECT.upper
+        case None => SnappyParserConsts.SELECT.lower
       })
   }
 
@@ -344,7 +344,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     (TO ~
         (capture(CURRENT_USER) |
             (LDAPGROUP ~ ':' ~ ws ~
-                push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
+                push(SnappyParserConsts.LDAPGROUP.lower + ':')).? ~
                 identifier ~ ws ~> {(ldapOpt: Any, x) =>
               ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
         ). + (commaSep) ~> {
@@ -352,7 +352,7 @@ abstract class SnappyDDLParser(session: SparkSession)
           }).? ~> { (toOpt: Any) =>
       toOpt match {
         case Some(x) => x.asInstanceOf[Seq[String]]
-        case _ => Seq(SnappyParserConsts.CURRENT_USER.upper)
+        case _ => Seq(SnappyParserConsts.CURRENT_USER.lower)
       }
     }
 
@@ -364,7 +364,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         tableName: TableIdentifier, policyFor: String,
         applyTo: Seq[String], filterExp: Expression, filterStr: String) => {
       val applyToAll = applyTo.exists(_.equalsIgnoreCase(
-        SnappyParserConsts.CURRENT_USER.upper))
+        SnappyParserConsts.CURRENT_USER.lower))
       val expandedApplyTo = if (applyToAll) Nil
       else ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       /*
@@ -612,7 +612,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
         capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
-          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedNormalizedId(r)} $s"))
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedUppercaseId(r)} $s"))
     )
   }
 

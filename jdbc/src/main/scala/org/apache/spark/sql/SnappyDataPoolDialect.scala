@@ -64,20 +64,16 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
         TomcatConnectionPool.CURRENT_CONNECTION.get() match {
           case null => u
           case conn =>
-            // convert to upper case since hive catalog is case-insensitive
-            val tableName = JdbcExtendedUtils.toUpperCase(u.tableIdentifier.table)
+            val tableName = u.tableIdentifier.table
             val schemaName = u.tableIdentifier.database match {
-              case None =>
-                val defaultSchema = sessionState.catalog.getCurrentDatabase
-                if (defaultSchema == "default") "APP"
-                else JdbcExtendedUtils.toUpperCase(defaultSchema)
+              case None => sessionState.catalog.getCurrentDatabase
               case Some(s) => s
             }
             val metadata = JdbcExtendedUtils.getTableSchema(schemaName, tableName,
               conn, Some(session))
             if (metadata.isEmpty) u
             else {
-              val output = StructType(metadata).toAttributes
+              val output = metadata.toAttributes
               // create SubqueryAlias by reflection to account for differences
               // in Spark versions (2 arguments vs 3)
               try {
@@ -149,8 +145,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
         } else attr.dataType
         val typeName = JdbcExtendedUtils.getJdbcType(dataType, attr.metadata,
           this).databaseTypeDefinition
-        val columnName = if (session.sessionState.conf.caseSensitiveAnalysis) attr.name
-        else JdbcExtendedUtils.toUpperCase(attr.name)
+        val columnName = JdbcExtendedUtils.toUpperCase(attr.name)
         s"""CAST (${defaultDataTypeValue(attr)} AS $typeName) AS "$columnName""""
       }.mkString("SELECT ", ", ", s" FROM ${JdbcExtendedUtils.DUMMY_TABLE_QUALIFIED_NAME}")
     } catch {

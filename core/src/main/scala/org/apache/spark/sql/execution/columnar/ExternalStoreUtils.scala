@@ -24,8 +24,8 @@ import javax.naming.NameNotFoundException
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
-import com.pivotal.gemfirexd.auth.callback.UserAuthenticator
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -36,6 +36,7 @@ import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.SparkContext
 import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
@@ -81,22 +82,22 @@ object ExternalStoreUtils {
     }
   }
 
-  final val INDEX_TYPE = "INDEX_TYPE"
-  final val INDEX_NAME = "INDEX_NAME"
-  final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
-  final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
-  final val COMPRESSION_CODEC = "COMPRESSION"
+  final val INDEX_TYPE = "index_type"
+  final val INDEX_NAME = "index_name"
+  final val COLUMN_BATCH_SIZE = "column_batch_size"
+  final val COLUMN_MAX_DELTA_ROWS = "column_max_delta_rows"
+  final val COMPRESSION_CODEC = "compression"
 
   // inbuilt basic table properties
-  final val PARTITION_BY = "PARTITION_BY"
-  final val REPLICATE = "REPLICATE"
-  final val BUCKETS = "BUCKETS"
-  final val KEY_COLUMNS = "KEY_COLUMNS"
+  final val PARTITION_BY = "partition_by"
+  final val REPLICATE = "replicate"
+  final val BUCKETS = "buckets"
+  final val KEY_COLUMNS = "key_columns"
 
   // these three are obsolete column table properties only for backward compatibility
-  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
-  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
-  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
+  final val COLUMN_BATCH_SIZE_TRANSIENT = "column_batch_size_transient"
+  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "column_max_delta_rows_transient"
+  final val RELATION_FOR_SAMPLE = "relation_for_sample"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
@@ -190,7 +191,7 @@ object ExternalStoreUtils {
     // remove the "path" property added by Spark hive catalog
     parameters.remove("path")
     parameters.remove("serialization.format")
-    table
+    Utils.toUpperCase(table)
   }
 
   def removeSamplingOptions(
@@ -205,7 +206,7 @@ object ExternalStoreUtils {
     optSequence.map(key => {
       val value = parameters.remove(key)
       value match {
-        case Some(v) => optMap += (Utils.toLowerCase(key) -> v)
+        case Some(v) => optMap += key -> v
         case None => // Do nothing
       }
     })
@@ -270,11 +271,11 @@ object ExternalStoreUtils {
     val hikariCP = poolImpl.map(Utils.toLowerCase) match {
       case Some("hikari") => true
       case Some("tomcat") => false
-      case Some(p) =>
-        throw new IllegalArgumentException("ExternalStoreUtils: " +
-            s"unsupported pool implementation '$p' " +
-            s"(supported values: tomcat, hikari)")
       case None => Constant.DEFAULT_USE_HIKARICP
+      case _ =>
+        throw new IllegalArgumentException("ExternalStoreUtils: " +
+            s"unsupported pool implementation '${poolImpl.get}' " +
+            s"(supported values: tomcat, hikari)")
     }
     val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
       val eqIndex = s.indexOf('=')
@@ -295,7 +296,7 @@ object ExternalStoreUtils {
     val connProps = new Properties()
     val executorConnProps = new Properties()
     parameters.foreach { kv =>
-      if (!ddlOptions.contains(Utils.toUpperCase(kv._1))) {
+      if (!ddlOptions.contains(Utils.toLowerCase(kv._1))) {
         connProps.setProperty(kv._1, kv._2)
         executorConnProps.setProperty(kv._1, kv._2)
       }
@@ -436,7 +437,7 @@ object ExternalStoreUtils {
     if (indexedCols.contains(col)) Some(a.withName("\"" + col + '"'))
     else {
       // case-insensitive check
-      val ucol = Utils.toUpperCase(col)
+      val ucol = Utils.toLowerCase(col)
       if ((col ne ucol) && indexedCols.contains(ucol)) Some(a) else None
     }
   }

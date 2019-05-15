@@ -195,6 +195,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       updateRequestOrResult: CatalogMetadataDetails = null, user: String = null)
       extends Callable[R] {
 
+    private lazy val formattedTable = JdbcExtendedUtils.toLowerCase(tableName)
+    private lazy val formattedSchema = JdbcExtendedUtils.toLowerCase(schemaName)
+
     override def call(): R = qType match {
       case INIT =>
         // Take read/write lock on metastore. Because of this all the servers
@@ -241,12 +244,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           }
         }
 
-      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOption(schemaName, tableName) match {
+      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOption(
+        formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.schema.json.asInstanceOf[R]
       }
 
-      case GET_TABLE => externalCatalog.getTableOption(schemaName, tableName) match {
+      case GET_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.asInstanceOf[R]
       }
@@ -315,10 +319,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           CatalogObjectType.getTableType(table)) => table.database -> table.identifier.table
       }.asInstanceOf[R]
 
-      case REMOVE_TABLE => externalCatalog.dropTable(schemaName, tableName,
+      case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
         ignoreIfNotExists = true, purge = false).asInstanceOf[R]
 
-      case GET_COL_TABLE => externalCatalog.getTableOption(schemaName, tableName) match {
+      case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(table) =>
           val qualifiedName = table.identifier.unquotedString
@@ -327,8 +331,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val partitions = parameters.get(ExternalStoreUtils.BUCKETS) match {
             case None =>
               // get the partitions from the actual table if not in catalog
-              val pattrs = Misc.getRegionForTableByPath(qualifiedName, true)
-                  .getAttributes.getPartitionAttributes
+              val pattrs = Misc.getRegionForTableByPath(JdbcExtendedUtils.toUpperCase(
+                qualifiedName), true).getAttributes.getPartitionAttributes
               if (pattrs ne null) pattrs.getTotalNumBuckets else 1
             case Some(buckets) => buckets.toInt
           }

@@ -355,17 +355,17 @@ abstract class BaseColumnFormatRelation(
   }
 
   override protected def createActualTables(conn: Connection): Unit = {
-    val sql =
-      s"CREATE TABLE ${quotedName(resolvedName)} $schemaExtensions ENABLE CONCURRENCY CHECKS"
+    val fullName = quotedName(resolvedName)
+    val sql = s"CREATE TABLE $fullName $schemaExtensions ENABLE CONCURRENCY CHECKS"
     val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
     if (isInfoEnabled) {
       val schemaString = JdbcExtendedUtils.schemaString(userSchema, connProperties.dialect)
       val optsString = if (origOptions.nonEmpty) {
-        origOptions.filter(p => !Utils.toUpperCase(p._1).startsWith(
+        origOptions.filter(p => !Utils.toLowerCase(p._1).startsWith(
           SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
           p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
       } else ""
-      logInfo(s"Executing DDL: CREATE TABLE ${quotedName(resolvedName)} " +
+      logInfo(s"Executing DDL: CREATE TABLE $fullName " +
           s"$schemaString USING $provider$optsString ; (url=${connProperties.url}; " +
           s"props=${connProperties.connProps})")
     }
@@ -647,7 +647,8 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def columnBatchTableName(table: String,
       session: Option[SparkSession] = None): String = {
-    val (schema, tableName) = JdbcExtendedUtils.getTableWithSchema(table, null, session)
+    val (schema, tableName) = JdbcExtendedUtils.getTableWithSchema(
+      table, null, session, forSpark = false)
     schema + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
         tableName + Constant.SHADOW_TABLE_SUFFIX
   }

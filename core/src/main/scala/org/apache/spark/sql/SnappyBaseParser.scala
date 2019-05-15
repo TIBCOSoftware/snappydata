@@ -28,7 +28,7 @@ import org.apache.spark.sql.catalyst.parser.ParserUtils
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, IdentifierWithDatabase, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.collection.Utils.{toUpperCase => upper}
+import org.apache.spark.sql.collection.Utils.{toLowerCase => lower, toUpperCase => upper}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 
@@ -161,9 +161,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected final def identifier: Rule1[String] = rule {
     unquotedIdentifier ~> { (s: String) =>
-      val ucase = upper(s)
-      test(!Consts.reservedKeywords.contains(ucase)) ~
-          push(if (caseSensitive) s else ucase)
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
     } |
     quotedIdentifier
   }
@@ -184,16 +184,16 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
    */
   protected final def strictIdentifier: Rule1[String] = rule {
     unquotedIdentifier ~> { (s: String) =>
-      val ucase = upper(s)
-      test(!Consts.allKeywords.contains(ucase)) ~
-          push(if (caseSensitive) s else ucase)
+      val lcase = lower(s)
+      test(!Consts.allKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
     } |
     quotedIdentifier
   }
 
   private def quoteIdentifier(name: String): String = name.replace("`", "``")
 
-  protected final def quotedNormalizedId(id: IdentifierWithDatabase): String = id.database match {
+  protected final def quotedUppercaseId(id: IdentifierWithDatabase): String = id.database match {
     case None => s"`${upper(quoteIdentifier(id.identifier))}`"
     case Some(d) => s"`${upper(quoteIdentifier(d))}`.`${upper(quoteIdentifier(id.identifier))}`"
   }
@@ -303,9 +303,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   protected final def tableIdentifierPart: Rule1[String] = rule {
     atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
-      val ucase = upper(s)
-      test(!Consts.reservedKeywords.contains(ucase)) ~
-          push(if (caseSensitive) s else ucase)
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
     } |
     quotedIdentifier
   }
@@ -326,7 +326,6 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
 final class Keyword private[sql] (s: String) {
   val lower: String = Utils.toLowerCase(s)
-  val upper: String = Utils.toUpperCase(s)
 }
 
 final class ParseException(msg: String, cause: Option[Throwable] = None)
@@ -401,8 +400,8 @@ object SnappyParserConsts {
    */
   private[sql] def reservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    reservedKeywords.add(k.upper)
-    allKeywords.add(k.upper)
+    reservedKeywords.add(k.lower)
+    allKeywords.add(k.lower)
     k
   }
 
@@ -417,7 +416,7 @@ object SnappyParserConsts {
    */
   private[sql] def nonReservedKeyword(s: String): Keyword = {
     val k = new Keyword(s)
-    allKeywords.add(k.upper)
+    allKeywords.add(k.lower)
     k
   }
 
