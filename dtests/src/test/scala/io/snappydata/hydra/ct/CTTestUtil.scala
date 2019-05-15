@@ -20,8 +20,8 @@ package io.snappydata.hydra.ct
 import java.io.PrintWriter
 
 import io.snappydata.hydra.TestUtil
-import org.apache.spark.sql.snappy._
 
+import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 
 object CTTestUtil {
@@ -214,7 +214,8 @@ object CTTestUtil {
   Load data to already created tables by removing duplicate records.
  */
   def loadTablesByRemovingDuplicateRecords(snc: SnappyContext): Unit = {
-    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID").write.insertInto("orders_details")
+    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID")
+        .write.insertInto("orders_details")
     CTQueries.exec_details_df(snc).dropDuplicates("EXEC_DID").write.insertInto("exec_details")
   }
 
@@ -223,7 +224,8 @@ object CTTestUtil {
  */
 
   def addDataUsingPutInto(snc: SnappyContext): Unit = {
-    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID").write.putInto("orders_details")
+    CTQueries.orders_details_df(snc).dropDuplicates("SINGLE_ORDER_DID")
+        .write.putInto("orders_details")
     CTQueries.exec_details_df(snc).dropDuplicates("EXEC_DID").write.putInto("exec_details")
   }
 
@@ -232,15 +234,19 @@ object CTTestUtil {
    */
   def createAndLoadSparkTables(sqlContext: SQLContext, insertUniqueRecords: Boolean): Unit = {
     if (insertUniqueRecords) {
-      CTQueries.orders_details_df(sqlContext).dropDuplicates("SINGLE_ORDER_DID").createOrReplaceTempView("orders_details")
+      CTQueries.orders_details_df(sqlContext, true).dropDuplicates("SINGLE_ORDER_DID")
+          .createOrReplaceTempView("orders_details")
       println(s"orders_details Table created successfully in spark")
-      CTQueries.exec_details_df(sqlContext).dropDuplicates("EXEC_DID").createOrReplaceTempView("exec_details")
+      CTQueries.exec_details_df(sqlContext, true).dropDuplicates("EXEC_DID")
+          .createOrReplaceTempView("exec_details")
       println(s"exec_details Table created successfully in spark")
     }
     else {
-      CTQueries.orders_details_df(sqlContext).createOrReplaceTempView("orders_details")
+      CTQueries.orders_details_df(sqlContext, true).
+          createOrReplaceTempView("orders_details")
       println(s"orders_details Table created successfully in spark")
-      CTQueries.exec_details_df(sqlContext).createOrReplaceTempView("exec_details")
+      CTQueries.exec_details_df(sqlContext, true).
+          createOrReplaceTempView("exec_details")
       println(s"exec_details Table created successfully in spark")
     }
   }
