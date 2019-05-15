@@ -443,25 +443,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: String,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType], hashVar: Array[String]): String = {
-    if (numBytesForNullKeyBits == 0 && keysDataType.size == 1 && (keysDataType(0) match {
-      case StringType => true
-      case _ => false
-    })) {
-      val keyVarName = keyVars(0).value
-      s"""
-         |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($keyVarName.getBaseObject(),
-         |$keyVarName.getBaseOffset(), $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
-         | ${hashVar(0)}, true);
-       """.stripMargin
-    } else if (numBytesForNullKeyBits == 0 && keysDataType.forall(_ == StringType)) {
-
+    if (numBytesForNullKeyBits == 0 && keysDataType.forall(_ == StringType)) {
       s"""
          |${keyVars.map(_.value).zipWithIndex.map{
                case(varName, i) =>
                  s"""
-                    |${multiBytesWrapperTerm}_baseObjects[$i] = $varName.getBaseObject();
-                    |${multiBytesWrapperTerm}_baseOffsets[$i] = $varName.getBaseOffset();
-                    |${multiBytesWrapperTerm}_lengths[$i] = $varName.numBytes();
+                    |${multiBytesWrapperTerm}[$i] = $varName;
                   """.stripMargin
              }.mkString("\n")
           }
