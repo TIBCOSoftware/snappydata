@@ -46,9 +46,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
-  multiBytesWrapperTerm: String, valueDataCapacityTerm: String)
-
-  extends CodegenSupport {
+  multiBytesWrapperTerm: String, valueDataCapacityTerm: String,
+  storedAggNullBitsTerm: Option[String]) extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
     get(session.sessionState.conf)
@@ -542,22 +541,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
     val plaformClass = classOf[Platform].getName
-    val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
-    val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
-      numBytesForNullAggBits) && numBytesForNullAggBits > 0
+
+
     s"""
-      ${ if (cacheStoredAggNullBits) {
-           s"""
-              |${SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggBits)}
-              |$storedAggNullBitsTerm = $nullAggsBitsetTerm;
-            """.stripMargin
-         } else ""
-      }
+       |${storedAggNullBitsTerm.map(storedNullBit =>
+         s"$storedNullBit = $nullAggsBitsetTerm;").getOrElse("")}
       ${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
       ${
       writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
         aggBufferDataType, bufferVars, nullAggsBitsetTerm, numBytesForNullAggBits,
-        false, false, if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None)
+        false, false)
      }
     """.stripMargin
 
@@ -575,7 +568,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
     dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
     numBytesForNullBits: Int, isKey: Boolean, skipNullEvalCode: Boolean,
-    cachedAggNullBitTermBeforeUpdate: Option[String], nestingLevel: Int = 0): String = {
+    nestingLevel: Int = 0): String = {
     // Move the offset at the end of num Null Bytes space, we will fill that space later
     // store the starting value of offset
     val unsafeArrayClass = classOf[UnsafeArrayData].getName
@@ -682,7 +675,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |${
                       writeKeyOrValue(baseObjectTerm, offsetTerm, childDataTypes, childExprCodes,
                       newNullBitTerm, newNumBytesForNullBits, true, false,
-                       None, nestingLevel + 1)
+                        nestingLevel + 1)
                     }
                  """.stripMargin
               val unexplodedStructSnippet =
@@ -722,7 +715,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               val dataTypeClass = classOf[DataType].getName
               val elementWitingCode = writeKeyOrValue(baseObjectTerm, offsetTerm, Seq(elementType),
                 Seq(ExprCode("", "false", arrElement)), "", -1,
-                true, true, None, nestingLevel)
+                true, true, nestingLevel)
               val explodeArraySnippet =
                s"""|$plaformClass.putBoolean($baseObjectTerm, $offsetTerm, true);
                    |$offsetTerm += 1;
@@ -850,13 +843,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
     ${if (!skipNullEvalCode) {
         val nullBitsWritingCode = writeNullBitsAt(baseObjectTerm, startingOffsetTerm,
           nullBitsTerm, numBytesForNullBits)
-        cachedAggNullBitTermBeforeUpdate.map(storedAggBitTerm =>
-        s"""
-           | if ($storedAggBitTerm != $nullAggsBitsetTerm) {
-           |   $nullBitsWritingCode
-           | }
+       if(isKey) {
+         nullBitsWritingCode
+       } else {
+         storedAggNullBitsTerm.map(storedAggBit =>
+           s"""
+              | if ($storedAggBit != $nullAggsBitsetTerm) {
+              |   $nullBitsWritingCode
+              | }
          """.stripMargin
-        ).getOrElse(nullBitsWritingCode)
+         ).getOrElse(nullBitsWritingCode)
+       }
       } else ""
     }"""
 
@@ -883,8 +880,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
         long $currentOffset = $baseKeyHolderOffset;
         // first write key data
         ${ writeKeyOrValue(baseKeyObject, currentOffset, keysDataType, keyVars,
-          nullKeysBitsetTerm, numBytesForNullKeyBits, true, numBytesForNullKeyBits == 0,
-          None)
+          nullKeysBitsetTerm, numBytesForNullKeyBits, true, numBytesForNullKeyBits == 0)
         }
        // write value data
        ${"" /* writeKeyOrValue(baseKeyObject, currentOffset, aggregatesDataType, valueInitVars,
