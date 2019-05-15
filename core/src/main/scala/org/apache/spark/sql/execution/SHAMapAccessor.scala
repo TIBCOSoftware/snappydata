@@ -112,15 +112,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
           val holderBaseObject = ctx.freshName("holderBaseObject")
           val holderBaseOffset = ctx.freshName("holderBaseOffset")
           val len = ctx.freshName("len")
-          s"""int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+          val readLenCode = if (nestingLevel == 0 && i == skipLenForAttribIndex) {
+            s"int $len = $codeForLenOfSkippedTerm"
+          } else {
+            s"""int $len = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+               |$currentValueOffsetTerm += 4;
+               """
+          }
+          s"""$readLenCode
              |$byteBufferClass $holder =  $allocatorTerm.allocate($len, "SHA");
-             |Object $holderBaseObject = $allocatorTerm.baseObject($holder);
-             |long $holderBaseOffset = $allocatorTerm.baseOffset($holder);
-             |$currentValueOffsetTerm += 4;
-             |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-             |$holderBaseObject, $holderBaseOffset , $len);
-             |$varName = ${classOf[UTF8String].getName}.fromAddress($holderBaseObject,
-             | $holderBaseOffset, $len);
+             | Object $holderBaseObject = $allocatorTerm.baseObject($holder);
+             | long $holderBaseOffset = $allocatorTerm.baseOffset($holder);
+             | $plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
+             | $holderBaseObject, $holderBaseOffset , $len);
+             | $varName = ${classOf[UTF8String].getName}.fromAddress($holderBaseObject,
+             |  $holderBaseOffset, $len);
              |$currentValueOffsetTerm += $len;
           """.stripMargin
           */
@@ -134,7 +140,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                """
           }
           s"""$readLenCode
-             |$varName = ${classOf[UTF8String].getName}.fromAddress($vdBaseObjectTerm,
+             | $varName = ${classOf[UTF8String].getName}.fromAddress($vdBaseObjectTerm,
              | $currentValueOffsetTerm, $len);
              |$currentValueOffsetTerm += $len;
           """.stripMargin
