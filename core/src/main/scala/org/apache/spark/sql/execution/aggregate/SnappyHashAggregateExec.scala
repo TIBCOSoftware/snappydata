@@ -696,15 +696,16 @@ case class SnappyHashAggregateExec(
     val valueOffsetTerm = ctx.freshName("valueOffset")
     val currentValueOffSetTerm = ctx.freshName("currentValueOffSet")
     val valueDataTerm = ctx.freshName("valueData")
-
+    val vdBaseObjectTerm = ctx.freshName("vdBaseObjectTerm")
+    val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
+    val valueDataCapacityTerm = ctx.freshName("valueDataCapacity")
     val doAgg = ctx.freshName("doAggregateWithKeys")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[SHAMap].getName
 
-    val vdBaseObjectTerm = ctx.freshName("vdBaseObjectTerm")
-    val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
+
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
       ctx.freshName(s"buffer_$i")
@@ -810,7 +811,7 @@ case class SnappyHashAggregateExec(
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
-      skipLenForAttrib, codeForLenOfSkippedTerm)
+      skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm)
 
 
 
@@ -834,6 +835,7 @@ case class SnappyHashAggregateExec(
            |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+           |int $valueDataCapacityTerm = $valueDataTerm.capacity();
            |$childProduce
          |}""".stripMargin)
 
