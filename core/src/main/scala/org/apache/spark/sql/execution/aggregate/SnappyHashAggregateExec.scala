@@ -926,8 +926,8 @@ case class SnappyHashAggregateExec(
       Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
       long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();
       long $localIterValueOffsetTerm = $iterValueOffsetTerm;
-      for (; $localIterValueOffsetTerm != $endIterValueOffset; ) {
-        ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
+      ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
+      while ($localIterValueOffsetTerm != $endIterValueOffset) {
         $numOutput.${metricAdd("1")};
         $readKeyLengthCode
         // skip the key length
