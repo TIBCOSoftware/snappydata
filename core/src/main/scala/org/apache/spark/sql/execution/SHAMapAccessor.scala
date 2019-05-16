@@ -47,7 +47,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
   multiBytesWrapperTerm: String, valueDataCapacityTerm: String,
-  storedAggNullBitsTerm: Option[String]) extends CodegenSupport {
+  storedAggNullBitsTerm: Option[String], aggregateBufferVars: Seq[String]) extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
     get(session.sessionState.conf)
