@@ -130,7 +130,6 @@ For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in t
 </diagnosis>
 
 <action> **Solution:** </br>
-If you are executing queries using **SnappySession.sql()** API, you may see the error logged in the log files or on the console, however the query is retried internally by the product, that is without the user's intervention, by fetching the latest catalog.
 If the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException** and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how this scenario should be handled:
 
 ```pre
