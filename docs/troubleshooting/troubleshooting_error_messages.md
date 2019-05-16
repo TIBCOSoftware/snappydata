@@ -1,4 +1,4 @@
-# Troubleshooting Error Messages
+an# Troubleshooting Error Messages
 Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
@@ -128,8 +128,43 @@ For performance reasons, SnappyData Smart Connector caches the catalog in the Sm
 </diagnosis>
 
 <action> **Solution:** </br>
-If you are executing queries using **SnappySession.sql()** API, you may see the error logged in the log files or on the console, however the query is retried internally by the product, that is without the user's intervention, by fetching the latest catalog.
+If the user application is performing DataFrame/DataSet operations, you will have to recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException **and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. 
+Check the following code snippet to get better understanding of how this scenario should be handled:
 
-If the user application is performing DataFrame/DataSet operations, you will have to recreate the DataFrame/DataSet and retry the operation. In such cases, application can catch an exception of type `org.apache.spark.sql.execution.CatalogStaleException`. If the application receives this exception, it can reconstruct their DataSet/DataFrame and retry the operations. 
+```pre
+int retryCount = 0;
+int maxRetryAttempts = 5;
+while (true) {
+    try {
+        // dataset/dataframe operations goes here (e.g. deleteFrom, putInto)
+        return;
+    } catch (Exception ex) {
+        if (retryCount >= maxRetryAttempts || !isRetriableException(ex)) {
+            throw ex;
+        } else {
+            log.warn("Encountered a retriable exception. Will retry processing batch." +
+                " maxRetryAttempts:"+maxRetryAttempts+", retryCount:"+retryCount+"", ex);
+            retryCount++;
+        }
+    }
+}
+
+private boolean isRetriableException(Exception ex) {
+    Throwable cause = ex;
+    do {
+        if ((cause instanceof SQLException &&
+            ((SQLException)cause).getSQLState().equals("X0Z39"))
+            || cause instanceof CatalogStaleException
+            || (cause instanceof TaskCompletionListenerException && cause.getMessage()
+            .startsWith("java.sql.SQLException: (SQLState=X0Z39"))) {
+            return true;
+        }
+        cause = cause.getCause();
+    } while (cause != null);
+    return false;
+}
+
+```
+
 </action>
 
