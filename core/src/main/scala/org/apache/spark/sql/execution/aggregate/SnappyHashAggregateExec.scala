@@ -783,6 +783,7 @@ case class SnappyHashAggregateExec(
     val keyBytesHolderVar = ctx.freshName("keyBytesHolder")
     val baseKeyHolderOffset = ctx.freshName("baseKeyHolderOffset")
     val baseKeyObject = ctx.freshName("baseKeyHolderObject")
+    val keyHolderCapacityTerm = ctx.freshName("keyholderCapacity")
     val keyExistedTerm = ctx.freshName("keyExisted")
 
     val codeForLenOfSkippedTerm = if (skipLenForAttrib != -1) {
@@ -818,9 +819,11 @@ case class SnappyHashAggregateExec(
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
 
+    val numValueBytesTerm = ctx.freshName("numValueBytes")
+
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-      valueOffsetTerm, numKeyBytesTerm, currentValueOffSetTerm,
+      valueOffsetTerm, numKeyBytesTerm, numValueBytesTerm, currentValueOffSetTerm,
       valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm,
@@ -829,7 +832,7 @@ case class SnappyHashAggregateExec(
       skipLenForAttrib, codeForLenOfSkippedTerm, multiBytesWrapperTerm,
       valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
-      aggregateBufferVars)
+      aggregateBufferVars, keyHolderCapacityTerm)
 
 
 
@@ -848,6 +851,7 @@ case class SnappyHashAggregateExec(
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
            |$byteBufferClass $keyBytesHolderVar = null;
+           |int $keyHolderCapacityTerm = 0;
            |Object $baseKeyObject = null;
            |long $baseKeyHolderOffset = -1L;
            |$multiBytesDeclaration
@@ -855,11 +859,16 @@ case class SnappyHashAggregateExec(
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |int $valueDataCapacityTerm = $valueDataTerm.capacity();
+           |${SHAMapAccessor.initNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
+           |${SHAMapAccessor.initNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggsBits)}
+           |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
            |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
            |${ if (cacheStoredAggNullBits) {
                  SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggsBits)
                } else ""
             }
+           |int $numKeyBytesTerm = 0;
+           |int $numValueBytesTerm = 0;
            |$childProduce
          |}""".stripMargin)
 
@@ -1111,7 +1120,6 @@ case class SnappyHashAggregateExec(
     // Finally, sort the spilled aggregate buffers by key, and merge
     // them together for same key.
     s"""
-       |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, byteBufferAccessor.aggregateBufferVars)}
        |$mapCode
        |// initialization for buffer fields from the hashmap
        |if (${byteBufferAccessor.keyExistedTerm}) {
