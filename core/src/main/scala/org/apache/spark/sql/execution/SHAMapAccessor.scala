@@ -652,14 +652,17 @@ keyHolderCapacityTerm: String) extends CodegenSupport {
                     """.stripMargin
                   })
                 case t if t =:= typeOf[UTF8String] =>
+                  val tempLenTerm = ctx.freshName("tempLen")
+
                   val lengthWritingPart = if (nestingLevel > 0 || i != skipLenForAttribIndex) {
-                    s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable.numBytes());
+                    s"""$plaformClass.putInt($baseObjectTerm, $offsetTerm, $tempLenTerm);
                         |$offsetTerm += 4;""".stripMargin
                   } else ""
 
-                  s"""$lengthWritingPart
+                  s"""int $tempLenTerm = $variable.numBytes();
+                     |$lengthWritingPart
                      |$variable.writeToMemory($baseObjectTerm, $offsetTerm);
-                     |$offsetTerm += $variable.numBytes();
+                     |$offsetTerm += $tempLenTerm;
                """.stripMargin
                 case _ => throw new UnsupportedOperationException("unknown type " + dt)
               }
