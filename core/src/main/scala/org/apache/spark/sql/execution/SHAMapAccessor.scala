@@ -560,7 +560,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     } else {
       s"""long $startingOffsetTerm = $offsetTerm;
           |// move current offset to end of null bits
-          |$offsetTerm += ${sizeForNullBits(numBytesForNullBits)};""".stripMargin
+          |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
     s"""$storeNullBitStartOffsetAndRepositionOffset
        |${dataTypes.zip(varsToWrite).zipWithIndex.map {
@@ -896,7 +896,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
       case _ => 0
     })
-    ) + sizeForNullBits(numBytesForNullAggBits)
+    ) + SHAMapAccessor.sizeForNullBits(numBytesForNullAggBits)
   }
 
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
@@ -1014,7 +1014,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
       } else {
         s"($nullVar? 0 : $notNullSizeExpr)"
       }
-    }.mkString(" + ") + s" + ${sizeForNullBits(numBytesForNullBits)}"
+    }.mkString(" + ") + s" + ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)}"
   }
 
   def getExplodedExprCodeAndDataTypeForStruct(parentStructVarName: String, st: StructType,
@@ -1025,16 +1025,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }.unzip
 
 
-  def sizeForNullBits(numBytesForNullBits: Int): Int =
-    if (numBytesForNullBits == 0) {
-      0
-    } else if (numBytesForNullBits < 3 || numBytesForNullBits > 8) {
-      numBytesForNullBits
-    } else if (numBytesForNullBits <= 4) {
-      4
-    } else {
-      8
-    }
+
 
   /**
    * Generate code to calculate the hash code for given column variables that
@@ -1248,5 +1239,16 @@ object SHAMapAccessor {
   }
 
   def isByteArrayNeededForNullBits(numBytes: Int): Boolean = numBytes > 8
+
+  def sizeForNullBits(numBytesForNullBits: Int): Int =
+    if (numBytesForNullBits == 0) {
+      0
+    } else if (numBytesForNullBits < 3 || numBytesForNullBits > 8) {
+      numBytesForNullBits
+    } else if (numBytesForNullBits <= 4) {
+      4
+    } else {
+      8
+    }
 
 }

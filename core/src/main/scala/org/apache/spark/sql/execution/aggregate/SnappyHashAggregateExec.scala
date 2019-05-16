@@ -826,9 +826,11 @@ case class SnappyHashAggregateExec(
 
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
-        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 16)) +
+        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4)) +
       aggregateExpressions.foldLeft(0)((len, exp) => len + exp.dataType.defaultSize) +
-      + numBytesForNullKeyBits +  numBytesForNullAggsBits
+      + SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits) +
+      SHAMapAccessor.sizeForNullBits(numBytesForNullAggsBits) -
+      (if (skipLenForAttrib != -1) 4 else 0)
 
 
     val childProduce =
