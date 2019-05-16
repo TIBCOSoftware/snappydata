@@ -817,7 +817,7 @@ case class SnappyHashAggregateExec(
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
-      if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None)
+      if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None, aggregateBufferVars)
 
 
 
@@ -842,6 +842,7 @@ case class SnappyHashAggregateExec(
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
            |int $valueDataCapacityTerm = $valueDataTerm.capacity();
+           |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
            |${ if (cacheStoredAggNullBits) {
                  SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggsBits)
                } else ""
@@ -1039,10 +1040,7 @@ case class SnappyHashAggregateExec(
             .mergeExpressions
       }
     }
-    // generate variable names for holding data from the Map buffer
-    val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
-      ctx.freshName(s"buffer_$i")
-    }
+
     ctx.currentVars = input
     val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
@@ -1064,10 +1062,12 @@ case class SnappyHashAggregateExec(
       keysExpr, keysDataType, aggBuffDataTypes)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
-      aggregateBufferVars, byteBufferAccessor.currentOffSetForMapLookupUpdt, false,
-      byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits, false)
+      byteBufferAccessor.aggregateBufferVars,
+      byteBufferAccessor.currentOffSetForMapLookupUpdt,
+      false, byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits,
+      false)
     val bufferEval = evaluateVariables(bufferVars)
-    val bufferVarsFromInitVars = aggregateBufferVars.zip(initVars).map {
+    val bufferVarsFromInitVars = byteBufferAccessor.aggregateBufferVars.zip(initVars).map {
       case (bufferVarName, initExpr) => ExprCode(
         s"""
           |$bufferVarName${SHAMapAccessor.nullVarSuffix} = ${initExpr.isNull};
@@ -1098,8 +1098,7 @@ case class SnappyHashAggregateExec(
     // Finally, sort the spilled aggregate buffers by key, and merge
     // them together for same key.
     s"""
-       |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
-       |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, aggregateBufferVars)}
+       |${byteBufferAccessor.initKeyOrBufferVal(aggBuffDataTypes, byteBufferAccessor.aggregateBufferVars)}
        |$mapCode
        |// initialization for buffer fields from the hashmap
        |if (${byteBufferAccessor.keyExistedTerm}) {
