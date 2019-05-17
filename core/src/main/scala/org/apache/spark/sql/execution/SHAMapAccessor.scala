@@ -447,17 +447,30 @@ keyHolderCapacityTerm: String) extends CodegenSupport {
   def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: String,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType], hashVar: Array[String]): String = {
     if (numBytesForNullKeyBits == 0 && keysDataType.forall(_ == StringType)) {
-      s"""
-         |${keyVars.map(_.value).zipWithIndex.map{
-               case(varName, i) =>
-                 s"""
-                    |${multiBytesWrapperTerm}[$i] = $varName;
+      if (keysDataType.size > 2 || keysDataType.size == 1) {
+        s"""
+           |${
+          keyVars.map(_.value).zipWithIndex.map {
+            case (varName, i) =>
+              s"""
+                 |${multiBytesWrapperTerm}[$i] = $varName;
                   """.stripMargin
-             }.mkString("\n")
-          }
-         |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($multiBytesWrapperTerm,
+          }.mkString("\n")
+        }
+
+        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($multiBytesWrapperTerm,
+            $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+        """.stripMargin
+        } else {
+        s"""
+
+           |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent(
+           |${keyVars.map(_.value).mkString(",")},
             $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
        """.stripMargin
+        }
+
+
     } else {
       s"""
          |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyVars, keysDataType)}
