@@ -492,10 +492,11 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   private def toLowerCase(s: Array[String]): Array[String] = {
+    val r = new Array[String](s.length)
     for (i <- s.indices) {
-      s(i) = JdbcExtendedUtils.toLowerCase(s(i))
+      r(i) = JdbcExtendedUtils.toLowerCase(s(i))
     }
-    s
+    r
   }
 
   override def getRelationInfo(schema: String, table: String,

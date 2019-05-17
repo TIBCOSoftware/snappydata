@@ -130,7 +130,7 @@ object JdbcExtendedUtils extends Logging {
   /**
    * Convert column names to upper-case for snappy-store or lower-case for spark.
    */
-  def normalizeType(dataType: DataType, forSpark: Boolean): DataType = dataType match {
+  private[sql] def normalizeType(dataType: DataType, forSpark: Boolean): DataType = dataType match {
     case a: ArrayType => a.copy(elementType = normalizeType(a.elementType, forSpark))
     case m: MapType => m.copy(keyType = normalizeType(m.keyType, forSpark),
       valueType = normalizeType(m.valueType, forSpark))

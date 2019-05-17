@@ -365,16 +365,17 @@ object StoreUtils {
 
     if (!isShadowTable) {
       sb.append(parameters.remove(PARTITION_BY).map(v => {
+        val partCol = Utils.toUpperCase(v.trim())
         val parClause = {
           v match {
-            case _ if v.trim().equalsIgnoreCase(PRIMARY_KEY) =>
+            case _ if partCol.equalsIgnoreCase(PRIMARY_KEY) =>
               if (isRowTable) {
                 s"sparkhash $PRIMARY_KEY"
               } else {
                 throw Utils.analysisException("Column table cannot be " +
                     "partitioned on PRIMARY KEY as no primary key")
               }
-            case _ => s"sparkhash COLUMN($v)"
+            case _ => s"sparkhash COLUMN($partCol)"
           }
         }
         s"$GEM_PARTITION_BY $parClause "

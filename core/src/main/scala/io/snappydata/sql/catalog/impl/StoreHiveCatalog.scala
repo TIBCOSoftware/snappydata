@@ -98,12 +98,6 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     (table ne null) && CatalogObjectType.isColumnTable(CatalogObjectType.getTableType(table))
   }
 
-  override def isRowTable(table: CatalogTableObject): Boolean = {
-    CatalogObjectType.getTableType(table.getTableType,
-      table.getProperties.asScala.toMap, table.getStorage.getProperties.asScala.toMap,
-      Option(table.getProvider)) == CatalogObjectType.Row
-  }
-
   override def getCatalogTables: JList[ExternalTableMetaData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)

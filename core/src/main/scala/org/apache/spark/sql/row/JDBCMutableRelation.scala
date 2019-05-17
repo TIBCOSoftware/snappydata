@@ -400,6 +400,7 @@ abstract case class JDBCMutableRelation(
       isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit = {
     val conn = connFactory()
     try {
+      val columnName = JdbcExtendedUtils.toUpperCase(column.name)
       val sql = if (isAddColumn) {
         val defaultColumnValue = defaultValue match {
           case Some(v) =>
@@ -413,10 +414,10 @@ abstract case class JDBCMutableRelation(
 
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
-           | add column "${column.name}"
+           | add column "$columnName"
            |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
       } else {
-        s"""alter table ${quotedName(table)} drop column "${column.name}""""
+        s"""alter table ${quotedName(table)} drop column "$columnName""""
       }
       if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
