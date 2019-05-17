@@ -21,7 +21,6 @@ import java.io.File
 
 import scala.util.Try
 
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, QueryHint}
@@ -46,7 +45,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import org.apache.spark.sql.execution.InvalidateCachedPlans
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -722,7 +720,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ (CALL | EXECUTE))) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
         (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
-          Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
+          Some(JdbcExtendedUtils.SYSIBM_SCHEMA)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
             Map(SnappyExternalCatalog.DBTABLE_PROPERTY -> JdbcExtendedUtils
                 .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))

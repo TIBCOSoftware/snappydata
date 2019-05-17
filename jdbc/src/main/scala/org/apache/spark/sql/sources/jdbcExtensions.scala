@@ -76,8 +76,9 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
-  val DUMMY_TABLE_NAME: String = "SYSDUMMY1"
-  val DUMMY_TABLE_QUALIFIED_NAME: String = "SYSIBM." + DUMMY_TABLE_NAME
+  val SYSIBM_SCHEMA: String = "sysibm"
+  val DUMMY_TABLE_NAME: String = "sysdummy1"
+  val DUMMY_TABLE_QUALIFIED_NAME: String = s"$SYSIBM_SCHEMA.$DUMMY_TABLE_NAME"
   val EMPTY_SCHEMA: StructType = StructType(Nil)
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
@@ -247,7 +248,7 @@ object JdbcExtendedUtils extends Logging {
       val cols = new mutable.ArrayBuffer[StructField]()
       do {
         // COLUMN_NAME
-        val columnName = rs.getString(4)
+        val columnName = toLowerCase(rs.getString(4))
         // DATA_TYPE
         val jdbcType = rs.getInt(5)
         // TYPE_NAME
@@ -272,7 +273,7 @@ object JdbcExtendedUtils extends Logging {
       conn: Connection, skipType: String = ""): Boolean = {
     try {
       // using the JDBC meta-data API
-      val rs = getTableMetadataResultSet(schemaName, tableName, conn)
+      val rs = getTableMetadataResultSet(toUpperCase(schemaName), toUpperCase(tableName), conn)
       if (skipType.isEmpty) {
         rs.next()
       } else {
@@ -304,7 +305,7 @@ object JdbcExtendedUtils extends Logging {
 
       case _ =>
         try {
-          val (schemaName, tableName) = getTableWithSchema(table, conn, None, forSpark = false)
+          val (schemaName, tableName) = getTableWithSchema(table, conn, None)
           tableExistsInMetaData(schemaName, tableName, conn)
         } catch {
           case NonFatal(_) =>

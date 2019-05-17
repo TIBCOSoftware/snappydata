@@ -26,7 +26,6 @@ import com.gemstone.gemfire.internal.cache.LocalRegion
 import com.google.common.util.concurrent.UncheckedExecutionException
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
@@ -37,6 +36,7 @@ import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions
 import org.apache.spark.sql.hive.HiveExternalCatalog
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
@@ -87,7 +87,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
         if (table == MEMBERS_VTI || JdbcExtendedUtils.tableExistsInMetaData(
           schema, table, conn, SysVTIs.LOCAL_VTI)) {
           val cols = JdbcExtendedUtils.getTableSchema(SYS_SCHEMA, table, conn, session)
-          CatalogTable(identifier = TableIdentifier(table, Option(SYS_SCHEMA)),
+          CatalogTable(identifier = TableIdentifier(table, Some(SYS_SCHEMA)),
             tableType = CatalogTableType.EXTERNAL,
             storage = CatalogStorageFormat.empty.copy(
               properties = Map(DBTABLE_PROPERTY -> s"$schema.$table")),
@@ -282,7 +282,7 @@ object SnappyExternalCatalog {
   val TABLETYPE_PROPERTY = "external_snappy"
 
   // -------- Properties that go in CatalogTable.storage.properties --------
-  val DBTABLE_PROPERTY = "dbtable"
+  val DBTABLE_PROPERTY: String = JDBCOptions.JDBC_TABLE_NAME
   val BASETABLE_PROPERTY = "basetable"
   val SCHEMADDL_PROPERTY = "schemaddl"
   val INDEXED_TABLE = "indexed_table"
@@ -312,7 +312,7 @@ object SnappyExternalCatalog {
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks ne null) {
       // allow creating entry for dummy table by anyone
-      if (!(schema.equalsIgnoreCase(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)
+      if (!(schema.equalsIgnoreCase(JdbcExtendedUtils.SYSIBM_SCHEMA)
           && table.equalsIgnoreCase(JdbcExtendedUtils.DUMMY_TABLE_NAME))) {
         val user = if (defaultUser eq null) {
           conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)

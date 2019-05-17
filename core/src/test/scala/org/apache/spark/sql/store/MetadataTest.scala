@@ -62,14 +62,14 @@ object MetadataTest extends Assertions {
       scale: Long = 0): Metadata = typeName match {
     case "VARCHAR" | "CHAR" =>
       val builder = new MetadataBuilder
-      builder.putString("name", name)
+      builder.putString("name", name.toLowerCase)
       builder.putLong("size", size)
       builder.putString("base", typeName)
       builder.putLong("scale", scale)
       builder.build()
     case "LONGVARCHAR" | "CLOB" | "STRING" | "BOOLEAN" =>
       val builder = new MetadataBuilder
-      builder.putString("name", name)
+      builder.putString("name", name.toLowerCase)
       builder.putLong("scale", scale)
       if (typeName == "CLOB") {
         builder.putString("base", typeName)
@@ -100,21 +100,21 @@ object MetadataTest extends Assertions {
     "SYSPOLICIES", "TABLESTATS", "VTIS")
   private val localVTIs = Array("MEMORYANALYTICS", "QUERYSTATS", "SESSIONS", "STATEMENTPLANS")
 
-  private val sysSchemasColumns = List(("SCHEMAID", 36, "CHAR"),
-    ("SCHEMANAME", 128, "VARCHAR"), ("AUTHORIZATIONID", 128, "VARCHAR"),
-    ("DEFAULTSERVERGROUPS", 32672, "VARCHAR"))
+  private val sysSchemasColumns = List(("schemaid", 36, "CHAR"),
+    ("schemaname", 128, "VARCHAR"), ("authorizationid", 128, "VARCHAR"),
+    ("defaultservergroups", 32672, "VARCHAR"))
   private val sysTablesColumns: List[(String, Long, String, Boolean)] = List(
-    ("TABLEID", 36, "CHAR", false), ("TABLENAME", 128, "VARCHAR", false),
-    ("TABLETYPE", 1, "CHAR", false), ("SCHEMAID", 36, "CHAR", false),
-    ("TABLESCHEMANAME", 128, "VARCHAR", false), ("LOCKGRANULARITY", 1, "CHAR", false),
-    getLongVarcharTuple("SERVERGROUPS", nullable = false), ("DATAPOLICY", 24, "VARCHAR", false),
-    getLongVarcharTuple("PARTITIONATTRS"), getLongVarcharTuple("RESOLVER"),
-    getLongVarcharTuple("EXPIRATIONATTRS"), getLongVarcharTuple("EVICTIONATTRS"),
-    getLongVarcharTuple("DISKATTRS"), ("LOADER", 128, "VARCHAR", true),
-    ("WRITER", 128, "VARCHAR", true), getLongVarcharTuple("LISTENERS"),
-    getLongVarcharTuple("ASYNCLISTENERS"), ("GATEWAYENABLED", 0, "BOOLEAN", false),
-    getLongVarcharTuple("GATEWAYSENDERS"), ("OFFHEAPENABLED", 0, "BOOLEAN", false),
-    ("ROWLEVELSECURITYENABLED", 0, "BOOLEAN", false))
+    ("tableid", 36, "CHAR", false), ("tablename", 128, "VARCHAR", false),
+    ("tabletype", 1, "CHAR", false), ("schemaid", 36, "CHAR", false),
+    ("tableschemaname", 128, "VARCHAR", false), ("lockgranularity", 1, "CHAR", false),
+    getLongVarcharTuple("servergroups", nullable = false), ("datapolicy", 24, "VARCHAR", false),
+    getLongVarcharTuple("partitionattrs"), getLongVarcharTuple("resolver"),
+    getLongVarcharTuple("expirationattrs"), getLongVarcharTuple("evictionattrs"),
+    getLongVarcharTuple("diskattrs"), ("loader", 128, "VARCHAR", true),
+    ("writer", 128, "VARCHAR", true), getLongVarcharTuple("listeners"),
+    getLongVarcharTuple("asynclisteners"), ("gatewayenabled", 0, "BOOLEAN", false),
+    getLongVarcharTuple("gatewaysenders"), ("offheapenabled", 0, "BOOLEAN", false),
+    ("rowlevelsecurityenabled", 0, "BOOLEAN", false))
 
   def testSYSTablesAndVTIs(executeSQL: String => Dataset[Row],
       hostName: String = ClientSharedUtils.getLocalHost.getCanonicalHostName,
@@ -163,7 +163,7 @@ object MetadataTest extends Assertions {
     checkMembers(rs, forShow = false)
 
     ds = executeSQL("show members")
-    expectedColumns = List("ID", "HOST", "KIND", "STATUS", "THRIFTSERVERS", "SERVERGROUPS")
+    expectedColumns = List("id", "host", "kind", "status", "thriftservers", "servergroups")
     val expectedSizes = List(256, 256, 24, 12, 32672, 32672)
     rs = ds.collect()
     // check schema of the returned Dataset
@@ -316,7 +316,7 @@ object MetadataTest extends Assertions {
     partAttrs = List(commonPartAttrs, commonPartAttrs, null, commonPartAttrs,
       "colocatedWith=/SCHEMA1/COLUMNTABLE1,recoveryDelay=-1,startupRecoveryDelay=0",
       "colocatedWith=/APP/COLUMNTABLE2,recoveryDelay=-1,startupRecoveryDelay=0")
-    resolvers = List("PARTITION BY COLUMN (ID)", "PARTITION BY PRIMARY KEY", null,
+    resolvers = List("PARTITION BY COLUMN (id)", "PARTITION BY PRIMARY KEY", null,
       "PARTITION BY PRIMARY KEY", s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'",
       s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'")
     diskAttrs = List(commonDiskAttrs.replace("%d", "SNAPPY-INTERNAL-DELTA"),
@@ -383,11 +383,11 @@ object MetadataTest extends Assertions {
     // ----- check DESCRIBE for schema-----
 
     rs = executeSQL("describe schema sys").collect()
-    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System schema"),
-      Row("Location", "SYS")))
+    assert(rs === Array(Row("Database Name", "sys"), Row("Description", "System schema"),
+      Row("Location", "sys")))
     rs = executeSQL("desc schema extended sys").collect()
-    assert(rs === Array(Row("Database Name", "SYS"), Row("Description", "System schema"),
-      Row("Location", "SYS"), Row("Properties", "")))
+    assert(rs === Array(Row("Database Name", "sys"), Row("Description", "System schema"),
+      Row("Location", "sys"), Row("Properties", "")))
 
     // ----- check SHOW TABLES variants -----
     val allSYSTables = (expectedSYSTables ++ expectedVTIs).map(Utils.toLowerCase).sorted
@@ -432,7 +432,7 @@ object MetadataTest extends Assertions {
     // ----- check SHOW COLUMNS for a few SYS tables -----
 
     rs = executeSQL("show columns from sys.sysSchemas").collect()
-    expectedColumns = List("SCHEMAID", "SCHEMANAME", "AUTHORIZATIONID", "DEFAULTSERVERGROUPS")
+    expectedColumns = List("schemaid", "schemaname", "authorizationid", "defaultservergroups")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns in sysTables from sys").collect()
@@ -509,43 +509,43 @@ object MetadataTest extends Assertions {
     // ----- check SHOW COLUMNS for VTIs -----
 
     rs = executeSQL("show columns in diskStoreIds from sys").collect()
-    expectedColumns = List("MEMBERID", "NAME", "ID", "DIRS")
+    expectedColumns = List("memberid", "name", "id", "dirs")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns in sys.indexes").collect()
-    expectedColumns = List("SCHEMANAME", "TABLENAME", "INDEXNAME", "COLUMNS_AND_ORDER",
-      "UNIQUE", "CASESENSITIVE", "INDEXTYPE")
+    expectedColumns = List("schemaname", "tablename", "indexname", "columns_and_order",
+      "unique", "casesensitive", "indextype")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns from sys.jars").collect()
-    expectedColumns = List("SCHEMA", "ALIAS", "ID")
+    expectedColumns = List("schema", "alias", "id")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns in sys.members").collect()
-    expectedColumns = List("ID", "KIND", "STATUS", "HOSTDATA", "ISELDER", "IPADDRESS", "HOST",
-      "PID", "PORT", "ROLES", "NETSERVERS", "THRIFTSERVERS", "LOCATOR", "SERVERGROUPS",
-      "SYSTEMPROPS", "GEMFIREPROPS", "BOOTPROPS", "MANAGERINFO")
+    expectedColumns = List("id", "kind", "status", "hostdata", "iselder", "ipaddress", "host",
+      "pid", "port", "roles", "netservers", "thriftservers", "locator", "servergroups",
+      "systemprops", "gemfireprops", "bootprops", "managerinfo")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns from sys.sysPolicies in sys").collect()
-    expectedColumns = List("NAME", "SCHEMANAME", "TABLENAME", "POLICYFOR", "APPLYTO",
-      "FILTER", "OWNER")
+    expectedColumns = List("name", "schemaname", "tablename", "policyfor", "applyto",
+      "filter", "owner")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns in sys.tableStats").collect()
-    expectedColumns = List("TABLE", "IS_COLUMN_TABLE", "IS_REPLICATED_TABLE", "ROW_COUNT",
-      "SIZE_IN_MEMORY", "TOTAL_SIZE", "BUCKETS")
+    expectedColumns = List("tablename", "is_column_table", "is_replicated_table", "row_count",
+      "size_in_memory", "total_size", "buckets")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns in hiveTables in sys").collect()
-    expectedColumns = List("SCHEMANAME", "TABLENAME", "TABLETYPE", "PROVIDER", "SOURCEPATH",
-      "COMPRESSION", "COLUMNNAME", "TYPEID", "TYPENAME", "ORDINAL", "PRECISION", "SCALE",
-      "MAXWIDTH", "NULLABLE", "VIEWTEXT")
+    expectedColumns = List("schemaname", "tablename", "tabletype", "provider", "sourcepath",
+      "compression", "columnname", "typeid", "typename", "ordinal", "precision", "scale",
+      "maxwidth", "nullable", "viewtext")
     checkExpectedColumns(rs, expectedColumns)
 
     rs = executeSQL("show columns in SYS.VTIs").collect()
-    expectedColumns = List("SCHEMANAME", "TABLENAME", "TABLETYPE", "COLUMNNAME", "TYPEID",
-      "TYPENAME", "ORDINAL", "PRECISION", "SCALE", "DISPLAYWIDTH", "NULLABLE")
+    expectedColumns = List("schemaname", "tablename", "tabletype", "columnname", "typeid",
+      "typename", "ordinal", "precision", "scale", "displaywidth", "nullable")
     checkExpectedColumns(rs, expectedColumns)
 
     // ----- empty SHOW TBLPROPERTIES for SYS tables/VTIs -----
@@ -595,21 +595,21 @@ object MetadataTest extends Assertions {
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 
     rs = executeSQL("describe rowTable1").collect()
-    assert(rs === Array(Row("ID", IntegerType.simpleString, null),
-      Row("DATA", StringType.simpleString, null)))
+    assert(rs === Array(Row("id", IntegerType.simpleString, null),
+      Row("data", StringType.simpleString, null)))
     rs = executeSQL("describe extended columnTable2").collect()
     // last row is detailed information and an empty row before that (no partitioning information)
     assert(rs.length === 5)
-    assert(rs.take(3) === Array(Row("ID", LongType.simpleString, null),
-      Row("DATA", StringType.simpleString, null),
-      Row("DATA2", DecimalType.SYSTEM_DEFAULT.simpleString, null)))
+    assert(rs.take(3) === Array(Row("id", LongType.simpleString, null),
+      Row("data", StringType.simpleString, null),
+      Row("data2", DecimalType.SYSTEM_DEFAULT.simpleString, null)))
     assert(rs(4).getString(0) === "# Detailed Table Information")
 
     rs = executeSQL("show columns in rowTable1 from app").collect()
-    expectedColumns = List("ID", "DATA")
+    expectedColumns = List("id", "data")
     checkExpectedColumns(rs, expectedColumns)
     rs = executeSQL("show columns in columnTable2").collect()
-    expectedColumns = List("ID", "DATA", "DATA2")
+    expectedColumns = List("id", "data", "data2")
     checkExpectedColumns(rs, expectedColumns)
 
     // ----- check SHOW TBLPROPERTIES for user tables -----
@@ -658,7 +658,7 @@ object MetadataTest extends Assertions {
     }
 
     var expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* > " + literalString("10") + ".*"
+        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*id.* > " + literalString("10") + ".*"
 
     assert(matches(plan, expectedPattern))
 
@@ -677,7 +677,7 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
       expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-          ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*ID.* = " + literalString("10") + ".*"
+          ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*id.* = " + literalString("10") + ".*"
       assert(matches(plan, expectedPattern))
     }
     // explain extended will route with JDBC since its not supported by store
@@ -691,12 +691,12 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    expectedPattern = s".*Parsed Logical Plan.*Filter.*ID = " + literalString("10") + "" +
-        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = " + literalString("10") +
-        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = " + literalString("10") +
+    expectedPattern = s".*Parsed Logical Plan.*Filter.*id = " + literalString("10") + "" +
+        ".*Analyzed Logical Plan.*Filter.*id#[0-9]* = " + literalString("10") +
+        ".*Optimized Logical Plan.*Filter.*id#[0-9]* = " + literalString("10") +
         ".*RowFormatRelation\\[APP.ROWTABLE1\\].*Physical Plan.*Partitioned Scan" +
         " RowFormatRelation\\[APP.ROWTABLE1\\].*numBuckets = 1 numPartitions = 1" +
-        ".*ID.* = " + literalString("10") + ".*"
+        ".*id.* = " + literalString("10") + ".*"
     assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for column tables -----
@@ -713,7 +713,7 @@ object MetadataTest extends Assertions {
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
-        s".*ID#[0-9]*L = DynExpr\\(" + literalString("10") + "\\).*"
+        s".*id#[0-9]*L = DynExpr\\(" + literalString("10") + "\\).*"
     assert(matches(plan, expectedPattern))
 
     ds = executeSQL("explain extended select * from columnTable2 where id > 20")
@@ -726,12 +726,12 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    expectedPattern = s".*Parsed Logical Plan.*Filter.*ID > ${literalString("20")}" +
-        s".*Analyzed Logical Plan.*Filter.*ID#[0-9]*L > cast\\(${literalString("20")} as bigint" +
-        s".*Optimized Logical Plan.*Filter.*ID#[0-9]*L > DynExpr\\(${literalString("20")}\\)" +
+    expectedPattern = s".*Parsed Logical Plan.*Filter.*id > ${literalString("20")}" +
+        s".*Analyzed Logical Plan.*Filter.*id#[0-9]*L > cast\\(${literalString("20")} as bigint" +
+        s".*Optimized Logical Plan.*Filter.*id#[0-9]*L > DynExpr\\(${literalString("20")}\\)" +
         ".*ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*Physical Plan.*Partitioned Scan" +
         " ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
-        s".*ID#[0-9]*L > DynExpr\\(${literalString("20")}\\).*"
+        s".*id#[0-9]*L > DynExpr\\(${literalString("20")}\\).*"
     assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for DDLs -----
@@ -747,7 +747,7 @@ object MetadataTest extends Assertions {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
     assert(matches(plan, ".*Physical Plan.*ExecutedCommand.*CreateTableUsingCommand" +
-        ".*ROWTABLE2.*\\(id int primary key, id2 int\\), row.*"))
+        ".*rowtable2.*\\(id int primary key, id2 int\\), row.*"))
 
     // create more tables and repeat the checks
 
@@ -786,21 +786,21 @@ object MetadataTest extends Assertions {
     // ----- check DESCRIBE and SHOW COLUMNS for user tables -----
 
     rs = executeSQL("describe schema1.columnTable1").collect()
-    assert(rs === Array(Row("ID", IntegerType.simpleString, null),
-      Row("DATA", DateType.simpleString, null),
-      Row("DATA2", StringType.simpleString, null)))
+    assert(rs === Array(Row("id", IntegerType.simpleString, null),
+      Row("data", DateType.simpleString, null),
+      Row("data2", StringType.simpleString, null)))
     rs = executeSQL("describe extended schema2.rowTable2").collect()
     // last row is detailed information and an empty row before that (no partitioning information)
     assert(rs.length === 4)
-    assert(rs.take(2) === Array(Row("ID", IntegerType.simpleString, null),
-      Row("DATA", StringType.simpleString, null)))
+    assert(rs.take(2) === Array(Row("id", IntegerType.simpleString, null),
+      Row("data", StringType.simpleString, null)))
     assert(rs(3).getString(0) === "# Detailed Table Information")
 
     rs = executeSQL("show columns in schema1.columnTable1").collect()
-    expectedColumns = List("ID", "DATA", "DATA2")
+    expectedColumns = List("id", "data", "data2")
     checkExpectedColumns(rs, expectedColumns)
     rs = executeSQL("show columns in rowTable2 from schema2").collect()
-    expectedColumns = List("ID", "DATA")
+    expectedColumns = List("id", "data")
     checkExpectedColumns(rs, expectedColumns)
 
     // ----- check SHOW TBLPROPERTIES for user tables -----
@@ -840,7 +840,7 @@ object MetadataTest extends Assertions {
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
         "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
-        ".*ID.* > " + literalString("10") + ".*"
+        ".*id.* > " + literalString("10") + ".*"
     assert(matches(plan, expectedPattern))
 
     // ----- check EXPLAIN for row tables no routing -----
@@ -860,7 +860,7 @@ object MetadataTest extends Assertions {
       // no pruning for row tables yet
       expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
           "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
-          ".*ID.* = " + literalString("15") + ".*"
+          ".*id.* = " + literalString("15") + ".*"
       assert(matches(plan, expectedPattern))
     }
 
@@ -878,7 +878,7 @@ object MetadataTest extends Assertions {
     }
     assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
         "\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
-        ".*ID#[0-9]* = " + literalString("15") + ".*"))
+        ".*id#[0-9]* = " + literalString("15") + ".*"))
 
     ds = executeSQL("explain extended select * from schema1.columnTable1 where id = 20")
     rs = ds.collect()
@@ -892,12 +892,12 @@ object MetadataTest extends Assertions {
     }
 
     // should prune to a single partition
-    assert(matches(plan, s".*Parsed Logical Plan.*Filter.*ID = ${literalString("20")}" +
-        ".*Analyzed Logical Plan.*Filter.*ID#[0-9]* = " + literalString("20") +
-        ".*Optimized Logical Plan.*Filter.*ID#[0-9]* = " + literalString("20") +
+    assert(matches(plan, s".*Parsed Logical Plan.*Filter.*id = ${literalString("20")}" +
+        ".*Analyzed Logical Plan.*Filter.*id#[0-9]* = " + literalString("20") +
+        ".*Optimized Logical Plan.*Filter.*id#[0-9]* = " + literalString("20") +
         ".*ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*Physical Plan.*Partitioned Scan" +
         " ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
-        ".*ID#[0-9]* = " + literalString("20") + ".*"))
+        ".*id#[0-9]* = " + literalString("20") + ".*"))
 
     // ----- cleanup -----
 

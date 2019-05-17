@@ -491,6 +491,13 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     }
   }
 
+  private def toLowerCase(s: Array[String]): Array[String] = {
+    for (i <- s.indices) {
+      s(i) = JdbcExtendedUtils.toLowerCase(s(i))
+    }
+    s
+  }
+
   override def getRelationInfo(schema: String, table: String,
       rowTable: Boolean): (RelationInfo, Option[LocalRegion]) = {
     if (SYS_SCHEMA.equalsIgnoreCase(schema)) {
@@ -500,15 +507,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         JdbcExtendedUtils.toUpperCase(table), null),
         true, false).asInstanceOf[LocalRegion]
       val indexCols = if (rowTable) {
-        GfxdSystemProcedures.getIndexColumns(r).asScala.toArray
+        toLowerCase(GfxdSystemProcedures.getIndexColumns(r).asScala.toArray)
       } else EMPTY_STRING_ARRAY
       val pkCols = if (rowTable) {
-        GfxdSystemProcedures.getPKColumns(r).asScala.toArray
+        toLowerCase(GfxdSystemProcedures.getPKColumns(r).asScala.toArray)
       } else EMPTY_STRING_ARRAY
       r match {
         case pr: PartitionedRegion =>
           val resolver = pr.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-          val partCols = resolver.getColumnNames
+          val partCols = toLowerCase(resolver.getColumnNames)
           RelationInfo(pr.getTotalNumberOfBuckets, isPartitioned = true, partCols,
             indexCols, pkCols) -> Some(pr)
         case _ => RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY,
@@ -585,7 +592,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       try {
         // hive compatible filter patterns are different from JDBC ones
         // so get all tables in the schema and apply filter separately
-        val rs = conn.getMetaData.getTables(null, schema, "%", null)
+        val rs = conn.getMetaData.getTables(null, JdbcExtendedUtils.toUpperCase(schema), "%", null)
         val buffer = new mutable.ArrayBuffer[String]()
         // add special case sys.members which is a distributed VTI but used by
         // SnappyData layer as a replicated one

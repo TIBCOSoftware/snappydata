@@ -17,8 +17,8 @@
 package io.snappydata.sql.catalog.impl
 
 import java.sql.SQLException
-import java.util.Collections
 import java.util.concurrent.{Callable, ExecutionException, ExecutorService, Executors, Future, TimeUnit}
+import java.util.{Collections, List => JList}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -48,6 +48,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.policy.PolicyProperties
+import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
 import org.apache.spark.{Logging, SparkConf}
 
@@ -59,7 +60,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private val COLUMN_TABLE_SCHEMA = 1
   // all hive tables that are expected to be in DataDictionary
   // this will exclude external tables like parquet tables, stream tables
-  private val GET_ALL_TABLES_MANAGED_IN_DD = 2
+  private val GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE = 2
   private val REMOVE_TABLE = 3
   private val GET_COL_TABLE = 4
   private val GET_TABLE = 5
@@ -103,7 +104,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       Option(table.getProvider)) == CatalogObjectType.Row
   }
 
-  override def getCatalogTables: java.util.List[ExternalTableMetaData] = {
+  override def getCatalogTables: JList[ExternalTableMetaData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
     if (GfxdDataDictionary.SKIP_CATALOG_OPS.get().skipHiveCatalogCalls) {
@@ -119,7 +120,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
-  override def getPolicies: java.util.List[PolicyTableData] = {
+  override def getPolicies: JList[PolicyTableData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
     if (GfxdDataDictionary.SKIP_CATALOG_OPS.get().skipHiveCatalogCalls) {
@@ -152,8 +153,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   override def getCatalogSchemaVersion: Long = externalCatalog.getCatalogSchemaVersion
 
-  override def getAllStoreTablesInCatalog: java.util.Map[String, java.util.List[String]] = {
-    val q = new CatalogQuery[Seq[(String, String)]](GET_ALL_TABLES_MANAGED_IN_DD,
+  override def getAllStoreTablesInCatalogUppercase: java.util.Map[String, JList[String]] = {
+    val q = new CatalogQuery[Seq[(String, String)]](GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE,
       tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).groupBy(p => p._1)
         .mapValues(_.map(_._2).asJava).asJava
@@ -195,8 +196,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       updateRequestOrResult: CatalogMetadataDetails = null, user: String = null)
       extends Callable[R] {
 
-    private lazy val formattedTable = JdbcExtendedUtils.toLowerCase(tableName)
-    private lazy val formattedSchema = JdbcExtendedUtils.toLowerCase(schemaName)
+    private lazy val formattedTable = toLowerCase(tableName)
+    private lazy val formattedSchema = toLowerCase(schemaName)
 
     override def call(): R = qType match {
       case INIT =>
@@ -314,9 +315,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           metaData
       }.asInstanceOf[R]
 
-      case GET_ALL_TABLES_MANAGED_IN_DD => externalCatalog.getAllTables().collect {
+      case GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE => externalCatalog.getAllTables().collect {
         case table if CatalogObjectType.isTableBackedByRegion(
-          CatalogObjectType.getTableType(table)) => table.database -> table.identifier.table
+          CatalogObjectType.getTableType(table)) =>
+          toUpperCase(table.database) -> toUpperCase(table.identifier.table)
       }.asInstanceOf[R]
 
       case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
@@ -331,8 +333,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val partitions = parameters.get(ExternalStoreUtils.BUCKETS) match {
             case None =>
               // get the partitions from the actual table if not in catalog
-              val pattrs = Misc.getRegionForTableByPath(JdbcExtendedUtils.toUpperCase(
-                qualifiedName), true).getAttributes.getPartitionAttributes
+              val pattrs = Misc.getRegionForTableByPath(toUpperCase(qualifiedName), true)
+                  .getAttributes.getPartitionAttributes
               if (pattrs ne null) pattrs.getTotalNumBuckets else 1
             case Some(buckets) => buckets.toInt
           }
@@ -472,7 +474,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private def pattern(request: CatalogMetadataRequest): String =
     if (request.isSetNameOrPattern) request.getNameOrPattern else "*"
 
-  private def columnList(columns: Array[String]): java.util.List[String] = {
+  private def columnList(columns: Array[String]): JList[String] = {
     if (columns.length == 0) Collections.emptyList() else java.util.Arrays.asList(columns: _*)
   }
 
