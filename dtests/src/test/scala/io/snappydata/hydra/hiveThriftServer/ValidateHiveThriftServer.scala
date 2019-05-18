@@ -19,7 +19,7 @@ package io.snappydata.hydra.hiveThriftServer
 import java.io.PrintWriter
 import org.apache.spark.sql.SnappyContext
 
-object ValidateHiveThrifServer {
+object ValidateHiveThriftServer {
   // scalastyle:off println
 
   def validate_ShowSchema_Showdatabases(command : String, hts : HiveThriftServer,
@@ -54,7 +54,6 @@ object ValidateHiveThrifServer {
       else {
         pw.println("Row counts and Row contents aren't matched for command : " + command)
       }
-      pw.println()
     }
 
     if(command == "sHOw SCHemas") {
@@ -78,7 +77,7 @@ object ValidateHiveThrifServer {
     var calculateSnappyCount : String = ""
 
     val snappyDF1 = snc.sql(query).collect()
-    calculateSnappyCount = snappyDF1.mkString
+    calculateSnappyCount = snappyDF1(0).toString()
       .replace("[", "").replace("]", "")
 
     hts.stmt = hts.connection.createStatement()
@@ -87,18 +86,37 @@ object ValidateHiveThrifServer {
     {
       calculateBeelineCount = hts.rs.getString(1)
     }
+
+    println("calculateSnappyCount : " + calculateSnappyCount)
+    println("calculateBeelineCount : " + calculateBeelineCount)
+
     if(calculateSnappyCount.equals(calculateBeelineCount)) {
-      pw.println("Row count for query  " + query + " are  equal between Snappy and Beeline. " +
+      pw.println("Row count for query  >> " + query +
+        " << are  equal between Snappy and Beeline. " +
         "Total Row count is : " + calculateBeelineCount )
     }
     else {
-      pw.println("Row count for query  " + query + " are  not equal between Snappy and Beeline.")
+      pw.println("Row count for query  >> " + query +
+        " << are  not equal between Snappy and Beeline.")
     }
   }
 
   def validateSelectQuery(query : String, snc : SnappyContext,
                                hts : HiveThriftServer, pw: PrintWriter) : Unit = {
 
-  }
+     hts.stmt = hts.connection.createStatement()
+     hts.rs = hts.stmt.executeQuery(query)
+     var index : Long = 0
+     while(hts.rs.next()) {
+        index += 1
+     }
 
+    if(snc.sql(query).count() == index) {
+      println("Counts of query : " + query + " are equal.")
+      if (hts.printLog) {
+      println("Beeline count : " + index)
+      println("Snappy count : " + snc.sql(query).count)
+      }
+    }
+  }
 }
