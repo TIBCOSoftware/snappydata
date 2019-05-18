@@ -85,7 +85,7 @@ object ValidateHiveThrifServer {
     hts.rs = hts.stmt.executeQuery(query)
     while (hts.rs.next())
     {
-      calculateBeelineCount = hts.rs.getString("Total")
+      calculateBeelineCount = hts.rs.getString(1)
     }
     if(calculateSnappyCount.equals(calculateBeelineCount)) {
       pw.println("Row count for query  " + query + " are  equal between Snappy and Beeline. " +

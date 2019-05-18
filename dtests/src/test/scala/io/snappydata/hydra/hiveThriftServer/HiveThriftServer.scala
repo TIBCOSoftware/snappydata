@@ -70,6 +70,8 @@ class HiveThriftServer extends SnappySQLJob {
 //    executeDropTables(hiveThriftServer, "drop table if exists EmpBeeline")
 //    executeShowTables(hiveThriftServer, "ShoW tAbLES iN DEFAULT")
 
+    pw.flush()
+    pw.close()
     disconnectToBeeline(hiveThriftServer)
     println("Finished the Hive Thrift Server testing.....")
   }
@@ -91,7 +93,7 @@ class HiveThriftServer extends SnappySQLJob {
     hts.stmt = hts.connection.createStatement()
     hts.rs = hts.stmt.executeQuery(command)
     hts.rsMetaData = hts.rs.getMetaData
-    ValidateHiveThrifServer.validate_ShowSchema_Showdatabases(command, hts, snc, pw)
+    ValidateHiveThriftServer.validate_ShowSchema_Showdatabases(command, hts, snc, pw)
   }
 
   def executeUseSchema(hts : HiveThriftServer, command : String, snc : SnappyContext,
@@ -120,22 +122,10 @@ class HiveThriftServer extends SnappySQLJob {
     hts.stmt.executeQuery(command)
     val insertChk1 : String = "select count(*) as Total from EmpBeeline"
     val insertChk2 : String = "select * from EmpBeeline where id > 19050"
-    ValidateHiveThrifServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
+    ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
+    ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
 
-//    val snappyDF2 = snc.sql(insertChk2)
-//    println("snappyDF2 Count : " + snappyDF2.show())
-//    val list = snappyDF2.collectAsList()
-//    hts.stmt = hts.connection.createStatement()
-//    hts.rs = hts.stmt.executeQuery(insertChk2)
-//    var index : Int = 0
-//    while(hts.rs.next()) {
-//      pw.println(list.get(index))
-//      index += 1
-//    }
-    pw.flush()
-    pw.close()
-
-//    SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk1, "InsertCheck1",
+    //    SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk1, "InsertCheck1",
 //      "Row", pw, spark, false)
 //    SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk2, "InsertCheck2",
 //      "Row", pw, spark, false)
