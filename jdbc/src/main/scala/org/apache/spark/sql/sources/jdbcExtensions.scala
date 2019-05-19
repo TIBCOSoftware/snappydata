@@ -381,9 +381,9 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
-  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ROOT)
+  def toLowerCase(k: String): String = k.toLowerCase(java.util.Locale.ENGLISH)
 
-  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ROOT)
+  def toUpperCase(k: String): String = k.toUpperCase(java.util.Locale.ENGLISH)
 
   /**
    * Returns the SQL for prepare to insert or put rows into a table.

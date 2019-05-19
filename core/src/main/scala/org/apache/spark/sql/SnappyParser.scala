@@ -963,10 +963,10 @@ class SnappyParser(session: SnappySession)
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
         val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
         fn match {
-          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
+          case f if f.funcName.equalsIgnoreCase("timestampadd") =>
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
-                exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
+                exprs.head.asInstanceOf[UnresolvedAttribute].name.equalsIgnoreCase("sql_tsi_day"))
             DateAdd(exprs(2), exprs(1))
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }

@@ -786,7 +786,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val message = intercept[AnalysisException] {
       df2.write.deleteFrom("col_table")
     }.getMessage
-    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
+    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation."))
   }
 
   test("Bug - SNAP-2157") {
@@ -892,7 +892,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("row_table")
     }.getMessage
 
-    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
+    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation."))
   }
 
   test("Delete From SQL using JDBC: row tables") {

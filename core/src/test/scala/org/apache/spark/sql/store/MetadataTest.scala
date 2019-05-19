@@ -316,7 +316,7 @@ object MetadataTest extends Assertions {
     partAttrs = List(commonPartAttrs, commonPartAttrs, null, commonPartAttrs,
       "colocatedWith=/SCHEMA1/COLUMNTABLE1,recoveryDelay=-1,startupRecoveryDelay=0",
       "colocatedWith=/APP/COLUMNTABLE2,recoveryDelay=-1,startupRecoveryDelay=0")
-    resolvers = List("PARTITION BY COLUMN (id)", "PARTITION BY PRIMARY KEY", null,
+    resolvers = List("PARTITION BY COLUMN (ID)", "PARTITION BY PRIMARY KEY", null,
       "PARTITION BY PRIMARY KEY", s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'",
       s"PARTITIONER '${classOf[ColumnPartitionResolver].getName}'")
     diskAttrs = List(commonDiskAttrs.replace("%d", "SNAPPY-INTERNAL-DELTA"),

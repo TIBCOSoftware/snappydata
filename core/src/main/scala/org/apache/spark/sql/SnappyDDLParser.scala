@@ -341,19 +341,20 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
         (capture(CURRENT_USER) |
-            (LDAPGROUP ~ ':' ~ ws ~
-                push(SnappyParserConsts.LDAPGROUP.lower + ':')).? ~
-                identifier ~ ws ~> {(ldapOpt: Any, x) =>
-              ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
+            (LDAPGROUP ~ ':' ~ ws ~ push(true)).? ~
+                identifier ~ ws ~> ((ldapOpt: Any, id) => ldapOpt match {
+              case None => IdUtil.getUserAuthorizationId(id)
+              case _ => IdUtil.getUserAuthorizationId(SnappyParserConsts.LDAPGROUP.lower) +
+                  ':' + IdUtil.getUserAuthorizationId(id)
+            })
         ). + (commaSep) ~> {
         (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
           }).? ~> { (toOpt: Any) =>
       toOpt match {
         case Some(x) => x.asInstanceOf[Seq[String]]
-        case _ => Seq(SnappyParserConsts.CURRENT_USER.lower)
+        case _ => SnappyParserConsts.CURRENT_USER.lower :: Nil
       }
     }
-
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {

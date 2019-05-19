@@ -473,7 +473,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (nonExistentTables.getIfPresent(name) eq java.lang.Boolean.TRUE) {
       throw new TableNotFoundException(schema, table)
     }
-    if (table.toLowerCase != table) {
+    if (table.toLowerCase != table || schema.toLowerCase != schema) {
       throw new IllegalStateException("SW:")
     }
     // need to do the load under a sync block to avoid deadlock due to lock inversion

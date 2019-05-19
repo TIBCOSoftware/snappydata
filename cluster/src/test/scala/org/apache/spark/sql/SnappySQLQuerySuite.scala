@@ -461,18 +461,18 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
 
     var ds = session.sql("select ct1.id, ct2.data from ct1 join ct2 on (ct1.id = ct2.id) where " +
         "(ct1.id < 1000 and ct2.data = 'data100') or (ct1.id < 1000 and ct1.data = 'data100')")
-    var analyzedFilter = "Filter (((ID#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
-        "(DATA#0 = ParamLiteral:1#0,data100)) || ((ID#0 < cast(ParamLiteral:2#0,1000 as " +
-        "bigint)) && (DATA#0 = ParamLiteral:3#0,data100)))"
+    var analyzedFilter = "Filter (((id#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
+        "(data#0 = ParamLiteral:1#0,data100)) || ((id#0 < cast(ParamLiteral:2#0,1000 as " +
+        "bigint)) && (data#0 = ParamLiteral:3#0,data100)))"
 
     def expectedTree: String =
-      s"""Project [ID#0, DATA#0]
+      s"""Project [id#0, data#0]
          |+- $analyzedFilter
-         |   +- Join Inner, (ID#0 = ID#0)
-         |      :- SubqueryAlias CT1
-         |      :  +- Relation[ID#0,DATA#0] ColumnFormatRelation[APP.CT1]
-         |      +- SubqueryAlias CT2
-         |         +- Relation[ID#0,DATA#0] ColumnFormatRelation[APP.CT2]
+         |   +- Join Inner, (id#0 = id#0)
+         |      :- SubqueryAlias ct1
+         |      :  +- Relation[id#0,data#0] ColumnFormatRelation[APP.CT1]
+         |      +- SubqueryAlias ct2
+         |         +- Relation[id#0,data#0] ColumnFormatRelation[APP.CT2]
          |""".stripMargin
     assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))
@@ -490,16 +490,16 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     assert(joins.length === 1)
     assert(joins.head.condition.isDefined)
     var condString = joins.head.condition.get.toString()
-    assert(condString.contains("DATA#"))
-    assert(!condString.contains("ID#"))
+    assert(condString.contains("data#"))
+    assert(!condString.contains("id#"))
 
     // similar query but different values in the two positions should lead to a different
     // plan with no filter push down
     ds = session.sql("select ct1.id, ct2.data from ct1 join ct2 on (ct1.id = ct2.id) where " +
         "(ct1.id < 1000 and ct2.data = 'data100') or (ct1.id < 20 and ct1.data = 'data100')")
-    analyzedFilter = "Filter (((ID#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
-        "(DATA#0 = ParamLiteral:1#0,data100)) || ((ID#0 < cast(ParamLiteral:2#0,20 as " +
-        "bigint)) && (DATA#0 = ParamLiteral:3#0,data100)))"
+    analyzedFilter = "Filter (((id#0 < cast(ParamLiteral:0#0,1000 as bigint)) && " +
+        "(data#0 = ParamLiteral:1#0,data100)) || ((id#0 < cast(ParamLiteral:2#0,20 as " +
+        "bigint)) && (data#0 = ParamLiteral:3#0,data100)))"
     assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))
 
@@ -516,8 +516,8 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
     assert(joins.length === 1)
     assert(joins.head.condition.isDefined)
     condString = joins.head.condition.get.toString()
-    assert(condString.contains("DATA#"))
-    assert(condString.contains("ID#"))
+    assert(condString.contains("data#"))
+    assert(condString.contains("id#"))
 
     ds = session.sql("select ct1.id, ct2.data from ct1 join ct2 on (ct1.id = ct2.id) where " +
         "(ct1.id < 10 and ct2.data = 'data100') or (ct1.id < 10 and ct1.data = 'data100')")
