@@ -255,13 +255,12 @@ object SnappyTestUtils {
     if (actualLineSet.hasNext || expectedLineSet.hasNext) {
       pw.println(s"\nFor ${queryNum} result count mismatch observed")
       pw.flush()
-      pw.close()
+
       // assert(assertion = false, s"\nFor $queryNum result count mismatch observed")
     }
     pw.println(s"Validation for ${queryNum} finished.")
     pw.println()
     // scalastyle:on println
     pw.flush()
-    pw.close()
   }
 }

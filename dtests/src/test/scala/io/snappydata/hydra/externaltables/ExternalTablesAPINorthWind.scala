@@ -17,9 +17,10 @@
 
 package io.snappydata.hydra.externaltables
 
-import java.io.{FileOutputStream, PrintWriter, File}
+import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 
@@ -172,18 +173,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <1>snc_namesWithTOC : " + snc_namesWithTOC.show())
       println("##### <1>spark_namesWithTOC : " + spark_namesWithTOC.show())
     }
-    val df1 = snc_namesWithTOC.except(spark_namesWithTOC)
-    if(!(df1.count() == 0)) {
-      pw.write("SELECT TitleOfCourtesy, FirstName, LastName FROM Employees " +
-        "WHERE TitleOfCourtesy IN ('Ms.','Mrs.') --> failed")
-      pw.println()
-      pw.write("Difference : " + df1.show())
-      pw.println()
-    }
-    if(df1.count() == 0) {
-      pw.write("SELECT TitleOfCourtesy, FirstName, LastName FROM Employees " +
-        "WHERE TitleOfCourtesy IN ('Ms.','Mrs.') --> passed")
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_namesWithTOC,
+      spark_namesWithTOC, "EmbeddedNWAPI1", "column", pw, sqlContext)
 
     /*  <2> SELECT FirstName, LastName FROM Employees; */
     val snc_names = sncEmpDF.select("FirstName" , "LastName")
@@ -192,17 +183,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <2>snc_names : " + snc_names.show())
       println("##### <2>spark_names : " + spark_names.show())
     }
-    val df2 = snc_names.except(spark_names)
-    if(!(df2.count() == 0)) {
-      pw.write("SELECT FirstName, LastName FROM Employees --> failed")
-      pw.println()
-      pw.write("Difference : " + df2.show())
-      pw.println()
-    }
-    if(df2.count() == 0) {
-      pw.write("SELECT FirstName, LastName FROM Employees --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_names, spark_names,
+      "EmbeddedNWAPI2", "column", pw, sqlContext)
 
     /*  <3> SELECT FirstName, LastName FROM Employees ORDER BY LastName; */
     val snc_namesSortByLastName = sncEmpDF.select("FirstName", "LastName").orderBy(sncEmpDF("LastName").desc)
@@ -212,20 +194,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <3>snc_namesSortByLastName : " + snc_namesSortByLastName.show())
       println("##### <3>spark_namesSortByLastName : " + spark_namesSortByLastName.show())
     }
-    val df3 = snc_namesSortByLastName.except(spark_namesSortByLastName)
-    if(!(df3.count() == 0)) {
-      pw.write("SELECT FirstName, LastName FROM Employees " +
-        "ORDER BY LastName --> failed")
-      pw.println()
-      pw.write("Difference : " + df3.show())
-      pw.println()
-    }
-    if(df3.count() == 0) {
-      pw.write("SELECT FirstName, LastName FROM Employees " +
-        "ORDER BY LastName --> passed")
-      pw.println()
-    }
-
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_namesSortByLastName,
+      spark_namesSortByLastName, "EmbeddedNWAPI3", "column", pw, sqlContext)
 
     /* <4> SELECT Title, FirstName, LastName FROM Employees WHERE Title = 'Sales Representative'; */
     val snc_salesRep = sncEmpDF.select(("Title"), "FirstName", "LastName").filter(sncEmpDF("Title") === "Sales Representative")
@@ -235,19 +205,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <4>snc_salesRep : " + snc_salesRep.show())
       println("##### <4>spark_salesRep : " + spark_SalesRep.show())
     }
-    val df4 = snc_salesRep.except(spark_SalesRep)
-    if(!(df4.count() == 0)) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees " +
-        "WHERE Title = 'Sales Representative' --> failed")
-      pw.println()
-      pw.write("Difference : " + df4.show())
-      pw.println()
-    }
-    if(df4.count() == 0) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees " +
-        "WHERE Title = 'Sales Representative' --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_salesRep, spark_SalesRep,
+    "EmbeddedNWAPI4", "column", pw, sqlContext)
 
     /*  <5> SELECT FirstName, LastName FROM Employees WHERE Title <> 'Sales Representative';
     //  TODO : Test the where(String) or filter("String) condition
@@ -260,19 +219,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <5>snc_titleOtherThanSalsRep : " + snc_titleOtherThanSalsRep.show())
       println("##### <5>spark_titleOtherThanSalsRep : " + spark_titleOtherThanSalsRep.show())
     }
-    val df5 = snc_titleOtherThanSalsRep.except(spark_titleOtherThanSalsRep)
-    if(!(df5.count() == 0)) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees " +
-        "WHERE Title = 'Sales Representative' --> failed")
-      pw.println()
-      pw.write("Difference : " + df5.show())
-      pw.println()
-    }
-    if(df5.count() == 0) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees " +
-        "WHERE Title = 'Sales Representative' --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_titleOtherThanSalsRep,
+      spark_titleOtherThanSalsRep, "EmbeddedNWAPI5", "column", pw, sqlContext)
 
     /* <6> SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N'
            ORDER BY LastName DESC; */
@@ -284,19 +232,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <6>snc_empName : " + snc_EmpNameDesc.show())
       println("##### <6>spark_empName : " + spark_EmpNameDesc.show())
     }
-    val df6 = snc_EmpNameDesc.except(spark_EmpNameDesc)
-    if(!(df6.count() == 0)) {
-      pw.write("SELECT FirstName, LastName FROM Employees " +
-        "WHERE LastName >= 'N' ORDER BY LastName DESC --> failed")
-      pw.println()
-      pw.write("Difference : " + df6.show())
-      pw.println()
-    }
-    if(df6.count() == 0) {
-      pw.write("SELECT FirstName, LastName FROM Employees " +
-        "WHERE LastName >= 'N' ORDER BY LastName DESC --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameDesc, spark_EmpNameDesc,
+    "EmbeddedNWAPI6", "column", pw, sqlContext)
 
     /*  <7> SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM Orders
     WHERE Freight >= 500; */
@@ -312,19 +249,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <7>snc_freightgeq500 : " + snc_Freightgeq500.show())
       println("##### <7>spark_freightgeq500 : " + spark_Freightgeq500.show())
     }
-    val df7 = snc_Freightgeq500.except(spark_Freightgeq500)
-    if(!(df7.count() == 0)) {
-      pw.write("SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal " +
-        "FROM Orders WHERE Freight >= 500 --> failed")
-      pw.println()
-      pw.write("Difference : " + df7.show())
-      pw.println()
-    }
-    if(df7.count() == 0) {
-      pw.write("SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal " +
-        "FROM Orders WHERE Freight >= 500 --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_Freightgeq500, spark_Freightgeq500,
+    "EmbeddedNWAPI7", "column", pw, sqlContext)
 
     /* <8> SELECT SUM(Quantity) AS TotalUnits FROM Order_Details WHERE ProductID=3; */
     import org.apache.spark.sql.functions._
@@ -336,7 +262,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <8>snc_totalUnits : " + snc_TotalUnits.show())
       println("##### <8>spark_totalUnits : " + spark_TotalUnits.show())
     }
-    // Print the result in file
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_TotalUnits, spark_TotalUnits,
+    "EmbeddedNWAPI8", "column", pw, sqlContext)
 
     /* <9> SELECT COUNT(DISTINCT City) AS NumCities FROM Employees; */
     val snc_DistinctCity = sncEmpDF.select("City").distinct().withColumnRenamed("City", "NumCities")
@@ -350,18 +277,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <9.2>snc_DistinctCityCount : " + snc_DistinctCityCount.show())
       println("##### <9.2>spark_DistinctCityCount : " + spark_DistinctCityCount.show())
     }
-    val df9_1 = snc_DistinctCity.except(spark_DistinctCity)
-    if(!(df9_1.count() == 0)) {
-      pw.write("SELECT COUNT(DISTINCT City) AS NumCities FROM Employees --> failed")
-      pw.println()
-      pw.write("Difference : " + df9_1.show())
-      pw.println()
-    }
-    if(df9_1.count() == 0) {
-      pw.write("SELECT COUNT(DISTINCT City) AS NumCities FROM Employees --> passed")
-      pw.println()
-    }
-
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_DistinctCity, spark_DistinctCity,
+    "EmbeddedNWAPI9", "column", pw, sqlContext)
 
     /* <10> SELECT CONCAT(FirstName, ' ', LastName) FROM Employees; */
     val snc_Name = sncEmpDF.select(concat_ws(" ", col("FirstName"), col("LastName")))
@@ -374,28 +291,10 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <10.2>snc_Name1 : " + snc_Name1.show())
       println("##### <10.2>spark_Name1 : " + spark_Name1.show())
     }
-    val df10_1 = snc_Name.except(spark_Name)
-    if(!(df10_1.count() == 0)) {
-      pw.write("SELECT CONCAT(FirstName,' ',LastName) FROM Employees --> failed")
-      pw.println()
-      pw.write("Difference : " + df10_1.show())
-      pw.println()
-    }
-    if(df10_1.count() == 0) {
-      pw.write("SELECT CONCAT(FirstName,' ',LastName) FROM Employees --> passed")
-      pw.println()
-    }
-    val df10_2 = snc_Name1.except(spark_Name1)
-    if(!(df10_2.count() == 0)) {
-      pw.write("SELECT CONCAT(FirstName,',',LastName) FROM Employees --> failed")
-      pw.println()
-      pw.write("Difference : " + df10_2.show())
-      pw.println()
-    }
-    if(df10_2.count() == 0) {
-      pw.write("SELECT CONCAT(FirstName,',',LastName) FROM Employees --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_Name, spark_Name,
+    "EmbeddedNWAPI10_1", "column", pw, sqlContext)
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_Name1, spark_Name1,
+      "EmbeddedNWAPI10_1", "column", pw, sqlContext)
 
     /* <11> SELECT count(*) FROM orders FULL JOIN order_details; */
     val snc_FullJoinCnt = sncOrdersDF.crossJoin(sncOrderDetailsDF)
@@ -403,17 +302,6 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
     if(printDFContent) {
       println("***** <11>snc_FullJoinCount : " + snc_FullJoinCnt.count())
       println("##### <11>spark_FullJoinCount : " + spark_FullJoinCnt.count())
-    }
-    val df11 = snc_FullJoinCnt.except(spark_FullJoinCnt)
-    if(!(df11.count() == 0)) {
-      pw.write("SELECT count(*) FROM orders FULL JOIN order_details --> failed")
-      pw.println()
-      pw.write("Difference : " + df11.show())
-      pw.println()
-    }
-    if(df11.count() == 0) {
-      pw.write("SELECT count(*) FROM orders FULL JOIN order_details --> passed")
-      pw.println()
     }
 
     /* <12> SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate asc; */
@@ -429,19 +317,9 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <12>snc_dateWiseOrderCountASC : " + snc_dateWiseOrderCountASC.show(480))
       println("##### <12>spark_dateWiseOrderCountASC : " + spark_dateWiseOrderCountASC.show(480))
     }
-    val df12 = snc_dateWiseOrderCountASC.except(spark_dateWiseOrderCountASC)
-    if(!(df12.count() == 0)) {
-      pw.write("SELECT OrderDate, count(1) from Orders group by OrderDate " +
-                "order by OrderDate asc --> failed")
-      pw.println()
-      pw.write("Difference : " + df12.show())
-      pw.println()
-    }
-    if(df12.count() == 0) {
-      pw.write("SELECT OrderDate, count(1) from Orders group by OrderDate " +
-        "order by OrderDate asc --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_dateWiseOrderCountASC,
+      spark_dateWiseOrderCountASC, "EmbeddedNWAPI12",
+    "column", pw, sqlContext)
 
     /* <13> SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate; */
     val snc_dateWiseOrderCnt = sncOrdersDF.select(col("OrderDt")).groupBy(col("OrderDt"))
@@ -454,19 +332,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <13>snc_dateWiseOrderCnt : " + snc_dateWiseOrderCnt.show(480))
       println("##### <13>spark_dateWiseOrderCnt : " + spark_dateWiseOrderCnt.show(480))
     }
-    val df13 = snc_dateWiseOrderCnt.except(spark_dateWiseOrderCnt)
-    if(!(df13.count() == 0)) {
-      pw.write("SELECT OrderDate, count(1) from Orders group by OrderDate " +
-        "order by OrderDate --> failed")
-      pw.println()
-      pw.write("Difference : " + df13.show())
-      pw.println()
-    }
-    if(df13.count() == 0) {
-      pw.write("SELECT OrderDate, count(1) from Orders group by OrderDate " +
-        "order by OrderDate --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_dateWiseOrderCnt, spark_dateWiseOrderCnt,
+    "EmbeddedNWAPI13", "column", pw, sqlContext)
 
     /* <14> SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N'; */
     val snc_EmpName = sncEmpDF.select(col("FirstName"), col("LastName"))
@@ -477,17 +344,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <14>snc_EmpName : " + snc_EmpName.show())
       println("##### <14>spark_EmpName " + spark_EmpName.show())
     }
-    val df14 = snc_EmpName.except(spark_EmpName)
-    if(!(df14.count() == 0)) {
-      pw.write("SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N' --> failed")
-      pw.println()
-      pw.write("Difference : " + df14.show())
-      pw.println()
-    }
-    if(df14.count() == 0) {
-      pw.write("SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N' --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpName, spark_EmpName,
+    "EmbeddedNWAPI14", "column", pw, sqlContext)
 
     /* <15> SELECT FirstName, LastName FROM Employees WHERE Region IS NULL; */
     val snc_EmpNameWhereRegIsNull = sncEmpDF.select(col("FirstName"), col("LastName"))
@@ -498,17 +356,8 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <15>snc_EmpNameWhereRegIsNull : " + snc_EmpNameWhereRegIsNull.show())
       println("##### <15>spark_EmpNameWhereRegIsNull : " + spark_EmpNameWhereRegIsNull.show())
     }
-    val df15 = snc_EmpNameWhereRegIsNull.except(spark_EmpNameWhereRegIsNull)
-    if(!(df15.count() == 0)) {
-      pw.write("SELECT FirstName, LastName FROM Employees WHERE Region IS NULL --> failed")
-      pw.println()
-      pw.write("Difference : " + df15.show())
-      pw.println()
-    }
-    if(df15.count() == 0) {
-      pw.write("SELECT FirstName, LastName FROM Employees WHERE Region IS NULL --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameWhereRegIsNull, spark_EmpNameWhereRegIsNull,
+    "EmbeddedNWAPI15", "column", pw, sqlContext)
 
     /* <16> SELECT Title, FirstName, LastName FROM Employees ORDER BY 1,3; */
     val snc_EmpNameOrderByColumnPos = sncEmpDF.select(col("Title"), col("FirstName"), col("LastName"))
@@ -520,17 +369,9 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("***** <16>snc_EmpNameOrderByColumnPos : " +  snc_EmpNameOrderByColumnPos.show())
       println("##### <16>spark_EmpNameOrderByColumnPos : " + spark_EmpNameOrderByColumnPos.show())
     }
-    val df16 = snc_EmpNameOrderByColumnPos.except(spark_EmpNameOrderByColumnPos)
-    if(!(df16.count() == 0)) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees ORDER BY 1,3 --> failed")
-      pw.println()
-      pw.write("Difference : " + df16.show())
-      pw.println()
-    }
-    if(df16.count() == 0) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees ORDER BY 1,3 --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameOrderByColumnPos,
+      spark_EmpNameOrderByColumnPos, "EmbeddedNWAPI16",
+    "column", pw, sqlContext)
 
     /* <17> SELECT Title, FirstName, LastName FROM Employees ORDER BY Title ASC, LastName DESC; */
     val snc_EmpNameOrderByTitleLastName = sncEmpDF.select(col("Title"), col("FirstName"), col("LastName"))
@@ -544,23 +385,11 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
       println("##### <17>spark_EmpNameOrderByTitleLastName : "
         + spark_EmpNameOrderByTitleLastName.show())
     }
-    val df17 = (snc_EmpNameOrderByTitleLastName.except(spark_EmpNameOrderByTitleLastName))
-    if(!(df17.count() == 0)) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees " +
-               "ORDER BY Title ASC, LastName DESC --> failed")
-      pw.println()
-      pw.write("Difference : " + df17.show())
-      pw.println()
-    }
-    if(df17.count() == 0) {
-      pw.write("SELECT Title, FirstName, LastName FROM Employees " +
-        "ORDER BY Title ASC, LastName DESC --> passed")
-      pw.println()
-    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameOrderByTitleLastName,
+      spark_EmpNameOrderByTitleLastName, "EmbeddedNWAPI17",
+    "column", pw, sqlContext)
 
     /* Will add all the NorthWind Queries */
-    pw.flush()
-    pw.close()
 
     snc.dropTable("NW.Employees")
     snc.dropTable("NW.Categories")
@@ -576,6 +405,7 @@ class ExternalTablesAPINorthWind extends SnappySQLJob{
 
     snc.sql("DROP SCHEMA NW;")
     println("ExternalTablesAPINorthWind completed.....") // Write it into file
+    pw.close()
   }
 
   def loadDataFromSourceAndRunSelectQueryThenDropTable(snc : SnappyContext, format : String,
