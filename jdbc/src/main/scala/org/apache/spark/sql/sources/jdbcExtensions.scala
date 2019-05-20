@@ -78,7 +78,7 @@ object JdbcExtendedUtils extends Logging {
 
   val SYSIBM_SCHEMA: String = "sysibm"
   val DUMMY_TABLE_NAME: String = "sysdummy1"
-  val DUMMY_TABLE_QUALIFIED_NAME: String = s"$SYSIBM_SCHEMA.$DUMMY_TABLE_NAME"
+  val DUMMY_TABLE_QUALIFIED_NAME: String = toUpperCase(s"$SYSIBM_SCHEMA.$DUMMY_TABLE_NAME")
   val EMPTY_SCHEMA: StructType = StructType(Nil)
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
@@ -447,7 +447,12 @@ object JdbcExtendedUtils extends Logging {
           s"Neither $sparkProp nor ${Constant.CONNECTION_PROPERTY} set for SnappyData connect")
       }
     }
-    s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
+    // convert to host[port] format that handles ipv6 addresses correctly
+    val colonIndex = hostPort.lastIndexOf(':')
+    val hostPortNormalized =
+      if (colonIndex == -1) hostPort
+      else s"${hostPort.substring(0, colonIndex)}[${hostPort.substring(colonIndex + 1)}]"
+    s"${Constant.POOLED_THIN_CLIENT_URL}$hostPortNormalized"
   }
 
   val PREFIXES: Array[String] = Array(

@@ -141,6 +141,7 @@ object ExternalStoreUtils {
       props.put("url", url)
       addProperty(props, "maxActive", defaultMaxPoolSize)
       addProperty(props, "maxIdle", defaultMaxPoolSize)
+      addProperty(props, "minIdle", "4")
       addProperty(props, "initialSize", "4")
       addProperty(props, "testOnBorrow", "true")
       // embedded validation check is cheap

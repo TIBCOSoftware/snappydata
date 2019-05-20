@@ -66,7 +66,7 @@ case object SnappyDataPoolDialect extends SnappyDataBaseDialect with Logging {
           case conn =>
             val tableName = u.tableIdentifier.table
             val schemaName = u.tableIdentifier.database match {
-              case None => sessionState.catalog.getCurrentDatabase
+              case None => conn.getSchema
               case Some(s) => s
             }
             val metadata = JdbcExtendedUtils.getTableSchema(schemaName, tableName,
