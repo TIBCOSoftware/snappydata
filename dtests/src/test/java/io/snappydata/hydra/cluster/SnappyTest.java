@@ -3839,9 +3839,9 @@ public class SnappyTest implements Serializable {
       }
       if (useRowStore) {
         Log.getLogWriter().info("Starting locator/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore",secureBootProperties);
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", "rowstore");//,secureBootProperties);
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start", secureBootProperties);
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh"), "start");//, secureBootProperties);
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
@@ -3865,9 +3865,9 @@ public class SnappyTest implements Serializable {
       }
       if (useRowStore) {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore", secureBootProperties);
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", "rowstore");//, secureBootProperties);
       } else {
-        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start", secureBootProperties);
+        pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "start");//, secureBootProperties);
       }
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyServerSystem.log";
@@ -3895,7 +3895,7 @@ public class SnappyTest implements Serializable {
         Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
       }
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
-          "start",secureBootProperties);
+          "start");//,secureBootProperties);
       log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
