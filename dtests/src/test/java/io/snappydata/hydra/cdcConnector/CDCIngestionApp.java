@@ -102,52 +102,65 @@ public class CDCIngestionApp implements Runnable {
 
   public void insertData(ArrayList<String> queryArray, Connection conn) {
     PreparedStatement ps = null;
-    try {
-      final int batchSize = 1000;
-      int count = 0;
-      for (int i = 0; i < queryArray.size(); i++) {
-        String qStr = queryArray.get(i);
-        System.out.println("Query = " + qStr);
-        System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
-        if (qStr.contains("PUT INTO")) {
-          for (int j = startRange; j <= endRange; j++) {
-            String newStr;
-            if (qStr.contains("?"))
-              newStr = qStr.replace("?", Integer.toString(j));
-            else
-              newStr = qStr;
-            System.out.println("The new query String is " + newStr);
-            conn.createStatement().execute(newStr);
-            updateData(queryArray,conn);
-          }
-        } else {
-          ps = conn.prepareStatement(qStr);
-          for (int j = startRange; j <= endRange; j++) {
-            int KEY_ID = j;
-            ps.setInt(1, KEY_ID);
-            ps.setInt(1, j);
-            ps.addBatch();
-            if (++count % batchSize == 0) {
-              ps.executeBatch();
-            }
-          }
-          System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
+  try {
+    final int batchSize = 1000;
+    int count = 0;
+    for (int i = 0; i < queryArray.size(); i++) {
+      String qStr = queryArray.get(i);
+      System.out.println("Query = " + qStr);
+      System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
+      if (qStr.contains("PUT INTO")) {
+        for (int j = startRange; j <= endRange; j++) {
+          String newStr;
+          if (qStr.contains("?"))
+            newStr = qStr.replace("?", Integer.toString(j));
+          else
+            newStr = qStr;
+          System.out.println("The new query String is " + newStr);
+          conn.createStatement().execute(newStr);
+          updateData(queryArray,conn);
         }
       }
-      System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
-    } catch (Exception e) {
-      System.out.println("Caught exception " + e.getMessage());
-    } finally {
-      if (ps != null) try {
-        ps.close();
-      } catch (SQLException ex) {
+      else if(qStr.contains("UPDATE"))
+      {
+        Random rnd = new Random();
+        ps = conn.prepareStatement(qStr);
+        int updateKEY_ID = rnd.nextInt(endRange);
+        ps.setInt(1, updateKEY_ID);
+        ps.execute();
+        System.out.println("Update complete");
       }
-      if (conn != null) try {
-        conn.close();
-      } catch (SQLException ex) {
+      else if(qStr.contains("INSERT INTO")){
+        ps = conn.prepareStatement(qStr);
+        for (int j = startRange; j <= endRange; j++) {
+          int KEY_ID = j;
+          ps.setInt(1, KEY_ID);
+          ps.addBatch();
+          if (++count % batchSize == 0) {
+            ps.executeBatch();
+          }
+        }
+        System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
       }
+     else
+       conn.createStatement().execute(qStr);
     }
+    System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
+  } catch (Exception e) {
+    System.out.println("Caught exception " + e.getMessage());
+  } finally {
+    if (ps != null) try {
+      ps.close();
+    } catch (SQLException ex) {
+    }
+    if (conn != null) try {
+      conn.close();
+    } catch (SQLException ex) {
+    }
+
   }
+}
+
 
   public void updateData(ArrayList<String> queryArray, Connection conn) {
     try {
