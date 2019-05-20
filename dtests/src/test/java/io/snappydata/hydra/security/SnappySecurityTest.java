@@ -66,9 +66,15 @@ public class SnappySecurityTest extends SnappyTest {
     }
     try {
       String dest = getCurrentDirPath() + File.separator + "ldapServerStart.log";
-      String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
+//      String propFile = getCurrentDirPath() + File.separator + "../../../secureBootProp.log";
+      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
       File ldapServerFile = new File(dest);
       File secureBootPropFile = new File(propFile);
+      if(secureBootPropFile.exists())
+      {
+        secureBootPropFile.delete();
+        secureBootPropFile.createNewFile(); 
+      }
       if (!ldapServerFile.exists()) {
         String cmd = "nohup " + ldapScriptPath + "/start-ldap-server.sh " + ldapScriptPath + "/auth.ldif > " + ldapServerFile + " & ";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
@@ -79,14 +85,20 @@ public class SnappySecurityTest extends SnappyTest {
       String cmd1 = "grep Boot " + dest;
       ProcessBuilder pb1 = new ProcessBuilder("/bin/bash", "-c", cmd1);
       snappyTest.executeProcess(pb1, secureBootPropFile);
-    } catch (InterruptedException ex) {
+     }
+     catch (InterruptedException ex) {
+      Log.getLogWriter().info("Caught InterruptedException in startLdapServer method " + ex.getMessage());
+    }
+    catch (IOException io) {
+      Log.getLogWriter().info("Caught IO exception in startLdapServer method " + io.getMessage());
     }
   }
 
   public static String getSecureBootProp() {
     try {
       File log = new File(".");
-      String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
+//      String propFile = log.getCanonicalPath() + File.separator + "../../../secureBootProp.log";
+      String propFile = "/export/shared/QA_DATA/secureBootProp.log";
       File secureBootPropFile = new File(propFile);
       FileInputStream fis = new FileInputStream(secureBootPropFile);
       BufferedReader br = new BufferedReader(new InputStreamReader(fis));

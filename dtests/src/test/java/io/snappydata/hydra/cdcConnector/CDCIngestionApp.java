@@ -27,14 +27,16 @@ public class CDCIngestionApp implements Runnable {
   private int startRange;
   private int endRange;
   private String endPoint;
+  private boolean isSecurityEnabled;
 
-  public CDCIngestionApp(int sRange, int eRange, int i, String path, String sqlServerInst, String hostName){
+  public CDCIngestionApp(int sRange, int eRange, int i, String path, String sqlServerInst, String hostName, boolean isSecurity){
     threadName = "Thread-" + i;
     startRange = sRange;
     endRange = eRange;
     filePath = path + "/insert" + i + ".sql";
     sqlServer = sqlServerInst;
     endPoint = hostName;
+    isSecurityEnabled = isSecurity;
   }
 
   public void run() {
@@ -57,9 +59,14 @@ public class CDCIngestionApp implements Runnable {
     Connection conn = null;
     String url = "jdbc:snappydata://" + endPoint;
     String driver = "io.snappydata.jdbc.ClientDriver";
-    try {
+    Properties props = new Properties();
+    if(isSecurityEnabled){
+      props.setProperty("user","gemfire");
+      props.setProperty("password","gemfire");
+    }
+   try {
       Class.forName(driver);
-      conn = DriverManager.getConnection(url);
+      conn = DriverManager.getConnection(url,props);
     } catch (Exception ex) {
       System.out.println("Caught exception in getSnappyConnection() method" + ex.getMessage());
     }
@@ -196,12 +203,12 @@ public class CDCIngestionApp implements Runnable {
     }
   }
 
-  public static void runIngestionApp(int sRange, int eRange, int thnCnt, String path, String sqlServerInst, String hostName) {
+  public static void runIngestionApp(int sRange, int eRange, int thnCnt, String path, String sqlServerInst, String hostName, boolean isSecurity) {
     ExecutorService executor = Executors.newFixedThreadPool(thnCnt);
     for (int i = 1; i <= thnCnt; i++) {
       String threadName = "Thread-" + i;
       System.out.println("Creating " + threadName);
-      executor.execute(new CDCIngestionApp(sRange, eRange, i,path, sqlServerInst, hostName));
+      executor.execute(new CDCIngestionApp(sRange, eRange, i,path, sqlServerInst, hostName, isSecurity));
     }
     executor.shutdown();
     try {
@@ -221,7 +228,7 @@ public class CDCIngestionApp implements Runnable {
       String sqlServerInstance = args[4];
       String hostname = args[5];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
-      runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname);
+      runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname, false);
     } catch (Exception e) {
       System.out.println("Caught exception in main " + e.getMessage());
     } finally {
