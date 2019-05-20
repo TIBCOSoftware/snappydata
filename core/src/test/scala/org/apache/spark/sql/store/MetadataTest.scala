@@ -634,8 +634,8 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*"))
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[app" +
+        ".rowtable1\\].*numBuckets = 1 numPartitions = 1.*"))
 
     // a filter that should not use store execution plan with JDBC
     ds = executeSQL("explain select * from rowTable1 where id > 10")
@@ -657,8 +657,8 @@ object MetadataTest extends Assertions {
       }
     }
 
-    var expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-        ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*id.* > " + literalString("10") + ".*"
+    var expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[app" +
+        ".rowtable1\\].*numBuckets = 1 numPartitions = 1.*id.* > " + literalString("10") + ".*"
 
     assert(matches(plan, expectedPattern))
 
@@ -676,8 +676,8 @@ object MetadataTest extends Assertions {
       assert(plan.contains("REGION-GET"))
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
-      expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[APP" +
-          ".ROWTABLE1\\].*numBuckets = 1 numPartitions = 1.*id.* = " + literalString("10") + ".*"
+      expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[app" +
+          ".rowtable1\\].*numBuckets = 1 numPartitions = 1.*id.* = " + literalString("10") + ".*"
       assert(matches(plan, expectedPattern))
     }
     // explain extended will route with JDBC since its not supported by store
@@ -694,8 +694,8 @@ object MetadataTest extends Assertions {
     expectedPattern = s".*Parsed Logical Plan.*Filter.*id = " + literalString("10") + "" +
         ".*Analyzed Logical Plan.*Filter.*id#[0-9]* = " + literalString("10") +
         ".*Optimized Logical Plan.*Filter.*id#[0-9]* = " + literalString("10") +
-        ".*RowFormatRelation\\[APP.ROWTABLE1\\].*Physical Plan.*Partitioned Scan" +
-        " RowFormatRelation\\[APP.ROWTABLE1\\].*numBuckets = 1 numPartitions = 1" +
+        ".*RowFormatRelation\\[app.rowtable1\\].*Physical Plan.*Partitioned Scan" +
+        " RowFormatRelation\\[app.rowtable1\\].*numBuckets = 1 numPartitions = 1" +
         ".*id.* = " + literalString("10") + ".*"
     assert(matches(plan, expectedPattern))
 
@@ -712,7 +712,7 @@ object MetadataTest extends Assertions {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
-        "\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
+        "\\[app.columntable2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
         s".*id#[0-9]*L = DynExpr\\(" + literalString("10") + "\\).*"
     assert(matches(plan, expectedPattern))
 
@@ -729,8 +729,8 @@ object MetadataTest extends Assertions {
     expectedPattern = s".*Parsed Logical Plan.*Filter.*id > ${literalString("20")}" +
         s".*Analyzed Logical Plan.*Filter.*id#[0-9]*L > cast\\(${literalString("20")} as bigint" +
         s".*Optimized Logical Plan.*Filter.*id#[0-9]*L > DynExpr\\(${literalString("20")}\\)" +
-        ".*ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*Physical Plan.*Partitioned Scan" +
-        " ColumnFormatRelation\\[APP.COLUMNTABLE2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
+        ".*ColumnFormatRelation\\[app.columntable2\\].*Physical Plan.*Partitioned Scan" +
+        " ColumnFormatRelation\\[app.columntable2\\].*numBuckets = [0-9]* numPartitions = [0-9]*" +
         s".*id#[0-9]*L > DynExpr\\(${literalString("20")}\\).*"
     assert(matches(plan, expectedPattern))
 
@@ -824,8 +824,8 @@ object MetadataTest extends Assertions {
     } else {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
-    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[SCHEMA2" +
-        ".ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*.*"))
+    assert(matches(plan, ".*Physical Plan.*Partitioned Scan RowFormatRelation\\[schema2" +
+        ".rowtable2\\].*numBuckets = 8 numPartitions = [0-9]*.*"))
 
     // a filter that should not use store execution plan with JDBC
     ds = executeSQL("explain select * from schema2.rowTable2 where id > 10")
@@ -839,7 +839,7 @@ object MetadataTest extends Assertions {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
     expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
-        "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
+        "\\[schema2.rowtable2\\].*numBuckets = 8 numPartitions = [0-9]*" +
         ".*id.* > " + literalString("10") + ".*"
     assert(matches(plan, expectedPattern))
 
@@ -859,7 +859,7 @@ object MetadataTest extends Assertions {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
       // no pruning for row tables yet
       expectedPattern = ".*Physical Plan.*Partitioned Scan RowFormatRelation" +
-          "\\[SCHEMA2.ROWTABLE2\\].*numBuckets = 8 numPartitions = [0-9]*" +
+          "\\[schema2.rowtable2\\].*numBuckets = 8 numPartitions = [0-9]*" +
           ".*id.* = " + literalString("15") + ".*"
       assert(matches(plan, expectedPattern))
     }
@@ -877,7 +877,7 @@ object MetadataTest extends Assertions {
       assert(ds.schema === StructType(Array(StructField("plan", StringType, nullable = true))))
     }
     assert(matches(plan, ".*Physical Plan.*Partitioned Scan ColumnFormatRelation" +
-        "\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
+        "\\[schema1.columntable1\\].*numBuckets = [0-9]* numPartitions = 1" +
         ".*id#[0-9]* = " + literalString("15") + ".*"))
 
     ds = executeSQL("explain extended select * from schema1.columnTable1 where id = 20")
@@ -895,8 +895,8 @@ object MetadataTest extends Assertions {
     assert(matches(plan, s".*Parsed Logical Plan.*Filter.*id = ${literalString("20")}" +
         ".*Analyzed Logical Plan.*Filter.*id#[0-9]* = " + literalString("20") +
         ".*Optimized Logical Plan.*Filter.*id#[0-9]* = " + literalString("20") +
-        ".*ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*Physical Plan.*Partitioned Scan" +
-        " ColumnFormatRelation\\[SCHEMA1.COLUMNTABLE1\\].*numBuckets = [0-9]* numPartitions = 1" +
+        ".*ColumnFormatRelation\\[schema1.columntable1\\].*Physical Plan.*Partitioned Scan" +
+        " ColumnFormatRelation\\[schema1.columntable1\\].*numBuckets = [0-9]* numPartitions = 1" +
         ".*id#[0-9]* = " + literalString("20") + ".*"))
 
     // ----- cleanup -----

@@ -61,7 +61,7 @@ class RowFormatRelation(
     with PartitionedDataSourceScan
     with RowPutRelation {
 
-  override def toString: String = s"RowFormatRelation[$table]"
+  override def toString: String = s"RowFormatRelation[${Utils.toLowerCase(table)}]"
 
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)

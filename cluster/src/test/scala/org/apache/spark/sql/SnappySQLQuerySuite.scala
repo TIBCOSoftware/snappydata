@@ -470,9 +470,9 @@ class SnappySQLQuerySuite extends SnappyFunSuite {
          |+- $analyzedFilter
          |   +- Join Inner, (id#0 = id#0)
          |      :- SubqueryAlias ct1
-         |      :  +- Relation[id#0,data#0] ColumnFormatRelation[APP.CT1]
+         |      :  +- Relation[id#0,data#0] ColumnFormatRelation[app.ct1]
          |      +- SubqueryAlias ct2
-         |         +- Relation[id#0,data#0] ColumnFormatRelation[APP.CT2]
+         |         +- Relation[id#0,data#0] ColumnFormatRelation[app.ct2]
          |""".stripMargin
     assert(idPattern.replaceAllIn(ds.queryExecution.analyzed.treeString, "#0") === expectedTree)
     assert(ds.collect() === Array(Row(100L, "data100")))

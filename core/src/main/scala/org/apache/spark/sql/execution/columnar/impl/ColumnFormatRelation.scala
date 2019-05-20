@@ -79,7 +79,7 @@ abstract class BaseColumnFormatRelation(
     with RowInsertableRelation
     with MutableRelation {
 
-  override def toString: String = s"${getClass.getSimpleName}[$table]"
+  override def toString: String = s"${getClass.getSimpleName}[${Utils.toLowerCase(table)}]"
 
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
