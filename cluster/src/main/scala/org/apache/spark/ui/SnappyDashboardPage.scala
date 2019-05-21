@@ -119,7 +119,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </h3>
       </div>
     </div>
-    <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
+    <div id="CPUCoresContainer">
       <div id="CPUCoresDetails">
         <div id="TotalCoresHolder">
           <span style="padding-left: 5px;"> Total CPU Cores: </span>
@@ -351,7 +351,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 }
 
 object SnappyDashboardPage {
-  val pageHeaderText = "SnappyData Dashboard"
+  val pageHeaderText = "Dashboard"
 
   object Status {
     val normal = "Normal"
@@ -363,7 +363,7 @@ object SnappyDashboardPage {
   val ValueNotApplicable = "N/A"
 
   val clusterStatsTitle = "Cluster"
-  val clusterStatsTitleTooltip = "SnappyData Clusters Summary"
+  val clusterStatsTitleTooltip = "Clusters Summary"
   val clusterStats = scala.collection.mutable.HashMap.empty[String, Any]
   clusterStats += ("status" -> "Cluster Status")
   clusterStats += ("members" -> "Members")
@@ -384,7 +384,7 @@ object SnappyDashboardPage {
   clusterStats += ("jvmHeapUsageTooltip" -> "Clusters Total JVM Heap Usage")
 
   val membersStatsTitle = "Members"
-  val membersStatsTitleTooltip = "SnappyData Members Summary"
+  val membersStatsTitleTooltip = "Members Summary"
   val memberStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   memberStatsColumn += ("expandCollapseTooltip" -> "Expand/Collapse All Rows")
   memberStatsColumn += ("status" -> "Status")
@@ -433,7 +433,7 @@ object SnappyDashboardPage {
   memberStatsColumn += ("jvmHeapMemoryTooltip" -> "Members used and total JVM Heap")
 
   val tablesStatsTitle = "Tables"
-  val tablesStatsTitleTooltip = "SnappyData Tables Summary"
+  val tablesStatsTitleTooltip = "Tables Summary"
   val tableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   tableStatsColumn += ("id" -> "Id")
   tableStatsColumn += ("idTooltip" -> "Tables unique Identifier")
@@ -457,7 +457,7 @@ object SnappyDashboardPage {
   tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
 
   val extTablesStatsTitle = "External Tables"
-  val extTablesStatsTitleTooltip = "SnappyData ExternalTables Summary"
+  val extTablesStatsTitleTooltip = "External Tables Summary"
   val extTableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   extTableStatsColumn += ("id" -> "Id")
   extTableStatsColumn += ("idTooltip" -> "External Tables unique Identifier")

@@ -69,7 +69,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   private var currentKeyPartitionId: Int = _
   private var currentKeyUUID: Long = _
   private var batchProcessed = false
-  private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
+  private var currentColumns: ArrayBuffer[ColumnFormatValue] = _
 
   override protected def createIterator(container: GemFireContainer, region: LocalRegion,
       tx: TXStateInterface): PRIterator = if (region ne null) {

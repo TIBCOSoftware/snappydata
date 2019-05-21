@@ -361,16 +361,17 @@ case class SnappyHashAggregateExec(
      """.stripMargin
   }
 
-  protected def genAssignCodeForWithoutKeys(ev: ExprCode, i: Int, doCopy: Boolean,
-      inputAttrs: Seq[Attribute]): String = {
+  protected def genAssignCodeForWithoutKeys(ctx: CodegenContext, ev: ExprCode, i: Int,
+      doCopy: Boolean, inputAttrs: Seq[Attribute]): String = {
     if (doCopy) {
       inputAttrs(i).dataType match {
         case StringType =>
           ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
-        case _: ArrayType | _: MapType | _: StructType =>
-          s"${bufVars(i).value} = ${ev.value} != null ? ${ev.value}.copy() : null;"
+        case d@(_: ArrayType | _: MapType | _: StructType) =>
+          val javaType = ctx.javaType(d)
+          s"${bufVars(i).value} = ($javaType)(${ev.value} != null ? ${ev.value}.copy() : null);"
         case _: BinaryType =>
-          s"${bufVars(i).value} = ${ev.value} != null ? ${ev.value}.clone() : null;"
+          s"${bufVars(i).value} = (byte[])(${ev.value} != null ? ${ev.value}.clone() : null);"
         case _ => s"${bufVars(i).value} = ${ev.value};"
       }
     } else s"${bufVars(i).value} = ${ev.value};"
@@ -404,7 +405,7 @@ case class SnappyHashAggregateExec(
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       s"""
          | ${bufVars(i).isNull} = ${ev.isNull};
-         | ${genAssignCodeForWithoutKeys(ev, i, doCopy, inputAttrs)}
+         | ${genAssignCodeForWithoutKeys(ctx, ev, i, doCopy, inputAttrs)}
       """.stripMargin
     }
     s"""

@@ -1,8 +1,8 @@
-# Securing SnappyData Pulse UI Connection
+# Securing SnappyData Monitoring Console Connection
 
-You can secure the SnappyData Pulse UI with SSL authentication, so that the UI can be accessed only over HTTPS. The following configurations are needed to set up SSL enabled connections for SnappyData Pulse UI:
+You can secure the SnappyData Monitoring Console with SSL authentication, so that the UI can be accessed only over HTTPS. The following configurations are needed to set up SSL enabled connections for SnappyData Monitoring Console:
 
-**To set up SSL enabled connections for SnappyData Pulse UI:**
+**To set up SSL enabled connections for SnappyData Monitoring Console:**
 
 1. Make sure that you have valid SSL certificate imported into truststore.
 2. Provide the following spark configuration in the conf/lead files:
@@ -15,7 +15,7 @@ You can secure the SnappyData Pulse UI with SSL authentication, so that the UI c
 
 3.	Launch the Snappy cluster.</br>
 	`./sbin/snappy-start-all.sh` 
-4.	Launch the Snappy Pulse UI in your web browser. You are directed to the HTTPS site.
+4.	Launch the SnappyData Monitoring Console in your web browser. You are directed to the HTTPS site.
 
 !!!Note
-	You are automatically redirected to HTTPS (on port 5450) even if the SnappyData Pulse UI is accessed with HTTP protocol.
+	You are automatically redirected to HTTPS (on port 5450) even if the SnappyData Monitoring Console is accessed with HTTP protocol.
