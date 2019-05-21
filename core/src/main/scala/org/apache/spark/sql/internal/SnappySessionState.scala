@@ -1182,11 +1182,13 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
             (SnappyExternalCatalog.DBTABLE_PROPERTY -> tableName)
         if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(provider))) {
           // add default batchSize and maxDeltaRows options for column tables
-          if (!newOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
+          val parameters = new ExternalStoreUtils.CaseInsensitiveMutableHashMap[String](
+            tableDesc.storage.properties)
+          if (!parameters.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
             newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
                 ExternalStoreUtils.defaultColumnMaxDeltaRows(state.snappySession).toString)
           }
-          if (!newOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
+          if (!parameters.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
             newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
                 ExternalStoreUtils.defaultColumnBatchSize(state.snappySession).toString)
           }

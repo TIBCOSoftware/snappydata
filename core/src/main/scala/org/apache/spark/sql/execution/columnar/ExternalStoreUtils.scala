@@ -183,6 +183,9 @@ object ExternalStoreUtils {
     }
   }
 
+  val emptyCIMutableMap: CaseInsensitiveMutableHashMap[String] =
+    new CaseInsensitiveMutableHashMap[String](Map.empty)
+
   def removeInternalProps(parameters: mutable.Map[String, String]): String = {
     val dbtableProp = SnappyExternalCatalog.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
@@ -255,7 +258,7 @@ object ExternalStoreUtils {
   }
 
   def validateAndGetAllProps(session: Option[SparkSession],
-      parameters: mutable.Map[String, String]): ConnectionProperties = {
+      parameters: CaseInsensitiveMutableHashMap[String]): ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(
       session.map(_.sparkContext)))
@@ -269,10 +272,10 @@ object ExternalStoreUtils {
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    val hikariCP = poolImpl.map(Utils.toLowerCase) match {
-      case Some("hikari") => true
-      case Some("tomcat") => false
+    val hikariCP = poolImpl match {
       case None => Constant.DEFAULT_USE_HIKARICP
+      case Some(s) if s.equalsIgnoreCase("tomcat") => false
+      case Some(s) if s.equalsIgnoreCase("hikari") => true
       case _ =>
         throw new IllegalArgumentException("ExternalStoreUtils: " +
             s"unsupported pool implementation '${poolImpl.get}' " +
@@ -315,7 +318,7 @@ object ExternalStoreUtils {
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
-        val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
+        val batchSize = parameters.get(COLUMN_BATCH_SIZE) match {
           case Some(s) => sizeAsBytes(s, COLUMN_BATCH_SIZE)
           case None => session.map(defaultColumnBatchSize).getOrElse(
             sizeAsBytes(Property.ColumnBatchSize.defaultValue.get, Property.ColumnBatchSize.name))
@@ -631,7 +634,7 @@ object ExternalStoreUtils {
     (ctx, cleanedSource)
   }
 
-  def getExternalStoreOnExecutor(parameters: mutable.Map[String, String],
+  def getExternalStoreOnExecutor(parameters: CaseInsensitiveMutableHashMap[String],
       partitions: Int, tableName: String, schema: StructType): ExternalStore = {
     val connProperties: ConnectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(None, parameters)

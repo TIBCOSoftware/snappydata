@@ -589,7 +589,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       // check for a system table/VTI in store
       val session = SparkSession.getActiveSession
       val conn = ConnectionUtil.getPooledConnection(schema, new ConnectionConf(
-        ExternalStoreUtils.validateAndGetAllProps(session, mutable.Map.empty)))
+        ExternalStoreUtils.validateAndGetAllProps(session, ExternalStoreUtils.emptyCIMutableMap)))
       try {
         // hive compatible filter patterns are different from JDBC ones
         // so get all tables in the schema and apply filter separately

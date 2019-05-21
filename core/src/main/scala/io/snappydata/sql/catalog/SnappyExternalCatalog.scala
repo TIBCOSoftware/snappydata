@@ -82,7 +82,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
       // check for a system table/VTI in store
       val session = Utils.getActiveSession
       val conn = ConnectionUtil.getPooledConnection(schema, new ConnectionConf(
-        ExternalStoreUtils.validateAndGetAllProps(session, mutable.Map.empty)))
+        ExternalStoreUtils.validateAndGetAllProps(session, ExternalStoreUtils.emptyCIMutableMap)))
       try {
         if (table == MEMBERS_VTI || JdbcExtendedUtils.tableExistsInMetaData(
           schema, table, conn, SysVTIs.LOCAL_VTI)) {

@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -1595,7 +1594,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(this), mutable.Map.empty[String, String])
+      Some(this), ExternalStoreUtils.emptyCIMutableMap)
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -1776,7 +1775,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def defaultConnectionProps: ConnectionProperties =
-    ExternalStoreUtils.validateAndGetAllProps(Some(this), mutable.Map.empty[String, String])
+    ExternalStoreUtils.validateAndGetAllProps(Some(this), ExternalStoreUtils.emptyCIMutableMap)
 
   private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
     ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
