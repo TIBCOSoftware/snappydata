@@ -4,32 +4,30 @@
 
 If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
-**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server.
+**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. The Hive Thrift server also starts by default. 
 
 ```pre
 $ ./sbin/snappy-start-all.sh
 ```
 
-It may take 30 seconds or more to bootstrap the entire cluster on your local machine.
+It may take 30 seconds or more to bootstrap the entire cluster on your local machine. An additional 10 seconds is required to start the Hive Thrift server. To avoid this additional 10 seconds, you can set the `snappydata.hiveServer.enabled` to false.
 
 **Sample Output**: The sample output for `snappy-start-all.sh` is displayed as:
 
 ```pre
-Starting SnappyData Locator using peer discovery on: localhost[10334]
-Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
-SnappyData Locator pid: 9368 status: running
-Starting SnappyData Server using locators for peer discovery: user1-laptop[10334]
-Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/user1/snappyData/work/localhost-server-1/snappyserver.log
-SnappyData Server pid: 9519 status: running
+Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-locator-1/snappylocator.log
+SnappyData Locator pid: 10813 status: running
+  Distributed system now has 1 members.
+  Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
+Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-server-1/snappyserver.log
+SnappyData Server pid: 11018 status: running
   Distributed system now has 2 members.
-  Other members: localhost(9368:locator)<v0>:16944
-Starting SnappyData Leader using locators for peer discovery: user1-laptop[10334]
-Logs generated in /home/user1/snappyData/work/localhost-lead-1/snappyleader.log
-SnappyData Leader pid: 9699 status: running
+  Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
+Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-lead-1/snappyleader.log
+SnappyData Leader pid: 11213 status: running
   Distributed system now has 3 members.
-  Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
+  Starting hive thrift server (session=snappy)
+  Starting job server on: 0.0.0.0[8090]
 ```
 
 ## Starting the SnappyData Cluster on Multiple Hosts

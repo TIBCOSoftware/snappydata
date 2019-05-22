@@ -1,7 +1,7 @@
-site_name: SnappyData Documentation v.1.0.2.1
+site_name: SnappyData Documentation 1.1.0
 site_url: http://www.snappydata.io
-site_description: Project documentation for SnappyData
-site_author: SnappyData Team
+site_description: Project documentation for SnappyData™
+site_author: SnappyData™ Team
 site_favicon: favicon.ico
 
 repo_url: https://github.com/SnappyDataInc/snappydata
@@ -10,17 +10,6 @@ pages:
 # this file may just be the [toc] tag .. not sure if that works.
 #
 - Overview: index.md
-# - Introduction: snappyIntroduction.md
-- 'Getting Started in 5 minutes or Less': 'quickstart.md'
-- 'Getting Started in 5 minutes or Less': 
-    - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
-    - 'Getting Started with SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-    - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
-    - 'Getting Started with SnappyData on Docker Image': 'quickstart/getting_started_with_docker_image.md'
-    - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
-    - 'SnappyData Performance:16x-20x faster than Apache Spark': 'quickstart/performance_apache_spark.md'
-    - 'Using SQL': 'quickstart/using_sql.md'
-    - 'SnappyData Cluster SQL Tutorials': 'quickstart/snappydataquick_start.md'
 - 'Provisioning SnappyData': 'install.md'
 - 'Provisioning SnappyData':
     - 'System Requirements': 'install/system_requirements.md'
@@ -30,6 +19,16 @@ pages:
     - 'Docker': 'quickstart/getting_started_with_docker_image.md'
     - 'Building from Source': 'install/building_from_source.md'
     - 'Upgrade Instructions': 'install/upgrade.md'
+- 'Getting Started in 5 minutes or Less': 'quickstart.md'
+- 'Getting Started in 5 minutes or Less': 
+    - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
+    - 'Getting Started with SnappyData On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
+    - 'Getting Started with SnappyData on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
+    - 'Getting Started with SnappyData on Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
+    - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
+    - 'Using SQL': 'quickstart/using_sql.md'
+    - 'Create SnappyData Cluster': 'quickstart/snappydataquick_start.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -66,6 +65,8 @@ pages:
     - 'How to Connect to the Cluster from External Network': 'howto/connect_to_the_cluster_from_external_clients.md'
     - 'How to Import Data from Hive Table into SnappyData Table': 'howto/import_from_hive_table.md'    
     - 'How to Export and Restore Table Data using HDFS': 'howto/export_hdfs.md'   
+    - 'How to Access SnappyData from Various SQL Client Tools': 'howto/connect_oss_vis_client_tools.md'
+    - 'How to connect TIBCO Spotfire® Desktop to SnappyData': 'howto/connecttibcospotfire.md' 
     - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
@@ -85,9 +86,9 @@ pages:
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
-    - 'SnappyData Jobs': 'programming_guide/snappydata_jobs.md'
+    - 'Snappy Jobs': 'programming_guide/snappydata_jobs.md'
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
-    - 'Using SnappyData Shell': 'programming_guide/using_snappydata_shell.md'
+    - 'Using Snappy Shell': 'programming_guide/using_snappydata_shell.md'
     - 'Using the Spark Shell and spark-submit': 'programming_guide/using_the_spark_shell_and_spark-submit.md'
     - 'Working with Hadoop YARN cluster Manager': 'programming_guide/working_with_hadoop_yarn_cluster_manager.md'
     - 'Using JDBC with SnappyData': 'programming_guide/using_jdbc_with_snappydata.md'
@@ -117,8 +118,8 @@ pages:
     - 'HA Considerations': 'best_practices/ha_considerations.md'    
     - 'Important Settings': 'best_practices/important_settings.md'
     - 'SnappyData Distributed Transactions': 'best_practices/transactions_best_practices.md'      
-- 'Synopsis Data Engine (SDE)': 'aqp.md'
-- 'Synopsis Data Engine (SDE)': 
+- 'Approximate Query Processing': 'aqp.md'
+- 'Approximate Query Processing': 
     - 'Key Concepts': 'sde/key_concepts.md'
     - 'Working with Stratified Samples': 'sde/working_with_stratified_samples.md'
     - 'Running Queries': 'sde/running_queries.md'
@@ -133,7 +134,7 @@ pages:
     - 'Using the SnappyData CDC (Change Data Capture) Connector': 'connectors/cdc_connector.md'
 - 'Managing and Monitoring': 'monitoring/managing_and_monitoring.md'
 - 'Managing and Monitoring':
-    - 'SnappyData Pulse': 'monitoring/monitoring.md'
+    - 'SnappyData Monitoring UI': 'monitoring/monitoring.md'
     - 'Configuring High Availability for a Partitioned Table': 'monitoring/configure_high_availability.md'    
     - 'Configuring Logging': 'monitoring/configure_logging.md'
     - 'Getting Information from SnappyData System Tables': 'monitoring/monitor-manage.md'    
@@ -147,7 +148,7 @@ pages:
     - 'Implementing Row Level Security': 'security/row_level_security.md'
     - 'Configuring Network Encryption and Authentication using SSL': 'security/configuring_network_encryption_and_authentication_using_ssl.md'
     - 'Enabling SSL Encryption in Different Socket Endpoints of SnappyData': 'configuring_cluster/ssl_setup.md'
-    - 'Securing SnappyData Pulse UI Connection': 'configuring_cluster/securinguiconnection.md'
+    - 'Securing SnappyData UI Connection': 'configuring_cluster/securinguiconnection.md'
     - 'User Names for Authentication, Authorization, and Membership': 'security/user_names_for_authentication_authorization_and_membership.md'
 - 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
 - 'Evaluating Statistics for the System and Applications':
@@ -298,7 +299,7 @@ pages:
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
     - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
-#    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
+    - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up SnappyData ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
     - 'Setting Up SnappyData JDBC Client and QlikView': 'setting_up_jdbc_driver_qlikview.md'
@@ -309,6 +310,7 @@ pages:
     - 'Preventing Disk Full Errors': 'troubleshooting/preventing_disk_full_errors.md'
     - 'Recovering from Disk Full Errors': 'troubleshooting/recovering_from_disk_full_errors.md'
     - 'Resolving Catalog Inconsistency Issues': 'troubleshooting/catalog_inconsistency.md'
+    - 'Troubleshooting Out-of-Memory (OOM) Error': 'troubleshooting/oom.md'
     - 'Collecting Logs, Stats and Dumps Using the collect-debug-artifacts Script': 'troubleshooting/collect_debug_artifacts.md'
     - 'Troubleshooting Error Messages': 'troubleshooting/troubleshooting_error_messages.md'  
 #- Additional Information: additional_files/additional_docs.md
@@ -316,12 +318,10 @@ pages:
 #   - Contributing: about/contributing.md
 - Community Edition/ Enterprise Edition Features: additional_files/open_source_components.md
 - 'License Model': 'additional_files/license_model.md'
-- 'Release Notes': 'release_notes/release_notes.md'
-- 'Release Notes': 
-    - 'Known Issues': 'release_notes/known_issues.md'
-- Doc Archives: prev_doc_ver.md
-- Contact and Support: techsupport.md
-- License: LICENSE.md
+- 'Release Notes': 'release_notes/release_notes.md' 
+- 'Doc Archives': prev_doc_ver.md
+- 'Contact and Support': techsupport.md
+- 'License': LICENSE.md
 
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
@@ -341,4 +341,5 @@ extra_css:
 markdown_extensions:
     - admonition 
     
-copyright: Copyright &copy; 2018 SnappyData Inc.
+copyright: Copyright © 2017-2019 TIBCO Software Inc. All rights reserved. 
+
