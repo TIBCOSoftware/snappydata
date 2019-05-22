@@ -147,6 +147,7 @@ public class SnappyConsistencyTest extends SnappyTest {
         query = query + " tid = " + tid;
       }
     } else {
+      dmlOp = "insert";
       query = selectStmt[0];
     }
     try {
@@ -193,22 +194,18 @@ public class SnappyConsistencyTest extends SnappyTest {
   }
 
   public static boolean verifyAtomicity(int rs_before, int rs_after, String op) {
-    if(op.isEmpty()){
-      return false;
-    } else {
-      if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("delete")) {
-        Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
-            "after DML start : " + rs_after);
-        if (rs_after % 1000 == 0)
-          return true;
-      } else if (op.equalsIgnoreCase("update")) {
-        Log.getLogWriter().info("Avg before update: " + rs_before + " and Avg after update " +
-            "started  : " + rs_after);
-        if (rs_after % 5 == 0)
-          return true;
-      }
-      return false;
+    if (op.equalsIgnoreCase("insert") || op.equalsIgnoreCase("delete")) {
+      Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
+          "after DML start : " + rs_after);
+      if (rs_after % 1000 == 0)
+        return true;
+    } else if (op.equalsIgnoreCase("update")) {
+      Log.getLogWriter().info("Avg before update: " + rs_before + " and Avg after update " +
+          "started  : " + rs_after);
+      if (rs_after % 5 == 0)
+        return true;
     }
+    return false;
   }
 
   public enum DMLOp {
