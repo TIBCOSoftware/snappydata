@@ -1,23 +1,23 @@
-# Setting Up SnappyData ODBC Driver
+# Setting Up TIBCO ComputeDB ODBC Driver
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData, which is called TIBCO ComputeDB Enterprise Edition. </br></ent>
 
 !!! Note
-	* This is currently tested and supported only on Windows 10 (32-bit and 64-bit systems).
+    * This is currently tested and supported only on Windows 10 (32-bit and 64-bit systems).
 
     * [Download and Install Visual C++ Redistributable for Visual Studio 2013](https://www.microsoft.com/en-in/download/details.aspx?id=40784) 
 
-## Step 1: Install the SnappyData ODBC Driver
+## Step 1: Install the TIBCO ComputeDB ODBC Driver
 
-1. [Download the SnappyData 1.0.2.1 Enterprise Edition](install.md#download-snappydata).
+1. [Download the TIBCO ComputeDB 1.1.0 Enterprise Edition](install.md#download-snappydata).
 
-2. Click **ODBC INSTALLERS** to download the **snappydata-odbc-1.0.2.zip** file.
+2. Click **ODBC INSTALLERS** to download the **TIB_compute-odbc_1.1.0_win.zip** file.
 
-3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the  SnappyData ODBC driver.
+3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the TIBCO ComputeDB ODBC driver.
 
-## Step 2: Create SnappyData DSN from ODBC Data Sources 64-bit/32-bit
+## Step 2: Create TIBCO ComputeDB DSN from ODBC Data Sources 64-bit/32-bit
 
-To create SnappyData DSN from ODBC Data Sources:
+To create TIBCO ComputeDB DSN from ODBC Data Sources:
 
 1. Open the **ODBC Data Source Administrator** window:
 
@@ -29,13 +29,13 @@ To create SnappyData DSN from ODBC Data Sources:
 
 3. Click **Add** to view the list of installed ODBC drivers on your machine.
 
-4. From the list of drivers, select **SnappyData ODBC Driver** and click **Finish**.
+4. From the list of drivers, select **TIBCO ComputeDB ODBC Driver** and click **Finish**.
 
-5. The **SnappyData ODBC Configuration** dialog is displayed. </br>Enter the following details to create a DSN:
+5. The **TIBCO ComputeDB ODBC Configuration** dialog is displayed. </br>Enter the following details to create a DSN:
 
 	* **Data Source Name**: Name of the Data Source. For example, *snappydsn*.  
 
-	* **Server (Hostname or IP)**: IP address of the data server which is running in the SnappyData cluster.
+	* **Server (Hostname or IP)**: IP address of the data server which is running in the TIBCO ComputeDB cluster.
 
 	* **Port**: Port number of the server. By default, it is **1528** for the first data server in the cluster, if all the nodes in the cluster are started on the same machine.
 
@@ -49,4 +49,4 @@ To create SnappyData DSN from ODBC Data Sources:
 !!! Note
 	Ensure that you provide the IP Address/Host Name and Port number of the data server. If you provide the details of the locator, the connection fails. 
 
-For information about connecting Tableau using SnappyData ODBC Driver, refer to [Connect Tableau using ODBC Driver](./howto/tableauconnect.md#odbcdritab)
+For information about connecting Tableau using TIBCO ComputeDB ODBC Driver, refer to [Connect Tableau using ODBC Driver](./howto/tableauconnect.md#odbcdritab)
