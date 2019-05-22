@@ -16,30 +16,22 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.nio.{ByteBuffer, ByteOrder}
-import java.sql.{Connection, ResultSet, Statement}
+import java.nio.ByteBuffer
 import java.util.function.BiFunction
 
 import scala.collection.mutable.ArrayBuffer
 import scala.language.implicitConversions
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.EntryDestroyedException
-import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, FetchRequest}
+import com.gemstone.gemfire.internal.cache.{BucketRegion, LocalRegion, NonLocalRegionEntry, PartitionedRegion, RegionEntry, TXStateInterface}
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedConnection
-import io.snappydata.thrift.common.BufferedBlob
-import org.eclipse.collections.api.block.procedure.Procedure
-import org.eclipse.collections.impl.map.mutable.primitive.IntObjectHashMap
 
-import org.apache.spark.memory.MemoryManagerCallback.releaseExecutionMemory
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnEncoding, UpdatedColumnDecoder, UpdatedColumnDecoderBase}
 import org.apache.spark.sql.execution.columnar.impl._
 import org.apache.spark.sql.execution.row.PRValuesIterator
-import org.apache.spark.sql.store.CompressionUtils
 import org.apache.spark.sql.types.StructField
-import org.apache.spark.{Logging, TaskContext, TaskContextImpl, TaskKilledException}
 
 case class ColumnBatch(numRows: Int, buffers: Array[ByteBuffer],
     statsData: Array[Byte], deltaIndexes: Array[Int])
@@ -77,7 +69,7 @@ final class ColumnBatchIterator(region: LocalRegion, val batch: ColumnBatch,
   private var currentKeyPartitionId: Int = _
   private var currentKeyUUID: Long = _
   private var batchProcessed = false
-  private var currentColumns = new ArrayBuffer[ColumnFormatValue]()
+  private var currentColumns: ArrayBuffer[ColumnFormatValue] = _
 
   override protected def createIterator(container: GemFireContainer, region: LocalRegion,
       tx: TXStateInterface): PRIterator = if (region ne null) {
