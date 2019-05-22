@@ -432,7 +432,8 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
           |$valueOffsetTerm = -1 * $valueOffsetTerm;
           |// $bbDataClass $tempValueData = $hashMapTerm.getValueData();
           |// if ($valueDataTerm !=  $tempValueData) {
-          |if ($valueOffsetTerm >=  $valueDataCapacityTerm) {
+          |if ( ($valueOffsetTerm + $numValueBytesTerm + $numKeyBytesTerm) >=
+          |  $valueDataCapacityTerm) {
             |//$valueDataTerm = $tempValueData;
             |$valueDataTerm =  $hashMapTerm.getValueData();
             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
