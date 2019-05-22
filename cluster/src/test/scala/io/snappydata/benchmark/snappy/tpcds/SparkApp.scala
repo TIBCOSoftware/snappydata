@@ -32,6 +32,10 @@ object SparkApp {
       .appName("TPCDS_Spark")
       .getOrCreate()
 
+    for(arg <- args){
+      println(arg)
+    }
+
     val sparkSqlProps = args(0).split(",")
     val dataLocation = args(1)
     val queries = args(2).split(",").toSeq
@@ -143,7 +147,7 @@ object SparkApp {
         var totalTime: Long = 0
 
         // scalastyle:off println
-        //println("Query : " + queryString)
+        println(s"Running Query $name now.")
 
         for (i <- 1 to (warmUp + runsForAverage)) {
           // queryPrintStream.println(queryToBeExecuted)

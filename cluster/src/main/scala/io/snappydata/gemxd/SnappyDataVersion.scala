@@ -70,11 +70,13 @@ object SnappyDataVersion {
 
     // platform version
     loadProperties()
-    pw.println("SnappyData Platform Version " + GemFireVersion.getProductVersion +
-        " " + GemFireVersion.getProductReleaseStage)
+    val platform = s" Platform Version ${GemFireVersion.getProductVersion} " +
+        s"${GemFireVersion.getProductReleaseStage}"
 
     // rowstore version
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+    val product = if (GemFireVersion.isEnterpriseEdition) "TIBCO ComputeDB" else "SnappyData"
+    pw.println(product + platform)
     pw.printf("%4s%s\n", " ", GemFireVersion.getProductName + " " +
         GemFireVersion.getProductVersion + " " + GemFireVersion.getProductReleaseStage)
 
