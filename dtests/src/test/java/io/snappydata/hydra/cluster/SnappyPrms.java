@@ -253,6 +253,11 @@ public class SnappyPrms extends BasePrms {
   public static Long isTPCHSchema;
 
   /**
+   * (boolean) - whether mix of schemas to be used in test for running the queries concurrently.
+   */
+  public static Long isStabilityTest;
+
+  /**
    * (boolean) - whether to enable time statistics. snappy hydra already sets the
    * enable-time-statistics to true.
    */

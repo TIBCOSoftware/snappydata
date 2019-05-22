@@ -29,7 +29,7 @@ class CreateAndLoadNWTablesJob extends SnappySQLJob {
     val pw = new PrintWriter(new FileOutputStream(new File("CreateAndLoadNWTablesJob.out"), true));
     Try {
       val snc = snSession.sqlContext
-      snc.sql("set spark.sql.shuffle.partitions=23")
+     // snc.sql("set spark.sql.shuffle.partitions=23")
       // scalastyle:off println
       println("jobConfig.entrySet().size() : " + jobConfig.entrySet().size())
       val dataFilesLocation = jobConfig.getString("dataFilesLocation")

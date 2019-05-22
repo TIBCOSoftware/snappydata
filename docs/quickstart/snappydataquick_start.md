@@ -1,4 +1,4 @@
-# SnappyData Cluster SQL Tutorial
+# Create SnappyData Cluster
  
 In this section, you will get a quick tour to start a SnappyData cluster and try out the basic features and functionalities. The following items are covered in this guide:
 
@@ -31,15 +31,15 @@ Navigate to the SnappyData product root directory to start the cluster. Run the 
 ```pre
 $./sbin/snappy-start-all.sh
 
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 9086 status: running
   Distributed system now has 1 members.
   Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-server-1/snappyserver.log
+Logs generated in /home/xyz/<snappydata_install_dir>/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 9220 status: running
   Distributed system now has 2 members.
   Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
-Logs generated in /home/xyz/Product_Checkout/snappydata/build-artifacts/scala-2.11/snappy/work/localhost-lead-1/snappyleader.log
+Logs generated in /home/xyz/<snappydata_install_dir>/snappy/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 9370 status: running
   Distributed system now has 3 members.
   Starting job server on: 0.0.0.0[8090]
@@ -76,7 +76,7 @@ SnappyData Leader pid: 10468 status: running
 Connect to  [Snappy SQL shell](#connectsnappyshell) to perform various SQL operations.
 
 
-Alternatively , you can access the [SnappyData Pulse](/monitoring/monitoring.md) monitoring tool by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Pulse dashboards, after starting a cluster, you can check the status of each of the cluster member.
+Alternatively , you can access the [SnappyData Monitoring Console](/monitoring/monitoring.md) by entering  [http:// `<leadhost>`:5050/dashboard/]() in the web browser. For example,  http://localhost:5050/dashboard/. </br>` <leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the conf/leads file. On the SnappyData Monitoring Console dashboards, after starting a cluster, you can check the status of each of the cluster member.
 
 <a id= connectsnappyshell> </a>
 ## Connect/Disconnect to SnappyData Shell
@@ -133,7 +133,7 @@ SnappyData contains various quickstart scripts that can be used to run some basi
 			
             ./bin/snappy
 			connect client '127.0.0.1:1527';
-    		run quickstart/scripts/create_and_load_column_table.sql;
+    		RUN 'quickstart/scripts/create_and_load_column_table.sql';
             
             # Use the following command to view the details of the external table. 
 			describe staging_airline;
@@ -185,18 +185,17 @@ You can also try the following:
 
 *	**Create and load a row table:**
 
-		run ./quickstart/scripts/create_and_load_row_table.sql;
+		RUN './quickstart/scripts/create_and_load_row_table.sql';
 
 *	**View the status of the system:**
 
-		run ./quickstart/scripts/status_queries.sql;
+		RUN './quickstart/scripts/status_queries.sql';
 
 <a id= createcoltabwithext> </a>
 ## Create a Column Table Using an External Table 
 Similarly as the quickstart scripts, you can try to create an external table named staging_airline to load the formatted data from a airlineParquetData file with inferSchema option as true. Later, you can create a column table named airline and pull data from the external table into this table. After pulling in the data, you can check the number of records in the table.
 
-				CREATE EXTERNAL TABLE STAGING_AIRLINE
-   	USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData', inferSchema 'true');
+		CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet OPTIONS(path '../../quickstart/data/airlineParquetData', inferSchema 'true');
     
     		CREATE TABLE AIRLINE2 USING column AS (SELECT * FROM STAGING_AIRLINE);
             
@@ -244,7 +243,7 @@ Similarly as the quickstart scripts, you can try to create an external table nam
 
         1 row selected
 
-After running these queries, you can check the table details on the SnappyData Pulse Dashboards. The details of the newly created tables are displayed in the **Tables** section.
+After running these queries, you can check the table details on the SnappyData Monitoring Console Dashboards. The details of the newly created tables are displayed in the **Tables** section.
 
 ![External Table & Tables on Dashboard](../Images/externaltable_scripts.png)
 
@@ -282,10 +281,10 @@ NULL
 
 You can add more than one server to a cluster. To add a new server, do the following:
 
-1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
+1.	Go to SnappyData home directory.</br>`cd <snappydata_install_dir>`
 2.	Create a configuration file named **servers** in the conf folder in the the SnappyData home directory. To do so, you can copy the existing template files **servers.template** and rename it to **servers** as shown:</br>`cp -f conf/servers.template conf/servers`
 3. Open this file using a vi editor and add a hostname entry of the additional server, after the entry of the primary server, and save the file. </br>For example, suppose there is an entry **localhost** in this file for the primary server. You can add an entry **localhost** below this entry for the additional server. The **servers** file should contain the hostnames of the nodes (one per line) where you intend to start the member.
-4. From the SnappyData home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Pulse UI. 
+4. From the SnappyData home directory, start the cluster again using the `./sbin/snappy-start-all.sh` command. The new server gets started. Ignore the error messages of the other nodes that are already running. You can check  details of the newly added member from the SnappyData Monitoring Console. 
 
 <a id= rebalancedataonserver> </a>
 ## Rebalancing Data on Servers
@@ -293,10 +292,10 @@ You can add more than one server to a cluster. To add a new server, do the follo
 Further, you can distribute the data among the servers in the cluster. This ensures that each server carries almost equal data.
 To balance the data equally on the servers, do the following:
 
-1.	Go to SnappyData home directory.</br>`cd snappydata/build-artifacts/scala-2.11/snappy`
+1.	Go to SnappyData home directory.</br>`cd <snappydata_install_dir>`
 2.	[Connect to snappy shell](#connectsnappyshell) and obtain the jdbc client connection.
 3.	Run the rebalance command.</br> `call sys.rebalance_all_buckets();`
-4.	On SnappyData Pulse UI, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
+4.	On SnappyData Monitoring Console, check the Heap Memory Used/Total column for the servers. You will notice that before rebalancing the data, there was an unequal distribution of the memory usage and after running the rebalance command, the data is distributed equally among both the servers.
 
 	**Before Rebalance**
     

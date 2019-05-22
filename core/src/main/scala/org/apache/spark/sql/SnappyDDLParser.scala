@@ -17,7 +17,6 @@
 
 package org.apache.spark.sql
 
-
 import java.io.File
 
 import scala.util.Try
@@ -29,6 +28,7 @@ import io.snappydata.{Constant, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
 
+import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.analysis.UnresolvedRelation
 import org.apache.spark.sql.catalyst.catalog.{FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
@@ -46,6 +46,7 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
+import org.apache.spark.sql.execution.InvalidateCachedPlans
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -128,7 +129,9 @@ abstract class SnappyDDLParser(session: SparkSession)
   final def COMMENT: Rule0 = rule { keyword(Consts.COMMENT) }
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
+  final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
+  final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
   final def DESCRIBE: Rule0 = rule { keyword(Consts.DESCRIBE) }
   final def DISABLE: Rule0 = rule { keyword(Consts.DISABLE) }
   final def DISTRIBUTE: Rule0 = rule { keyword(Consts.DISTRIBUTE) }
@@ -279,6 +282,30 @@ abstract class SnappyDDLParser(session: SparkSession)
       CreateTableUsingCommand(tableIdent, None, userSpecifiedSchema, schemaDDL,
         provider, mode, options, remaining._3, external == None)
     }
+  }
+
+  protected final def booleanLiteral: Rule1[Boolean] = rule {
+    TRUE ~> (() => true) | FALSE ~> (() => false)
+  }
+
+  protected final def numericLiteral: Rule1[String] = rule {
+    capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
+        plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
+        Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => s)
+  }
+
+  protected final def defaultLiteral: Rule1[Option[String]] = rule {
+    stringLiteral ~> ((s: String) => Option(s)) |
+    numericLiteral ~> ((s: String) => Option(s)) |
+    booleanLiteral ~> ((b: Boolean) => Option(b.toString)) |
+    NULL ~> (() => None)
+  }
+
+  protected final def defaultVal: Rule1[Option[String]] = rule {
+    (DEFAULT ~ defaultLiteral ~ ws).?  ~> ((value: Any) => value match {
+        case Some(v) => v.asInstanceOf[Option[String]]
+        case None => None
+      })
   }
 
   protected final def policyFor: Rule1[String] = rule {
@@ -481,10 +508,10 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
-        ADD ~ COLUMN.? ~ column ~ EOI ~> AlterTableAddColumnCommand |
+        ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
-        ANY. + ~ EOI ~> ((r: TableIdentifier) =>
-          DMLExternalTable(r, UnresolvedRelation(r), input.sliceString(0, input.length)))
+        capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedNormalizedId(r)} $s"))
     )
   }
 
@@ -676,7 +703,11 @@ abstract class SnappyDDLParser(session: SparkSession)
           if (separatorIndex >= 0) {
             val key = rest.substring(0, separatorIndex).trim
             val value = rest.substring(separatorIndex + 1).trim
-            SetCommand(Some(key -> Option(value)))
+            if (key.startsWith("spark.sql.aqp.")) {
+              new SetCommand(Some(key -> Option(value))) with InvalidateCachedPlans
+            } else {
+              SetCommand(Some(key -> Option(value)))
+            }
           } else if (rest.nonEmpty) {
             SetCommand(Some(rest.trim -> None))
           } else {
