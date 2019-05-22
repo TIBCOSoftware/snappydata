@@ -22,7 +22,7 @@ import scala.reflect.runtime.universe._
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import io.snappydata.Property
-import io.snappydata.collection.ByteBufferData
+import io.snappydata.collection.{ByteBufferData, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -30,8 +30,10 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
 
 case class SHAMapAccessor(@transient session: SnappySession,
@@ -46,9 +48,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
-  multiBytesWrapperTerm: String, valueDataCapacityTerm: String,
+   valueDataCapacityTerm: String,
   storedAggNullBitsTerm: Option[String], aggregateBufferVars: Seq[String],
-keyHolderCapacityTerm: String) extends CodegenSupport {
+keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSupport {
 
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -446,31 +448,12 @@ keyHolderCapacityTerm: String) extends CodegenSupport {
 
   def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: String,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType], hashVar: Array[String]): String = {
-    if (numBytesForNullKeyBits == 0 && keysDataType.forall(_ == StringType)) {
-      if (keysDataType.size > 2 || keysDataType.size == 1) {
+    if (allStringGroupKeys) {
         s"""
-           |${
-          keyVars.map(_.value).zipWithIndex.map {
-            case (varName, i) =>
-              s"""
-                 |${multiBytesWrapperTerm}[$i] = $varName;
-                  """.stripMargin
-          }.mkString("\n")
-        }
-
-        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($multiBytesWrapperTerm,
-            $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
-        """.stripMargin
-        } else {
-        s"""
-
            |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent(
            |${keyVars.map(_.value).mkString(",")},
             $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
        """.stripMargin
-        }
-
-
     } else {
       s"""
          |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyVars, keysDataType)}
@@ -1059,6 +1042,173 @@ keyHolderCapacityTerm: String) extends CodegenSupport {
   }.unzip
 
 
+
+  def generateCustomSHAMapClass(className: String, numUtf8StringParams: Int): String = {
+    val shaMapClass = classOf[SHAMap].getName
+    val params = Array.fill[String](numUtf8StringParams)(ctx.freshName("utf8param"))
+    val utf8StringClass = classOf[UTF8String].getName
+    val args = params.map(prm => s"$utf8StringClass $prm").mkString(",")
+    val platformClass = classOf[Platform].getName
+    val columnEncodingClass = ColumnEncoding.getClass.getName + ".MODULE$"
+    val bbDataClass = classOf[ByteBufferData].getName
+    def generatePutIfAbsent(): String =
+        s"""
+           | public int putBufferIfAbsent($args, int numKeyBytes, int numBytes, int hash) {
+           |    $bbDataClass keyData = this.keyData();
+           |    Object mapKeyObject = keyData.baseObject();
+           |    long mapKeyBaseOffset = keyData.baseOffset();
+           |    int fixedKeySizeLocal = fixedKeySize();
+           |    int localMask = this.mask();
+           |    int pos = hash & localMask;
+           |    int delta = 1;
+           |    while (true) {
+           |      long mapKeyOffset = mapKeyBaseOffset + fixedKeySizeLocal * pos;
+           |      long mapKey = $platformClass.getLong(mapKeyObject, mapKeyOffset);
+           |      // offset will at least be 4 so mapKey can never be zero when occupied
+           |      if (mapKey != 0L) {
+           |        // first compare the hash codes followed by "equalsSize" that will
+           |        // include the check for 4 bytes of numKeyBytes itself
+           |        int valueStartOffset = (int)(mapKey >>> 32L) - 4;
+           |        if (hash == (int)mapKey && equalsSize(valueStartOffset,
+           |         ${params.mkString(",")}, numKeyBytes)) {
+           |          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4);
+           |        } else {
+           |          // quadratic probing (increase delta)
+           |          pos = (pos + delta) & localMask;
+           |          delta += 1;
+           |        }
+           |      } else {
+           |        // insert into the map and rehash if required
+           |        long relativeOffset = customNewInsert(${params.mkString(",")}, numKeyBytes,
+           |         numBytes);
+           |        $platformClass.putLong(mapKeyObject, mapKeyOffset,
+           |          (relativeOffset << 32L) | (hash & 0xffffffffL));
+           |        return handleNew(mapKeyObject, mapKeyOffset, (int)relativeOffset);
+           |      }
+           |    }
+           |   // return 0; // not expected to reach
+           |  }
+       """.stripMargin
+
+
+    def generateCustomNewInsert(): String = {
+      val snippet1 = params.take(params.length -1).map(param => {
+      val partLen = ctx.freshName("partLength")
+        s"""
+           |int $partLen = $param.numBytes();
+           |$platformClass.putInt(valueBaseObject, position, $partLen);
+           |position += 4;
+           |$platformClass.copyMemory($param.getBaseObject(), $param.getBaseOffset(),
+           | valueBaseObject, position, $partLen);
+           |position += $partLen;
+        """.stripMargin
+      } ).mkString("\n")
+      val partLen2 = ctx.freshName("partLength")
+      val lastParam = params.last
+      val snippet2 =
+        s"""
+           |int $partLen2 = $lastParam.numBytes();
+           |$platformClass.copyMemory($lastParam.getBaseObject(), $lastParam.getBaseOffset(),
+           | valueBaseObject, position, $partLen2);
+           |position += $partLen2;
+        """.stripMargin
+      s"""
+         |public int customNewInsert($args, int numKeyBytes, int numBytes ) {
+           |long position = valueDataPosition();
+           |$bbDataClass valueDataLocal = this.valueData();
+           |long dataSize = position - valueDataLocal.baseOffset();
+           |if (position + numBytes + 4 > valueDataLocal.endPosition()) {
+             |valueDataLocal = valueDataLocal.resize(numBytes + 4, allocator());
+             |valueData_$$eq(valueDataLocal);
+             |position = valueDataLocal.baseOffset() + dataSize;
+           |}
+           |Object valueBaseObject = valueDataLocal.baseObject();
+           |// write the key size followed by the full key+value bytes
+           |$columnEncodingClass.writeInt(valueBaseObject, position, numKeyBytes);
+           |position += 4;
+           |long startPosition = position;
+           |$snippet1
+           |$snippet2
+           |valueDataPosition_$$eq(startPosition + numBytes);
+           |// return the relative offset to the start excluding numKeyBytes
+           |return (int)(dataSize + 4);
+         |}
+       """.stripMargin
+    }
+
+    def generateEqualSize(): String = {
+      s"""
+         |public boolean equalsSize(int srcOffset, $args, int size) {
+           |$bbDataClass valueData = this.valueData();
+           |Object baseObject = valueData.baseObject();
+           |long offset = valueData.baseOffset() + srcOffset;
+           |// below is ColumnEncoding.readInt and not Platform.readInt because the
+           |// write is using ColumnEncoding.writeUTF8String which writes the size
+           |// using former (which respects endianness)
+           |return $columnEncodingClass.readInt(baseObject, offset) == size &&
+           | stringEquals(baseObject, offset + 4, ${params.mkString(",")});
+           |
+         |}
+       """.stripMargin
+    }
+
+    def generateStringEquals(): String = {
+      val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
+      val snippet1 = params.take(params.length -1).map(param => {
+        val partLen = ctx.freshName("partLength")
+        s"""
+          |int $partLen = $param.numBytes();
+          |if ($partLen != $platformClass.getInt(leftBase,
+          |currentLeftOffset)) {
+          |  return false;
+          |}
+          |currentLeftOffset += 4;
+          |if (!$byteArrayEqualsClass.arrayEquals(leftBase, currentLeftOffset,
+          |        $param.getBaseObject(), $param.getBaseOffset(),
+          |        $partLen)) {
+          |   return false;
+          |}
+          |currentLeftOffset += $partLen;
+        """.stripMargin
+      } ).mkString("\n")
+
+      val partLen2 = ctx.freshName("partLength")
+      val lastParam = params.last
+      val snippet2 =
+        s"""
+           |int $partLen2 = $lastParam.numBytes();
+           |if (!$byteArrayEqualsClass.arrayEquals(leftBase,
+           |currentLeftOffset, $lastParam.getBaseObject(),
+           | $lastParam.getBaseOffset(), $partLen2)) {
+           |   return false;
+           |}
+           |return true;
+        """.stripMargin
+
+
+      s"""
+         |public boolean stringEquals(Object leftBase, long leftOffset, $args) {
+           |long currentLeftOffset = leftOffset;
+           |$snippet1
+           |$snippet2
+         |}
+       """.stripMargin
+
+    }
+
+    s"""
+       |static class $className extends $shaMapClass {
+       |   public $className(int valueSize) {
+       |     super(valueSize);
+       |   }
+       |${generatePutIfAbsent()}
+       |${generateCustomNewInsert()}
+       |${generateEqualSize()}
+       |${generateStringEquals()}
+       |}
+     """.stripMargin
+
+  }
 
 
   /**

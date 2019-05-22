@@ -42,7 +42,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 import io.snappydata.Property
-import io.snappydata.collection.{ByteBufferData, MultiByteSourceWrapper, ObjectHashSet, SHAMap}
+import io.snappydata.collection.{ByteBufferData, ObjectHashSet, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.InternalRow
@@ -703,8 +703,9 @@ case class SnappyHashAggregateExec(
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
-    val hashSetClassName = classOf[SHAMap].getName
 
+    val shaMapClassName = classOf[SHAMap].getName
+    val customShaMapClassName = ctx.freshName("CustomSHAMap")
 
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
@@ -798,16 +799,7 @@ case class SnappyHashAggregateExec(
     } else ""
 
 
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
-
-    val multiBytesClass = classOf[MultiByteSourceWrapper].getName
-    val multiBytesWrapperTerm = ctx.freshName("multiBytesWrapper")
-    val multiBytesDeclaration = if (numBytesForNullKeyBits == 0 &&
-      keysDataType.forall(_ == StringType)) {
-      s"""
-         |$utf8Class[] $multiBytesWrapperTerm = new $utf8Class[${keysDataType.length}];
-       """.stripMargin
-    } else ""
+    val allStringGroupKeys = numBytesForNullKeyBits == 0 &&  keysDataType.forall(_ == StringType)
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
@@ -829,12 +821,10 @@ case class SnappyHashAggregateExec(
       numBytesForNullAggsBits, nullAggsBitsetTerm,
       sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
-      skipLenForAttrib, codeForLenOfSkippedTerm, multiBytesWrapperTerm,
+      skipLenForAttrib, codeForLenOfSkippedTerm,
       valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
-      aggregateBufferVars, keyHolderCapacityTerm)
-
-
+      aggregateBufferVars, keyHolderCapacityTerm, allStringGroupKeys)
 
     val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
@@ -845,18 +835,39 @@ case class SnappyHashAggregateExec(
       (if (skipLenForAttrib != -1) 4 else 0)
 
 
+    if (allStringGroupKeys) {
+      ctx.addMutableState(customShaMapClassName, hashMapTerm, "")
+      ctx.addNewFunction(customShaMapClassName, byteBufferAccessor.
+        generateCustomSHAMapClass(customShaMapClassName, keysDataType.length))
+
+    } else {
+      ctx.addMutableState(shaMapClassName, hashMapTerm, "")
+    }
+
+
+   val hashMapCreatorCode = if (allStringGroupKeys) {
+     s"""
+        |$hashMapTerm = new $customShaMapClassName($valueSize);
+      """.stripMargin
+   } else {
+     s"""
+        |$hashMapTerm = new $shaMapClassName($valueSize);
+      """.stripMargin
+   }
+
+
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
+
     ctx.addNewFunction(doAgg,
       s"""private void $doAgg() throws java.io.IOException {
-           |$hashMapTerm = new $hashSetClassName($valueSize);
+           |$hashMapCreatorCode
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
            |$byteBufferClass $keyBytesHolderVar = null;
            |int $keyHolderCapacityTerm = 0;
            |Object $baseKeyObject = null;
            |long $baseKeyHolderOffset = -1L;
-           |$multiBytesDeclaration
            |$bbDataClass $valueDataTerm = $hashMapTerm.getValueData();
            |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
            |long $vdBaseOffsetTerm = $valueDataTerm.baseOffset();
@@ -905,9 +916,7 @@ case class SnappyHashAggregateExec(
       }
     } else ""
 
-
-
-    s"""
+   s"""
       if (!$initAgg) {
         $initAgg = true;
         long $beforeAgg = System.nanoTime();
