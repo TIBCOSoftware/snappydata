@@ -11,8 +11,8 @@ This is the simplest form of deployment and can be used for testing and POCs.
 Open the command prompt, go the location of the downloaded TIBCO ComputeDB file, and run the following command to extract the archive file.
 
 ```pre
-$ tar -xzf snappydata-<version-number>bin.tar.gz
-$ cd snappydata-<version-number>-bin/
+$ tar -xzf TIB_compute_1.1.0_linux.tar.gz
+$ cd TIB_compute_1.1.0_linux/
 ```
 
 Start a basic cluster with one data node, one lead, and one locator:
@@ -52,8 +52,8 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 
 2. Extract the downloaded archive file and go to TIBCO ComputeDB home directory.
 
-		$ tar -xzf snappydata-<version-number>-bin.tar.gz
-		$ cd snappydata-<version-number>.-bin/
+		$ tar -xzf TIB_compute_1.1.0_linux.tar.gz
+		$ cd TIB_compute_1.1.0_linux/
 
 3. Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md).
 
@@ -79,7 +79,7 @@ In case all the machines in your cluster do not share a path over an NFS or simi
 
 **To set up the cluster for machines without a shared path:**
 
-1.	Copy and extract the downloaded binaries into each machine.	Ensure to maintain the same directory structure on all the machines. For example, if you copy the binaries in **/opt/snappydata/** on the first machine, then you must ensure to copy the binaries to **/opt/snappydata/** on rest of the machines.
+1.	Copy and extract the downloaded binaries into each machine.	Ensure to maintain the same directory structure on all the machines. For example, if you copy the binaries in **/opt/computedb/** on the first machine, then you must ensure to copy the binaries to **/opt/computedb/** on rest of the machines.
 
 2.	Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md). Maintain one node as the controller node, where you can configure your cluster. Usually this is done in the lead node. On that machine, you can edit files such as servers, locators, and leads which are in the **$SNAPPY_HOME/conf/ directory**.
 

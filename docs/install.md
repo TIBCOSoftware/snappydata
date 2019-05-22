@@ -15,13 +15,12 @@ The Enterprise Edition includes several additional capabilities that are closed 
 
 <heading2> Download TIBCO ComputeDB Enterprise Edition</heading2> 
 
-1. From the [TIBCO eDelivery website](https://edelivery.tibco.com), search **TIBCO ComputeDB** and go to its **Product Detail** page.
-
-2. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
-
-4. Click **Download** to download the main product tarball (**TIB_compute_1.1.0_linux.tar.gz**).
-
-5. You can also download the following additional files by clicking on the links:
+1. On the [TIBCO eDelivery website](https://edelivery.tibco.com), search for **TIBCO ComputeDB** and go to the **Product Detail** page.
+2. Click **Download** and then enter your credentials. 
+3. In the Download page, select the version and the operation system as per your requirement.
+4. Read and accept the **END USER LICENSE AGREEMENT**.
+5. Choose an installation option and then click **Download**.
+6. You can also download the following additional files by clicking on the links:
 
 	* DEBIAN INSTALLER
 
