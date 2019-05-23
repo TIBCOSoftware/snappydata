@@ -176,7 +176,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <1>spark_namesWithTOC : " + spark_namesWithTOC.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_namesWithTOC,
-      spark_namesWithTOC, "NWAPI1", "column", pw, sqlContext)
+      spark_namesWithTOC, "NWAPI1", "column", pw, sqlContext, false)
 
     /*  <2> SELECT FirstName, LastName FROM Employees; */
     val snc_names = sncEmpDF.select("FirstName" , "LastName")
@@ -186,7 +186,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <2>spark_names : " + spark_names.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_names, spark_names,
-      "NWAPI2", "column", pw, sqlContext)
+      "NWAPI2", "column", pw, sqlContext, false)
 
     /*  <3> SELECT FirstName, LastName FROM Employees ORDER BY LastName; */
     val snc_namesSortByLastName = sncEmpDF.select("FirstName", "LastName").orderBy(sncEmpDF("LastName").desc)
@@ -197,7 +197,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <3>spark_namesSortByLastName : " + spark_namesSortByLastName.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_namesSortByLastName,
-       spark_namesSortByLastName, "NWAPI3", "column", pw, sqlContext)
+       spark_namesSortByLastName, "NWAPI3", "column", pw, sqlContext, false)
 
     /* <4> SELECT Title, FirstName, LastName FROM Employees WHERE Title = 'Sales Representative'; */
     val snc_salesRep = sncEmpDF.select(("Title"), "FirstName", "LastName").filter(sncEmpDF("Title") === "Sales Representative")
@@ -208,7 +208,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <4>spark_salesRep : " + spark_SalesRep.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_salesRep, spark_SalesRep,
-      "NWAPI4", "column", pw, sqlContext)
+      "NWAPI4", "column", pw, sqlContext, false)
 
     /*  <5> SELECT FirstName, LastName FROM Employees WHERE Title <> 'Sales Representative';
     //  TODO : Test the where(String) or filter("String) condition
@@ -222,7 +222,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <5>spark_titleOtherThanSalsRep : " + spark_titleOtherThanSalsRep.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_titleOtherThanSalsRep,
-      spark_titleOtherThanSalsRep, "NWAPI5", "column", pw, sqlContext)
+      spark_titleOtherThanSalsRep, "NWAPI5", "column", pw, sqlContext, false)
 
     /* <6> SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N'
            ORDER BY LastName DESC; */
@@ -235,7 +235,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <6>spark_empName : " + spark_EmpNameDesc.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameDesc, spark_EmpNameDesc,
-    "NWAPI6", "column", pw, sqlContext)
+    "NWAPI6", "column", pw, sqlContext, false)
 
     /*  <7> SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM Orders
     WHERE Freight >= 500; */
@@ -252,7 +252,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <7>spark_freightgeq500 : " + spark_Freightgeq500.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_Freightgeq500, spark_Freightgeq500,
-      "NWAPI7", "column", pw, sqlContext)
+      "NWAPI7", "column", pw, sqlContext, false)
 
     /* <8> SELECT SUM(Quantity) AS TotalUnits FROM Order_Details WHERE ProductID=3; */
     import org.apache.spark.sql.functions._
@@ -265,7 +265,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <8>spark_totalUnits : " + spark_TotalUnits.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_TotalUnits, spark_TotalUnits,
-    "NWAPI8", "column", pw, sqlContext)
+    "NWAPI8", "column", pw, sqlContext, false)
     // Print the result in file
 
     /* <9> SELECT COUNT(DISTINCT City) AS NumCities FROM Employees; */
@@ -281,7 +281,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <9.2>spark_DistinctCityCount : " + spark_DistinctCityCount.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_DistinctCity, spark_DistinctCity,
-    "NWAPI9", "column", pw, sqlContext)
+    "NWAPI9", "column", pw, sqlContext, false)
 
     /* <10> SELECT CONCAT(FirstName, ' ', LastName) FROM Employees; */
     val snc_Name = sncEmpDF.select(concat_ws(" ", col("FirstName"), col("LastName")))
@@ -295,9 +295,9 @@ object SmartConnectorExternalTableAPINW {
       println("##### <10.2>spark_Name1 : " + spark_Name1.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_Name, spark_Name,
-    "NWAPI10_1", "column", pw, sqlContext)
+    "NWAPI10_1", "column", pw, sqlContext, false)
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_Name1, spark_Name1,
-    "NWAPI10_2", "column", pw, sqlContext)
+    "NWAPI10_2", "column", pw, sqlContext, false)
 
     /* <11> SELECT count(*) FROM orders FULL JOIN order_details; */
     val snc_FullJoinCnt = sncOrdersDF.crossJoin(sncOrderDetailsDF)
@@ -306,19 +306,8 @@ object SmartConnectorExternalTableAPINW {
       println("***** <11>snc_FullJoinCount : " + snc_FullJoinCnt.count())
       println("##### <11>spark_FullJoinCount : " + spark_FullJoinCnt.count())
     }
-//    SnappyTestUtils.assertQueryFullResultSet(snc, snc_FullJoinCnt, spark_FullJoinCnt,
-//     "NWAPI11", "column", pw, sqlContext)
-//    val df11 = snc_FullJoinCnt.except(spark_FullJoinCnt)
-//    if(!(df11.count() == 0)) {
-//      pw.write("SELECT count(*) FROM orders FULL JOIN order_details --> failed")
-//      pw.println()
-//      pw.write("Difference : " + df11.show())
-//      pw.println()
-//    }
-//    if(df11.count() == 0) {
-//      pw.write("SELECT count(*) FROM orders FULL JOIN order_details --> passed")
-//      pw.println()
-//    }
+    SnappyTestUtils.assertQueryFullResultSet(snc, snc_FullJoinCnt, spark_FullJoinCnt,
+     "NWAPI11", "column", pw, sqlContext, true)
 
     /* <12> SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate asc; */
     import org.apache.spark.sql.functions.{count, lit}
@@ -334,7 +323,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <12>spark_dateWiseOrderCountASC : " + spark_dateWiseOrderCountASC.show(480))
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_dateWiseOrderCountASC,
-      spark_dateWiseOrderCountASC, "NWAPI12", "column", pw, sqlContext)
+      spark_dateWiseOrderCountASC, "NWAPI12", "column", pw, sqlContext, false)
 
     /* <13> SELECT OrderDate, count(1) from Orders group by OrderDate order by OrderDate; */
     val snc_dateWiseOrderCnt = sncOrdersDF.select(col("OrderDt")).groupBy(col("OrderDt"))
@@ -348,7 +337,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <13>spark_dateWiseOrderCnt : " + spark_dateWiseOrderCnt.show(480))
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_dateWiseOrderCnt, spark_dateWiseOrderCnt,
-    "NWAPI13", "column", pw, sqlContext)
+    "NWAPI13", "column", pw, sqlContext, false)
 
     /* <14> SELECT FirstName, LastName FROM Employees WHERE LastName >= 'N'; */
     val snc_EmpName = sncEmpDF.select(col("FirstName"), col("LastName"))
@@ -360,7 +349,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <14>spark_EmpName " + spark_EmpName.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpName, spark_EmpName,
-    "NWAPI14", "column", pw, sqlContext)
+    "NWAPI14", "column", pw, sqlContext, false)
 
     /* <15> SELECT FirstName, LastName FROM Employees WHERE Region IS NULL; */
     val snc_EmpNameWhereRegIsNull = sncEmpDF.select(col("FirstName"), col("LastName"))
@@ -372,7 +361,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <15>spark_EmpNameWhereRegIsNull : " + spark_EmpNameWhereRegIsNull.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameWhereRegIsNull,
-       spark_EmpNameWhereRegIsNull, "NWAPI15", "column", pw, sqlContext)
+       spark_EmpNameWhereRegIsNull, "NWAPI15", "column", pw, sqlContext, false)
 
     /* <16> SELECT Title, FirstName, LastName FROM Employees ORDER BY 1,3; */
     val snc_EmpNameOrderByColumnPos = sncEmpDF.select(col("Title"), col("FirstName"), col("LastName"))
@@ -385,7 +374,7 @@ object SmartConnectorExternalTableAPINW {
       println("##### <16>spark_EmpNameOrderByColumnPos : " + spark_EmpNameOrderByColumnPos.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameOrderByColumnPos,
-      spark_EmpNameOrderByColumnPos, "NWAPI16", "column", pw, sqlContext)
+      spark_EmpNameOrderByColumnPos, "NWAPI16", "column", pw, sqlContext, false)
 
     /* <17> SELECT Title, FirstName, LastName FROM Employees ORDER BY Title ASC, LastName DESC; */
     val snc_EmpNameOrderByTitleLastName = sncEmpDF.select(col("Title"), col("FirstName"), col("LastName"))
@@ -400,7 +389,7 @@ object SmartConnectorExternalTableAPINW {
         + spark_EmpNameOrderByTitleLastName.show())
     }
     SnappyTestUtils.assertQueryFullResultSet(snc, snc_EmpNameOrderByTitleLastName,
-      spark_EmpNameOrderByTitleLastName, "NWAPI17", "column", pw, sqlContext)
+      spark_EmpNameOrderByTitleLastName, "NWAPI17", "column", pw, sqlContext, false)
 
     /* Will add all the NorthWind Queries */
 
