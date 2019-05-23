@@ -18,35 +18,35 @@ package org.apache.spark.sql.execution.oplog.impl
 
 import java.sql.Timestamp
 
+import scala.annotation.meta.param
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.util.control.Breaks._
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache._
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.catalog.UUID
+import com.pivotal.gemfirexd.internal.client.am.Types
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store._
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.{ColumnDescriptor, ColumnDescriptorList}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataType => _, _}
-
-import org.apache.spark.sql.{Row, SnappySession}
-import org.apache.spark.sql.catalyst.expressions.Expression
-import org.apache.spark.sql.execution.RDDKryo
-import org.apache.spark.sql.types._
-import org.apache.spark.{Partition, TaskContext}
-import scala.annotation.meta.param
-
-import com.gemstone.gemfire.internal.shared.FetchRequest
-import com.pivotal.gemfirexd.internal.client.am.Types
 import io.snappydata.recovery.RecoveryService
 import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
 import io.snappydata.thrift.CatalogTableObject
 
 import org.apache.spark.serializer.StructTypeSerializer
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
+import org.apache.spark.sql.execution.RDDKryo
 import org.apache.spark.sql.execution.columnar.encoding.{ColumnDecoder, ColumnDeleteDecoder, ColumnDeltaDecoder, ColumnEncoding, ColumnStatsSchema, UpdatedColumnDecoder}
 import org.apache.spark.sql.execution.columnar.impl.{ColumnDelta, ColumnFormatEntry, ColumnFormatKey, ColumnFormatValue}
+import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Row, SnappySession}
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.{Partition, TaskContext}
 
 class OpLogRdd(
     @transient private val session: SnappySession,
@@ -57,7 +57,10 @@ class OpLogRdd(
     private var projection: Array[Int],
     @transient private[sql] val filters: Array[Expression],
     private[sql] var fullScan: Boolean,
-    @(transient@param) partitionPruner: () => Int)
+    @(transient@param) partitionPruner: () => Int,
+    var schemaStructMap: mutable.Map[String, StructType],
+    var versionMap: mutable.Map[String, Int],
+    var tableColIdsMap: mutable.Map[String, Array[Int]])
     extends RDDKryo[Any](session.sparkContext, Nil) with KryoSerializable {
 
   /**
@@ -109,17 +112,56 @@ class OpLogRdd(
     }
   }
 
+  def getProjectColumnId(tableName: String, columnName: String): Int = {
+    val fqtn = tableName.replace(".", "_")
+    val maxVersion = versionMap.getOrElse(fqtn, null)
+    assert(maxVersion != null)
+    var index = -1
+    val fieldsArr = schemaStructMap.getOrElse(s"$maxVersion#$fqtn", null).fields
+    breakable {
+      for (i <- 0 until fieldsArr.length) {
+        if (fieldsArr(i).name.toUpperCase() == columnName.toUpperCase()) {
+          index = i
+          break()
+        } else {
+          index = -1
+        }
+      }
+    }
+
+    tableColIdsMap.getOrElse(s"$maxVersion#$fqtn", null)(index)
+
+  }
+
+  def getSchemaColumnId(tableName: String, colName: String, version: Int): Int = {
+    val fqtn = tableName.replace(".", "_")
+    var index = -1
+    val fieldsArr = schemaStructMap.getOrElse(s"$version#$fqtn", null).fields
+    breakable {
+      for (i <- fieldsArr.indices) {
+        if (fieldsArr(i).name.toUpperCase() == colName.toUpperCase()) {
+          index = i
+          break()
+        } else {
+          index = -1
+        }
+      }
+    }
+    if (index != -1) tableColIdsMap.getOrElse(s"$version#$fqtn", null)(index)
+    else -1
+  }
+
   /**
    * Method creates and returns a RowFormatter from schema
    *
    * @return RowFormatter
    */
-  def getRowFormatter: RowFormatter = {
+  def getRowFormatter(versionNum: Int, schemaStruct: StructType): RowFormatter = {
     val cdl = new ColumnDescriptorList()
-    sch.toList.foreach(field => {
+    schemaStruct.toList.foreach(field => {
       val cd = new ColumnDescriptor(
         field.name,
-        sch.fieldIndex(field.name) + 1,
+        schemaStruct.fieldIndex(field.name) + 1,
         getDVDType(field),
         // getDVDType(field.dataType),
         null,
@@ -133,9 +175,8 @@ class OpLogRdd(
       )
       cdl.add(null, cd)
     })
-    // if (RecoveryService.getProvider(dbTableName).equalsIgnoreCase("ROW")) {
-    if (true) {
-      cdl.add(null, new ColumnDescriptor("SNAPPYDATA_INTERNAL_ROWID", sch.size + 1,
+    if (provider.equalsIgnoreCase("ROW")) {
+      cdl.add(null, new ColumnDescriptor("SNAPPYDATA_INTERNAL_ROWID", schemaStruct.size + 1,
         DataTypeDescriptor.getBuiltInDataTypeDescriptor(Types.BIGINT, false),
         null,
         null,
@@ -148,7 +189,7 @@ class OpLogRdd(
     }
     val schemaName = tblName.split("\\.")(0)
     val tableName = tblName.split("\\.")(1)
-    val rf = new RowFormatter(cdl, schemaName, tableName, 1, null, false)
+    val rf = new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
     rf
   }
 
@@ -166,14 +207,12 @@ class OpLogRdd(
     for ((_, adr) <- diskStr.getAllDiskRegions) {
       val adrPath = adr.getFullPath
       var regUnescPath = PartitionedRegionHelper.unescapePRPath(adrPath)
-
       var regionPath = regPath
       if (!adr.isBucket) {
         // regPath for pr tables is in the format /_PR//B_<schema>/<table>/0
         // but for replicated tables it is /<schema>/<table>
         regionPath = s"/${dbTableName.replace('.', '/')}"
       }
-
       if (regUnescPath.equals(regionPath)) {
         phdr = adr.asInstanceOf[PlaceHolderDiskRegion]
       }
@@ -188,13 +227,12 @@ class OpLogRdd(
    * @param phdrRow PlaceHolderDiskRegion of row
    */
   def iterateRowData(phdrRow: PlaceHolderDiskRegion): Iterator[Row] = {
-    val rowFormatter = getRowFormatter
-    val dvdArr = new Array[DataValueDescriptor](sch.length)
 
-    def getFromDVD(dvd: DataValueDescriptor, i: Integer,
+    def getFromDVD(schema: StructType, dvd: DataValueDescriptor, i: Integer,
         valueArr: Array[Array[Byte]], complexSchema: Seq[StructField]): Any = {
-      val field = sch(i)
-      val complexFieldIndex = complexSchema.indexOf(field) + 1
+      val field = schema(i)
+      logInfo(s"PP: oplogrdd- dvd $dvd")
+      val complexFieldIndex = if (complexSchema == null) 0 else complexSchema.indexOf(field) + 1
       field.dataType match {
         case ShortType =>
           dvd.getShort
@@ -202,7 +240,7 @@ class OpLogRdd(
           dvd.getByte
         case a: ArrayType =>
           assert(field.dataType == a)
-          sch.indexOf(field)
+          schema.indexOf(field)
           val array = valueArr(complexFieldIndex)
           val data = new SerializedArray(8)
           data.pointTo(array, Platform.BYTE_ARRAY_OFFSET, array.length)
@@ -226,36 +264,111 @@ class OpLogRdd(
       }
     }
 
+    var projectColumns: Array[String] = sch.fields.map(_.name)
+
     val regMapItr = phdrRow.getRegionMap.regionEntries().iterator().asScala
     regMapItr.map { regEntry =>
-      val complexSch = sch.filter(f =>
-        f.dataType match {
-          case a: ArrayType => true
-          case m: MapType => true
-          case s: StructType => true
-          case _ => false
-        }
-      )
+
       DiskEntry.Helper.readValueFromDisk(
         regEntry.asInstanceOf[DiskEntry], phdrRow) match {
-        case valueArr: Array[Byte] =>
-          rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
+        case valueArr: Array[Byte] => {
+          val versionNum = RowFormatter.readCompactInt(valueArr, 0)
+          assert(versionNum >= 0 || versionNum == RowFormatter.TOKEN_RECOVERY_VERSION,
+            "unexpected schemaVersion=" + versionNum + " for RF#readVersion")
+          var schStruct = schemaStructMap
+              .getOrElse(versionNum + "#" + dbTableName.replace(".", "_"), null)
+          assert(schStruct != null)
+          // todo: build a local cache = table ->rowformatters -
+          // todo: so we don't have to create rowformatters for every record
+
+          // For row tables external catalog stores:
+          // float gets stored as DoubleType
+          // byte gets stored as ShortType
+          // tinyint gets store as ShortType
+          if ("row".equalsIgnoreCase(provider)) {
+            val correctedFields = schStruct.map(field => {
+              field.dataType match {
+                case FloatType =>
+                  StructField(field.name, DoubleType, field.nullable, field.metadata)
+                case ByteType =>
+                  StructField(field.name, ShortType, field.nullable, field.metadata)
+                case _ => field
+              }
+            }).toArray
+            schStruct = StructType(correctedFields)
+          }
+          val rowFormatterFixed = getRowFormatter(versionNum, schStruct)
+          val dvdArr = new Array[DataValueDescriptor](schStruct.length)
+          rowFormatterFixed.getColumns(valueArr, dvdArr, (1 to schStruct.size).toArray)
           // dvd gets gemfire data types
           val row = Row.fromSeq(dvdArr.zipWithIndex.map {
-            case (dvd, i) => getFromDVD(dvd, i, null, null)
+            case (dvd, i) => getFromDVD(schStruct, dvd, i, null, null)
           })
-          logInfo(s"1891: rowasseq[]: ${row}")
-          row
-        case valueArr: Array[Array[Byte]] =>
-          rowFormatter.getColumns(valueArr, dvdArr, (1 to sch.size).toArray)
+          formatFinalRow(row, projectColumns, versionNum, schStruct)
+        }
+        case valueArr: Array[Array[Byte]] => {
+          val versionNum = RowFormatter.readCompactInt(valueArr(0), 0)
+          assert(versionNum >= 0 || versionNum == RowFormatter.TOKEN_RECOVERY_VERSION,
+            "unexpected schemaVersion=" + versionNum + " for RF#readVersion")
+          var schStruct = schemaStructMap
+              .getOrElse(versionNum + "#" + dbTableName.replace(".", "_"), null)
+          assert(schStruct != null)
+          // todo: build a local cache = table ->rowformatters
+          // todo: so we don't have to create rowformatters for every record
+
+          // For row tables external catalog stores:
+          // float gets stored as DoubleType
+          // byte gets stored as ShortType
+          // tinyint gets store as ShortType
+          if ("row".equalsIgnoreCase(provider)) {
+            val correctedFields = schStruct.map(field => {
+              field.dataType match {
+                case FloatType =>
+                  StructField(field.name, DoubleType, field.nullable, field.metadata)
+                case ByteType =>
+                  StructField(field.name, ShortType, field.nullable, field.metadata)
+                case _ => field
+              }
+            }).toArray
+            schStruct = StructType(correctedFields)
+          }
+          val rowFormatterVar = getRowFormatter(versionNum, schStruct)
+          val dvdArr = new Array[DataValueDescriptor](schStruct.length)
+          val complexSch = schStruct.filter(f =>
+            f.dataType match {
+              case a: ArrayType => true
+              case m: MapType => true
+              case s: StructType => true
+              case _ => false
+            }
+          )
+          rowFormatterVar.getColumns(valueArr, dvdArr, (1 to schStruct.size).toArray)
           val row = Row.fromSeq(dvdArr.zipWithIndex.map {
-            case (dvd, i) => getFromDVD(dvd, i, valueArr, complexSch)
+            case (dvd, i) => getFromDVD(schStruct, dvd, i, valueArr, complexSch)
           })
-          logInfo(s"1891: rowasseq[][]: ${row}")
-          row
+          formatFinalRow(row, projectColumns, versionNum, schStruct)
+        }
         case Token.TOMBSTONE => null
       }
     }.filter(_ ne null)
+  }
+
+  def formatFinalRow(row: Row, projectColumns: Array[String],
+      versionNum: Int, schStruct: StructType): Row = {
+    val resArr = new Array[Any](projectColumns.length)
+    var i = 0
+    projectColumns.foreach(projectCol => {
+      val projectColId = getProjectColumnId(dbTableName, projectCol)
+      val schemaColId = getSchemaColumnId(dbTableName, projectCol, versionNum)
+      val colValue = if (projectColId == schemaColId) {
+        // col is from latest schema not previous/dropped column
+        val colNamesArr = schStruct.fields.map(_.name)
+        row(colNamesArr.indexOf(projectCol))
+      } else null
+      resArr(i) = colValue
+      i += 1
+    })
+    Row.fromSeq(resArr.toSeq)
   }
 
   /**
@@ -381,9 +494,7 @@ class OpLogRdd(
       val s = Misc.getRegionPath(tblName)
       s"/_PR//B_${s.substring(1, s.length - 1)}/_${split.index}"
     }
-
     val rowRegPath = s"/_PR//B_${dbTableName.replace('.', '/').toUpperCase()}/${split.index}"
-
     for (d <- diskStrs.asScala) {
       val dskRegMap = d.getAllDiskRegions
       for ((_, adr) <- dskRegMap.asScala) {
@@ -403,7 +514,7 @@ class OpLogRdd(
     val phdrRow = getPlaceHolderDiskRegion(diskStrRow, rowRegPath)
     val rowIter = iterateRowData(phdrRow)
 
-    if (provider.equalsIgnoreCase("COLUMN")) {
+    if ("column".equalsIgnoreCase(provider)) {
       assert(diskStrCol != null, s"1891: col disk store is null")
       val phdrCol = getPlaceHolderDiskRegion(diskStrCol, colRegPath)
       val colIter = iterateColData(phdrCol)
@@ -432,7 +543,6 @@ class OpLogRdd(
       case d: DecimalType => currentDeltaBuffer.readDecimal(d.precision, d.scale)
       case _ => null
     }
-    logInfo(s"1891: from getupdatedvalue for field ${field.name} is ${retVal}")
     retVal
   }
 
@@ -556,6 +666,22 @@ class OpLogRdd(
     output.writeString(tblName)
     output.writeString(dbTableName)
     output.writeString(provider)
+    output.writeInt(schemaStructMap.size)
+    schemaStructMap.iterator.foreach(ele => {
+      output.writeString(ele._1)
+      StructTypeSerializer.write(kryo, output, ele._2)
+    })
+    output.writeInt(versionMap.size)
+    versionMap.iterator.foreach(ele => {
+      output.writeString(ele._1)
+      output.writeInt(ele._2)
+    })
+    output.writeInt(tableColIdsMap.size)
+    tableColIdsMap.foreach(ele => {
+      output.writeString(ele._1)
+      output.writeInt(ele._2.length)
+      output.writeInts(ele._2)
+    })
     StructTypeSerializer.write(kryo, output, sch)
   }
 
@@ -564,6 +690,28 @@ class OpLogRdd(
     tblName = input.readString()
     dbTableName = input.readString()
     provider = input.readString()
+    val schemaMapSize = input.readInt()
+    schemaStructMap = collection.mutable.Map().empty
+    for (_ <- 0 until (schemaMapSize)) {
+      val k = input.readString()
+      val v = StructTypeSerializer.read(kryo, input, c = null)
+      schemaStructMap.put(k, v)
+    }
+    val versionMapSize = input.readInt()
+    versionMap = collection.mutable.Map.empty
+    for (_ <- 0 until versionMapSize) {
+      val k = input.readString()
+      val v = input.readInt()
+      versionMap.put(k, v)
+    }
+    val tableColIdsMapSize = input.readInt()
+    tableColIdsMap = collection.mutable.Map.empty
+    for (_ <- 0 until tableColIdsMapSize) {
+      val k = input.readString()
+      val vlength = input.readInt()
+      val v = input.readInts(vlength)
+      tableColIdsMap.put(k, v)
+    }
     sch = StructTypeSerializer.read(kryo, input, c = null)
   }
 }

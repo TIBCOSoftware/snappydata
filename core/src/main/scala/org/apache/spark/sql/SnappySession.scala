@@ -1249,14 +1249,20 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             sessionCatalog.resolveTableIdentifier(tableIdentifier(b)).unquotedString
       }
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(s) => s
+      case None => ""
+    }
     val tableDesc = CatalogTable(
       identifier = resolvedName,
       tableType = CatalogTableType.EXTERNAL,
       storage = DataSource.buildStorageFormatFromOptions(fullOptions),
       schema = schema,
-      provider = Some(provider))
+      provider = Some(provider),
+      properties = Map(("orgSqlText" -> orgSqlText)))
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
+    plan.schema
     val df = table(resolvedName)
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
@@ -1341,11 +1347,16 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(str) => str
+      case None => ""
+    }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        sessionCatalog.alterTable(metadata.copy(schema = ar.schema,
+          properties = metadata.properties + (s"altTxt_${System.currentTimeMillis()}" -> orgSqlText)))
       case _ =>
         throw new AnalysisException(s"ALTER TABLE not supported for ${tableIdent.unquotedString}")
     }
@@ -2077,6 +2088,7 @@ object SnappySession extends Logging {
       session.currentKey = key
       try {
         val execution = session.executePlan(plan)
+        session.addContextObject[String]("orgSqlText", sqlText)
         cachedDF = evaluatePlan(execution, session, sqlShortText, sqlText, paramLiterals, paramsId)
         // put in cache if the DF has to be cached
         if (planCaching && cachedDF.isCached) {

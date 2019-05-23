@@ -17,12 +17,14 @@
 package org.apache.spark.sql.execution.oplog.impl
 
 import io.snappydata.Constant
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
 import io.snappydata.thrift.CatalogTableObject
+
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Expression}
+import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.hive.HiveClientUtil
 import org.apache.spark.sql.sources.{BaseRelation, TableScan}
@@ -63,29 +65,18 @@ class OpLogFormatRelation(
     (0 until schema.length).foreach(i =>
       fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
     val projection = null
-    //      requiredColumns.map { c =>
-    //      val index = fieldNames.get(Utils.toLowerCase(c))
-    //      if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
-    //      index.toInt
-    //    }
 
     logWarning(s"1891; getcolumnbatchrdd schema is null ${_userSchema}")
-    logInfo(s"PP: OpLogFormatRelation: dbTableName: $dbTableName ; tableName: $tableName")
 
-    import scala.collection.JavaConverters._
-    val provider = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
-      x.isInstanceOf[CatalogTableObject] && {
-        val cto = x.asInstanceOf[CatalogTableObject]
-        val fqtn = s"${cto.getSchemaName}.${cto.getTableName}"
-        fqtn.equalsIgnoreCase(dbTableName)
-      }
-    }).head.asInstanceOf[CatalogTableObject].getProvider
-
+    val provider = RecoveryService.getProvider(dbTableName)
     val snappySession = SparkSession.builder().getOrCreate().asInstanceOf[SnappySession]
+    val schemaStructMap = RecoveryService.getSchemaStructMap()
+    val versionMap = RecoveryService.getVersionMap()
+    val tableColIdsMap = RecoveryService.getTableColumnIds()
     (new OpLogRdd(snappySession, dbTableName, tableName, _userSchema, provider, projection,
-      filters, (filters eq null) || filters.length == 0, prunePartitions), projection)
+      filters, (filters eq null) || filters.length == 0, prunePartitions, schemaStructMap,
+      versionMap, tableColIdsMap), projection)
   }
-
 
   override def sqlContext: SQLContext = _context
 

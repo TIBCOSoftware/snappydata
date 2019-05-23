@@ -318,8 +318,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     if (externalCatalog.databaseExists(schemaName)) {
       if (!ignoreIfExists) throw new AnalysisException(s"Schema '$schemaName' already exists")
     } else {
+      val orgSqlText = snappySession.getContextObject[String]("orgSqlText") match {
+        case Some(s) => s
+        case None => ""
+      }
       createDatabase(CatalogDatabase(schemaName, s"User $schemaName schema",
-        getDefaultDBPath(schemaName), Map.empty), ignoreIfExists)
+        getDefaultDBPath(schemaName), Map("orgSqlText" -> orgSqlText)), ignoreIfExists)
     }
   }
 
