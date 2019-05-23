@@ -81,7 +81,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val bigIntegerClass = classOf[java.math.BigInteger].getName
     val byteBufferClass = classOf[ByteBuffer].getName
     val unsafeClass = classOf[UnsafeRow].getName
-    val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+    val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = if (isKey) {
         if (nestingLevel == 0 && skipNullBitsCode) {
@@ -97,14 +97,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
       val nullVarCode = if (skipNullBitsCode) {
         ""
       } else {
-        if (numBytesForNullBits <= 8) {
-          s"""$booleanStr $nullVar = ($nullBitTerm & ((($castTerm)0x01) << $i)) == 0;""".stripMargin
-        } else {
-          val remainder = i % 8
-          val index = i / 8
-          s"""$booleanStr $nullVar =
-             |($nullBitTerm[$index] & (0x01 << $remainder)) == 0;""".stripMargin
-        }
+        s"""$booleanStr $nullVar = ${SHAMapAccessor.getExpressionForNullEvalFromMask(i,
+          numBytesForNullBits, nullBitTerm)};""".stripMargin
       }
 
       val evaluationCode = (dt match {
@@ -508,15 +502,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }
 
 
-  private def getNullBitsCastTerm(numBytesForNullBits: Int) = if (numBytesForNullBits == 1) {
-    "byte"
-  } else if (numBytesForNullBits == 2) {
-    "short"
-  } else if (numBytesForNullBits <= 4) {
-    "int"
-  } else {
-    "long"
-  }
+
 
 
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
@@ -767,7 +753,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           if (skipNullEvalCode) {
             writingCode
           } else {
-            val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+            val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
             val nullVar = expr.isNull
             if (numBytesForNullBits > 8) {
               val remainder = i % 8
@@ -1251,5 +1237,28 @@ object SHAMapAccessor {
     } else {
       8
     }
+
+
+   def getExpressionForNullEvalFromMask(i: Int, numBytesForNullBits: Int,
+     nullBitTerm: String ): String = {
+     val castTerm = getNullBitsCastTerm(numBytesForNullBits)
+     if (numBytesForNullBits <= 8) {
+       s"""($nullBitTerm & ((($castTerm)0x01) << $i)) == 0"""
+     } else {
+       val remainder = i % 8
+       val index = i / 8
+       s"""($nullBitTerm[$index] & (0x01 << $remainder)) == 0"""
+     }
+   }
+
+  def getNullBitsCastTerm(numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
+    "byte"
+  } else if (numBytesForNullBits == 2) {
+    "short"
+  } else if (numBytesForNullBits <= 4) {
+    "int"
+  } else {
+    "long"
+  }
 
 }

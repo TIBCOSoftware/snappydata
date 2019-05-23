@@ -787,14 +787,32 @@ case class SnappyHashAggregateExec(
     val keyExistedTerm = ctx.freshName("keyExisted")
 
     val codeForLenOfSkippedTerm = if (skipLenForAttrib != -1) {
-      val suffixSize = this.groupingAttributes.drop(skipLenForAttrib + 1).foldLeft(0) {
-        case (size, attrib) => size + attrib.dataType.defaultSize + (attrib.dataType match {
-          case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-          case _ => 0
-        })}
+      val numToDrop = skipLenForAttrib + 1
+      val keysToProcessSize = this.groupingAttributes.drop(numToDrop)
+      val suffixSize = if (numBytesForNullKeyBits == 0) {
+        keysToProcessSize.foldLeft(0) {
+          case (size, attrib) => size + attrib.dataType.defaultSize + (attrib.dataType match {
+            case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
+            case _ => 0
+          })
+        }.toString
+      } else {
+        keysToProcessSize.zipWithIndex.map {
+          case(attrib, i) => {
+            val sizeTerm = attrib.dataType.defaultSize + (attrib.dataType match {
+              case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
+              case _ => 0
+            })
+            s"""(int)(${SHAMapAccessor.getExpressionForNullEvalFromMask(i + numToDrop,
+              numBytesForNullKeyBits, nullKeysBitsetTerm)} ? 0 : $sizeTerm)
+            """
+          }
+        }.mkString("+")
+      }
 
-      s"""$keyLengthTerm - (int)($localIterValueOffsetTerm - $localIterValueStartOffsetTerm)
-          ${ if (suffixSize > 0) s" - $suffixSize" else ""};"""
+      s"""$keyLengthTerm -
+         |(int)($localIterValueOffsetTerm - $localIterValueStartOffsetTerm)
+         |${ if (keysToProcessSize.length > 0) s" - ($suffixSize)" else ""};""".stripMargin
     } else ""
 
 
