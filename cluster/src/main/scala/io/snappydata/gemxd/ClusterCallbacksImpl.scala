@@ -16,9 +16,11 @@
  */
 package io.snappydata.gemxd
 
-import java.io.InputStream
+import java.io.{BufferedWriter, File, FileWriter, InputStream, PrintWriter}
 import java.lang
 import java.util.{Iterator => JIterator}
+
+import scala.util.Try
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
@@ -30,6 +32,7 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
 import org.apache.spark.Logging
@@ -134,33 +137,61 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def recoverData(connId: lang.Long, exportUri: String,
-      formatType: String, tableNames: String): Unit = {
-
+      formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
     // todo: make sure tableNames are fully qualified... how?
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
-
     val tablesArr = if (tableNames.equalsIgnoreCase("all")) {
       val catalogTables = session.externalCatalog.getAllTables()
-
       val tablesArr = catalogTables.map(ct => {
         ct.identifier.database match {
-         case Some(db) =>
-        db + "." + ct.identifier.table
-         case None => ct.identifier.table
-      }
+          case Some(db) =>
+            db + "." + ct.identifier.table
+          case None => ct.identifier.table
+        }
       })
       tablesArr
     } else {
       tableNames.split(",").toSeq
     }
-      logDebug(s"Using connection ID: $connId\n Export path:" +
-          s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
-
-      tablesArr.foreach(table => {
+    logDebug(s"Using connection ID: $connId\n Export path:" +
+        s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
+    tablesArr.foreach(f = table => {
+      Try {
         val tableData = session.sql(s"select * from $table;")
         logDebug(s"Querying table $table.")
-        tableData.write.mode(SaveMode.Overwrite).format(formatType).save(exportUri + table.toUpperCase)
+        tableData.write.mode(SaveMode.Overwrite).format(formatType)
+            .save(exportUri + table.toUpperCase)
+      } match {
+        case scala.util.Success(value) =>
+        case scala.util.Failure(exception) => {
+          if (!ignoreError) {
+            logInfo(s"Error recovering table: $table.")
+            throw new Exception(exception)
+          }
+        }
+      }
+
+    })
+  }
+
+  override def recoverDDLs(exportUri: String): Unit = {
+    new File(exportUri).mkdir()
+    val dirPath = if (exportUri.endsWith("/")) {
+      exportUri + "RECOVERED_DDLs_.txt"
+    }
+    else {
+      exportUri + File.separator + "RECOVERED_DDLs.txt"
+    }
+    try {
+      val pw = new PrintWriter(new File(dirPath))
+      RecoveryService.getAllDDLs().foreach(ddl => {
+        pw.append(ddl + "\n")
       })
+      pw.close()
+    }
+    catch {
+      case e: Exception => throw new Exception(e)
+    }
   }
 
   override def setLeadClassLoader(): Unit = {

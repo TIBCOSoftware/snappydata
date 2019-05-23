@@ -140,8 +140,11 @@ public final class SnappySharedState extends SharedState {
     if (clusterMode instanceof ThinClientConnectorMode) {
       this.embedCatalog = null;
     } else {
-      // ensure store catalog is initialized
-      Misc.getMemStoreBooting().getExistingExternalCatalog();
+        // store catalog is not initialized for leader in recovery mode until this point.
+      if (!Misc.getGemFireCache().isSnappyRecoveryMode()) {
+        // ensure store catalog is initialized
+        Misc.getMemStoreBooting().getExistingExternalCatalog();
+      }
       this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
           sparkContext, sparkContext.conf());
     }

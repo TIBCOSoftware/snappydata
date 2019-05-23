@@ -430,7 +430,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         val newProps = JdbcExtendedUtils.addSplitProperty(catalogTable.schema.json,
           SnappyExternalCatalog.TABLE_SCHEMA, oldRawDefinition.properties, maxLen)
         withHiveExceptionHandling(client.alterTable(oldRawDefinition.copy(
-          schema = catalogTable.schema, properties = newProps.toMap)))
+          schema = catalogTable.schema, properties = catalogTable.properties ++ newProps.toMap)))
 
         registerCatalogSchemaChange(schemaName -> tableName :: Nil)
         return
