@@ -199,7 +199,7 @@ object SnappyTestUtils {
 
   def assertQueryFullResultSet(snc: SnappyContext, snDF : DataFrame,
                                spDF : DataFrame, queryNum: String,
-                               tableType: String, pw: PrintWriter, sqlContext: SQLContext): Any = {
+                               tableType: String, pw: PrintWriter, sqlContext: SQLContext, isJoin : Boolean ): Any = {
     var snappyDF: DataFrame = snDF
     //    if(!usePlanCaching) {
     //      snappyDF = snc.sqlUncached(sqlString)
@@ -217,7 +217,12 @@ object SnappyTestUtils {
     if (snappyFile.listFiles() == null) {
       val col1 = snappyDF.schema.fieldNames(0)
       val col = snappyDF.schema.fieldNames.tail
-      snappyDF = snappyDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      if(isJoin) {
+        snappyDF = snappyDF.repartition(1)
+      }
+      else {
+        snappyDF = snappyDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      }
       writeToFile(snappyDF, snappyDest, snc)
       // scalastyle:off println
       pw.println(s"${queryNum} Result Collected in file $snappyDest")
@@ -225,7 +230,12 @@ object SnappyTestUtils {
     if (sparkFile.listFiles() == null) {
       val col1 = sparkDF.schema.fieldNames(0)
       val col = sparkDF.schema.fieldNames.tail
-      sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      if(isJoin) {
+        sparkDF = sparkDF.repartition(1)
+      }
+      else {
+        sparkDF = sparkDF.repartition(1).sortWithinPartitions(col1, col: _*)
+      }
       writeToFile(sparkDF, sparkDest, snc)
       pw.println(s"${queryNum} Result Collected in file $sparkDest")
     }
