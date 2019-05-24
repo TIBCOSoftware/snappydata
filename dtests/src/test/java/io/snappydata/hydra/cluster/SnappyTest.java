@@ -335,12 +335,12 @@ public class SnappyTest implements Serializable {
   }
 
   protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
-  //  String secureBootProperties = " -server-auth-provider=NONE ";
     String secureBootProperties = " ";
     boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     if(isSecurityEnabled) {
       secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
-      Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
+      Log.getLogWriter().info(" secureBootProperties are " + secureBootProperties);
+      Log.getLogWriter().info("Security is Enabled");
     }
     if (logDirExists) return;
     String addr = HostHelper.getHostAddress();
@@ -2375,9 +2375,19 @@ public class SnappyTest implements Serializable {
       SnappyBB.getBB().getSharedMap().put("START_RANGE_APP2", finalEnd2 + 1);
       SnappyBB.getBB().getSharedMap().put("END_RANGE_APP2", finalEnd2 + 1000);
     } else if (appName.equals("CDCIngestionApp1")) {
-      userAppArgs = finalStart + " " + finalEnd + " " + userAppArgs;
-      SnappyBB.getBB().getSharedMap().put("finalStartRange", finalStart);
-      SnappyBB.getBB().getSharedMap().put("finalEndRange", finalEnd);
+      int BBfinalStart1 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP1");
+      int BBfinalEnd1 = (Integer) SnappyBB.getBB().getSharedMap().get("END_RANGE_APP1");
+      int finalStart1, finalEnd1;
+      if (BBfinalStart1 == 0 || BBfinalEnd1 == 0) {
+        finalStart1 = finalStart;
+        finalEnd1 = finalEnd;
+      } else {
+        finalStart1 = BBfinalStart1;
+        finalEnd1 = BBfinalEnd1;
+      }
+      userAppArgs = finalStart1 + " " + finalEnd1 + " " + userAppArgs;
+      SnappyBB.getBB().getSharedMap().put("START_RANGE_APP1", finalEnd1 + 1);
+      SnappyBB.getBB().getSharedMap().put("END_RANGE_APP1", finalEnd1 + 1000);
     } else if (appName.equals("BulkDeleteApp")) {
       commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
           " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener ";
