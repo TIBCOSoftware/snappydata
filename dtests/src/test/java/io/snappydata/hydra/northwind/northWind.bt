@@ -9,7 +9,6 @@ io/snappydata/hydra/northwind/nwReplicatedRowTablesTest.conf
   fullResultSetValidation = true
   isSmokeRun = false
   createLargeOrderTable = false
-  passFile="$GEMFIRE/../../../dtests/src/test/java/io/snappydata/hydra/cluster/commonPassFile.txt"
 
 io/snappydata/hydra/northwind/nwPartitionedRowTablesTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1

@@ -335,10 +335,11 @@ public class SnappyTest implements Serializable {
   }
 
   protected void generateNodeConfig(String logDir, boolean returnNodeLogDir) {
-    String secureBootProperties = " -server-auth-provider=NONE ";
+  //  String secureBootProperties = " -server-auth-provider=NONE ";
+    String secureBootProperties = " ";
     boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
     if(isSecurityEnabled) {
-      secureBootProperties += SnappySecurityTest.getSecureBootProp();
+      secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
       Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
     }
     if (logDirExists) return;
@@ -2283,6 +2284,7 @@ public class SnappyTest implements Serializable {
 
   public void executeSnappyJob(Vector jobClassNames, String logFileName, String
       userAppJar, String jarPath, String appName) {
+    Log.getLogWriter().info("Inside executeSnappyJob");
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     File log = null, logFile = null;
     if (appName == null) appName = SnappyPrms.getUserAppName() + "_" + System.currentTimeMillis();
@@ -3834,7 +3836,7 @@ public class SnappyTest implements Serializable {
     try {
       boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
       if(isSecurityEnabled) {
-        secureBootProperties = SnappySecurityTest.getSecureBootProp();
+        secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
         Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
       }
       if (useRowStore) {
@@ -3860,7 +3862,7 @@ public class SnappyTest implements Serializable {
     try {
       boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
       if(isSecurityEnabled) {
-        secureBootProperties = SnappySecurityTest.getSecureBootProp();
+        secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
         Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
       }
       if (useRowStore) {
@@ -3891,7 +3893,7 @@ public class SnappyTest implements Serializable {
     try {
       boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
       if(isSecurityEnabled) {
-        secureBootProperties = SnappySecurityTest.getSecureBootProp();
+        secureBootProperties = " -server-auth-provider=NONE " + SnappySecurityTest.getSecureBootProp();
         Log.getLogWriter().info("SP: secureBootProperties are " + secureBootProperties);
       }
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
