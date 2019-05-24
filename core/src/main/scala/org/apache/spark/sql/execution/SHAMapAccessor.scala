@@ -507,11 +507,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   def generateUpdate(bufferVars: Seq[ExprCode], aggBufferDataType: Seq[DataType]): String = {
     val plaformClass = classOf[Platform].getName
+    val setStoredAggNullBitsTerm = storedAggNullBitsTerm.map(storedNullBit => {
+      s"""// If key did not exist, make cachedAggBit -1 , so that the update will always write
+      // the right state of agg bit , else it will be that stored Agg Bit will match the
+      // after update aggBit, but will not reflect it in the HashMap bits
+      if ($keyExistedTerm) {
+        $storedNullBit = $nullAggsBitsetTerm;
+      } else {
+        $storedNullBit = -1;
+      }
+      """.stripMargin
+    }).getOrElse("")
 
 
     s"""
-       |${storedAggNullBitsTerm.map(storedNullBit =>
-         s"$storedNullBit = $nullAggsBitsetTerm;").getOrElse("")}
+       |$setStoredAggNullBitsTerm
       ${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
       ${
       writeKeyOrValue(vdBaseObjectTerm, currentOffSetForMapLookupUpdt,
