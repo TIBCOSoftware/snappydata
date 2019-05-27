@@ -103,8 +103,7 @@ class SnappySessionState(val snappySession: SnappySession)
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         val rules = batch.rules.flatMap(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) Nil
-          else StringPromotionCheckForUpdate :: PromoteStrings :: Nil
+          case PromoteStrings => StringPromotionCheckForUpdate :: PromoteStrings :: Nil
           case a => Seq(a)
         })
         Batch(batch.name, getStrategy(batch.strategy), rules: _*)
