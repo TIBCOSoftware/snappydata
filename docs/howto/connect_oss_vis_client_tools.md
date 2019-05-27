@@ -29,9 +29,9 @@ To create a database driver, do the following:
 To connect SnappyData from DbVisualizer, do the following:
 
 1. On the main dbviz UI, click the **Create new database** icon.<br>You are given the options to either use or not use a wizard for the connection. 
-2. Click **Use Wizard**. 
+2. Click **Use Wizard**. </br> ![Images](../Images/sql_clienttools_images/dbvisualizer1.png)
 3. In the **New Connection** dialog box, enter a name that can be used to refer to the database connection.
-4. In the **Select Database Driver** dialog box, select the database driver that you have created.
+4. In the **Select Database Driver** dialog box, select the database driver that you have created.</br> ![Images](../Images/sql_clienttools_images/dbvisualizer2.png)
 5. In the **Database URL** dialog box, type the complete URL. For example: *jdbc:snappydata://localhost:1527/*.
 6. Enter the UserID and password.
 7. Select the **Auto Commit** option if you want to enable auto-commit in the SQL Commander.
@@ -94,7 +94,7 @@ To start the LDAP server, do the following:
 
 ### Connecting to SnappyData from DBeaver
 4.	Launch DBeaver and click **New database connection**. 
-5.	Select **Hadoop / Big Data** section from the left. 
+5.	Select **Hadoop / Big Data** section from the left. </br> ![Images](../Images/sql_clienttools_images/dbeaver_install1.png) </br> ![Images](../Images/sql_clienttools_images/dbeaver_install2.png)
 6.	Select SnappyData from the available list of databases and provide the following details:
 	*	Hostname/IP
 	*	Port
@@ -132,7 +132,7 @@ To start the LDAP server, do the following:
 To connect SnappyData from SQuirreL SQL Client, do the following:
 
 1.	Launch SQuirreL SQL Client.
-2.	In the **Drivers** tab on the left side, click **+** sign to add a new driver. 
+2.	In the **Drivers** tab on the left side, click **+** sign to add a new driver. </br> ![Images](../Images/sql_clienttools_images/squirrel1.png)
 2.	Provide the following details:
 	*	Name
 	*	Example URL(connection string)
@@ -142,7 +142,7 @@ To connect SnappyData from SQuirreL SQL Client, do the following:
 jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/1.1.0
 	jdbc class: io.snappydata.jdbc.ClientPoolDriver
 ```
-4.	Go to **Aliases** tab and then click **+** to add a new alias. 
+4.	Go to **Aliases** tab and then click **+** to add a new alias. </br> ![Images](../Images/sql_clienttools_images/squirrel2.png)
 5.	Provide the following details: 
 	*	Name
 	*	Driver (added in step 4) 
