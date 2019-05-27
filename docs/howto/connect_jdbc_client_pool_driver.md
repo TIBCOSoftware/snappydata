@@ -29,14 +29,14 @@ Where the `<locatorHostName>` is the hostname of the node on which the locator i
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.0.2.1</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
 **Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.0.2.1"
+libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
 ```
 
 !!! Note

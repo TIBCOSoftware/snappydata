@@ -107,10 +107,6 @@ object SharedUtils {
         releaseStorageMemoryForObject(objectName, numBytes, mode)
   }
 
-  /** for testing only (a long convoluted name chosen deliberately) */
-  var TEST_RANDOM_BUCKETID_ASSIGNMENT: Boolean = java.lang.Boolean.getBoolean(
-    "SNAPPYTEST_RANDOM_BUCKETID_TO_PARTITION_ASSIGNMENT")
-
   /**
    * For V2 connector filters are pushed in java serialized format
    */

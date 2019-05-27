@@ -104,10 +104,32 @@ class SnappySessionState(val snappySession: SnappySession)
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         val rules = batch.rules.flatMap(_ match {
           case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) Nil
-            else StringPromotionCheckForUpdate :: PromoteStrings :: Nil
+          else StringPromotionCheckForUpdate :: PromoteStrings :: Nil
           case a => Seq(a)
         })
         Batch(batch.name, getStrategy(batch.strategy), rules: _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  lazy val analyzerWithoutPromote: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+          case PromoteStrings => false
+          case _ => true
+        }): _*)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
     }
 
@@ -851,12 +873,15 @@ class SnappyConf(@transient val session: SnappySession)
     else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
   }
 
-  private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
+  private def keyUpdateActions(key: String, value: Option[Any],
+      doSet: Boolean, search: Boolean = true): String = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
          Property.HashAggregateSize.name |
-         Property.ForceLinkPartitionsToBuckets.name => session.clearPlanCache()
+         Property.ForceLinkPartitionsToBuckets.name =>
+      session.clearPlanCache()
+      key
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
@@ -866,18 +891,22 @@ class SnappyConf(@transient val session: SnappySession)
         dynamicShufflePartitions = coreCountForShuffle
       }
       session.clearPlanCache()
+      key
     case Property.SchedulerPool.name =>
       schedulerPool = value match {
         case None => Property.SchedulerPool.defaultValue.get
         case Some(pool: String) if session.sparkContext.getPoolForName(pool).isDefined => pool
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+      key
 
-    case Property.PartitionPruning.name => value match {
-      case Some(b) => session.partitionPruning = b.toString.toBoolean
-      case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
-    }
+    case Property.PartitionPruning.name =>
+      value match {
+        case Some(b) => session.partitionPruning = b.toString.toBoolean
+        case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
+      }
       session.clearPlanCache()
+      key
 
     case Property.PlanCaching.name =>
       value match {
@@ -888,6 +917,7 @@ class SnappyConf(@transient val session: SnappySession)
           session.planCaching = boolVal.toString.toBoolean
         case None => session.planCaching = Property.PlanCaching.defaultValue.get
       }
+      key
 
     case Property.Tokenize.name =>
       value match {
@@ -895,6 +925,7 @@ class SnappyConf(@transient val session: SnappySession)
         case None => session.tokenize = Property.Tokenize.defaultValue.get
       }
       session.clearPlanCache()
+      key
 
     case Property.DisableHashJoin.name =>
       value match {
@@ -902,8 +933,11 @@ class SnappyConf(@transient val session: SnappySession)
         case None => session.disableHashJoin = Property.DisableHashJoin.defaultValue.get
       }
       session.clearPlanCache()
+      key
 
-    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
+    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key =>
+      session.clearPlanCache()
+      key
 
     case Constant.TRIGGER_AUTHENTICATION => value match {
       case Some(boolVal) if boolVal.toString.toBoolean =>
@@ -916,10 +950,23 @@ class SnappyConf(@transient val session: SnappySession)
               throw Util.generateCsSQLException(SQLState.NET_CONNECT_AUTH_FAILED, failure)
           }
         }
-      case _ =>
+        key
+      case _ => key
     }
 
-    case _ => // ignore others
+    case _ =>
+      // search case-insensitively for other keys if required
+      if (search) {
+        getAllDefinedConfs.collectFirst {
+          case (k, _, _) if k.equalsIgnoreCase(key) => k
+        } match {
+          case None => key
+          case Some(k) =>
+            // execute keyUpdateActions again since it might be one of the pre-defined ones
+            keyUpdateActions(k, value, doSet, search = false)
+            k
+        }
+      } else key
   }
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
@@ -951,12 +998,12 @@ class SnappyConf(@transient val session: SnappySession)
   def activeSchedulerPool: String = schedulerPool
 
   override def setConfString(key: String, value: String): Unit = {
-    keyUpdateActions(key, Some(value), doSet = true)
-    super.setConfString(key, value)
+    val rkey = keyUpdateActions(key, Some(value), doSet = true)
+    super.setConfString(rkey, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    keyUpdateActions(entry.key, Some(value), doSet = true)
+    keyUpdateActions(entry.key, Some(value), doSet = true, search = false)
     require(entry != null, "entry cannot be null")
     require(value != null, s"value cannot be null for key: ${entry.key}")
     entry.defaultValue match {
@@ -966,12 +1013,12 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   override def unsetConf(key: String): Unit = {
-    keyUpdateActions(key, None, doSet = false)
-    super.unsetConf(key)
+    val rkey = keyUpdateActions(key, None, doSet = false)
+    super.unsetConf(rkey)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
-    keyUpdateActions(entry.key, None, doSet = false)
+    keyUpdateActions(entry.key, None, doSet = false, search = false)
     super.unsetConf(entry)
   }
 }
