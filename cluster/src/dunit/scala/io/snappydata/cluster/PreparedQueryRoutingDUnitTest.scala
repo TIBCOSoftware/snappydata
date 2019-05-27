@@ -707,11 +707,8 @@ class PreparedQueryRoutingDUnitTest(val s: String)
 
     // scalastyle:off println
     println(s"query1_test2: Connected to $serverHostPort")
-    // scalastyle:on println
     val stmt = conn.createStatement()
-    if (createTableAndPopulateSomeData(conn)) {
-
-    }
+    createTableAndPopulateSomeData(conn)
     val keepRunning = new AtomicBoolean(true)
     createNThreadsAndPrepExecute(10, keepRunning)
     assert(keepRunning.get())
