@@ -79,13 +79,24 @@ case class SnappyHashAggregateExec(
     hasDistinct: Boolean)
     extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
-  val useByteBufferMapBasedAggregation: Boolean = aggregateBufferAttributes.forall( attr =>
+
+  val useByteBufferMapBasedAggregation: Boolean = {
+    val useDictionaryOptimizationForSingleKey = (groupingExpressions.length == 1 &&
+      groupingExpressions.exists(_.dataType match {
+      case StringType => true
+      case _ => false
+    }) && !Property.TestUseBBMapInSHAFor1StringGrouBy.get(
+      sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf))
+
+    aggregateBufferAttributes.forall(attr =>
       TypeUtilities.isFixedWidth(attr.dataType)) &&
-     !Property.TestDisableByteBufferMapInSHA.get(
-       sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
-     !groupingExpressions.isEmpty &&
+      !Property.TestDisableByteBufferMapInSHA.get(
+        sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
+      !groupingExpressions.isEmpty &&
       groupingExpressions.forall(_.dataType.
-      existsRecursively(SHAMapAccessor.supportedDataTypes))
+        existsRecursively(SHAMapAccessor.supportedDataTypes)) &&
+      !useDictionaryOptimizationForSingleKey
+  }
 
 
 
