@@ -444,10 +444,21 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
   def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: String,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType], hashVar: Array[String]): String = {
     if (allStringGroupKeys) {
+        val nullKeyBitsEvalCode = if (numBytesForNullKeyBits == 0) ""
+        else {
+          keyVars.zip(keysDataType).zipWithIndex.map {
+            case ((exprCode, dt), i) => SHAMapAccessor.evaluateNullBitsAndEmbedWrite(
+              numBytesForNullKeyBits, exprCode, i, nullKeysBitsetTerm,
+              "", dt, true, "")
+          }.mkString("\n")
+        }
+
         s"""
+           |$nullKeyBitsEvalCode
            |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent(
            |${keyVars.map(_.value).mkString(",")},
-            $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+            $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)}
+             ${if (numBytesForNullKeyBits == 0) "" else s", $nullKeysBitsetTerm" });
        """.stripMargin
     } else {
       s"""
