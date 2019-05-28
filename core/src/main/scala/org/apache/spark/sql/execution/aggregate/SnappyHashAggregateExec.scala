@@ -828,7 +828,7 @@ case class SnappyHashAggregateExec(
     } else ""
 
 
-    val allStringGroupKeys = numBytesForNullKeyBits == 0 &&  keysDataType.forall(_ == StringType)
+    val allStringGroupKeys = keysDataType.forall(_ == StringType)
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
