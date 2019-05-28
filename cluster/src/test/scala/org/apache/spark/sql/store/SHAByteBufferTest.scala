@@ -49,6 +49,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     super.newSparkConf((conf: SparkConf) => {
       conf.set("spark.sql.codegen.maxFields", "110")
       conf.set("spark.sql.codegen.fallback", "false")
+      conf.set("snappydata.sql.useBBMapInSHAFor1StringGroupBy", "true")
       conf
     })
   }
