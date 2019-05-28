@@ -331,7 +331,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
           if (!isKey) {
             s"""
              else {
-               ${getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
+               ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(currentValueOffsetTerm, dt)}
              } """.stripMargin
           } else {
             ""
@@ -532,14 +532,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   }
 
-  def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
-    s"""$offsetTerm += ${
-      dt.defaultSize + (dt match {
-        case dec: DecimalType  if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-        case _ => 0
-      })
-    };"""
-  }
+
 
   def writeKeyOrValue(baseObjectTerm: String, offsetTerm: String,
     dataTypes: Seq[DataType], varsToWrite: Seq[ExprCode], nullBitsTerm: String,
@@ -763,57 +756,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
           if (skipNullEvalCode) {
             writingCode
           } else {
-            val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
-            val nullVar = expr.isNull
-            if (numBytesForNullBits > 8) {
-              val remainder = i % 8
-              val index = i / 8
-              if (nullVar.isEmpty || nullVar == "false") {
-                s"""$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
-                   |$writingCode""".stripMargin
-              } else if (nullVar == "true") {
-                if (!isKey) {
-                  getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
-                } else {
-                  ""
-                }
-              }
-              else {
-                s"""if (!$nullVar) {
-                     |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
-                     |$writingCode
-                    }${
-                  if (!isKey) {
-                    s"""else {
-                          ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
-                        }""".stripMargin
-                  } else ""
-                }""".stripMargin
-              }
-            }
-            else {
-              if (nullVar.isEmpty || nullVar == "false") {
-                s"""$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
-                   |$writingCode
-                """.stripMargin
-              } else if (nullVar == "true") {
-                if (!isKey) {
-                  getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
-                } else {
-                  ""
-                }
-              } else {
-                s"""if (!$nullVar) {
-                        $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
-                        $writingCode
-                    }${if (!isKey) {
-                      s"""else {
-                           ${getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
-                          }""".stripMargin
-                  } else ""
-                 }""".stripMargin
-              }
-            }
+            SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullBits, expr,
+              i, nullBitsTerm, offsetTerm, dt, isKey, writingCode)
           }
 
       }.mkString("\n")
@@ -848,7 +792,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     s"""
         if ($keyBytesHolderVarTerm == null || $keyHolderCapacityTerm <
       $numKeyBytesVar + $numValueBytesVar) {
-          //$keyBytesHolderVarTerm = $allocatorTerm.allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
+          //$keyBytesHolderVarTerm =
+           //$allocatorTerm.allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
           //$baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
           //$baseKeyHolderOffset = $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
            $keyHolderCapacityTerm = $numKeyBytesVar + $numValueBytesVar;
@@ -1269,6 +1214,71 @@ object SHAMapAccessor {
     "int"
   } else {
     "long"
+  }
+
+  def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
+    s"""$offsetTerm += ${
+      dt.defaultSize + (dt match {
+        case dec: DecimalType  if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
+        case _ => 0
+      })
+    };"""
+  }
+
+  def evaluateNullBitsAndEmbedWrite(numBytesForNullBits: Int, expr: ExprCode,
+    i: Int, nullBitsTerm: String, offsetTerm: String, dt: DataType,
+    isKey: Boolean, writingCodeToEmbed: String): String = {
+    val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+    val nullVar = expr.isNull
+    if (numBytesForNullBits > 8) {
+      val remainder = i % 8
+      val index = i / 8
+      if (nullVar.isEmpty || nullVar == "false") {
+        s"""$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
+           |$writingCodeToEmbed""".stripMargin
+      } else if (nullVar == "true") {
+        if (!isKey) {
+          SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+        } else {
+          ""
+        }
+      }
+      else {
+        s"""if (!$nullVar) {
+           |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
+           |$writingCodeToEmbed
+                    }${
+          if (!isKey) {
+            s"""else {
+                  ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
+                }""".stripMargin
+          } else ""
+        }""".stripMargin
+      }
+    }
+    else {
+      if (nullVar.isEmpty || nullVar == "false") {
+        s"""$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+           |$writingCodeToEmbed
+            """.stripMargin
+      } else if (nullVar == "true") {
+        if (!isKey) {
+          SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+        } else {
+          ""
+        }
+      } else {
+        s"""if (!$nullVar) {
+              $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+              $writingCodeToEmbed
+            }${ if (!isKey) {
+                 s"""else {
+                      ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
+                    }""".stripMargin
+                } else ""
+              }""".stripMargin
+      }
+    }
   }
 
 }
