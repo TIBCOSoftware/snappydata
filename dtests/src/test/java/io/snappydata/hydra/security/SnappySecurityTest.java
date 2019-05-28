@@ -163,9 +163,9 @@ public class SnappySecurityTest extends SnappyTest {
   }
 
   public static ArrayList getQueryArr(String fileName, String user) {
-    Log.getLogWriter().info("Inide getQueryArray");
-    Log.getLogWriter().info("User = " + user);
-    Log.getLogWriter().info("File Name = " + fileName);
+   // Log.getLogWriter().info("Inide getQueryArray");
+   // Log.getLogWriter().info("User = " + user);
+  //  Log.getLogWriter().info("File Name = " + fileName);
     ArrayList<String> queries = new ArrayList<String>();
     Vector schemaToTest = SnappySecurityPrms.getSchema();
     String str = schemaToTest.elementAt(0).toString();
@@ -174,10 +174,10 @@ public class SnappySecurityTest extends SnappyTest {
     try {
       BufferedReader br = new BufferedReader(new FileReader(fileName));
       String line = null;
-      Log.getLogWriter().info("SS");
+     // Log.getLogWriter().info("SS");
       while ((line = br.readLine()) != null) {
         String[] splitData = line.split(";");
-        Log.getLogWriter().info("splitData length is " + splitData.length);
+     //   Log.getLogWriter().info("splitData length is " + splitData.length);
         for (int i = 0; i < splitData.length; i++) {
             if (!(splitData[i] == null) || !(splitData[i].length() == 0)) {
             String qry = splitData[i].replace("user2", schemaOwner);
@@ -255,7 +255,7 @@ public class SnappySecurityTest extends SnappyTest {
     String schemaOwner = schemaStr.split("\\.")[0];
     Log.getLogWriter().info(" SchemaOwner is " + schemaOwner);
     Boolean isGrant = SnappySecurityPrms.getIsGrant();
-    Log.getLogWriter().info("User = " + usr + " with passwd = " + pass + " with  authorization = " + isAuth + " and grant permisison is " + isGrant + "with schemaOwner = " + schemaOwner + "  will execute the below query \n");
+      Log.getLogWriter().info("User = " + usr + " with passwd = " + pass + " with  authorization = " + isAuth + " and grant permisison is " + isGrant + " with schemaOwner = " + schemaOwner + "  will execute the below query  with authorization = " + isAuth + " \n");
     conn = getSecuredLocatorConnection(usr, pass);
     String fileName = SnappySecurityPrms.getDataLocation();
     ArrayList queryArray = getQueryArr(fileName, usr);
@@ -271,7 +271,7 @@ public class SnappySecurityTest extends SnappyTest {
         if (!usr.equals(adminUser) && !usr.equals(schemaOwner) && isGrant) {
           for (int d = 0; d < dmlOps.size(); d++) {
             String dmlOp = dmlOps.elementAt(d).toString();
-            Log.getLogWriter().info("Find " + dmlOp + " in query " + queryStr);
+           // Log.getLogWriter().info("Find " + dmlOp + " in query " + queryStr);
             if (queryStr.contains(dmlOp)) {
               if (!isSelect) {
                 if (dmlOp.equals("INSERT"))
@@ -282,20 +282,20 @@ public class SnappySecurityTest extends SnappyTest {
           }
           for (int s = 0; s < schemaToTest.size(); s++) {
             String str = schemaToTest.elementAt(s).toString();
-            Log.getLogWriter().info("Find " + str + " in query " + queryStr);
+         //   Log.getLogWriter().info("Find " + str + " in query " + queryStr);
             if (queryStr.contains(str))
               schemaAuth = true;
           }
           if ((!opAuth || !schemaAuth) || (!opAuth && !schemaAuth)) {
             isAuth = false;
-            Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
+            Log.getLogWriter().info("The user " + usr + " will execute the query   " + queryStr + " with new authorization = " + isAuth);
             execute(queryStr, conn);
           } else {
             if (usr.equals(unAuthUser))
               isAuth = false;
             else
               isAuth = true;
-            Log.getLogWriter().info("The user " + usr + "will execute the query   " + queryStr + " with new authorization = " + isAuth);
+            Log.getLogWriter().info("The user " + usr + " will execute the query   " + queryStr + " with new authorization = " + isAuth);
             execute(queryStr, conn);
           }
           //   }
