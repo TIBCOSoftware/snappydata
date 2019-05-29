@@ -186,7 +186,8 @@ object ExternalStoreUtils {
   val emptyCIMutableMap: CaseInsensitiveMutableHashMap[String] =
     new CaseInsensitiveMutableHashMap[String](Map.empty)
 
-  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
+  def removeInternalPropsAndGetTable(parameters: mutable.Map[String, String],
+      tableAsUpper: Boolean = true): String = {
     val dbtableProp = SnappyExternalCatalog.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
@@ -195,7 +196,7 @@ object ExternalStoreUtils {
     // remove the "path" property added by Spark hive catalog
     parameters.remove("path")
     parameters.remove("serialization.format")
-    Utils.toUpperCase(table)
+    if (tableAsUpper) Utils.toUpperCase(table) else Utils.toLowerCase(table)
   }
 
   def removeSamplingOptions(

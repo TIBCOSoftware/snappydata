@@ -334,7 +334,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           }
           val baseTable = parameters.get(SnappyExternalCatalog.BASETABLE_PROPERTY) match {
             case None => ""
-            case Some(b) => b
+            case Some(b) => toLowerCase(b)
           }
           val dmls = JdbcExtendedUtils.
               getInsertOrPutString(qualifiedName, schema, putInto = false)

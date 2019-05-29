@@ -1301,8 +1301,8 @@ class SnappyParser(session: SnappySession)
     parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw new ParseException(formatError(e, new ErrorFormatter(
-          showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
+        throw new ParseException(formatError(e, new ErrorFormatter(showTraces =
+            (session ne null) && Property.ParserTraceError.get(session.sessionState.conf))))
       case Failure(e) =>
         throw new ParseException(e.toString, Some(e))
     }

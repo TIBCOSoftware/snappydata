@@ -56,7 +56,7 @@ import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
-    baseTable: Option[TableIdentifier],
+    baseTable: Option[String],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,

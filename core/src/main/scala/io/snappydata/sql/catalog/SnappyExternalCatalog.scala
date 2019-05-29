@@ -32,7 +32,6 @@ import io.snappydata.sql.catalog.SnappyExternalCatalog._
 
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable, CatalogTableType, ExternalCatalog, SessionCatalog}
-import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -226,11 +225,10 @@ trait SnappyExternalCatalog extends ExternalCatalog {
   def getBaseTable(tableDefinition: CatalogTable): Option[String] = {
     (tableDefinition.properties.get(BASETABLE_PROPERTY) match {
       case None =>
-        val params = new CaseInsensitiveMap(tableDefinition.storage.properties)
-        params.get(BASETABLE_PROPERTY) match {
+        tableDefinition.storage.properties.find(_._1.equalsIgnoreCase(BASETABLE_PROPERTY)) match {
           // older releases didn't have base table entry for indexes
-          case None => params.get(INDEXED_TABLE)
-          case t => t
+          case None => tableDefinition.storage.properties.get(INDEXED_TABLE)
+          case Some((_, v)) => Some(v)
         }
       case t => t
     }) match {
@@ -246,7 +244,7 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     getBaseTable(table) match {
       case None =>
       case Some(baseTable) =>
-        val withSchema = getTableWithSchema(baseTable, table.database)
+        val withSchema = getTableWithSchema(Utils.toLowerCase(baseTable), table.database)
         // add base table to the list of relations to be invalidated
         tableWithBase = withSchema :: tableWithBase
     }
@@ -279,25 +277,35 @@ object SnappyExternalCatalog {
   // internal properties stored as hive table parameters
   val DEPENDENT_RELATIONS = "dependent_relations"
   // obsolete property used for backward compatibility only during reads
-  val TABLETYPE_PROPERTY = "external_snappy"
+  val TABLETYPE_PROPERTY = "EXTERNAL_SNAPPY"
 
   // -------- Properties that go in CatalogTable.storage.properties --------
   val DBTABLE_PROPERTY: String = JDBCOptions.JDBC_TABLE_NAME
   val BASETABLE_PROPERTY = "basetable"
   val SCHEMADDL_PROPERTY = "schemaddl"
-  val INDEXED_TABLE = "indexed_table"
-  // older releases have this property in upper-case
-  val INDEXED_TABLE_OLD = "INDEXED_TABLE"
+
+  // obsolete properties to indicate column table indexes which were experimental and untested
+  val INDEXED_TABLE = "INDEXED_TABLE"
+  val INDEXED_TABLE_LOWER: String = Utils.toLowerCase("INDEXED_TABLE")
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
   private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 
-  def getDependents(properties: Map[String, String]): Array[String] = {
+  def getDependentsValue(properties: Map[String, String]): Option[String] = {
     properties.get(DEPENDENT_RELATIONS) match {
+      case None =>
+        // check upper-case for older releases
+        properties.get(Utils.toUpperCase(DEPENDENT_RELATIONS))
+      case s => s
+    }
+  }
+
+  def getDependents(properties: Map[String, String]): Array[String] = {
+    getDependentsValue(properties) match {
       case None => Utils.EMPTY_STRING_ARRAY
-      case Some(d) => d.split(",")
+      case Some(d) => d.split(',')
     }
   }
 
@@ -352,8 +360,7 @@ object CatalogObjectType extends Enumeration {
     tableType match {
       case CatalogTableType.VIEW.name => View
       case _ =>
-        if (storageProperties.contains(INDEXED_TABLE) ||
-            storageProperties.contains(INDEXED_TABLE_OLD)) {
+        if (storageProperties.contains(INDEXED_TABLE)) {
           Index
         }
         else if (properties.contains(PolicyProperties.policyApplyTo)) Policy

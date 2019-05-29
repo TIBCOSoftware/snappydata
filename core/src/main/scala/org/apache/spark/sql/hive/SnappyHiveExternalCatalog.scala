@@ -246,15 +246,16 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     withHiveExceptionHandling(client.getTableOption(name._1, name._2)) match {
       case None => // ignore, can be a temporary table
       case Some(baseTable) =>
-        val dependents = baseTable.properties.get(DEPENDENT_RELATIONS) match {
+        val dependents = SnappyExternalCatalog.getDependentsValue(baseTable.properties) match {
           case None => dependent
           case Some(deps) =>
             // add only if it doesn't exist
-            if (deps.split(",").contains(dependent)) return
-            else deps + "," + dependent
+            if (deps.split(',').contains(dependent)) return else deps + "," + dependent
         }
+        val newProps = baseTable.properties.filterNot(
+          _._1.equalsIgnoreCase(DEPENDENT_RELATIONS))
         withHiveExceptionHandling(client.alterTable(baseTable.copy(properties =
-            baseTable.properties + (DEPENDENT_RELATIONS -> dependents))))
+            newProps + (DEPENDENT_RELATIONS -> dependents))))
     }
   }
 
@@ -293,21 +294,22 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     withHiveExceptionHandling(client.getTableOption(name._1, name._2)) match {
       case None => // ignore, can be a temporary table
       case Some(baseTable) =>
-        baseTable.properties.get(DEPENDENT_RELATIONS) match {
-          case None =>
-          case Some(deps) =>
+        SnappyExternalCatalog.getDependents(baseTable.properties) match {
+          case deps if deps.length > 0 =>
             // remove all instances in case there are multiple coming from older releases
-            val dependents = deps.split(",").toSet
+            val dependents = deps.toSet
             if (dependents.contains(dependent)) withHiveExceptionHandling {
+              val newProps = baseTable.properties.filterNot(
+                _._1.equalsIgnoreCase(DEPENDENT_RELATIONS))
               if (dependents.size == 1) {
-                client.alterTable(baseTable.copy(properties = baseTable.properties -
-                    DEPENDENT_RELATIONS))
+                client.alterTable(baseTable.copy(properties = newProps))
               } else {
                 val newDependents = (dependents - dependent).mkString(",")
-                client.alterTable(baseTable.copy(properties = baseTable.properties +
+                client.alterTable(baseTable.copy(properties = newProps +
                     (DEPENDENT_RELATIONS -> newDependents)))
               }
             }
+          case _ =>
         }
     }
   }
@@ -462,7 +464,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     }
     // explicitly add weightage column to sample tables for old catalog data
     if (CatalogObjectType.getTableType(newTable) == CatalogObjectType.Sample &&
-        newTable.schema(table.schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+        !newTable.schema(table.schema.length - 1).name.equalsIgnoreCase(
+          Utils.WEIGHTAGE_COLUMN_NAME)) {
       newTable.copy(schema = newTable.schema.add(Utils.WEIGHTAGE_COLUMN_NAME, LongType,
         nullable = false))
     } else newTable

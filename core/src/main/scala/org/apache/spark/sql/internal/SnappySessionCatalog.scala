@@ -226,6 +226,13 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     TableIdentifier(formatTableName(identifier.table), Some(getSchemaName(identifier)))
   }
 
+  /** Convert a table name to TableIdentifier for an existing table. */
+  final def resolveExistingTable(name: String): TableIdentifier = {
+    val identifier = snappySession.tableIdentifier(name)
+    if (isTemporaryTable(identifier)) identifier
+    else TableIdentifier(identifier.table, Some(getSchemaName(identifier)))
+  }
+
   /**
    * Lookup relation and resolve to a LogicalRelation if not a temporary view.
    */
@@ -313,8 +320,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    * Drop all the objects in a schema. The provided schema must already be formatted
    * with a call to [[formatDatabaseName]].
    */
-  def dropAllSchemaObjects(schemaName: String, ignoreIfNotExists: Boolean,
+  def dropAllSchemaObjects(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
+    val schemaName = formatDatabaseName(schema)
     if (schemaName == SnappyExternalCatalog.SYS_SCHEMA) {
       throw new AnalysisException(s"$schemaName is a system preserved database/schema")
     }
@@ -336,8 +344,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         var tables = others
         while (tables.nonEmpty) {
           val (leaves, remaining) = tables.partition(t => t.tableType == CatalogTableType.VIEW ||
-              externalCatalog.getDependents(formatDatabaseName(t.database), formatTableName(
-                t.identifier.table), t, Nil, CatalogObjectType.Policy :: Nil).isEmpty)
+              externalCatalog.getDependents(t.database, t.identifier.table, t,
+                Nil, CatalogObjectType.Policy :: Nil).isEmpty)
           leaves.foreach(t => snappySession.dropTable(t.identifier, ifExists = true,
             t.tableType == CatalogTableType.VIEW))
           tables = remaining

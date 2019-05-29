@@ -530,14 +530,14 @@ object StoreUtils {
     SortOrder(batchIdColumn, Ascending)
   }
 
-  def validateConnProps(parameters: mutable.Map[String, String]): Unit = {
-    parameters.keys.foreach { v =>
-      val u = Utils.toLowerCase(v)
-      if (!u.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY) &&
-          u != SnappyExternalCatalog.BASETABLE_PROPERTY &&
-          u != SnappyExternalCatalog.INDEXED_TABLE && !ddlOptions.contains(u)) {
+  def validateConnProps(
+      parameters: ExternalStoreUtils.CaseInsensitiveMutableHashMap[String]): Unit = {
+    parameters.keys.foreach { k =>
+      if (!k.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY) &&
+          k != SnappyExternalCatalog.BASETABLE_PROPERTY &&
+          k != SnappyExternalCatalog.INDEXED_TABLE_LOWER && !ddlOptions.contains(k)) {
         throw new AnalysisException(
-          s"Unknown option '$v' specified while creating table")
+          s"Unknown option '$k' specified while creating table")
       }
     }
   }

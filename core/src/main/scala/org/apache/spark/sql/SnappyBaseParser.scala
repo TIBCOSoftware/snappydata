@@ -37,7 +37,8 @@ import org.apache.spark.sql.{SnappyParserConsts => Consts}
  */
 abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
-  protected var caseSensitive: Boolean = session.sessionState.conf.caseSensitiveAnalysis
+  protected var caseSensitive: Boolean =
+    (session ne null) && session.sessionState.conf.caseSensitiveAnalysis
 
   private[sql] final val queryHints: ConcurrentHashMap[String, String] =
     new ConcurrentHashMap[String, String](4, 0.7f, 1)
@@ -481,9 +482,7 @@ object SnappyParserConsts {
 
   // marked as internal keywords to prevent use in SQL
   final val HIVE_METASTORE: Keyword = reservedKeyword(SystemProperties.SNAPPY_HIVE_METASTORE)
-
-  final val SAMPLER_WEIGHTAGE: Keyword = nonReservedKeyword(
-    Utils.WEIGHTAGE_COLUMN_NAME)
+  final val SAMPLER_WEIGHTAGE: Keyword = nonReservedKeyword(Utils.WEIGHTAGE_COLUMN_NAME)
 
   // non-reserved keywords
   final val ADD: Keyword = nonReservedKeyword("add")

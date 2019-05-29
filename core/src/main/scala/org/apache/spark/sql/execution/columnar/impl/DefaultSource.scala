@@ -105,7 +105,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], specifiedSchema: StructType): BaseColumnFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
+    val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
 
     // don't allow commas in column names since it is used as separator in multiple places
     specifiedSchema.find(_.name.indexOf(',') != -1) match {

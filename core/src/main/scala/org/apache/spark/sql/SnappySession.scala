@@ -697,7 +697,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
   /**
@@ -739,7 +739,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
   /**
@@ -783,7 +783,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(topKName), SnappyContext.TOPK_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(inputDataSchema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), topkOptions) +
+      addBaseTableOption(baseTable, topkOptions) +
           ("key" -> keyColumnName), isBuiltIn = true)
   }
 
@@ -827,7 +827,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(topKName), SnappyContext.TOPK_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), topkOptions) +
+      addBaseTableOption(baseTable, topkOptions) +
           ("key" -> keyColumnName), isBuiltIn = true)
   }
 
@@ -1259,7 +1259,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       parameters.get(StoreUtils.COLOCATE_WITH) match {
         case None =>
         case Some(b) => fullOptions += SnappyExternalCatalog.BASETABLE_PROPERTY ->
-            sessionCatalog.resolveTableIdentifier(tableIdentifier(b)).unquotedString
+            sessionCatalog.resolveExistingTable(b).unquotedString
       }
     }
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
@@ -1286,9 +1286,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     df
   }
 
-  private[sql] def addBaseTableOption(baseTable: Option[TableIdentifier],
+  private[sql] def addBaseTableOption(baseTable: Option[String],
       options: Map[String, String]): Map[String, String] = baseTable match {
-    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY -> t.unquotedString)
+    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY ->
+        sessionCatalog.resolveExistingTable(t).unquotedString)
     case _ => options
   }
 

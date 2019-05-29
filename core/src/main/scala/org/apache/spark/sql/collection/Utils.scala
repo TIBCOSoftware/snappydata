@@ -71,8 +71,8 @@ import org.apache.spark.util.io.ChunkedByteBuffer
 object Utils {
 
   final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
-  final val WEIGHTAGE_COLUMN_NAME = "SNAPPY_SAMPLER_WEIGHTAGE"
-  final val SKIP_ANALYSIS_PREFIX = "SAMPLE_"
+  final val WEIGHTAGE_COLUMN_NAME = "snappy_sampler_weightage"
+  final val SKIP_ANALYSIS_PREFIX = "sample_"
   private final val TASKCONTEXT_FUNCTION = "getTaskContextFromTSS"
 
   // 1 - (1 - 0.95) / 2 = 0.975
@@ -129,6 +129,11 @@ object Utils {
 
   def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
+  def parseCSVList(s: String, parser: SnappyParser): Array[String] = {
+    s.split(',').map(c => Utils.toLowerCase(parser.parseSQLOnly(
+      c, parser.parseIdentifier.run())))
+  }
+
   def qcsOf(qa: Array[String], cols: Array[String],
       module: String): (Array[Int], Array[String]) = {
     val colIndexes = qa.map(columnIndex(_, cols, module))
@@ -142,7 +147,7 @@ object Utils {
       case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
         if (qs.isEmpty) throw analysisException(ERROR_NO_QCS(module))
-        else qcsOf(qs.split(","), fieldNames, module)
+        else qcsOf(parseCSVList(qs, new SnappyParser(session = null)), fieldNames, module)
       case qa: Array[String] => qcsOf(qa, fieldNames, module)
       case q => throw analysisException(
         s"$module: Cannot parse 'qcs'='$q'")
@@ -394,9 +399,7 @@ object Utils {
     if (s.trim.equals("*")) {
       (true, Set.empty[String])
     } else {
-      val parser = session.snappyParser
-      (false, s.split(',').map(c => Utils.toLowerCase(parser.parseSQLOnly(
-        c, parser.parseIdentifier.run()))).toSet)
+      (false, parseCSVList(s, session.snappyParser).toSet)
     }
   }
 

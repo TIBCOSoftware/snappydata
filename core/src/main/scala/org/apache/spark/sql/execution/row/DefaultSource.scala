@@ -93,7 +93,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], schemaString: String): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
+    val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
