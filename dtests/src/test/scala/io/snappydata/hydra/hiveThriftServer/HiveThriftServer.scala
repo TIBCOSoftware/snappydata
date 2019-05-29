@@ -35,6 +35,8 @@ class HiveThriftServer extends SnappySQLJob {
   var rsMetaData : ResultSetMetaData = null
   var stmt : Statement = null
   var printLog : Boolean = false
+  var beeLine : String = ""
+  var snappy : String = ""
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
@@ -44,31 +46,32 @@ class HiveThriftServer extends SnappySQLJob {
 
     val Query1 : String = "create TablE if not exists EmpBeeline(id long, name String)"
     val Query2 : String = "insert into EmpBeeline select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(20000)"
+      "id, concat(id, '_Snappy_TIBCO') from range(200000)"
 
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
+//    val validateSpark : SparkSession = SparkSession.builder().getOrCreate()
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val outputFile = "ValidateHiveThriftServer" + "_" +
       System.currentTimeMillis() + jobConfig.getString("logFileName")
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
-    val sc = SparkContext.getOrCreate()
-    val sqlContext = SQLContext.getOrCreate(spark.sparkContext)
+//    val sc = SparkContext.getOrCreate()
+    val sqlContext : SQLContext = spark.sqlContext
 
     println("Starting the Hive Thrift Server testing job.....")
     val hiveThriftServer = new HiveThriftServer
     connectToBeeline(hiveThriftServer)
 
-    executeShowSchemas(hiveThriftServer, "ShoW DaTAbasEs", snc, pw)
-    executeShowSchemas(hiveThriftServer, "sHOw SCHemas", snc, pw)
+    executeShowSchemas(hiveThriftServer, "ShoW DaTAbasEs", snc, pw, sqlContext)
+    executeShowSchemas(hiveThriftServer, "sHOw SCHemas", snc, pw, sqlContext)
 
     executeUseSchema(hiveThriftServer, "default", snc, spark)
     createRowOrColumnTableFromBeeline(hiveThriftServer, Query1)
     insertIntoRowOrColumnTableFromBeeline(hiveThriftServer, Query2, snc, spark, pw, sqlContext)
 
-//    executeShowTables(hiveThriftServer, "show TabLES in default")
-//    executeDropTables(hiveThriftServer, "drop table if exists EmpBeeline")
-//    executeShowTables(hiveThriftServer, "ShoW tAbLES iN DEFAULT")
+    executeShowTables(hiveThriftServer, "show TabLES in default", pw)
+    executeDropTables(hiveThriftServer, "drop table if exists EmpBeeline")
+    executeShowTables(hiveThriftServer, "ShoW tAbLES iN DEFAULT", pw)
 
     pw.flush()
     pw.close()
@@ -89,7 +92,7 @@ class HiveThriftServer extends SnappySQLJob {
   }
 
   def executeShowSchemas(hts : HiveThriftServer, command : String,
-                         snc : SnappyContext, pw : PrintWriter) : Unit = {
+                         snc : SnappyContext, pw : PrintWriter, sqlContext : SQLContext) : Unit = {
     hts.stmt = hts.connection.createStatement()
     hts.rs = hts.stmt.executeQuery(command)
     hts.rsMetaData = hts.rs.getMetaData
@@ -116,35 +119,32 @@ class HiveThriftServer extends SnappySQLJob {
   def insertIntoRowOrColumnTableFromBeeline(hts : HiveThriftServer, command : String,
                                             snc : SnappyContext, spark : SparkSession,
                                             pw : PrintWriter, sqlContext : SQLContext) : Unit = {
-    var calculateBeelineCount : String = ""
-    var calculateSnappyCount : String = ""
     hts.stmt = hts.connection.createStatement()
     hts.stmt.executeQuery(command)
     val insertChk1 : String = "select count(*) as Total from EmpBeeline"
-    val insertChk2 : String = "select * from EmpBeeline where id > 19050"
+    val insertChk2 : String = "select * from EmpBeeline where id > 19050 order by id DESC"
     ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
     ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
 
-    //    SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk1, "InsertCheck1",
+//      SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk1, "insertCheck1",
 //      "Row", pw, spark, false)
-//    SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk2, "InsertCheck2",
-//      "Row", pw, spark, false)
-
+//       SnappyTestUtils.assertQueryFullResultSetHiveThriftServer(snc, insertChk2, "insertCheck2",
+//         "Row", pw, spark, false  )
   }
 
-//  def executeShowTables(hts : HiveThriftServer, command : String) : Unit = {
-//    result = ""
-//    hts.stmt = hts.connection.createStatement()
-//    hts.rs = hts.stmt.executeQuery(command)
-//    hts.rsMetaData = hts.rs.getMetaData
-//    result = hts.rsMetaData.getColumnLabel(1) + "\t" +
-//      hts.rsMetaData.getColumnName(2) + "\t" + hts.rsMetaData.getColumnName(3) + "\n"
-//    while(hts.rs.next()) {
-//        result = result + hts.rs.getString("schemaName") + "\t"  +
-//        hts.rs.getString("tableName") + "\t" + hts.rs.getString("isTemporary") + "\n"
-//    }
-//    println("show tables : " + "\n" + result)
-//  }
+  def executeShowTables(hts : HiveThriftServer, command : String, pw : PrintWriter) : Unit = {
+    result = ""
+    hts.stmt = hts.connection.createStatement()
+    hts.rs = hts.stmt.executeQuery(command)
+    hts.rsMetaData = hts.rs.getMetaData
+    result = hts.rsMetaData.getColumnLabel(1) + "\t" +
+      hts.rsMetaData.getColumnName(2) + "\t" + hts.rsMetaData.getColumnName(3) + "\n"
+    while(hts.rs.next()) {
+        result = result + hts.rs.getString("schemaName") + "\t"  +
+        hts.rs.getString("tableName") + "\t" + hts.rs.getString("isTemporary") + "\n"
+    }
+    pw.println("show tables : " + "\n" + result)
+  }
 
   def executeDropTables(hts : HiveThriftServer, command : String) : Unit = {
     hts.stmt = hts.connection.createStatement()

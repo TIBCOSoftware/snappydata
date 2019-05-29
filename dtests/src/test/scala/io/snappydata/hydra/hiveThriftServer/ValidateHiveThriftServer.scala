@@ -16,10 +16,11 @@
  */
 package io.snappydata.hydra.hiveThriftServer
 
-import java.io.PrintWriter
+import java.io.{FileOutputStream, PrintWriter, File}
 import org.apache.spark.sql.SnappyContext
 
 object ValidateHiveThriftServer {
+
   // scalastyle:off println
 
   def validate_ShowSchema_Showdatabases(command : String, hts : HiveThriftServer,
@@ -52,7 +53,7 @@ object ValidateHiveThriftServer {
           " for command : " + command)
       }
       else {
-        pw.println("Row counts and Row contents aren't matched for command : " + command)
+        pw.println("ROW COUNTS AND ROW contents AREN'T MATCHED FOR COMMAND : " + command)
       }
     }
 
@@ -66,7 +67,7 @@ object ValidateHiveThriftServer {
           " for command : " + command)
        }
       else {
-        pw.println("Row counts and Row contents aren't matched for command : " + command)
+        pw.println("ROW COUNTS AND ROW CONTENTS AREN'T MATCHED FOR COMMAND : " + command)
       }
     }
   }
@@ -87,18 +88,22 @@ object ValidateHiveThriftServer {
       calculateBeelineCount = hts.rs.getString(1)
     }
 
-    println("calculateSnappyCount : " + calculateSnappyCount)
-    println("calculateBeelineCount : " + calculateBeelineCount)
+    if(hts.printLog) {
+      println("calculateSnappyCount : " + calculateSnappyCount)
+      println("calculateBeelineCount : " + calculateBeelineCount)
+    }
 
     if(calculateSnappyCount.equals(calculateBeelineCount)) {
-      pw.println("Row count for query  >> " + query +
-        " << are  equal between Snappy and Beeline. " +
+      pw.println("Row count for query  -- " + query +
+        " -- are  equal between Snappy and Beeline. " +
         "Total Row count is : " + calculateBeelineCount )
     }
     else {
-      pw.println("Row count for query  >> " + query +
-        " << are  not equal between Snappy and Beeline.")
+      pw.println("ROW COUNT FOR QUERY  -- " + query +
+        " -- ARE NOT EQUAL BETWEEN Snappy AND Beeline.")
     }
+    calculateBeelineCount = null
+    calculateSnappyCount = null
   }
 
   def validateSelectQuery(query : String, snc : SnappyContext,
@@ -107,16 +112,31 @@ object ValidateHiveThriftServer {
      hts.stmt = hts.connection.createStatement()
      hts.rs = hts.stmt.executeQuery(query)
      var index : Long = 0
+     var beeLineString : String = ""
      while(hts.rs.next()) {
         index += 1
+       beeLineString = beeLineString + "[" + hts.rs.getString("id") + "," +
+       hts.rs.getString("name") + "]"
      }
+    var snappyString = snc.sql(query).collect().mkString
+    if(beeLineString.equals(snappyString)) {
+      pw.println("Data between BeeLine and Snappy are matched for " + query)
+    }
+    else {
+      pw.println("DATA BETWEEN BeeLine AND Snappy ARE NOT MATCHED FOR " + query)
+    }
 
     if(snc.sql(query).count() == index) {
-      println("Counts of query : " + query + " are equal.")
-      if (hts.printLog) {
+      pw.println("Counts of query : " + query + " are equal.")
+    }
+    else {
+      pw.println("COUNTS OF QUERY : " + query + " are NOT EQUAL.")
+    }
+    if (hts.printLog) {
       println("Beeline count : " + index)
       println("Snappy count : " + snc.sql(query).count)
-      }
-    }
-  }
-}
+     }
+    beeLineString = null
+    snappyString = null
+   }
+ }
