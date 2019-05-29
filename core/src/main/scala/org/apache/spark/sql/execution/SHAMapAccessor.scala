@@ -230,7 +230,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                  |for (int $counter = 0; $counter < $arraySize; ++$counter ) {
                    |int $remainder = $counter % 8;
                    |int $indx = $counter / 8;
-                   |if ( ($varWidthNullBits[$indx] & (0x01 << $remainder)) != 0) {
+                   |if ( ($varWidthNullBits[$indx] & (0x01 << $remainder)) == 0) {
                      |${readingCodeExprs.map(_.code).mkString("\n")}
                    |}
                  |}
@@ -710,13 +710,16 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |for( int $counter = 0; $counter < $variable.numElements(); ++$counter) {
                      |int $remainder = $counter % 8;
                      |int $arrIndex = $counter / 8;
-                     |if (!$variable.isNullAt($counter)) {
-                       |${ctx.javaType(elementType)} $arrElement =
-                       |(${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
-                       |$elementWitingCode
+                     |if ($variable.isNullAt($counter)) {
                        |if ($containsNull) {
                          |$varWidthNullBits[$arrIndex] |= (byte)((0x01 << $remainder));
+                       |} else {
+                       |  throw new IllegalStateException("Not null Array element contains null");
                        |}
+                     |} else {
+                        |${ctx.javaType(elementType)} $arrElement =
+                        |(${ctx.boxedType(elementType)}) $variable.get($counter, $dataType);
+                        |$elementWitingCode
                      |}
                    |}
                    |${ if (containsNull ) {
@@ -1198,11 +1201,11 @@ object SHAMapAccessor {
      nullBitTerm: String ): String = {
      val castTerm = getNullBitsCastTerm(numBytesForNullBits)
      if (numBytesForNullBits <= 8) {
-       s"""($nullBitTerm & ((($castTerm)0x01) << $i)) == 0"""
+       s"""($nullBitTerm & ((($castTerm)0x01) << $i)) != 0"""
      } else {
        val remainder = i % 8
        val index = i / 8
-       s"""($nullBitTerm[$index] & (0x01 << $remainder)) == 0"""
+       s"""($nullBitTerm[$index] & (0x01 << $remainder)) != 0"""
      }
    }
 
@@ -1234,49 +1237,53 @@ object SHAMapAccessor {
       val remainder = i % 8
       val index = i / 8
       if (nullVar.isEmpty || nullVar == "false") {
-        s"""$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
-           |$writingCodeToEmbed""".stripMargin
+        s"""$writingCodeToEmbed"""
       } else if (nullVar == "true") {
-        if (!isKey) {
-          SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
-        } else {
-          ""
+        s"""
+        |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
+        ${
+          if (isKey) {
+            ""
+          } else {
+            SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+          }
         }
+        """.stripMargin
       }
       else {
-        s"""if (!$nullVar) {
-           |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
-           |$writingCodeToEmbed
-                    }${
-          if (!isKey) {
-            s"""else {
-                  ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
-                }""".stripMargin
-          } else ""
-        }""".stripMargin
+        s""" if ($nullVar) {
+               |$nullBitsTerm[$index] |= (byte)((0x01 << $remainder));
+               |${
+                   if (isKey) ""
+                   else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+                }
+             } else {
+               |$writingCodeToEmbed
+             }
+         """.stripMargin
       }
     }
     else {
       if (nullVar.isEmpty || nullVar == "false") {
-        s"""$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
-           |$writingCodeToEmbed
-            """.stripMargin
+        s"""$writingCodeToEmbed"""
       } else if (nullVar == "true") {
-        if (!isKey) {
-          SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
-        } else {
-          ""
-        }
+        s""""$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+            |${ if (isKey) ""
+                else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+             }
+         """.stripMargin
+
       } else {
-        s"""if (!$nullVar) {
-              $nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
-              $writingCodeToEmbed
-            }${ if (!isKey) {
-                 s"""else {
-                      ${SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)}
-                    }""".stripMargin
-                } else ""
-              }""".stripMargin
+       s"""
+          |if ($nullVar) {
+            |$nullBitsTerm |= ($castTerm)(( (($castTerm)0x01) << $i));
+            |${ if (isKey) ""
+                else SHAMapAccessor.getOffsetIncrementCodeForNullAgg(offsetTerm, dt)
+              }
+          |} else {
+          | $writingCodeToEmbed
+          |}
+        """.stripMargin
       }
     }
   }
