@@ -127,7 +127,7 @@ object ValidateHiveThriftServer {
     }
 
     if(snc.sql(query).count() == index) {
-      pw.println("Counts of query : " + query + " are equal.")
+      pw.println("Counts of query : -- " + query + " -- are equal.")
     }
     else {
       pw.println("COUNTS OF QUERY : " + query + " are NOT EQUAL.")
