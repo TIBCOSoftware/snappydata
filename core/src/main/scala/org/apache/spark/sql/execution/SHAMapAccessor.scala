@@ -47,6 +47,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
   valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
+  storedKeyNullBitsTerm: Option[String],
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String)
   extends CodegenSupport {
 
@@ -770,7 +771,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
         val nullBitsWritingCode = writeNullBitsAt(baseObjectTerm, startingOffsetTerm,
           nullBitsTerm, numBytesForNullBits)
        if(isKey) {
-         nullBitsWritingCode
+         if (nestingLevel == 0) {
+            storedKeyNullBitsTerm.map(storedBit =>
+              s"""
+                 | if ($storedBit != $nullBitsTerm) {
+                 |   $nullBitsWritingCode
+                 |   $storedBit = $nullBitsTerm;
+                 | }
+               """.stripMargin).getOrElse(nullBitsWritingCode)
+         } else {
+           nullBitsWritingCode
+         }
        } else {
          storedAggNullBitsTerm.map(storedAggBit =>
            s"""
@@ -803,6 +814,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
            $keyBytesHolderVarTerm = $byteBufferClass.allocate($keyHolderCapacityTerm);
            $baseKeyObject = $keyBytesHolderVarTerm.array();
            $baseKeyHolderOffset = $plaformClass.BYTE_ARRAY_OFFSET;
+           ${storedKeyNullBitsTerm.map(x => s"$x = -1;").getOrElse("")}
         }
 
         long $currentOffset = $baseKeyHolderOffset;
