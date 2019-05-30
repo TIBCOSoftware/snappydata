@@ -40,7 +40,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
   @transient valueExprs: Seq[Expression], classPrefix: String,
   hashMapTerm: String, valueOffsetTerm: String, numKeyBytesTerm: String,
-  numValueBytesTerm: String, currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
+  numValueBytes: Int, currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
   vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
   nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int,
   allocatorTerm: String, numBytesForNullAggBits: Int,
@@ -391,7 +391,7 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
     val bbDataClass = classOf[ByteBufferData].getName
 
     // val valueInit = valueInitCode + '\n'
-    val numAggBytes = getSizeOfValueBytes(aggregateDataTypes)
+
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
     val inputEvals = evaluateVariables(input)
@@ -416,17 +416,19 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
         |//  System.out.println("hash code for key = " +${hashVar(0)});
         |// get key size code
         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
-        |$numValueBytesTerm = $numAggBytes;
+
         |// prepare the key
-        |${generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm, numValueBytesTerm,
+
+        |${generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm, numValueBytes,
           keyVars, keysDataType, hashVar)}
+
 
         |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
         |if (!$keyExistedTerm) {
           |$valueOffsetTerm = -1 * $valueOffsetTerm;
           |// $bbDataClass $tempValueData = $hashMapTerm.getValueData();
           |// if ($valueDataTerm !=  $tempValueData) {
-          |if ( ($valueOffsetTerm + $numValueBytesTerm + $numKeyBytesTerm) >=
+          |if ( ($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
           |  $valueDataCapacityTerm) {
             |//$valueDataTerm = $tempValueData;
             |$valueDataTerm =  $hashMapTerm.getValueData();
@@ -441,7 +443,7 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
 
   }
 
-  def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: String,
+  def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: Int,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType], hashVar: Array[String]): String = {
     if (allStringGroupKeys) {
         val nullKeyBitsEvalCode = if (numBytesForNullKeyBits == 0) ""
@@ -813,20 +815,24 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
 
   }
 
-  def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytesVar: String,
+
+  def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytes: Int,
     keyVars: Seq[ExprCode], keysDataType: Seq[DataType]): String = {
+
 
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = ctx.freshName("currentOffset")
     val plaformClass = classOf[Platform].getName
     s"""
         if ($keyBytesHolderVarTerm == null || $keyHolderCapacityTerm <
-          $numKeyBytesVar + $numValueBytesVar) {
+
+          $numKeyBytesVar + $numValueBytes) {
            //$keyBytesHolderVarTerm =
-           //$allocatorTerm.allocate($numKeyBytesVar + $numValueBytesVar, "SHA");
+           //$allocatorTerm.allocate($numKeyBytesVar + $numValueBytes, "SHA");
+
           //$baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
           //$baseKeyHolderOffset = $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
-           $keyHolderCapacityTerm = $numKeyBytesVar + $numValueBytesVar;
+           $keyHolderCapacityTerm = $numKeyBytesVar + $numValueBytes;
            $keyBytesHolderVarTerm = $byteBufferClass.allocate($keyHolderCapacityTerm);
            $baseKeyObject = $keyBytesHolderVarTerm.array();
            $baseKeyHolderOffset = $plaformClass.BYTE_ARRAY_OFFSET;
@@ -863,13 +869,7 @@ keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSuppo
     }
   }
 
-  def getSizeOfValueBytes(aggDataTypes: Seq[DataType]): Int = {
-    aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize + (dt match {
-      case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-      case _ => 0
-    })
-    ) + SHAMapAccessor.sizeForNullBits(numBytesForNullAggBits)
-  }
+
 
   def generateKeySizeCode(keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
     numBytesForNullBits: Int, nestingLevel: Int = 0): String = {
@@ -1456,6 +1456,14 @@ object SHAMapAccessor {
        s"""($nullBitTerm[$index] & (0x01 << $remainder)) != 0"""
      }
    }
+
+  def getSizeOfValueBytes(aggDataTypes: Seq[DataType], numBytesForNullAggBits: Int): Int = {
+    aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize + (dt match {
+      case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
+      case _ => 0
+    })
+    ) + SHAMapAccessor.sizeForNullBits(numBytesForNullAggBits)
+  }
 
   def getNullBitsCastTerm(numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
     "byte"
