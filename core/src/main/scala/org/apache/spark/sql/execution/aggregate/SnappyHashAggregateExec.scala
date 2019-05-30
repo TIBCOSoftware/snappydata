@@ -834,6 +834,9 @@ case class SnappyHashAggregateExec(
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
       numBytesForNullAggsBits) && numBytesForNullAggsBits > 0
 
+    val storedKeyNullBitsTerm = ctx.freshName("storedKeyNullBit")
+    val cacheStoredKeyNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
+      numBytesForNullKeyBits) && numBytesForNullKeyBits > 0
 
     // generate the map accessor to generate key/value class
     // and get map access methods
@@ -850,6 +853,7 @@ case class SnappyHashAggregateExec(
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
+      if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
       aggregateBufferVars, keyHolderCapacityTerm)
 
 
@@ -882,6 +886,10 @@ case class SnappyHashAggregateExec(
            |${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
            |${ if (cacheStoredAggNullBits) {
                  SHAMapAccessor.initNullBitsetCode(storedAggNullBitsTerm, numBytesForNullAggsBits)
+               } else ""
+            }
+           |${ if (cacheStoredKeyNullBits) {
+                 SHAMapAccessor.initNullBitsetCode(storedKeyNullBitsTerm, numBytesForNullKeyBits)
                } else ""
             }
            |int $numKeyBytesTerm = 0;
