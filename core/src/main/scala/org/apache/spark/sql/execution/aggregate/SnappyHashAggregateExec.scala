@@ -839,10 +839,11 @@ case class SnappyHashAggregateExec(
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
-    val numValueBytesTerm = ctx.freshName("numValueBytes")
+    val numValueBytes = SHAMapAccessor.getSizeOfValueBytes(aggBuffDataTypes,
+      numBytesForNullAggsBits)
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-      valueOffsetTerm, numKeyBytesTerm, numValueBytesTerm, currentValueOffSetTerm,
+      valueOffsetTerm, numKeyBytesTerm, numValueBytes, currentValueOffSetTerm,
       valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
@@ -853,20 +854,18 @@ case class SnappyHashAggregateExec(
 
 
 
-    val valueSize = groupingAttributes.foldLeft(0)((len, attrib) =>
+    val keyValSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
-        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4)) +
-      aggregateExpressions.foldLeft(0)((len, exp) => len + exp.dataType.defaultSize) +
-      + SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits) +
-      SHAMapAccessor.sizeForNullBits(numBytesForNullAggsBits) -
-      (if (skipLenForAttrib != -1) 4 else 0)
+        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4))  +
+      + SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes
+       -  (if (skipLenForAttrib != -1) 4 else 0)
 
 
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
     ctx.addNewFunction(doAgg,
       s"""private void $doAgg() throws java.io.IOException {
-           |$hashMapTerm = new $hashSetClassName($valueSize);
+           |$hashMapTerm = new $hashSetClassName($keyValSize);
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
            |$byteBufferClass $keyBytesHolderVar = null;
@@ -886,7 +885,6 @@ case class SnappyHashAggregateExec(
                } else ""
             }
            |int $numKeyBytesTerm = 0;
-           |int $numValueBytesTerm = 0;
            |$childProduce
          |}""".stripMargin)
 
