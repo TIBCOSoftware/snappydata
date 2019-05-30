@@ -1,0 +1,142 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>impl - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.sql.catalog.impl</title>
+          <meta name="description" content="impl - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.sql.catalog.impl" />
+          <meta name="keywords" content="impl snappydata 2.11 1.1.0 HF 1 API io.snappydata.sql.catalog.impl" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'io.snappydata.sql.catalog.impl.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="io">io</a>.<a href="../../../package.html" class="extype" name="io.snappydata">snappydata</a>.<a href="../../package.html" class="extype" name="io.snappydata.sql">sql</a>.<a href="../package.html" class="extype" name="io.snappydata.sql.catalog">catalog</a></p>
+        <h1>impl</h1><span class="permalink">
+      <a href="../../../../../index.html#io.snappydata.sql.catalog.impl.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">impl</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SmartConnectorExternalCatalogextendsExternalCatalogwithSnappyExternalCatalogwithConnectorExternalCatalog"></a>
+      <a id="SmartConnectorExternalCatalog:SmartConnectorExternalCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SmartConnectorExternalCatalog.html"><span class="name">SmartConnectorExternalCatalog</span></a><span class="result"> extends <a href="../../../../../org/apache/spark/sql/catalyst/catalog/ExternalCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.ExternalCatalog">ExternalCatalog</a> with <a href="../SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a> with <a href="../ConnectorExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.ConnectorExternalCatalog">ConnectorExternalCatalog</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.snappydata.sql.catalog.impl.package@SmartConnectorExternalCatalogextendsExternalCatalogwithSnappyExternalCatalogwithConnectorExternalCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An ExternalCatalog implementation for the smart connector mode.</p><div class="fullcomment"><div class="comment cmt"><p>An ExternalCatalog implementation for the smart connector mode.</p><p>Note that unlike other ExternalCatalog implementations, this is created one for each session
+rather than being a singleton in the SharedState because each request needs to be authenticated
+independently using the credentials of the user that created the session. Consequently calls
+to &quot;sharedState.externalCatalog()&quot; will return null in smart connector mode and should never
+be used. For internal code paths in Spark that use it, an alternative dummy global might
+be added later that switches the user authentication using thread-locals or similar, but as
+of now it is used only by some hive insert paths which are not used in SnappySessionState.
+</p></div></div>
+    </li><li name="io.snappydata.sql.catalog.impl.StoreHiveCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StoreHiveCatalogextendsExternalCatalogwithLogging"></a>
+      <a id="StoreHiveCatalog:StoreHiveCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StoreHiveCatalog.html"><span class="name">StoreHiveCatalog</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.catalog.ExternalCatalog">ExternalCatalog</span> with <a href="../../../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#io.snappydata.sql.catalog.impl.package@StoreHiveCatalogextendsExternalCatalogwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

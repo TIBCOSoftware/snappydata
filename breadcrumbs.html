@@ -1,0 +1,27 @@
+<div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="{{ nav.homepage.url }}">Docs</a> &raquo;</li>
+    {% if page %}
+      {% for doc in page.ancestors %}
+        {% if doc.link %}
+          <li><a href="{{ doc.link|e }}">{{ doc.title }}</a> &raquo;</li>
+        {% else %}
+          <li>{{ doc.title }} &raquo;</li>
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {% if page %}<li>{{ page.title }}</li>{% endif %}
+<!--    <li class="wy-breadcrumbs-aside">
+      {% if config.repo_url %}
+        {% if config.repo_name == 'GitHub' %}
+          <a href="{{ config.repo_url }}" class="icon icon-github"> Edit on GitHub</a>
+        {% elif config.repo_name == 'Bitbucket' %}
+          <a href="{{ config.repo_url }}" class="icon icon-bitbucket"> Edit on BitBucket</a>
+        {% endif %}
+      {% endif %}
+    </li> !-->
+  </ul>
+</br>
+ <b>This document is a work in progress and will be progressively updated.</b>
+  <hr/>
+</div>

@@ -1,0 +1,916 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>KeyValueGroupedDataset - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.KeyValueGroupedDataset</title>
+          <meta name="description" content="KeyValueGroupedDataset - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.KeyValueGroupedDataset" />
+          <meta name="keywords" content="KeyValueGroupedDataset snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.KeyValueGroupedDataset" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'org.apache.spark.sql.KeyValueGroupedDataset';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Class" src="../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>KeyValueGroupedDataset</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql">package sql</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">KeyValueGroupedDataset</span><span class="tparams">[<span name="K">K</span>, <span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>:: Experimental ::
+A <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> has been logically grouped by a user specified grouping key.  Users should not
+construct a <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> directly, but should instead call <code>groupByKey</code> on
+an existing <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.KeyValueGroupedDataset"><span>KeyValueGroupedDataset</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@##():Int" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#agg" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="agg[U1,U2,U3,U4](col1:org.apache.spark.sql.TypedColumn[V,U1],col2:org.apache.spark.sql.TypedColumn[V,U2],col3:org.apache.spark.sql.TypedColumn[V,U3],col4:org.apache.spark.sql.TypedColumn[V,U4]):org.apache.spark.sql.Dataset[(K,U1,U2,U3,U4)]"></a>
+      <a id="agg[U1,U2,U3,U4](TypedColumn[V,U1],TypedColumn[V,U2],TypedColumn[V,U3],TypedColumn[V,U4]):Dataset[(K,U1,U2,U3,U4)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">agg</span><span class="tparams">[<span name="U1">U1</span>, <span name="U2">U2</span>, <span name="U3">U3</span>, <span name="U4">U4</span>]</span><span class="params">(<span name="col1">col1: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>]</span>, <span name="col2">col2: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U2">U2</span>]</span>, <span name="col3">col3: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U3">U3</span>]</span>, <span name="col4">col4: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U4">U4</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U2">U2</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U3">U3</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U4">U4</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@agg[U1,U2,U3,U4](col1:org.apache.spark.sql.TypedColumn[V,U1],col2:org.apache.spark.sql.TypedColumn[V,U2],col3:org.apache.spark.sql.TypedColumn[V,U3],col4:org.apache.spark.sql.TypedColumn[V,U4]):org.apache.spark.sql.Dataset[(K,U1,U2,U3,U4)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Computes the given aggregations, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing these aggregations over all elements in the group.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the given aggregations, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing these aggregations over all elements in the group.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#agg" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="agg[U1,U2,U3](col1:org.apache.spark.sql.TypedColumn[V,U1],col2:org.apache.spark.sql.TypedColumn[V,U2],col3:org.apache.spark.sql.TypedColumn[V,U3]):org.apache.spark.sql.Dataset[(K,U1,U2,U3)]"></a>
+      <a id="agg[U1,U2,U3](TypedColumn[V,U1],TypedColumn[V,U2],TypedColumn[V,U3]):Dataset[(K,U1,U2,U3)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">agg</span><span class="tparams">[<span name="U1">U1</span>, <span name="U2">U2</span>, <span name="U3">U3</span>]</span><span class="params">(<span name="col1">col1: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>]</span>, <span name="col2">col2: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U2">U2</span>]</span>, <span name="col3">col3: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U3">U3</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U2">U2</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U3">U3</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@agg[U1,U2,U3](col1:org.apache.spark.sql.TypedColumn[V,U1],col2:org.apache.spark.sql.TypedColumn[V,U2],col3:org.apache.spark.sql.TypedColumn[V,U3]):org.apache.spark.sql.Dataset[(K,U1,U2,U3)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Computes the given aggregations, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing these aggregations over all elements in the group.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the given aggregations, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing these aggregations over all elements in the group.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#agg" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="agg[U1,U2](col1:org.apache.spark.sql.TypedColumn[V,U1],col2:org.apache.spark.sql.TypedColumn[V,U2]):org.apache.spark.sql.Dataset[(K,U1,U2)]"></a>
+      <a id="agg[U1,U2](TypedColumn[V,U1],TypedColumn[V,U2]):Dataset[(K,U1,U2)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">agg</span><span class="tparams">[<span name="U1">U1</span>, <span name="U2">U2</span>]</span><span class="params">(<span name="col1">col1: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>]</span>, <span name="col2">col2: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U2">U2</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U2">U2</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@agg[U1,U2](col1:org.apache.spark.sql.TypedColumn[V,U1],col2:org.apache.spark.sql.TypedColumn[V,U2]):org.apache.spark.sql.Dataset[(K,U1,U2)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Computes the given aggregations, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing these aggregations over all elements in the group.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the given aggregations, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing these aggregations over all elements in the group.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#agg" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="agg[U1](col1:org.apache.spark.sql.TypedColumn[V,U1]):org.apache.spark.sql.Dataset[(K,U1)]"></a>
+      <a id="agg[U1](TypedColumn[V,U1]):Dataset[(K,U1)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">agg</span><span class="tparams">[<span name="U1">U1</span>]</span><span class="params">(<span name="col1">col1: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.agg.U1">U1</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@agg[U1](col1:org.apache.spark.sql.TypedColumn[V,U1]):org.apache.spark.sql.Dataset[(K,U1)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Computes the given aggregation, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing this aggregation over all elements in the group.</p><div class="fullcomment"><div class="comment cmt"><p>Computes the given aggregation, returning a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> of tuples for each unique key
+and the result of computing this aggregation over all elements in the group.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#aggUntyped" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="aggUntyped(columns:org.apache.spark.sql.TypedColumn[_,_]*):org.apache.spark.sql.Dataset[_]"></a>
+      <a id="aggUntyped(TypedColumn[_,_]*):Dataset[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">aggUntyped</span><span class="params">(<span name="columns">columns: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[_, _]*</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@aggUntyped(columns:org.apache.spark.sql.TypedColumn[_,_]*):org.apache.spark.sql.Dataset[_]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Internal helper function for building typed aggregations that return tuples.</p><div class="fullcomment"><div class="comment cmt"><p>Internal helper function for building typed aggregations that return tuples.  For simplicity
+and code reuse, we do this without the help of the type system and then use helper functions
+that cast appropriately for the user facing interface.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#cogroup" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U],f:org.apache.spark.api.java.function.CoGroupFunction[K,V,U,R],encoder:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]"></a>
+      <a id="cogroup[U,R](KeyValueGroupedDataset[K,U],CoGroupFunction[K,V,U,R],Encoder[R]):Dataset[R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cogroup</span><span class="tparams">[<span name="U">U</span>, <span name="R">R</span>]</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.U">U</span>]</span>, <span name="f">f: <a href="../api/java/function/CoGroupFunction.html" class="extype" name="org.apache.spark.api.java.function.CoGroupFunction">CoGroupFunction</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.U">U</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>, <span name="encoder">encoder: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U],f:org.apache.spark.api.java.function.CoGroupFunction[K,V,U,R],encoder:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Java-specific)
+Applies the given function to each cogrouped data.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Applies the given function to each cogrouped data.  For each unique group, the function will
+be passed the grouping key and 2 iterators containing all elements in the group from
+<a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> <code>this</code> and <code>other</code>.  The function can return an iterator containing elements of an
+arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#cogroup" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U])(f:(K,Iterator[V],Iterator[U])=&gt;TraversableOnce[R])(implicitevidence$5:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]"></a>
+      <a id="cogroup[U,R](KeyValueGroupedDataset[K,U])((K,Iterator[V],Iterator[U])⇒TraversableOnce[R])(Encoder[R]):Dataset[R]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cogroup</span><span class="tparams">[<span name="U">U</span>, <span name="R">R</span>]</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.U">U</span>]</span>)</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>], <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.U">U</span>]) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.cogroup.R">R</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@cogroup[U,R](other:org.apache.spark.sql.KeyValueGroupedDataset[K,U])(f:(K,Iterator[V],Iterator[U])=&gt;TraversableOnce[R])(implicitevidence$5:org.apache.spark.sql.Encoder[R]):org.apache.spark.sql.Dataset[R]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific)
+Applies the given function to each cogrouped data.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Applies the given function to each cogrouped data.  For each unique group, the function will
+be passed the grouping key and 2 iterators containing all elements in the group from
+<a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> <code>this</code> and <code>other</code>.  The function can return an iterator containing elements of an
+arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#count" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="count():org.apache.spark.sql.Dataset[(K,Long)]"></a>
+      <a id="count():Dataset[(K,Long)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">count</span><span class="params">()</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="scala.Long">Long</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@count():org.apache.spark.sql.Dataset[(K,Long)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> that contains a tuple with each key and the number of items present
+for that key.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> that contains a tuple with each key and the number of items present
+for that key.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#flatMapGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="flatMapGroups[U](f:org.apache.spark.api.java.function.FlatMapGroupsFunction[K,V,U],encoder:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="flatMapGroups[U](FlatMapGroupsFunction[K,V,U],Encoder[U]):Dataset[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">flatMapGroups</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: <a href="../api/java/function/FlatMapGroupsFunction.html" class="extype" name="org.apache.spark.api.java.function.FlatMapGroupsFunction">FlatMapGroupsFunction</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>, <span name="encoder">encoder: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@flatMapGroups[U](f:org.apache.spark.api.java.function.FlatMapGroupsFunction[K,V,U],encoder:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Java-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Applies the given function to each group of data.  For each unique group, the function will
+be passed the group key and an iterator that contains all of the elements in the group. The
+function can return an iterator containing elements of an arbitrary type which will be returned
+as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
+the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
+key, it is best to use the reduce function or an
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+memory.  However, users must take care to avoid materializing the whole iterator for a group
+(for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
+constraints of their cluster.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#flatMapGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="flatMapGroups[U](f:(K,Iterator[V])=&gt;TraversableOnce[U])(implicitevidence$3:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="flatMapGroups[U]((K,Iterator[V])⇒TraversableOnce[U])(Encoder[U]):Dataset[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">flatMapGroups</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>]) ⇒ <a href="../../../../scala/package.html#TraversableOnce[+A]=scala.collection.TraversableOnce[A]" class="extmbr" name="scala.TraversableOnce">TraversableOnce</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.flatMapGroups.U">U</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@flatMapGroups[U](f:(K,Iterator[V])=&gt;TraversableOnce[U])(implicitevidence$3:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Applies the given function to each group of data.  For each unique group, the function will
+be passed the group key and an iterator that contains all of the elements in the group. The
+function can return an iterator containing elements of an arbitrary type which will be returned
+as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
+the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
+key, it is best to use the reduce function or an
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+memory.  However, users must take care to avoid materializing the whole iterator for a group
+(for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
+constraints of their cluster.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#keyAs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="keyAs[L](implicitevidence$1:org.apache.spark.sql.Encoder[L]):org.apache.spark.sql.KeyValueGroupedDataset[L,V]"></a>
+      <a id="keyAs[L](Encoder[L]):KeyValueGroupedDataset[L,V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">keyAs</span><span class="tparams">[<span name="L">L</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.keyAs.L">L</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.keyAs.L">L</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@keyAs[L](implicitevidence$1:org.apache.spark.sql.Encoder[L]):org.apache.spark.sql.KeyValueGroupedDataset[L,V]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the type of the key has been mapped to the
+specified type.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the type of the key has been mapped to the
+specified type. The mapping of key columns to the type follows the same rules as <code>as</code> on
+<a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#keys" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="keys:org.apache.spark.sql.Dataset[K]"></a>
+      <a id="keys:Dataset[K]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">keys</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@keys:org.apache.spark.sql.Dataset[K]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> that contains each unique key.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> that contains each unique key. This is equivalent to doing mapping
+over the Dataset to extract the keys and then running a distinct operation on those.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapGroups[U](f:org.apache.spark.api.java.function.MapGroupsFunction[K,V,U],encoder:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="mapGroups[U](MapGroupsFunction[K,V,U],Encoder[U]):Dataset[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapGroups</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: <a href="../api/java/function/MapGroupsFunction.html" class="extype" name="org.apache.spark.api.java.function.MapGroupsFunction">MapGroupsFunction</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>, <span name="encoder">encoder: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapGroups[U](f:org.apache.spark.api.java.function.MapGroupsFunction[K,V,U],encoder:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Java-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Applies the given function to each group of data.  For each unique group, the function will
+be passed the group key and an iterator that contains all of the elements in the group. The
+function can return an element of arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
+the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
+key, it is best to use the reduce function or an
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+memory.  However, users must take care to avoid materializing the whole iterator for a group
+(for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
+constraints of their cluster.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapGroups[U](f:(K,Iterator[V])=&gt;U)(implicitevidence$4:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]"></a>
+      <a id="mapGroups[U]((K,Iterator[V])⇒U)(Encoder[U]):Dataset[U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapGroups</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <a href="../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>]) ⇒ <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapGroups.U">U</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapGroups[U](f:(K,Iterator[V])=&gt;U)(implicitevidence$4:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.Dataset[U]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific)
+Applies the given function to each group of data.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Applies the given function to each group of data.  For each unique group, the function will
+be passed the group key and an iterator that contains all of the elements in the group. The
+function can return an element of arbitrary type which will be returned as a new <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>.</p><p>This function does not support partial aggregation, and as a result requires shuffling all
+the data in the <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>. If an application intends to perform an aggregation over each
+key, it is best to use the reduce function or an
+<code>org.apache.spark.sql.expressions#Aggregator</code>.</p><p>Internally, the implementation will spill to disk if any given group is too large to fit into
+memory.  However, users must take care to avoid materializing the whole iterator for a group
+(for example, by calling <code>toList</code>) unless they are sure that this is possible given the memory
+constraints of their cluster.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapValues[W](func:org.apache.spark.api.java.function.MapFunction[V,W],encoder:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]"></a>
+      <a id="mapValues[W](MapFunction[V,W],Encoder[W]):KeyValueGroupedDataset[K,W]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapValues</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="func">func: <a href="../api/java/function/MapFunction.html" class="extype" name="org.apache.spark.api.java.function.MapFunction">MapFunction</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>, <span name="encoder">encoder: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapValues[W](func:org.apache.spark.api.java.function.MapFunction[V,W],encoder:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data. The grouping key is unchanged by this.</p><pre><span class="cmt">// Create Integer values grouped by String key from a Dataset<Tuple2<String, Integer>></span>
+Dataset&lt;Tuple2&lt;<span class="std">String</span>, Integer&gt;&gt; ds = ...;
+KeyValueGroupedDataset&lt;<span class="std">String</span>, Integer&gt; grouped =
+  ds.groupByKey(t -&gt; t._1, Encoders.STRING()).mapValues(t -&gt; t._2, Encoders.INT()); <span class="cmt">// Java 8</span></pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#mapValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mapValues[W](func:V=&gt;W)(implicitevidence$2:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]"></a>
+      <a id="mapValues[W]((V)⇒W)(Encoder[W]):KeyValueGroupedDataset[K,W]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mapValues</span><span class="tparams">[<span name="W">W</span>]</span><span class="params">(<span name="func">func: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>) ⇒ <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.mapValues.W">W</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@mapValues[W](func:V=&gt;W)(implicitevidence$2:org.apache.spark.sql.Encoder[W]):org.apache.spark.sql.KeyValueGroupedDataset[K,W]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a new <a href="" class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset">KeyValueGroupedDataset</a> where the given function <code>func</code> has been applied
+to the data. The grouping key is unchanged by this.</p><pre><span class="cmt">// Create values grouped by key from a Dataset[(K, V)]</span>
+ds.groupByKey(_._1).mapValues(_._2) <span class="cmt">// Scala</span></pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#queryExecution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryExecution:org.apache.spark.sql.execution.QueryExecution"></a>
+      <a id="queryExecution:QueryExecution"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryExecution</span><span class="result">: <a href="execution/QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@queryExecution:org.apache.spark.sql.execution.QueryExecution" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#reduceGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reduceGroups(f:org.apache.spark.api.java.function.ReduceFunction[V]):org.apache.spark.sql.Dataset[(K,V)]"></a>
+      <a id="reduceGroups(ReduceFunction[V]):Dataset[(K,V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reduceGroups</span><span class="params">(<span name="f">f: <a href="../api/java/function/ReduceFunction.html" class="extype" name="org.apache.spark.api.java.function.ReduceFunction">ReduceFunction</a>[<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>]</span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@reduceGroups(f:org.apache.spark.api.java.function.ReduceFunction[V]):org.apache.spark.sql.Dataset[(K,V)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Java-specific)
+Reduces the elements of each group of data using the specified binary function.</p><div class="fullcomment"><div class="comment cmt"><p>(Java-specific)
+Reduces the elements of each group of data using the specified binary function.
+The given function must be commutative and associative or the result may be non-deterministic.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.KeyValueGroupedDataset#reduceGroups" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="reduceGroups(f:(V,V)=&gt;V):org.apache.spark.sql.Dataset[(K,V)]"></a>
+      <a id="reduceGroups((V,V)⇒V):Dataset[(K,V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">reduceGroups</span><span class="params">(<span name="f">f: (<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>) ⇒ <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span></span>)</span><span class="result">: <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a>[(<span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.K">K</span>, <span class="extype" name="org.apache.spark.sql.KeyValueGroupedDataset.V">V</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@reduceGroups(f:(V,V)=&gt;V):org.apache.spark.sql.Dataset[(K,V)]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific)
+Reduces the elements of each group of data using the specified binary function.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific)
+Reduces the elements of each group of data using the specified binary function.
+The given function must be commutative and associative or the result may be non-deterministic.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@toString():String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.KeyValueGroupedDataset@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

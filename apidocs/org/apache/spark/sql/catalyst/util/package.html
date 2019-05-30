@@ -1,0 +1,677 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>util - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.util</title>
+          <meta name="description" content="util - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.util" />
+          <meta name="keywords" content="util snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.util" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.util.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a></p>
+        <h1>util</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">util</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.util"><span>util</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.util.AbstractScalaRowIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AbstractScalaRowIterator[T]extendsIterator[T]"></a>
+      <a id="AbstractScalaRowIterator[T]:AbstractScalaRowIterator[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="AbstractScalaRowIterator.html"><span class="name">AbstractScalaRowIterator</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.catalyst.util.AbstractScalaRowIterator.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@AbstractScalaRowIterator[T]extendsIterator[T]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Shim to allow us to implement <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">scala.Iterator</a> in Java.</p><div class="fullcomment"><div class="comment cmt"><p>Shim to allow us to implement <a href="../../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">scala.Iterator</a> in Java. Scala 2.11+ has an AbstractIterator
+class for this, but that class is <code>private[scala]</code> in 2.10. We need to explicitly fix this to
+<code>Row</code> in order to work around a spurious IntelliJ compiler error. This cannot be an abstract
+class because that leads to compilation errors under Scala 2.11.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArrayBasedMapDataextendsMapData"></a>
+      <a id="ArrayBasedMapData:ArrayBasedMapData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ArrayBasedMapData.html"><span class="name">ArrayBasedMapData</span></a><span class="result"> extends <a href="MapData.html" class="extype" name="org.apache.spark.sql.catalyst.util.MapData">MapData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ArrayBasedMapDataextendsMapData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayData" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ArrayDataextendsSpecializedGetterswithSerializable"></a>
+      <a id="ArrayData:ArrayData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ArrayData.html"><span class="name">ArrayData</span></a><span class="result"> extends <a href="../expressions/SpecializedGetters.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SpecializedGetters">SpecializedGetters</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ArrayDataextendsSpecializedGetterswithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.CaseInsensitiveMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CaseInsensitiveMapextendsMap[String,String]withSerializable"></a>
+      <a id="CaseInsensitiveMap:CaseInsensitiveMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CaseInsensitiveMap.html"><span class="name">CaseInsensitiveMap</span></a><span class="result"> extends <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@CaseInsensitiveMapextendsMap[String,String]withSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Builds a map in which keys are case insensitive
+</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.GenericArrayData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenericArrayDataextendsArrayData"></a>
+      <a id="GenericArrayData:GenericArrayData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenericArrayData.html"><span class="name">GenericArrayData</span></a><span class="result"> extends <a href="ArrayData.html" class="extype" name="org.apache.spark.sql.catalyst.util.ArrayData">ArrayData</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@GenericArrayDataextendsArrayData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.MapData" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="MapDataextendsSerializable"></a>
+      <a id="MapData:MapData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MapData.html"><span class="name">MapData</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@MapDataextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is an internal data representation for map type in Spark SQL.</p><div class="fullcomment"><div class="comment cmt"><p>This is an internal data representation for map type in Spark SQL. This should not implement
+<code>equals</code> and <code>hashCode</code> because the type cannot be used as join keys, grouping keys, or
+in equality tests. See SPARK-9415 and PR#13847 for the discussions.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.QuantileSummaries" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="QuantileSummariesextendsSerializable"></a>
+      <a id="QuantileSummaries:QuantileSummaries"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="QuantileSummaries.html"><span class="name">QuantileSummaries</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@QuantileSummariesextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper class to compute approximate quantile summary.</p><div class="fullcomment"><div class="comment cmt"><p>Helper class to compute approximate quantile summary.
+This implementation is based on the algorithm proposed in the paper:
+&quot;Space-efficient Online Computation of Quantile Summaries&quot; by Greenwald, Michael
+and Khanna, Sanjeev. (http://dx.doi.org/10.1145/375663.375670)</p><p>In order to optimize for speed, it maintains an internal buffer of the last seen samples,
+and only inserts them after crossing a certain size threshold. This guarantees a near-constant
+runtime complexity compared to the original algorithm.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.StringKeyHashMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StringKeyHashMap[T]extendsAnyRef"></a>
+      <a id="StringKeyHashMap[T]:StringKeyHashMap[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StringKeyHashMap.html"><span class="name">StringKeyHashMap</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@StringKeyHashMap[T]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.util.ArrayBasedMapData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArrayBasedMapData"></a>
+      <a id="ArrayBasedMapData:ArrayBasedMapData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ArrayBasedMapData$.html"><span class="name">ArrayBasedMapData</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ArrayBasedMapData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.ArrayData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ArrayData"></a>
+      <a id="ArrayData:ArrayData"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ArrayData$.html"><span class="name">ArrayData</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ArrayData" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.CompressionCodecs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CompressionCodecs"></a>
+      <a id="CompressionCodecs:CompressionCodecs"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CompressionCodecs$.html"><span class="name">CompressionCodecs</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@CompressionCodecs" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DateTimeUtils"></a>
+      <a id="DateTimeUtils:DateTimeUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DateTimeUtils$.html"><span class="name">DateTimeUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@DateTimeUtils" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper functions for converting between internal and external date and time representations.</p><div class="fullcomment"><div class="comment cmt"><p>Helper functions for converting between internal and external date and time representations.
+Dates are exposed externally as java.sql.Date and are represented internally as the number of
+dates since the Unix epoch (1970-01-01). Timestamps are exposed externally as java.sql.Timestamp
+and are stored internally as longs, which are capable of storing timestamps with 100 nanosecond
+precision.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.NumberConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NumberConverter"></a>
+      <a id="NumberConverter:NumberConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="NumberConverter$.html"><span class="name">NumberConverter</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@NumberConverter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.ParseModes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParseModes"></a>
+      <a id="ParseModes:ParseModes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ParseModes$.html"><span class="name">ParseModes</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@ParseModes" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.QuantileSummaries" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="QuantileSummaries"></a>
+      <a id="QuantileSummaries:QuantileSummaries"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="QuantileSummaries$.html"><span class="name">QuantileSummaries</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@QuantileSummaries" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.StringKeyHashMap" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StringKeyHashMap"></a>
+      <a id="StringKeyHashMap:StringKeyHashMap"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StringKeyHashMap$.html"><span class="name">StringKeyHashMap</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@StringKeyHashMap" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Build a map with String type of key, and it also supports either key case
+sensitive or insensitive.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.StringUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StringUtils"></a>
+      <a id="StringUtils:StringUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StringUtils$.html"><span class="name">StringUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@StringUtils" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.TypeUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TypeUtils"></a>
+      <a id="TypeUtils:TypeUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TypeUtils$.html"><span class="name">TypeUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@TypeUtils" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper functions to check for valid data types.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util#benchmark" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="benchmark[A](f:=&gt;A):A"></a>
+      <a id="benchmark[A](⇒A):A"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">benchmark</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.util.benchmark.A">A</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.util.benchmark.A">A</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@benchmark[A](f:=&gt;A):A" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#fileToString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fileToString(file:java.io.File,encoding:String):String"></a>
+      <a id="fileToString(File,String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fileToString</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>, <span name="encoding">encoding: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;UTF-8&quot;</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@fileToString(file:java.io.File,encoding:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#quietly" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="quietly[A](f:=&gt;A):A"></a>
+      <a id="quietly[A](⇒A):A"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">quietly</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="f">f: ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.util.quietly.A">A</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.util.quietly.A">A</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@quietly[A](f:=&gt;A):A" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Silences output to stderr or stdout for the duration of f</p>
+    </li><li name="org.apache.spark.sql.catalyst.util#quoteIdentifier" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="quoteIdentifier(name:String):String"></a>
+      <a id="quoteIdentifier(String):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">quoteIdentifier</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@quoteIdentifier(name:String):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#resourceToBytes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resourceToBytes(resource:String,classLoader:ClassLoader):Array[Byte]"></a>
+      <a id="resourceToBytes(String,ClassLoader):Array[Byte]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resourceToBytes</span><span class="params">(<span name="resource">resource: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="classLoader">classLoader: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.getSparkClassLoader</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Byte">Byte</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@resourceToBytes(resource:String,classLoader:ClassLoader):Array[Byte]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#resourceToString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resourceToString(resource:String,encoding:String,classLoader:ClassLoader):String"></a>
+      <a id="resourceToString(String,String,ClassLoader):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resourceToString</span><span class="params">(<span name="resource">resource: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="encoding">encoding: <span class="extype" name="scala.Predef.String">String</span> = <span class="symbol">&quot;UTF-8&quot;</span></span>, <span name="classLoader">classLoader: <span class="extype" name="java.lang.ClassLoader">ClassLoader</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">Utils.getSparkClassLoader</a></span></span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@resourceToString(resource:String,encoding:String,classLoader:ClassLoader):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#sideBySide" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sideBySide(left:Seq[String],right:Seq[String]):Seq[String]"></a>
+      <a id="sideBySide(Seq[String],Seq[String]):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sideBySide</span><span class="params">(<span name="left">left: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="right">right: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@sideBySide(left:Seq[String],right:Seq[String]):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#sideBySide" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="sideBySide(left:String,right:String):Seq[String]"></a>
+      <a id="sideBySide(String,String):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">sideBySide</span><span class="params">(<span name="left">left: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="right">right: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@sideBySide(left:String,right:String):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#stackTraceToString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="stackTraceToString(t:Throwable):String"></a>
+      <a id="stackTraceToString(Throwable):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stackTraceToString</span><span class="params">(<span name="t">t: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@stackTraceToString(t:Throwable):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#stringOrNull" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="stringOrNull(a:AnyRef):String"></a>
+      <a id="stringOrNull(AnyRef):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringOrNull</span><span class="params">(<span name="a">a: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@stringOrNull(a:AnyRef):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#stringToFile" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="stringToFile(file:java.io.File,str:String):java.io.File"></a>
+      <a id="stringToFile(File,String):File"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringToFile</span><span class="params">(<span name="file">file: <span class="extype" name="java.io.File">File</span></span>, <span name="str">str: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="java.io.File">File</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@stringToFile(file:java.io.File,str:String):java.io.File" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#toPrettySQL" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toPrettySQL(e:org.apache.spark.sql.catalyst.expressions.Expression):String"></a>
+      <a id="toPrettySQL(Expression):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toPrettySQL</span><span class="params">(<span name="e">e: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@toPrettySQL(e:org.apache.spark.sql.catalyst.expressions.Expression):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util#usePrettyExpression" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="usePrettyExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="usePrettyExpression(Expression):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">usePrettyExpression</span><span class="params">(<span name="e">e: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result">: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.package@usePrettyExpression(e:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

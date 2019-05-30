@@ -1,0 +1,790 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>clustering - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.mllib.clustering</title>
+          <meta name="description" content="clustering - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.mllib.clustering" />
+          <meta name="keywords" content="clustering snappydata 2.11 1.1.0 HF 1 API org.apache.spark.mllib.clustering" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.mllib.clustering.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.mllib">mllib</a></p>
+        <h1>clustering</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clustering</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.mllib.clustering.BisectingKMeans" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BisectingKMeansextendsLogging"></a>
+      <a id="BisectingKMeans:BisectingKMeans"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BisectingKMeans.html"><span class="name">BisectingKMeans</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@BisectingKMeansextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A bisecting k-means algorithm based on the paper &quot;A comparison of document clustering techniques&quot;
+by Steinbach, Karypis, and Kumar, with modification to fit Spark.</p><div class="fullcomment"><div class="comment cmt"><p>A bisecting k-means algorithm based on the paper &quot;A comparison of document clustering techniques&quot;
+by Steinbach, Karypis, and Kumar, with modification to fit Spark.
+The algorithm starts from a single cluster that contains all points.
+Iteratively it finds divisible clusters on the bottom level and bisects each of them using
+k-means, until there are <code>k</code> leaf clusters in total or no leaf clusters are divisible.
+The bisecting steps of clusters on the same level are grouped together to increase parallelism.
+If bisecting all divisible clusters on the bottom level would result more than <code>k</code> leaf clusters,
+larger clusters get higher priority.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.6.0&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://glaros.dtc.umn.edu/gkhome/fetch/papers/docclusterKDDTMW00.pdf">
+Steinbach, Karypis, and Kumar, A comparison of document clustering techniques,
+KDD Workshop on Text Mining, 2000.</a></p></span></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.BisectingKMeansModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BisectingKMeansModelextendsSerializablewithSaveablewithLogging"></a>
+      <a id="BisectingKMeansModel:BisectingKMeansModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BisectingKMeansModel.html"><span class="name">BisectingKMeansModel</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@BisectingKMeansModelextendsSerializablewithSaveablewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Clustering model produced by <a href="BisectingKMeans.html" class="extype" name="org.apache.spark.mllib.clustering.BisectingKMeans">BisectingKMeans</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Clustering model produced by <a href="BisectingKMeans.html" class="extype" name="org.apache.spark.mllib.clustering.BisectingKMeans">BisectingKMeans</a>.
+The prediction is done level-by-level from the root node to a leaf node, and at each node among
+its children the closest to the input point is selected.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.6.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DistributedLDAModelextendsLDAModel"></a>
+      <a id="DistributedLDAModel:DistributedLDAModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DistributedLDAModel.html"><span class="name">DistributedLDAModel</span></a><span class="result"> extends <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@DistributedLDAModelextendsLDAModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Distributed LDA model.</p><div class="fullcomment"><div class="comment cmt"><p>Distributed LDA model.
+This model stores the inferred topics, the full training dataset, and the topic distributions.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.EMLDAOptimizer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EMLDAOptimizerextendsLDAOptimizer"></a>
+      <a id="EMLDAOptimizer:EMLDAOptimizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="EMLDAOptimizer.html"><span class="name">EMLDAOptimizer</span></a><span class="result"> extends <a href="LDAOptimizer.html" class="extype" name="org.apache.spark.mllib.clustering.LDAOptimizer">LDAOptimizer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@EMLDAOptimizerextendsLDAOptimizer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>Optimizer for EM algorithm which stores data + parameter graph, plus algorithm parameters.</p><p>Currently, the underlying implementation uses Expectation-Maximization (EM), implemented
+according to the Asuncion et al. (2009) paper referenced below.</p><p>References:</p><ul><li>Original LDA paper (journal version):
+   Blei, Ng, and Jordan.  &quot;Latent Dirichlet Allocation.&quot;  JMLR, 2003.<ul><li>This class implements their &quot;smoothed&quot; LDA model.</li></ul></li><li>Paper which clearly explains several algorithms, including EM:
+   Asuncion, Welling, Smyth, and Teh.
+   &quot;On Smoothing and Inference for Topic Models.&quot;  UAI, 2009.
+</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.GaussianMixture" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GaussianMixtureextendsSerializable"></a>
+      <a id="GaussianMixture:GaussianMixture"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GaussianMixture.html"><span class="name">GaussianMixture</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@GaussianMixtureextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This class performs expectation maximization for multivariate Gaussian
+Mixture Models (GMMs).</p><div class="fullcomment"><div class="comment cmt"><p>This class performs expectation maximization for multivariate Gaussian
+Mixture Models (GMMs).  A GMM represents a composite distribution of
+independent Gaussian distributions with associated &quot;mixing&quot; weights
+specifying each's contribution to the composite.</p><p>Given a set of sample points, this class will maximize the log-likelihood
+for a mixture of k Gaussians, iterating until the log-likelihood changes by
+less than convergenceTol, or until it has reached the max number of iterations.
+While this process is generally guaranteed to converge, it is not guaranteed
+to find a global optimum.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>For high-dimensional data (with many features), this algorithm may perform poorly.
+This is due to high-dimensional data (a) making it difficult to cluster at all (based
+on statistical/theoretical arguments) and (b) numerical issues with Gaussian distributions.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.GaussianMixtureModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GaussianMixtureModelextendsSerializablewithSaveable"></a>
+      <a id="GaussianMixtureModel:GaussianMixtureModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GaussianMixtureModel.html"><span class="name">GaussianMixtureModel</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@GaussianMixtureModelextendsSerializablewithSaveable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Multivariate Gaussian Mixture Model (GMM) consisting of k Gaussians, where points
+are drawn from each Gaussian i=1..k with probability w(i); mu(i) and sigma(i) are
+the respective mean and covariance for each Gaussian distribution i=1..k.</p><div class="fullcomment"><div class="comment cmt"><p>Multivariate Gaussian Mixture Model (GMM) consisting of k Gaussians, where points
+are drawn from each Gaussian i=1..k with probability w(i); mu(i) and sigma(i) are
+the respective mean and covariance for each Gaussian distribution i=1..k.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.KMeans" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="KMeansextendsSerializablewithLogging"></a>
+      <a id="KMeans:KMeans"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KMeans.html"><span class="name">KMeans</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@KMeansextendsSerializablewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">K-means clustering with a k-means++ like initialization mode
+(the k-means|| algorithm by Bahmani et al).</p><div class="fullcomment"><div class="comment cmt"><p>K-means clustering with a k-means++ like initialization mode
+(the k-means|| algorithm by Bahmani et al).</p><p>This is an iterative algorithm that will make multiple passes over the data, so any RDDs given
+to it should be cached by the user.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;0.8.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.KMeansModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="KMeansModelextendsSaveablewithSerializablewithPMMLExportable"></a>
+      <a id="KMeansModel:KMeansModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="KMeansModel.html"><span class="name">KMeansModel</span></a><span class="result"> extends <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../pmml/PMMLExportable.html" class="extype" name="org.apache.spark.mllib.pmml.PMMLExportable">PMMLExportable</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@KMeansModelextendsSaveablewithSerializablewithPMMLExportable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A clustering model for K-means.</p><div class="fullcomment"><div class="comment cmt"><p>A clustering model for K-means. Each point belongs to the cluster with the closest center.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;0.8.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.LDA" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LDAextendsLogging"></a>
+      <a id="LDA:LDA"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LDA.html"><span class="name">LDA</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@LDAextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Latent Dirichlet Allocation (LDA), a topic model designed for text documents.</p><div class="fullcomment"><div class="comment cmt"><p>Latent Dirichlet Allocation (LDA), a topic model designed for text documents.</p><p>Terminology:</p><ul><li>&quot;word&quot; = &quot;term&quot;: an element of the vocabulary</li><li>&quot;token&quot;: instance of a term appearing in a document</li><li>&quot;topic&quot;: multinomial distribution over words representing some concept</li></ul><p>References:</p><ul><li>Original LDA paper (journal version):
+   Blei, Ng, and Jordan.  &quot;Latent Dirichlet Allocation.&quot;  JMLR, 2003.
+</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Latent_Dirichlet_allocation">
+Latent Dirichlet allocation (Wikipedia)</a></p></span></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.LDAModel" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="LDAModelextendsSaveable"></a>
+      <a id="LDAModel:LDAModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LDAModel.html"><span class="name">LDAModel</span></a><span class="result"> extends <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@LDAModelextendsSaveable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Latent Dirichlet Allocation (LDA) model.</p><div class="fullcomment"><div class="comment cmt"><p>Latent Dirichlet Allocation (LDA) model.</p><p>This abstraction permits for different underlying representations,
+including local and distributed data structures.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.LDAOptimizer" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="LDAOptimizerextendsAnyRef"></a>
+      <a id="LDAOptimizer:LDAOptimizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="LDAOptimizer.html"><span class="name">LDAOptimizer</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@LDAOptimizerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>An LDAOptimizer specifies which optimization/learning/inference algorithm to use, and it can
+hold optimizer-specific parameters for users to set.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.LocalLDAModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LocalLDAModelextendsLDAModelwithSerializable"></a>
+      <a id="LocalLDAModel:LocalLDAModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LocalLDAModel.html"><span class="name">LocalLDAModel</span></a><span class="result"> extends <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@LocalLDAModelextendsLDAModelwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Local LDA model.</p><div class="fullcomment"><div class="comment cmt"><p>Local LDA model.
+This model stores only the inferred topics.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.OnlineLDAOptimizer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OnlineLDAOptimizerextendsLDAOptimizer"></a>
+      <a id="OnlineLDAOptimizer:OnlineLDAOptimizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OnlineLDAOptimizer.html"><span class="name">OnlineLDAOptimizer</span></a><span class="result"> extends <a href="LDAOptimizer.html" class="extype" name="org.apache.spark.mllib.clustering.LDAOptimizer">LDAOptimizer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@OnlineLDAOptimizerextendsLDAOptimizer" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::</p><p>An online optimizer for LDA. The Optimizer implements the Online variational Bayes LDA
+algorithm, which processes a subset of the corpus on each iteration, and updates the term-topic
+distribution adaptively.</p><p>Original Online LDA paper:
+  Hoffman, Blei and Bach, &quot;Online Learning for Latent Dirichlet Allocation.&quot; NIPS, 2010.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.PowerIterationClustering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PowerIterationClusteringextendsSerializable"></a>
+      <a id="PowerIterationClustering:PowerIterationClustering"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PowerIterationClustering.html"><span class="name">PowerIterationClustering</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@PowerIterationClusteringextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Power Iteration Clustering (PIC), a scalable graph clustering algorithm developed by
+<a href="http://www.icml2010.org/papers/387.pdf">Lin and Cohen</a>.</a></p><div class="fullcomment"><div class="comment cmt"><p>Power Iteration Clustering (PIC), a scalable graph clustering algorithm developed by
+<a href="http://www.icml2010.org/papers/387.pdf">Lin and Cohen</a>. From the abstract: PIC finds
+a very low-dimensional embedding of a dataset using truncated power iteration on a normalized
+pair-wise similarity matrix of the data.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>See also</dt><dd><span class="cmt"><p><a href="http://en.wikipedia.org/wiki/Spectral_clustering">
+Spectral clustering (Wikipedia)</a></p></span></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.PowerIterationClusteringModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PowerIterationClusteringModelextendsSaveablewithSerializable"></a>
+      <a id="PowerIterationClusteringModel:PowerIterationClusteringModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PowerIterationClusteringModel.html"><span class="name">PowerIterationClusteringModel</span></a><span class="result"> extends <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@PowerIterationClusteringModelextendsSaveablewithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Model produced by <a href="PowerIterationClustering.html" class="extype" name="org.apache.spark.mllib.clustering.PowerIterationClustering">PowerIterationClustering</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Model produced by <a href="PowerIterationClustering.html" class="extype" name="org.apache.spark.mllib.clustering.PowerIterationClustering">PowerIterationClustering</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.StreamingKMeans" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingKMeansextendsLoggingwithSerializable"></a>
+      <a id="StreamingKMeans:StreamingKMeans"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingKMeans.html"><span class="name">StreamingKMeans</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@StreamingKMeansextendsLoggingwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">StreamingKMeans provides methods for configuring a
+streaming k-means analysis, training the model on streaming,
+and using the model to make predictions on streaming data.</p><div class="fullcomment"><div class="comment cmt"><p>StreamingKMeans provides methods for configuring a
+streaming k-means analysis, training the model on streaming,
+and using the model to make predictions on streaming data.
+See KMeansModel for details on algorithm and update rules.</p><p>Use a builder pattern to construct a streaming k-means analysis
+in an application, like:</p><pre><span class="kw">val</span> model = <span class="kw">new</span> StreamingKMeans()
+  .setDecayFactor(<span class="num">0.5</span>)
+  .setK(<span class="num">3</span>)
+  .setRandomCenters(<span class="num">5</span>, <span class="num">100.0</span>)
+  .trainOn(DStream)</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.StreamingKMeansModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingKMeansModelextendsKMeansModelwithLogging"></a>
+      <a id="StreamingKMeansModel:StreamingKMeansModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingKMeansModel.html"><span class="name">StreamingKMeansModel</span></a><span class="result"> extends <a href="KMeansModel.html" class="extype" name="org.apache.spark.mllib.clustering.KMeansModel">KMeansModel</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@StreamingKMeansModelextendsKMeansModelwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">StreamingKMeansModel extends MLlib's KMeansModel for streaming
+algorithms, so it can keep track of a continuously updated weight
+associated with each cluster, and also update the model by
+doing a single iteration of the standard k-means algorithm.</p><div class="fullcomment"><div class="comment cmt"><p>StreamingKMeansModel extends MLlib's KMeansModel for streaming
+algorithms, so it can keep track of a continuously updated weight
+associated with each cluster, and also update the model by
+doing a single iteration of the standard k-means algorithm.</p><p>The update algorithm uses the &quot;mini-batch&quot; KMeans rule,
+generalized to incorporate forgetfullness (i.e. decay).
+The update rule (for each cluster) is:</p><p><blockquote>
+   $$
+   \begin{align}
+    c_t+1 &= [(c_t * n_t * a) + (x_t * m_t)] / [n_t + m_t] \\
+    n_t+t &= n_t * a + m_t
+   \end{align}
+   $$
+</blockquote></p><p>Where c_t is the previously estimated centroid for that cluster,
+n_t is the number of points assigned to it thus far, x_t is the centroid
+estimated on the current batch, and m_t is the number of points assigned
+to that centroid in the current batch.</p><p>The decay factor 'a' scales the contribution of the clusters as estimated thus far,
+by applying a as a discount weighting on the current point when evaluating
+new incoming data. If a=1, all batches are weighted equally. If a=0, new centroids
+are determined entirely by recent data. Lower values correspond to
+more forgetting.</p><p>Decay can optionally be specified by a half life and associated
+time unit. The time unit can either be a batch of data or a single
+data point. Considering data arrived at time t, the half life h is defined
+such that at time t + h the discount applied to the data from t is 0.5.
+The definition remains the same whether the time unit is given
+as batches or points.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.mllib.clustering.BisectingKMeansModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BisectingKMeansModel"></a>
+      <a id="BisectingKMeansModel:BisectingKMeansModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="BisectingKMeansModel$.html"><span class="name">BisectingKMeansModel</span></a><span class="result"> extends <a href="../util/Loader.html" class="extype" name="org.apache.spark.mllib.util.Loader">Loader</a>[<a href="BisectingKMeansModel.html" class="extype" name="org.apache.spark.mllib.clustering.BisectingKMeansModel">BisectingKMeansModel</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@BisectingKMeansModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;2.0.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DistributedLDAModel"></a>
+      <a id="DistributedLDAModel:DistributedLDAModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DistributedLDAModel$.html"><span class="name">DistributedLDAModel</span></a><span class="result"> extends <a href="../util/Loader.html" class="extype" name="org.apache.spark.mllib.util.Loader">Loader</a>[<a href="DistributedLDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@DistributedLDAModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Distributed model fitted by <a href="LDA.html" class="extype" name="org.apache.spark.mllib.clustering.LDA">LDA</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Distributed model fitted by <a href="LDA.html" class="extype" name="org.apache.spark.mllib.clustering.LDA">LDA</a>.
+This type of model is currently only produced by Expectation-Maximization (EM).</p><p>This model stores the inferred topics, the full training dataset, and the topic distribution
+for each training document.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.GaussianMixtureModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GaussianMixtureModel"></a>
+      <a id="GaussianMixtureModel:GaussianMixtureModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GaussianMixtureModel$.html"><span class="name">GaussianMixtureModel</span></a><span class="result"> extends <a href="../util/Loader.html" class="extype" name="org.apache.spark.mllib.util.Loader">Loader</a>[<a href="GaussianMixtureModel.html" class="extype" name="org.apache.spark.mllib.clustering.GaussianMixtureModel">GaussianMixtureModel</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@GaussianMixtureModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.KMeans" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="KMeans"></a>
+      <a id="KMeans:KMeans"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="KMeans$.html"><span class="name">KMeans</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@KMeans" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Top-level methods for calling K-means clustering.</p><div class="fullcomment"><div class="comment cmt"><p>Top-level methods for calling K-means clustering.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;0.8.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.KMeansModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="KMeansModel"></a>
+      <a id="KMeansModel:KMeansModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="KMeansModel$.html"><span class="name">KMeansModel</span></a><span class="result"> extends <a href="../util/Loader.html" class="extype" name="org.apache.spark.mllib.util.Loader">Loader</a>[<a href="KMeansModel.html" class="extype" name="org.apache.spark.mllib.clustering.KMeansModel">KMeansModel</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@KMeansModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.LocalLDAModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LocalLDAModel"></a>
+      <a id="LocalLDAModel:LocalLDAModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LocalLDAModel$.html"><span class="name">LocalLDAModel</span></a><span class="result"> extends <a href="../util/Loader.html" class="extype" name="org.apache.spark.mllib.util.Loader">Loader</a>[<a href="LocalLDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LocalLDAModel">LocalLDAModel</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@LocalLDAModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Local (non-distributed) model fitted by <a href="LDA.html" class="extype" name="org.apache.spark.mllib.clustering.LDA">LDA</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Local (non-distributed) model fitted by <a href="LDA.html" class="extype" name="org.apache.spark.mllib.clustering.LDA">LDA</a>.</p><p>This model stores the inferred topics only; it does not store info about the training dataset.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.PowerIterationClustering" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PowerIterationClustering"></a>
+      <a id="PowerIterationClustering:PowerIterationClustering"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PowerIterationClustering$.html"><span class="name">PowerIterationClustering</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@PowerIterationClustering" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.PowerIterationClusteringModel" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PowerIterationClusteringModel"></a>
+      <a id="PowerIterationClusteringModel:PowerIterationClusteringModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PowerIterationClusteringModel$.html"><span class="name">PowerIterationClusteringModel</span></a><span class="result"> extends <a href="../util/Loader.html" class="extype" name="org.apache.spark.mllib.util.Loader">Loader</a>[<a href="PowerIterationClusteringModel.html" class="extype" name="org.apache.spark.mllib.clustering.PowerIterationClusteringModel">PowerIterationClusteringModel</a>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.package@PowerIterationClusteringModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

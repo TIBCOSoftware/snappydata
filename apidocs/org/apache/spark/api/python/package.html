@@ -1,0 +1,161 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>python - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.api.python</title>
+          <meta name="description" content="python - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.api.python" />
+          <meta name="keywords" content="python snappydata 2.11 1.1.0 HF 1 API org.apache.spark.api.python" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.api.python.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.api">api</a></p>
+        <h1>python</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.python.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">python</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.api.python.Converter" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="Converter[T,+U]extendsSerializable"></a>
+      <a id="Converter[T,+U]:Converter[T,U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Converter.html"><span class="name">Converter</span></a><span class="tparams">[<span name="T">T</span>, <span name="U">+U</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.python.package@Converter[T,+U]extendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A trait for use with reading custom classes in PySpark.</p><div class="fullcomment"><div class="comment cmt"><p>A trait for use with reading custom classes in PySpark. Implement this trait and add custom
+transformation code by overriding the convert method.
+</p></div></div>
+    </li><li name="org.apache.spark.api.python.TestWritable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestWritableextendsWritablewithProductwithSerializable"></a>
+      <a id="TestWritable:TestWritable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TestWritable.html"><span class="name">TestWritable</span></a><span class="params">(<span name="str">str: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="int">int: <span class="extype" name="scala.Int">Int</span></span>, <span name="double">double: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result"> extends <span class="extype" name="org.apache.hadoop.io.Writable">Writable</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.python.package@TestWritableextendsWritablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A class to test Pyrolite serialization on the Scala side, that will be deserialized
+in Python
+</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.api.python.WriteInputFormatTestDataGenerator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WriteInputFormatTestDataGenerator"></a>
+      <a id="WriteInputFormatTestDataGenerator:WriteInputFormatTestDataGenerator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WriteInputFormatTestDataGenerator$.html"><span class="name">WriteInputFormatTestDataGenerator</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.api.python.package@WriteInputFormatTestDataGenerator" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This object contains method to generate SequenceFile test data and write it to a
+given directory (probably a temp directory)
+</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

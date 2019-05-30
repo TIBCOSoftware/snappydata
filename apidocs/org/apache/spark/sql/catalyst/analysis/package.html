@@ -1,0 +1,1215 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>analysis - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.analysis</title>
+          <meta name="description" content="analysis - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.analysis" />
+          <meta name="keywords" content="analysis snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.analysis" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.analysis.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a></p>
+        <h1>analysis</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">analysis</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Provides a logical query plan <a href="Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> and supporting classes for performing analysis.
+Analysis consists of translating <a href="UnresolvedAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute">UnresolvedAttribute</a>s and <a href="UnresolvedRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedRelation">UnresolvedRelation</a>s
+into fully typed objects using information in a schema <span class="extype" name="Catalog">Catalog</span>.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.analysis"><span>analysis</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.analysis.AnalysisErrorAt" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AnalysisErrorAtextendsAnyRef"></a>
+      <a id="AnalysisErrorAt:AnalysisErrorAt"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">implicit </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="package$$AnalysisErrorAt.html"><span class="name">AnalysisErrorAt</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@AnalysisErrorAtextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.Analyzer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="AnalyzerextendsRuleExecutor[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withCheckAnalysis"></a>
+      <a id="Analyzer:Analyzer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Analyzer.html"><span class="name">Analyzer</span></a><span class="result"> extends <a href="../rules/RuleExecutor.html" class="extype" name="org.apache.spark.sql.catalyst.rules.RuleExecutor">RuleExecutor</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="CheckAnalysis.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis">CheckAnalysis</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@AnalyzerextendsRuleExecutor[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withCheckAnalysis" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Provides a logical query plan analyzer, which translates <a href="UnresolvedAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute">UnresolvedAttribute</a>s and
+<a href="UnresolvedRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedRelation">UnresolvedRelation</a>s into fully typed objects using information in a
+<span class="extype" name="SessionCatalog">SessionCatalog</span> and a <a href="FunctionRegistry.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry">FunctionRegistry</a>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.CheckAnalysis" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CheckAnalysisextendsPredicateHelper"></a>
+      <a id="CheckAnalysis:CheckAnalysis"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CheckAnalysis.html"><span class="name">CheckAnalysis</span></a><span class="result"> extends <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@CheckAnalysisextendsPredicateHelper" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Throws user facing errors when passed invalid queries that fail to analyze.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.DatabaseAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DatabaseAlreadyExistsExceptionextendsAnalysisException"></a>
+      <a id="DatabaseAlreadyExistsException:DatabaseAlreadyExistsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DatabaseAlreadyExistsException.html"><span class="name">DatabaseAlreadyExistsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@DatabaseAlreadyExistsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Thrown by a catalog when an item already exists.</p><div class="fullcomment"><div class="comment cmt"><p>Thrown by a catalog when an item already exists. The analyzer will rethrow the exception
+as an <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">org.apache.spark.sql.AnalysisException</a> with the correct position information.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.FunctionAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FunctionAlreadyExistsExceptionextendsAnalysisException"></a>
+      <a id="FunctionAlreadyExistsException:FunctionAlreadyExistsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FunctionAlreadyExistsException.html"><span class="name">FunctionAlreadyExistsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@FunctionAlreadyExistsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="FunctionRegistryextendsAnyRef"></a>
+      <a id="FunctionRegistry:FunctionRegistry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="FunctionRegistry.html"><span class="name">FunctionRegistry</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@FunctionRegistryextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A catalog for looking up user defined functions, used by an <a href="Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A catalog for looking up user defined functions, used by an <a href="Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a>.</p><p>Note: The implementation should be thread-safe to allow concurrent access.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.GetColumnByOrdinal" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GetColumnByOrdinalextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="GetColumnByOrdinal:GetColumnByOrdinal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="GetColumnByOrdinal.html"><span class="name">GetColumnByOrdinal</span></a><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <a href="../expressions/LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <a href="../expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@GetColumnByOrdinalextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.MultiAlias" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MultiAliasextendsUnaryExpressionwithNamedExpressionwithCodegenFallbackwithProductwithSerializable"></a>
+      <a id="MultiAlias:MultiAlias"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MultiAlias.html"><span class="name">MultiAlias</span></a><span class="params">(<span name="child">child: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="names">names: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a> with <a href="../expressions/codegen/CodegenFallback.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback">CodegenFallback</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@MultiAliasextendsUnaryExpressionwithNamedExpressionwithCodegenFallbackwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to assign new names to Generator's output, such as hive udtf.</p><div class="fullcomment"><div class="comment cmt"><p>Used to assign new names to Generator's output, such as hive udtf.
+For example the SQL expression &quot;stack(2, key, value, key, value) as (a, b)&quot; could be represented
+as follows:
+ MultiAlias(stack_function, Seq(a, b))</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>the computation being performed</p></dd><dt class="param">names</dt><dd class="cmt"><p>the names to be associated with each output of computing <a href="MultiAlias.html#child:org.apache.spark.sql.catalyst.expressions.Expression" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.MultiAlias#child">child</a>.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="MultiInstanceRelationextendsAnyRef"></a>
+      <a id="MultiInstanceRelation:MultiInstanceRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MultiInstanceRelation.html"><span class="name">MultiInstanceRelation</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@MultiInstanceRelationextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A trait that should be mixed into query operators where a single instance might appear multiple
+times in a logical query plan.</p><div class="fullcomment"><div class="comment cmt"><p>A trait that should be mixed into query operators where a single instance might appear multiple
+times in a logical query plan.  It is invalid to have multiple copies of the same attribute
+produced by distinct operators in a query tree as this breaks the guarantee that expression
+ids, which are used to differentiate attributes, are unique.</p><p>During analysis, operators that include this trait may be asked to produce a new version
+of itself with globally unique expression ids.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchDatabaseException" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NoSuchDatabaseExceptionextendsAnalysisException"></a>
+      <a id="NoSuchDatabaseException:NoSuchDatabaseException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchDatabaseException.html"><span class="name">NoSuchDatabaseException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchDatabaseExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Thrown by a catalog when an item cannot be found.</p><div class="fullcomment"><div class="comment cmt"><p>Thrown by a catalog when an item cannot be found. The analyzer will rethrow the exception
+as an <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">org.apache.spark.sql.AnalysisException</a> with the correct position information.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchFunctionException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoSuchFunctionExceptionextendsAnalysisException"></a>
+      <a id="NoSuchFunctionException:NoSuchFunctionException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchFunctionException.html"><span class="name">NoSuchFunctionException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchFunctionExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchPartitionException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoSuchPartitionExceptionextendsAnalysisException"></a>
+      <a id="NoSuchPartitionException:NoSuchPartitionException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchPartitionException.html"><span class="name">NoSuchPartitionException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchPartitionExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchPartitionsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoSuchPartitionsExceptionextendsAnalysisException"></a>
+      <a id="NoSuchPartitionsException:NoSuchPartitionsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchPartitionsException.html"><span class="name">NoSuchPartitionsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchPartitionsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchPermanentFunctionException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoSuchPermanentFunctionExceptionextendsAnalysisException"></a>
+      <a id="NoSuchPermanentFunctionException:NoSuchPermanentFunctionException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchPermanentFunctionException.html"><span class="name">NoSuchPermanentFunctionException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchPermanentFunctionExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchTableException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoSuchTableExceptionextendsAnalysisException"></a>
+      <a id="NoSuchTableException:NoSuchTableException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchTableException.html"><span class="name">NoSuchTableException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchTableExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.NoSuchTempFunctionException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NoSuchTempFunctionExceptionextendsAnalysisException"></a>
+      <a id="NoSuchTempFunctionException:NoSuchTempFunctionException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NoSuchTempFunctionException.html"><span class="name">NoSuchTempFunctionException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@NoSuchTempFunctionExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.PartitionAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitionAlreadyExistsExceptionextendsAnalysisException"></a>
+      <a id="PartitionAlreadyExistsException:PartitionAlreadyExistsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionAlreadyExistsException.html"><span class="name">PartitionAlreadyExistsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@PartitionAlreadyExistsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.PartitionsAlreadyExistException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PartitionsAlreadyExistExceptionextendsAnalysisException"></a>
+      <a id="PartitionsAlreadyExistException:PartitionsAlreadyExistException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="PartitionsAlreadyExistException.html"><span class="name">PartitionsAlreadyExistException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@PartitionsAlreadyExistExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.ResolvedStar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ResolvedStarextendsStarwithUnevaluablewithProductwithSerializable"></a>
+      <a id="ResolvedStar:ResolvedStar"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ResolvedStar.html"><span class="name">ResolvedStar</span></a><span class="params">(<span name="expressions">expressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>)</span><span class="result"> extends <a href="Star.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Star">Star</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@ResolvedStarextendsStarwithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents all the resolved input attributes to a given relational operator.</p><div class="fullcomment"><div class="comment cmt"><p>Represents all the resolved input attributes to a given relational operator. This is used
+in the data frame DSL.
+</p></div><dl class="paramcmts block"><dt class="param">expressions</dt><dd class="cmt"><p>Expressions to expand.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.Resolver" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Resolver=(String,String)=&gt;Boolean"></a>
+      <a id="Resolver:Resolver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Resolver</span><span class="result"> = (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@Resolver=(String,String)=&gt;Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Resolver should return true if the first string refers to the same entity as the second string.</p><div class="fullcomment"><div class="comment cmt"><p>Resolver should return true if the first string refers to the same entity as the second string.
+For example, by using case insensitive equality.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.SimpleFunctionRegistry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SimpleFunctionRegistryextendsFunctionRegistry"></a>
+      <a id="SimpleFunctionRegistry:SimpleFunctionRegistry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SimpleFunctionRegistry.html"><span class="name">SimpleFunctionRegistry</span></a><span class="result"> extends <a href="FunctionRegistry.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry">FunctionRegistry</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@SimpleFunctionRegistryextendsFunctionRegistry" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.Star" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StarextendsLeafExpressionwithNamedExpression"></a>
+      <a id="Star:Star"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Star.html"><span class="name">Star</span></a><span class="result"> extends <a href="../expressions/LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> with <a href="../expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@StarextendsLeafExpressionwithNamedExpression" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents all of the input attributes to a given relational operator, for example in
+&quot;SELECT * FROM ...&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Represents all of the input attributes to a given relational operator, for example in
+&quot;SELECT * FROM ...&quot;. A <a href="Star.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Star">Star</a> gets automatically expanded during analysis.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.SubstituteUnresolvedOrdinals" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SubstituteUnresolvedOrdinalsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="SubstituteUnresolvedOrdinals:SubstituteUnresolvedOrdinals"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SubstituteUnresolvedOrdinals.html"><span class="name">SubstituteUnresolvedOrdinals</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@SubstituteUnresolvedOrdinalsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Replaces ordinal in 'order by' or 'group by' with UnresolvedOrdinal expression.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TableAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TableAlreadyExistsExceptionextendsAnalysisException"></a>
+      <a id="TableAlreadyExistsException:TableAlreadyExistsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TableAlreadyExistsException.html"><span class="name">TableAlreadyExistsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TableAlreadyExistsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TempFunctionAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TempFunctionAlreadyExistsExceptionextendsAnalysisException"></a>
+      <a id="TempFunctionAlreadyExistsException:TempFunctionAlreadyExistsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TempFunctionAlreadyExistsException.html"><span class="name">TempFunctionAlreadyExistsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TempFunctionAlreadyExistsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TempTableAlreadyExistsException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TempTableAlreadyExistsExceptionextendsAnalysisException"></a>
+      <a id="TempTableAlreadyExistsException:TempTableAlreadyExistsException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TempTableAlreadyExistsException.html"><span class="name">TempTableAlreadyExistsException</span></a><span class="result"> extends <a href="../../AnalysisException.html" class="extype" name="org.apache.spark.sql.AnalysisException">AnalysisException</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TempTableAlreadyExistsExceptionextendsAnalysisException" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCheckResult" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="TypeCheckResultextendsAnyRef"></a>
+      <a id="TypeCheckResult:TypeCheckResult"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TypeCheckResult.html"><span class="name">TypeCheckResult</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TypeCheckResultextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents the result of <code>Expression.checkInputDataTypes</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Represents the result of <code>Expression.checkInputDataTypes</code>.
+We will throw <code>AnalysisException</code> in <code>CheckAnalysis</code> if <code>isFailure</code> is true.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedAlias" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedAliasextendsUnaryExpressionwithNamedExpressionwithUnevaluablewithProductwithSerializable"></a>
+      <a id="UnresolvedAlias:UnresolvedAlias"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedAlias.html"><span class="name">UnresolvedAlias</span></a><span class="params">(<span name="child">child: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="aliasFunc">aliasFunc: <span class="extype" name="scala.Option">Option</span>[(<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>) ⇒ <span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="../expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedAliasextendsUnaryExpressionwithNamedExpressionwithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Holds the expression that has yet to be aliased.</p><div class="fullcomment"><div class="comment cmt"><p>Holds the expression that has yet to be aliased.
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The computation that is needs to be resolved during analysis.</p></dd><dt class="param">aliasFunc</dt><dd class="cmt"><p>The function if specified to be called to generate an alias to associate
+                 with the result of computing <a href="UnresolvedAlias.html#child:org.apache.spark.sql.catalyst.expressions.Expression" class="extmbr" name="org.apache.spark.sql.catalyst.analysis.UnresolvedAlias#child">child</a></p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnresolvedAttributeextendsAttributewithUnevaluablewithProductwithSerializable"></a>
+      <a id="UnresolvedAttribute:UnresolvedAttribute"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedAttribute.html"><span class="name">UnresolvedAttribute</span></a><span class="params">(<span name="nameParts">nameParts: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedAttributeextendsAttributewithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Holds the name of an attribute that has yet to be resolved.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedDeserializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedDeserializerextendsUnaryExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="UnresolvedDeserializer:UnresolvedDeserializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedDeserializer.html"><span class="name">UnresolvedDeserializer</span></a><span class="params">(<span name="deserializer">deserializer: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="inputAttributes">inputAttributes: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>] = <span class="symbol">Nil</span></span>)</span><span class="result"> extends <a href="../expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <a href="../expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedDeserializerextendsUnaryExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Holds the deserializer expression and the attributes that are available during the resolution
+for it.</p><div class="fullcomment"><div class="comment cmt"><p>Holds the deserializer expression and the attributes that are available during the resolution
+for it.  Deserializer expression is a special kind of expression that is not always resolved by
+children output, but by given attributes, e.g. the <code>keyDeserializer</code> in <code>MapGroups</code> should be
+resolved by <code>groupingAttributes</code> instead of children output.
+</p></div><dl class="paramcmts block"><dt class="param">deserializer</dt><dd class="cmt"><p>The unresolved deserializer expression</p></dd><dt class="param">inputAttributes</dt><dd class="cmt"><p>The input attributes used to resolve deserializer expression, can be empty
+                       if we want to resolve deserializer by children output.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedException" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnresolvedException[TreeType&lt;:org.apache.spark.sql.catalyst.trees.TreeNode[_]]extendsTreeNodeException[TreeType]"></a>
+      <a id="UnresolvedException[TreeType&lt;:TreeNode[_]]:UnresolvedException[TreeType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedException.html"><span class="name">UnresolvedException</span></a><span class="tparams">[<span name="TreeType">TreeType &lt;: <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>]</span><span class="result"> extends <a href="../errors/package$$TreeNodeException.html" class="extype" name="org.apache.spark.sql.catalyst.errors.TreeNodeException">TreeNodeException</a>[<span class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedException.TreeType">TreeType</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedException[TreeType&lt;:org.apache.spark.sql.catalyst.trees.TreeNode[_]]extendsTreeNodeException[TreeType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Thrown when an invalid attempt is made to access a property of a tree that has yet to be fully
+resolved.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedExtractValueextendsUnaryExpressionwithUnevaluablewithProductwithSerializable"></a>
+      <a id="UnresolvedExtractValue:UnresolvedExtractValue"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedExtractValue.html"><span class="name">UnresolvedExtractValue</span></a><span class="params">(<span name="child">child: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="extraction">extraction: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="../expressions/UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedExtractValueextendsUnaryExpressionwithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extracts a value or values from an Expression
+</p><div class="fullcomment"><div class="comment cmt"><p>Extracts a value or values from an Expression
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The expression to extract value from,
+             can be Map, Array, Struct or array of Structs.</p></dd><dt class="param">extraction</dt><dd class="cmt"><p>The expression to describe the extraction,
+                  can be key of Map, index of Array, field name of Struct.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnresolvedFunctionextendsExpressionwithUnevaluablewithProductwithSerializable"></a>
+      <a id="UnresolvedFunction:UnresolvedFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedFunction.html"><span class="name">UnresolvedFunction</span></a><span class="params">(<span name="name">name: <a href="../FunctionIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</a></span>, <span name="children">children: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="isDistinct">isDistinct: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedFunctionextendsExpressionwithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedGenerator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedGeneratorextendsExpressionwithGeneratorwithProductwithSerializable"></a>
+      <a id="UnresolvedGenerator:UnresolvedGenerator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedGenerator.html"><span class="name">UnresolvedGenerator</span></a><span class="params">(<span name="name">name: <a href="../FunctionIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.FunctionIdentifier">FunctionIdentifier</a></span>, <span name="children">children: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../expressions/Generator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Generator">Generator</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedGeneratorextendsExpressionwithGeneratorwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents an unresolved generator, which will be created by the parser for
+the <a href="../plans/logical/Generate.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Generate">org.apache.spark.sql.catalyst.plans.logical.Generate</a> operator.</p><div class="fullcomment"><div class="comment cmt"><p>Represents an unresolved generator, which will be created by the parser for
+the <a href="../plans/logical/Generate.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.Generate">org.apache.spark.sql.catalyst.plans.logical.Generate</a> operator.
+The analyzer will resolve this generator.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedInlineTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedInlineTableextendsLeafNodewithProductwithSerializable"></a>
+      <a id="UnresolvedInlineTable:UnresolvedInlineTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedInlineTable.html"><span class="name">UnresolvedInlineTable</span></a><span class="params">(<span name="names">names: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="rows">rows: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]]</span>)</span><span class="result"> extends <a href="../plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedInlineTableextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An inline table that has not been resolved yet.</p><div class="fullcomment"><div class="comment cmt"><p>An inline table that has not been resolved yet. Once resolved, it is turned by the analyzer into
+a <a href="../plans/logical/LocalRelation.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LocalRelation">org.apache.spark.sql.catalyst.plans.logical.LocalRelation</a>.
+</p></div><dl class="paramcmts block"><dt class="param">names</dt><dd class="cmt"><p>list of column names</p></dd><dt class="param">rows</dt><dd class="cmt"><p>expressions for the data</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedOrdinal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedOrdinalextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="UnresolvedOrdinal:UnresolvedOrdinal"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedOrdinal.html"><span class="name">UnresolvedOrdinal</span></a><span class="params">(<span name="ordinal">ordinal: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <a href="../expressions/LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <a href="../expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedOrdinalextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents unresolved ordinal used in order by or group by.</p><div class="fullcomment"><div class="comment cmt"><p>Represents unresolved ordinal used in order by or group by.</p><p>For example:</p><pre>select a from table order by <span class="num">1</span>
+select a   from table group by <span class="num">1</span></pre></div><dl class="paramcmts block"><dt class="param">ordinal</dt><dd class="cmt"><p>ordinal starts from 1, instead of 0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnresolvedRelationextendsLeafNodewithProductwithSerializable"></a>
+      <a id="UnresolvedRelation:UnresolvedRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedRelation.html"><span class="name">UnresolvedRelation</span></a><span class="params">(<span name="tableIdentifier">tableIdentifier: <a href="../TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>, <span name="alias">alias: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <a href="../plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedRelationextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Holds the name of a relation that has yet to be looked up in a catalog.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedStar" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedStarextendsStarwithUnevaluablewithProductwithSerializable"></a>
+      <a id="UnresolvedStar:UnresolvedStar"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedStar.html"><span class="name">UnresolvedStar</span></a><span class="params">(<span name="target">target: <span class="extype" name="scala.Option">Option</span>[<a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]]</span>)</span><span class="result"> extends <a href="Star.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Star">Star</a> with <a href="../expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedStarextendsStarwithUnevaluablewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Represents all of the input attributes to a given relational operator, for example in
+&quot;SELECT * FROM ...&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Represents all of the input attributes to a given relational operator, for example in
+&quot;SELECT * FROM ...&quot;.</p><p>This is also used to expand structs. For example:
+&quot;SELECT record.* from (SELECT struct(a,b,c) as record ...)
+</p></div><dl class="paramcmts block"><dt class="param">target</dt><dd class="cmt"><p>an optional name that should be the target of the expansion.  If omitted all
+             targets' columns are produced. This can either be a table name or struct name. This
+             is a list of identifiers that is the path of the expansion.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedTableValuedFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnresolvedTableValuedFunctionextendsLeafNodewithProductwithSerializable"></a>
+      <a id="UnresolvedTableValuedFunction:UnresolvedTableValuedFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedTableValuedFunction.html"><span class="name">UnresolvedTableValuedFunction</span></a><span class="params">(<span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="functionArgs">functionArgs: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedTableValuedFunctionextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A table-valued function, e.g.</p><div class="fullcomment"><div class="comment cmt"><p>A table-valued function, e.g.</p><pre>select * from range(<span class="num">10</span>);</pre></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.analysis.CleanupAliases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CleanupAliases"></a>
+      <a id="CleanupAliases:CleanupAliases"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CleanupAliases$.html"><span class="name">CleanupAliases</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@CleanupAliases" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Cleans up unnecessary Aliases inside the plan.</p><div class="fullcomment"><div class="comment cmt"><p>Cleans up unnecessary Aliases inside the plan. Basically we only need Alias as a top level
+expression in Project(project list) or Aggregate(aggregate expressions) or
+Window(window expressions).
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.DecimalPrecision" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DecimalPrecision"></a>
+      <a id="DecimalPrecision:DecimalPrecision"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DecimalPrecision$.html"><span class="name">DecimalPrecision</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@DecimalPrecision" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Calculates and propagates precision for fixed-precision decimals.</p><div class="fullcomment"><div class="comment cmt"><p>Calculates and propagates precision for fixed-precision decimals. Hive has a number of
+rules for this based on the SQL standard and MS SQL:
+https://cwiki.apache.org/confluence/download/attachments/27362075/Hive_Decimal_Precision_Scale_Support.pdf
+https://msdn.microsoft.com/en-us/library/ms190476.aspx</p><p>In particular, if we have expressions e1 and e2 with precision/scale p1/s2 and p2/s2
+respectively, then the following operations have the following precision / scale:</p><p>  Operation    Result Precision                        Result Scale
+  ------------------------------------------------------------------------
+  e1 + e2      max(s1, s2) + max(p1-s1, p2-s2) + 1     max(s1, s2)
+  e1 - e2      max(s1, s2) + max(p1-s1, p2-s2) + 1     max(s1, s2)
+  e1 * e2      p1 + p2 + 1                             s1 + s2
+  e1 / e2      p1 - s1 + s2 + max(6, s1 + p2 + 1)      max(6, s1 + p2 + 1)
+  e1 % e2      min(p1-s1, p2-s2) + max(s1, s2)         max(s1, s2)
+  e1 union e2  max(s1, s2) + max(p1-s1, p2-s2)         max(s1, s2)
+  sum(e1)      p1 + 10                                 s1
+  avg(e1)      p1 + 4                                  s1 + 4</p><p>To implement the rules for fixed-precision types, we introduce casts to turn them to unlimited
+precision, do the math on unlimited-precision numbers, then introduce casts back to the
+required fixed precision. This allows us to do all rounding and overflow handling in the
+cast-to-fixed-precision operator.</p><p>In addition, when mixing non-decimal types with decimals, we use the following rules:
+- BYTE gets turned into DECIMAL(3, 0)
+- SHORT gets turned into DECIMAL(5, 0)
+- INT gets turned into DECIMAL(10, 0)
+- LONG gets turned into DECIMAL(20, 0)
+- FLOAT and DOUBLE cause fixed-length decimals to turn into DOUBLE
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.EliminateSubqueryAliases" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EliminateSubqueryAliases"></a>
+      <a id="EliminateSubqueryAliases:EliminateSubqueryAliases"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EliminateSubqueryAliases$.html"><span class="name">EliminateSubqueryAliases</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@EliminateSubqueryAliases" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Removes <span class="extype" name="SubqueryAlias">SubqueryAlias</span> operators from the plan.</p><div class="fullcomment"><div class="comment cmt"><p>Removes <span class="extype" name="SubqueryAlias">SubqueryAlias</span> operators from the plan. Subqueries are only required to provide
+scoping information for attributes and can be removed once analysis is complete.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.EliminateUnions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EliminateUnions"></a>
+      <a id="EliminateUnions:EliminateUnions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EliminateUnions$.html"><span class="name">EliminateUnions</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@EliminateUnions" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Removes <span class="extype" name="Union">Union</span> operators from the plan if it just has one child.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.EmptyFunctionRegistry" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EmptyFunctionRegistry"></a>
+      <a id="EmptyFunctionRegistry:EmptyFunctionRegistry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EmptyFunctionRegistry$.html"><span class="name">EmptyFunctionRegistry</span></a><span class="result"> extends <a href="FunctionRegistry.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry">FunctionRegistry</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@EmptyFunctionRegistry" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A trivial catalog that returns an error when a function is requested.</p><div class="fullcomment"><div class="comment cmt"><p>A trivial catalog that returns an error when a function is requested. Used for testing when all
+functions are already filled in and the analyzer needs only to resolve attribute references.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.FunctionRegistry" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FunctionRegistry"></a>
+      <a id="FunctionRegistry:FunctionRegistry"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FunctionRegistry$.html"><span class="name">FunctionRegistry</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@FunctionRegistry" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.ResolveCreateNamedStruct" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResolveCreateNamedStruct"></a>
+      <a id="ResolveCreateNamedStruct:ResolveCreateNamedStruct"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ResolveCreateNamedStruct$.html"><span class="name">ResolveCreateNamedStruct</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@ResolveCreateNamedStruct" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Resolve a <span class="extype" name="CreateNamedStruct">CreateNamedStruct</span> if it contains <span class="extype" name="NamePlaceholder">NamePlaceholder</span>s.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.ResolveInlineTables" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResolveInlineTables"></a>
+      <a id="ResolveInlineTables:ResolveInlineTables"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ResolveInlineTables$.html"><span class="name">ResolveInlineTables</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@ResolveInlineTables" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An analyzer rule that replaces <a href="UnresolvedInlineTable.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.UnresolvedInlineTable">UnresolvedInlineTable</a> with <span class="extype" name="LocalRelation">LocalRelation</span>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.ResolveTableValuedFunctions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ResolveTableValuedFunctions"></a>
+      <a id="ResolveTableValuedFunctions:ResolveTableValuedFunctions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ResolveTableValuedFunctions$.html"><span class="name">ResolveTableValuedFunctions</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@ResolveTableValuedFunctions" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Rule that resolves table-valued function references.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.SimpleAnalyzer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SimpleAnalyzer"></a>
+      <a id="SimpleAnalyzer:SimpleAnalyzer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SimpleAnalyzer$.html"><span class="name">SimpleAnalyzer</span></a><span class="result"> extends <a href="Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@SimpleAnalyzer" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A trivial <a href="Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> with a dummy <span class="extype" name="SessionCatalog">SessionCatalog</span> and <a href="EmptyFunctionRegistry$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.EmptyFunctionRegistry">EmptyFunctionRegistry</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A trivial <a href="Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a> with a dummy <span class="extype" name="SessionCatalog">SessionCatalog</span> and <a href="EmptyFunctionRegistry$.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.EmptyFunctionRegistry">EmptyFunctionRegistry</a>.
+Used for testing when all relations are already filled in and the analyzer needs only
+to resolve attribute references.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TimeWindowing" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TimeWindowing"></a>
+      <a id="TimeWindowing:TimeWindowing"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TimeWindowing$.html"><span class="name">TimeWindowing</span></a><span class="result"> extends <a href="../rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TimeWindowing" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Maps a time column to multiple time windows using the Expand operator.</p><div class="fullcomment"><div class="comment cmt"><p>Maps a time column to multiple time windows using the Expand operator. Since it's non-trivial to
+figure out how many windows a time column can map to, we over-estimate the number of windows and
+filter out the rows where the time column is not inside the time window.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCheckResult" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TypeCheckResult"></a>
+      <a id="TypeCheckResult:TypeCheckResult"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TypeCheckResult$.html"><span class="name">TypeCheckResult</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TypeCheckResult" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.TypeCoercion" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TypeCoercion"></a>
+      <a id="TypeCoercion:TypeCoercion"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TypeCoercion$.html"><span class="name">TypeCoercion</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@TypeCoercion" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A collection of <span class="extype" name="Rule">Rule</span> that can be used to coerce differing types that participate in
+operations into compatible ones.</p><div class="fullcomment"><div class="comment cmt"><p>A collection of <span class="extype" name="Rule">Rule</span> that can be used to coerce differing types that participate in
+operations into compatible ones.</p><p>Notes about type widening / tightest common types: Broadly, there are two cases when we need
+to widen data types (e.g. union, binary comparison). In case 1, we are looking for a common
+data type for two or more data types, and in this case no loss of precision is allowed. Examples
+include type inference in JSON (e.g. what's the column's data type if one row is an integer
+while the other row is a long?). In case 2, we are looking for a widened data type with
+some acceptable loss of precision (e.g. there is no common type for double and decimal because
+double's range is larger than decimal, and yet decimal is more precise than double, but in
+union we would cast the decimal into double).
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedAttribute" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnresolvedAttribute"></a>
+      <a id="UnresolvedAttribute:UnresolvedAttribute"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedAttribute$.html"><span class="name">UnresolvedAttribute</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedAttribute" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnresolvedFunction" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnresolvedFunction"></a>
+      <a id="UnresolvedFunction:UnresolvedFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="UnresolvedFunction$.html"><span class="name">UnresolvedFunction</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnresolvedFunction" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis.UnsupportedOperationChecker" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnsupportedOperationChecker"></a>
+      <a id="UnsupportedOperationChecker:UnsupportedOperationChecker"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="UnsupportedOperationChecker$.html"><span class="name">UnsupportedOperationChecker</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@UnsupportedOperationChecker" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Analyzes the presence of unsupported operations in a logical plan.</p>
+    </li><li name="org.apache.spark.sql.catalyst.analysis#caseInsensitiveResolution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="caseInsensitiveResolution:(String,String)=&gt;Boolean"></a>
+      <a id="caseInsensitiveResolution:(String,String)⇒Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">caseInsensitiveResolution</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@caseInsensitiveResolution:(String,String)=&gt;Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis#caseSensitiveResolution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="caseSensitiveResolution:(String,String)=&gt;Boolean"></a>
+      <a id="caseSensitiveResolution:(String,String)⇒Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">caseSensitiveResolution</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>) ⇒ <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@caseSensitiveResolution:(String,String)=&gt;Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.analysis#withPosition" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="withPosition[A](t:org.apache.spark.sql.catalyst.trees.TreeNode[_])(f:=&gt;A):A"></a>
+      <a id="withPosition[A](TreeNode[_])(⇒A):A"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">withPosition</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="t">t: <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[_]</span>)</span><span class="params">(<span name="f">f: ⇒ <span class="extype" name="org.apache.spark.sql.catalyst.analysis.withPosition.A">A</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.catalyst.analysis.withPosition.A">A</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.analysis.package@withPosition[A](t:org.apache.spark.sql.catalyst.trees.TreeNode[_])(f:=&gt;A):A" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Catches any AnalysisExceptions thrown by <code>f</code> and attaches <code>t</code>'s position if any.</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

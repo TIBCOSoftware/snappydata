@@ -1,0 +1,1197 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>MesosSchedulerUtils - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils</title>
+          <meta name="description" content="MesosSchedulerUtils - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils" />
+          <meta name="keywords" content="MesosSchedulerUtils snappydata 2.11 1.1.0 HF 1 API org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Trait" src="../../../../../../lib/trait_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.scheduler">scheduler</a>.<a href="../package.html" class="extype" name="org.apache.spark.scheduler.cluster">cluster</a>.<a href="package.html" class="extype" name="org.apache.spark.scheduler.cluster.mesos">mesos</a></p>
+        <h1>MesosSchedulerUtils</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.scheduler.cluster.mesos">package mesos</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MesosSchedulerUtils</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Shared trait for implementing a Mesos Scheduler. This holds common state and helper
+methods and Mesos scheduler will use.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils"><span>MesosSchedulerUtils</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#checkPorts" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="checkPorts(conf:org.apache.spark.SparkConf,ports:List[(Long,Long)]):Boolean"></a>
+      <a id="checkPorts(SparkConf,List[(Long,Long)]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">checkPorts</span><span class="params">(<span name="conf">conf: <a href="../../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="ports">ports: <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[(<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Long">Long</span>)]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@checkPorts(conf:org.apache.spark.SparkConf,ports:List[(Long,Long)]):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Checks executor ports if they are within some range of the offered list of ports ranges,
+</p><div class="fullcomment"><div class="comment cmt"><p>Checks executor ports if they are within some range of the offered list of ports ranges,
+</p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>the Spark Config</p></dd><dt class="param">ports</dt><dd class="cmt"><p>the list of ports to check</p></dd><dt>returns</dt><dd class="cmt"><p>true if ports are within range false otherwise</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#createResource" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createResource(resourceName:String,quantity:Double):org.apache.mesos.Protos.Resource"></a>
+      <a id="createResource(String,Double):Resource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createResource</span><span class="params">(<span name="resourceName">resourceName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="quantity">quantity: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: <span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@createResource(resourceName:String,quantity:Double):org.apache.mesos.Protos.Resource" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Build a Mesos resource protobuf object</p><div class="fullcomment"><div class="comment cmt"><p>Build a Mesos resource protobuf object</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#createResource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="createResource(name:String,amount:Double,role:Option[String]):org.apache.mesos.Protos.Resource"></a>
+      <a id="createResource(String,Double,Option[String]):Resource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createResource</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="amount">amount: <span class="extype" name="scala.Double">Double</span></span>, <span name="role">role: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@createResource(name:String,amount:Double,role:Option[String]):org.apache.mesos.Protos.Resource" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#createSchedulerDriver" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="createSchedulerDriver(masterUrl:String,scheduler:org.apache.mesos.Scheduler,sparkUser:String,appName:String,conf:org.apache.spark.SparkConf,webuiUrl:Option[String],checkpoint:Option[Boolean],failoverTimeout:Option[Double],frameworkId:Option[String]):org.apache.mesos.SchedulerDriver"></a>
+      <a id="createSchedulerDriver(String,Scheduler,String,String,SparkConf,Option[String],Option[Boolean],Option[Double],Option[String]):SchedulerDriver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createSchedulerDriver</span><span class="params">(<span name="masterUrl">masterUrl: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="scheduler">scheduler: <span class="extype" name="org.apache.mesos.Scheduler">Scheduler</span></span>, <span name="sparkUser">sparkUser: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="appName">appName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conf">conf: <a href="../../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>, <span name="webuiUrl">webuiUrl: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="checkpoint">checkpoint: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Boolean">Boolean</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="failoverTimeout">failoverTimeout: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Double">Double</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="frameworkId">frameworkId: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result">: <span class="extype" name="org.apache.mesos.SchedulerDriver">SchedulerDriver</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@createSchedulerDriver(masterUrl:String,scheduler:org.apache.mesos.Scheduler,sparkUser:String,appName:String,conf:org.apache.spark.SparkConf,webuiUrl:Option[String],checkpoint:Option[Boolean],failoverTimeout:Option[Double],frameworkId:Option[String]):org.apache.mesos.SchedulerDriver" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Creates a new MesosSchedulerDriver that communicates to the Mesos master.</p><div class="fullcomment"><div class="comment cmt"><p>Creates a new MesosSchedulerDriver that communicates to the Mesos master.
+</p></div><dl class="paramcmts block"><dt class="param">masterUrl</dt><dd class="cmt"><p>The url to connect to Mesos master</p></dd><dt class="param">scheduler</dt><dd class="cmt"><p>the scheduler class to receive scheduler callbacks</p></dd><dt class="param">sparkUser</dt><dd class="cmt"><p>User to impersonate with when running tasks</p></dd><dt class="param">appName</dt><dd class="cmt"><p>The framework name to display on the Mesos UI</p></dd><dt class="param">conf</dt><dd class="cmt"><p>Spark configuration</p></dd><dt class="param">webuiUrl</dt><dd class="cmt"><p>The WebUI url to link from Mesos UI</p></dd><dt class="param">checkpoint</dt><dd class="cmt"><p>Option to checkpoint tasks for failover</p></dd><dt class="param">failoverTimeout</dt><dd class="cmt"><p>Duration Mesos master expect scheduler to reconnect on disconnect</p></dd><dt class="param">frameworkId</dt><dd class="cmt"><p>The id of the new framework</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#executorMemory" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="executorMemory(sc:org.apache.spark.SparkContext):Int"></a>
+      <a id="executorMemory(SparkContext):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executorMemory</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@executorMemory(sc:org.apache.spark.SparkContext):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the amount of memory to allocate to each executor, taking into account
+container overheads.</p><div class="fullcomment"><div class="comment cmt"><p>Return the amount of memory to allocate to each executor, taking into account
+container overheads.
+</p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>SparkContext to use to get <code>spark.mesos.executor.memoryOverhead</code> value</p></dd><dt>returns</dt><dd class="cmt"><p>memory requirement as (0.1 * &lt;memoryOverhead&gt;) or MEMORY_OVERHEAD_MINIMUM
+        (whichever is larger)</p></dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#getAttribute" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getAttribute(attr:org.apache.mesos.Protos.Attribute):(String,Set[String])"></a>
+      <a id="getAttribute(Attribute):(String,Set[String])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getAttribute</span><span class="params">(<span name="attr">attr: <span class="extype" name="org.apache.mesos.Protos.Attribute">Attribute</span></span>)</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>])</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@getAttribute(attr:org.apache.mesos.Protos.Attribute):(String,Set[String])" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper method to get the key,value-set pair for a Mesos Attribute protobuf</p><div class="fullcomment"><div class="comment cmt"><p>Helper method to get the key,value-set pair for a Mesos Attribute protobuf</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#getRangeResource" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getRangeResource(res:java.util.List[org.apache.mesos.Protos.Resource],name:String):List[(Long,Long)]"></a>
+      <a id="getRangeResource(List[Resource],String):List[(Long,Long)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRangeResource</span><span class="params">(<span name="res">res: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>]</span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[(<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Long">Long</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@getRangeResource(res:java.util.List[org.apache.mesos.Protos.Resource],name:String):List[(Long,Long)]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Transforms a range resource to a list of ranges
+</p><div class="fullcomment"><div class="comment cmt"><p>Transforms a range resource to a list of ranges
+</p></div><dl class="paramcmts block"><dt class="param">res</dt><dd class="cmt"><p>the mesos resource list</p></dd><dt class="param">name</dt><dd class="cmt"><p>the name of the resource</p></dd><dt>returns</dt><dd class="cmt"><p>the list of ranges returned</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#getRejectOfferDurationForReachedMaxCores" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getRejectOfferDurationForReachedMaxCores(sc:org.apache.spark.SparkContext):Long"></a>
+      <a id="getRejectOfferDurationForReachedMaxCores(SparkContext):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRejectOfferDurationForReachedMaxCores</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@getRejectOfferDurationForReachedMaxCores(sc:org.apache.spark.SparkContext):Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#getRejectOfferDurationForUnmetConstraints" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getRejectOfferDurationForUnmetConstraints(sc:org.apache.spark.SparkContext):Long"></a>
+      <a id="getRejectOfferDurationForUnmetConstraints(SparkContext):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getRejectOfferDurationForUnmetConstraints</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@getRejectOfferDurationForUnmetConstraints(sc:org.apache.spark.SparkContext):Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#getResource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getResource(res:java.util.List[org.apache.mesos.Protos.Resource],name:String):Double"></a>
+      <a id="getResource(List[Resource],String):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getResource</span><span class="params">(<span name="res">res: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>]</span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@getResource(res:java.util.List[org.apache.mesos.Protos.Resource],name:String):Double" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@isTraceEnabled():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log:org.slf4j.Logger"></a>
+      <a id="log:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@log:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logDebug(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String):Unit"></a>
+      <a id="logDebug(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logError(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String):Unit"></a>
+      <a id="logError(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logInfo(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String):Unit"></a>
+      <a id="logInfo(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logName:String"></a>
+      <a id="logName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logName:String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logTrace(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String):Unit"></a>
+      <a id="logTrace(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logWarning(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String):Unit"></a>
+      <a id="logWarning(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#managedPortNames" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="managedPortNames:List[String]"></a>
+      <a id="managedPortNames:List[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">managedPortNames</span><span class="result">: <span class="extype" name="scala.collection.immutable.List">List</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@managedPortNames:List[String]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#markErr" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="markErr():Unit"></a>
+      <a id="markErr():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">markErr</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@markErr():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#markRegistered" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="markRegistered():Unit"></a>
+      <a id="markRegistered():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">markRegistered</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@markRegistered():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Signal that the scheduler has registered with Mesos.</p><div class="fullcomment"><div class="comment cmt"><p>Signal that the scheduler has registered with Mesos.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#matchesAttributeRequirements" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="matchesAttributeRequirements(slaveOfferConstraints:Map[String,Set[String]],offerAttributes:Map[String,org.apache.mesos.protobuf.GeneratedMessage]):Boolean"></a>
+      <a id="matchesAttributeRequirements(Map[String,Set[String]],Map[String,GeneratedMessage]):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">matchesAttributeRequirements</span><span class="params">(<span name="slaveOfferConstraints">slaveOfferConstraints: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>, <span name="offerAttributes">offerAttributes: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.mesos.protobuf.GeneratedMessage">GeneratedMessage</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@matchesAttributeRequirements(slaveOfferConstraints:Map[String,Set[String]],offerAttributes:Map[String,org.apache.mesos.protobuf.GeneratedMessage]):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Match the requirements (if any) to the offer attributes.</p><div class="fullcomment"><div class="comment cmt"><p>Match the requirements (if any) to the offer attributes.
+if attribute requirements are not specified - return true
+else if attribute is defined and no values are given, simple attribute presence is performed
+else if attribute name and value is specified, subset match is performed on slave attributes
+</p></div></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#mesosDriver" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mesosDriver:org.apache.mesos.SchedulerDriver"></a>
+      <a id="mesosDriver:SchedulerDriver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mesosDriver</span><span class="result">: <span class="extype" name="org.apache.mesos.SchedulerDriver">SchedulerDriver</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@mesosDriver:org.apache.mesos.SchedulerDriver" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#mesosToTaskState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mesosToTaskState(state:org.apache.mesos.Protos.TaskState):org.apache.spark.TaskState.TaskState"></a>
+      <a id="mesosToTaskState(mesos.Protos.TaskState):TaskState.TaskState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mesosToTaskState</span><span class="params">(<span name="state">state: <span class="extype" name="org.apache.mesos.Protos.TaskState">mesos.Protos.TaskState</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.TaskState.TaskState">TaskState.TaskState</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@mesosToTaskState(state:org.apache.mesos.Protos.TaskState):org.apache.spark.TaskState.TaskState" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#nonZeroPortValuesFromConfig" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="nonZeroPortValuesFromConfig(conf:org.apache.spark.SparkConf):List[Long]"></a>
+      <a id="nonZeroPortValuesFromConfig(SparkConf):List[Long]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">nonZeroPortValuesFromConfig</span><span class="params">(<span name="conf">conf: <a href="../../../SparkConf.html" class="extype" name="org.apache.spark.SparkConf">SparkConf</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.Long">Long</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@nonZeroPortValuesFromConfig(conf:org.apache.spark.SparkConf):List[Long]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The values of the non-zero ports to be used by the executor process.</p><div class="fullcomment"><div class="comment cmt"><p>The values of the non-zero ports to be used by the executor process.</p></div><dl class="paramcmts block"><dt class="param">conf</dt><dd class="cmt"><p>the spark config to use</p></dd><dt>returns</dt><dd class="cmt"><p>the ono-zero values of the ports</p></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#parseConstraintString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="parseConstraintString(constraintsVal:String):Map[String,Set[String]]"></a>
+      <a id="parseConstraintString(String):Map[String,Set[String]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parseConstraintString</span><span class="params">(<span name="constraintsVal">constraintsVal: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@parseConstraintString(constraintsVal:String):Map[String,Set[String]]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Parses the attributes constraints provided to spark and build a matching data struct:
+ Map[&lt;attribute-name&gt;, Set[values-to-match]]
+ The constraints are specified as ';' separated key-value pairs where keys and values
+ are separated by ':'.</p><div class="fullcomment"><div class="comment cmt"><p>Parses the attributes constraints provided to spark and build a matching data struct:
+ Map[&lt;attribute-name&gt;, Set[values-to-match]]
+ The constraints are specified as ';' separated key-value pairs where keys and values
+ are separated by ':'. The ':' implies equality (for singular values) and &quot;is one of&quot; for
+ multiple values (comma separated). For example:</p><pre>parseConstraintString(<span class="lit">"os:centos7;zone:us-east-1a,us-east-1b"</span>)
+<span class="cmt">// would result in</span>
+&lt;code&gt;
+<span class="std">Map</span>(
+  <span class="lit">"os"</span> -&gt; <span class="std">Set</span>(<span class="lit">"centos7"</span>),
+  <span class="lit">"zone"</span>:   -&gt; <span class="std">Set</span>(<span class="lit">"us-east-1a"</span>, <span class="lit">"us-east-1b"</span>)
+)</pre><p> Mesos documentation: http://mesos.apache.org/documentation/attributes-resources/
+                      https://github.com/apache/mesos/blob/master/src/common/values.cpp
+                      https://github.com/apache/mesos/blob/master/src/common/attributes.cpp
+</p></div><dl class="paramcmts block"><dt class="param">constraintsVal</dt><dd class="cmt"><p>constaints string consisting of ';' separated key-value pairs (separated
+                      by ':')</p></dd><dt>returns</dt><dd class="cmt"><p>Map of constraints to match resources offers.</p></dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#partitionPortResources" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="partitionPortResources(requestedPorts:List[Long],offeredResources:List[org.apache.mesos.Protos.Resource]):(List[org.apache.mesos.Protos.Resource],List[org.apache.mesos.Protos.Resource])"></a>
+      <a id="partitionPortResources(List[Long],List[Resource]):(List[Resource],List[Resource])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitionPortResources</span><span class="params">(<span name="requestedPorts">requestedPorts: <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="scala.Long">Long</span>]</span>, <span name="offeredResources">offeredResources: <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>]</span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>], <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>])</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@partitionPortResources(requestedPorts:List[Long],offeredResources:List[org.apache.mesos.Protos.Resource]):(List[org.apache.mesos.Protos.Resource],List[org.apache.mesos.Protos.Resource])" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Partitions port resources.</p><div class="fullcomment"><div class="comment cmt"><p>Partitions port resources.
+</p></div><dl class="paramcmts block"><dt class="param">requestedPorts</dt><dd class="cmt"><p>non-zero ports to assign</p></dd><dt class="param">offeredResources</dt><dd class="cmt"><p>the resources offered</p></dd><dt>returns</dt><dd class="cmt"><p>resources left, port resources to be used.</p></dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#partitionResources" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="partitionResources(resources:java.util.List[org.apache.mesos.Protos.Resource],resourceName:String,amountToUse:Double):(List[org.apache.mesos.Protos.Resource],List[org.apache.mesos.Protos.Resource])"></a>
+      <a id="partitionResources(List[Resource],String,Double):(List[Resource],List[Resource])"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">partitionResources</span><span class="params">(<span name="resources">resources: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>]</span>, <span name="resourceName">resourceName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="amountToUse">amountToUse: <span class="extype" name="scala.Double">Double</span></span>)</span><span class="result">: (<a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>], <a href="../../../../../../scala/package.html#List[+A]=List[A]" class="extmbr" name="scala.List">List</a>[<span class="extype" name="org.apache.mesos.Protos.Resource">Resource</span>])</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@partitionResources(resources:java.util.List[org.apache.mesos.Protos.Resource],resourceName:String,amountToUse:Double):(List[org.apache.mesos.Protos.Resource],List[org.apache.mesos.Protos.Resource])" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Partition the existing set of resources into two groups, those remaining to be
+scheduled and those requested to be used for a new task.</p><div class="fullcomment"><div class="comment cmt"><p>Partition the existing set of resources into two groups, those remaining to be
+scheduled and those requested to be used for a new task.
+</p></div><dl class="paramcmts block"><dt class="param">resources</dt><dd class="cmt"><p>The full list of available resources</p></dd><dt class="param">resourceName</dt><dd class="cmt"><p>The name of the resource to take from the available resources</p></dd><dt class="param">amountToUse</dt><dd class="cmt"><p>The amount of resources to take from the available resources</p></dd><dt>returns</dt><dd class="cmt"><p>The remaining resources list and the used resources list.</p></dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#setupUris" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="setupUris(uris:String,builder:org.apache.mesos.Protos.CommandInfo.Builder,useFetcherCache:Boolean):Unit"></a>
+      <a id="setupUris(String,Builder,Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">setupUris</span><span class="params">(<span name="uris">uris: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="builder">builder: <span class="extype" name="org.apache.mesos.Protos.CommandInfo.Builder">Builder</span></span>, <span name="useFetcherCache">useFetcherCache: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@setupUris(uris:String,builder:org.apache.mesos.Protos.CommandInfo.Builder,useFetcherCache:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#startScheduler" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="startScheduler(newDriver:org.apache.mesos.SchedulerDriver):Unit"></a>
+      <a id="startScheduler(SchedulerDriver):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startScheduler</span><span class="params">(<span name="newDriver">newDriver: <span class="extype" name="org.apache.mesos.SchedulerDriver">SchedulerDriver</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@startScheduler(newDriver:org.apache.mesos.SchedulerDriver):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Starts the MesosSchedulerDriver and stores the current running driver to this new instance.</p><div class="fullcomment"><div class="comment cmt"><p>Starts the MesosSchedulerDriver and stores the current running driver to this new instance.
+This driver is expected to not be running.
+This method returns only after the scheduler has registered with Mesos.
+</p></div></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#taskStateToMesos" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="taskStateToMesos(state:org.apache.spark.TaskState.TaskState):org.apache.mesos.Protos.TaskState"></a>
+      <a id="taskStateToMesos(TaskState.TaskState):mesos.Protos.TaskState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">taskStateToMesos</span><span class="params">(<span name="state">state: <span class="extype" name="org.apache.spark.TaskState.TaskState">TaskState.TaskState</span></span>)</span><span class="result">: <span class="extype" name="org.apache.mesos.Protos.TaskState">mesos.Protos.TaskState</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@taskStateToMesos(state:org.apache.spark.TaskState.TaskState):org.apache.mesos.Protos.TaskState" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#toAttributeMap" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toAttributeMap(offerAttributes:java.util.List[org.apache.mesos.Protos.Attribute]):Map[String,org.apache.mesos.protobuf.GeneratedMessage]"></a>
+      <a id="toAttributeMap(List[Attribute]):Map[String,GeneratedMessage]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toAttributeMap</span><span class="params">(<span name="offerAttributes">offerAttributes: <span class="extype" name="java.util.List">List</span>[<span class="extype" name="org.apache.mesos.Protos.Attribute">Attribute</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="org.apache.mesos.protobuf.GeneratedMessage">GeneratedMessage</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@toAttributeMap(offerAttributes:java.util.List[org.apache.mesos.Protos.Attribute]):Map[String,org.apache.mesos.protobuf.GeneratedMessage]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts the attributes from the resource offer into a Map of name -&gt; Attribute Value
+The attribute values are the mesos attribute types and they are
+</p><div class="fullcomment"><div class="comment cmt"><p>Converts the attributes from the resource offer into a Map of name -&gt; Attribute Value
+The attribute values are the mesos attribute types and they are
+</p></div><dl class="paramcmts block"><dt class="param">offerAttributes</dt><dd class="cmt"><p>the attributes offered</p></dd></dl><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils#unsetFrameworkID" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unsetFrameworkID(sc:org.apache.spark.SparkContext):Unit"></a>
+      <a id="unsetFrameworkID(SparkContext):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unsetFrameworkID</span><span class="params">(<span name="sc">sc: <a href="../../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@unsetFrameworkID(sc:org.apache.spark.SparkContext):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">spark.mesos.driver.frameworkId is set by the cluster dispatcher to correlate driver
+submissions with frameworkIDs.</p><div class="fullcomment"><div class="comment cmt"><p>spark.mesos.driver.frameworkId is set by the cluster dispatcher to correlate driver
+submissions with frameworkIDs.  However, this causes issues when a driver process launches
+more than one framework (more than one SparkContext(, because they all try to register with
+the same frameworkID.  To enforce that only the first driver registers with the configured
+framework ID, the driver calls this method after the first registration.
+</p></div></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.scheduler.cluster.mesos.MesosSchedulerUtils@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.spark.internal.Logging">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

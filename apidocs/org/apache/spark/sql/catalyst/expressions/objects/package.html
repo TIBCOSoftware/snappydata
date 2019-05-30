@@ -1,0 +1,475 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>objects - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.expressions.objects</title>
+          <meta name="description" content="objects - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.expressions.objects" />
+          <meta name="keywords" content="objects snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.expressions.objects" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.expressions.objects.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a></p>
+        <h1>objects</h1><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">objects</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.expressions.objects.AssertNotNull" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AssertNotNullextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="AssertNotNull:AssertNotNull"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="AssertNotNull.html"><span class="name">AssertNotNull</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="walkedTypePath">walkedTypePath: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>] = <span class="symbol">Nil</span></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@AssertNotNullextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Asserts that input values of a non-nullable child expression are not null.</p><div class="fullcomment"><div class="comment cmt"><p>Asserts that input values of a non-nullable child expression are not null.</p><p>Note that there are cases where <code>child.nullable == true</code>, while we still need to add this
+assertion.  Consider a nullable column <code>s</code> whose data type is a struct containing a non-nullable
+<code>Int</code> field named <code>i</code>.  Expression <code>s.i</code> is nullable because <code>s</code> can be null.  However, for all
+non-null <code>s</code>, <code>s.i</code> can't be null.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.CreateExternalRow" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CreateExternalRowextendsExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="CreateExternalRow:CreateExternalRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CreateExternalRow.html"><span class="name">CreateExternalRow</span></a><span class="params">(<span name="children">children: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="schema">schema: <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@CreateExternalRowextendsExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Constructs a new external row, using the result of evaluating the specified expressions
+as content.</p><div class="fullcomment"><div class="comment cmt"><p>Constructs a new external row, using the result of evaluating the specified expressions
+as content.
+</p></div><dl class="paramcmts block"><dt class="param">children</dt><dd class="cmt"><p>A list of expression to use as content of the external row.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.DecodeUsingSerializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DecodeUsingSerializer[T]extendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="DecodeUsingSerializer[T]:DecodeUsingSerializer[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="DecodeUsingSerializer.html"><span class="name">DecodeUsingSerializer</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="tag">tag: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.DecodeUsingSerializer.T">T</span>]</span>, <span name="kryo">kryo: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@DecodeUsingSerializer[T]extendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Serializes an input object using a generic serializer (Kryo or Java).</p><div class="fullcomment"><div class="comment cmt"><p>Serializes an input object using a generic serializer (Kryo or Java).  Note that the ClassTag
+is not an implicit parameter because TreeNode cannot copy implicit parameters.
+</p></div><dl class="paramcmts block"><dt class="param">kryo</dt><dd class="cmt"><p>if true, use Kryo. Otherwise, use Java.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.EncodeUsingSerializer" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EncodeUsingSerializerextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="EncodeUsingSerializer:EncodeUsingSerializer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="EncodeUsingSerializer.html"><span class="name">EncodeUsingSerializer</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="kryo">kryo: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@EncodeUsingSerializerextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Serializes an input object using a generic serializer (Kryo or Java).</p><div class="fullcomment"><div class="comment cmt"><p>Serializes an input object using a generic serializer (Kryo or Java).
+</p></div><dl class="paramcmts block"><dt class="param">kryo</dt><dd class="cmt"><p>if true, use Kryo. Otherwise, use Java.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.ExternalMapToCatalyst" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExternalMapToCatalystextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="ExternalMapToCatalyst:ExternalMapToCatalyst"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalMapToCatalyst.html"><span class="name">ExternalMapToCatalyst</span></a><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@ExternalMapToCatalystextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts a Scala/Java map object into catalyst format, by applying the key/value converter when
+iterate the map.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.GetExternalRowField" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetExternalRowFieldextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="GetExternalRowField:GetExternalRowField"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="GetExternalRowField.html"><span class="name">GetExternalRowField</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="index">index: <span class="extype" name="scala.Int">Int</span></span>, <span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@GetExternalRowFieldextendsUnaryExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the value of field at index <code>index</code> from the external row <code>child</code>.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the value of field at index <code>index</code> from the external row <code>child</code>.
+This class can be viewed as <a href="../GetStructField.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.GetStructField">GetStructField</a> for <a href="../../../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>s instead of <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>s.</p><p>Note that the input row and the field we try to get are both guaranteed to be not null, if they
+are null, a runtime exception will be thrown.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.InitializeJavaBean" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="InitializeJavaBeanextendsExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="InitializeJavaBean:InitializeJavaBean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InitializeJavaBean.html"><span class="name">InitializeJavaBean</span></a><span class="params">(<span name="beanInstance">beanInstance: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="setters">setters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@InitializeJavaBeanextendsExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Initialize a Java Bean instance by setting its field values via setters.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.Invoke" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InvokeextendsExpressionwithInvokeLikewithProductwithSerializable"></a>
+      <a id="Invoke:Invoke"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Invoke.html"><span class="name">Invoke</span></a><span class="params">(<span name="targetObject">targetObject: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="arguments">arguments: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>] = <span class="symbol">Nil</span></span>, <span name="propagateNull">propagateNull: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="InvokeLike.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.InvokeLike">InvokeLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@InvokeextendsExpressionwithInvokeLikewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Calls the specified function on an object, optionally passing arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Calls the specified function on an object, optionally passing arguments.  If the <code>targetObject</code>
+expression evaluates to null then null will be returned.</p><p>In some cases, due to erasure, the schema may expect a primitive type when in fact the method
+is returning java.lang.Object.  In this case, we will generate code that attempts to unbox the
+value automatically.
+</p></div><dl class="paramcmts block"><dt class="param">targetObject</dt><dd class="cmt"><p>An expression that will return the object to call the method on.</p></dd><dt class="param">functionName</dt><dd class="cmt"><p>The name of the method to call.</p></dd><dt class="param">dataType</dt><dd class="cmt"><p>The expected return type of the function.</p></dd><dt class="param">arguments</dt><dd class="cmt"><p>An optional list of expressions, whos evaluation will be passed to the function.</p></dd><dt class="param">propagateNull</dt><dd class="cmt"><p>When true, and any of the arguments is null, null will be returned instead
+                     of calling the function.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.InvokeLike" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InvokeLikeextendsExpressionwithNonSQLExpression"></a>
+      <a id="InvokeLike:InvokeLike"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="InvokeLike.html"><span class="name">InvokeLike</span></a><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@InvokeLikeextendsExpressionwithNonSQLExpression" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Common base class for <a href="StaticInvoke.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke">StaticInvoke</a>, <a href="Invoke.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.Invoke">Invoke</a>, and <a href="NewInstance.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.NewInstance">NewInstance</a>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.LambdaVariable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LambdaVariableextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="LambdaVariable:LambdaVariable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="LambdaVariable.html"><span class="name">LambdaVariable</span></a><span class="params">(<span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isNull">isNull: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <a href="../LeafExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.LeafExpression">LeafExpression</a> with <a href="../Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@LambdaVariableextendsLeafExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A place holder for the loop variable used in <a href="MapObjects.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.MapObjects">MapObjects</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A place holder for the loop variable used in <a href="MapObjects.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.MapObjects">MapObjects</a>.  This should never be constructed
+manually, but will instead be passed into the provided lambda function.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.MapObjects" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MapObjectsextendsExpressionwithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="MapObjects:MapObjects"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MapObjects.html"><span class="name">MapObjects</span></a><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@MapObjectsextendsExpressionwithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Applies the given expression to every element of a collection of items, returning the result
+as an ArrayType.</p><div class="fullcomment"><div class="comment cmt"><p>Applies the given expression to every element of a collection of items, returning the result
+as an ArrayType.  This is similar to a typical map operation, but where the lambda function
+is expressed using catalyst expressions.</p><p>The following collection ObjectTypes are currently supported:
+  Seq, Array, ArrayData, java.util.List
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.NewInstance" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="NewInstanceextendsExpressionwithInvokeLikewithProductwithSerializable"></a>
+      <a id="NewInstance:NewInstance"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="NewInstance.html"><span class="name">NewInstance</span></a><span class="params">(<span name="cls">cls: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="arguments">arguments: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="propagateNull">propagateNull: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="outerPointer">outerPointer: <span class="extype" name="scala.Option">Option</span>[() ⇒ <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>)</span><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="InvokeLike.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.InvokeLike">InvokeLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@NewInstanceextendsExpressionwithInvokeLikewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Constructs a new instance of the given class, using the result of evaluating the specified
+expressions as arguments.</p><div class="fullcomment"><div class="comment cmt"><p>Constructs a new instance of the given class, using the result of evaluating the specified
+expressions as arguments.
+</p></div><dl class="paramcmts block"><dt class="param">cls</dt><dd class="cmt"><p>The class to construct.</p></dd><dt class="param">arguments</dt><dd class="cmt"><p>A list of expression to use as arguments to the constructor.</p></dd><dt class="param">propagateNull</dt><dd class="cmt"><p>When true, if any of the arguments is null, then null will be returned
+                     instead of trying to construct the object.</p></dd><dt class="param">dataType</dt><dd class="cmt"><p>The type of object being constructed, as a Spark SQL datatype.  This allows you
+                to manually specify the type when the object in question is a valid internal
+                representation (i.e. ArrayData) instead of an object.</p></dd><dt class="param">outerPointer</dt><dd class="cmt"><p>If the object being constructed is an inner class, the outerPointer for the
+                    containing class must be specified. This parameter is defined as an optional
+                    function, which allows us to get the outer pointer lazily,and it's useful if
+                    the inner class is defined in REPL.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.StaticInvoke" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StaticInvokeextendsExpressionwithInvokeLikewithProductwithSerializable"></a>
+      <a id="StaticInvoke:StaticInvoke"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StaticInvoke.html"><span class="name">StaticInvoke</span></a><span class="params">(<span name="staticObject">staticObject: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>, <span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="functionName">functionName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="arguments">arguments: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>] = <span class="symbol">Nil</span></span>, <span name="propagateNull">propagateNull: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="InvokeLike.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.objects.InvokeLike">InvokeLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@StaticInvokeextendsExpressionwithInvokeLikewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Invokes a static function, returning the result.</p><div class="fullcomment"><div class="comment cmt"><p>Invokes a static function, returning the result.  By default, any of the arguments being null
+will result in returning null instead of calling the function.
+</p></div><dl class="paramcmts block"><dt class="param">staticObject</dt><dd class="cmt"><p>The target of the static call.  This can either be the object itself
+                    (methods defined on scala objects), or the class object
+                    (static methods defined in java).</p></dd><dt class="param">dataType</dt><dd class="cmt"><p>The expected return type of the function call</p></dd><dt class="param">functionName</dt><dd class="cmt"><p>The name of the method to call.</p></dd><dt class="param">arguments</dt><dd class="cmt"><p>An optional list of expressions to pass as arguments to the function.</p></dd><dt class="param">propagateNull</dt><dd class="cmt"><p>When true, and any of the arguments is null, null will be returned instead
+                     of calling the function.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.UnwrapOption" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UnwrapOptionextendsUnaryExpressionwithNonSQLExpressionwithExpectsInputTypeswithProductwithSerializable"></a>
+      <a id="UnwrapOption:UnwrapOption"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnwrapOption.html"><span class="name">UnwrapOption</span></a><span class="params">(<span name="dataType">dataType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <a href="../ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@UnwrapOptionextendsUnaryExpressionwithNonSQLExpressionwithExpectsInputTypeswithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Given an expression that returns on object of type <code>Option[_]</code>, this expression unwraps the
+option into the specified Spark SQL datatype.</p><div class="fullcomment"><div class="comment cmt"><p>Given an expression that returns on object of type <code>Option[_]</code>, this expression unwraps the
+option into the specified Spark SQL datatype.  In the case of <code>None</code>, the nullbit is set instead.
+</p></div><dl class="paramcmts block"><dt class="param">dataType</dt><dd class="cmt"><p>The expected unwrapped option type.</p></dd><dt class="param">child</dt><dd class="cmt"><p>An expression that returns an <code>Option</code></p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.ValidateExternalType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ValidateExternalTypeextendsUnaryExpressionwithNonSQLExpressionwithExpectsInputTypeswithProductwithSerializable"></a>
+      <a id="ValidateExternalType:ValidateExternalType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ValidateExternalType.html"><span class="name">ValidateExternalType</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="expected">expected: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <a href="../ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@ValidateExternalTypeextendsUnaryExpressionwithNonSQLExpressionwithExpectsInputTypeswithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Validates the actual data type of input expression at runtime.</p><div class="fullcomment"><div class="comment cmt"><p>Validates the actual data type of input expression at runtime.  If it doesn't match the
+expectation, throw an exception.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.WrapOption" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="WrapOptionextendsUnaryExpressionwithNonSQLExpressionwithExpectsInputTypeswithProductwithSerializable"></a>
+      <a id="WrapOption:WrapOption"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WrapOption.html"><span class="name">WrapOption</span></a><span class="params">(<span name="child">child: <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="optType">optType: <a href="../../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <a href="../UnaryExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnaryExpression">UnaryExpression</a> with <a href="../NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <a href="../ExpectsInputTypes.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.ExpectsInputTypes">ExpectsInputTypes</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@WrapOptionextendsUnaryExpressionwithNonSQLExpressionwithExpectsInputTypeswithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts the result of evaluating <code>child</code> into an option, checking both the isNull bit and
+(in the case of reference types) equality with null.</p><div class="fullcomment"><div class="comment cmt"><p>Converts the result of evaluating <code>child</code> into an option, checking both the isNull bit and
+(in the case of reference types) equality with null.
+</p></div><dl class="paramcmts block"><dt class="param">child</dt><dd class="cmt"><p>The expression to evaluate and wrap.</p></dd><dt class="param">optType</dt><dd class="cmt"><p>The type of this option.</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.expressions.objects.ExternalMapToCatalyst" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExternalMapToCatalyst"></a>
+      <a id="ExternalMapToCatalyst:ExternalMapToCatalyst"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExternalMapToCatalyst$.html"><span class="name">ExternalMapToCatalyst</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@ExternalMapToCatalyst" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.MapObjects" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MapObjects"></a>
+      <a id="MapObjects:MapObjects"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MapObjects$.html"><span class="name">MapObjects</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@MapObjects" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.objects.NewInstance" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NewInstance"></a>
+      <a id="NewInstance:NewInstance"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="NewInstance$.html"><span class="name">NewInstance</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.objects.package@NewInstance" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

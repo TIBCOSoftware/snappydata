@@ -1,0 +1,2256 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>Column - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.Column</title>
+          <meta name="description" content="Column - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.Column" />
+          <meta name="keywords" content="Column snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.Column" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'org.apache.spark.sql.Column';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Class" src="../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>Column</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql">package sql</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Column</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A column that will be computed based on the data in a <code>DataFrame</code>.</p><p>A new column is constructed based on the input columns present in a dataframe:</p><pre>df(<span class="lit">"columnName"</span>)            <span class="cmt">// On a specific DataFrame.</span>
+col(<span class="lit">"columnName"</span>)           <span class="cmt">// A generic column no yet associated with a DataFrame.</span>
+col(<span class="lit">"columnName.field"</span>)     <span class="cmt">// Extracting a struct field</span>
+col(<span class="lit">"`a.column.with.dots`"</span>) <span class="cmt">// Escape `.` in column names.</span>
+$<span class="lit">"columnName"</span>               <span class="cmt">// Scala short hand for a named column.</span>
+expr(<span class="lit">"a + 1"</span>)               <span class="cmt">// A column that is constructed from a parsed SQL Expression.</span>
+lit(<span class="lit">"abc"</span>)                  <span class="cmt">// A column that produces a literal (constant) value.</span></pre><p><a href="" class="extype" name="org.apache.spark.sql.Column">Column</a> objects can be composed to form complex expressions:</p><pre>$<span class="lit">"a"</span> + <span class="num">1</span>
+$<span class="lit">"a"</span> === $<span class="lit">"b"</span></pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.3.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The internal Catalyst expression can be accessed via &quot;expr&quot;, but this method is for
+debugging purposes only and can change in any future Spark releases.</p></span></dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span>, <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="ColumnName.html" class="extype" name="org.apache.spark.sql.ColumnName">ColumnName</a>, <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a></div>
+          </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.Column"><span>Column</span></li><li class="in" name="org.apache.spark.internal.Logging"><span>Logging</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.Column#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(name:String):org.apache.spark.sql.Column"></a>
+      <a id="&lt;init&gt;:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Column</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&lt;init&gt;(name:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.Column#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(expr:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.Column"></a>
+      <a id="&lt;init&gt;:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Column</span><span class="params">(<span name="expr">expr: <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&lt;init&gt;(expr:org.apache.spark.sql.catalyst.expressions.Expression):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@##():Int" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#%" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="%(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="%(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $percent" class="name">%</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@%(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Modulo (a.k.a.</p><div class="fullcomment"><div class="comment cmt"><p>Modulo (a.k.a. remainder) expression.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#&amp;&amp;" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="&amp;&amp;(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="&amp;&amp;(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $amp$amp" class="name">&amp;&amp;</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&amp;&amp;(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Boolean AND.</p><div class="fullcomment"><div class="comment cmt"><p>Boolean AND.</p><pre><span class="cmt">// Scala: The following selects people that are in school and employed at the same time.</span>
+people.select( people(<span class="lit">"inSchool"</span>) &amp;&amp; people(<span class="lit">"isEmployed"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"inSchool"</span>).and(people(<span class="lit">"isEmployed"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#*" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="*(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="*(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $times" class="name">*</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@*(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Multiplication of this expression and another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Multiplication of this expression and another expression.</p><pre><span class="cmt">// Scala: The following multiplies a person's height by their weight.</span>
+people.select( people(<span class="lit">"height"</span>) * people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).multiply(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#+" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="+(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="+(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $plus" class="name">+</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@+(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Sum of this expression and another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Sum of this expression and another expression.</p><pre><span class="cmt">// Scala: The following selects the sum of a person's height and weight.</span>
+people.select( people(<span class="lit">"height"</span>) + people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).plus(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#-" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="-(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="-(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $minus" class="name">-</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@-(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Subtraction.</p><div class="fullcomment"><div class="comment cmt"><p>Subtraction. Subtract the other expression from this expression.</p><pre><span class="cmt">// Scala: The following selects the difference between people's height and their weight.</span>
+people.select( people(<span class="lit">"height"</span>) - people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).minus(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#/" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="/(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="/(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $div" class="name">/</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@/(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Division this expression by another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Division this expression by another expression.</p><pre><span class="cmt">// Scala: The following divides a person's height by their weight.</span>
+people.select( people(<span class="lit">"height"</span>) / people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).divide(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#&lt;" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="&lt;(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="&lt;(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less" class="name">&lt;</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&lt;(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Less than.</p><div class="fullcomment"><div class="comment cmt"><p>Less than.</p><pre><span class="cmt">// Scala: The following selects people younger than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &lt; <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"age"</span>).lt(<span class="num">21</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#&lt;=" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="&lt;=(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="&lt;=(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$eq" class="name">&lt;=</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&lt;=(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Less than or equal to.</p><div class="fullcomment"><div class="comment cmt"><p>Less than or equal to.</p><pre><span class="cmt">// Scala: The following selects people age 21 or younger than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &lt;= <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"age"</span>).leq(<span class="num">21</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#&lt;=&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="&lt;=&gt;(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="&lt;=&gt;(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $less$eq$greater" class="name">&lt;=&gt;</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&lt;=&gt;(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Equality test that is safe for null values.</p><div class="fullcomment"><div class="comment cmt"><p>Equality test that is safe for null values.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#=!=" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="=!=(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="=!=(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$bang$eq" class="name">=!=</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@=!=(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Inequality test.</p><div class="fullcomment"><div class="comment cmt"><p>Inequality test.</p><pre><span class="cmt">// Scala:</span>
+df.select( df(<span class="lit">"colA"</span>) =!= df(<span class="lit">"colB"</span>) )
+df.select( !(df(<span class="lit">"colA"</span>) === df(<span class="lit">"colB"</span>)) )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.filter( col(<span class="lit">"colA"</span>).notEqual(col(<span class="lit">"colB"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#===" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="===(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="===(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq$eq" class="name">===</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@===(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Equality test.</p><div class="fullcomment"><div class="comment cmt"><p>Equality test.</p><pre><span class="cmt">// Scala:</span>
+df.filter( df(<span class="lit">"colA"</span>) === df(<span class="lit">"colB"</span>) )
+
+<span class="cmt">// Java</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"colB"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#&gt;" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="&gt;(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="&gt;(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater" class="name">&gt;</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&gt;(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Greater than.</p><div class="fullcomment"><div class="comment cmt"><p>Greater than.</p><pre><span class="cmt">// Scala: The following selects people older than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &gt; <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+people.select( people(<span class="lit">"age"</span>).gt(<span class="num">21</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#&gt;=" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="&gt;=(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="&gt;=(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $greater$eq" class="name">&gt;=</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@&gt;=(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Greater than or equal to an expression.</p><div class="fullcomment"><div class="comment cmt"><p>Greater than or equal to an expression.</p><pre><span class="cmt">// Scala: The following selects people age 21 or older than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &gt;= <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"age"</span>).geq(<span class="num">21</span>) )</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#alias" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="alias(alias:String):org.apache.spark.sql.Column"></a>
+      <a id="alias(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">alias</span><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@alias(alias:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Gives the column an alias.</p><div class="fullcomment"><div class="comment cmt"><p>Gives the column an alias. Same as <code>as</code>.</p><pre><span class="cmt">// Renames colA to colB in select output.</span>
+df.select($<span class="lit">"colA"</span>.alias(<span class="lit">"colB"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#and" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="and(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="and(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">and</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@and(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Boolean AND.</p><div class="fullcomment"><div class="comment cmt"><p>Boolean AND.</p><pre><span class="cmt">// Scala: The following selects people that are in school and employed at the same time.</span>
+people.select( people(<span class="lit">"inSchool"</span>) &amp;&amp; people(<span class="lit">"isEmployed"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"inSchool"</span>).and(people(<span class="lit">"isEmployed"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#apply" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="apply(extraction:Any):org.apache.spark.sql.Column"></a>
+      <a id="apply(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="extraction">extraction: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@apply(extraction:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extracts a value or values from a complex type.</p><div class="fullcomment"><div class="comment cmt"><p>Extracts a value or values from a complex type.
+The following types of extraction are supported:</p><ul><li>Given an Array, an integer ordinal can be used to retrieve a single value.</li><li>Given a Map, a key of the correct type can be used to retrieve an individual value.</li><li>Given a Struct, a string fieldName can be used to extract that field.</li><li>Given an Array of Structs, a string fieldName can be used to extract filed
+   of every struct in that array, and return an Array of fields
+</li></ul></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="as(alias:String,metadata:org.apache.spark.sql.types.Metadata):org.apache.spark.sql.Column"></a>
+      <a id="as(String,Metadata):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="metadata">metadata: <a href="types/Metadata.html" class="extype" name="org.apache.spark.sql.types.Metadata">Metadata</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@as(alias:String,metadata:org.apache.spark.sql.types.Metadata):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Gives the column an alias with metadata.</p><div class="fullcomment"><div class="comment cmt"><p>Gives the column an alias with metadata.</p><pre><span class="kw">val</span> metadata: Metadata = ...
+df.select($<span class="lit">"colA"</span>.as(<span class="lit">"colB"</span>, metadata))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="as(alias:Symbol):org.apache.spark.sql.Column"></a>
+      <a id="as(Symbol):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Symbol">Symbol</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@as(alias:Symbol):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Gives the column an alias.</p><div class="fullcomment"><div class="comment cmt"><p>Gives the column an alias.</p><pre><span class="cmt">// Renames colA to colB in select output.</span>
+df.select($<span class="lit">"colA"</span>.as(<span class="lit">'colB))</span></pre><p>If the current column has metadata associated with it, this metadata will be propagated
+to the new column.  If this not desired, use <code>as</code> with explicitly empty metadata.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="as(aliases:Array[String]):org.apache.spark.sql.Column"></a>
+      <a id="as(Array[String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="params">(<span name="aliases">aliases: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@as(aliases:Array[String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Assigns the given aliases to the results of a table generating function.</p><div class="fullcomment"><div class="comment cmt"><p>Assigns the given aliases to the results of a table generating function.</p><pre><span class="cmt">// Renames colA to colB in select output.</span>
+df.select(explode($<span class="lit">"myMap"</span>).as(<span class="lit">"key"</span> :: <span class="lit">"value"</span> :: Nil))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="as(aliases:Seq[String]):org.apache.spark.sql.Column"></a>
+      <a id="as(Seq[String]):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="params">(<span name="aliases">aliases: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@as(aliases:Seq[String]):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">(Scala-specific) Assigns the given aliases to the results of a table generating function.</p><div class="fullcomment"><div class="comment cmt"><p>(Scala-specific) Assigns the given aliases to the results of a table generating function.</p><pre><span class="cmt">// Renames colA to colB in select output.</span>
+df.select(explode($<span class="lit">"myMap"</span>).as(<span class="lit">"key"</span> :: <span class="lit">"value"</span> :: Nil))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="as(alias:String):org.apache.spark.sql.Column"></a>
+      <a id="as(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@as(alias:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Gives the column an alias.</p><div class="fullcomment"><div class="comment cmt"><p>Gives the column an alias.</p><pre><span class="cmt">// Renames colA to colB in select output.</span>
+df.select($<span class="lit">"colA"</span>.as(<span class="lit">"colB"</span>))</pre><p>If the current column has metadata associated with it, this metadata will be propagated
+to the new column.  If this not desired, use <code>as</code> with explicitly empty metadata.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#as" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="as[U](implicitevidence$1:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.TypedColumn[Any,U]"></a>
+      <a id="as[U](Encoder[U]):TypedColumn[Any,U]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">as</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.Column.as.U">U</span>]</span>)</span><span class="result">: <a href="TypedColumn.html" class="extype" name="org.apache.spark.sql.TypedColumn">TypedColumn</a>[<span class="extype" name="scala.Any">Any</span>, <span class="extype" name="org.apache.spark.sql.Column.as.U">U</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@as[U](implicitevidence$1:org.apache.spark.sql.Encoder[U]):org.apache.spark.sql.TypedColumn[Any,U]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Provides a type hint about the expected return value of this column.</p><div class="fullcomment"><div class="comment cmt"><p>Provides a type hint about the expected return value of this column.  This information can
+be used by operations such as <code>select</code> on a <a href="Dataset.html" class="extype" name="org.apache.spark.sql.Dataset">Dataset</a> to automatically convert the
+results into the correct JVM types.</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.6.0</p></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc:org.apache.spark.sql.Column"></a>
+      <a id="asc:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@asc:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ascending ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ascending ordering used in sorting.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order.</span>
+df.sort(df(<span class="lit">"age"</span>).asc)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc());</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc_nulls_first:org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_first:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_first</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@asc_nulls_first:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ascending ordering used in sorting, where null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ascending ordering used in sorting, where null values appear before non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order and null values appearing first.</span>
+df.sort(df(<span class="lit">"age"</span>).asc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc_nulls_last());</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#asc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="asc_nulls_last:org.apache.spark.sql.Column"></a>
+      <a id="asc_nulls_last:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asc_nulls_last</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@asc_nulls_last:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ordering used in sorting, where null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting, where null values appear after non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in ascending order and null values appearing last.</span>
+df.sort(df(<span class="lit">"age"</span>).asc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).asc_nulls_last());</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#between" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="between(lowerBound:Any,upperBound:Any):org.apache.spark.sql.Column"></a>
+      <a id="between(Any,Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">between</span><span class="params">(<span name="lowerBound">lowerBound: <span class="extype" name="scala.Any">Any</span></span>, <span name="upperBound">upperBound: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@between(lowerBound:Any,upperBound:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">True if the current column is between the lower bound and upper bound, inclusive.</p><div class="fullcomment"><div class="comment cmt"><p>True if the current column is between the lower bound and upper bound, inclusive.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#bitwiseAND" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="bitwiseAND(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="bitwiseAND(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bitwiseAND</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@bitwiseAND(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute bitwise AND of this expression with another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Compute bitwise AND of this expression with another expression.</p><pre>df.select($<span class="lit">"colA"</span>.bitwiseAND($<span class="lit">"colB"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#bitwiseOR" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="bitwiseOR(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="bitwiseOR(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bitwiseOR</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@bitwiseOR(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute bitwise OR of this expression with another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Compute bitwise OR of this expression with another expression.</p><pre>df.select($<span class="lit">"colA"</span>.bitwiseOR($<span class="lit">"colB"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#bitwiseXOR" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="bitwiseXOR(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="bitwiseXOR(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">bitwiseXOR</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@bitwiseXOR(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Compute bitwise XOR of this expression with another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Compute bitwise XOR of this expression with another expression.</p><pre>df.select($<span class="lit">"colA"</span>.bitwiseXOR($<span class="lit">"colB"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#cast" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="cast(to:String):org.apache.spark.sql.Column"></a>
+      <a id="cast(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cast</span><span class="params">(<span name="to">to: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@cast(to:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Casts the column to a different data type, using the canonical string representation
+of the type.</p><div class="fullcomment"><div class="comment cmt"><p>Casts the column to a different data type, using the canonical string representation
+of the type. The supported types are: <code>string</code>, <code>boolean</code>, <code>byte</code>, <code>short</code>, <code>int</code>, <code>long</code>,
+<code>float</code>, <code>double</code>, <code>decimal</code>, <code>date</code>, <code>timestamp</code>.</p><pre><span class="cmt">// Casts colA to integer.</span>
+df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#cast" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="cast(to:org.apache.spark.sql.types.DataType):org.apache.spark.sql.Column"></a>
+      <a id="cast(DataType):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cast</span><span class="params">(<span name="to">to: <a href="types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@cast(to:org.apache.spark.sql.types.DataType):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Casts the column to a different data type.</p><div class="fullcomment"><div class="comment cmt"><p>Casts the column to a different data type.</p><pre><span class="cmt">// Casts colA to IntegerType.</span>
+<span class="kw">import</span> org.apache.spark.sql.types.IntegerType
+df.select(df(<span class="lit">"colA"</span>).cast(IntegerType))
+
+<span class="cmt">// equivalent to</span>
+df.select(df(<span class="lit">"colA"</span>).cast(<span class="lit">"int"</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#contains" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="contains(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="contains(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">contains</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@contains(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Contains the other element.</p><div class="fullcomment"><div class="comment cmt"><p>Contains the other element.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc:org.apache.spark.sql.Column"></a>
+      <a id="desc:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@desc:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an ordering used in sorting.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an ordering used in sorting.</p><pre><span class="cmt">// Scala</span>
+df.sort(df(<span class="lit">"age"</span>).desc)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc());</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc_nulls_first" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc_nulls_first:org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_first:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_first</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@desc_nulls_first:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a descending ordering used in sorting, where null values appear before non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a descending ordering used in sorting, where null values appear before non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order and null values appearing first.</span>
+df.sort(df(<span class="lit">"age"</span>).desc_nulls_first)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc_nulls_first());</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#desc_nulls_last" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="desc_nulls_last:org.apache.spark.sql.Column"></a>
+      <a id="desc_nulls_last:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">desc_nulls_last</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@desc_nulls_last:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a descending ordering used in sorting, where null values appear after non-null values.</p><div class="fullcomment"><div class="comment cmt"><p>Returns a descending ordering used in sorting, where null values appear after non-null values.</p><pre><span class="cmt">// Scala: sort a DataFrame by age column in descending order and null values appearing last.</span>
+df.sort(df(<span class="lit">"age"</span>).desc_nulls_last)
+
+<span class="cmt">// Java</span>
+df.sort(df.col(<span class="lit">"age"</span>).desc_nulls_last());</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#divide" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="divide(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="divide(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">divide</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@divide(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Division this expression by another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Division this expression by another expression.</p><pre><span class="cmt">// Scala: The following divides a person's height by their weight.</span>
+people.select( people(<span class="lit">"height"</span>) / people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).divide(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#endsWith" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="endsWith(literal:String):org.apache.spark.sql.Column"></a>
+      <a id="endsWith(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endsWith</span><span class="params">(<span name="literal">literal: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@endsWith(literal:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">String ends with another string literal.</p><div class="fullcomment"><div class="comment cmt"><p>String ends with another string literal.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#endsWith" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="endsWith(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="endsWith(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">endsWith</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@endsWith(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">String ends with.</p><div class="fullcomment"><div class="comment cmt"><p>String ends with.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#eqNullSafe" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="eqNullSafe(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="eqNullSafe(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eqNullSafe</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@eqNullSafe(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Equality test that is safe for null values.</p><div class="fullcomment"><div class="comment cmt"><p>Equality test that is safe for null values.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#equalTo" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="equalTo(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="equalTo(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equalTo</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@equalTo(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Equality test.</p><div class="fullcomment"><div class="comment cmt"><p>Equality test.</p><pre><span class="cmt">// Scala:</span>
+df.filter( df(<span class="lit">"colA"</span>) === df(<span class="lit">"colB"</span>) )
+
+<span class="cmt">// Java</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.filter( col(<span class="lit">"colA"</span>).equalTo(col(<span class="lit">"colB"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(that:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="that">that: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@equals(that:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.Column">Column</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#explain" visbl="pub" data-isabs="false" fullComment="yes" group="df_ops">
+      <a id="explain(extended:Boolean):Unit"></a>
+      <a id="explain(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">explain</span><span class="params">(<span name="extended">extended: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@explain(extended:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Prints the expression to the console for debugging purpose.</p><div class="fullcomment"><div class="comment cmt"><p>Prints the expression to the console for debugging purpose.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#expr" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="expr:org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="expr:Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">expr</span><span class="result">: <a href="catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@expr:org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#geq" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="geq(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="geq(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">geq</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@geq(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Greater than or equal to an expression.</p><div class="fullcomment"><div class="comment cmt"><p>Greater than or equal to an expression.</p><pre><span class="cmt">// Scala: The following selects people age 21 or older than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &gt;= <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"age"</span>).geq(<span class="num">21</span>) )</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#getField" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="getField(fieldName:String):org.apache.spark.sql.Column"></a>
+      <a id="getField(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getField</span><span class="params">(<span name="fieldName">fieldName: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@getField(fieldName:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An expression that gets a field by name in a <code>StructType</code>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets a field by name in a <code>StructType</code>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#getItem" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="getItem(key:Any):org.apache.spark.sql.Column"></a>
+      <a id="getItem(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getItem</span><span class="params">(<span name="key">key: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@getItem(key:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An expression that gets an item at position <code>ordinal</code> out of an array,
+or gets a value by key <code>key</code> in a <code>MapType</code>.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that gets an item at position <code>ordinal</code> out of an array,
+or gets a value by key <code>key</code> in a <code>MapType</code>.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#gt" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="gt(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="gt(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">gt</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@gt(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Greater than.</p><div class="fullcomment"><div class="comment cmt"><p>Greater than.</p><pre><span class="cmt">// Scala: The following selects people older than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &gt; lit(<span class="num">21</span>) )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+people.select( people(<span class="lit">"age"</span>).gt(<span class="num">21</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.Column">Column</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#initializeLogIfNecessary" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="initializeLogIfNecessary(isInterpreter:Boolean):Unit"></a>
+      <a id="initializeLogIfNecessary(Boolean):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">initializeLogIfNecessary</span><span class="params">(<span name="isInterpreter">isInterpreter: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@initializeLogIfNecessary(isInterpreter:Boolean):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#isNaN" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="isNaN:org.apache.spark.sql.Column"></a>
+      <a id="isNaN:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNaN</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@isNaN:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">True if the current expression is NaN.</p><div class="fullcomment"><div class="comment cmt"><p>True if the current expression is NaN.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#isNotNull" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="isNotNull:org.apache.spark.sql.Column"></a>
+      <a id="isNotNull:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNotNull</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@isNotNull:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">True if the current expression is NOT null.</p><div class="fullcomment"><div class="comment cmt"><p>True if the current expression is NOT null.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#isNull" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="isNull:org.apache.spark.sql.Column"></a>
+      <a id="isNull:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNull</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@isNull:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">True if the current expression is null.</p><div class="fullcomment"><div class="comment cmt"><p>True if the current expression is null.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#isTraceEnabled" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isTraceEnabled():Boolean"></a>
+      <a id="isTraceEnabled():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isTraceEnabled</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@isTraceEnabled():Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#isin" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="isin(list:Any*):org.apache.spark.sql.Column"></a>
+      <a id="isin(Any*):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isin</span><span class="params">(<span name="list">list: <span class="extype" name="scala.Any">Any</span>*</span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@isin(list:Any*):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A boolean expression that is evaluated to true if the value of this expression is contained
+by the evaluated values of the arguments.</p><div class="fullcomment"><div class="comment cmt"><p>A boolean expression that is evaluated to true if the value of this expression is contained
+by the evaluated values of the arguments.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@varargs</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>1.5.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#leq" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="leq(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="leq(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">leq</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@leq(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Less than or equal to.</p><div class="fullcomment"><div class="comment cmt"><p>Less than or equal to.</p><pre><span class="cmt">// Scala: The following selects people age 21 or younger than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &lt;= <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"age"</span>).leq(<span class="num">21</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#like" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="like(literal:String):org.apache.spark.sql.Column"></a>
+      <a id="like(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">like</span><span class="params">(<span name="literal">literal: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@like(literal:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">SQL like expression.</p><div class="fullcomment"><div class="comment cmt"><p>SQL like expression.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#log" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="log:org.slf4j.Logger"></a>
+      <a id="log:Logger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">log</span><span class="result">: <span class="extype" name="org.slf4j.Logger">Logger</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@log:org.slf4j.Logger" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logDebug(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logDebug(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logDebug" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logDebug(msg:=&gt;String):Unit"></a>
+      <a id="logDebug(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logDebug</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logDebug(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logError(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logError(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logError" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logError(msg:=&gt;String):Unit"></a>
+      <a id="logError(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logError</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logError(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logInfo(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logInfo(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logInfo" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logInfo(msg:=&gt;String):Unit"></a>
+      <a id="logInfo(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logInfo</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logInfo(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logName" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logName:String"></a>
+      <a id="logName:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logName</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logName:String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logTrace(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logTrace(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logTrace" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logTrace(msg:=&gt;String):Unit"></a>
+      <a id="logTrace(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logTrace</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logTrace(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String,throwable:Throwable):Unit"></a>
+      <a id="logWarning(⇒String,Throwable):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>, <span name="throwable">throwable: <a href="../../../../scala/package.html#Throwable=Throwable" class="extmbr" name="scala.Throwable">Throwable</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logWarning(msg:=&gt;String,throwable:Throwable):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.internal.Logging#logWarning" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logWarning(msg:=&gt;String):Unit"></a>
+      <a id="logWarning(⇒String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logWarning</span><span class="params">(<span name="msg">msg: ⇒ <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@logWarning(msg:=&gt;String):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd>Logging</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#lt" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="lt(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="lt(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">lt</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@lt(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Less than.</p><div class="fullcomment"><div class="comment cmt"><p>Less than.</p><pre><span class="cmt">// Scala: The following selects people younger than 21.</span>
+people.select( people(<span class="lit">"age"</span>) &lt; <span class="num">21</span> )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"age"</span>).lt(<span class="num">21</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#minus" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="minus(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="minus(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">minus</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@minus(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Subtraction.</p><div class="fullcomment"><div class="comment cmt"><p>Subtraction. Subtract the other expression from this expression.</p><pre><span class="cmt">// Scala: The following selects the difference between people's height and their weight.</span>
+people.select( people(<span class="lit">"height"</span>) - people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).minus(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#mod" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="mod(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="mod(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mod</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@mod(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Modulo (a.k.a.</p><div class="fullcomment"><div class="comment cmt"><p>Modulo (a.k.a. remainder) expression.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#multiply" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="multiply(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="multiply(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">multiply</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@multiply(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Multiplication of this expression and another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Multiplication of this expression and another expression.</p><pre><span class="cmt">// Scala: The following multiplies a person's height by their weight.</span>
+people.select( people(<span class="lit">"height"</span>) * people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).multiply(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#name" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="name(alias:String):org.apache.spark.sql.Column"></a>
+      <a id="name(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">name</span><span class="params">(<span name="alias">alias: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@name(alias:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Gives the column a name (alias).</p><div class="fullcomment"><div class="comment cmt"><p>Gives the column a name (alias).</p><pre><span class="cmt">// Renames colA to colB in select output.</span>
+df.select($<span class="lit">"colA"</span>.name(<span class="lit">"colB"</span>))</pre><p>If the current column has metadata associated with it, this metadata will be propagated
+to the new column.  If this not desired, use <code>as</code> with explicitly empty metadata.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#notEqual" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="notEqual(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="notEqual(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notEqual</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@notEqual(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Inequality test.</p><div class="fullcomment"><div class="comment cmt"><p>Inequality test.</p><pre><span class="cmt">// Scala:</span>
+df.select( df(<span class="lit">"colA"</span>) !== df(<span class="lit">"colB"</span>) )
+df.select( !(df(<span class="lit">"colA"</span>) === df(<span class="lit">"colB"</span>)) )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.filter( col(<span class="lit">"colA"</span>).notEqual(col(<span class="lit">"colB"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#or" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="or(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="or(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">or</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@or(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Boolean OR.</p><div class="fullcomment"><div class="comment cmt"><p>Boolean OR.</p><pre><span class="cmt">// Scala: The following selects people that are in school or employed.</span>
+people.filter( people(<span class="lit">"inSchool"</span>) || people(<span class="lit">"isEmployed"</span>) )
+
+<span class="cmt">// Java:</span>
+people.filter( people(<span class="lit">"inSchool"</span>).or(people(<span class="lit">"isEmployed"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#otherwise" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="otherwise(value:Any):org.apache.spark.sql.Column"></a>
+      <a id="otherwise(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">otherwise</span><span class="params">(<span name="value">value: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@otherwise(value:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Evaluates a list of conditions and returns one of multiple possible result expressions.</p><div class="fullcomment"><div class="comment cmt"><p>Evaluates a list of conditions and returns one of multiple possible result expressions.
+If otherwise is not defined at the end, null is returned for unmatched conditions.</p><pre><span class="cmt">// Example: encoding gender string column into integer.</span>
+
+<span class="cmt">// Scala:</span>
+people.select(when(people(<span class="lit">"gender"</span>) === <span class="lit">"male"</span>, <span class="num">0</span>)
+  .when(people(<span class="lit">"gender"</span>) === <span class="lit">"female"</span>, <span class="num">1</span>)
+  .otherwise(<span class="num">2</span>))
+
+<span class="cmt">// Java:</span>
+people.select(when(col(<span class="lit">"gender"</span>).equalTo(<span class="lit">"male"</span>), <span class="num">0</span>)
+  .when(col(<span class="lit">"gender"</span>).equalTo(<span class="lit">"female"</span>), <span class="num">1</span>)
+  .otherwise(<span class="num">2</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#over" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="over():org.apache.spark.sql.Column"></a>
+      <a id="over():Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">over</span><span class="params">()</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@over():org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Define a empty analytic clause.</p><div class="fullcomment"><div class="comment cmt"><p>Define a empty analytic clause. In this case the analytic function is applied
+and presented for all rows in the result set.</p><pre>df.select(
+  sum(<span class="lit">"price"</span>).over(),
+  avg(<span class="lit">"price"</span>).over()
+)</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#over" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="over(window:org.apache.spark.sql.expressions.WindowSpec):org.apache.spark.sql.Column"></a>
+      <a id="over(WindowSpec):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">over</span><span class="params">(<span name="window">window: <a href="expressions/WindowSpec.html" class="extype" name="org.apache.spark.sql.expressions.WindowSpec">WindowSpec</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@over(window:org.apache.spark.sql.expressions.WindowSpec):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Define a windowing column.</p><div class="fullcomment"><div class="comment cmt"><p>Define a windowing column.</p><pre><span class="kw">val</span> w = Window.partitionBy(<span class="lit">"name"</span>).orderBy(<span class="lit">"id"</span>)
+df.select(
+  sum(<span class="lit">"price"</span>).over(w.rangeBetween(<span class="std">Long</span>.MinValue, <span class="num">2</span>)),
+  avg(<span class="lit">"price"</span>).over(w.rowsBetween(<span class="num">0</span>, <span class="num">4</span>))
+)</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#plus" visbl="pub" data-isabs="false" fullComment="yes" group="java_expr_ops">
+      <a id="plus(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="plus(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">plus</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@plus(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Sum of this expression and another expression.</p><div class="fullcomment"><div class="comment cmt"><p>Sum of this expression and another expression.</p><pre><span class="cmt">// Scala: The following selects the sum of a person's height and weight.</span>
+people.select( people(<span class="lit">"height"</span>) + people(<span class="lit">"weight"</span>) )
+
+<span class="cmt">// Java:</span>
+people.select( people(<span class="lit">"height"</span>).plus(people(<span class="lit">"weight"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#rlike" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="rlike(literal:String):org.apache.spark.sql.Column"></a>
+      <a id="rlike(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">rlike</span><span class="params">(<span name="literal">literal: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@rlike(literal:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">SQL RLIKE expression (LIKE with Regex).</p><div class="fullcomment"><div class="comment cmt"><p>SQL RLIKE expression (LIKE with Regex).
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#startsWith" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="startsWith(literal:String):org.apache.spark.sql.Column"></a>
+      <a id="startsWith(String):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startsWith</span><span class="params">(<span name="literal">literal: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@startsWith(literal:String):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">String starts with another string literal.</p><div class="fullcomment"><div class="comment cmt"><p>String starts with another string literal.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#startsWith" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="startsWith(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="startsWith(Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">startsWith</span><span class="params">(<span name="other">other: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@startsWith(other:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">String starts with.</p><div class="fullcomment"><div class="comment cmt"><p>String starts with.
+</p></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#substr" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="substr(startPos:Int,len:Int):org.apache.spark.sql.Column"></a>
+      <a id="substr(Int,Int):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">substr</span><span class="params">(<span name="startPos">startPos: <span class="extype" name="scala.Int">Int</span></span>, <span name="len">len: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@substr(startPos:Int,len:Int):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An expression that returns a substring.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that returns a substring.</p></div><dl class="paramcmts block"><dt class="param">startPos</dt><dd class="cmt"><p>starting position.</p></dd><dt class="param">len</dt><dd class="cmt"><p>length of the substring.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#substr" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="substr(startPos:org.apache.spark.sql.Column,len:org.apache.spark.sql.Column):org.apache.spark.sql.Column"></a>
+      <a id="substr(Column,Column):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">substr</span><span class="params">(<span name="startPos">startPos: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="len">len: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@substr(startPos:org.apache.spark.sql.Column,len:org.apache.spark.sql.Column):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An expression that returns a substring.</p><div class="fullcomment"><div class="comment cmt"><p>An expression that returns a substring.</p></div><dl class="paramcmts block"><dt class="param">startPos</dt><dd class="cmt"><p>expression for the starting position.</p></dd><dt class="param">len</dt><dd class="cmt"><p>expression for the length of the substring.</p></dd></dl><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@toString():String" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.Column">Column</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#unary_!" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="unary_!:org.apache.spark.sql.Column"></a>
+      <a id="unary_!:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: unary_$bang" class="name">unary_!</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@unary_!:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Inversion of boolean expression, i.e.</p><div class="fullcomment"><div class="comment cmt"><p>Inversion of boolean expression, i.e. NOT.</p><pre><span class="cmt">// Scala: select rows that are not active (isActive === false)</span>
+df.filter( !df(<span class="lit">"isActive"</span>) )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.filter( not(df.col(<span class="lit">"isActive"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#unary_-" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="unary_-:org.apache.spark.sql.Column"></a>
+      <a id="unary_-:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: unary_$minus" class="name">unary_-</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@unary_-:org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Unary minus, i.e.</p><div class="fullcomment"><div class="comment cmt"><p>Unary minus, i.e. negate the expression.</p><pre><span class="cmt">// Scala: select the amount column and negates all values.</span>
+df.select( -df(<span class="lit">"amount"</span>) )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.select( negate(col(<span class="lit">"amount"</span>) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#when" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="when(condition:org.apache.spark.sql.Column,value:Any):org.apache.spark.sql.Column"></a>
+      <a id="when(Column,Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">when</span><span class="params">(<span name="condition">condition: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>, <span name="value">value: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@when(condition:org.apache.spark.sql.Column,value:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Evaluates a list of conditions and returns one of multiple possible result expressions.</p><div class="fullcomment"><div class="comment cmt"><p>Evaluates a list of conditions and returns one of multiple possible result expressions.
+If otherwise is not defined at the end, null is returned for unmatched conditions.</p><pre><span class="cmt">// Example: encoding gender string column into integer.</span>
+
+<span class="cmt">// Scala:</span>
+people.select(when(people(<span class="lit">"gender"</span>) === <span class="lit">"male"</span>, <span class="num">0</span>)
+  .when(people(<span class="lit">"gender"</span>) === <span class="lit">"female"</span>, <span class="num">1</span>)
+  .otherwise(<span class="num">2</span>))
+
+<span class="cmt">// Java:</span>
+people.select(when(col(<span class="lit">"gender"</span>).equalTo(<span class="lit">"male"</span>), <span class="num">0</span>)
+  .when(col(<span class="lit">"gender"</span>).equalTo(<span class="lit">"female"</span>), <span class="num">1</span>)
+  .otherwise(<span class="num">2</span>))</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.4.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.Column#||" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="||(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="||(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bar$bar" class="name">||</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@||(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Boolean OR.</p><div class="fullcomment"><div class="comment cmt"><p>Boolean OR.</p><pre><span class="cmt">// Scala: The following selects people that are in school or employed.</span>
+people.filter( people(<span class="lit">"inSchool"</span>) || people(<span class="lit">"isEmployed"</span>) )
+
+<span class="cmt">// Java:</span>
+people.filter( people(<span class="lit">"inSchool"</span>).or(people(<span class="lit">"isEmployed"</span>)) );</pre></div><dl class="attributes block"> <dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Deprecated Value Members</h3>
+              <ol><li name="org.apache.spark.sql.Column#!==" visbl="pub" data-isabs="false" fullComment="yes" group="expr_ops">
+      <a id="!==(other:Any):org.apache.spark.sql.Column"></a>
+      <a id="!==(Any):Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq$eq. Deprecated: (Since version 2.0.0) !== does not have the same precedence as ===, use =!= instead" class="name deprecated">!==</span><span class="params">(<span name="other">other: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <a href="" class="extype" name="org.apache.spark.sql.Column">Column</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.sql.Column@!==(other:Any):org.apache.spark.sql.Column" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Inequality test.</p><div class="fullcomment"><div class="comment cmt"><p>Inequality test.</p><pre><span class="cmt">// Scala:</span>
+df.select( df(<span class="lit">"colA"</span>) !== df(<span class="lit">"colB"</span>) )
+df.select( !(df(<span class="lit">"colA"</span>) === df(<span class="lit">"colB"</span>)) )
+
+<span class="cmt">// Java:</span>
+<span class="kw">import</span> static org.apache.spark.sql.functions.*;
+df.filter( col(<span class="lit">"colA"</span>).notEqual(col(<span class="lit">"colB"</span>)) );</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> !== does not have the same precedence as ===, use =!= instead</p></dd><dt>Since</dt><dd><p>1.3.0</p></dd></dl></div>
+    </li></ol>
+            </div>
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.spark.internal.Logging">
+              <h3>Inherited from <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="df_ops">
+              <h3>DataFrame functions</h3>
+              
+            </div><div class="group" name="expr_ops">
+              <h3>Expression operators</h3>
+              
+            </div><div class="group" name="java_expr_ops">
+              <h3>Java-specific expression operators</h3>
+              
+            </div><div class="group" name="Ungrouped">
+              <h3>Support functions for DataFrames</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

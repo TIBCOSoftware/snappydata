@@ -1,0 +1,1283 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>streaming - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.streaming</title>
+          <meta name="description" content="streaming - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.streaming" />
+          <meta name="keywords" content="streaming snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.streaming" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.streaming.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>streaming</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">streaming</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.streaming.DataStreamReader" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DataStreamReaderextendsLogging"></a>
+      <a id="DataStreamReader:DataStreamReader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DataStreamReader.html"><span class="name">DataStreamReader</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DataStreamReaderextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Interface used to load a streaming <code>Dataset</code> from external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Interface used to load a streaming <code>Dataset</code> from external storage systems (e.g. file systems,
+key-value stores, etc). Use <code>SparkSession.readStream</code> to access this.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.DataStreamWriter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DataStreamWriter[T]extendsAnyRef"></a>
+      <a id="DataStreamWriter[T]:DataStreamWriter[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DataStreamWriter.html"><span class="name">DataStreamWriter</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DataStreamWriter[T]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Interface used to write a streaming <code>Dataset</code> to external storage systems (e.g.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Interface used to write a streaming <code>Dataset</code> to external storage systems (e.g. file systems,
+key-value stores, etc). Use <code>Dataset.writeStream</code> to access this.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DefaultSnappySinkCallbackextendsSnappySinkCallback"></a>
+      <a id="DefaultSnappySinkCallback:DefaultSnappySinkCallback"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DefaultSnappySinkCallback.html"><span class="name">DefaultSnappySinkCallback</span></a><span class="result"> extends <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DefaultSnappySinkCallbackextendsSnappySinkCallback" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.DirectKafkaStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DirectKafkaStreamRelationextendsStreamBaseRelationwithLoggingwithSerializable"></a>
+      <a id="DirectKafkaStreamRelation:DirectKafkaStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DirectKafkaStreamRelation.html"><span class="name">DirectKafkaStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamRelationextendsStreamBaseRelationwithLoggingwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.DirectKafkaStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DirectKafkaStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="DirectKafkaStreamSource:DirectKafkaStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="DirectKafkaStreamSource.html"><span class="name">DirectKafkaStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.FileStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamRelationextendsStreamBaseRelation"></a>
+      <a id="FileStreamRelation:FileStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamRelation.html"><span class="name">FileStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@FileStreamRelationextendsStreamBaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.FileStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="FileStreamSource:FileStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSource.html"><span class="name">FileStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@FileStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.HashTagToRowsConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HashTagToRowsConverterextendsStreamToRowsConverterwithSerializable"></a>
+      <a id="HashTagToRowsConverter:HashTagToRowsConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HashTagToRowsConverter.html"><span class="name">HashTagToRowsConverter</span></a><span class="result"> extends <a href="StreamToRowsConverter.html" class="extype" name="org.apache.spark.sql.streaming.StreamToRowsConverter">StreamToRowsConverter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@HashTagToRowsConverterextendsStreamToRowsConverterwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.LogicalDStreamPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LogicalDStreamPlanextendsLogicalPlanwithMultiInstanceRelationwithProductwithSerializable"></a>
+      <a id="LogicalDStreamPlan:LogicalDStreamPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="LogicalDStreamPlan.html"><span class="name">LogicalDStreamPlan</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="stream">stream: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>)</span><span class="params">(<span name="streamingSnappy">streamingSnappy: <a href="../../streaming/SnappyStreamingContext.html" class="extype" name="org.apache.spark.streaming.SnappyStreamingContext">SnappyStreamingContext</a></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a> with <a href="../catalyst/analysis/MultiInstanceRelation.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.MultiInstanceRelation">MultiInstanceRelation</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@LogicalDStreamPlanextendsLogicalPlanwithMultiInstanceRelationwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.MyStreamConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MyStreamConverterextendsStreamConverterwithSerializable"></a>
+      <a id="MyStreamConverter:MyStreamConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MyStreamConverter.html"><span class="name">MyStreamConverter</span></a><span class="result"> extends <a href="StreamConverter.html" class="extype" name="org.apache.spark.sql.streaming.StreamConverter">StreamConverter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@MyStreamConverterextendsStreamConverterwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.OutputMode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OutputModeextendsObject"></a>
+      <a id="OutputMode:OutputMode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OutputMode.html"><span class="name">OutputMode</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@OutputModeextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.PhysicalDStreamPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PhysicalDStreamPlanextendsSparkPlanwithStreamPlanwithProductwithSerializable"></a>
+      <a id="PhysicalDStreamPlan:PhysicalDStreamPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PhysicalDStreamPlan.html"><span class="name">PhysicalDStreamPlan</span></a><span class="params">(<span name="output">output: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="rowStream">rowStream: <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<a href="../catalyst/InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>)</span><span class="result"> extends <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@PhysicalDStreamPlanextendsSparkPlanwithStreamPlanwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A PhysicalPlan wrapper of SchemaDStream, inject the validTime and
+generate an effective RDD of current batchDuration.</p>
+    </li><li name="org.apache.spark.sql.streaming.ProcessingTime" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ProcessingTimeextendsTriggerwithProductwithSerializable"></a>
+      <a id="ProcessingTime:ProcessingTime"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProcessingTime.html"><span class="name">ProcessingTime</span></a><span class="params">(<span name="intervalMs">intervalMs: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="Trigger.html" class="extype" name="org.apache.spark.sql.streaming.Trigger">Trigger</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@ProcessingTimeextendsTriggerwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+A trigger that runs a query periodically based on the processing time.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+A trigger that runs a query periodically based on the processing time. If <code>interval</code> is 0,
+the query will run as fast as possible.</p><p>Scala Example:</p><pre>df.write.trigger(ProcessingTime(<span class="lit">"10 seconds"</span>))
+
+<span class="kw">import</span> scala.concurrent.duration._
+df.write.trigger(ProcessingTime(<span class="num">10.</span>seconds))</pre><p>Java Example:</p><pre>df.write.trigger(ProcessingTime.create(<span class="lit">"10 seconds"</span>))
+
+<span class="kw">import</span> java.util.concurrent.TimeUnit
+df.write.trigger(ProcessingTime.create(<span class="num">10</span>, TimeUnit.SECONDS))</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQDecoder" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQDecoder[T]extendsAnyRef"></a>
+      <a id="RabbitMQDecoder[T]:RabbitMQDecoder[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQDecoder.html"><span class="name">RabbitMQDecoder</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQDecoder[T]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQInputDStream" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQInputDStream[T,D]extendsReceiverInputDStream[T]"></a>
+      <a id="RabbitMQInputDStream[T,D]:RabbitMQInputDStream[T,D]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQInputDStream.html"><span class="name">RabbitMQInputDStream</span></a><span class="tparams">[<span name="T">T</span>, <span name="D">D</span>]</span><span class="result"> extends <a href="../../streaming/dstream/ReceiverInputDStream.html" class="extype" name="org.apache.spark.streaming.dstream.ReceiverInputDStream">ReceiverInputDStream</a>[<span class="extype" name="org.apache.spark.sql.streaming.RabbitMQInputDStream.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQInputDStream[T,D]extendsReceiverInputDStream[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQReceiver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQReceiver[T,D]extendsReceiver[T]withLogging"></a>
+      <a id="RabbitMQReceiver[T,D]:RabbitMQReceiver[T,D]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQReceiver.html"><span class="name">RabbitMQReceiver</span></a><span class="tparams">[<span name="T">T</span>, <span name="D">D</span>]</span><span class="result"> extends <a href="../../streaming/receiver/Receiver.html" class="extype" name="org.apache.spark.streaming.receiver.Receiver">Receiver</a>[<span class="extype" name="org.apache.spark.sql.streaming.RabbitMQReceiver.T">T</span>] with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQReceiver[T,D]extendsReceiver[T]withLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQStreamRelationextendsStreamBaseRelation"></a>
+      <a id="RabbitMQStreamRelation:RabbitMQStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQStreamRelation.html"><span class="name">RabbitMQStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQStreamRelationextendsStreamBaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="RabbitMQStreamSource:RabbitMQStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQStreamSource.html"><span class="name">RabbitMQStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQStringDecoder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQStringDecoderextendsRabbitMQDecoder[String]"></a>
+      <a id="RabbitMQStringDecoder:RabbitMQStringDecoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQStringDecoder.html"><span class="name">RabbitMQStringDecoder</span></a><span class="result"> extends <a href="RabbitMQDecoder.html" class="extype" name="org.apache.spark.sql.streaming.RabbitMQDecoder">RabbitMQDecoder</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQStringDecoderextendsRabbitMQDecoder[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RawSocketStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RawSocketStreamRelationextendsStreamBaseRelation"></a>
+      <a id="RawSocketStreamRelation:RawSocketStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RawSocketStreamRelation.html"><span class="name">RawSocketStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RawSocketStreamRelationextendsStreamBaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.RawSocketStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RawSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="RawSocketStreamSource:RawSocketStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RawSocketStreamSource.html"><span class="name">RawSocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RawSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SchemaDStream" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SchemaDStreamextendsDStream[org.apache.spark.sql.Row]"></a>
+      <a id="SchemaDStream:SchemaDStream"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SchemaDStream.html"><span class="name">SchemaDStream</span></a><span class="result"> extends <a href="../../streaming/dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">DStream</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SchemaDStreamextendsDStream[org.apache.spark.sql.Row]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A SQL based DStream with support for schema/Product
+This class offers the ability to manipulate SQL query on DStreams
+It is similar to SchemaRDD, which offers the similar functions
+Internally, RDD of each batch duration is treated as a small
+table and CQs are evaluated on those small tables
+Some of the abstraction and code is borrowed from the project:
+https://github.com/Intel-bigdata/spark-streamingsql
+</p>
+    </li><li name="org.apache.spark.sql.streaming.SinkProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SinkProgressextendsSerializable"></a>
+      <a id="SinkProgress:SinkProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SinkProgress.html"><span class="name">SinkProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SinkProgressextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Information about progress made for a sink in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about progress made for a sink in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> for more information.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.SnappySinkCallback" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="SnappySinkCallbackextendsAnyRef"></a>
+      <a id="SnappySinkCallback:SnappySinkCallback"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappySinkCallback.html"><span class="name">SnappySinkCallback</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappySinkCallbackextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Should be implemented by clients who wants to override default behavior provided by
+<a href="DefaultSnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback">DefaultSnappySinkCallback</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Should be implemented by clients who wants to override default behavior provided by
+<a href="DefaultSnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback">DefaultSnappySinkCallback</a>.</p><p>In order to override the default callback behavior the qualified name of the implementing
+class needs to be passed against <code>sinkCallback</code> option while defining stream query.</p></div></div>
+    </li><li name="org.apache.spark.sql.streaming.SnappyStoreSink" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyStoreSinkextendsSinkwithProductwithSerializable"></a>
+      <a id="SnappyStoreSink:SnappyStoreSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStoreSink.html"><span class="name">SnappyStoreSink</span></a><span class="params">(<span name="snappySession">snappySession: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="parameters">parameters: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sinkCallback">sinkCallback: <a href="SnappySinkCallback.html" class="extype" name="org.apache.spark.sql.streaming.SnappySinkCallback">SnappySinkCallback</a></span>)</span><span class="result"> extends <a href="../execution/streaming/Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStoreSinkextendsSinkwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SnappyStoreSinkProvider" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyStoreSinkProviderextendsStreamSinkProviderwithDataSourceRegister"></a>
+      <a id="SnappyStoreSinkProvider:SnappyStoreSinkProvider"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStoreSinkProvider.html"><span class="name">SnappyStoreSinkProvider</span></a><span class="result"> extends <a href="../sources/StreamSinkProvider.html" class="extype" name="org.apache.spark.sql.sources.StreamSinkProvider">StreamSinkProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStoreSinkProviderextendsStreamSinkProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SnappyStreamingContextFactory" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyStreamingContextFactoryextendsSparkContextFactory"></a>
+      <a id="SnappyStreamingContextFactory:SnappyStreamingContextFactory"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStreamingContextFactory.html"><span class="name">SnappyStreamingContextFactory</span></a><span class="result"> extends <span class="extype" name="spark.jobserver.context.SparkContextFactory">SparkContextFactory</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStreamingContextFactoryextendsSparkContextFactory" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SnappyStreamingJob" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SnappyStreamingJobextendsSparkJobBase"></a>
+      <a id="SnappyStreamingJob:SnappyStreamingJob"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStreamingJob.html"><span class="name">SnappyStreamingJob</span></a><span class="result"> extends <span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SnappyStreamingJobextendsSparkJobBase" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SocketStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SocketStreamRelationextendsStreamBaseRelation"></a>
+      <a id="SocketStreamRelation:SocketStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SocketStreamRelation.html"><span class="name">SocketStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SocketStreamRelationextendsStreamBaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SocketStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="SocketStreamSource:SocketStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SocketStreamSource.html"><span class="name">SocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.SourceProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SourceProgressextendsSerializable"></a>
+      <a id="SourceProgress:SourceProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SourceProgress.html"><span class="name">SourceProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@SourceProgressextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Information about progress made for a source in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about progress made for a source in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>
+during a trigger. See <a href="StreamingQueryProgress.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryProgress">StreamingQueryProgress</a> for more information.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StateOperatorProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StateOperatorProgressextendsSerializable"></a>
+      <a id="StateOperatorProgress:StateOperatorProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StateOperatorProgress.html"><span class="name">StateOperatorProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StateOperatorProgressextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Information about updates made to stateful operators in a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about updates made to stateful operators in a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during a trigger.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamBaseRelation" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="StreamBaseRelationextendsBaseRelationwithDestroyRelationwithStreamPlanwithTableScanwithSerializablewithLogging"></a>
+      <a id="StreamBaseRelation:StreamBaseRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamBaseRelation.html"><span class="name">StreamBaseRelation</span></a><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <a href="../sources/TableScan.html" class="extype" name="org.apache.spark.sql.sources.TableScan">TableScan</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamBaseRelationextendsBaseRelationwithDestroyRelationwithStreamPlanwithTableScanwithSerializablewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamConverter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="StreamConverterextendsSerializable"></a>
+      <a id="StreamConverter:StreamConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamConverter.html"><span class="name">StreamConverter</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamConverterextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamPlan" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="StreamPlanextendsAnyRef"></a>
+      <a id="StreamPlan:StreamPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamPlan.html"><span class="name">StreamPlan</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamPlanextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamPlanProvider" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="StreamPlanProviderextendsSchemaRelationProvider"></a>
+      <a id="StreamPlanProvider:StreamPlanProvider"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamPlanProvider.html"><span class="name">StreamPlanProvider</span></a><span class="result"> extends <a href="../sources/SchemaRelationProvider.html" class="extype" name="org.apache.spark.sql.sources.SchemaRelationProvider">SchemaRelationProvider</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamPlanProviderextendsSchemaRelationProvider" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamToRowsConverter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="StreamToRowsConverterextendsSerializable"></a>
+      <a id="StreamToRowsConverter:StreamToRowsConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamToRowsConverter.html"><span class="name">StreamToRowsConverter</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamToRowsConverterextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamingQuery" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryextendsAnyRef"></a>
+      <a id="StreamingQuery:StreamingQuery"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQuery.html"><span class="name">StreamingQuery</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+A handle to a query that is executing continuously in the background as new data arrives.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+A handle to a query that is executing continuously in the background as new data arrives.
+All these methods are thread-safe.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryException" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryExceptionextendsException"></a>
+      <a id="StreamingQueryException:StreamingQueryException"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryException.html"><span class="name">StreamingQueryException</span></a><span class="result"> extends <a href="../../../../../scala/package.html#Exception=Exception" class="extmbr" name="scala.Exception">Exception</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryExceptionextendsException" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Exception that stopped a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Exception that stopped a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>. Use <code>cause</code> get the actual exception
+that caused the failure.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryListenerextendsAnyRef"></a>
+      <a id="StreamingQueryListener:StreamingQueryListener"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryListener.html"><span class="name">StreamingQueryListener</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryListenerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Interface for listening to events related to <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQueries</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Interface for listening to events related to <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQueries</a>.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd><dt>Note</dt><dd><span class="cmt"><p>The methods are not thread-safe as they may be called from different threads.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryManager" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryManagerextendsAnyRef"></a>
+      <a id="StreamingQueryManager:StreamingQueryManager"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryManager.html"><span class="name">StreamingQueryManager</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryManagerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <code>SparkSession</code>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+A class to manage all the <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> active on a <code>SparkSession</code>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryProgress" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryProgressextendsSerializable"></a>
+      <a id="StreamingQueryProgress:StreamingQueryProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryProgress.html"><span class="name">StreamingQueryProgress</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryProgressextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Information about progress made in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during
+a trigger.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Information about progress made in the execution of a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> during
+a trigger. Each event relates to processing done for a single trigger of the streaming
+query. Events are emitted even when no new data is available to be processed.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryStatusextendsSerializable"></a>
+      <a id="StreamingQueryStatus:StreamingQueryStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryStatus.html"><span class="name">StreamingQueryStatus</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryStatusextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Reports information about the instantaneous status of a streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Reports information about the instantaneous status of a streaming query.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.1.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.TextSocketStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TextSocketStreamRelationextendsStreamBaseRelation"></a>
+      <a id="TextSocketStreamRelation:TextSocketStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TextSocketStreamRelation.html"><span class="name">TextSocketStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TextSocketStreamRelationextendsStreamBaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.TextSocketStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TextSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="TextSocketStreamSource:TextSocketStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TextSocketStreamSource.html"><span class="name">TextSocketStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TextSocketStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.Trigger" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="TriggerextendsAnyRef"></a>
+      <a id="Trigger:Trigger"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed </span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Trigger.html"><span class="name">Trigger</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TriggerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Used to indicate how often results should be produced by a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Used to indicate how often results should be produced by a <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.TweetToHashtagRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TweetToHashtagRowextendsStreamToRowsConverterwithSerializable"></a>
+      <a id="TweetToHashtagRow:TweetToHashtagRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TweetToHashtagRow.html"><span class="name">TweetToHashtagRow</span></a><span class="result"> extends <a href="StreamToRowsConverter.html" class="extype" name="org.apache.spark.sql.streaming.StreamToRowsConverter">StreamToRowsConverter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TweetToHashtagRowextendsStreamToRowsConverterwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.TweetToRetweetRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TweetToRetweetRowextendsStreamToRowsConverterwithSerializable"></a>
+      <a id="TweetToRetweetRow:TweetToRetweetRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TweetToRetweetRow.html"><span class="name">TweetToRetweetRow</span></a><span class="result"> extends <a href="StreamToRowsConverter.html" class="extype" name="org.apache.spark.sql.streaming.StreamToRowsConverter">StreamToRowsConverter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TweetToRetweetRowextendsStreamToRowsConverterwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.TweetToRowsConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TweetToRowsConverterextendsStreamToRowsConverterwithSerializable"></a>
+      <a id="TweetToRowsConverter:TweetToRowsConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TweetToRowsConverter.html"><span class="name">TweetToRowsConverter</span></a><span class="result"> extends <a href="StreamToRowsConverter.html" class="extype" name="org.apache.spark.sql.streaming.StreamToRowsConverter">StreamToRowsConverter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TweetToRowsConverterextendsStreamToRowsConverterwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.TwitterStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TwitterStreamRelationextendsStreamBaseRelation"></a>
+      <a id="TwitterStreamRelation:TwitterStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TwitterStreamRelation.html"><span class="name">TwitterStreamRelation</span></a><span class="result"> extends <a href="StreamBaseRelation.html" class="extype" name="org.apache.spark.sql.streaming.StreamBaseRelation">StreamBaseRelation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TwitterStreamRelationextendsStreamBaseRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.TwitterStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TwitterStreamSourceextendsStreamPlanProviderwithDataSourceRegister"></a>
+      <a id="TwitterStreamSource:TwitterStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TwitterStreamSource.html"><span class="name">TwitterStreamSource</span></a><span class="result"> extends <a href="StreamPlanProvider.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlanProvider">StreamPlanProvider</a> with <a href="../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@TwitterStreamSourceextendsStreamPlanProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.WindowLogicalPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WindowLogicalPlanextendsUnaryNodewithProductwithSerializable"></a>
+      <a id="WindowLogicalPlan:WindowLogicalPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WindowLogicalPlan.html"><span class="name">WindowLogicalPlan</span></a><span class="params">(<span name="windowDuration">windowDuration: <a href="../../streaming/Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a></span>, <span name="slideDuration">slideDuration: <span class="extype" name="scala.Option">Option</span>[<a href="../../streaming/Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a>]</span>, <span name="child">child: <a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="transformed">transformed: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/UnaryNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.UnaryNode">UnaryNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@WindowLogicalPlanextendsUnaryNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.WindowPhysicalPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WindowPhysicalPlanextendsSparkPlanwithUnaryExecNodewithStreamPlanwithProductwithSerializable"></a>
+      <a id="WindowPhysicalPlan:WindowPhysicalPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="WindowPhysicalPlan.html"><span class="name">WindowPhysicalPlan</span></a><span class="params">(<span name="windowDuration">windowDuration: <a href="../../streaming/Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a></span>, <span name="slide">slide: <span class="extype" name="scala.Option">Option</span>[<a href="../../streaming/Duration.html" class="extype" name="org.apache.spark.streaming.Duration">Duration</a>]</span>, <span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../execution/UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="StreamPlan.html" class="extype" name="org.apache.spark.sql.streaming.StreamPlan">StreamPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@WindowPhysicalPlanextendsSparkPlanwithUnaryExecNodewithStreamPlanwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.streaming.DefaultSnappySinkCallback" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DefaultSnappySinkCallback"></a>
+      <a id="DefaultSnappySinkCallback:DefaultSnappySinkCallback"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DefaultSnappySinkCallback$.html"><span class="name">DefaultSnappySinkCallback</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DefaultSnappySinkCallback" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.DirectKafkaStreamRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DirectKafkaStreamRelation"></a>
+      <a id="DirectKafkaStreamRelation:DirectKafkaStreamRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DirectKafkaStreamRelation$.html"><span class="name">DirectKafkaStreamRelation</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@DirectKafkaStreamRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.ProcessingTime" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ProcessingTime"></a>
+      <a id="ProcessingTime:ProcessingTime"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ProcessingTime$.html"><span class="name">ProcessingTime</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@ProcessingTime" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Used to create <a href="ProcessingTime.html" class="extype" name="org.apache.spark.sql.streaming.ProcessingTime">ProcessingTime</a> triggers for <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>s.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Used to create <a href="ProcessingTime.html" class="extype" name="org.apache.spark.sql.streaming.ProcessingTime">ProcessingTime</a> triggers for <a href="StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a>s.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.RabbitMQUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RabbitMQUtils"></a>
+      <a id="RabbitMQUtils:RabbitMQUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="RabbitMQUtils$.html"><span class="name">RabbitMQUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@RabbitMQUtils" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamSqlHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamSqlHelper"></a>
+      <a id="StreamSqlHelper:StreamSqlHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamSqlHelper$.html"><span class="name">StreamSqlHelper</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamSqlHelper" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.StreamingQueryListener" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryListener"></a>
+      <a id="StreamingQueryListener:StreamingQueryListener"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryListener$.html"><span class="name">StreamingQueryListener</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@StreamingQueryListener" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Companion object of <a href="StreamingQueryListener.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener">StreamingQueryListener</a> that defines the listener events.</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Companion object of <a href="StreamingQueryListener.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener">StreamingQueryListener</a> that defines the listener events.</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.streaming.jdbc" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="jdbc"></a>
+      <a id="jdbc:jdbc"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="jdbc/package.html"><span class="name">jdbc</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@jdbc" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.streaming.twitter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="twitter"></a>
+      <a id="twitter:twitter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="twitter/package.html"><span class="name">twitter</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.streaming.package@twitter" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Twitter feed receiver for spark streaming.</p>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

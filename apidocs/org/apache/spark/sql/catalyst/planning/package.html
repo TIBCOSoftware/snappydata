@@ -1,0 +1,266 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>planning - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.planning</title>
+          <meta name="description" content="planning - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.planning" />
+          <meta name="keywords" content="planning snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.planning" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.planning.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a></p>
+        <h1>planning</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">planning</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Contains classes for enumerating possible physical plans for a given logical query plan.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.planning"><span>planning</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.planning.GenericStrategy" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="GenericStrategy[PhysicalPlan&lt;:org.apache.spark.sql.catalyst.trees.TreeNode[PhysicalPlan]]extendsLogging"></a>
+      <a id="GenericStrategy[PhysicalPlan&lt;:TreeNode[PhysicalPlan]]:GenericStrategy[PhysicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenericStrategy.html"><span class="name">GenericStrategy</span></a><span class="tparams">[<span name="PhysicalPlan">PhysicalPlan &lt;: <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<span class="extype" name="org.apache.spark.sql.catalyst.planning.GenericStrategy.PhysicalPlan">PhysicalPlan</span>]</span>]</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package@GenericStrategy[PhysicalPlan&lt;:org.apache.spark.sql.catalyst.trees.TreeNode[PhysicalPlan]]extendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Given a <span class="extype" name="LogicalPlan">LogicalPlan</span>, returns a list of <code>PhysicalPlan</code>s that can
+be used for execution.</p><div class="fullcomment"><div class="comment cmt"><p>Given a <span class="extype" name="LogicalPlan">LogicalPlan</span>, returns a list of <code>PhysicalPlan</code>s that can
+be used for execution. If this strategy does not apply to the give logical operation then an
+empty list should be returned.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.planning.QueryPlanner" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="QueryPlanner[PhysicalPlan&lt;:org.apache.spark.sql.catalyst.trees.TreeNode[PhysicalPlan]]extendsAnyRef"></a>
+      <a id="QueryPlanner[PhysicalPlan&lt;:TreeNode[PhysicalPlan]]:QueryPlanner[PhysicalPlan]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="QueryPlanner.html"><span class="name">QueryPlanner</span></a><span class="tparams">[<span name="PhysicalPlan">PhysicalPlan &lt;: <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<span class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner.PhysicalPlan">PhysicalPlan</span>]</span>]</span><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package@QueryPlanner[PhysicalPlan&lt;:org.apache.spark.sql.catalyst.trees.TreeNode[PhysicalPlan]]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Abstract class for transforming <span class="extype" name="LogicalPlan">LogicalPlan</span>s into physical plans.</p><div class="fullcomment"><div class="comment cmt"><p>Abstract class for transforming <span class="extype" name="LogicalPlan">LogicalPlan</span>s into physical plans.
+Child classes are responsible for specifying a list of <a href="GenericStrategy.html" class="extype" name="org.apache.spark.sql.catalyst.planning.GenericStrategy">GenericStrategy</a> objects that
+each of which can return a list of possible physical plan options.
+If a given strategy is unable to plan all
+of the remaining operators in the tree, it can call <span class="extype" name="planLater">planLater</span>, which returns a placeholder
+object that will be filled in using other available strategies.</p><p>TODO: RIGHT NOW ONLY ONE PLAN IS RETURNED EVER...
+      PLAN SPACE EXPLORATION WILL BE IMPLEMENTED LATER.
+</p></div><dl class="paramcmts block"><dt class="tparam">PhysicalPlan</dt><dd class="cmt"><p>The type of physical plan produced by this <a href="QueryPlanner.html" class="extype" name="org.apache.spark.sql.catalyst.planning.QueryPlanner">QueryPlanner</a></p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExtractEquiJoinKeys"></a>
+      <a id="ExtractEquiJoinKeys:ExtractEquiJoinKeys"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExtractEquiJoinKeys$.html"><span class="name">ExtractEquiJoinKeys</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package@ExtractEquiJoinKeys" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A pattern that finds joins with equality conditions that can be evaluated using equi-join.</p><div class="fullcomment"><div class="comment cmt"><p>A pattern that finds joins with equality conditions that can be evaluated using equi-join.</p><p>Null-safe equality will be transformed into equality as joining key (replace null with default
+value).
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.planning.ExtractFiltersAndInnerJoins" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExtractFiltersAndInnerJoins"></a>
+      <a id="ExtractFiltersAndInnerJoins:ExtractFiltersAndInnerJoins"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExtractFiltersAndInnerJoins$.html"><span class="name">ExtractFiltersAndInnerJoins</span></a><span class="result"> extends <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package@ExtractFiltersAndInnerJoins" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A pattern that collects the filter and inner joins.</p><div class="fullcomment"><div class="comment cmt"><p>A pattern that collects the filter and inner joins.</p><p>         Filter
+           |
+       inner Join
+         /    \            ----&gt;      (Seq(plan0, plan1, plan2), conditions)
+     Filter   plan2
+       |
+ inner join
+     /    \
+  plan0    plan1</p><p>Note: This pattern currently only works for left-deep trees.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.planning.PhysicalAggregation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PhysicalAggregation"></a>
+      <a id="PhysicalAggregation:PhysicalAggregation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PhysicalAggregation$.html"><span class="name">PhysicalAggregation</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package@PhysicalAggregation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An extractor used when planning the physical execution of an aggregation.</p><div class="fullcomment"><div class="comment cmt"><p>An extractor used when planning the physical execution of an aggregation. Compared with a logical
+aggregation, the following transformations are performed:</p><ul><li>Unnamed grouping expressions are named so that they can be referred to across phases of
+   aggregation</li><li>Aggregations that appear multiple times are deduplicated.</li><li>The computation of the aggregations themselves is separated from the final result. For
+   example, the <code>count</code> in <code>count + 1</code> will be split into an <span class="extype" name="AggregateExpression">AggregateExpression</span> and a final
+   computation that computes <code>count.resultAttribute + 1</code>.
+</li></ul></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.planning.PhysicalOperation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="PhysicalOperation"></a>
+      <a id="PhysicalOperation:PhysicalOperation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="PhysicalOperation$.html"><span class="name">PhysicalOperation</span></a><span class="result"> extends <a href="../expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.planning.package@PhysicalOperation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A pattern that matches any number of project or filter operations on top of another relational
+operator.</p><div class="fullcomment"><div class="comment cmt"><p>A pattern that matches any number of project or filter operations on top of another relational
+operator.  All filter operators are collected and their conditions are broken up and returned
+together with the top project operator.
+<a href="../expressions/Alias.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Alias">Aliases</a> are in-lined/substituted if
+necessary.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

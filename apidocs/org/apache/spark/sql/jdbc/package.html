@@ -1,0 +1,198 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>jdbc - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.jdbc</title>
+          <meta name="description" content="jdbc - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.jdbc" />
+          <meta name="keywords" content="jdbc snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.jdbc" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.jdbc.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>jdbc</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">jdbc</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.jdbc.JdbcDialect" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="JdbcDialectextendsSerializable"></a>
+      <a id="JdbcDialect:JdbcDialect"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JdbcDialect.html"><span class="name">JdbcDialect</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.package@JdbcDialectextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Encapsulates everything (extensions, workarounds, quirks) to handle the
+SQL dialect of a certain database or jdbc driver.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Encapsulates everything (extensions, workarounds, quirks) to handle the
+SQL dialect of a certain database or jdbc driver.
+Lots of databases define types that aren't explicitly supported
+by the JDBC spec.  Some JDBC drivers also report inaccurate
+information---for instance, BIT(n<code>&gt;</code>1) being reported as a BIT type is quite
+common, even though BIT in JDBC is meant for single-bit values. Also, there
+does not appear to be a standard name for an unbounded string or binary
+type; we use BLOB and CLOB by default but override with database-specific
+alternatives when these are absent or do not behave correctly.</p><p>Currently, the only thing done by the dialect is type mapping.
+<code>getCatalystType</code> is used when reading from a JDBC table and <code>getJDBCType</code>
+is used when writing to a JDBC table.  If <code>getCatalystType</code> returns <code>null</code>,
+the default type handling is used for the given JDBC type.  Similarly,
+if <code>getJDBCType</code> returns <code>(null, None)</code>, the default type handling is used
+for the given Catalyst type.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.jdbc.JdbcType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JdbcTypeextendsProductwithSerializable"></a>
+      <a id="JdbcType:JdbcType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="JdbcType.html"><span class="name">JdbcType</span></a><span class="params">(<span name="databaseTypeDefinition">databaseTypeDefinition: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="jdbcNullType">jdbcNullType: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.package@JdbcTypeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A database type definition coupled with the jdbc type needed to send null
+values to the database.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A database type definition coupled with the jdbc type needed to send null
+values to the database.</p></div><dl class="paramcmts block"><dt class="param">databaseTypeDefinition</dt><dd class="cmt"><p>The database type definition</p></dd><dt class="param">jdbcNullType</dt><dd class="cmt"><p>The jdbc type (as defined in java.sql.Types) used to
+                    send a null value to the database.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.jdbc.JdbcDialects" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JdbcDialects"></a>
+      <a id="JdbcDialects:JdbcDialects"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JdbcDialects$.html"><span class="name">JdbcDialects</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.jdbc.package@JdbcDialects" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Registry of dialects that apply to every new jdbc <code>org.apache.spark.sql.DataFrame</code>.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Registry of dialects that apply to every new jdbc <code>org.apache.spark.sql.DataFrame</code>.</p><p>If multiple matching dialects are registered then all matching ones will be
+tried in reverse order. A user-added dialect will thus be applied first,
+overwriting the defaults.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+                <span class="name">@Evolving</span><span class="args">()</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>All new dialects are applied to new jdbc DataFrames only. Make
+sure to register your dialects first.</p></span></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

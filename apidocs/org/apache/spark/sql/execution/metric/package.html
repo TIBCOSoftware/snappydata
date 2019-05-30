@@ -1,0 +1,164 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>metric - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.metric</title>
+          <meta name="description" content="metric - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.metric" />
+          <meta name="keywords" content="metric snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.metric" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.metric.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
+        <h1>metric</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.metric.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">metric</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.metric.SQLMetric" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SQLMetricextendsAccumulatorV2Kryo[Long,Long]withKryoSerializable"></a>
+      <a id="SQLMetric:SQLMetric"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SQLMetric.html"><span class="name">SQLMetric</span></a><span class="result"> extends <a href="../../../util/AccumulatorV2Kryo.html" class="extype" name="org.apache.spark.util.AccumulatorV2Kryo">AccumulatorV2Kryo</a>[<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Long">Long</span>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.metric.package@SQLMetricextendsAccumulatorV2Kryo[Long,Long]withKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A metric used in a SQL query plan.</p><div class="fullcomment"><div class="comment cmt"><p>A metric used in a SQL query plan. This is implemented as an <span class="extype" name="AccumulatorV2">AccumulatorV2</span>. Updates on
+the executor side are automatically propagated and shown in the SQL UI through metrics. Updates
+on the driver side must be explicitly posted using <span class="extype" name="SQLMetrics.postDriverMetricUpdates()">SQLMetrics.postDriverMetricUpdates()</span>.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.metric.SQLMetricInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SQLMetricInfoextendsAnyRef"></a>
+      <a id="SQLMetricInfo:SQLMetricInfo"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SQLMetricInfo.html"><span class="name">SQLMetricInfo</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.metric.package@SQLMetricInfoextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Stores information about a SQL Metric.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Stores information about a SQL Metric.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.metric.SQLMetrics" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SQLMetrics"></a>
+      <a id="SQLMetrics:SQLMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SQLMetrics$.html"><span class="name">SQLMetrics</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.metric.package@SQLMetrics" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

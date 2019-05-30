@@ -1,0 +1,1210 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>ReservoirRegionSegmentMap - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.ReservoirRegionSegmentMap</title>
+          <meta name="description" content="ReservoirRegionSegmentMap - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.ReservoirRegionSegmentMap" />
+          <meta name="keywords" content="ReservoirRegionSegmentMap snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.ReservoirRegionSegmentMap" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.ReservoirRegionSegmentMap';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Class" src="../../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
+        <h1>ReservoirRegionSegmentMap</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.execution">package execution</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ReservoirRegionSegmentMap</span><span class="tparams">[<span name="V">V</span>]</span><span class="result"> extends <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span> with <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>] with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Created by vivekb on 21/10/16.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="scala.Serializable">Serializable</span>, <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>], <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span>, <span class="extype" name="java.io.Serializable">Serializable</span>, <span class="extype" name="java.util.concurrent.locks.ReadWriteLock">ReadWriteLock</span>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap"><span>ReservoirRegionSegmentMap</span></li><li class="in" name="scala.Serializable"><span>Serializable</span></li><li class="in" name="org.apache.spark.sql.collection.SegmentMap"><span>SegmentMap</span></li><li class="in" name="java.util.concurrent.locks.ReentrantReadWriteLock"><span>ReentrantReadWriteLock</span></li><li class="in" name="java.io.Serializable"><span>Serializable</span></li><li class="in" name="java.util.concurrent.locks.ReadWriteLock"><span>ReadWriteLock</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(_reservoirRegion:com.gemstone.gemfire.internal.cache.PartitionedRegion,_columns:Array[Int],_types:Array[org.apache.spark.sql.types.DataType],_numColumns:Int,qcsColHandler:Option[org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler],_segi:Int,_nsegs:Int,_sampleIsPartitioned:Boolean)(implicitevidence$1:scala.reflect.ClassTag[V]):org.apache.spark.sql.execution.ReservoirRegionSegmentMap[V]"></a>
+      <a id="&lt;init&gt;:ReservoirRegionSegmentMap[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ReservoirRegionSegmentMap</span><span class="params">(<span name="_reservoirRegion">_reservoirRegion: <span class="extype" name="com.gemstone.gemfire.internal.cache.PartitionedRegion">PartitionedRegion</span></span>, <span name="_columns">_columns: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>, <span name="_types">_types: <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>, <span name="_numColumns">_numColumns: <span class="extype" name="scala.Int">Int</span></span>, <span name="qcsColHandler">qcsColHandler: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler">ColumnHandler</span>]</span>, <span name="_segi">_segi: <span class="extype" name="scala.Int">Int</span></span>, <span name="_nsegs">_nsegs: <span class="extype" name="scala.Int">Int</span></span>, <span name="_sampleIsPartitioned">_sampleIsPartitioned: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>]</span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@&lt;init&gt;(_reservoirRegion:com.gemstone.gemfire.internal.cache.PartitionedRegion,_columns:Array[Int],_types:Array[org.apache.spark.sql.types.DataType],_numColumns:Int,qcsColHandler:Option[org.apache.spark.sql.collection.MultiColumnOpenHashSet.ColumnHandler],_segi:Int,_nsegs:Int,_sampleIsPartitioned:Boolean)(implicitevidence$1:scala.reflect.ClassTag[V]):org.apache.spark.sql.execution.ReservoirRegionSegmentMap[V]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#_columns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="_columns:Array[Int]"></a>
+      <a id="_columns:Array[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_columns</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@_columns:Array[Int]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#_nsegs" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="_nsegs:Int"></a>
+      <a id="_nsegs:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_nsegs</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@_nsegs:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#_numColumns" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="_numColumns:Int"></a>
+      <a id="_numColumns:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_numColumns</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@_numColumns:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#_reservoirRegion" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="_reservoirRegion:com.gemstone.gemfire.internal.cache.PartitionedRegion"></a>
+      <a id="_reservoirRegion:PartitionedRegion"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_reservoirRegion</span><span class="result">: <span class="extype" name="com.gemstone.gemfire.internal.cache.PartitionedRegion">PartitionedRegion</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@_reservoirRegion:com.gemstone.gemfire.internal.cache.PartitionedRegion" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#_segi" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="_segi:Int"></a>
+      <a id="_segi:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_segi</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@_segi:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#_types" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="_types:Array[org.apache.spark.sql.types.DataType]"></a>
+      <a id="_types:Array[DataType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">_types</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[<a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@_types:Array[org.apache.spark.sql.types.DataType]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#apply" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="apply(k:org.apache.spark.sql.Row,hash:Int):V"></a>
+      <a id="apply(Row,Int):V"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">apply</span><span class="params">(<span name="k">k: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@apply(k:org.apache.spark.sql.Row,hash:Int):V" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#beforeSegmentEnd" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="beforeSegmentEnd():AnyRef"></a>
+      <a id="beforeSegmentEnd():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">beforeSegmentEnd</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@beforeSegmentEnd():AnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#changeValue" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="changeValue(r:org.apache.spark.sql.Row,bucketId:Int,change:org.apache.spark.sql.collection.ChangeValue[org.apache.spark.sql.Row,V],isLocal:Boolean):Boolean"></a>
+      <a id="changeValue(Row,Int,ChangeValue[Row,V],Boolean):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">changeValue</span><span class="params">(<span name="r">r: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="bucketId">bucketId: <span class="extype" name="scala.Int">Int</span></span>, <span name="change">change: <a href="../collection/ChangeValue.html" class="extype" name="org.apache.spark.sql.collection.ChangeValue">ChangeValue</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>]</span>, <span name="isLocal">isLocal: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="java.lang.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@changeValue(r:org.apache.spark.sql.Row,bucketId:Int,change:org.apache.spark.sql.collection.ChangeValue[org.apache.spark.sql.Row,V],isLocal:Boolean):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#clearBucket" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clearBucket():Unit"></a>
+      <a id="clearBucket():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clearBucket</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@clearBucket():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#contains" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="contains(k:org.apache.spark.sql.Row,hash:Int):Boolean"></a>
+      <a id="contains(Row,Int):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">contains</span><span class="params">(<span name="k">k: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@contains(k:org.apache.spark.sql.Row,hash:Int):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#currentRow" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="currentRow(newRow:org.apache.spark.sql.collection.ReusableRow,row:org.apache.spark.sql.Row,bucketId:Int):org.apache.spark.sql.collection.ReusableRow"></a>
+      <a id="currentRow(ReusableRow,Row,Int):ReusableRow"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">currentRow</span><span class="params">(<span name="newRow">newRow: <a href="../collection/ReusableRow.html" class="extype" name="org.apache.spark.sql.collection.ReusableRow">ReusableRow</a></span>, <span name="row">row: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="bucketId">bucketId: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../collection/ReusableRow.html" class="extype" name="org.apache.spark.sql.collection.ReusableRow">ReusableRow</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@currentRow(newRow:org.apache.spark.sql.collection.ReusableRow,row:org.apache.spark.sql.Row,bucketId:Int):org.apache.spark.sql.collection.ReusableRow" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#executeInReadLock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="executeInReadLock[T](br:com.gemstone.gemfire.internal.cache.BucketRegion,body:=&gt;T,doLock:Boolean):T"></a>
+      <a id="executeInReadLock[T](BucketRegion,⇒T,Boolean):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executeInReadLock</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="br">br: <span class="extype" name="com.gemstone.gemfire.internal.cache.BucketRegion">BucketRegion</span></span>, <span name="body">body: ⇒ <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.executeInReadLock.T">T</span></span>, <span name="doLock">doLock: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.executeInReadLock.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@executeInReadLock[T](br:com.gemstone.gemfire.internal.cache.BucketRegion,body:=&gt;T,doLock:Boolean):T" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#executeInWriteLock" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="executeInWriteLock[T](br:com.gemstone.gemfire.internal.cache.BucketRegion,body:=&gt;T,doLock:Boolean):T"></a>
+      <a id="executeInWriteLock[T](BucketRegion,⇒T,Boolean):T"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executeInWriteLock</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="br">br: <span class="extype" name="com.gemstone.gemfire.internal.cache.BucketRegion">BucketRegion</span></span>, <span name="body">body: ⇒ <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.executeInWriteLock.T">T</span></span>, <span name="doLock">doLock: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.executeInWriteLock.T">T</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@executeInWriteLock[T](br:com.gemstone.gemfire.internal.cache.BucketRegion,body:=&gt;T,doLock:Boolean):T" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#foldEntries" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foldEntries[U](init:U,copyIfRequired:Boolean,f:(org.apache.spark.sql.Row,V,U)=&gt;U):U"></a>
+      <a id="foldEntries[U](U,Boolean,(Row,V,U)⇒U):U"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foldEntries</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldEntries.U">U</span></span>, <span name="copyIfRequired">copyIfRequired: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="f">f: (<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldEntries.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldEntries.U">U</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldEntries.U">U</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@foldEntries[U](init:U,copyIfRequired:Boolean,f:(org.apache.spark.sql.Row,V,U)=&gt;U):U" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#foldValues" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="foldValues[U](init:U,f:(Int,V,U)=&gt;U,reset:Boolean):U"></a>
+      <a id="foldValues[U](U,(Int,V,U)⇒U,Boolean):U"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">foldValues</span><span class="tparams">[<span name="U">U</span>]</span><span class="params">(<span name="init">init: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldValues.U">U</span></span>, <span name="f">f: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldValues.U">U</span>) ⇒ <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldValues.U">U</span></span>, <span name="reset">reset: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">false</span></span>)</span><span class="result">: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.foldValues.U">U</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@foldValues[U](init:U,f:(Int,V,U)=&gt;U,reset:Boolean):U" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getOwner" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getOwner():Thread"></a>
+      <a id="getOwner():Thread"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getOwner</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Thread">Thread</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getOwner():Thread" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$util$concurrent$locks.html" class="extype" name="java.util.concurrent.locks">java.util.concurrent.locks</a>] </dd><dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getQueueLength" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getQueueLength():Int"></a>
+      <a id="getQueueLength():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getQueueLength</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getQueueLength():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getQueuedReaderThreads" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getQueuedReaderThreads():java.util.Collection[Thread]"></a>
+      <a id="getQueuedReaderThreads():Collection[Thread]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getQueuedReaderThreads</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Collection">Collection</span>[<span class="extype" name="java.lang.Thread">Thread</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getQueuedReaderThreads():java.util.Collection[Thread]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$util$concurrent$locks.html" class="extype" name="java.util.concurrent.locks">java.util.concurrent.locks</a>] </dd><dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getQueuedThreads" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getQueuedThreads():java.util.Collection[Thread]"></a>
+      <a id="getQueuedThreads():Collection[Thread]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getQueuedThreads</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Collection">Collection</span>[<span class="extype" name="java.lang.Thread">Thread</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getQueuedThreads():java.util.Collection[Thread]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$util$concurrent$locks.html" class="extype" name="java.util.concurrent.locks">java.util.concurrent.locks</a>] </dd><dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getQueuedWriterThreads" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getQueuedWriterThreads():java.util.Collection[Thread]"></a>
+      <a id="getQueuedWriterThreads():Collection[Thread]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getQueuedWriterThreads</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.Collection">Collection</span>[<span class="extype" name="java.lang.Thread">Thread</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getQueuedWriterThreads():java.util.Collection[Thread]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$util$concurrent$locks.html" class="extype" name="java.util.concurrent.locks">java.util.concurrent.locks</a>] </dd><dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getReadHoldCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getReadHoldCount():Int"></a>
+      <a id="getReadHoldCount():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getReadHoldCount</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getReadHoldCount():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getReadLockCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getReadLockCount():Int"></a>
+      <a id="getReadLockCount():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getReadLockCount</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getReadLockCount():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getWaitQueueLength" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getWaitQueueLength(x$1:java.util.concurrent.locks.Condition):Int"></a>
+      <a id="getWaitQueueLength(Condition):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getWaitQueueLength</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.concurrent.locks.Condition">Condition</span></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getWaitQueueLength(x$1:java.util.concurrent.locks.Condition):Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getWaitingThreads" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getWaitingThreads(x$1:java.util.concurrent.locks.Condition):java.util.Collection[Thread]"></a>
+      <a id="getWaitingThreads(Condition):Collection[Thread]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getWaitingThreads</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.concurrent.locks.Condition">Condition</span></span>)</span><span class="result">: <span class="extype" name="java.util.Collection">Collection</span>[<span class="extype" name="java.lang.Thread">Thread</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getWaitingThreads(x$1:java.util.concurrent.locks.Condition):java.util.Collection[Thread]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$util$concurrent$locks.html" class="extype" name="java.util.concurrent.locks">java.util.concurrent.locks</a>] </dd><dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#getWriteHoldCount" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getWriteHoldCount():Int"></a>
+      <a id="getWriteHoldCount():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getWriteHoldCount</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@getWriteHoldCount():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#hasQueuedThread" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasQueuedThread(x$1:Thread):Boolean"></a>
+      <a id="hasQueuedThread(Thread):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasQueuedThread</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.lang.Thread">Thread</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@hasQueuedThread(x$1:Thread):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#hasQueuedThreads" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasQueuedThreads():Boolean"></a>
+      <a id="hasQueuedThreads():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasQueuedThreads</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@hasQueuedThreads():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#hasWaiters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hasWaiters(x$1:java.util.concurrent.locks.Condition):Boolean"></a>
+      <a id="hasWaiters(Condition):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hasWaiters</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="java.util.concurrent.locks.Condition">Condition</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@hasWaiters(x$1:java.util.concurrent.locks.Condition):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#isEmpty" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isEmpty:Boolean"></a>
+      <a id="isEmpty:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isEmpty</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@isEmpty:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#isFair" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isFair():Boolean"></a>
+      <a id="isFair():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isFair</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@isFair():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#isWriteLocked" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isWriteLocked():Boolean"></a>
+      <a id="isWriteLocked():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isWriteLocked</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@isWriteLocked():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#isWriteLockedByCurrentThread" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isWriteLockedByCurrentThread():Boolean"></a>
+      <a id="isWriteLockedByCurrentThread():Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isWriteLockedByCurrentThread</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@isWriteLockedByCurrentThread():Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#iterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="iterator:Iterator[(org.apache.spark.sql.Row,V)]"></a>
+      <a id="iterator:Iterator[(Row,V)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">iterator</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[(<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@iterator:Iterator[(org.apache.spark.sql.Row,V)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#readLock" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="readLock():java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock"></a>
+      <a id="readLock():ReadLock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">readLock</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock">ReadLock</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@readLock():java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock → ReadWriteLock</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#segmentEnd" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="segmentEnd(puts:AnyRef):Unit"></a>
+      <a id="segmentEnd(AnyRef):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">segmentEnd</span><span class="params">(<span name="puts">puts: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@segmentEnd(puts:AnyRef):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#size" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="size:Int"></a>
+      <a id="size:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">size</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@size:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock → AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#update" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="update(k:org.apache.spark.sql.Row,hash:Int,v:V):Boolean"></a>
+      <a id="update(Row,Int,V):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">update</span><span class="params">(<span name="k">k: <a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a></span>, <span name="hash">hash: <span class="extype" name="scala.Int">Int</span></span>, <span name="v">v: <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@update(k:org.apache.spark.sql.Row,hash:Int,v:V):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.SegmentMap#valid" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valid:Boolean"></a>
+      <a id="valid:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valid</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@valid:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap#valuesIterator" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="valuesIterator:Iterator[V]"></a>
+      <a id="valuesIterator:Iterator[V]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">valuesIterator</span><span class="result">: <a href="../../../../../scala/package.html#Iterator[+A]=Iterator[A]" class="extmbr" name="scala.Iterator">Iterator</a>[<span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@valuesIterator:Iterator[V]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap">ReservoirRegionSegmentMap</a> → <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="java.util.concurrent.locks.ReentrantReadWriteLock#writeLock" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="writeLock():java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock"></a>
+      <a id="writeLock():WriteLock"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">writeLock</span><span class="params">()</span><span class="result">: <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock">WriteLock</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.ReservoirRegionSegmentMap@writeLock():java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>ReentrantReadWriteLock → ReadWriteLock</dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.Serializable">
+              <h3>Inherited from <span class="extype" name="scala.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="org.apache.spark.sql.collection.SegmentMap">
+              <h3>Inherited from <a href="../collection/SegmentMap.html" class="extype" name="org.apache.spark.sql.collection.SegmentMap">SegmentMap</a>[<a href="../Row.html" class="extype" name="org.apache.spark.sql.Row">Row</a>, <span class="extype" name="org.apache.spark.sql.execution.ReservoirRegionSegmentMap.V">V</span>]</h3>
+            </div><div class="parent" name="java.util.concurrent.locks.ReentrantReadWriteLock">
+              <h3>Inherited from <span class="extype" name="java.util.concurrent.locks.ReentrantReadWriteLock">ReentrantReadWriteLock</span></h3>
+            </div><div class="parent" name="java.io.Serializable">
+              <h3>Inherited from <span class="extype" name="java.io.Serializable">Serializable</span></h3>
+            </div><div class="parent" name="java.util.concurrent.locks.ReadWriteLock">
+              <h3>Inherited from <span class="extype" name="java.util.concurrent.locks.ReadWriteLock">ReadWriteLock</span></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

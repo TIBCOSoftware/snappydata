@@ -1,0 +1,1383 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>streaming - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.streaming</title>
+          <meta name="description" content="streaming - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.streaming" />
+          <meta name="keywords" content="streaming snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.streaming" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.streaming.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
+        <h1>streaming</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">streaming</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="CompactibleFileStreamLog[T&lt;:AnyRef]extendsHDFSMetadataLog[Array[T]]"></a>
+      <a id="CompactibleFileStreamLog[T&lt;:AnyRef]:CompactibleFileStreamLog[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CompactibleFileStreamLog.html"><span class="name">CompactibleFileStreamLog</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="result"> extends <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a>[<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog.T">T</span>]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@CompactibleFileStreamLog[T&lt;:AnyRef]extendsHDFSMetadataLog[Array[T]]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An abstract class for compactible metadata logs.</p><div class="fullcomment"><div class="comment cmt"><p>An abstract class for compactible metadata logs. It will write one log file for each batch.
+The first line of the log file is the version number, and there are multiple serialized
+metadata lines following.</p><p>As reading from many small files is usually pretty slow, also too many
+small files in one folder will mess the FS, <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a> will
+compact log files every 10 batches by default into a big file. When
+doing a compaction, it will read all old log files and merge them with the new batch.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.ConsoleSink" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConsoleSinkextendsSinkwithLogging"></a>
+      <a id="ConsoleSink:ConsoleSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConsoleSink.html"><span class="name">ConsoleSink</span></a><span class="result"> extends <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@ConsoleSinkextendsSinkwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.ConsoleSinkProvider" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ConsoleSinkProviderextendsStreamSinkProviderwithDataSourceRegister"></a>
+      <a id="ConsoleSinkProvider:ConsoleSinkProvider"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ConsoleSinkProvider.html"><span class="name">ConsoleSinkProvider</span></a><span class="result"> extends <a href="../../sources/StreamSinkProvider.html" class="extype" name="org.apache.spark.sql.sources.StreamSinkProvider">StreamSinkProvider</a> with <a href="../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@ConsoleSinkProviderextendsStreamSinkProviderwithDataSourceRegister" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.EventTimeStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EventTimeStatsextendsProductwithSerializable"></a>
+      <a id="EventTimeStats:EventTimeStats"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="EventTimeStats.html"><span class="name">EventTimeStats</span></a><span class="params">(<span name="max">max: <span class="extype" name="scala.Long">Long</span></span>, <span name="min">min: <span class="extype" name="scala.Long">Long</span></span>, <span name="sum">sum: <span class="extype" name="scala.Long">Long</span></span>, <span name="count">count: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@EventTimeStatsextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Class for collecting event time stats with an accumulator</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.EventTimeStatsAccum" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EventTimeStatsAccumextendsAccumulatorV2[Long,org.apache.spark.sql.execution.streaming.EventTimeStats]"></a>
+      <a id="EventTimeStatsAccum:EventTimeStatsAccum"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="EventTimeStatsAccum.html"><span class="name">EventTimeStatsAccum</span></a><span class="result"> extends <a href="../../../util/AccumulatorV2.html" class="extype" name="org.apache.spark.util.AccumulatorV2">AccumulatorV2</a>[<span class="extype" name="scala.Long">Long</span>, <a href="EventTimeStats.html" class="extype" name="org.apache.spark.sql.execution.streaming.EventTimeStats">EventTimeStats</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@EventTimeStatsAccumextendsAccumulatorV2[Long,org.apache.spark.sql.execution.streaming.EventTimeStats]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Accumulator that collects stats on event time in a batch.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.EventTimeWatermarkExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="EventTimeWatermarkExecextendsSparkPlanwithProductwithSerializable"></a>
+      <a id="EventTimeWatermarkExec:EventTimeWatermarkExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="EventTimeWatermarkExec.html"><span class="name">EventTimeWatermarkExec</span></a><span class="params">(<span name="eventTime">eventTime: <a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>, <span name="delay">delay: <a href="../../../unsafe/types/CalendarInterval.html" class="extype" name="org.apache.spark.unsafe.types.CalendarInterval">CalendarInterval</a></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@EventTimeWatermarkExecextendsSparkPlanwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to mark a column as the containing the event time for a given record.</p><div class="fullcomment"><div class="comment cmt"><p>Used to mark a column as the containing the event time for a given record. In addition to
+adding appropriate metadata to this column, this operator also tracks the maximum observed event
+time. Based on the maximum observed time and a user specified delay, we can calculate the
+<code>watermark</code> after which we assume we will no longer see late records for a particular time
+period. Note that event time is measured in milliseconds.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamOptions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamOptionsextendsLogging"></a>
+      <a id="FileStreamOptions:FileStreamOptions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamOptions.html"><span class="name">FileStreamOptions</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamOptionsextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">User specified options for file streams.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FileStreamSinkextendsSinkwithLogging"></a>
+      <a id="FileStreamSink:FileStreamSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSink.html"><span class="name">FileStreamSink</span></a><span class="result"> extends <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSinkextendsSinkwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A sink that writes out results to parquet files.</p><div class="fullcomment"><div class="comment cmt"><p>A sink that writes out results to parquet files.  Each batch is written out to a unique
+directory. After all of the files in a batch have been successfully written, the list of
+file paths is appended to the log atomically. In the case of partial failures, some duplicate
+data may be present in the target directory, but only one copy of each file will be present
+in the log.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FileStreamSinkLogextendsCompactibleFileStreamLog[org.apache.spark.sql.execution.streaming.SinkFileStatus]"></a>
+      <a id="FileStreamSinkLog:FileStreamSinkLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSinkLog.html"><span class="name">FileStreamSinkLog</span></a><span class="result"> extends <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a>[<a href="SinkFileStatus.html" class="extype" name="org.apache.spark.sql.execution.streaming.SinkFileStatus">SinkFileStatus</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSinkLogextendsCompactibleFileStreamLog[org.apache.spark.sql.execution.streaming.SinkFileStatus]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A special log for <a href="FileStreamSink.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSink">FileStreamSink</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A special log for <a href="FileStreamSink.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSink">FileStreamSink</a>. It will write one log file for each batch. The first line
+of the log file is the version number, and there are multiple JSON lines following. Each JSON
+line is a JSON format of <a href="SinkFileStatus.html" class="extype" name="org.apache.spark.sql.execution.streaming.SinkFileStatus">SinkFileStatus</a>.</p><p>As reading from many small files is usually pretty slow, <a href="FileStreamSinkLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog">FileStreamSinkLog</a> will compact log
+files every &quot;spark.sql.sink.file.log.compactLen&quot; batches into a big file. When doing a
+compaction, it will read all old log files and merge them with the new batch. During the
+compaction, it will also delete the files that are deleted (marked by <a href="SinkFileStatus.html#action:String" class="extmbr" name="org.apache.spark.sql.execution.streaming.SinkFileStatus#action">SinkFileStatus.action</a>).
+When the reader uses <code>allFiles</code> to list all files, this method only returns the visible files
+(drops the deleted files).
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSourceextendsSourcewithLogging"></a>
+      <a id="FileStreamSource:FileStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSource.html"><span class="name">FileStreamSource</span></a><span class="result"> extends <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSourceextendsSourcewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A very simple source that reads files from the given directory as they appear.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSourceLogextendsCompactibleFileStreamLog[org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry]"></a>
+      <a id="FileStreamSourceLog:FileStreamSourceLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSourceLog.html"><span class="name">FileStreamSourceLog</span></a><span class="result"> extends <a href="CompactibleFileStreamLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog">CompactibleFileStreamLog</a>[<a href="FileStreamSource$$FileEntry.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry">FileEntry</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSourceLogextendsCompactibleFileStreamLog[org.apache.spark.sql.execution.streaming.FileStreamSource.FileEntry]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSourceOffset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FileStreamSourceOffsetextendsOffsetwithProductwithSerializable"></a>
+      <a id="FileStreamSourceOffset:FileStreamSourceOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSourceOffset.html"><span class="name">FileStreamSourceOffset</span></a><span class="params">(<span name="logOffset">logOffset: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSourceOffsetextendsOffsetwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Offset for the <a href="FileStreamSource.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource">FileStreamSource</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Offset for the <a href="FileStreamSource.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSource">FileStreamSource</a>.</p></div><dl class="paramcmts block"><dt class="param">logOffset</dt><dd class="cmt"><p>Position in the <a href="FileStreamSourceLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog">FileStreamSourceLog</a></p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.ForeachSink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ForeachSink[T]extendsSinkwithSerializable"></a>
+      <a id="ForeachSink[T]:ForeachSink[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ForeachSink.html"><span class="name">ForeachSink</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@ForeachSink[T]extendsSinkwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> that forwards all data into <a href="../../ForeachWriter.html" class="extype" name="org.apache.spark.sql.ForeachWriter">ForeachWriter</a> according to the contract defined by
+<a href="../../ForeachWriter.html" class="extype" name="org.apache.spark.sql.ForeachWriter">ForeachWriter</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> that forwards all data into <a href="../../ForeachWriter.html" class="extype" name="org.apache.spark.sql.ForeachWriter">ForeachWriter</a> according to the contract defined by
+<a href="../../ForeachWriter.html" class="extype" name="org.apache.spark.sql.ForeachWriter">ForeachWriter</a>.
+</p></div><dl class="paramcmts block"><dt class="tparam">T</dt><dd class="cmt"><p>The expected type of the sink.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="HDFSMetadataLog[T&lt;:AnyRef]extendsMetadataLog[T]withLogging"></a>
+      <a id="HDFSMetadataLog[T&lt;:AnyRef]:HDFSMetadataLog[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HDFSMetadataLog.html"><span class="name">HDFSMetadataLog</span></a><span class="tparams">[<span name="T">T &lt;: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="result"> extends <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog.T">T</span>] with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@HDFSMetadataLog[T&lt;:AnyRef]extendsMetadataLog[T]withLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a> implementation based on HDFS.</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="MetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.MetadataLog">MetadataLog</a> implementation based on HDFS. <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> uses the specified <code>path</code>
+as the metadata storage.</p><p>When writing a new batch, <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> will firstly write to a temp file and then rename
+it to the final batch file. If the rename step fails, there must be multiple writers and only
+one of them will succeed and the others will fail.</p><p>Note: <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a> doesn't support S3-like file systems as they don't guarantee listing
+files in a directory always shows the latest files.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.IncrementalExecution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="IncrementalExecutionextendsQueryExecutionwithLogging"></a>
+      <a id="IncrementalExecution:IncrementalExecution"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IncrementalExecution.html"><span class="name">IncrementalExecution</span></a><span class="result"> extends <a href="../QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@IncrementalExecutionextendsQueryExecutionwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A variant of <a href="../QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a> that allows the execution of the given <span class="extype" name="LogicalPlan">LogicalPlan</span>
+plan incrementally.</p><div class="fullcomment"><div class="comment cmt"><p>A variant of <a href="../QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a> that allows the execution of the given <span class="extype" name="LogicalPlan">LogicalPlan</span>
+plan incrementally. Possibly preserving state in between each execution.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.LongOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LongOffsetextendsOffsetwithProductwithSerializable"></a>
+      <a id="LongOffset:LongOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="LongOffset.html"><span class="name">LongOffset</span></a><span class="params">(<span name="offset">offset: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@LongOffsetextendsOffsetwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A simple offset for sources that produce a single linear stream of data.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.ManifestFileCommitProtocol" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ManifestFileCommitProtocolextendsFileCommitProtocolwithSerializablewithLogging"></a>
+      <a id="ManifestFileCommitProtocol:ManifestFileCommitProtocol"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ManifestFileCommitProtocol.html"><span class="name">ManifestFileCommitProtocol</span></a><span class="result"> extends <a href="../../../internal/io/FileCommitProtocol.html" class="extype" name="org.apache.spark.internal.io.FileCommitProtocol">FileCommitProtocol</a> with <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@ManifestFileCommitProtocolextendsFileCommitProtocolwithSerializablewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <span class="extype" name="FileCommitProtocol">FileCommitProtocol</span> that tracks the list of valid files in a manifest file, used in
+structured streaming.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.MemoryPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemoryPlanextendsLeafNodewithProductwithSerializable"></a>
+      <a id="MemoryPlan:MemoryPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MemoryPlan.html"><span class="name">MemoryPlan</span></a><span class="params">(<span name="sink">sink: <a href="MemorySink.html" class="extype" name="org.apache.spark.sql.execution.streaming.MemorySink">MemorySink</a></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MemoryPlanextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to query the data that has been written into a <a href="MemorySink.html" class="extype" name="org.apache.spark.sql.execution.streaming.MemorySink">MemorySink</a>.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.MemorySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MemorySinkextendsSinkwithLogging"></a>
+      <a id="MemorySink:MemorySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MemorySink.html"><span class="name">MemorySink</span></a><span class="result"> extends <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MemorySinkextendsSinkwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A sink that stores the results in memory.</p><div class="fullcomment"><div class="comment cmt"><p>A sink that stores the results in memory. This <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a> is primarily intended for use in unit
+tests and does not provide durability.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.MemoryStream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="MemoryStream[A]extendsSourcewithLoggingwithProductwithSerializable"></a>
+      <a id="MemoryStream[A]:MemoryStream[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="MemoryStream.html"><span class="name">MemoryStream</span></a><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span name="id">id: <span class="extype" name="scala.Int">Int</span></span>, <span name="sqlContext">sqlContext: <a href="../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="evidence$2">evidence$2: <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.execution.streaming.MemoryStream.A">A</span>]</span>)</span><span class="result"> extends <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MemoryStream[A]extendsSourcewithLoggingwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> that produces value stored in memory as they are added by the user.</p><div class="fullcomment"><div class="comment cmt"><p>A <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> that produces value stored in memory as they are added by the user.  This <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>
+is primarily intended for use in unit tests as it can only replay data when the object is still
+available.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.MetadataLog" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="MetadataLog[T]extendsAnyRef"></a>
+      <a id="MetadataLog[T]:MetadataLog[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="MetadataLog.html"><span class="name">MetadataLog</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MetadataLog[T]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A general MetadataLog that supports the following features:</p><div class="fullcomment"><div class="comment cmt"><p>A general MetadataLog that supports the following features:</p><ul><li>Allow the user to store a metadata object for each batch.</li><li>Allow the user to query the latest batch id.</li><li>Allow the user to query the metadata object of a specified batch id.</li><li>Allow the user to query metadata objects in a range of batch ids.</li><li>Allow the user to remove obsolete metadata
+</li></ul></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.MetadataLogFileIndex" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MetadataLogFileIndexextendsPartitioningAwareFileIndex"></a>
+      <a id="MetadataLogFileIndex:MetadataLogFileIndex"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MetadataLogFileIndex.html"><span class="name">MetadataLogFileIndex</span></a><span class="result"> extends <a href="../datasources/PartitioningAwareFileIndex.html" class="extype" name="org.apache.spark.sql.execution.datasources.PartitioningAwareFileIndex">PartitioningAwareFileIndex</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MetadataLogFileIndexextendsPartitioningAwareFileIndex" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A <span class="extype" name="FileIndex">FileIndex</span> that generates the list of files to processing by reading them from the
+metadata log files generated by the <a href="FileStreamSink.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSink">FileStreamSink</a>.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.MetricsReporter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MetricsReporterextendsSourcewithLogging"></a>
+      <a id="MetricsReporter:MetricsReporter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MetricsReporter.html"><span class="name">MetricsReporter</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.metrics.source.Source">metrics.source.Source</span> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MetricsReporterextendsSourcewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Serves metrics from a <a href="../../streaming/StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">org.apache.spark.sql.streaming.StreamingQuery</a> to
+Codahale/DropWizard metrics
+</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.Offset" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="OffsetextendsAnyRef"></a>
+      <a id="Offset:Offset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Offset.html"><span class="name">Offset</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An offset is a monotonically increasing metric used to track progress in the computation of a
+stream.</p><div class="fullcomment"><div class="comment cmt"><p>An offset is a monotonically increasing metric used to track progress in the computation of a
+stream. Since offsets are retrieved from a <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> by a single thread, we know the global
+ordering of two <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> instances.  We do assume that if two offsets are <code>equal</code> then no
+new data has arrived.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.OffsetSeq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OffsetSeqextendsProductwithSerializable"></a>
+      <a id="OffsetSeq:OffsetSeq"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OffsetSeq.html"><span class="name">OffsetSeq</span></a><span class="params">(<span name="offsets">offsets: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Option">Option</span>[<a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>]]</span>, <span name="metadata">metadata: <span class="extype" name="scala.Option">Option</span>[<a href="OffsetSeqMetadata.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeqMetadata">OffsetSeqMetadata</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetSeqextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An ordered collection of offsets, used to track the progress of processing data from one or more
+<a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>s that are present in a streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>An ordered collection of offsets, used to track the progress of processing data from one or more
+<a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>s that are present in a streaming query. This is similar to simplified, single-instance
+vector clock that must progress linearly forward.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.OffsetSeqLog" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OffsetSeqLogextendsHDFSMetadataLog[org.apache.spark.sql.execution.streaming.OffsetSeq]"></a>
+      <a id="OffsetSeqLog:OffsetSeqLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OffsetSeqLog.html"><span class="name">OffsetSeqLog</span></a><span class="result"> extends <a href="HDFSMetadataLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog">HDFSMetadataLog</a>[<a href="OffsetSeq.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeq">OffsetSeq</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetSeqLogextendsHDFSMetadataLog[org.apache.spark.sql.execution.streaming.OffsetSeq]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This class is used to log offsets to persistent files in HDFS.</p><div class="fullcomment"><div class="comment cmt"><p>This class is used to log offsets to persistent files in HDFS.
+Each file corresponds to a specific batch of offsets. The file
+format contain a version string in the first line, followed
+by a the JSON string representation of the offsets separated
+by a newline character. If a source offset is missing, then
+that line will contain a string value defined in the
+SERIALIZED_VOID_OFFSET variable in <a href="OffsetSeqLog.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeqLog">OffsetSeqLog</a> companion object.
+For instance, when dealing with <a href="LongOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.LongOffset">LongOffset</a> types:
+  v1        // version 1
+  metadata
+  {0}       // LongOffset 0
+  {3}       // LongOffset 3</p><ul><li>        // No offset for this source i.e., an invalid JSON string
+  {2}       // LongOffset 2
+  ...
+</li></ul></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.OffsetSeqMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OffsetSeqMetadataextendsProductwithSerializable"></a>
+      <a id="OffsetSeqMetadata:OffsetSeqMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OffsetSeqMetadata.html"><span class="name">OffsetSeqMetadata</span></a><span class="params">(<span name="batchWatermarkMs">batchWatermarkMs: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">0</span></span>, <span name="batchTimestampMs">batchTimestampMs: <span class="extype" name="scala.Long">Long</span> = <span class="symbol">0</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetSeqMetadataextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Contains metadata associated with a <a href="OffsetSeq.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeq">OffsetSeq</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Contains metadata associated with a <a href="OffsetSeq.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeq">OffsetSeq</a>. This information is
+persisted to the offset log in the checkpoint location via the <a href="OffsetSeq.html" class="extype" name="org.apache.spark.sql.execution.streaming.OffsetSeq">OffsetSeq</a> metadata field.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.OperatorStateId" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OperatorStateIdextendsProductwithSerializable"></a>
+      <a id="OperatorStateId:OperatorStateId"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="OperatorStateId.html"><span class="name">OperatorStateId</span></a><span class="params">(<span name="checkpointLocation">checkpointLocation: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="operatorId">operatorId: <span class="extype" name="scala.Long">Long</span></span>, <span name="batchId">batchId: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OperatorStateIdextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to identify the state store for a given operator.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.ProcessingTimeExecutor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ProcessingTimeExecutorextendsTriggerExecutorwithLoggingwithProductwithSerializable"></a>
+      <a id="ProcessingTimeExecutor:ProcessingTimeExecutor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ProcessingTimeExecutor.html"><span class="name">ProcessingTimeExecutor</span></a><span class="params">(<span name="processingTime">processingTime: <a href="../../streaming/ProcessingTime.html" class="extype" name="org.apache.spark.sql.streaming.ProcessingTime">ProcessingTime</a></span>, <span name="clock">clock: <span class="extype" name="org.apache.spark.util.Clock">Clock</span> = <span class="symbol"><span class="name"><a href="../../../../../package.html">new SystemClock()</a></span></span></span>)</span><span class="result"> extends <a href="TriggerExecutor.html" class="extype" name="org.apache.spark.sql.execution.streaming.TriggerExecutor">TriggerExecutor</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@ProcessingTimeExecutorextendsTriggerExecutorwithLoggingwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A trigger executor that runs a batch every <code>intervalMs</code> milliseconds.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.ProgressReporter" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="ProgressReporterextendsLogging"></a>
+      <a id="ProgressReporter:ProgressReporter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ProgressReporter.html"><span class="name">ProgressReporter</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@ProgressReporterextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Responsible for continually reporting statistics about the amount of data processed as well
+as latency for a streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>Responsible for continually reporting statistics about the amount of data processed as well
+as latency for a streaming query.  This trait is designed to be mixed into the
+<a href="StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a>, who is responsible for calling <code>startTrigger</code> and <code>finishTrigger</code>
+at the appropriate times. Additionally, the status can updated with <code>updateStatusMessage</code> to
+allow reporting on the streams current state (i.e. &quot;Fetching more data&quot;).
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.SerializedOffset" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SerializedOffsetextendsOffsetwithProductwithSerializable"></a>
+      <a id="SerializedOffset:SerializedOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SerializedOffset.html"><span class="name">SerializedOffset</span></a><span class="params">(<span name="json">json: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@SerializedOffsetextendsOffsetwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used when loading a JSON serialized offset from external storage.</p><div class="fullcomment"><div class="comment cmt"><p>Used when loading a JSON serialized offset from external storage.
+We are currently not responsible for converting JSON serialized
+data into an internal (i.e., object) representation. Sources should
+define a factory method in their source Offset companion objects
+that accepts a <a href="SerializedOffset.html" class="extype" name="org.apache.spark.sql.execution.streaming.SerializedOffset">SerializedOffset</a> for doing the conversion.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.Sink" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="SinkextendsAnyRef"></a>
+      <a id="Sink:Sink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Sink.html"><span class="name">Sink</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@SinkextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An interface for systems that can collect the results of a streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>An interface for systems that can collect the results of a streaming query. In order to preserve
+exactly once semantics a sink must be idempotent in the face of multiple attempts to add the same
+batch.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.SinkFileStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SinkFileStatusextendsProductwithSerializable"></a>
+      <a id="SinkFileStatus:SinkFileStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SinkFileStatus.html"><span class="name">SinkFileStatus</span></a><span class="params">(<span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="size">size: <span class="extype" name="scala.Long">Long</span></span>, <span name="isDir">isDir: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="modificationTime">modificationTime: <span class="extype" name="scala.Long">Long</span></span>, <span name="blockReplication">blockReplication: <span class="extype" name="scala.Int">Int</span></span>, <span name="blockSize">blockSize: <span class="extype" name="scala.Long">Long</span></span>, <span name="action">action: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@SinkFileStatusextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The status of a file outputted by <a href="FileStreamSink.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSink">FileStreamSink</a>.</p><div class="fullcomment"><div class="comment cmt"><p>The status of a file outputted by <a href="FileStreamSink.html" class="extype" name="org.apache.spark.sql.execution.streaming.FileStreamSink">FileStreamSink</a>. A file is visible only if it appears in
+the sink log and its action is not &quot;delete&quot;.
+</p></div><dl class="paramcmts block"><dt class="param">path</dt><dd class="cmt"><p>the file path.</p></dd><dt class="param">size</dt><dd class="cmt"><p>the file size.</p></dd><dt class="param">isDir</dt><dd class="cmt"><p>whether this file is a directory.</p></dd><dt class="param">modificationTime</dt><dd class="cmt"><p>the file last modification time.</p></dd><dt class="param">blockReplication</dt><dd class="cmt"><p>the block replication.</p></dd><dt class="param">blockSize</dt><dd class="cmt"><p>the block size.</p></dd><dt class="param">action</dt><dd class="cmt"><p>the file action. Must be either &quot;add&quot; or &quot;delete&quot;.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.Source" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="SourceextendsAnyRef"></a>
+      <a id="Source:Source"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Source.html"><span class="name">Source</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@SourceextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A source of continually arriving data for a streaming query.</p><div class="fullcomment"><div class="comment cmt"><p>A source of continually arriving data for a streaming query. A <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> must have a
+monotonically increasing notion of progress that can be represented as an <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>. Spark
+will regularly query each <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> to see if any more data is available.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StateStoreRestoreExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StateStoreRestoreExecextendsSparkPlanwithUnaryExecNodewithStatefulOperatorwithProductwithSerializable"></a>
+      <a id="StateStoreRestoreExec:StateStoreRestoreExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StateStoreRestoreExec.html"><span class="name">StateStoreRestoreExec</span></a><span class="params">(<span name="keyExpressions">keyExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="stateId">stateId: <span class="extype" name="scala.Option">Option</span>[<a href="OperatorStateId.html" class="extype" name="org.apache.spark.sql.execution.streaming.OperatorStateId">OperatorStateId</a>]</span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="StatefulOperator.html" class="extype" name="org.apache.spark.sql.execution.streaming.StatefulOperator">StatefulOperator</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StateStoreRestoreExecextendsSparkPlanwithUnaryExecNodewithStatefulOperatorwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">For each input tuple, the key is calculated and the value from the <span class="extype" name="StateStore">StateStore</span> is added
+to the stream (in addition to the input tuple) if present.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.StateStoreSaveExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StateStoreSaveExecextendsSparkPlanwithUnaryExecNodewithStatefulOperatorwithProductwithSerializable"></a>
+      <a id="StateStoreSaveExec:StateStoreSaveExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StateStoreSaveExec.html"><span class="name">StateStoreSaveExec</span></a><span class="params">(<span name="keyExpressions">keyExpressions: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="stateId">stateId: <span class="extype" name="scala.Option">Option</span>[<a href="OperatorStateId.html" class="extype" name="org.apache.spark.sql.execution.streaming.OperatorStateId">OperatorStateId</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="outputMode">outputMode: <span class="extype" name="scala.Option">Option</span>[<a href="../../streaming/OutputMode.html" class="extype" name="org.apache.spark.sql.streaming.OutputMode">OutputMode</a>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="eventTimeWatermark">eventTimeWatermark: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Long">Long</span>] = <span class="symbol"><span class="name"><a href="../../../../../../scala/package.html">None</a></span></span></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <a href="StatefulOperator.html" class="extype" name="org.apache.spark.sql.execution.streaming.StatefulOperator">StatefulOperator</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StateStoreSaveExecextendsSparkPlanwithUnaryExecNodewithStatefulOperatorwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">For each input tuple, the key is calculated and the tuple is <code>put</code> into the <span class="extype" name="StateStore">StateStore</span>.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.StatefulOperator" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StatefulOperatorextendsSparkPlan"></a>
+      <a id="StatefulOperator:StatefulOperator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="StatefulOperator.html"><span class="name">StatefulOperator</span></a><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StatefulOperatorextendsSparkPlan" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An operator that saves or restores state from the <span class="extype" name="StateStore">StateStore</span>.</p><div class="fullcomment"><div class="comment cmt"><p>An operator that saves or restores state from the <span class="extype" name="StateStore">StateStore</span>.  The <a href="OperatorStateId.html" class="extype" name="org.apache.spark.sql.execution.streaming.OperatorStateId">OperatorStateId</a> should
+be filled in by <code>prepareForExecution</code> in <a href="IncrementalExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.IncrementalExecution">IncrementalExecution</a>.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecution" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamExecutionextendsStreamingQuerywithProgressReporterwithLogging"></a>
+      <a id="StreamExecution:StreamExecution"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamExecution.html"><span class="name">StreamExecution</span></a><span class="result"> extends <a href="../../streaming/StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> with <a href="ProgressReporter.html" class="extype" name="org.apache.spark.sql.execution.streaming.ProgressReporter">ProgressReporter</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamExecutionextendsStreamingQuerywithProgressReporterwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Manages the execution of a streaming Spark SQL query that is occurring in a separate thread.</p><div class="fullcomment"><div class="comment cmt"><p>Manages the execution of a streaming Spark SQL query that is occurring in a separate thread.
+Unlike a standard query, a streaming query executes repeatedly each time new data arrives at any
+<a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> present in the query plan. Whenever new data arrives, a <a href="../QueryExecution.html" class="extype" name="org.apache.spark.sql.execution.QueryExecution">QueryExecution</a> is created
+and the results are committed transactionally to the given <a href="Sink.html" class="extype" name="org.apache.spark.sql.execution.streaming.Sink">Sink</a>.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamExecutionThread" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StreamExecutionThreadextendsUninterruptibleThread"></a>
+      <a id="StreamExecutionThread:StreamExecutionThread"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamExecutionThread.html"><span class="name">StreamExecutionThread</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.util.UninterruptibleThread">UninterruptibleThread</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamExecutionThreadextendsUninterruptibleThread" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A special thread to run the stream query.</p><div class="fullcomment"><div class="comment cmt"><p>A special thread to run the stream query. Some codes require to run in the StreamExecutionThread
+and will use <code>classOf[StreamExecutionThread]</code> to check.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamMetadataextendsProductwithSerializable"></a>
+      <a id="StreamMetadata:StreamMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamMetadata.html"><span class="name">StreamMetadata</span></a><span class="params">(<span name="id">id: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamMetadataextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Contains metadata associated with a <span class="extype" name="StreamingQuery">StreamingQuery</span>.</p><div class="fullcomment"><div class="comment cmt"><p>Contains metadata associated with a <span class="extype" name="StreamingQuery">StreamingQuery</span>. This information is written
+in the checkpoint location the first time a query is started and recovered every time the query
+is restarted.
+</p></div><dl class="paramcmts block"><dt class="param">id</dt><dd class="cmt"><p>unique id of the <span class="extype" name="StreamingQuery">StreamingQuery</span> that needs to be persisted across restarts</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamProgress" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamProgressextendsMap[org.apache.spark.sql.execution.streaming.Source,org.apache.spark.sql.execution.streaming.Offset]"></a>
+      <a id="StreamProgress:StreamProgress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamProgress.html"><span class="name">StreamProgress</span></a><span class="result"> extends <span class="extype" name="scala.collection.immutable.Map">Map</span>[<a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a>, <a href="Offset.html" class="extype" name="org.apache.spark.sql.execution.streaming.Offset">Offset</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamProgressextendsMap[org.apache.spark.sql.execution.streaming.Source,org.apache.spark.sql.execution.streaming.Offset]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A helper class that looks like a Map[Source, Offset].</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingExecutionRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingExecutionRelationextendsLeafNodewithProductwithSerializable"></a>
+      <a id="StreamingExecutionRelation:StreamingExecutionRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingExecutionRelation.html"><span class="name">StreamingExecutionRelation</span></a><span class="params">(<span name="source">source: <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingExecutionRelationextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to link a streaming <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> of data into a
+<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">org.apache.spark.sql.catalyst.plans.logical.LogicalPlan</a>.</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingQueryListenerBus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryListenerBusextendsSparkListenerwithListenerBus[org.apache.spark.sql.streaming.StreamingQueryListener,org.apache.spark.sql.streaming.StreamingQueryListener.Event]"></a>
+      <a id="StreamingQueryListenerBus:StreamingQueryListenerBus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryListenerBus.html"><span class="name">StreamingQueryListenerBus</span></a><span class="result"> extends <a href="../../../scheduler/SparkListener.html" class="extype" name="org.apache.spark.scheduler.SparkListener">SparkListener</a> with <span class="extype" name="org.apache.spark.util.ListenerBus">ListenerBus</span>[<a href="../../streaming/StreamingQueryListener.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener">StreamingQueryListener</a>, <a href="../../streaming/StreamingQueryListener$$Event.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQueryListener.Event">Event</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingQueryListenerBusextendsSparkListenerwithListenerBus[org.apache.spark.sql.streaming.StreamingQueryListener,org.apache.spark.sql.streaming.StreamingQueryListener.Event]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A bus to forward events to <span class="extype" name="StreamingQueryListener">StreamingQueryListener</span>s.</p><div class="fullcomment"><div class="comment cmt"><p>A bus to forward events to <span class="extype" name="StreamingQueryListener">StreamingQueryListener</span>s. This one will send received
+<span class="extype" name="StreamingQueryListener.Event">StreamingQueryListener.Event</span>s to the Spark listener bus. It also registers itself with
+Spark listener bus, so that it can receive <span class="extype" name="StreamingQueryListener.Event">StreamingQueryListener.Event</span>s and dispatch them
+to StreamingQueryListeners.</p><p>Note that each bus and its registered listeners are associated with a single SparkSession
+and StreamingQueryManager. So this bus will dispatch events to registered listeners for only
+those queries that were started in the associated SparkSession.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingQueryWrapper" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingQueryWrapperextendsStreamingQuerywithSerializable"></a>
+      <a id="StreamingQueryWrapper:StreamingQueryWrapper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingQueryWrapper.html"><span class="name">StreamingQueryWrapper</span></a><span class="result"> extends <a href="../../streaming/StreamingQuery.html" class="extype" name="org.apache.spark.sql.streaming.StreamingQuery">StreamingQuery</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingQueryWrapperextendsStreamingQuerywithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Wrap non-serializable StreamExecution to make the query serializable as it's easy to for it to
+get captured with normal usage.</p><div class="fullcomment"><div class="comment cmt"><p>Wrap non-serializable StreamExecution to make the query serializable as it's easy to for it to
+get captured with normal usage. It's safe to capture the query but not use it in executors.
+However, if the user tries to call its methods, it will throw <code>IllegalStateException</code>.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingRelation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingRelationextendsLeafNodewithProductwithSerializable"></a>
+      <a id="StreamingRelation:StreamingRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingRelation.html"><span class="name">StreamingRelation</span></a><span class="params">(<span name="dataSource">dataSource: <a href="../datasources/DataSource.html" class="extype" name="org.apache.spark.sql.execution.datasources.DataSource">DataSource</a></span>, <span name="sourceName">sourceName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingRelationextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Used to link a streaming <span class="extype" name="DataSource">DataSource</span> into a
+<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">org.apache.spark.sql.catalyst.plans.logical.LogicalPlan</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Used to link a streaming <span class="extype" name="DataSource">DataSource</span> into a
+<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">org.apache.spark.sql.catalyst.plans.logical.LogicalPlan</a>. This is only used for creating
+a streaming <a href="../../package.html#DataFrame=org.apache.spark.sql.Dataset[org.apache.spark.sql.Row]" class="extmbr" name="org.apache.spark.sql.DataFrame">org.apache.spark.sql.DataFrame</a> from <a href="../../DataFrameReader.html" class="extype" name="org.apache.spark.sql.DataFrameReader">org.apache.spark.sql.DataFrameReader</a>.
+It should be used to create <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> and converted to <a href="StreamingExecutionRelation.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamingExecutionRelation">StreamingExecutionRelation</a> when
+passing to <a href="StreamExecution.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamExecution">StreamExecution</a> to run a query.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingRelationExec" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingRelationExecextendsSparkPlanwithLeafExecNodewithProductwithSerializable"></a>
+      <a id="StreamingRelationExec:StreamingRelationExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingRelationExec.html"><span class="name">StreamingRelationExec</span></a><span class="params">(<span name="sourceName">sourceName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../LeafExecNode.html" class="extype" name="org.apache.spark.sql.execution.LeafExecNode">LeafExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingRelationExecextendsSparkPlanwithLeafExecNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A dummy physical plan for <a href="StreamingRelation.html" class="extype" name="org.apache.spark.sql.execution.streaming.StreamingRelation">StreamingRelation</a> to support
+<a href="../../Dataset.html#explain():Unit" class="extmbr" name="org.apache.spark.sql.Dataset#explain">org.apache.spark.sql.Dataset.explain</a>
+</p>
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSource" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TextSocketSourceextendsSourcewithLogging"></a>
+      <a id="TextSocketSource:TextSocketSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TextSocketSource.html"><span class="name">TextSocketSource</span></a><span class="result"> extends <a href="Source.html" class="extype" name="org.apache.spark.sql.execution.streaming.Source">Source</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@TextSocketSourceextendsSourcewithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A source that reads text lines through a TCP socket, designed only for tutorials and debugging.</p><div class="fullcomment"><div class="comment cmt"><p>A source that reads text lines through a TCP socket, designed only for tutorials and debugging.
+This source will *not* work in production applications due to multiple reasons, including no
+support for fault recovery and keeping all of the text read in memory forever.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSourceProvider" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TextSocketSourceProviderextendsStreamSourceProviderwithDataSourceRegisterwithLogging"></a>
+      <a id="TextSocketSourceProvider:TextSocketSourceProvider"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TextSocketSourceProvider.html"><span class="name">TextSocketSourceProvider</span></a><span class="result"> extends <a href="../../sources/StreamSourceProvider.html" class="extype" name="org.apache.spark.sql.sources.StreamSourceProvider">StreamSourceProvider</a> with <a href="../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@TextSocketSourceProviderextendsStreamSourceProviderwithDataSourceRegisterwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.TriggerExecutor" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="TriggerExecutorextendsAnyRef"></a>
+      <a id="TriggerExecutor:TriggerExecutor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="TriggerExecutor.html"><span class="name">TriggerExecutor</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@TriggerExecutorextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.streaming.CompactibleFileStreamLog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CompactibleFileStreamLog"></a>
+      <a id="CompactibleFileStreamLog:CompactibleFileStreamLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CompactibleFileStreamLog$.html"><span class="name">CompactibleFileStreamLog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@CompactibleFileStreamLog" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.EventTimeStats" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EventTimeStats"></a>
+      <a id="EventTimeStats:EventTimeStats"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EventTimeStats$.html"><span class="name">EventTimeStats</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@EventTimeStats" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSink" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSink"></a>
+      <a id="FileStreamSink:FileStreamSink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSink$.html"><span class="name">FileStreamSink</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSink" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSinkLog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSinkLog"></a>
+      <a id="FileStreamSinkLog:FileStreamSinkLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSinkLog$.html"><span class="name">FileStreamSinkLog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSinkLog" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSource"></a>
+      <a id="FileStreamSource:FileStreamSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSource$.html"><span class="name">FileStreamSource</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSource" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSourceLog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSourceLog"></a>
+      <a id="FileStreamSourceLog:FileStreamSourceLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSourceLog$.html"><span class="name">FileStreamSourceLog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSourceLog" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.FileStreamSourceOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FileStreamSourceOffset"></a>
+      <a id="FileStreamSourceOffset:FileStreamSourceOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FileStreamSourceOffset$.html"><span class="name">FileStreamSourceOffset</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@FileStreamSourceOffset" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.HDFSMetadataLog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HDFSMetadataLog"></a>
+      <a id="HDFSMetadataLog:HDFSMetadataLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HDFSMetadataLog$.html"><span class="name">HDFSMetadataLog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@HDFSMetadataLog" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.LongOffset" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LongOffset"></a>
+      <a id="LongOffset:LongOffset"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LongOffset$.html"><span class="name">LongOffset</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@LongOffset" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.MemoryStream" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MemoryStream"></a>
+      <a id="MemoryStream:MemoryStream"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="MemoryStream$.html"><span class="name">MemoryStream</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@MemoryStream" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.OffsetSeq" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OffsetSeq"></a>
+      <a id="OffsetSeq:OffsetSeq"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OffsetSeq$.html"><span class="name">OffsetSeq</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetSeq" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.OffsetSeqLog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OffsetSeqLog"></a>
+      <a id="OffsetSeqLog:OffsetSeqLog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OffsetSeqLog$.html"><span class="name">OffsetSeqLog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetSeqLog" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.OffsetSeqMetadata" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OffsetSeqMetadata"></a>
+      <a id="OffsetSeqMetadata:OffsetSeqMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OffsetSeqMetadata$.html"><span class="name">OffsetSeqMetadata</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@OffsetSeqMetadata" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.SinkFileStatus" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SinkFileStatus"></a>
+      <a id="SinkFileStatus:SinkFileStatus"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SinkFileStatus$.html"><span class="name">SinkFileStatus</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@SinkFileStatus" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamMetadata" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamMetadata"></a>
+      <a id="StreamMetadata:StreamMetadata"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamMetadata$.html"><span class="name">StreamMetadata</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamMetadata" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingExecutionRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingExecutionRelation"></a>
+      <a id="StreamingExecutionRelation:StreamingExecutionRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingExecutionRelation$.html"><span class="name">StreamingExecutionRelation</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingExecutionRelation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.StreamingRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingRelation"></a>
+      <a id="StreamingRelation:StreamingRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingRelation$.html"><span class="name">StreamingRelation</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@StreamingRelation" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.TextSocketSource" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TextSocketSource"></a>
+      <a id="TextSocketSource:TextSocketSource"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TextSocketSource$.html"><span class="name">TextSocketSource</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@TextSocketSource" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.streaming.state" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="state"></a>
+      <a id="state:state"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="state/package.html"><span class="name">state</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.streaming.package@state" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -1,0 +1,966 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>Hokusai - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.Hokusai</title>
+          <meta name="description" content="Hokusai - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.Hokusai" />
+          <meta name="keywords" content="Hokusai snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.Hokusai" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.Hokusai';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <a href="Hokusai$.html" title="See companion object"><img alt="Class/Object" src="../../../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
+        <h1><a href="Hokusai$.html" title="See companion object">Hokusai</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="Hokusai$.html" title="See companion object">object Hokusai</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.sql.execution">package execution</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Hokusai</span><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Implements the algorithms and data structures from &quot;Hokusai -- Sketching
+Streams in Real Time&quot;, by Sergiy Matusevych, Alexander Smola, Amr Ahmed.
+http://www.auai.org/uai2012/papers/231.pdf</p><p>Aggregates state, so this is a mutable class.</p><p>Since we are all still learning scala, I thought I'd explain the use of
+implicits in this file.   TimeAggregation takes an implicit constructor
+parameter:
+   TimeAggregation[T]()(implicit val cmsMonoid: CMSMonoid[T])
+The purpose for that is:
++ In Algebird, a CMSMonoid[T] is a factory for creating instances of CMS[T]
++ TimeAggregation needs to occasionally make new CMS instances, so it will
+  use the factory
++ By making it an implicit (and in the curried param), the outer context of
+  the TimeAggregation can create/ensure that the factory is there.
++ Hokusai[T] will be the &quot;outer context&quot; so it can handle that for
+  TimeAggregation</p><p>TODO
+1. Decide if the underlying CMS should be mutable (save memory) or
+   functional (algebird) I'm afraid that with the functional approach,
+   and having so many, every time we merge two CMS, we create a third
+   and that is wasteful of memory or may take too much memory. If we go
+   with a mutable CMS, we have to either make stream-lib's serializable,
+   or make our own.</p><p>2. Clean up intrusion of algebird shenanigans in the code (implicit
+   factories etc)</p><p>3. Decide on API for managing data and time.  Do we increment time in a
+   separate operation or add a time parameter to addData()?</p><p>4. Decide if we want to be mutable or functional in this datastruct.
+   Current version is mutable.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="TopKHokusai.html" class="extype" name="org.apache.spark.sql.execution.TopKHokusai">TopKHokusai</a></div>
+          </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.execution.Hokusai"><span>Hokusai</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.spark.sql.execution.Hokusai#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(cmsParams:org.apache.spark.sql.execution.CMSParams,windowSize:Long,epoch0:Long,taList:scala.collection.mutable.MutableList[org.apache.spark.sql.execution.cms.CountMinSketch[T]],itemList:scala.collection.mutable.MutableList[org.apache.spark.sql.execution.cms.CountMinSketch[T]],intervalTracker:org.apache.spark.sql.execution.IntervalTracker,intitalInterval:Long,mBarInitializer:Option[org.apache.spark.sql.execution.cms.CountMinSketch[T]])(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.sql.execution.Hokusai[T]"></a>
+      <a id="&lt;init&gt;:Hokusai[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">Hokusai</span><span class="params">(<span name="cmsParams">cmsParams: <a href="CMSParams.html" class="extype" name="org.apache.spark.sql.execution.CMSParams">CMSParams</a></span>, <span name="windowSize">windowSize: <span class="extype" name="scala.Long">Long</span></span>, <span name="epoch0">epoch0: <span class="extype" name="scala.Long">Long</span></span>, <span name="taList">taList: <span class="extype" name="scala.collection.mutable.MutableList">MutableList</span>[<a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]]</span>, <span name="itemList">itemList: <span class="extype" name="scala.collection.mutable.MutableList">MutableList</span>[<a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]]</span>, <span name="intervalTracker">intervalTracker: <a href="IntervalTracker.html" class="extype" name="org.apache.spark.sql.execution.IntervalTracker">IntervalTracker</a></span>, <span name="intitalInterval">intitalInterval: <span class="extype" name="scala.Long">Long</span></span>, <span name="mBarInitializer">mBarInitializer: <span class="extype" name="scala.Option">Option</span>[<a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]]</span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]</span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@&lt;init&gt;(cmsParams:org.apache.spark.sql.execution.CMSParams,windowSize:Long,epoch0:Long,taList:scala.collection.mutable.MutableList[org.apache.spark.sql.execution.cms.CountMinSketch[T]],itemList:scala.collection.mutable.MutableList[org.apache.spark.sql.execution.cms.CountMinSketch[T]],intervalTracker:org.apache.spark.sql.execution.IntervalTracker,intitalInterval:Long,mBarInitializer:Option[org.apache.spark.sql.execution.cms.CountMinSketch[T]])(implicitevidence$1:scala.reflect.ClassTag[T]):org.apache.spark.sql.execution.Hokusai[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.Hokusai.ItemAggregation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ItemAggregationextendsAnyRef"></a>
+      <a id="ItemAggregation:ItemAggregation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Hokusai$ItemAggregation.html"><span class="name">ItemAggregation</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@ItemAggregationextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai.TimeAggregation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TimeAggregationextendsAnyRef"></a>
+      <a id="TimeAggregation:TimeAggregation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Hokusai$TimeAggregation.html"><span class="name">TimeAggregation</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@TimeAggregationextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Data Structures and Algorithms to maintain Time Aggregation from the paper.</p><div class="fullcomment"><div class="comment cmt"><p>Data Structures and Algorithms to maintain Time Aggregation from the paper.
+Time is modeled as a non-decreasing integer starting at 0.</p><p>The type parameter, T, is the key type.  This needs to be numeric.  Typical
+value is Long, but Short can cut down on size of resulting data structure,
+but increased chance of collision.  BigInt is another possibility.</p><p>From Theorem 4 in the Paper:</p><p>At time t, the sketch M<sup>j contains statistics for the period
+[t-delta, t-delta-2</sup>j] where delta = t mod 2^j</p><p>The following shows an example of how data ages through m() as t
+starts at 0 and increases:</p><pre>=== t = <span class="num">0</span>
+  t=<span class="num">0</span>  j=<span class="num">0</span> m is EMPTY
+=== t = <span class="num">1</span>
+  t=<span class="num">1</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">0</span>, <span class="num">1</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+=== t = <span class="num">2</span>
+  t=<span class="num">2</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">1</span>, <span class="num">2</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">2</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">0</span>, <span class="num">2</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+=== t = <span class="num">3</span>
+  t=<span class="num">3</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">2</span>, <span class="num">3</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">3</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">0</span>, <span class="num">2</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+=== t = <span class="num">4</span>
+  t=<span class="num">4</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">3</span>, <span class="num">4</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">4</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">2</span>, <span class="num">4</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+  t=<span class="num">4</span>  j=<span class="num">2</span> m(<span class="num">2</span>)=[<span class="num">0</span>, <span class="num">4</span>) # secs in m(<span class="num">2</span>): <span class="num">4</span>
+=== t = <span class="num">5</span>
+  t=<span class="num">5</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">4</span>, <span class="num">5</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">5</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">2</span>, <span class="num">4</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+  t=<span class="num">5</span>  j=<span class="num">2</span> m(<span class="num">2</span>)=[<span class="num">0</span>, <span class="num">4</span>) # secs in m(<span class="num">2</span>): <span class="num">4</span>
+=== t = <span class="num">6</span>
+  t=<span class="num">6</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">5</span>, <span class="num">6</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">6</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">4</span>, <span class="num">6</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+  t=<span class="num">6</span>  j=<span class="num">2</span> m(<span class="num">2</span>)=[<span class="num">0</span>, <span class="num">4</span>) # secs in m(<span class="num">2</span>): <span class="num">4</span>
+=== t = <span class="num">7</span>
+  t=<span class="num">7</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">6</span>, <span class="num">7</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">7</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">4</span>, <span class="num">6</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+  t=<span class="num">7</span>  j=<span class="num">2</span> m(<span class="num">2</span>)=[<span class="num">0</span>, <span class="num">4</span>) # secs in m(<span class="num">2</span>): <span class="num">4</span>
+=== t = <span class="num">8</span>
+  t=<span class="num">8</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">7</span>, <span class="num">8</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">8</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">6</span>, <span class="num">8</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+  t=<span class="num">8</span>  j=<span class="num">2</span> m(<span class="num">2</span>)=[<span class="num">4</span>, <span class="num">8</span>) # secs in m(<span class="num">2</span>): <span class="num">4</span>
+  t=<span class="num">8</span>  j=<span class="num">3</span> m(<span class="num">3</span>)=[<span class="num">0</span>, <span class="num">8</span>) # secs in m(<span class="num">3</span>): <span class="num">8</span>
+=== t = <span class="num">9</span>
+  t=<span class="num">9</span>  j=<span class="num">0</span> m(<span class="num">0</span>)=[<span class="num">8</span>, <span class="num">9</span>) # secs in m(<span class="num">0</span>): <span class="num">1</span>
+  t=<span class="num">9</span>  j=<span class="num">1</span> m(<span class="num">1</span>)=[<span class="num">6</span>, <span class="num">8</span>) # secs in m(<span class="num">1</span>): <span class="num">2</span>
+  t=<span class="num">9</span>  j=<span class="num">2</span> m(<span class="num">2</span>)=[<span class="num">4</span>, <span class="num">8</span>) # secs in m(<span class="num">2</span>): <span class="num">4</span>
+  t=<span class="num">9</span>  j=<span class="num">3</span> m(<span class="num">3</span>)=[<span class="num">0</span>, <span class="num">8</span>) # secs in m(<span class="num">3</span>): <span class="num">8</span></pre><p> numIntervals The number of sketches to keep in the exponential backoff.
+       the last one will have a sketch of all data.  Default value is 16.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai.TimeAndItemAggregation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TimeAndItemAggregationextendsAnyRef"></a>
+      <a id="TimeAndItemAggregation:TimeAndItemAggregation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Hokusai$TimeAndItemAggregation.html"><span class="name">TimeAndItemAggregation</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@TimeAndItemAggregationextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#accummulate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="accummulate[K](data:Iterable[K],extractor:K=&gt;(T,Long,Long)):Unit"></a>
+      <a id="accummulate[K](Iterable[K],(K)⇒(T,Long,Long)):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">accummulate</span><span class="tparams">[<span name="K">K</span>]</span><span class="params">(<span name="data">data: <a href="../../../../../scala/package.html#Iterable[+A]=Iterable[A]" class="extmbr" name="scala.Iterable">Iterable</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.accummulate.K">K</span>]</span>, <span name="extractor">extractor: (<span class="extype" name="org.apache.spark.sql.execution.Hokusai.accummulate.K">K</span>) ⇒ (<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>, <span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Long">Long</span>)</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@accummulate[K](data:Iterable[K],extractor:K=&gt;(T,Long,Long)):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#accummulate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="accummulate(data:scala.collection.Map[T,Long]):Unit"></a>
+      <a id="accummulate(Map[T,Long]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">accummulate</span><span class="params">(<span name="data">data: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>, <span class="extype" name="scala.Long">Long</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@accummulate(data:scala.collection.Map[T,Long]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#accummulate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="accummulate(data:Seq[T]):Unit"></a>
+      <a id="accummulate(Seq[T]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">accummulate</span><span class="params">(<span name="data">data: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@accummulate(data:Seq[T]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#addEpochData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addEpochData(data:scala.collection.Map[T,Long]):Unit"></a>
+      <a id="addEpochData(Map[T,Long]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addEpochData</span><span class="params">(<span name="data">data: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>, <span class="extype" name="scala.Long">Long</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@addEpochData(data:scala.collection.Map[T,Long]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#addEpochData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addEpochData(data:scala.collection.Map[T,Long],time:Long):Unit"></a>
+      <a id="addEpochData(Map[T,Long],Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addEpochData</span><span class="params">(<span name="data">data: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>, <span class="extype" name="scala.Long">Long</span>]</span>, <span name="time">time: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@addEpochData(data:scala.collection.Map[T,Long],time:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#addEpochData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addEpochData(data:Seq[T]):Unit"></a>
+      <a id="addEpochData(Seq[T]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addEpochData</span><span class="params">(<span name="data">data: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@addEpochData(data:Seq[T]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#addTimestampedData" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="addTimestampedData(data:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.execution.KeyFrequencyWithTimestamp[T]]):Unit"></a>
+      <a id="addTimestampedData(ArrayBuffer[KeyFrequencyWithTimestamp[T]]):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">addTimestampedData</span><span class="params">(<span name="data">data: <span class="extype" name="scala.collection.mutable.ArrayBuffer">ArrayBuffer</span>[<a href="KeyFrequencyWithTimestamp.html" class="extype" name="org.apache.spark.sql.execution.KeyFrequencyWithTimestamp">KeyFrequencyWithTimestamp</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]]</span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@addTimestampedData(data:scala.collection.mutable.ArrayBuffer[org.apache.spark.sql.execution.KeyFrequencyWithTimestamp[T]]):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#cmsParams" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="cmsParams:org.apache.spark.sql.execution.CMSParams"></a>
+      <a id="cmsParams:CMSParams"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">cmsParams</span><span class="result">: <a href="CMSParams.html" class="extype" name="org.apache.spark.sql.execution.CMSParams">CMSParams</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@cmsParams:org.apache.spark.sql.execution.CMSParams" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#createZeroCMS" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="createZeroCMS(intervalFromLast:Int):org.apache.spark.sql.execution.cms.CountMinSketch[T]"></a>
+      <a id="createZeroCMS(Int):CountMinSketch[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">createZeroCMS</span><span class="params">(<span name="intervalFromLast">intervalFromLast: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@createZeroCMS(intervalFromLast:Int):org.apache.spark.sql.execution.cms.CountMinSketch[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#epoch0" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="epoch0:Long"></a>
+      <a id="epoch0:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">epoch0</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@epoch0:Long" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#increment" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="increment():Unit"></a>
+      <a id="increment():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">increment</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@increment():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#mBar" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mBar:org.apache.spark.sql.execution.cms.CountMinSketch[T]"></a>
+      <a id="mBar:CountMinSketch[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">var</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mBar</span><span class="result">: <a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@mBar:org.apache.spark.sql.execution.cms.CountMinSketch[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#mergeCreator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="mergeCreator:Array[org.apache.spark.sql.execution.cms.CountMinSketch[T]]=&gt;org.apache.spark.sql.execution.cms.CountMinSketch[T]"></a>
+      <a id="mergeCreator:(Array[CountMinSketch[T]])⇒CountMinSketch[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mergeCreator</span><span class="result">: (<span class="extype" name="scala.Array">Array</span>[<a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]]) ⇒ <a href="cms/CountMinSketch.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a>[<span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@mergeCreator:Array[org.apache.spark.sql.execution.cms.CountMinSketch[T]]=&gt;org.apache.spark.sql.execution.cms.CountMinSketch[T]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#queryAtTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryAtTime(epoch:Long,key:T):Option[org.apache.spark.sql.execution.Approximate]"></a>
+      <a id="queryAtTime(Long,T):Option[Approximate]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryAtTime</span><span class="params">(<span name="epoch">epoch: <span class="extype" name="scala.Long">Long</span></span>, <span name="key">key: <span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@queryAtTime(epoch:Long,key:T):Option[org.apache.spark.sql.execution.Approximate]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#queryBetweenTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryBetweenTime(epochFrom:Long,epochTo:Long,key:T):Option[org.apache.spark.sql.execution.Approximate]"></a>
+      <a id="queryBetweenTime(Long,Long,T):Option[Approximate]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryBetweenTime</span><span class="params">(<span name="epochFrom">epochFrom: <span class="extype" name="scala.Long">Long</span></span>, <span name="epochTo">epochTo: <span class="extype" name="scala.Long">Long</span></span>, <span name="key">key: <span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@queryBetweenTime(epochFrom:Long,epochTo:Long,key:T):Option[org.apache.spark.sql.execution.Approximate]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#queryTillLastNIntervals" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryTillLastNIntervals(lastNIntervals:Int,item:T):Option[org.apache.spark.sql.execution.Approximate]"></a>
+      <a id="queryTillLastNIntervals(Int,T):Option[Approximate]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryTillLastNIntervals</span><span class="params">(<span name="lastNIntervals">lastNIntervals: <span class="extype" name="scala.Int">Int</span></span>, <span name="item">item: <span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@queryTillLastNIntervals(lastNIntervals:Int,item:T):Option[org.apache.spark.sql.execution.Approximate]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#queryTillTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="queryTillTime(epoch:Long,key:T):Option[org.apache.spark.sql.execution.Approximate]"></a>
+      <a id="queryTillTime(Long,T):Option[Approximate]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">queryTillTime</span><span class="params">(<span name="epoch">epoch: <span class="extype" name="scala.Long">Long</span></span>, <span name="key">key: <span class="extype" name="org.apache.spark.sql.execution.Hokusai.T">T</span></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="Approximate.html" class="extype" name="org.apache.spark.sql.execution.Approximate">Approximate</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@queryTillTime(epoch:Long,key:T):Option[org.apache.spark.sql.execution.Approximate]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#taPlusIa" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="taPlusIa:Hokusai.this.TimeAndItemAggregation"></a>
+      <a id="taPlusIa:TimeAndItemAggregation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">taPlusIa</span><span class="result">: <a href="Hokusai$TimeAndItemAggregation.html" class="extype" name="org.apache.spark.sql.execution.Hokusai.TimeAndItemAggregation">TimeAndItemAggregation</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@taPlusIa:Hokusai.this.TimeAndItemAggregation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#timeEpoch" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="timeEpoch:org.apache.spark.sql.TimeEpoch"></a>
+      <a id="timeEpoch:TimeEpoch"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timeEpoch</span><span class="result">: <a href="../TimeEpoch.html" class="extype" name="org.apache.spark.sql.TimeEpoch">TimeEpoch</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@timeEpoch:org.apache.spark.sql.TimeEpoch" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.Hokusai#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.Hokusai">Hokusai</a> → AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.execution.Hokusai#windowSize" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="windowSize:Long"></a>
+      <a id="windowSize:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">windowSize</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.execution.Hokusai@windowSize:Long" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

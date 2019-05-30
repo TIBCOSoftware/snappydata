@@ -1,0 +1,1063 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>ThriftCLIService - snappydata_2.11 1.1.0-HF-1 API - org.apache.hive.service.cli.thrift.ThriftCLIService</title>
+          <meta name="description" content="ThriftCLIService - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.hive.service.cli.thrift.ThriftCLIService" />
+          <meta name="keywords" content="ThriftCLIService snappydata 2.11 1.1.0 HF 1 API org.apache.hive.service.cli.thrift.ThriftCLIService" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.hive.service.cli.thrift.ThriftCLIService';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <img alt="Class" src="../../../../../../lib/class_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.hive">hive</a>.<a href="../../package.html" class="extype" name="org.apache.hive.service">service</a>.<a href="../package.html" class="extype" name="org.apache.hive.service.cli">cli</a>.<a href="package.html" class="extype" name="org.apache.hive.service.cli.thrift">thrift</a></p>
+        <h1>ThriftCLIService</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.hive.service.cli.thrift">package thrift</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ThriftCLIService</span><span class="result"> extends <a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> with <span class="extype" name="org.apache.hive.service.cli.thrift.TCLIService.Iface">Iface</span> with <span class="extype" name="java.lang.Runnable">Runnable</span></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><span class="extype" name="java.lang.Runnable">Runnable</span>, <span class="extype" name="org.apache.hive.service.cli.thrift.TCLIService.Iface">Iface</span>, <a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a>, <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a>, <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div><div class="toggleContainer block">
+            <span class="toggle">Known Subclasses</span>
+            <div class="subClasses hiddenContent"><a href="ThriftBinaryCLIService.html" class="extype" name="org.apache.hive.service.cli.thrift.ThriftBinaryCLIService">ThriftBinaryCLIService</a>, <a href="ThriftHttpCLIService.html" class="extype" name="org.apache.hive.service.cli.thrift.ThriftHttpCLIService">ThriftHttpCLIService</a></div>
+          </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.hive.service.cli.thrift.ThriftCLIService"><span>ThriftCLIService</span></li><li class="in" name="java.lang.Runnable"><span>Runnable</span></li><li class="in" name="org.apache.hive.service.cli.thrift.TCLIService.Iface"><span>Iface</span></li><li class="in" name="org.apache.hive.service.AbstractService"><span>AbstractService</span></li><li class="in" name="org.apache.hive.service.Service"><span>Service</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        <div id="constructors" class="members">
+              <h3>Instance Constructors</h3>
+              <ol><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="&lt;init&gt;(service:org.apache.hive.service.cli.CLIService,serviceName:String):org.apache.hive.service.cli.thrift.ThriftCLIService"></a>
+      <a id="&lt;init&gt;:ThriftCLIService"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">new</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ThriftCLIService</span><span class="params">(<span name="service">service: <a href="../CLIService.html" class="extype" name="org.apache.hive.service.cli.CLIService">CLIService</a></span>, <span name="serviceName">serviceName: <span class="extype" name="java.lang.String">String</span></span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@&lt;init&gt;(service:org.apache.hive.service.cli.CLIService,serviceName:String):org.apache.hive.service.cli.thrift.ThriftCLIService" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.hive.service.Service.STATE" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="STATE=org.apache.hive.service.Service.STATE"></a>
+      <a id="STATE:STATE"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">STATE</span><span class="result"> = <span class="extype" name="org.apache.hive.service.Service.STATE">Service.STATE</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@STATE=org.apache.hive.service.Service.STATE" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Abstract Value Members</h3>
+              <ol><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#run" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="run():Unit"></a>
+      <a id="run():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">run</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@run():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Runnable</dd></dl></div>
+    </li></ol>
+            </div>
+
+        <div id="values" class="values members">
+              <h3>Concrete Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#CancelDelegationToken" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CancelDelegationToken(req:org.apache.hive.service.cli.thrift.TCancelDelegationTokenReq):org.apache.hive.service.cli.thrift.TCancelDelegationTokenResp"></a>
+      <a id="CancelDelegationToken(TCancelDelegationTokenReq):TCancelDelegationTokenResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CancelDelegationToken</span><span class="params">(<span name="req">req: <a href="TCancelDelegationTokenReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TCancelDelegationTokenReq">TCancelDelegationTokenReq</a></span>)</span><span class="result">: <a href="TCancelDelegationTokenResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TCancelDelegationTokenResp">TCancelDelegationTokenResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@CancelDelegationToken(req:org.apache.hive.service.cli.thrift.TCancelDelegationTokenReq):org.apache.hive.service.cli.thrift.TCancelDelegationTokenResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#CancelOperation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CancelOperation(req:org.apache.hive.service.cli.thrift.TCancelOperationReq):org.apache.hive.service.cli.thrift.TCancelOperationResp"></a>
+      <a id="CancelOperation(TCancelOperationReq):TCancelOperationResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CancelOperation</span><span class="params">(<span name="req">req: <a href="TCancelOperationReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TCancelOperationReq">TCancelOperationReq</a></span>)</span><span class="result">: <a href="TCancelOperationResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TCancelOperationResp">TCancelOperationResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@CancelOperation(req:org.apache.hive.service.cli.thrift.TCancelOperationReq):org.apache.hive.service.cli.thrift.TCancelOperationResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#CloseOperation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CloseOperation(req:org.apache.hive.service.cli.thrift.TCloseOperationReq):org.apache.hive.service.cli.thrift.TCloseOperationResp"></a>
+      <a id="CloseOperation(TCloseOperationReq):TCloseOperationResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CloseOperation</span><span class="params">(<span name="req">req: <a href="TCloseOperationReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TCloseOperationReq">TCloseOperationReq</a></span>)</span><span class="result">: <a href="TCloseOperationResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TCloseOperationResp">TCloseOperationResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@CloseOperation(req:org.apache.hive.service.cli.thrift.TCloseOperationReq):org.apache.hive.service.cli.thrift.TCloseOperationResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#CloseSession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CloseSession(req:org.apache.hive.service.cli.thrift.TCloseSessionReq):org.apache.hive.service.cli.thrift.TCloseSessionResp"></a>
+      <a id="CloseSession(TCloseSessionReq):TCloseSessionResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">CloseSession</span><span class="params">(<span name="req">req: <a href="TCloseSessionReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TCloseSessionReq">TCloseSessionReq</a></span>)</span><span class="result">: <a href="TCloseSessionResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TCloseSessionResp">TCloseSessionResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@CloseSession(req:org.apache.hive.service.cli.thrift.TCloseSessionReq):org.apache.hive.service.cli.thrift.TCloseSessionResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#ExecuteStatement" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExecuteStatement(req:org.apache.hive.service.cli.thrift.TExecuteStatementReq):org.apache.hive.service.cli.thrift.TExecuteStatementResp"></a>
+      <a id="ExecuteStatement(TExecuteStatementReq):TExecuteStatementResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ExecuteStatement</span><span class="params">(<span name="req">req: <a href="TExecuteStatementReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TExecuteStatementReq">TExecuteStatementReq</a></span>)</span><span class="result">: <a href="TExecuteStatementResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TExecuteStatementResp">TExecuteStatementResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@ExecuteStatement(req:org.apache.hive.service.cli.thrift.TExecuteStatementReq):org.apache.hive.service.cli.thrift.TExecuteStatementResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#FetchResults" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FetchResults(req:org.apache.hive.service.cli.thrift.TFetchResultsReq):org.apache.hive.service.cli.thrift.TFetchResultsResp"></a>
+      <a id="FetchResults(TFetchResultsReq):TFetchResultsResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">FetchResults</span><span class="params">(<span name="req">req: <a href="TFetchResultsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TFetchResultsReq">TFetchResultsReq</a></span>)</span><span class="result">: <a href="TFetchResultsResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TFetchResultsResp">TFetchResultsResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@FetchResults(req:org.apache.hive.service.cli.thrift.TFetchResultsReq):org.apache.hive.service.cli.thrift.TFetchResultsResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetCatalogs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetCatalogs(req:org.apache.hive.service.cli.thrift.TGetCatalogsReq):org.apache.hive.service.cli.thrift.TGetCatalogsResp"></a>
+      <a id="GetCatalogs(TGetCatalogsReq):TGetCatalogsResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetCatalogs</span><span class="params">(<span name="req">req: <a href="TGetCatalogsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetCatalogsReq">TGetCatalogsReq</a></span>)</span><span class="result">: <a href="TGetCatalogsResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetCatalogsResp">TGetCatalogsResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetCatalogs(req:org.apache.hive.service.cli.thrift.TGetCatalogsReq):org.apache.hive.service.cli.thrift.TGetCatalogsResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetColumns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetColumns(req:org.apache.hive.service.cli.thrift.TGetColumnsReq):org.apache.hive.service.cli.thrift.TGetColumnsResp"></a>
+      <a id="GetColumns(TGetColumnsReq):TGetColumnsResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetColumns</span><span class="params">(<span name="req">req: <a href="TGetColumnsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsReq">TGetColumnsReq</a></span>)</span><span class="result">: <a href="TGetColumnsResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetColumnsResp">TGetColumnsResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetColumns(req:org.apache.hive.service.cli.thrift.TGetColumnsReq):org.apache.hive.service.cli.thrift.TGetColumnsResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetDelegationToken" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetDelegationToken(req:org.apache.hive.service.cli.thrift.TGetDelegationTokenReq):org.apache.hive.service.cli.thrift.TGetDelegationTokenResp"></a>
+      <a id="GetDelegationToken(TGetDelegationTokenReq):TGetDelegationTokenResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetDelegationToken</span><span class="params">(<span name="req">req: <a href="TGetDelegationTokenReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetDelegationTokenReq">TGetDelegationTokenReq</a></span>)</span><span class="result">: <a href="TGetDelegationTokenResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetDelegationTokenResp">TGetDelegationTokenResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetDelegationToken(req:org.apache.hive.service.cli.thrift.TGetDelegationTokenReq):org.apache.hive.service.cli.thrift.TGetDelegationTokenResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetFunctions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetFunctions(req:org.apache.hive.service.cli.thrift.TGetFunctionsReq):org.apache.hive.service.cli.thrift.TGetFunctionsResp"></a>
+      <a id="GetFunctions(TGetFunctionsReq):TGetFunctionsResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetFunctions</span><span class="params">(<span name="req">req: <a href="TGetFunctionsReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetFunctionsReq">TGetFunctionsReq</a></span>)</span><span class="result">: <a href="TGetFunctionsResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetFunctionsResp">TGetFunctionsResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetFunctions(req:org.apache.hive.service.cli.thrift.TGetFunctionsReq):org.apache.hive.service.cli.thrift.TGetFunctionsResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetInfo(req:org.apache.hive.service.cli.thrift.TGetInfoReq):org.apache.hive.service.cli.thrift.TGetInfoResp"></a>
+      <a id="GetInfo(TGetInfoReq):TGetInfoResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetInfo</span><span class="params">(<span name="req">req: <a href="TGetInfoReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetInfoReq">TGetInfoReq</a></span>)</span><span class="result">: <a href="TGetInfoResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetInfoResp">TGetInfoResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetInfo(req:org.apache.hive.service.cli.thrift.TGetInfoReq):org.apache.hive.service.cli.thrift.TGetInfoResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetOperationStatus" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetOperationStatus(req:org.apache.hive.service.cli.thrift.TGetOperationStatusReq):org.apache.hive.service.cli.thrift.TGetOperationStatusResp"></a>
+      <a id="GetOperationStatus(TGetOperationStatusReq):TGetOperationStatusResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetOperationStatus</span><span class="params">(<span name="req">req: <a href="TGetOperationStatusReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetOperationStatusReq">TGetOperationStatusReq</a></span>)</span><span class="result">: <a href="TGetOperationStatusResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetOperationStatusResp">TGetOperationStatusResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetOperationStatus(req:org.apache.hive.service.cli.thrift.TGetOperationStatusReq):org.apache.hive.service.cli.thrift.TGetOperationStatusResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetResultSetMetadata" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetResultSetMetadata(req:org.apache.hive.service.cli.thrift.TGetResultSetMetadataReq):org.apache.hive.service.cli.thrift.TGetResultSetMetadataResp"></a>
+      <a id="GetResultSetMetadata(TGetResultSetMetadataReq):TGetResultSetMetadataResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetResultSetMetadata</span><span class="params">(<span name="req">req: <a href="TGetResultSetMetadataReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetResultSetMetadataReq">TGetResultSetMetadataReq</a></span>)</span><span class="result">: <a href="TGetResultSetMetadataResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetResultSetMetadataResp">TGetResultSetMetadataResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetResultSetMetadata(req:org.apache.hive.service.cli.thrift.TGetResultSetMetadataReq):org.apache.hive.service.cli.thrift.TGetResultSetMetadataResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetSchemas" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetSchemas(req:org.apache.hive.service.cli.thrift.TGetSchemasReq):org.apache.hive.service.cli.thrift.TGetSchemasResp"></a>
+      <a id="GetSchemas(TGetSchemasReq):TGetSchemasResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetSchemas</span><span class="params">(<span name="req">req: <a href="TGetSchemasReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetSchemasReq">TGetSchemasReq</a></span>)</span><span class="result">: <a href="TGetSchemasResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetSchemasResp">TGetSchemasResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetSchemas(req:org.apache.hive.service.cli.thrift.TGetSchemasReq):org.apache.hive.service.cli.thrift.TGetSchemasResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetTableTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetTableTypes(req:org.apache.hive.service.cli.thrift.TGetTableTypesReq):org.apache.hive.service.cli.thrift.TGetTableTypesResp"></a>
+      <a id="GetTableTypes(TGetTableTypesReq):TGetTableTypesResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetTableTypes</span><span class="params">(<span name="req">req: <a href="TGetTableTypesReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTableTypesReq">TGetTableTypesReq</a></span>)</span><span class="result">: <a href="TGetTableTypesResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTableTypesResp">TGetTableTypesResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetTableTypes(req:org.apache.hive.service.cli.thrift.TGetTableTypesReq):org.apache.hive.service.cli.thrift.TGetTableTypesResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetTables(req:org.apache.hive.service.cli.thrift.TGetTablesReq):org.apache.hive.service.cli.thrift.TGetTablesResp"></a>
+      <a id="GetTables(TGetTablesReq):TGetTablesResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetTables</span><span class="params">(<span name="req">req: <a href="TGetTablesReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTablesReq">TGetTablesReq</a></span>)</span><span class="result">: <a href="TGetTablesResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTablesResp">TGetTablesResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetTables(req:org.apache.hive.service.cli.thrift.TGetTablesReq):org.apache.hive.service.cli.thrift.TGetTablesResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#GetTypeInfo" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GetTypeInfo(req:org.apache.hive.service.cli.thrift.TGetTypeInfoReq):org.apache.hive.service.cli.thrift.TGetTypeInfoResp"></a>
+      <a id="GetTypeInfo(TGetTypeInfoReq):TGetTypeInfoResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">GetTypeInfo</span><span class="params">(<span name="req">req: <a href="TGetTypeInfoReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTypeInfoReq">TGetTypeInfoReq</a></span>)</span><span class="result">: <a href="TGetTypeInfoResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TGetTypeInfoResp">TGetTypeInfoResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@GetTypeInfo(req:org.apache.hive.service.cli.thrift.TGetTypeInfoReq):org.apache.hive.service.cli.thrift.TGetTypeInfoResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#OpenSession" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OpenSession(req:org.apache.hive.service.cli.thrift.TOpenSessionReq):org.apache.hive.service.cli.thrift.TOpenSessionResp"></a>
+      <a id="OpenSession(TOpenSessionReq):TOpenSessionResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">OpenSession</span><span class="params">(<span name="req">req: <a href="TOpenSessionReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TOpenSessionReq">TOpenSessionReq</a></span>)</span><span class="result">: <a href="TOpenSessionResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TOpenSessionResp">TOpenSessionResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@OpenSession(req:org.apache.hive.service.cli.thrift.TOpenSessionReq):org.apache.hive.service.cli.thrift.TOpenSessionResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#RenewDelegationToken" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RenewDelegationToken(req:org.apache.hive.service.cli.thrift.TRenewDelegationTokenReq):org.apache.hive.service.cli.thrift.TRenewDelegationTokenResp"></a>
+      <a id="RenewDelegationToken(TRenewDelegationTokenReq):TRenewDelegationTokenResp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">RenewDelegationToken</span><span class="params">(<span name="req">req: <a href="TRenewDelegationTokenReq.html" class="extype" name="org.apache.hive.service.cli.thrift.TRenewDelegationTokenReq">TRenewDelegationTokenReq</a></span>)</span><span class="result">: <a href="TRenewDelegationTokenResp.html" class="extype" name="org.apache.hive.service.cli.thrift.TRenewDelegationTokenResp">TRenewDelegationTokenResp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@RenewDelegationToken(req:org.apache.hive.service.cli.thrift.TRenewDelegationTokenReq):org.apache.hive.service.cli.thrift.TRenewDelegationTokenResp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → Iface</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.hive.service.AbstractService#getHiveConf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getHiveConf():org.apache.hadoop.hive.conf.HiveConf"></a>
+      <a id="getHiveConf():HiveConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHiveConf</span><span class="params">()</span><span class="result">: <span class="extype" name="org.apache.hadoop.hive.conf.HiveConf">HiveConf</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getHiveConf():org.apache.hadoop.hive.conf.HiveConf" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="org.apache.hive.service.AbstractService#getName" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getName():String"></a>
+      <a id="getName():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getName</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getName():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#getPortNumber" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getPortNumber():Int"></a>
+      <a id="getPortNumber():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getPortNumber</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getPortNumber():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#getServerIPAddress" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getServerIPAddress():java.net.InetAddress"></a>
+      <a id="getServerIPAddress():InetAddress"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getServerIPAddress</span><span class="params">()</span><span class="result">: <span class="extype" name="java.net.InetAddress">InetAddress</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getServerIPAddress():java.net.InetAddress" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.hive.service.AbstractService#getServiceState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getServiceState():AbstractService.this.STATE"></a>
+      <a id="getServiceState():STATE"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getServiceState</span><span class="params">()</span><span class="result">: <a href="#STATE=org.apache.hive.service.Service.STATE" class="extmbr" name="org.apache.hive.service.cli.thrift.ThriftCLIService.STATE">STATE</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getServiceState():AbstractService.this.STATE" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="org.apache.hive.service.AbstractService#getStartTime" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getStartTime():Long"></a>
+      <a id="getStartTime():Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getStartTime</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@getStartTime():Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#init" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="init(hiveConf:org.apache.hadoop.hive.conf.HiveConf):Unit"></a>
+      <a id="init(HiveConf):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">init</span><span class="params">(<span name="hiveConf">hiveConf: <span class="extype" name="org.apache.hadoop.hive.conf.HiveConf">HiveConf</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@init(hiveConf:org.apache.hadoop.hive.conf.HiveConf):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → <a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.hive.service.AbstractService#register" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="register(l:org.apache.hive.service.ServiceStateChangeListener):Unit"></a>
+      <a id="register(ServiceStateChangeListener):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">register</span><span class="params">(<span name="l">l: <a href="../../ServiceStateChangeListener.html" class="extype" name="org.apache.hive.service.ServiceStateChangeListener">ServiceStateChangeListener</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@register(l:org.apache.hive.service.ServiceStateChangeListener):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#start" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="start():Unit"></a>
+      <a id="start():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">start</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@start():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → <a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="org.apache.hive.service.cli.thrift.ThriftCLIService#stop" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stop():Unit"></a>
+      <a id="stop():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stop</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@stop():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.hive.service.cli.thrift.ThriftCLIService">ThriftCLIService</a> → <a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.hive.service.AbstractService#unregister" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="unregister(l:org.apache.hive.service.ServiceStateChangeListener):Unit"></a>
+      <a id="unregister(ServiceStateChangeListener):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">unregister</span><span class="params">(<span name="l">l: <a href="../../ServiceStateChangeListener.html" class="extype" name="org.apache.hive.service.ServiceStateChangeListener">ServiceStateChangeListener</a></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@unregister(l:org.apache.hive.service.ServiceStateChangeListener):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a> → <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.hive.service.cli.thrift.ThriftCLIService@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="java.lang.Runnable">
+              <h3>Inherited from <span class="extype" name="java.lang.Runnable">Runnable</span></h3>
+            </div><div class="parent" name="org.apache.hive.service.cli.thrift.TCLIService.Iface">
+              <h3>Inherited from <span class="extype" name="org.apache.hive.service.cli.thrift.TCLIService.Iface">Iface</span></h3>
+            </div><div class="parent" name="org.apache.hive.service.AbstractService">
+              <h3>Inherited from <a href="../../AbstractService.html" class="extype" name="org.apache.hive.service.AbstractService">AbstractService</a></h3>
+            </div><div class="parent" name="org.apache.hive.service.Service">
+              <h3>Inherited from <a href="../../Service.html" class="extype" name="org.apache.hive.service.Service">Service</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

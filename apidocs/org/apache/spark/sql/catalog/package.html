@@ -1,0 +1,206 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>catalog - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalog</title>
+          <meta name="description" content="catalog - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalog" />
+          <meta name="keywords" content="catalog snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalog" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalog.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>catalog</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">catalog</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalog.Catalog" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="CatalogextendsAnyRef"></a>
+      <a id="Catalog:Catalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Catalog.html"><span class="name">Catalog</span></a><span class="result"> extends <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.package@CatalogextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Catalog interface for Spark.</p><div class="fullcomment"><div class="comment cmt"><p>Catalog interface for Spark. To access this, use <code>SparkSession.catalog</code>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Column" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ColumnextendsDefinedByConstructorParams"></a>
+      <a id="Column:Column"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Column.html"><span class="name">Column</span></a><span class="result"> extends <a href="../catalyst/DefinedByConstructorParams.html" class="extype" name="org.apache.spark.sql.catalyst.DefinedByConstructorParams">DefinedByConstructorParams</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.package@ColumnextendsDefinedByConstructorParams" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A column in Spark, as returned by <code>listColumns</code> method in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A column in Spark, as returned by <code>listColumns</code> method in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Database" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DatabaseextendsDefinedByConstructorParams"></a>
+      <a id="Database:Database"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Database.html"><span class="name">Database</span></a><span class="result"> extends <a href="../catalyst/DefinedByConstructorParams.html" class="extype" name="org.apache.spark.sql.catalyst.DefinedByConstructorParams">DefinedByConstructorParams</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.package@DatabaseextendsDefinedByConstructorParams" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A database in Spark, as returned by the <code>listDatabases</code> method defined in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A database in Spark, as returned by the <code>listDatabases</code> method defined in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Function" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="FunctionextendsDefinedByConstructorParams"></a>
+      <a id="Function:Function"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Function.html"><span class="name">Function</span></a><span class="result"> extends <a href="../catalyst/DefinedByConstructorParams.html" class="extype" name="org.apache.spark.sql.catalyst.DefinedByConstructorParams">DefinedByConstructorParams</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.package@FunctionextendsDefinedByConstructorParams" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A user-defined function in Spark, as returned by <code>listFunctions</code> method in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A user-defined function in Spark, as returned by <code>listFunctions</code> method in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalog.Table" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TableextendsDefinedByConstructorParams"></a>
+      <a id="Table:Table"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Table.html"><span class="name">Table</span></a><span class="result"> extends <a href="../catalyst/DefinedByConstructorParams.html" class="extype" name="org.apache.spark.sql.catalyst.DefinedByConstructorParams">DefinedByConstructorParams</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalog.package@TableextendsDefinedByConstructorParams" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A table in Spark, as returned by the <code>listTables</code> method in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A table in Spark, as returned by the <code>listTables</code> method in <a href="Catalog.html" class="extype" name="org.apache.spark.sql.catalog.Catalog">Catalog</a>.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Stable</span><span class="args">()</span>
+              
+        </dd><dt>Since</dt><dd><p>2.0.0</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -1,0 +1,257 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>parquet - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.datasources.parquet</title>
+          <meta name="description" content="parquet - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.datasources.parquet" />
+          <meta name="keywords" content="parquet snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.datasources.parquet" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.datasources.parquet.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution.datasources">datasources</a></p>
+        <h1>parquet</h1><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parquet</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParquetFileFormatextendsFileFormatwithDataSourceRegisterwithLoggingwithSerializable"></a>
+      <a id="ParquetFileFormat:ParquetFileFormat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ParquetFileFormat.html"><span class="name">ParquetFileFormat</span></a><span class="result"> extends <a href="../FileFormat.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormat">FileFormat</a> with <a href="../../../sources/DataSourceRegister.html" class="extype" name="org.apache.spark.sql.sources.DataSourceRegister">DataSourceRegister</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@ParquetFileFormatextendsFileFormatwithDataSourceRegisterwithLoggingwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.SpecificParquetRecordReaderBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SpecificParquetRecordReaderBase[T]extendsRecordReader[Void,T]"></a>
+      <a id="SpecificParquetRecordReaderBase[T]:SpecificParquetRecordReaderBase[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SpecificParquetRecordReaderBase.html"><span class="name">SpecificParquetRecordReaderBase</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="result"> extends <span class="extype" name="org.apache.hadoop.mapreduce.RecordReader">RecordReader</span>[<span class="extype" name="java.lang.Void">Void</span>, <span class="extype" name="org.apache.spark.sql.execution.datasources.parquet.SpecificParquetRecordReaderBase.T">T</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@SpecificParquetRecordReaderBase[T]extendsRecordReader[Void,T]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.VectorizedColumnReader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VectorizedColumnReaderextendsObject"></a>
+      <a id="VectorizedColumnReader:VectorizedColumnReader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VectorizedColumnReader.html"><span class="name">VectorizedColumnReader</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@VectorizedColumnReaderextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.VectorizedParquetRecordReader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VectorizedParquetRecordReaderextendsSpecificParquetRecordReaderBase[Object]"></a>
+      <a id="VectorizedParquetRecordReader:VectorizedParquetRecordReader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VectorizedParquetRecordReader.html"><span class="name">VectorizedParquetRecordReader</span></a><span class="result"> extends <a href="SpecificParquetRecordReaderBase.html" class="extype" name="org.apache.spark.sql.execution.datasources.parquet.SpecificParquetRecordReaderBase">SpecificParquetRecordReaderBase</a>[<a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@VectorizedParquetRecordReaderextendsSpecificParquetRecordReaderBase[Object]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.VectorizedPlainValuesReader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VectorizedPlainValuesReaderextendsValuesReaderwithVectorizedValuesReader"></a>
+      <a id="VectorizedPlainValuesReader:VectorizedPlainValuesReader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VectorizedPlainValuesReader.html"><span class="name">VectorizedPlainValuesReader</span></a><span class="result"> extends <span class="extype" name="org.apache.parquet.column.values.ValuesReader">ValuesReader</span> with <a href="VectorizedValuesReader.html" class="extype" name="org.apache.spark.sql.execution.datasources.parquet.VectorizedValuesReader">VectorizedValuesReader</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@VectorizedPlainValuesReaderextendsValuesReaderwithVectorizedValuesReader" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.VectorizedRleValuesReader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="VectorizedRleValuesReaderextendsValuesReaderwithVectorizedValuesReader"></a>
+      <a id="VectorizedRleValuesReader:VectorizedRleValuesReader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="VectorizedRleValuesReader.html"><span class="name">VectorizedRleValuesReader</span></a><span class="result"> extends <span class="extype" name="org.apache.parquet.column.values.ValuesReader">ValuesReader</span> with <a href="VectorizedValuesReader.html" class="extype" name="org.apache.spark.sql.execution.datasources.parquet.VectorizedValuesReader">VectorizedValuesReader</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@VectorizedRleValuesReaderextendsValuesReaderwithVectorizedValuesReader" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.VectorizedValuesReader" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="VectorizedValuesReaderextendsObject"></a>
+      <a id="VectorizedValuesReader:VectorizedValuesReader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="VectorizedValuesReader.html"><span class="name">VectorizedValuesReader</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@VectorizedValuesReaderextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetFileFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParquetFileFormat"></a>
+      <a id="ParquetFileFormat:ParquetFileFormat"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ParquetFileFormat$.html"><span class="name">ParquetFileFormat</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@ParquetFileFormat" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.datasources.parquet.ParquetOptions" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ParquetOptions"></a>
+      <a id="ParquetOptions:ParquetOptions"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ParquetOptions$.html"><span class="name">ParquetOptions</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.execution.datasources.parquet.package@ParquetOptions" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

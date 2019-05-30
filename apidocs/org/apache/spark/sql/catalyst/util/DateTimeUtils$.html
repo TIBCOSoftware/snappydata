@@ -1,0 +1,1395 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>DateTimeUtils - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.util.DateTimeUtils</title>
+          <meta name="description" content="DateTimeUtils - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.util.DateTimeUtils" />
+          <meta name="keywords" content="DateTimeUtils snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.util.DateTimeUtils" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.util.DateTimeUtils$';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Object" src="../../../../../../lib/object_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.util">util</a></p>
+        <h1>DateTimeUtils</h1><h3><span class="morelinks"><div>Related Doc:
+            <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst.util">package util</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <span class="name">DateTimeUtils</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Helper functions for converting between internal and external date and time representations.
+Dates are exposed externally as java.sql.Date and are represented internally as the number of
+dates since the Unix epoch (1970-01-01). Timestamps are exposed externally as java.sql.Timestamp
+and are stored internally as longs, which are capable of storing timestamps with 100 nanosecond
+precision.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.util.DateTimeUtils"><span>DateTimeUtils</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SQLDate=Int"></a>
+      <a id="SQLDate:SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SQLDate</span><span class="result"> = <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@SQLDate=Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SQLTimestamp=Long"></a>
+      <a id="SQLTimestamp:SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">type</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SQLTimestamp</span><span class="result"> = <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@SQLTimestamp=Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#JULIAN_DAY_OF_EPOCH" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JULIAN_DAY_OF_EPOCH:Int(2440588)"></a>
+      <a id="JULIAN_DAY_OF_EPOCH:Int(2440588)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">JULIAN_DAY_OF_EPOCH</span><span class="result">: Int(2440588)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@JULIAN_DAY_OF_EPOCH:Int(2440588)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#MICROS_PER_DAY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MICROS_PER_DAY:Long"></a>
+      <a id="MICROS_PER_DAY:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MICROS_PER_DAY</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@MICROS_PER_DAY:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#MICROS_PER_SECOND" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MICROS_PER_SECOND:Long(1000000L)"></a>
+      <a id="MICROS_PER_SECOND:Long(1000000L)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MICROS_PER_SECOND</span><span class="result">: Long(1000000L)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@MICROS_PER_SECOND:Long(1000000L)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#MILLIS_PER_DAY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MILLIS_PER_DAY:Long"></a>
+      <a id="MILLIS_PER_DAY:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MILLIS_PER_DAY</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@MILLIS_PER_DAY:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#MonthOf31Days" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MonthOf31Days:scala.collection.immutable.Set[Int]"></a>
+      <a id="MonthOf31Days:Set[Int]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">MonthOf31Days</span><span class="result">: <span class="extype" name="scala.collection.immutable.Set">Set</span>[<span class="extype" name="scala.Int">Int</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@MonthOf31Days:scala.collection.immutable.Set[Int]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#NANOS_PER_SECOND" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NANOS_PER_SECOND:Long"></a>
+      <a id="NANOS_PER_SECOND:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">NANOS_PER_SECOND</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@NANOS_PER_SECOND:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#SECONDS_PER_DAY" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SECONDS_PER_DAY:Long"></a>
+      <a id="SECONDS_PER_DAY:Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SECONDS_PER_DAY</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@SECONDS_PER_DAY:Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#TimeZoneGMT" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TimeZoneGMT:java.util.TimeZone"></a>
+      <a id="TimeZoneGMT:TimeZone"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">TimeZoneGMT</span><span class="result">: <span class="extype" name="java.util.TimeZone">TimeZone</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@TimeZoneGMT:java.util.TimeZone" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#YearZero" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="YearZero:Int(-17999)"></a>
+      <a id="YearZero:Int(-17999)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">YearZero</span><span class="result">: Int(-17999)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@YearZero:Int(-17999)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#convertTz" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="convertTz(ts:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,fromZone:java.util.TimeZone,toZone:java.util.TimeZone):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp"></a>
+      <a id="convertTz(SQLTimestamp,TimeZone,TimeZone):SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">convertTz</span><span class="params">(<span name="ts">ts: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>, <span name="fromZone">fromZone: <span class="extype" name="java.util.TimeZone">TimeZone</span></span>, <span name="toZone">toZone: <span class="extype" name="java.util.TimeZone">TimeZone</span></span>)</span><span class="result">: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@convertTz(ts:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,fromZone:java.util.TimeZone,toZone:java.util.TimeZone):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Convert the timestamp <code>ts</code> from one timezone to another.</p><div class="fullcomment"><div class="comment cmt"><p>Convert the timestamp <code>ts</code> from one timezone to another.</p><p>TODO: Because of DST, the conversion between UTC and human time is not exactly one-to-one
+mapping, the conversion here may return wrong result, we should make the timestamp
+timezone-aware.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#dateAddMonths" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dateAddMonths(days:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate,months:Int):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate"></a>
+      <a id="dateAddMonths(SQLDate,Int):SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dateAddMonths</span><span class="params">(<span name="days">days: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>, <span name="months">months: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@dateAddMonths(days:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate,months:Int):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Add date and year-month interval.</p><div class="fullcomment"><div class="comment cmt"><p>Add date and year-month interval.
+Returns a date value, expressed in days since 1.1.1970.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#dateToString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="dateToString(days:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):String"></a>
+      <a id="dateToString(SQLDate):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dateToString</span><span class="params">(<span name="days">days: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@dateToString(days:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#daysIn400Years" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="daysIn400Years:Int"></a>
+      <a id="daysIn400Years:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">daysIn400Years</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@daysIn400Years:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#daysToMillis" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="daysToMillis(days:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Long"></a>
+      <a id="daysToMillis(SQLDate):Long"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">daysToMillis</span><span class="params">(<span name="days">days: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Long">Long</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@daysToMillis(days:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Long" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#defaultTimeZone" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="defaultTimeZone:java.util.TimeZone"></a>
+      <a id="defaultTimeZone:TimeZone"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">defaultTimeZone</span><span class="result">: <span class="extype" name="java.util.TimeZone">TimeZone</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@defaultTimeZone:java.util.TimeZone" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#fromJavaDate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromJavaDate(date:java.sql.Date):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate"></a>
+      <a id="fromJavaDate(Date):SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromJavaDate</span><span class="params">(<span name="date">date: <span class="extype" name="java.sql.Date">Date</span></span>)</span><span class="result">: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@fromJavaDate(date:java.sql.Date):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the number of days since epoch from from java.sql.Date.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#fromJavaTimestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromJavaTimestamp(t:java.sql.Timestamp):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp"></a>
+      <a id="fromJavaTimestamp(Timestamp):SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromJavaTimestamp</span><span class="params">(<span name="t">t: <span class="extype" name="java.sql.Timestamp">Timestamp</span></span>)</span><span class="result">: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@fromJavaTimestamp(t:java.sql.Timestamp):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the number of micros since epoch from java.sql.Timestamp.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#fromJulianDay" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromJulianDay(day:Int,nanoseconds:Long):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp"></a>
+      <a id="fromJulianDay(Int,Long):SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromJulianDay</span><span class="params">(<span name="day">day: <span class="extype" name="scala.Int">Int</span></span>, <span name="nanoseconds">nanoseconds: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@fromJulianDay(day:Int,nanoseconds:Long):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the number of microseconds since epoch from Julian day
+and nanoseconds in a day
+</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#fromUTCTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="fromUTCTime(time:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,timeZone:String):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp"></a>
+      <a id="fromUTCTime(SQLTimestamp,String):SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">fromUTCTime</span><span class="params">(<span name="time">time: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>, <span name="timeZone">timeZone: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@fromUTCTime(time:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,timeZone:String):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a timestamp of given timezone from utc timestamp, with the same string
+representation in their timezone.</p>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getDayInYear" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDayInYear(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int"></a>
+      <a id="getDayInYear(SQLDate):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDayInYear</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getDayInYear(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the 'day in year' value for the given date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the 'day in year' value for the given date. The date is expressed in days
+since 1.1.1970.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getDayOfMonth" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getDayOfMonth(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int"></a>
+      <a id="getDayOfMonth(SQLDate):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDayOfMonth</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getDayOfMonth(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the 'day of month' value for the given date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the 'day of month' value for the given date. The date is expressed in days
+since 1.1.1970.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getDayOfWeekFromString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getDayOfWeekFromString(string:org.apache.spark.unsafe.types.UTF8String):Int"></a>
+      <a id="getDayOfWeekFromString(UTF8String):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getDayOfWeekFromString</span><span class="params">(<span name="string">string: <a href="../../../unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getDayOfWeekFromString(string:org.apache.spark.unsafe.types.UTF8String):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getHours" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getHours(microsec:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Int"></a>
+      <a id="getHours(SQLTimestamp):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getHours</span><span class="params">(<span name="microsec">microsec: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getHours(microsec:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the hour value of a given timestamp value.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the hour value of a given timestamp value. The timestamp is expressed in microseconds.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getLastDayOfMonth" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getLastDayOfMonth(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate"></a>
+      <a id="getLastDayOfMonth(SQLDate):SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getLastDayOfMonth</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getLastDayOfMonth(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns last day of the month for the given date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns last day of the month for the given date. The date is expressed in days
+since 1.1.1970.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getMinutes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getMinutes(microsec:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Int"></a>
+      <a id="getMinutes(SQLTimestamp):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getMinutes</span><span class="params">(<span name="microsec">microsec: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getMinutes(microsec:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the minute value of a given timestamp value.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the minute value of a given timestamp value. The timestamp is expressed in
+microseconds.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getMonth" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getMonth(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int"></a>
+      <a id="getMonth(SQLDate):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getMonth</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getMonth(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the month value for the given date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the month value for the given date. The date is expressed in days
+since 1.1.1970. January is month 1.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getNextDateForDayOfWeek" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getNextDateForDayOfWeek(startDate:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate,dayOfWeek:Int):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate"></a>
+      <a id="getNextDateForDayOfWeek(SQLDate,Int):SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getNextDateForDayOfWeek</span><span class="params">(<span name="startDate">startDate: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>, <span name="dayOfWeek">dayOfWeek: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getNextDateForDayOfWeek(startDate:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate,dayOfWeek:Int):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the first date which is later than startDate and is of the given dayOfWeek.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the first date which is later than startDate and is of the given dayOfWeek.
+dayOfWeek is an integer ranges in [0, 6], and 0 is Thu, 1 is Fri, etc,.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getQuarter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getQuarter(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int"></a>
+      <a id="getQuarter(SQLDate):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getQuarter</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getQuarter(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the quarter for the given date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the quarter for the given date. The date is expressed in days
+since 1.1.1970.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getSeconds" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getSeconds(microsec:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Int"></a>
+      <a id="getSeconds(SQLTimestamp):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getSeconds</span><span class="params">(<span name="microsec">microsec: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getSeconds(microsec:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the second value of a given timestamp value.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the second value of a given timestamp value. The timestamp is expressed in
+microseconds.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#getYear" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getYear(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int"></a>
+      <a id="getYear(SQLDate):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getYear</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@getYear(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the year value for the given date.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the year value for the given date. The date is expressed in days
+since 1.1.1970.
+</p></div></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#millisToDays" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="millisToDays(millisUtc:Long):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate"></a>
+      <a id="millisToDays(Long):SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">millisToDays</span><span class="params">(<span name="millisUtc">millisUtc: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@millisToDays(millisUtc:Long):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#monthsBetween" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="monthsBetween(time1:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,time2:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Double"></a>
+      <a id="monthsBetween(SQLTimestamp,SQLTimestamp):Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">monthsBetween</span><span class="params">(<span name="time1">time1: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>, <span name="time2">time2: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@monthsBetween(time1:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,time2:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):Double" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns number of months between time1 and time2.</p><div class="fullcomment"><div class="comment cmt"><p>Returns number of months between time1 and time2. time1 and time2 are expressed in
+microseconds since 1.1.1970.</p><p>If time1 and time2 having the same day of month, or both are the last day of month,
+it returns an integer (time under a day will be ignored).</p><p>Otherwise, the difference is calculated based on 31 days per month, and rounding to
+8 digits.
+</p></div></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#parseTruncLevel" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="parseTruncLevel(format:org.apache.spark.unsafe.types.UTF8String):Int"></a>
+      <a id="parseTruncLevel(UTF8String):Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parseTruncLevel</span><span class="params">(<span name="format">format: <a href="../../../unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a></span>)</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@parseTruncLevel(format:org.apache.spark.unsafe.types.UTF8String):Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the truncate level, could be TRUNC_YEAR, TRUNC_MONTH, or TRUNC_INVALID,
+TRUNC_INVALID means unsupported truncate level.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#splitDate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="splitDate(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):(Int,Int,Int,Int)"></a>
+      <a id="splitDate(SQLDate):(Int,Int,Int,Int)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">splitDate</span><span class="params">(<span name="date">date: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Int">Int</span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@splitDate(date:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):(Int,Int,Int,Int)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Split date (expressed in days since 1.1.1970) into four fields:
+year, month (Jan is Month 1), dayInMonth, daysToMonthEnd (0 if it's last day of month).</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#stringToDate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringToDate(s:org.apache.spark.unsafe.types.UTF8String):Option[org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate]"></a>
+      <a id="stringToDate(UTF8String):Option[SQLDate]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringToDate</span><span class="params">(<span name="s">s: <a href="../../../unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@stringToDate(s:org.apache.spark.unsafe.types.UTF8String):Option[org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Parses a given UTF8 date string to the corresponding a corresponding <span class="extype" name="Int">Int</span> value.</p><div class="fullcomment"><div class="comment cmt"><p>Parses a given UTF8 date string to the corresponding a corresponding <span class="extype" name="Int">Int</span> value.
+The return type is <span class="extype" name="Option">Option</span> in order to distinguish between 0 and null. The following
+formats are allowed:</p><p><code>yyyy</code>,
+<code>yyyy-[m]m</code>
+<code>yyyy-[m]m-[d]d</code>
+<code>yyyy-[m]m-[d]d </code>
+<code>yyyy-[m]m-[d]d *</code>
+<code>yyyy-[m]m-[d]dT*</code>
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#stringToTime" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringToTime(s:String):java.util.Date"></a>
+      <a id="stringToTime(String):Date"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringToTime</span><span class="params">(<span name="s">s: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="java.util.Date">Date</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@stringToTime(s:String):java.util.Date" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@tailrec</span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#stringToTimestamp" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="stringToTimestamp(s:org.apache.spark.unsafe.types.UTF8String):Option[org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp]"></a>
+      <a id="stringToTimestamp(UTF8String):Option[SQLTimestamp]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">stringToTimestamp</span><span class="params">(<span name="s">s: <a href="../../../unsafe/types/UTF8String.html" class="extype" name="org.apache.spark.unsafe.types.UTF8String">UTF8String</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@stringToTimestamp(s:org.apache.spark.unsafe.types.UTF8String):Option[org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Parses a given UTF8 date string to the corresponding a corresponding <span class="extype" name="Long">Long</span> value.</p><div class="fullcomment"><div class="comment cmt"><p>Parses a given UTF8 date string to the corresponding a corresponding <span class="extype" name="Long">Long</span> value.
+The return type is <span class="extype" name="Option">Option</span> in order to distinguish between 0L and null. The following
+formats are allowed:</p><p><code>yyyy</code>
+<code>yyyy-[m]m</code>
+<code>yyyy-[m]m-[d]d</code>
+<code>yyyy-[m]m-[d]d </code>
+<code>yyyy-[m]m-[d]d [h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]</code>
+<code>yyyy-[m]m-[d]d [h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]Z</code>
+<code>yyyy-[m]m-[d]d [h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]-[h]h:[m]m</code>
+<code>yyyy-[m]m-[d]d [h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]+[h]h:[m]m</code>
+<code>yyyy-[m]m-[d]dT[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]</code>
+<code>yyyy-[m]m-[d]dT[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]Z</code>
+<code>yyyy-[m]m-[d]dT[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]-[h]h:[m]m</code>
+<code>yyyy-[m]m-[d]dT[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]+[h]h:[m]m</code>
+<code>[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]</code>
+<code>[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]Z</code>
+<code>[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]-[h]h:[m]m</code>
+<code>[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]+[h]h:[m]m</code>
+<code>T[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]</code>
+<code>T[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]Z</code>
+<code>T[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]-[h]h:[m]m</code>
+<code>T[h]h:[m]m:[s]s.[ms][ms][ms][us][us][us]+[h]h:[m]m</code>
+</p></div></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#threadLocalTimestampFormat" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="threadLocalTimestampFormat:ThreadLocal[java.text.DateFormat]{definitialValue():java.text.SimpleDateFormat}"></a>
+      <a id="threadLocalTimestampFormat:ThreadLocal[DateFormat]{definitialValue():java.text.SimpleDateFormat}"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">threadLocalTimestampFormat</span><span class="result">: <span class="extype" name="java.lang.ThreadLocal">ThreadLocal</span>[<span class="extype" name="java.text.DateFormat">DateFormat</span>] { def initialValue(): java.text.SimpleDateFormat }</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@threadLocalTimestampFormat:ThreadLocal[java.text.DateFormat]{definitialValue():java.text.SimpleDateFormat}" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#timestampAddInterval" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="timestampAddInterval(start:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,months:Int,microseconds:Long):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp"></a>
+      <a id="timestampAddInterval(SQLTimestamp,Int,Long):SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timestampAddInterval</span><span class="params">(<span name="start">start: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>, <span name="months">months: <span class="extype" name="scala.Int">Int</span></span>, <span name="microseconds">microseconds: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@timestampAddInterval(start:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,months:Int,microseconds:Long):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Add timestamp and full interval.</p><div class="fullcomment"><div class="comment cmt"><p>Add timestamp and full interval.
+Returns a timestamp value, expressed in microseconds since 1.1.1970 00:00:00.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#timestampToString" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="timestampToString(us:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):String"></a>
+      <a id="timestampToString(SQLTimestamp):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">timestampToString</span><span class="params">(<span name="us">us: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@timestampToString(us:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#to2001" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="to2001:Int(-11323)"></a>
+      <a id="to2001:Int(-11323)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">to2001</span><span class="result">: Int(-11323)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@to2001:Int(-11323)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#toJavaDate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toJavaDate(daysSinceEpoch:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):java.sql.Date"></a>
+      <a id="toJavaDate(SQLDate):Date"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toJavaDate</span><span class="params">(<span name="daysSinceEpoch">daysSinceEpoch: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>)</span><span class="result">: <span class="extype" name="java.sql.Date">Date</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@toJavaDate(daysSinceEpoch:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate):java.sql.Date" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a java.sql.Date from number of days since epoch.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#toJavaTimestamp" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toJavaTimestamp(us:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):java.sql.Timestamp"></a>
+      <a id="toJavaTimestamp(SQLTimestamp):Timestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toJavaTimestamp</span><span class="params">(<span name="us">us: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: <span class="extype" name="java.sql.Timestamp">Timestamp</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@toJavaTimestamp(us:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):java.sql.Timestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a java.sql.Timestamp from number of micros since epoch.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#toJulianDay" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toJulianDay(us:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):(Int,Long)"></a>
+      <a id="toJulianDay(SQLTimestamp):(Int,Long)"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toJulianDay</span><span class="params">(<span name="us">us: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>)</span><span class="result">: (<span class="extype" name="scala.Int">Int</span>, <span class="extype" name="scala.Long">Long</span>)</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@toJulianDay(us:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp):(Int,Long)" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns Julian day and nanoseconds in a day from the number of microseconds</p><div class="fullcomment"><div class="comment cmt"><p>Returns Julian day and nanoseconds in a day from the number of microseconds</p><p>Note: support timestamp since 4717 BC (without negative nanoseconds, compatible with Hive).
+</p></div></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#toUTCTime" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toUTCTime(time:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,timeZone:String):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp"></a>
+      <a id="toUTCTime(SQLTimestamp,String):SQLTimestamp"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toUTCTime</span><span class="params">(<span name="time">time: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>, <span name="timeZone">timeZone: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="#SQLTimestamp=Long" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp">SQLTimestamp</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@toUTCTime(time:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp,timeZone:String):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLTimestamp" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a utc timestamp from a given timestamp from a given timezone, with the same
+string representation in their timezone.</p>
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#toYearZero" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="toYearZero:Int"></a>
+      <a id="toYearZero:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toYearZero</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@toYearZero:Int" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.util.DateTimeUtils#truncDate" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="truncDate(d:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate,level:Int):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate"></a>
+      <a id="truncDate(SQLDate,Int):SQLDate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">truncDate</span><span class="params">(<span name="d">d: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>, <span name="level">level: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="#SQLDate=Int" class="extmbr" name="org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate">SQLDate</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@truncDate(d:org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate,level:Int):org.apache.spark.sql.catalyst.util.DateTimeUtils.SQLDate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the trunc date from original date and trunc level.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the trunc date from original date and trunc level.
+Trunc level should be generated using <code>parseTruncLevel()</code>, should only be 1 or 2.
+</p></div></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.util.DateTimeUtils$@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -1,0 +1,396 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>hive - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.hive</title>
+          <meta name="description" content="hive - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.hive" />
+          <meta name="keywords" content="hive snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.hive" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.hive.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>hive</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hive</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Support for running Spark SQL queries using functionality from Apache Hive (does not require an
+existing Hive installation).  Supported Hive features include:</p><ul><li>Using HiveQL to express queries.</li><li>Reading metadata from the Hive Metastore using HiveSerDes.</li><li>Hive UDFs, UDAs, UDTs</li></ul><p>Users that would like access to this functionality should create a
+<a href="HiveContext.html" class="extype" name="org.apache.spark.sql.hive.HiveContext">HiveContext</a> instead of a <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a>.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.hive"><span>hive</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.hive.SampledRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SampledRelationextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
+      <a id="SampledRelation:SampledRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SampledRelation.html"><span class="name">SampledRelation</span></a><span class="params">(<span name="child">child: <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../execution/UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SampledRelationextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyAQPSessionCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyAQPSessionCatalogextendsSnappySessionCatalog"></a>
+      <a id="SnappyAQPSessionCatalog:SnappyAQPSessionCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyAQPSessionCatalog.html"><span class="name">SnappyAQPSessionCatalog</span></a><span class="result"> extends <a href="../internal/SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyAQPSessionCatalogextendsSnappySessionCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyHiveCatalogBase" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="SnappyHiveCatalogBaseextendsHiveExternalCatalog"></a>
+      <a id="SnappyHiveCatalogBase:SnappyHiveCatalogBase"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyHiveCatalogBase.html"><span class="name">SnappyHiveCatalogBase</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.sql.hive.HiveExternalCatalog">HiveExternalCatalog</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyHiveCatalogBaseextendsHiveExternalCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyHiveExternalCatalogextendsSnappyHiveCatalogBasewithSnappyExternalCatalog"></a>
+      <a id="SnappyHiveExternalCatalog:SnappyHiveExternalCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyHiveExternalCatalog.html"><span class="name">SnappyHiveExternalCatalog</span></a><span class="result"> extends <a href="SnappyHiveCatalogBase.html" class="extype" name="org.apache.spark.sql.hive.SnappyHiveCatalogBase">SnappyHiveCatalogBase</a> with <a href="../../../../../io/snappydata/sql/catalog/SnappyExternalCatalog.html" class="extype" name="io.snappydata.sql.catalog.SnappyExternalCatalog">SnappyExternalCatalog</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyHiveExternalCatalogextendsSnappyHiveCatalogBasewithSnappyExternalCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.TopKPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TopKPlanextendsLeafNodewithProductwithSerializable"></a>
+      <a id="TopKPlan:TopKPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="TopKPlan.html"><span class="name">TopKPlan</span></a><span class="params">(<span name="topK">topK: (<a href="../execution/TopKWrapper.html" class="extype" name="org.apache.spark.sql.execution.TopKWrapper">TopKWrapper</a>, <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="scala.Int">Int</span>, <a href="../execution/TopK.html" class="extype" name="org.apache.spark.sql.execution.TopK">TopK</a>)])</span>)</span><span class="result"> extends <a href="../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@TopKPlanextendsLeafNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.HiveContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="HiveContextextendsSQLContextwithLogging"></a>
+      <a id="HiveContext:HiveContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveContext.html"><span class="name deprecated" title="Deprecated: (Since version 2.0.0) Use SparkSession.builder.enableHiveSupport instead">HiveContext</span></a><span class="result"> extends <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a> with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@HiveContextextendsSQLContextwithLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An instance of the Spark SQL execution engine that integrates with data stored in Hive.</p><div class="fullcomment"><div class="comment cmt"><p>An instance of the Spark SQL execution engine that integrates with data stored in Hive.
+Configuration for Hive is read from hive-site.xml on the classpath.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@deprecated</span>
+              
+        </dd><dt>Deprecated</dt><dd class="cmt"><p><i>(Since version 2.0.0)</i> Use SparkSession.builder.enableHiveSupport instead</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.hive.HiveClientUtil" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="HiveClientUtil"></a>
+      <a id="HiveClientUtil:HiveClientUtil"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveClientUtil$.html"><span class="name">HiveClientUtil</span></a><span class="result"> extends <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@HiveClientUtil" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A utility class to get hive meta-store connection to underlying SnappyData store.</p><div class="fullcomment"><div class="comment cmt"><p>A utility class to get hive meta-store connection to underlying SnappyData store.
+The main use of this class is to setup hive metadata client properties appropriate
+for connection to embedded store.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.hive.HiveExternalCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveExternalCatalog"></a>
+      <a id="HiveExternalCatalog:HiveExternalCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveExternalCatalog$.html"><span class="name">HiveExternalCatalog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@HiveExternalCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.IdentifySampledRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IdentifySampledRelation"></a>
+      <a id="IdentifySampledRelation:IdentifySampledRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="IdentifySampledRelation$.html"><span class="name">IdentifySampledRelation</span></a><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@IdentifySampledRelation" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.SnappyHiveExternalCatalog" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyHiveExternalCatalog"></a>
+      <a id="SnappyHiveExternalCatalog:SnappyHiveExternalCatalog"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyHiveExternalCatalog$.html"><span class="name">SnappyHiveExternalCatalog</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@SnappyHiveExternalCatalog" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.TopKPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TopKPlan"></a>
+      <a id="TopKPlan:TopKPlan"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TopKPlan$.html"><span class="name">TopKPlan</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@TopKPlan" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.execution" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="execution"></a>
+      <a id="execution:execution"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="execution/package.html"><span class="name">execution</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@execution" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.orc" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="orc"></a>
+      <a id="orc:orc"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="orc/package.html"><span class="name">orc</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@orc" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.test" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="test"></a>
+      <a id="test:test"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="test/package.html"><span class="name">test</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@test" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.hive.thriftserver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="thriftserver"></a>
+      <a id="thriftserver:thriftserver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="thriftserver/package.html"><span class="name">thriftserver</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.hive.package@thriftserver" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

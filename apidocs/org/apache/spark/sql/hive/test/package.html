@@ -1,0 +1,143 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>test - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.hive.test</title>
+          <meta name="description" content="test - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.hive.test" />
+          <meta name="keywords" content="test snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.hive.test" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.hive.test.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.hive">hive</a></p>
+        <h1>test</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.test.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">test</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.hive.test.TestHiveContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TestHiveContextextendsSQLContext"></a>
+      <a id="TestHiveContext:TestHiveContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TestHiveContext.html"><span class="name">TestHiveContext</span></a><span class="result"> extends <a href="../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.test.package@TestHiveContextextendsSQLContext" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A locally running test instance of Spark's Hive execution engine.</p><div class="fullcomment"><div class="comment cmt"><p>A locally running test instance of Spark's Hive execution engine.</p><p>Data from <span class="extype" name="testTables">testTables</span> will be automatically loaded whenever a query is run over those tables.
+Calling <a href="TestHiveContext.html#reset():Unit" class="extmbr" name="org.apache.spark.sql.hive.test.TestHiveContext#reset">reset</a> will delete all tables and other state in the database, leaving the database
+in a &quot;clean&quot; state.</p><p>TestHive is singleton object version of this class because instantiating multiple copies of the
+hive metastore seems to lead to weird non-deterministic failures.  Therefore, the execution of
+test cases that rely on TestHive must be serialized.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.hive.test.TestHive" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="TestHive"></a>
+      <a id="TestHive:TestHive"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="TestHive$.html"><span class="name">TestHive</span></a><span class="result"> extends <a href="TestHiveContext.html" class="extype" name="org.apache.spark.sql.hive.test.TestHiveContext">TestHiveContext</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.test.package@TestHive" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

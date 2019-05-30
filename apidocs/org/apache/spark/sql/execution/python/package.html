@@ -1,0 +1,227 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>python - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.execution.python</title>
+          <meta name="description" content="python - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.execution.python" />
+          <meta name="keywords" content="python snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.execution.python" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.execution.python.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.execution">execution</a></p>
+        <h1>python</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">python</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.python.BatchEvalPythonExec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="BatchEvalPythonExecextendsSparkPlanwithProductwithSerializable"></a>
+      <a id="BatchEvalPythonExec:BatchEvalPythonExec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="BatchEvalPythonExec.html"><span class="name">BatchEvalPythonExec</span></a><span class="params">(<span name="udfs">udfs: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="PythonUDF.html" class="extype" name="org.apache.spark.sql.execution.python.PythonUDF">PythonUDF</a>]</span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package@BatchEvalPythonExecextendsSparkPlanwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A physical plan that evaluates a <a href="PythonUDF.html" class="extype" name="org.apache.spark.sql.execution.python.PythonUDF">PythonUDF</a>, one partition of tuples at a time.</p><div class="fullcomment"><div class="comment cmt"><p>A physical plan that evaluates a <a href="PythonUDF.html" class="extype" name="org.apache.spark.sql.execution.python.PythonUDF">PythonUDF</a>, one partition of tuples at a time.</p><p>Python evaluation works by sending the necessary (projected) input data via a socket to an
+external Python process, and combine the result from the Python process with the original row.</p><p>For each row we send to Python, we also put it in a queue first. For each output row from Python,
+we drain the queue to find the original input row. Note that if the Python process is way too
+slow, this could lead to the queue growing unbounded and spill into disk when run out of memory.</p><p>Here is a diagram to show how this works:</p><p>           Downstream (for parent)
+            /      \
+           /     socket  (output of UDF)
+          /         \
+       RowQueue    Python
+          \         /
+           \     socket  (input of UDF)
+            \     /
+         upstream (from child)</p><p>The rows sent to and received from Python are packed into batches (100 rows) and serialized,
+there should be always some rows buffered in the socket or Python process, so the pulling from
+RowQueue ALWAYS happened after pushing into it.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.execution.python.PythonUDF" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PythonUDFextendsExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable"></a>
+      <a id="PythonUDF:PythonUDF"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="PythonUDF.html"><span class="name">PythonUDF</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="func">func: <span class="extype" name="org.apache.spark.api.python.PythonFunction">PythonFunction</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="children">children: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>)</span><span class="result"> extends <a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> with <a href="../../catalyst/expressions/Unevaluable.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Unevaluable">Unevaluable</a> with <a href="../../catalyst/expressions/NonSQLExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NonSQLExpression">NonSQLExpression</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package@PythonUDFextendsExpressionwithUnevaluablewithNonSQLExpressionwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A serialized version of a Python lambda function.</p>
+    </li><li name="org.apache.spark.sql.execution.python.UserDefinedPythonFunction" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="UserDefinedPythonFunctionextendsProductwithSerializable"></a>
+      <a id="UserDefinedPythonFunction:UserDefinedPythonFunction"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UserDefinedPythonFunction.html"><span class="name">UserDefinedPythonFunction</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="func">func: <span class="extype" name="org.apache.spark.api.python.PythonFunction">PythonFunction</span></span>, <span name="dataType">dataType: <a href="../../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package@UserDefinedPythonFunctionextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A user-defined Python function.</p><div class="fullcomment"><div class="comment cmt"><p>A user-defined Python function. This is used by the Python API.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.execution.python.EvaluatePython" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EvaluatePython"></a>
+      <a id="EvaluatePython:EvaluatePython"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="EvaluatePython$.html"><span class="name">EvaluatePython</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package@EvaluatePython" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.execution.python.ExtractPythonUDFFromAggregate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExtractPythonUDFFromAggregate"></a>
+      <a id="ExtractPythonUDFFromAggregate:ExtractPythonUDFFromAggregate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExtractPythonUDFFromAggregate$.html"><span class="name">ExtractPythonUDFFromAggregate</span></a><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package@ExtractPythonUDFFromAggregate" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extracts all the Python UDFs in logical aggregate, which depends on aggregate expression or
+grouping key, evaluate them after aggregate.</p>
+    </li><li name="org.apache.spark.sql.execution.python.ExtractPythonUDFs" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExtractPythonUDFs"></a>
+      <a id="ExtractPythonUDFs:ExtractPythonUDFs"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExtractPythonUDFs$.html"><span class="name">ExtractPythonUDFs</span></a><span class="result"> extends <a href="../../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.python.package@ExtractPythonUDFs" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Extracts PythonUDFs from operators, rewriting the query plan so that the UDF can be evaluated
+alone in a batch.</p><div class="fullcomment"><div class="comment cmt"><p>Extracts PythonUDFs from operators, rewriting the query plan so that the UDF can be evaluated
+alone in a batch.</p><p>Only extracts the PythonUDFs that could be evaluated in Python (the single child is PythonUDFs
+or all the children could be evaluated in JVM).</p><p>This has the limitation that the input to the Python UDF is not allowed include attributes from
+multiple child operators.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

@@ -1,0 +1,144 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>row - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.row</title>
+          <meta name="description" content="row - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.row" />
+          <meta name="keywords" content="row snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.row" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.row.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a></p>
+        <h1>row</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">row</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.row.JDBCMutableRelation" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="JDBCMutableRelationextendsBaseRelationwithPrunedUnsafeFilteredScanwithInsertableRelationwithPlanInsertableRelationwithRowInsertableRelationwithUpdatableRelationwithDeletableRelationwithDestroyRelationwithIndexableRelationwithAlterableRelationwithNativeTableRowLevelSecurityRelationwithLoggingwithProductwithSerializable"></a>
+      <a id="JDBCMutableRelation:JDBCMutableRelation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCMutableRelation.html"><span class="name">JDBCMutableRelation</span></a><span class="params">(<span name="connProperties">connProperties: <span class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</span></span>, <span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="mode">mode: <a href="../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="userSpecifiedString">userSpecifiedString: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="parts">parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="origOptions">origOptions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="sqlContext">sqlContext: <a href="../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span><span class="result"> extends <a href="../sources/BaseRelation.html" class="extype" name="org.apache.spark.sql.sources.BaseRelation">BaseRelation</a> with <a href="../sources/PrunedUnsafeFilteredScan.html" class="extype" name="org.apache.spark.sql.sources.PrunedUnsafeFilteredScan">PrunedUnsafeFilteredScan</a> with <a href="../sources/InsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.InsertableRelation">InsertableRelation</a> with <a href="../sources/PlanInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.PlanInsertableRelation">PlanInsertableRelation</a> with <a href="../sources/RowInsertableRelation.html" class="extype" name="org.apache.spark.sql.sources.RowInsertableRelation">RowInsertableRelation</a> with <a href="../sources/UpdatableRelation.html" class="extype" name="org.apache.spark.sql.sources.UpdatableRelation">UpdatableRelation</a> with <a href="../sources/DeletableRelation.html" class="extype" name="org.apache.spark.sql.sources.DeletableRelation">DeletableRelation</a> with <a href="../sources/DestroyRelation.html" class="extype" name="org.apache.spark.sql.sources.DestroyRelation">DestroyRelation</a> with <a href="../sources/IndexableRelation.html" class="extype" name="org.apache.spark.sql.sources.IndexableRelation">IndexableRelation</a> with <a href="../sources/AlterableRelation.html" class="extype" name="org.apache.spark.sql.sources.AlterableRelation">AlterableRelation</a> with <a href="../sources/NativeTableRowLevelSecurityRelation.html" class="extype" name="org.apache.spark.sql.sources.NativeTableRowLevelSecurityRelation">NativeTableRowLevelSecurityRelation</a> with <a href="../../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.package@JDBCMutableRelationextendsBaseRelationwithPrunedUnsafeFilteredScanwithInsertableRelationwithPlanInsertableRelationwithRowInsertableRelationwithUpdatableRelationwithDeletableRelationwithDestroyRelationwithIndexableRelationwithAlterableRelationwithNativeTableRowLevelSecurityRelationwithLoggingwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A LogicalPlan implementation for an external row table whose contents
+are retrieved using a JDBC URL or DataSource.</p>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.row.SnappyStoreDialect" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SnappyStoreDialect"></a>
+      <a id="SnappyStoreDialect:SnappyStoreDialect"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStoreDialect$.html"><span class="name">SnappyStoreDialect</span></a><span class="result"> extends <a href="../SnappyDataBaseDialect.html" class="extype" name="org.apache.spark.sql.SnappyDataBaseDialect">SnappyDataBaseDialect</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.row.package@SnappyStoreDialect" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Default dialect for GemFireXD &gt;= 1.4.0.</p><div class="fullcomment"><div class="comment cmt"><p>Default dialect for GemFireXD &gt;= 1.4.0.
+Contains specific type conversions to and from Spark SQL catalyst types.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

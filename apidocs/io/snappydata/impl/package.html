@@ -1,0 +1,386 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>impl - snappydata_2.11 1.1.0-HF-1 API - io.snappydata.impl</title>
+          <meta name="description" content="impl - snappydata 2.11 1.1.0 - HF - 1 API - io.snappydata.impl" />
+          <meta name="keywords" content="impl snappydata 2.11 1.1.0 HF 1 API io.snappydata.impl" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../index.html';
+            var hash = 'io.snappydata.impl.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../lib/package_big.png" />
+        <p id="owner"><a href="../../package.html" class="extype" name="io">io</a>.<a href="../package.html" class="extype" name="io.snappydata">snappydata</a></p>
+        <h1>impl</h1><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">impl</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="io.snappydata.impl.ComplexTypeSerializerImpl" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ComplexTypeSerializerImplextendsComplexTypeSerializerwithLogging"></a>
+      <a id="ComplexTypeSerializerImpl:ComplexTypeSerializerImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ComplexTypeSerializerImpl.html"><span class="name">ComplexTypeSerializerImpl</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.snappy.ComplexTypeSerializer">ComplexTypeSerializer</span> with <a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@ComplexTypeSerializerImplextendsComplexTypeSerializerwithLogging" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Implementation of <code>ComplexTypeSerializer</code> using SnappyData's
+SerializedArray/Map/Row types.</code></p><div class="fullcomment"><div class="comment cmt"><p>Implementation of <code>ComplexTypeSerializer</code> using SnappyData's
+SerializedArray/Map/Row types. These honour platform endianness and
+are overall more efficient than Spark's Unsafe* variants.
+The serialized sizes are included in the serialized form to make it
+consistent with the column table encoding so no additional conversions
+will be required when copying to-and-fro from column format vs row format.</p><p>Not required for the thrift JDBC driver that natively supports the complex
+types via the simpler getObject() JDBC APIs.
+</p></div></div>
+    </li><li name="io.snappydata.impl.ExtendibleURLClassLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExtendibleURLClassLoaderextendsURLClassLoader"></a>
+      <a id="ExtendibleURLClassLoader:ExtendibleURLClassLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExtendibleURLClassLoader.html"><span class="name">ExtendibleURLClassLoader</span></a><span class="result"> extends <span class="extype" name="java.net.URLClassLoader">URLClassLoader</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@ExtendibleURLClassLoaderextendsURLClassLoader" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.GenericInternalRowWithSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenericInternalRowWithSchemaextendsGenericInternalRow"></a>
+      <a id="GenericInternalRowWithSchema:GenericInternalRowWithSchema"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenericInternalRowWithSchema.html"><span class="name">GenericInternalRowWithSchema</span></a><span class="result"> extends <a href="../../../org/apache/spark/sql/catalyst/expressions/GenericInternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.GenericInternalRow">GenericInternalRow</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@GenericInternalRowWithSchemaextendsGenericInternalRow" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.GenericValidatingConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenericValidatingConverterextendsValidatingConverter"></a>
+      <a id="GenericValidatingConverter:GenericValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GenericValidatingConverter.html"><span class="name">GenericValidatingConverter</span></a><span class="result"> extends <a href="ValidatingConverter.html" class="extype" name="io.snappydata.impl.ValidatingConverter">ValidatingConverter</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@GenericValidatingConverterextendsValidatingConverter" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.IdentityValidatingConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="IdentityValidatingConverterextendsValidatingConverter"></a>
+      <a id="IdentityValidatingConverter:IdentityValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="IdentityValidatingConverter.html"><span class="name">IdentityValidatingConverter</span></a><span class="result"> extends <a href="ValidatingConverter.html" class="extype" name="io.snappydata.impl.ValidatingConverter">ValidatingConverter</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@IdentityValidatingConverterextendsValidatingConverter" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.LeadImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LeadImplextendsServerImplwithLeadwithProtocolOverrideswithLogging"></a>
+      <a id="LeadImpl:LeadImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LeadImpl.html"><span class="name">LeadImpl</span></a><span class="result"> extends <a href="ServerImpl.html" class="extype" name="io.snappydata.impl.ServerImpl">ServerImpl</a> with <a href="../Lead.html" class="extype" name="io.snappydata.Lead">Lead</a> with <a href="../ProtocolOverrides.html" class="extype" name="io.snappydata.ProtocolOverrides">ProtocolOverrides</a> with <a href="../../../org/apache/spark/Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@LeadImplextendsServerImplwithLeadwithProtocolOverrideswithLogging" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.LocatorImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LocatorImplextendsFabricLocatorImplwithLocatorwithProtocolOverrides"></a>
+      <a id="LocatorImpl:LocatorImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LocatorImpl.html"><span class="name">LocatorImpl</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricLocatorImpl">FabricLocatorImpl</span> with <a href="../Locator.html" class="extype" name="io.snappydata.Locator">Locator</a> with <a href="../ProtocolOverrides.html" class="extype" name="io.snappydata.ProtocolOverrides">ProtocolOverrides</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@LocatorImplextendsFabricLocatorImplwithLocatorwithProtocolOverrides" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.MapValidatingConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="MapValidatingConverterextendsValidatingConverter"></a>
+      <a id="MapValidatingConverter:MapValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="MapValidatingConverter.html"><span class="name">MapValidatingConverter</span></a><span class="result"> extends <a href="ValidatingConverter.html" class="extype" name="io.snappydata.impl.ValidatingConverter">ValidatingConverter</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@MapValidatingConverterextendsValidatingConverter" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.NullValidatingConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NullValidatingConverterextendsValidatingConverter"></a>
+      <a id="NullValidatingConverter:NullValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="NullValidatingConverter.html"><span class="name">NullValidatingConverter</span></a><span class="result"> extends <a href="ValidatingConverter.html" class="extype" name="io.snappydata.impl.ValidatingConverter">ValidatingConverter</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@NullValidatingConverterextendsValidatingConverter" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.ServerImpl" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ServerImplextendsFabricServerImplwithServerwithProtocolOverrides"></a>
+      <a id="ServerImpl:ServerImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ServerImpl.html"><span class="name">ServerImpl</span></a><span class="result"> extends <span class="extype" name="com.pivotal.gemfirexd.internal.engine.fabricservice.FabricServerImpl">FabricServerImpl</span> with <a href="../Server.html" class="extype" name="io.snappydata.Server">Server</a> with <a href="../ProtocolOverrides.html" class="extype" name="io.snappydata.ProtocolOverrides">ProtocolOverrides</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@ServerImplextendsFabricServerImplwithServerwithProtocolOverrides" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This class ties up few things that is Snappy specific.</p><div class="fullcomment"><div class="comment cmt"><p>This class ties up few things that is Snappy specific.
+for e.g. Connection url &amp; ClusterCallback
+</p></div></div>
+    </li><li name="io.snappydata.impl.SmartConnectorRDDHelper" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SmartConnectorRDDHelperextendsAnyRef"></a>
+      <a id="SmartConnectorRDDHelper:SmartConnectorRDDHelper"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SmartConnectorRDDHelper.html"><span class="name">SmartConnectorRDDHelper</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@SmartConnectorRDDHelperextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.SnappyHiveConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyHiveConfextendsHiveConf"></a>
+      <a id="SnappyHiveConf:SnappyHiveConf"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyHiveConf.html"><span class="name">SnappyHiveConf</span></a><span class="result"> extends <span class="extype" name="org.apache.hadoop.hive.conf.HiveConf">HiveConf</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@SnappyHiveConfextendsHiveConf" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.StructValidatingConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StructValidatingConverterextendsValidatingConverter"></a>
+      <a id="StructValidatingConverter:StructValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StructValidatingConverter.html"><span class="name">StructValidatingConverter</span></a><span class="result"> extends <a href="ValidatingConverter.html" class="extype" name="io.snappydata.impl.ValidatingConverter">ValidatingConverter</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@StructValidatingConverterextendsValidatingConverter" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.ValidatingConverter" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="ValidatingConverterextendsAnyRef"></a>
+      <a id="ValidatingConverter:ValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="ValidatingConverter.html"><span class="name">ValidatingConverter</span></a><span class="result"> extends <a href="../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@ValidatingConverterextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="io.snappydata.impl.LeadImpl" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LeadImpl"></a>
+      <a id="LeadImpl:LeadImpl"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LeadImpl$.html"><span class="name">LeadImpl</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@LeadImpl" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="io.snappydata.impl.ValidatingConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ValidatingConverter"></a>
+      <a id="ValidatingConverter:ValidatingConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ValidatingConverter$.html"><span class="name">ValidatingConverter</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.impl.package@ValidatingConverter" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

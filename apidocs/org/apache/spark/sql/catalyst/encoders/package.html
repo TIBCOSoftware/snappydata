@@ -1,0 +1,246 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>encoders - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.encoders</title>
+          <meta name="description" content="encoders - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.encoders" />
+          <meta name="keywords" content="encoders snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.encoders" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.encoders.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a></p>
+        <h1>encoders</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.encoders.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">encoders</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.encoders"><span>encoders</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExpressionEncoder[T]extendsEncoder[T]withProductwithSerializable"></a>
+      <a id="ExpressionEncoder[T]:ExpressionEncoder[T]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExpressionEncoder.html"><span class="name">ExpressionEncoder</span></a><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="schema">schema: <a href="../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="flat">flat: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="serializer">serializer: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="deserializer">deserializer: <a href="../expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>, <span name="clsTag">clsTag: <span class="extype" name="scala.reflect.ClassTag">ClassTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder.T">T</span>]</span>)</span><span class="result"> extends <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder.T">T</span>] with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.encoders.package@ExpressionEncoder[T]extendsEncoder[T]withProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A generic encoder for JVM objects.</p><div class="fullcomment"><div class="comment cmt"><p>A generic encoder for JVM objects.
+</p></div><dl class="paramcmts block"><dt class="param">schema</dt><dd class="cmt"><p>The schema after converting <code>T</code> to a Spark SQL row.</p></dd><dt class="param">serializer</dt><dd class="cmt"><p>A set of expressions, one for each top-level field that can be used to
+                  extract the values from a raw object into an <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>.</p></dd><dt class="param">deserializer</dt><dd class="cmt"><p>An expression that will construct an object given an <a href="../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>.</p></dd><dt class="param">clsTag</dt><dd class="cmt"><p>A classtag for <code>T</code>.</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExpressionEncoder"></a>
+      <a id="ExpressionEncoder:ExpressionEncoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="ExpressionEncoder$.html"><span class="name">ExpressionEncoder</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.encoders.package@ExpressionEncoder" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A factory for constructing encoders that convert objects and primitives to and from the
+internal row format using catalyst expressions and code generation.</p><div class="fullcomment"><div class="comment cmt"><p>A factory for constructing encoders that convert objects and primitives to and from the
+internal row format using catalyst expressions and code generation.  By default, the
+expressions used to retrieve values from an input row when producing an object will be created as
+follows:</p><ul><li>Classes will have their sub fields extracted by name using <span class="extype" name="UnresolvedAttribute">UnresolvedAttribute</span> expressions
+   and <span class="extype" name="UnresolvedExtractValue">UnresolvedExtractValue</span> expressions.</li><li>Tuples will have their subfields extracted by position using <span class="extype" name="BoundReference">BoundReference</span> expressions.</li><li>Primitives will have their values extracted from the first ordinal with a schema that defaults
+   to the name <code>value</code>.
+</li></ul></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.encoders.OuterScopes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="OuterScopes"></a>
+      <a id="OuterScopes:OuterScopes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="OuterScopes$.html"><span class="name">OuterScopes</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.encoders.package@OuterScopes" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.encoders.RowEncoder" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="RowEncoder"></a>
+      <a id="RowEncoder:RowEncoder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="RowEncoder$.html"><span class="name">RowEncoder</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.encoders.package@RowEncoder" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A factory for constructing encoders that convert external row to/from the Spark SQL
+internal binary representation.</p><div class="fullcomment"><div class="comment cmt"><p>A factory for constructing encoders that convert external row to/from the Spark SQL
+internal binary representation.</p><p>The following is a mapping between Spark SQL types and its allowed external types:</p><pre>BooleanType -&gt; java.lang.<span class="std">Boolean</span>
+ByteType -&gt; java.lang.<span class="std">Byte</span>
+ShortType -&gt; java.lang.<span class="std">Short</span>
+IntegerType -&gt; java.lang.Integer
+FloatType -&gt; java.lang.<span class="std">Float</span>
+DoubleType -&gt; java.lang.<span class="std">Double</span>
+StringType -&gt; <span class="std">String</span>
+DecimalType -&gt; java.math.BigDecimal or scala.math.BigDecimal or Decimal
+
+DateType -&gt; java.sql.Date
+TimestampType -&gt; java.sql.Timestamp
+
+BinaryType -&gt; byte array
+ArrayType -&gt; scala.collection.<span class="std">Seq</span> or <span class="std">Array</span>
+MapType -&gt; scala.collection.<span class="std">Map</span>
+StructType -&gt; org.apache.spark.sql.Row</pre></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.encoders#encoderFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="encoderFor[A](implicitevidence$1:org.apache.spark.sql.Encoder[A]):org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[A]"></a>
+      <a id="encoderFor[A](Encoder[A]):ExpressionEncoder[A]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">encoderFor</span><span class="tparams">[<span name="A">A</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <a href="../../Encoder.html" class="extype" name="org.apache.spark.sql.Encoder">Encoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.encoders.encoderFor.A">A</span>]</span>)</span><span class="result">: <a href="ExpressionEncoder.html" class="extype" name="org.apache.spark.sql.catalyst.encoders.ExpressionEncoder">ExpressionEncoder</a>[<span class="extype" name="org.apache.spark.sql.catalyst.encoders.encoderFor.A">A</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.encoders.package@encoderFor[A](implicitevidence$1:org.apache.spark.sql.Encoder[A]):org.apache.spark.sql.catalyst.encoders.ExpressionEncoder[A]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an internal encoder object that can be used to serialize / deserialize JVM objects
+into Spark SQL rows.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an internal encoder object that can be used to serialize / deserialize JVM objects
+into Spark SQL rows.  The implicit encoder should always be unresolved (i.e. have no attribute
+references from a specific schema.)  This requirement allows us to preserve whether a given
+object type is being bound by name or by ordinal when doing resolution.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

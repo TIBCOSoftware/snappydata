@@ -1,0 +1,354 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>executor - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.executor</title>
+          <meta name="description" content="executor - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.executor" />
+          <meta name="keywords" content="executor snappydata 2.11 1.1.0 HF 1 API org.apache.spark.executor" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'org.apache.spark.executor.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a></p>
+        <h1>executor</h1><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">executor</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Executor components used with various cluster managers.
+See <span class="extype" name="org.apache.spark.executor.Executor">org.apache.spark.executor.Executor</span>.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.executor"><span>executor</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.executor.InputMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InputMetricsextendsSerializablewithKryoSerializable"></a>
+      <a id="InputMetrics:InputMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InputMetrics.html"><span class="name">InputMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@InputMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A collection of accumulators that represents metrics about reading data from external systems.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A collection of accumulators that represents metrics about reading data from external systems.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.executor.OutputMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="OutputMetricsextendsSerializablewithKryoSerializable"></a>
+      <a id="OutputMetrics:OutputMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="OutputMetrics.html"><span class="name">OutputMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@OutputMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A collection of accumulators that represents metrics about writing data to external systems.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A collection of accumulators that represents metrics about writing data to external systems.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.executor.ShuffleReadMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ShuffleReadMetricsextendsSerializablewithKryoSerializable"></a>
+      <a id="ShuffleReadMetrics:ShuffleReadMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ShuffleReadMetrics.html"><span class="name">ShuffleReadMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@ShuffleReadMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A collection of accumulators that represent metrics about reading shuffle data.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A collection of accumulators that represent metrics about reading shuffle data.
+Operations are not thread-safe.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.executor.ShuffleWriteMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ShuffleWriteMetricsextendsSerializablewithKryoSerializable"></a>
+      <a id="ShuffleWriteMetrics:ShuffleWriteMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="ShuffleWriteMetrics.html"><span class="name">ShuffleWriteMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@ShuffleWriteMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+A collection of accumulators that represent metrics about writing shuffle data.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+A collection of accumulators that represent metrics about writing shuffle data.
+Operations are not thread-safe.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyCoarseGrainedExecutorBackendextendsCoarseGrainedExecutorBackend"></a>
+      <a id="SnappyCoarseGrainedExecutorBackend:SnappyCoarseGrainedExecutorBackend"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyCoarseGrainedExecutorBackend.html"><span class="name">SnappyCoarseGrainedExecutorBackend</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.executor.CoarseGrainedExecutorBackend">CoarseGrainedExecutorBackend</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@SnappyCoarseGrainedExecutorBackendextendsCoarseGrainedExecutorBackend" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor.SnappyExecutor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyExecutorextendsExecutor"></a>
+      <a id="SnappyExecutor:SnappyExecutor"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyExecutor.html"><span class="name">SnappyExecutor</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.executor.Executor">Executor</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@SnappyExecutorextendsExecutor" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor.SnappyMutableURLClassLoader" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyMutableURLClassLoaderextendsMutableURLClassLoaderwithLogging"></a>
+      <a id="SnappyMutableURLClassLoader:SnappyMutableURLClassLoader"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyMutableURLClassLoader.html"><span class="name">SnappyMutableURLClassLoader</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.util.MutableURLClassLoader">MutableURLClassLoader</span> with <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@SnappyMutableURLClassLoaderextendsMutableURLClassLoaderwithLogging" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.executor.TaskMetrics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TaskMetricsextendsSerializablewithKryoSerializable"></a>
+      <a id="TaskMetrics:TaskMetrics"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="TaskMetrics.html"><span class="name">TaskMetrics</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span> with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@TaskMetricsextendsSerializablewithKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Metrics tracked during the execution of a task.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Metrics tracked during the execution of a task.</p><p>This class is wrapper around a collection of internal accumulators that represent metrics
+associated with a task. The local values of these accumulators are sent from the executor
+to the driver when the task completes. These values are then merged into the corresponding
+accumulator previously registered on the driver.</p><p>The accumulator updates are also sent to the driver periodically (on executor heartbeat)
+and when the task failed with an exception. The <a href="TaskMetrics.html" class="extype" name="org.apache.spark.executor.TaskMetrics">TaskMetrics</a> object itself should never
+be sent to the driver.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.executor.DataReadMethod" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DataReadMethod"></a>
+      <a id="DataReadMethod:DataReadMethod"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DataReadMethod$.html"><span class="name">DataReadMethod</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@DataReadMethod" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Method by which input data was read.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Method by which input data was read. Network means that the data was read over the network
+from a remote block manager (which may have stored the data on-disk or in-memory).
+Operations are not thread-safe.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.executor.DataWriteMethod" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="DataWriteMethod"></a>
+      <a id="DataWriteMethod:DataWriteMethod"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="DataWriteMethod$.html"><span class="name">DataWriteMethod</span></a><span class="result"> extends <span class="extype" name="scala.Enumeration">Enumeration</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.executor.package@DataWriteMethod" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Method by which output data was written.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Method by which output data was written.
+Operations are not thread-safe.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

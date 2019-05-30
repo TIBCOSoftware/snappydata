@@ -1,0 +1,246 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>loss - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.mllib.tree.loss</title>
+          <meta name="description" content="loss - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.mllib.tree.loss" />
+          <meta name="keywords" content="loss snappydata 2.11 1.1.0 HF 1 API org.apache.spark.mllib.tree.loss" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.mllib.tree.loss.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.mllib">mllib</a>.<a href="../package.html" class="extype" name="org.apache.spark.mllib.tree">tree</a></p>
+        <h1>loss</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.mllib.tree.loss.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">loss</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.mllib.tree.loss.Loss" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="LossextendsSerializable"></a>
+      <a id="Loss:Loss"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="Loss.html"><span class="name">Loss</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.mllib.tree.loss.package@LossextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Trait for adding &quot;pluggable&quot; loss functions for the gradient boosting algorithm.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Trait for adding &quot;pluggable&quot; loss functions for the gradient boosting algorithm.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.mllib.tree.loss.AbsoluteError" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AbsoluteError"></a>
+      <a id="AbsoluteError:AbsoluteError"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="AbsoluteError$.html"><span class="name">AbsoluteError</span></a><span class="result"> extends <a href="Loss.html" class="extype" name="org.apache.spark.mllib.tree.loss.Loss">Loss</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.mllib.tree.loss.package@AbsoluteError" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Class for absolute error loss calculation (for regression).</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Class for absolute error loss calculation (for regression).</p><p>The absolute (L1) error is defined as:
+ |y - F(x)|
+where y is the label and F(x) is the model prediction for features x.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.tree.loss.LogLoss" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="LogLoss"></a>
+      <a id="LogLoss:LogLoss"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LogLoss$.html"><span class="name">LogLoss</span></a><span class="result"> extends <a href="Loss.html" class="extype" name="org.apache.spark.mllib.tree.loss.Loss">Loss</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.mllib.tree.loss.package@LogLoss" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Class for log loss calculation (for classification).</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Class for log loss calculation (for classification).
+This uses twice the binomial negative log likelihood, called &quot;deviance&quot; in Friedman (1999).</p><p>The log loss is defined as:
+  2 log(1 + exp(-2 y F(x)))
+where y is a label in {-1, 1} and F(x) is the model prediction for features x.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.tree.loss.Losses" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="Losses"></a>
+      <a id="Losses:Losses"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Losses$.html"><span class="name">Losses</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.mllib.tree.loss.package@Losses" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.tree.loss.SquaredError" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SquaredError"></a>
+      <a id="SquaredError:SquaredError"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SquaredError$.html"><span class="name">SquaredError</span></a><span class="result"> extends <a href="Loss.html" class="extype" name="org.apache.spark.mllib.tree.loss.Loss">Loss</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.mllib.tree.loss.package@SquaredError" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: DeveloperApi ::
+Class for squared error loss calculation.</p><div class="fullcomment"><div class="comment cmt"><p>:: DeveloperApi ::
+Class for squared error loss calculation.</p><p>The squared (L2) error is defined as:
+  (y - F(x))**2
+where y is the label and F(x) is the model prediction for features x.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.2.0&quot;</span>
+    </span>)</span>
+              
+                <span class="name">@<a href="../../../annotation/DeveloperApi.html" class="extype" name="org.apache.spark.annotation.DeveloperApi">DeveloperApi</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

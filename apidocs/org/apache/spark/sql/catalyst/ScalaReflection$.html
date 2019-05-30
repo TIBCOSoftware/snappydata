@@ -1,0 +1,886 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>ScalaReflection - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.ScalaReflection</title>
+          <meta name="description" content="ScalaReflection - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.ScalaReflection" />
+          <meta name="keywords" content="ScalaReflection snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.ScalaReflection" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.ScalaReflection$';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <a href="ScalaReflection.html" title="See companion trait"><img alt="Object/Trait" src="../../../../../lib/object_to_trait_big.png" /></a>
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a></p>
+        <h1><a href="ScalaReflection.html" title="See companion trait">ScalaReflection</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="ScalaReflection.html" title="See companion trait">trait ScalaReflection</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.sql.catalyst">package catalyst</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ScalaReflection</span><span class="result"> extends <a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A default version of ScalaReflection that uses the runtime universe.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.ScalaReflection"><span>ScalaReflection</span></li><li class="in" name="org.apache.spark.sql.catalyst.ScalaReflection"><span>ScalaReflection</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.ScalaReflection.Schema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SchemaextendsProductwithSerializable"></a>
+      <a id="Schema:Schema"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ScalaReflection$$Schema.html"><span class="name">Schema</span></a><span class="params">(<span name="dataType">dataType: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>, <span name="nullable">nullable: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@SchemaextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#attributesFor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="attributesFor[T](implicitevidence$4:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
+      <a id="attributesFor[T](scala.reflect.api.JavaUniverse.TypeTag[T]):Seq[Attribute]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">attributesFor</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.attributesFor.T">T</span>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@attributesFor[T](implicitevidence$4:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):Seq[org.apache.spark.sql.catalyst.expressions.Attribute]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a Sequence of attributes for the given case class type.</p>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#constructParams" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="constructParams(tpe:ScalaReflection.this.universe.Type):Seq[ScalaReflection.this.universe.Symbol]"></a>
+      <a id="constructParams(scala.reflect.api.JavaUniverse.Type):Seq[scala.reflect.api.JavaUniverse.Symbol]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">constructParams</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.reflect.api.Symbols.Symbol">scala.reflect.api.JavaUniverse.Symbol</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@constructParams(tpe:ScalaReflection.this.universe.Type):Seq[ScalaReflection.this.universe.Symbol]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#dataTypeFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dataTypeFor[T](implicitevidence$1:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.types.DataType"></a>
+      <a id="dataTypeFor[T](scala.reflect.api.JavaUniverse.TypeTag[T]):DataType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">dataTypeFor</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.dataTypeFor.T">T</span>]</span>)</span><span class="result">: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@dataTypeFor[T](implicitevidence$1:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.types.DataType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the Spark SQL DataType for a given scala type.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the Spark SQL DataType for a given scala type.  Where this is not an exact mapping
+to a native type, an ObjectType is returned. Special handling is also used for Arrays including
+those that hold primitive types.</p><p>Unlike <code>schemaFor</code>, this function doesn't do any massaging of types into the Spark SQL type
+system.  As a result, ObjectType will be returned for things like boxed Integers
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#definedByConstructorParams" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="definedByConstructorParams(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):Boolean"></a>
+      <a id="definedByConstructorParams(scala.reflect.api.JavaUniverse.Type):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">definedByConstructorParams</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@definedByConstructorParams(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Whether the fields of the given type is defined entirely by its constructor parameters.</p>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#deserializerFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="deserializerFor[T](implicitevidence$2:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.catalyst.expressions.Expression"></a>
+      <a id="deserializerFor[T](scala.reflect.api.JavaUniverse.TypeTag[T]):Expression"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">deserializerFor</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.deserializerFor.T">T</span>]</span>)</span><span class="result">: <a href="expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@deserializerFor[T](implicitevidence$2:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.catalyst.expressions.Expression" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an expression that can be used to deserialize an input row to an object of type <code>T</code>
+with a compatible schema.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an expression that can be used to deserialize an input row to an object of type <code>T</code>
+with a compatible schema.  Fields of the row will be extracted using UnresolvedAttributes
+of the same name as the constructor arguments.  Nested classes will have their fields accessed
+using UnresolvedExtractValue.</p><p>When used on a primitive type, the constructor will instead default to extracting the value
+from ordinal 0 (since there are no names to map to).  The actual location can be moved by
+calling resolve/bind with a new schema.
+</p></div></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getClassFromType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getClassFromType(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):Class[_]"></a>
+      <a id="getClassFromType(scala.reflect.api.JavaUniverse.Type):Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClassFromType</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getClassFromType(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getClassNameFromType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClassNameFromType(tpe:ScalaReflection.this.universe.Type):String"></a>
+      <a id="getClassNameFromType(scala.reflect.api.JavaUniverse.Type):String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClassNameFromType</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getClassNameFromType(tpe:ScalaReflection.this.universe.Type):String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the full class name for a type.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the full class name for a type. The returned name is the canonical
+Scala name, where each component is separated by a period. It is NOT the
+Java-equivalent runtime name (no dollar signs).</p><p>In simple cases, both the Scala and Java names are the same, however when Scala
+generates constructs that do not map to a Java equivalent, such as singleton objects
+or nested classes in package objects, it uses the dollar sign ($) to create
+synthetic classes, emulating behaviour in Java bytecode.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getConstructorParameterNames" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getConstructorParameterNames(cls:Class[_]):Seq[String]"></a>
+      <a id="getConstructorParameterNames(Class[_]):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getConstructorParameterNames</span><span class="params">(<span name="cls">cls: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getConstructorParameterNames(cls:Class[_]):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the parameter names for the primary constructor of this class.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the parameter names for the primary constructor of this class.</p><p>Logically we should call <code>getConstructorParameters</code> and throw away the parameter types to get
+parameter names, however there are some weird scala reflection problems and this method is a
+workaround to avoid getting parameter types.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getConstructorParameterValues" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="getConstructorParameterValues(obj:org.apache.spark.sql.catalyst.DefinedByConstructorParams):Seq[AnyRef]"></a>
+      <a id="getConstructorParameterValues(DefinedByConstructorParams):Seq[AnyRef]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getConstructorParameterValues</span><span class="params">(<span name="obj">obj: <a href="DefinedByConstructorParams.html" class="extype" name="org.apache.spark.sql.catalyst.DefinedByConstructorParams">DefinedByConstructorParams</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getConstructorParameterValues(obj:org.apache.spark.sql.catalyst.DefinedByConstructorParams):Seq[AnyRef]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the parameter values for the primary constructor of this class.</p>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getConstructorParameters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getConstructorParameters(cls:Class[_]):Seq[(String,org.apache.spark.sql.catalyst.ScalaReflection.universe.Type)]"></a>
+      <a id="getConstructorParameters(Class[_]):Seq[(String,scala.reflect.api.JavaUniverse.Type)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getConstructorParameters</span><span class="params">(<span name="cls">cls: <span class="extype" name="scala.Predef.Class">Class</span>[_]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getConstructorParameters(cls:Class[_]):Seq[(String,org.apache.spark.sql.catalyst.ScalaReflection.universe.Type)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the parameter names and types for the primary constructor of this class.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the parameter names and types for the primary constructor of this class.</p><p>Note that it only works for scala classes with primary constructor, and currently doesn't
+support inner class.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getConstructorParameters" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getConstructorParameters(tpe:ScalaReflection.this.universe.Type):Seq[(String,ScalaReflection.this.universe.Type)]"></a>
+      <a id="getConstructorParameters(scala.reflect.api.JavaUniverse.Type):Seq[(String,scala.reflect.api.JavaUniverse.Type)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getConstructorParameters</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getConstructorParameters(tpe:ScalaReflection.this.universe.Type):Seq[(String,ScalaReflection.this.universe.Type)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns the parameter names and types for the primary constructor of this type.</p><div class="fullcomment"><div class="comment cmt"><p>Returns the parameter names and types for the primary constructor of this type.</p><p>Note that it only works for scala classes with primary constructor, and currently doesn't
+support inner class.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#getParameterTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getParameterTypes(func:AnyRef):Seq[Class[_]]"></a>
+      <a id="getParameterTypes(AnyRef):Seq[Class[_]]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getParameterTypes</span><span class="params">(<span name="func">func: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.Class">Class</span>[_]]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@getParameterTypes(func:AnyRef):Seq[Class[_]]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns classes of input parameters of scala function object.</p><div class="fullcomment"><div class="comment cmt"><p>Returns classes of input parameters of scala function object.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#isNativeType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="isNativeType(dt:org.apache.spark.sql.types.DataType):Boolean"></a>
+      <a id="isNativeType(DataType):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isNativeType</span><span class="params">(<span name="dt">dt: <a href="../types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@isNativeType(dt:org.apache.spark.sql.types.DataType):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true if the value of this data type is same between internal and external.</p>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#localTypeOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="localTypeOf[T](implicitevidence$6:ScalaReflection.this.universe.TypeTag[T]):ScalaReflection.this.universe.Type"></a>
+      <a id="localTypeOf[T](scala.reflect.api.JavaUniverse.TypeTag[T]):scala.reflect.api.JavaUniverse.Type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">localTypeOf</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.localTypeOf.T">T</span>]</span>)</span><span class="result">: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@localTypeOf[T](implicitevidence$6:ScalaReflection.this.universe.TypeTag[T]):ScalaReflection.this.universe.Type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the Scala Type for <code>T</code> in the current classloader mirror.</p><div class="fullcomment"><div class="comment cmt"><p>Return the Scala Type for <code>T</code> in the current classloader mirror.</p><p>Use this method instead of the convenience method <code>universe.typeOf</code>, which
+assumes that all types can be found in the classloader that loaded scala-reflect classes.
+That's not necessarily the case when running using Eclipse launchers or even
+Sbt console or test (without <code>fork := true</code>).
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd><dt>See also</dt><dd><span class="cmt"><p>SPARK-5281</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#mirror" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="mirror:org.apache.spark.sql.catalyst.ScalaReflection.universe.Mirror"></a>
+      <a id="mirror:Mirror"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">mirror</span><span class="result">: <span class="extype" name="scala.reflect.api.JavaUniverse.Mirror">Mirror</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@mirror:org.apache.spark.sql.catalyst.ScalaReflection.universe.Mirror" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The mirror used to access types in the universe</p><div class="fullcomment"><div class="comment cmt"><p>The mirror used to access types in the universe</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a> → <a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#optionOfProductType" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="optionOfProductType(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):Boolean"></a>
+      <a id="optionOfProductType(scala.reflect.api.JavaUniverse.Type):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">optionOfProductType</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@optionOfProductType(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns true if the given type is option of product type, e.g.</p><div class="fullcomment"><div class="comment cmt"><p>Returns true if the given type is option of product type, e.g. <code>Option[Tuple2]</code>. Note that,
+we also treat <a href="DefinedByConstructorParams.html" class="extype" name="org.apache.spark.sql.catalyst.DefinedByConstructorParams">DefinedByConstructorParams</a> as product type.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#schemaFor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="schemaFor(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):org.apache.spark.sql.catalyst.ScalaReflection.Schema"></a>
+      <a id="schemaFor(scala.reflect.api.JavaUniverse.Type):Schema"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">schemaFor</span><span class="params">(<span name="tpe">tpe: <span class="extype" name="scala.reflect.api.Types.Type">scala.reflect.api.JavaUniverse.Type</span></span>)</span><span class="result">: <a href="ScalaReflection$$Schema.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.Schema">Schema</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@schemaFor(tpe:org.apache.spark.sql.catalyst.ScalaReflection.universe.Type):org.apache.spark.sql.catalyst.ScalaReflection.Schema" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a catalyst DataType and its nullability for the given Scala Type using reflection.</p>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#schemaFor" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="schemaFor[T](implicitevidence$5:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.catalyst.ScalaReflection.Schema"></a>
+      <a id="schemaFor[T](scala.reflect.api.JavaUniverse.TypeTag[T]):Schema"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">schemaFor</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.schemaFor.T">T</span>]</span>)</span><span class="result">: <a href="ScalaReflection$$Schema.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.Schema">Schema</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@schemaFor[T](implicitevidence$5:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.catalyst.ScalaReflection.Schema" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns a catalyst DataType and its nullability for the given Scala Type using reflection.</p>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#serializerFor" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="serializerFor[T](inputObject:org.apache.spark.sql.catalyst.expressions.Expression)(implicitevidence$3:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.catalyst.expressions.CreateNamedStruct"></a>
+      <a id="serializerFor[T](Expression)(scala.reflect.api.JavaUniverse.TypeTag[T]):CreateNamedStruct"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">serializerFor</span><span class="tparams">[<span name="T">T</span>]</span><span class="params">(<span name="inputObject">inputObject: <a href="expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>)</span><span class="params">(<span class="implicit">implicit </span><span name="arg0">arg0: <span class="extype" name="scala.reflect.api.TypeTags.TypeTag">scala.reflect.api.JavaUniverse.TypeTag</span>[<span class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection.serializerFor.T">T</span>]</span>)</span><span class="result">: <a href="expressions/CreateNamedStruct.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.CreateNamedStruct">CreateNamedStruct</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@serializerFor[T](inputObject:org.apache.spark.sql.catalyst.expressions.Expression)(implicitevidence$3:org.apache.spark.sql.catalyst.ScalaReflection.universe.TypeTag[T]):org.apache.spark.sql.catalyst.expressions.CreateNamedStruct" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Returns an expression for serializing an object of type T to an internal row.</p><div class="fullcomment"><div class="comment cmt"><p>Returns an expression for serializing an object of type T to an internal row.</p><p>If the given type is not supported, i.e. there is no encoder can be built for this type,
+an <span class="extype" name="UnsupportedOperationException">UnsupportedOperationException</span> will be thrown with detailed error message to explain
+the type path walked so far and which class we are not supporting.
+There are 4 kinds of type path:
+ * the root type: <code>root class: &quot;abc.xyz.MyClass&quot;</code>
+ * the value type of <span class="extype" name="Option">Option</span>: <code>option value class: &quot;abc.xyz.MyClass&quot;</code>
+ * the element type of <span class="extype" name="Array">Array</span> or <span class="extype" name="Seq">Seq</span>: <code>array element class: &quot;abc.xyz.MyClass&quot;</code>
+ * the field of <span class="extype" name="Product">Product</span>: <code>field (class: &quot;abc.xyz.MyClass&quot;, name: &quot;myField&quot;)</code>
+</p></div></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.ScalaReflection#universe" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="universe:reflect.runtime.universe.type"></a>
+      <a id="universe:scala.reflect.runtime.universe.type"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">universe</span><span class="result">: <span class="extype" name="scala.reflect.runtime.universe">scala.reflect.runtime.universe</span>.type</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@universe:reflect.runtime.universe.type" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The universe we work in (runtime or macro)</p><div class="fullcomment"><div class="comment cmt"><p>The universe we work in (runtime or macro)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a> → <a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.catalyst.ScalaReflection$@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.spark.sql.catalyst.ScalaReflection">
+              <h3>Inherited from <a href="ScalaReflection.html" class="extype" name="org.apache.spark.sql.catalyst.ScalaReflection">ScalaReflection</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

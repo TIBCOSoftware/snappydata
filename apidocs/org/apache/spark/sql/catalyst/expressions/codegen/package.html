@@ -1,0 +1,642 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>codegen - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.expressions.codegen</title>
+          <meta name="description" content="codegen - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.expressions.codegen" />
+          <meta name="keywords" content="codegen snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.expressions.codegen" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.expressions.codegen.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst.expressions">expressions</a></p>
+        <h1>codegen</h1><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">codegen</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A collection of generators that build custom bytecode at runtime for performing the evaluation
+of catalyst expression.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.expressions.codegen"><span>codegen</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.expressions.codegen.BaseMutableProjection" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BaseMutableProjectionextendsMutableProjection"></a>
+      <a id="BaseMutableProjection:BaseMutableProjection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BaseMutableProjection.html"><span class="name">BaseMutableProjection</span></a><span class="result"> extends <a href="../package$$MutableProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@BaseMutableProjectionextendsMutableProjection" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.BaseOrdering" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BaseOrderingextendsOrdering[org.apache.spark.sql.catalyst.InternalRow]"></a>
+      <a id="BaseOrdering:BaseOrdering"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BaseOrdering.html"><span class="name">BaseOrdering</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@BaseOrderingextendsOrdering[org.apache.spark.sql.catalyst.InternalRow]" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Inherits some default implementation for Java from <code>Ordering[Row]</code>
+</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.BaseProjection" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="BaseProjectionextendsProjection"></a>
+      <a id="BaseProjection:BaseProjection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BaseProjection.html"><span class="name">BaseProjection</span></a><span class="result"> extends <a href="../package$$Projection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Projection">Projection</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@BaseProjectionextendsProjection" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Java can not access Projection (in package object)
+</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.BufferHolder" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="BufferHolderextendsObject"></a>
+      <a id="BufferHolder:BufferHolder"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="BufferHolder.html"><span class="name">BufferHolder</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@BufferHolderextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodeAndComment" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CodeAndCommentextendsSerializable"></a>
+      <a id="CodeAndComment:CodeAndComment"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CodeAndComment.html"><span class="name">CodeAndComment</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@CodeAndCommentextendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A wrapper for the source code to be compiled by <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="CodeGenerator[InType&lt;:AnyRef,OutType&lt;:AnyRef]extendsLogging"></a>
+      <a id="CodeGenerator[InType&lt;:AnyRef,OutType&lt;:AnyRef]:CodeGenerator[InType,OutType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CodeGenerator.html"><span class="name">CodeGenerator</span></a><span class="tparams">[<span name="InType">InType &lt;: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>, <span name="OutType">OutType &lt;: <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>]</span><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@CodeGenerator[InType&lt;:AnyRef,OutType&lt;:AnyRef]extendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A base class for generators of byte code to perform expression evaluation.</p><div class="fullcomment"><div class="comment cmt"><p>A base class for generators of byte code to perform expression evaluation.  Includes a set of
+helpers for referring to Catalyst types and building trees that perform evaluation of individual
+expressions.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CodegenContextextendsAnyRef"></a>
+      <a id="CodegenContext:CodegenContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="CodegenContext.html"><span class="name">CodegenContext</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@CodegenContextextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A context for codegen, tracking a list of objects that could be passed into generated Java
+function.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="CodegenFallbackextendsExpression"></a>
+      <a id="CodegenFallback:CodegenFallback"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">trait</span>
+      </span>
+      <span class="symbol">
+        <a href="CodegenFallback.html"><span class="name">CodegenFallback</span></a><span class="result"> extends <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@CodegenFallbackextendsExpression" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A trait that can be used to provide a fallback mode for expression code generation.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.ExprCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ExprCodeextendsProductwithSerializable"></a>
+      <a id="ExprCode:ExprCode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExprCode.html"><span class="name">ExprCode</span></a><span class="params">(<span name="code">code: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="isNull">isNull: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@ExprCodeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Java source for evaluating an <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> given a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> of input.</p><div class="fullcomment"><div class="comment cmt"><p>Java source for evaluating an <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> given a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> of input.
+</p></div><dl class="paramcmts block"><dt class="param">code</dt><dd class="cmt"><p>The sequence of statements required to evaluate the expression.
+            It should be empty string, if <code>isNull</code> and <code>value</code> are already existed, or no code
+            needed to evaluate them (literals).</p></dd><dt class="param">isNull</dt><dd class="cmt"><p>A term that holds a boolean value representing whether the expression evaluated
+                to null.</p></dd><dt class="param">value</dt><dd class="cmt"><p>A term for a (possibly primitive) value of the result of the evaluation. Not
+             valid if <code>isNull</code> is set to <code>true</code>.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GeneratedClass" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="GeneratedClassextendsAnyRef"></a>
+      <a id="GeneratedClass:GeneratedClass"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="GeneratedClass.html"><span class="name">GeneratedClass</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GeneratedClassextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A wrapper for generated class, defines a <code>generate</code> method so that we can pass extra objects
+into generated class.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.LazilyGeneratedOrdering" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LazilyGeneratedOrderingextendsOrdering[org.apache.spark.sql.catalyst.InternalRow]withKryoSerializable"></a>
+      <a id="LazilyGeneratedOrdering:LazilyGeneratedOrdering"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="LazilyGeneratedOrdering.html"><span class="name">LazilyGeneratedOrdering</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>] with <span class="extype" name="com.esotericsoftware.kryo.KryoSerializable">KryoSerializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@LazilyGeneratedOrderingextendsOrdering[org.apache.spark.sql.catalyst.InternalRow]withKryoSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A lazily generated row ordering comparator.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="PredicateextendsAnyRef"></a>
+      <a id="Predicate:Predicate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="Predicate.html"><span class="name">Predicate</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@PredicateextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Interface for generated predicate
+</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.SubExprCodes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SubExprCodesextendsProductwithSerializable"></a>
+      <a id="SubExprCodes:SubExprCodes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SubExprCodes.html"><span class="name">SubExprCodes</span></a><span class="params">(<span name="codes">codes: <a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="states">states: <span class="extype" name="scala.Predef.Map">Map</span>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="SubExprEliminationState.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.SubExprEliminationState">SubExprEliminationState</a>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@SubExprCodesextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Codes and common subexpressions mapping used for subexpression elimination.</p><div class="fullcomment"><div class="comment cmt"><p>Codes and common subexpressions mapping used for subexpression elimination.
+</p></div><dl class="paramcmts block"><dt class="param">codes</dt><dd class="cmt"><p>Strings representing the codes that evaluate common subexpressions.</p></dd><dt class="param">states</dt><dd class="cmt"><p>Foreach expression that is participating in subexpression elimination,
+              the state to use.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.SubExprEliminationState" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SubExprEliminationStateextendsProductwithSerializable"></a>
+      <a id="SubExprEliminationState:SubExprEliminationState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="SubExprEliminationState.html"><span class="name">SubExprEliminationState</span></a><span class="params">(<span name="isNull">isNull: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="value">value: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@SubExprEliminationStateextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">State used for subexpression elimination.</p><div class="fullcomment"><div class="comment cmt"><p>State used for subexpression elimination.
+</p></div><dl class="paramcmts block"><dt class="param">isNull</dt><dd class="cmt"><p>A term that holds a boolean value representing whether the expression evaluated
+              to null.</p></dd><dt class="param">value</dt><dd class="cmt"><p>A term for a value of a common sub-expression. Not valid if <code>isNull</code>
+             is set to <code>true</code>.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeArrayWriter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnsafeArrayWriterextendsObject"></a>
+      <a id="UnsafeArrayWriter:UnsafeArrayWriter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnsafeArrayWriter.html"><span class="name">UnsafeArrayWriter</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@UnsafeArrayWriterextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeRowJoiner" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="UnsafeRowJoinerextendsAnyRef"></a>
+      <a id="UnsafeRowJoiner:UnsafeRowJoiner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnsafeRowJoiner.html"><span class="name">UnsafeRowJoiner</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@UnsafeRowJoinerextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeRowWriter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UnsafeRowWriterextendsObject"></a>
+      <a id="UnsafeRowWriter:UnsafeRowWriter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="UnsafeRowWriter.html"><span class="name">UnsafeRowWriter</span></a><span class="result"> extends <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@UnsafeRowWriterextendsObject" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodeFormatter" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CodeFormatter"></a>
+      <a id="CodeFormatter:CodeFormatter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CodeFormatter$.html"><span class="name">CodeFormatter</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@CodeFormatter" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An utility class that indents a block of code based on the curly braces and parentheses.</p><div class="fullcomment"><div class="comment cmt"><p>An utility class that indents a block of code based on the curly braces and parentheses.
+This is used to prettify generated code when in debug mode (or exceptions).</p><p>Written by Matei Zaharia.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="CodeGenerator"></a>
+      <a id="CodeGenerator:CodeGenerator"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CodeGenerator$.html"><span class="name">CodeGenerator</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@CodeGenerator" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.DumpByteCode" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DumpByteCode"></a>
+      <a id="DumpByteCode:DumpByteCode"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="package$$DumpByteCode$.html"><span class="name">DumpByteCode</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@DumpByteCode" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Dumps the bytecode from a class to the screen using javap.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.ExpressionCanonicalizer" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExpressionCanonicalizer"></a>
+      <a id="ExpressionCanonicalizer:ExpressionCanonicalizer"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="package$$ExpressionCanonicalizer$.html"><span class="name">ExpressionCanonicalizer</span></a><span class="result"> extends <a href="../../rules/RuleExecutor.html" class="extype" name="org.apache.spark.sql.catalyst.rules.RuleExecutor">RuleExecutor</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@ExpressionCanonicalizer" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Canonicalizes an expression so those that differ only by names can reuse the same code.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateMutableProjection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GenerateMutableProjection"></a>
+      <a id="GenerateMutableProjection:GenerateMutableProjection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GenerateMutableProjection$.html"><span class="name">GenerateMutableProjection</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <a href="../package$$MutableProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.MutableProjection">MutableProjection</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GenerateMutableProjection" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates byte code that produces a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object that can update itself based on a new
+input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Generates byte code that produces a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object that can update itself based on a new
+input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.
+It exposes a <code>target</code> method, which is used to set the row that will be updated.
+The internal <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object created internally is used only when <code>target</code> is not used.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateOrdering" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenerateOrdering"></a>
+      <a id="GenerateOrdering:GenerateOrdering"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GenerateOrdering$.html"><span class="name">GenerateOrdering</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../SortOrder.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.SortOrder">SortOrder</a>], <a href="../../../../../../../scala/package.html#Ordering[T]=scala.math.Ordering[T]" class="extmbr" name="scala.Ordering">Ordering</a>[<a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>]] with <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GenerateOrdering" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates bytecode for an <span class="extype" name="Ordering">Ordering</span> of rows for a given set of expressions.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GeneratePredicate" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GeneratePredicate"></a>
+      <a id="GeneratePredicate:GeneratePredicate"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GeneratePredicate$.html"><span class="name">GeneratePredicate</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>, <a href="Predicate.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.Predicate">Predicate</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GeneratePredicate" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates bytecode that evaluates a boolean <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a> on a given input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateSafeProjection" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="GenerateSafeProjection"></a>
+      <a id="GenerateSafeProjection:GenerateSafeProjection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GenerateSafeProjection$.html"><span class="name">GenerateSafeProjection</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <a href="../package$$Projection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Projection">Projection</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GenerateSafeProjection" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates byte code that produces a <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> object (not an <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>) that can update
+itself based on a new input <a href="../../InternalRow.html" class="extype" name="org.apache.spark.sql.catalyst.InternalRow">InternalRow</a> for a fixed set of <a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expressions</a>.</p>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeProjection" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GenerateUnsafeProjection"></a>
+      <a id="GenerateUnsafeProjection:GenerateUnsafeProjection"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GenerateUnsafeProjection$.html"><span class="name">GenerateUnsafeProjection</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[<a href="../../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>], <a href="../UnsafeProjection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeProjection">UnsafeProjection</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GenerateUnsafeProjection" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Generates a <a href="../package$$Projection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Projection">Projection</a> that returns an <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>.</p><div class="fullcomment"><div class="comment cmt"><p>Generates a <a href="../package$$Projection.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Projection">Projection</a> that returns an <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>.</p><p>It generates the code for all the expressions, compute the total length for all the columns
+(can be accessed via variables), and then copy the data into a scratch buffer space in the
+form of UnsafeRow (the scratch buffer will grow as needed).</p><p>Note: The returned UnsafeRow will be pointed to a scratch buffer inside the projection.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.GenerateUnsafeRowJoiner" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="GenerateUnsafeRowJoiner"></a>
+      <a id="GenerateUnsafeRowJoiner:GenerateUnsafeRowJoiner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="GenerateUnsafeRowJoiner$.html"><span class="name">GenerateUnsafeRowJoiner</span></a><span class="result"> extends <a href="CodeGenerator.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator">CodeGenerator</a>[(<a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>, <a href="../../../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a>), <a href="UnsafeRowJoiner.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.codegen.UnsafeRowJoiner">UnsafeRowJoiner</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@GenerateUnsafeRowJoiner" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">A code generator for concatenating two <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>s into a single <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>.</p><div class="fullcomment"><div class="comment cmt"><p>A code generator for concatenating two <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>s into a single <a href="../UnsafeRow.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.UnsafeRow">UnsafeRow</a>.</p><p>The high level algorithm is:</p><p>1. Concatenate the two bitsets together into a single one, taking padding into account.
+2. Move fixed-length data.
+3. Move variable-length data.
+4. Update the offset position (i.e. the upper 32 bits in the fixed length part) for all
+   variable-length data.
+</p></div></div>
+    </li><li name="org.apache.spark.sql.catalyst.expressions.codegen.LazilyGeneratedOrdering" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LazilyGeneratedOrdering"></a>
+      <a id="LazilyGeneratedOrdering:LazilyGeneratedOrdering"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LazilyGeneratedOrdering$.html"><span class="name">LazilyGeneratedOrdering</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../../index.html#org.apache.spark.sql.catalyst.expressions.codegen.package@LazilyGeneratedOrdering" title="Permalink" target="_top">
+        <img src="../../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

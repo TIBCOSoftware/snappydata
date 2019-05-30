@@ -1,0 +1,631 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>snappydata - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.examples.snappydata</title>
+          <meta name="description" content="snappydata - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.examples.snappydata" />
+          <meta name="keywords" content="snappydata snappydata 2.11 1.1.0 HF 1 API org.apache.spark.examples.snappydata" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.examples.snappydata.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.examples">examples</a></p>
+        <h1>snappydata</h1><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">snappydata</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.examples.snappydata.Address" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="AddressextendsProductwithSerializable"></a>
+      <a id="Address:Address"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Address.html"><span class="name">Address</span></a><span class="params">(<span name="city">city: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="state">state: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@AddressextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is a sample code snippet to work with domain objects and SnappyStore
+column tables.</p><div class="fullcomment"><div class="comment cmt"><p>This is a sample code snippet to work with domain objects and SnappyStore
+column tables.</p><p>This example can be run either in local mode (in which case the example runs
+collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+to an already running SnappyData cluster.</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.WorkingWithObjects
+</pre></p><p>To submit this example as a job to an already running cluster
+<pre>
+cd $SNAPPY_HOME
+bin/snappy-job.sh submit
+--app-name WorkingWithObjects
+--class org.apache.spark.examples.snappydata.WorkingWithObjects
+--app-jar examples/jars/quickstart.jar
+--lead [leadHost:port]
+
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.EmbeddedKafkaUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EmbeddedKafkaUtilsextendsLogging"></a>
+      <a id="EmbeddedKafkaUtils:EmbeddedKafkaUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="EmbeddedKafkaUtils.html"><span class="name">EmbeddedKafkaUtils</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@EmbeddedKafkaUtilsextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.examples.snappydata.Person" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="PersonextendsProductwithSerializable"></a>
+      <a id="Person:Person"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Person.html"><span class="name">Person</span></a><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="address">address: <a href="Address.html" class="extype" name="org.apache.spark.examples.snappydata.Address">Address</a></span>, <span name="emergencyContacts">emergencyContacts: <span class="extype" name="scala.collection.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@PersonextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.examples.snappydata.RowsConverter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RowsConverterextendsStreamToRowsConverterwithSerializable"></a>
+      <a id="RowsConverter:RowsConverter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="RowsConverter.html"><span class="name">RowsConverter</span></a><span class="result"> extends <a href="../../sql/streaming/StreamToRowsConverter.html" class="extype" name="org.apache.spark.sql.streaming.StreamToRowsConverter">StreamToRowsConverter</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@RowsConverterextendsStreamToRowsConverterwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Converts an input stream message into an org.apache.spark.sql.Row
+instance
+</p>
+    </li><li name="org.apache.spark.examples.snappydata.User" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UserextendsProductwithSerializable"></a>
+      <a id="User:User"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="User.html"><span class="name">User</span></a><span class="params">(<span name="is">is: <span class="extype" name="scala.Long">Long</span></span>, <span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="age">age: <span class="extype" name="scala.Int">Int</span></span>, <span name="_eventType">_eventType: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@UserextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.examples.snappydata.CollocatedJoinExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CollocatedJoinExample"></a>
+      <a id="CollocatedJoinExample:CollocatedJoinExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CollocatedJoinExample$.html"><span class="name">CollocatedJoinExample</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@CollocatedJoinExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows how to join between collocated tables</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows how to join between collocated tables</p><p>This example can be run either in local mode (in which case the example runs
+collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+to an already running SnappyData cluster.</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.CollocatedJoinExample
+</pre></p><p>To submit this example as a job to an already running cluster
+<pre>
+  cd $SNAPPY_HOME
+
+  bin/snappy-job.sh submit
+  --app-name CollocatedJoinExample
+  --class org.apache.spark.examples.snappydata.CollocatedJoinExample
+  --app-jar examples/jars/quickstart.jar
+  --lead [leadHost:port]
+</pre>
+<pre>
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+</pre></p><p>The output of the job will be redirected to a file named CollocatedJoinExample.out
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.CreateColumnTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CreateColumnTable"></a>
+      <a id="CreateColumnTable:CreateColumnTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CreateColumnTable$.html"><span class="name">CreateColumnTable</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@CreateColumnTable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows how to create column tables in SnappyData
+using SQL or APIs.</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows how to create column tables in SnappyData
+using SQL or APIs.</p><p>This example can be run either in local mode (in which case the example runs
+collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+to an already running SnappyData cluster.</p><p>To run the example in local mode go to you SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.CreateColumnTable quickstart/src/main/resources
+</pre></p><p>To submit this example as a job to an already running cluster
+<pre>
+  cd $SNAPPY_HOME
+  bin/snappy-job.sh submit
+  --app-name CreateColumnTable
+  --class org.apache.spark.examples.snappydata.CreateColumnTable
+  --app-jar examples/jars/quickstart.jar
+  --lead [leadHost:port]
+  --conf data_resource_folder=../../quickstart/src/main/resources
+
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+
+The output of the job will be redirected to a file named CreateColumnTable.out
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.CreatePartitionedRowTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CreatePartitionedRowTable"></a>
+      <a id="CreatePartitionedRowTable:CreatePartitionedRowTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CreatePartitionedRowTable$.html"><span class="name">CreatePartitionedRowTable</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@CreatePartitionedRowTable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows how to create partitioned row tables in SnappyData
+using SQL or APIs.</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows how to create partitioned row tables in SnappyData
+using SQL or APIs.</p><p>This example can be run either in local mode (in which case the example runs
+collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+to an already running SnappyData cluster.</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.CreatePartitionedRowTable
+</pre></p><p>To submit this example as a job to an already running cluster
+<pre>
+  cd $SNAPPY_HOME
+  bin/snappy-job.sh submit
+  --app-name CreatePartitionedRowTable
+  --class org.apache.spark.examples.snappydata.CreatePartitionedRowTable
+  --app-jar examples/jars/quickstart.jar
+  --lead [leadHost:port]
+
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+
+The output of the job will be redirected to a file named CreatePartitionedRowTable.out
+
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.CreateReplicatedRowTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CreateReplicatedRowTable"></a>
+      <a id="CreateReplicatedRowTable:CreateReplicatedRowTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="CreateReplicatedRowTable$.html"><span class="name">CreateReplicatedRowTable</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@CreateReplicatedRowTable" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows how to create replicated row tables in SnappyData
+using SQL or APIs.</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows how to create replicated row tables in SnappyData
+using SQL or APIs.</p><p>This example can be run either in local mode (in which case the example runs
+collocated with Spark+SnappyData Store in the same JVM) or can be submitted as a job
+to an already running SnappyData cluster.</p><p>To run the example in local mode go to you SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.CreateReplicatedRowTable
+</pre></p><p>To submit this example as a job to an already running cluster
+<pre>
+  cd $SNAPPY_HOME
+  bin/snappy-job.sh submit
+  --app-name CreateReplicatedRowTable
+  --class org.apache.spark.examples.snappydata.CreateReplicatedRowTable
+  --app-jar examples/jars/quickstart.jar
+  --lead [leadHost:port]
+
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+
+The output of the job will be redirected to a file named CreateReplicatedRowTable.out
+
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.JDBCExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JDBCExample"></a>
+      <a id="JDBCExample:JDBCExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCExample$.html"><span class="name">JDBCExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@JDBCExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows JDBC operations on SnappyData system</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows JDBC operations on SnappyData system</p><p>Before running this example, ensure that SnappyData cluster is started and
+running. To start the cluster execute the following command:
+sbin/snappy-start-all.sh</p><p> Run the example using following command:
+<pre>
+    bin/run-example snappydata.JDBCExample
+</pre>
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.JDBCWithComplexTypes" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="JDBCWithComplexTypes"></a>
+      <a id="JDBCWithComplexTypes:JDBCWithComplexTypes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JDBCWithComplexTypes$.html"><span class="name">JDBCWithComplexTypes</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@JDBCWithComplexTypes" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows JDBC operations on SnappyData system</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows JDBC operations on SnappyData system</p><p>Before running this example, ensure that SnappyData cluster is started and
+running. To start the cluster execute the following command:
+sbin/snappy-start-all.sh
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.SmartConnectorExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SmartConnectorExample"></a>
+      <a id="SmartConnectorExample:SmartConnectorExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SmartConnectorExample$.html"><span class="name">SmartConnectorExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@SmartConnectorExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This example shows how an application can interact with SnappyStore in Split cluster mode.</p><div class="fullcomment"><div class="comment cmt"><p>This example shows how an application can interact with SnappyStore in Split cluster mode.
+By this mode an application can access metastore of an existing running SnappyStore. Hence it can
+query tables, write to tables which reside in a SnappyStore.</p><p>To run this example you need to set up a Snappy Cluster first . To do the same, follow the steps
+mentioned below.</p><p>1.  Go to SNAPPY_HOME. Your Snappy installation directory.</p><p>2.  Start a Snappy cluster
+./sbin/snappy-start-all.sh
+This will start a simple cluster with one data node, one lead node and a locator</p><p>3.  Open Snappy Shell
+./bin/snappy-sql
+This will open Snappy shell which can be used to create and query tables.</p><p>4. Connect to the Snappy Cluster. On the shell prompt type
+connect client 'localhost:1527';</p><p>5. Create a column table and insert some rows in SnappyStore. Type the followings in Snappy Shell.</p><p>CREATE TABLE SNAPPY_COL_TABLE(r1 Integer, r2 Integer) USING COLUMN;</p><p>insert into SNAPPY_COL_TABLE VALUES(1,1);
+insert into SNAPPY_COL_TABLE VALUES(2,2);</p><p>6. Run this example to see how this program interacts with the Snappy Cluster
+table (SNAPPY_COL_TABLE) that we created. This program also creates a table in SnappyStore.
+After running this example you can also query the table from Snappy shell
+e.g. select count(*) from TestColumnTable.</p><p>bin/run-example snappydata.SmartConnectorExample</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.StreamingExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingExample"></a>
+      <a id="StreamingExample:StreamingExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingExample$.html"><span class="name">StreamingExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StreamingExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing usage of streaming with SnappyData</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of streaming with SnappyData</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.StreamingExample
+</pre></p><p>This example starts embedded Kafka and publishes messages(advertising bids)
+on it to be processed in SnappyData as streaming data. In SnappyData, streams
+are managed declaratively by creating a stream table(adImpressionStream). A
+continuous query is executed on the stream and its result is processed and
+publisher_bid_counts table is modified based on the streaming data</p><p>We also update a row table to maintain the no of distinct bids so far(example
+of storing and updating a state of streaming data)</p><p>For more details on streaming with SnappyData refer to:
+http://snappydatainc.github.io/snappydata/programming_guide
+/stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingCDCExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredStreamingCDCExample"></a>
+      <a id="StructuredStreamingCDCExample:StructuredStreamingCDCExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredStreamingCDCExample$.html"><span class="name">StructuredStreamingCDCExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingCDCExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing CDC usage with SnappyData structured streaming</p><div class="fullcomment"><div class="comment cmt"><p>An example showing CDC usage with SnappyData structured streaming</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.StructuredStreamingCDCExample
+</pre></p><p>To run this on your local machine, you need to first run a Netcat server <br>
+<code>$ nc -lk 9999</code></p><p>Sample input data:</p><pre><span class="num">1</span>,user1,<span class="num">23</span>,<span class="num">0</span>
+<span class="num">2</span>,user2,<span class="num">45</span>,<span class="num">0</span>
+<span class="num">1</span>,user1,<span class="num">23</span>,<span class="num">2</span>
+<span class="num">2</span>,user2,<span class="num">46</span>,<span class="num">1</span></pre></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredStreamingExample"></a>
+      <a id="StructuredStreamingExample:StructuredStreamingExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredStreamingExample$.html"><span class="name">StructuredStreamingExample</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing usage of structured streaming with SnappyData</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with SnappyData</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.StructuredStreamingExample
+</pre></p><p>To run this on your local machine, you need to first run a Netcat server <br>
+<code>$ nc -lk 9999</code></p><p>Sample input data:</p><pre>device1,<span class="num">45</span>
+device2,<span class="num">67</span>
+device3,<span class="num">35</span></pre><p>For more details on streaming with SnappyData refer to:
+http://snappydatainc.github.io/snappydata/programming_guide
+/stream_processing_using_sql/#stream-processing-using-sql</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.StructuredStreamingWithSnappySink" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StructuredStreamingWithSnappySink"></a>
+      <a id="StructuredStreamingWithSnappySink:StructuredStreamingWithSnappySink"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StructuredStreamingWithSnappySink$.html"><span class="name">StructuredStreamingWithSnappySink</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@StructuredStreamingWithSnappySink" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example showing usage of structured streaming with SnappyData</p><div class="fullcomment"><div class="comment cmt"><p>An example showing usage of structured streaming with SnappyData</p><p>To run the example in local mode go to your SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.StructuredStreamingWithSnappySink
+</pre></p><p>To run this on your local machine, you need to first run a Netcat server <br>
+<code>$ nc -lk 9999</code></p><p>Sample input data:</p><pre>device1,<span class="num">45</span>
+device2,<span class="num">67</span>
+device3,<span class="num">35</span></pre></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.SynopsisDataExample" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SynopsisDataExample"></a>
+      <a id="SynopsisDataExample:SynopsisDataExample"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SynopsisDataExample$.html"><span class="name">SynopsisDataExample</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@SynopsisDataExample" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">An example that shows how to create sample tables in SnappyData
+and execute approaximate queries using Synopsis Data Engine feature.</p><div class="fullcomment"><div class="comment cmt"><p>An example that shows how to create sample tables in SnappyData
+and execute approaximate queries using Synopsis Data Engine feature.</p><p>Refer to http://snappydatainc.github.io/snappydata/aqp/ for more details on
+Synopsis Data Engine</p><p>This example can be run either in local mode(in which it will spawn a single
+node SnappyData system) or can be submitted as a job to an already running
+SnappyData cluster.</p><p>To run the example in local mode go to you SnappyData product distribution
+directory and type following command on the command prompt
+<pre>
+bin/run-example snappydata.SynopsisDataExample quickstart/data
+</pre></p><p>To submit this example as a job to an already running cluster
+<pre>
+  cd $SNAPPY_HOME
+  bin/snappy-job.sh submit
+  --app-name SynopsisDataExample
+  --class org.apache.spark.examples.snappydata.SynopsisDataExample
+  --app-jar examples/jars/quickstart.jar
+  --lead [leadHost:port]
+  --conf data_resource_folder=../../quickstart/data
+
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+
+The output of the job will be redirected to a file named SynopsisDataExample.out
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.WorkingWithJson" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="WorkingWithJson"></a>
+      <a id="WorkingWithJson:WorkingWithJson"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WorkingWithJson$.html"><span class="name">WorkingWithJson</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@WorkingWithJson" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is a sample code snippet to work with JSON files and SnappyStore column tables.</p><div class="fullcomment"><div class="comment cmt"><p>This is a sample code snippet to work with JSON files and SnappyStore column tables.
+Run with
+<pre>
+bin/run-example snappydata.WorkingWithJson quickstart/src/main/resources
+</pre>
+Also you can run this example by submitting as a job.
+<pre>
+  cd $SNAPPY_HOME
+  bin/snappy-job.sh submit
+  --app-name JsonApp
+  --class org.apache.spark.examples.snappydata.WorkingWithJson
+  --app-jar examples/jars/quickstart.jar
+  --lead [leadHost:port]
+  --conf json_resource_folder=../../quickstart/src/main/resources
+
+Check the status of your job id
+bin/snappy-job.sh status --lead [leadHost:port] --job-id [job-id]
+</p></div></div>
+    </li><li name="org.apache.spark.examples.snappydata.WorkingWithObjects" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="WorkingWithObjects"></a>
+      <a id="WorkingWithObjects:WorkingWithObjects"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="WorkingWithObjects$.html"><span class="name">WorkingWithObjects</span></a><span class="result"> extends <a href="../../sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.examples.snappydata.package@WorkingWithObjects" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

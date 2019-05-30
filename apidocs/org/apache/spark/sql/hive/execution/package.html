@@ -1,0 +1,202 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>execution - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.hive.execution</title>
+          <meta name="description" content="execution - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.hive.execution" />
+          <meta name="keywords" content="execution snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.hive.execution" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.hive.execution.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.hive">hive</a></p>
+        <h1>execution</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">execution</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        
+        
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.hive.execution.CreateHiveTableAsSelectCommand" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="CreateHiveTableAsSelectCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable"></a>
+      <a id="CreateHiveTableAsSelectCommand:CreateHiveTableAsSelectCommand"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="CreateHiveTableAsSelectCommand.html"><span class="name">CreateHiveTableAsSelectCommand</span></a><span class="params">(<span name="tableDesc">tableDesc: <a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">CatalogTable</a></span>, <span name="query">query: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>, <span name="ignoreIfExists">ignoreIfExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../catalyst/plans/logical/LeafNode.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LeafNode">LeafNode</a> with <a href="../../execution/command/RunnableCommand.html" class="extype" name="org.apache.spark.sql.execution.command.RunnableCommand">RunnableCommand</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.package@CreateHiveTableAsSelectCommandextendsLeafNodewithRunnableCommandwithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Create table and insert the query result into it.</p><div class="fullcomment"><div class="comment cmt"><p>Create table and insert the query result into it.
+</p></div><dl class="paramcmts block"><dt class="param">tableDesc</dt><dd class="cmt"><p>the Table Describe, which may contains serde, storage handler etc.</p></dd><dt class="param">query</dt><dd class="cmt"><p>the query whose result will be insert into the new relation</p></dd><dt class="param">ignoreIfExists</dt><dd class="cmt"><p>allow continue working if it's already exists, otherwise
+                     raise exception</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.execution.HiveScriptIOSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveScriptIOSchemaextendsHiveInspectorswithProductwithSerializable"></a>
+      <a id="HiveScriptIOSchema:HiveScriptIOSchema"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveScriptIOSchema.html"><span class="name">HiveScriptIOSchema</span></a><span class="params">(<span name="inputRowFormat">inputRowFormat: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="outputRowFormat">outputRowFormat: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="inputSerdeClass">inputSerdeClass: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="outputSerdeClass">outputSerdeClass: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="inputSerdeProps">inputSerdeProps: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="outputSerdeProps">outputSerdeProps: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[(<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)]</span>, <span name="recordReaderClass">recordReaderClass: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="recordWriterClass">recordWriterClass: <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="schemaLess">schemaLess: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <span class="extype" name="org.apache.spark.sql.hive.HiveInspectors">HiveInspectors</span> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.package@HiveScriptIOSchemaextendsHiveInspectorswithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The wrapper class of Hive input and output schema properties
+</p>
+    </li><li name="org.apache.spark.sql.hive.execution.InsertIntoHiveTable" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="InsertIntoHiveTableextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
+      <a id="InsertIntoHiveTable:InsertIntoHiveTable"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="InsertIntoHiveTable.html"><span class="name">InsertIntoHiveTable</span></a><span class="params">(<span name="table">table: <span class="extype" name="org.apache.spark.sql.hive.MetastoreRelation">MetastoreRelation</span></span>, <span name="partition">partition: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Option">Option</span>[<span class="extype" name="scala.Predef.String">String</span>]]</span>, <span name="child">child: <a href="../../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="overwrite">overwrite: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="ifNotExists">ifNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result"> extends <a href="../../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../../execution/UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.package@InsertIntoHiveTableextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Command for writing data out to a Hive table.</p><div class="fullcomment"><div class="comment cmt"><p>Command for writing data out to a Hive table.</p><p>This class is mostly a mess, for legacy reasons (since it evolved in organic ways and had to
+follow Hive's internal implementations closely, which itself was a mess too). Please don't
+blame Reynold for this! He was just moving code around!</p><p>In the future we should converge the write path for Hive with the normal data source write path,
+as defined in <a href="../../execution/datasources/FileFormatWriter$.html" class="extype" name="org.apache.spark.sql.execution.datasources.FileFormatWriter">org.apache.spark.sql.execution.datasources.FileFormatWriter</a>.
+</p></div><dl class="paramcmts block"><dt class="param">table</dt><dd class="cmt"><p>the logical plan representing the table. In the future this should be a
+             <a href="../../catalyst/catalog/CatalogTable.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.CatalogTable">org.apache.spark.sql.catalyst.catalog.CatalogTable</a> once we converge Hive tables
+             and data source tables.</p></dd><dt class="param">partition</dt><dd class="cmt"><p>a map from the partition key to the partition value (optional). If the partition
+                 value is optional, dynamic partition insert will be performed.
+                 As an example, <code>INSERT INTO tbl PARTITION (a=1, b=2) AS ...</code> would have</p><pre><span class="std">Map</span>(<span class="lit">'a'</span> -&gt; <span class="std">Some</span>(<span class="lit">'1'</span>), <span class="lit">'b'</span> -&gt; <span class="std">Some</span>(<span class="lit">'2'</span>))</pre><p>                 and <code>INSERT INTO tbl PARTITION (a=1, b) AS ...</code>
+                 would have</p><pre><span class="std">Map</span>(<span class="lit">'a'</span> -&gt; <span class="std">Some</span>(<span class="lit">'1'</span>), <span class="lit">'b'</span> -&gt; <span class="std">None</span>)</pre><p>.</p></dd><dt class="param">child</dt><dd class="cmt"><p>the logical plan representing data to write to.</p></dd><dt class="param">overwrite</dt><dd class="cmt"><p>overwrite existing table or partitions.</p></dd><dt class="param">ifNotExists</dt><dd class="cmt"><p>If true, only write if the table or partition does not exist.</p></dd></dl></div>
+    </li><li name="org.apache.spark.sql.hive.execution.ScriptTransformation" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ScriptTransformationextendsSparkPlanwithUnaryExecNodewithProductwithSerializable"></a>
+      <a id="ScriptTransformation:ScriptTransformation"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ScriptTransformation.html"><span class="name">ScriptTransformation</span></a><span class="params">(<span name="input">input: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Expression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Expression">Expression</a>]</span>, <span name="script">script: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>, <span name="child">child: <a href="../../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="ioschema">ioschema: <a href="HiveScriptIOSchema.html" class="extype" name="org.apache.spark.sql.hive.execution.HiveScriptIOSchema">HiveScriptIOSchema</a></span>)</span><span class="result"> extends <a href="../../execution/SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../../execution/UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.package@ScriptTransformationextendsSparkPlanwithUnaryExecNodewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Transforms the input by forking and running the specified script.</p><div class="fullcomment"><div class="comment cmt"><p>Transforms the input by forking and running the specified script.
+</p></div><dl class="paramcmts block"><dt class="param">input</dt><dd class="cmt"><p>the set of expression that should be passed to the script.</p></dd><dt class="param">script</dt><dd class="cmt"><p>the command that should be executed.</p></dd><dt class="param">output</dt><dd class="cmt"><p>the attributes that are produced by the script.</p></dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.hive.execution.HiveScriptIOSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="HiveScriptIOSchema"></a>
+      <a id="HiveScriptIOSchema:HiveScriptIOSchema"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="HiveScriptIOSchema$.html"><span class="name">HiveScriptIOSchema</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.hive.execution.package@HiveScriptIOSchema" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

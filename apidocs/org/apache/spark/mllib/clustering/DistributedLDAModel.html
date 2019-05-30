@@ -1,0 +1,993 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>DistributedLDAModel - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.mllib.clustering.DistributedLDAModel</title>
+          <meta name="description" content="DistributedLDAModel - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.mllib.clustering.DistributedLDAModel" />
+          <meta name="keywords" content="DistributedLDAModel snappydata 2.11 1.1.0 HF 1 API org.apache.spark.mllib.clustering.DistributedLDAModel" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../index.html';
+            var hash = 'org.apache.spark.mllib.clustering.DistributedLDAModel';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="type">
+      <div id="definition">
+        <a href="DistributedLDAModel$.html" title="See companion object"><img alt="Class/Object" src="../../../../../lib/class_to_object_big.png" /></a>
+        <p id="owner"><a href="../../../../package.html" class="extype" name="org">org</a>.<a href="../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../package.html" class="extype" name="org.apache.spark.mllib">mllib</a>.<a href="package.html" class="extype" name="org.apache.spark.mllib.clustering">clustering</a></p>
+        <h1><a href="DistributedLDAModel$.html" title="See companion object">DistributedLDAModel</a></h1><h3><span class="morelinks"><div>
+            Related Docs:
+            <a href="DistributedLDAModel$.html" title="See companion object">object DistributedLDAModel</a>
+            | <a href="package.html" class="extype" name="org.apache.spark.mllib.clustering">package clustering</a>
+          </div></span></h3><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <span class="name">DistributedLDAModel</span><span class="result"> extends <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Distributed LDA model.
+This model stores the inferred topics, the full training dataset, and the topic distributions.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a>, <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a>, <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.mllib.clustering.DistributedLDAModel"><span>DistributedLDAModel</span></li><li class="in" name="org.apache.spark.mllib.clustering.LDAModel"><span>LDAModel</span></li><li class="in" name="org.apache.spark.mllib.util.Saveable"><span>Saveable</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="scala.AnyRef#!=" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="!=(x$1:Any):Boolean"></a>
+      <a id="!=(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $bang$eq" class="name">!=</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@!=(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef###" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="##():Int"></a>
+      <a id="##():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $hash$hash" class="name">##</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@##():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#==" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="==(x$1:Any):Boolean"></a>
+      <a id="==(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span title="gt4s: $eq$eq" class="name">==</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@==(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="asInstanceOf[T0]:T0"></a>
+      <a id="asInstanceOf[T0]:T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">asInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Any.asInstanceOf.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@asInstanceOf[T0]:T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="scala.AnyRef#clone" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="clone():Object"></a>
+      <a id="clone():AnyRef"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">clone</span><span class="params">()</span><span class="result">: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@clone():Object" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.CloneNotSupportedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#describeTopics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="describeTopics(maxTermsPerTopic:Int):Array[(Array[Int],Array[Double])]"></a>
+      <a id="describeTopics(Int):Array[(Array[Int],Array[Double])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">describeTopics</span><span class="params">(<span name="maxTermsPerTopic">maxTermsPerTopic: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@describeTopics(maxTermsPerTopic:Int):Array[(Array[Int],Array[Double])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the topics described by weighted terms.</p><div class="fullcomment"><div class="comment cmt"><p>Return the topics described by weighted terms.
+</p></div><dl class="paramcmts block"><dt class="param">maxTermsPerTopic</dt><dd class="cmt"><p>Maximum number of terms to collect for each topic.</p></dd><dt>returns</dt><dd class="cmt"><p>Array over topics.  Each topic is represented as a pair of matching arrays:
+         (term indices, term weights in topic).
+         Each topic's terms are sorted in order of decreasing weight.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.LDAModel#describeTopics" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="describeTopics():Array[(Array[Int],Array[Double])]"></a>
+      <a id="describeTopics():Array[(Array[Int],Array[Double])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">describeTopics</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@describeTopics():Array[(Array[Int],Array[Double])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the topics described by weighted terms.</p><div class="fullcomment"><div class="comment cmt"><p>Return the topics described by weighted terms.</p><p>WARNING: If vocabSize and k are large, this can return a large object!
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>Array over topics.  Each topic is represented as a pair of matching arrays:
+         (term indices, term weights in topic).
+         Each topic's terms are sorted in order of decreasing weight.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#docConcentration" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="docConcentration:org.apache.spark.mllib.linalg.Vector"></a>
+      <a id="docConcentration:Vector"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">docConcentration</span><span class="result">: <a href="../linalg/Vector.html" class="extype" name="org.apache.spark.mllib.linalg.Vector">Vector</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@docConcentration:org.apache.spark.mllib.linalg.Vector" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Concentration parameter (commonly named &quot;alpha&quot;) for the prior placed on documents'
+distributions over topics (&quot;theta&quot;).</p><div class="fullcomment"><div class="comment cmt"><p>Concentration parameter (commonly named &quot;alpha&quot;) for the prior placed on documents'
+distributions over topics (&quot;theta&quot;).</p><p>This is the parameter to a Dirichlet distribution.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#eq" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="eq(x$1:AnyRef):Boolean"></a>
+      <a id="eq(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">eq</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@eq(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#equals" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="equals(x$1:Any):Boolean"></a>
+      <a id="equals(Any):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">equals</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Any">Any</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@equals(x$1:Any):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#finalize" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="finalize():Unit"></a>
+      <a id="finalize():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">finalize</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@finalize():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../../../../../java$lang.html" class="extype" name="java.lang">java.lang</a>] </dd><dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="symbol">classOf[java.lang.Throwable]</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#formatVersion" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="formatVersion:String"></a>
+      <a id="formatVersion:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">formatVersion</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@formatVersion:String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Current version of model save/load format.</p><div class="fullcomment"><div class="comment cmt"><p>Current version of model save/load format.</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#gammaShape" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="gammaShape:Double"></a>
+      <a id="gammaShape:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">gammaShape</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@gammaShape:Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Shape parameter for random initialization of variational parameter gamma.</p><div class="fullcomment"><div class="comment cmt"><p>Shape parameter for random initialization of variational parameter gamma.
+Used for variational inference for perplexity and other test-time computations.
+</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="package.html" class="extype" name="org.apache.spark.mllib.clustering">org.apache.spark.mllib.clustering</a>] </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd></dl></div>
+    </li><li name="scala.AnyRef#getClass" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="getClass():Class[_]"></a>
+      <a id="getClass():Class[_]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">getClass</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.Class">Class</span>[_]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@getClass():Class[_]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="hashCode():Int"></a>
+      <a id="hashCode():Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hashCode</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@hashCode():Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="scala.Any#isInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <a id="isInstanceOf[T0]:Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">isInstanceOf</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@isInstanceOf[T0]:Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#javaTopTopicsPerDocument" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="javaTopTopicsPerDocument(k:Int):org.apache.spark.api.java.JavaRDD[(Long,Array[Int],Array[Double])]"></a>
+      <a id="javaTopTopicsPerDocument(Int):JavaRDD[(Long,Array[Int],Array[Double])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">javaTopTopicsPerDocument</span><span class="params">(<span name="k">k: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../api/java/JavaRDD.html" class="extype" name="org.apache.spark.api.java.JavaRDD">JavaRDD</a>[(<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@javaTopTopicsPerDocument(k:Int):org.apache.spark.api.java.JavaRDD[(Long,Array[Int],Array[Double])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Java-friendly version of <a href="#topTopicsPerDocument(k:Int):org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Double])]" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#topTopicsPerDocument">topTopicsPerDocument</a>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <a href="#topTopicsPerDocument(k:Int):org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Double])]" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#topTopicsPerDocument">topTopicsPerDocument</a>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#javaTopicAssignments" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="javaTopicAssignments:org.apache.spark.api.java.JavaRDD[(Long,Array[Int],Array[Int])]"></a>
+      <a id="javaTopicAssignments:JavaRDD[(Long,Array[Int],Array[Int])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">javaTopicAssignments</span><span class="result">: <a href="../../api/java/JavaRDD.html" class="extype" name="org.apache.spark.api.java.JavaRDD">JavaRDD</a>[(<span class="extype" name="java.lang.Long">Long</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@javaTopicAssignments:org.apache.spark.api.java.JavaRDD[(Long,Array[Int],Array[Int])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Java-friendly version of <a href="#topicAssignments:org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Int])]" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicAssignments">topicAssignments</a></p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <a href="#topicAssignments:org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Int])]" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicAssignments">topicAssignments</a></p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#javaTopicDistributions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="javaTopicDistributions:org.apache.spark.api.java.JavaPairRDD[Long,org.apache.spark.mllib.linalg.Vector]"></a>
+      <a id="javaTopicDistributions:JavaPairRDD[Long,Vector]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">javaTopicDistributions</span><span class="result">: <a href="../../api/java/JavaPairRDD.html" class="extype" name="org.apache.spark.api.java.JavaPairRDD">JavaPairRDD</a>[<span class="extype" name="java.lang.Long">Long</span>, <a href="../linalg/Vector.html" class="extype" name="org.apache.spark.mllib.linalg.Vector">Vector</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@javaTopicDistributions:org.apache.spark.api.java.JavaPairRDD[Long,org.apache.spark.mllib.linalg.Vector]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Java-friendly version of <a href="#topicDistributions:org.apache.spark.rdd.RDD[(Long,org.apache.spark.mllib.linalg.Vector)]" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicDistributions">topicDistributions</a>
+</p><div class="fullcomment"><div class="comment cmt"><p>Java-friendly version of <a href="#topicDistributions:org.apache.spark.rdd.RDD[(Long,org.apache.spark.mllib.linalg.Vector)]" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicDistributions">topicDistributions</a>
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.4.1&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#k" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="k:Int"></a>
+      <a id="k:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">k</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@k:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Number of topics</p><div class="fullcomment"><div class="comment cmt"><p>Number of topics</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#logLikelihood" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logLikelihood:Double"></a>
+      <a id="logLikelihood:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logLikelihood</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@logLikelihood:Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Log likelihood of the observed tokens in the training set,
+given the current parameter estimates:
+ log P(docs | topics, topic distributions for docs, alpha, eta)</p><div class="fullcomment"><div class="comment cmt"><p>Log likelihood of the observed tokens in the training set,
+given the current parameter estimates:
+ log P(docs | topics, topic distributions for docs, alpha, eta)</p><p>Note:</p><ul><li>This excludes the prior; for that, use <a href="#logPrior:Double" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#logPrior">logPrior</a>.</li><li>Even with <a href="#logPrior:Double" class="extmbr" name="org.apache.spark.mllib.clustering.DistributedLDAModel#logPrior">logPrior</a>, this is NOT the same as the data log likelihood given the
+   hyperparameters.
+</li></ul></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#logPrior" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="logPrior:Double"></a>
+      <a id="logPrior:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">logPrior</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@logPrior:Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Log probability of the current parameter estimate:
+log P(topics, topic distributions for docs | alpha, eta)
+</p><div class="fullcomment"><div class="comment cmt"><p>Log probability of the current parameter estimate:
+log P(topics, topic distributions for docs | alpha, eta)
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#ne" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="ne(x$1:AnyRef):Boolean"></a>
+      <a id="ne(AnyRef):Boolean"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">ne</span><span class="params">(<span name="arg0">arg0: <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@ne(x$1:AnyRef):Boolean" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notify():Unit"></a>
+      <a id="notify():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notify</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@notify():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="scala.AnyRef#notifyAll" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="notifyAll():Unit"></a>
+      <a id="notifyAll():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">notifyAll</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@notifyAll():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#save" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="save(sc:org.apache.spark.SparkContext,path:String):Unit"></a>
+      <a id="save(SparkContext,String):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">save</span><span class="params">(<span name="sc">sc: <a href="../../SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a></span>, <span name="path">path: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@save(sc:org.apache.spark.SparkContext,path:String):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Save this model to the given path.</p><div class="fullcomment"><div class="comment cmt"><p>Save this model to the given path.</p><p>This saves:</p><ul><li>human-readable (JSON) model metadata to path/metadata/</li><li>Parquet formatted data to path/data/</li></ul><p>The model may be loaded using <code>Loader.load</code>.
+</p></div><dl class="paramcmts block"><dt class="param">sc</dt><dd class="cmt"><p>Spark context used to save model data.</p></dd><dt class="param">path</dt><dd class="cmt"><p>Path specifying the directory in which to save this model.
+             If the directory already exists, this method throws an exception.</p></dd></dl><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#synchronized" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="synchronized[T0](x$1:=&gt;T0):T0"></a>
+      <a id="synchronized[T0](⇒T0):T0"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">synchronized</span><span class="tparams">[<span name="T0">T0</span>]</span><span class="params">(<span name="arg0">arg0: ⇒ <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>)</span><span class="result">: <span class="extype" name="java.lang.AnyRef.synchronized.T0">T0</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@synchronized[T0](x$1:=&gt;T0):T0" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#toLocal" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toLocal:org.apache.spark.mllib.clustering.LocalLDAModel"></a>
+      <a id="toLocal:LocalLDAModel"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toLocal</span><span class="result">: <a href="LocalLDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LocalLDAModel">LocalLDAModel</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@toLocal:org.apache.spark.mllib.clustering.LocalLDAModel" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Convert model to a local model.</p><div class="fullcomment"><div class="comment cmt"><p>Convert model to a local model.
+The local model stores the inferred topics but not the topic distributions for training
+documents.
+</p></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#toString" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="toString():String"></a>
+      <a id="toString():String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">toString</span><span class="params">()</span><span class="result">: <span class="extype" name="java.lang.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@toString():String" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#topDocumentsPerTopic" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="topDocumentsPerTopic(maxDocumentsPerTopic:Int):Array[(Array[Long],Array[Double])]"></a>
+      <a id="topDocumentsPerTopic(Int):Array[(Array[Long],Array[Double])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topDocumentsPerTopic</span><span class="params">(<span name="maxDocumentsPerTopic">maxDocumentsPerTopic: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Array">Array</span>[(<span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Long">Long</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@topDocumentsPerTopic(maxDocumentsPerTopic:Int):Array[(Array[Long],Array[Double])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the top documents for each topic
+</p><div class="fullcomment"><div class="comment cmt"><p>Return the top documents for each topic
+</p></div><dl class="paramcmts block"><dt class="param">maxDocumentsPerTopic</dt><dd class="cmt"><p>Maximum number of documents to collect for each topic.</p></dd><dt>returns</dt><dd class="cmt"><p>Array over topics.  Each element represent as a pair of matching arrays:
+         (IDs for the documents, weights of the topic in these documents).
+         For each topic, documents are sorted in order of decreasing topic weights.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#topTopicsPerDocument" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="topTopicsPerDocument(k:Int):org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Double])]"></a>
+      <a id="topTopicsPerDocument(Int):RDD[(Long,Array[Int],Array[Double])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topTopicsPerDocument</span><span class="params">(<span name="k">k: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Double">Double</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@topTopicsPerDocument(k:Int):org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Double])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">For each document, return the top k weighted topics for that document and their weights.</p><div class="fullcomment"><div class="comment cmt"><p>For each document, return the top k weighted topics for that document and their weights.</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>RDD of (doc ID, topic indices, topic weights)</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicAssignments" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="topicAssignments:org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Int])]"></a>
+      <a id="topicAssignments:RDD[(Long,Array[Int],Array[Int])]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topicAssignments</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="scala.Long">Long</span>, <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>], <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Int">Int</span>])]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@topicAssignments:org.apache.spark.rdd.RDD[(Long,Array[Int],Array[Int])]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Return the top topic for each (doc, term) pair.</p><div class="fullcomment"><div class="comment cmt"><p>Return the top topic for each (doc, term) pair.  I.e., for each document, what is the most
+likely topic generating each term?
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>RDD of (doc ID, assignment of top topic index for each term),
+        where the assignment is specified via a pair of zippable arrays
+        (term indices, topic indices).  Note that terms will be omitted if not present in
+        the document.</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicConcentration" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="topicConcentration:Double"></a>
+      <a id="topicConcentration:Double"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topicConcentration</span><span class="result">: <span class="extype" name="scala.Double">Double</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@topicConcentration:Double" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
+distributions over terms.</p><div class="fullcomment"><div class="comment cmt"><p>Concentration parameter (commonly named &quot;beta&quot; or &quot;eta&quot;) for the prior placed on topics'
+distributions over terms.</p><p>This is the parameter to a symmetric Dirichlet distribution.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.5.0&quot;</span>
+    </span>)</span>
+              
+        </dd><dt>Note</dt><dd><span class="cmt"><p>The topics' distributions over terms are called &quot;beta&quot; in the original LDA paper
+by Blei et al., but are called &quot;phi&quot; in many later papers such as Asuncion et al., 2009.</p></span></dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicDistributions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="topicDistributions:org.apache.spark.rdd.RDD[(Long,org.apache.spark.mllib.linalg.Vector)]"></a>
+      <a id="topicDistributions:RDD[(Long,Vector)]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topicDistributions</span><span class="result">: <a href="../../rdd/RDD.html" class="extype" name="org.apache.spark.rdd.RDD">RDD</a>[(<span class="extype" name="scala.Long">Long</span>, <a href="../linalg/Vector.html" class="extype" name="org.apache.spark.mllib.linalg.Vector">Vector</a>)]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@topicDistributions:org.apache.spark.rdd.RDD[(Long,org.apache.spark.mllib.linalg.Vector)]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">For each document in the training set, return the distribution over topics for that document
+(&quot;theta_doc&quot;).</p><div class="fullcomment"><div class="comment cmt"><p>For each document in the training set, return the distribution over topics for that document
+(&quot;theta_doc&quot;).
+</p></div><dl class="paramcmts block"><dt>returns</dt><dd class="cmt"><p>RDD of (document ID, topic distribution) pairs</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#topicsMatrix" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="topicsMatrix:org.apache.spark.mllib.linalg.Matrix"></a>
+      <a id="topicsMatrix:Matrix"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">lazy val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">topicsMatrix</span><span class="result">: <a href="../linalg/Matrix.html" class="extype" name="org.apache.spark.mllib.linalg.Matrix">Matrix</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@topicsMatrix:org.apache.spark.mllib.linalg.Matrix" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Inferred topics, where each topic is represented by a distribution over terms.</p><div class="fullcomment"><div class="comment cmt"><p>Inferred topics, where each topic is represented by a distribution over terms.
+This is a matrix of size vocabSize x k, where each column is a topic.
+No guarantees are given about the ordering of the topics.</p><p>WARNING: This matrix is collected from an RDD. Beware memory usage when vocabSize, k are large.
+</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.mllib.clustering.DistributedLDAModel#vocabSize" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="vocabSize:Int"></a>
+      <a id="vocabSize:Int"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">vocabSize</span><span class="result">: <span class="extype" name="scala.Int">Int</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@vocabSize:Int" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Vocabulary size (number of terms or terms in the vocabulary)</p><div class="fullcomment"><div class="comment cmt"><p>Vocabulary size (number of terms or terms in the vocabulary)</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.mllib.clustering.DistributedLDAModel">DistributedLDAModel</a> → <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></dd><dt>Annotations</dt><dd>
+                <span class="name">@Since</span><span class="args">(<span>
+      
+      <span class="symbol">&quot;1.3.0&quot;</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait():Unit"></a>
+      <a id="wait():Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">()</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@wait():Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long,x$2:Int):Unit"></a>
+      <a id="wait(Long,Int):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>, <span name="arg1">arg1: <span class="extype" name="scala.Int">Int</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@wait(x$1:Long,x$2:Int):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li><li name="scala.AnyRef#wait" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="wait(x$1:Long):Unit"></a>
+      <a id="wait(Long):Unit"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">wait</span><span class="params">(<span name="arg0">arg0: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.mllib.clustering.DistributedLDAModel@wait(x$1:Long):Unit" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd><dt>Annotations</dt><dd>
+                <span class="name">@throws</span><span class="args">(<span>
+      
+      <span class="defval" name="classOf[java.lang.InterruptedException]">...</span>
+    </span>)</span>
+              
+        </dd></dl></div>
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="org.apache.spark.mllib.clustering.LDAModel">
+              <h3>Inherited from <a href="LDAModel.html" class="extype" name="org.apache.spark.mllib.clustering.LDAModel">LDAModel</a></h3>
+            </div><div class="parent" name="org.apache.spark.mllib.util.Saveable">
+              <h3>Inherited from <a href="../util/Saveable.html" class="extype" name="org.apache.spark.mllib.util.Saveable">Saveable</a></h3>
+            </div><div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

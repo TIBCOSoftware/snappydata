@@ -1,0 +1,668 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>streaming - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.streaming</title>
+          <meta name="description" content="streaming - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.streaming" />
+          <meta name="keywords" content="streaming snappydata 2.11 1.1.0 HF 1 API org.apache.spark.streaming" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../index.html';
+            var hash = 'org.apache.spark.streaming.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../package.html" class="extype" name="org">org</a>.<a href="../../package.html" class="extype" name="org.apache">apache</a>.<a href="../package.html" class="extype" name="org.apache.spark">spark</a></p>
+        <h1>streaming</h1><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">streaming</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>Spark Streaming functionality. <a href="StreamingContext.html" class="extype" name="org.apache.spark.streaming.StreamingContext">org.apache.spark.streaming.StreamingContext</a> serves as the main
+entry point to Spark Streaming, while <a href="dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">org.apache.spark.streaming.dstream.DStream</a> is the data
+type representing a continuous sequence of RDDs, representing a continuous stream of data.</p><p>In addition, <a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">org.apache.spark.streaming.dstream.PairDStreamFunctions</a> contains operations
+available only on DStreams
+of key-value pairs, such as <code>groupByKey</code> and <code>reduceByKey</code>. These operations are automatically
+available on any DStream of the right type (e.g. DStream[(Int, Int)] through implicit
+conversions.</p><p>For the Java API of Spark Streaming, take a look at the
+<a href="api/java/JavaStreamingContext.html" class="extype" name="org.apache.spark.streaming.api.java.JavaStreamingContext">org.apache.spark.streaming.api.java.JavaStreamingContext</a> which serves as the entry point, and
+the <a href="api/java/JavaDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaDStream">org.apache.spark.streaming.api.java.JavaDStream</a> and the
+<a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">org.apache.spark.streaming.api.java.JavaPairDStream</a> which have the DStream functionality.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.streaming"><span>streaming</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.streaming.Duration" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="DurationextendsProductwithSerializable"></a>
+      <a id="Duration:Duration"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Duration.html"><span class="name">Duration</span></a><span class="params">(<span name="millis">millis: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@DurationextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.JavaSnappyStreamingJob" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="JavaSnappyStreamingJobextendsSparkJobBase"></a>
+      <a id="JavaSnappyStreamingJob:JavaSnappyStreamingJob"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JavaSnappyStreamingJob.html"><span class="name">JavaSnappyStreamingJob</span></a><span class="result"> extends <span class="extype" name="spark.jobserver.SparkJobBase">SparkJobBase</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@JavaSnappyStreamingJobextendsSparkJobBase" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.SnappyStreamingContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SnappyStreamingContextextendsStreamingContextwithSerializable"></a>
+      <a id="SnappyStreamingContext:SnappyStreamingContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStreamingContext.html"><span class="name">SnappyStreamingContext</span></a><span class="result"> extends <a href="StreamingContext.html" class="extype" name="org.apache.spark.streaming.StreamingContext">StreamingContext</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@SnappyStreamingContextextendsStreamingContextwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Main entry point for SnappyData extensions to Spark Streaming.</p><div class="fullcomment"><div class="comment cmt"><p>Main entry point for SnappyData extensions to Spark Streaming.
+A SnappyStreamingContext extends Spark's <a href="StreamingContext.html" class="extype" name="org.apache.spark.streaming.StreamingContext">org.apache.spark.streaming.StreamingContext</a>
+to provides an ability to manipulate SQL like query on
+<a href="dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">org.apache.spark.streaming.dstream.DStream</a>. You can apply schema and
+register continuous SQL queries(CQ) over the data streams.
+A single shared SnappyStreamingContext makes it possible to re-use Executors
+across client connections or applications.
+</p></div></div>
+    </li><li name="org.apache.spark.streaming.State" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="State[S]extendsAnyRef"></a>
+      <a id="State[S]:State[S]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="State.html"><span class="name">State</span></a><span class="tparams">[<span name="S">S</span>]</span><span class="result"> extends <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@State[S]extendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Abstract class for getting and updating the state in mapping function used in the <code>mapWithState</code>
+operation of a <a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala)
+or a <a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Abstract class for getting and updating the state in mapping function used in the <code>mapWithState</code>
+operation of a <a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala)
+or a <a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).</p><p>Scala example of using <code>State</code>:</p><pre><span class="cmt">// A mapping function that maintains an integer state and returns a String</span>
+<span class="kw">def</span> mappingFunction(key: <span class="std">String</span>, value: <span class="std">Option</span>[<span class="std">Int</span>], state: State[<span class="std">Int</span>]): <span class="std">Option</span>[<span class="std">String</span>] = {
+  <span class="cmt">// Check if state exists</span>
+  <span class="kw">if</span> (state.exists) {
+    <span class="kw">val</span> existingState = state.get  <span class="cmt">// Get the existing state</span>
+    <span class="kw">val</span> shouldRemove = ...         <span class="cmt">// Decide whether to remove the state</span>
+    <span class="kw">if</span> (shouldRemove) {
+      state.remove()     <span class="cmt">// Remove the state</span>
+    } <span class="kw">else</span> {
+      <span class="kw">val</span> newState = ...
+      state.update(newState)    <span class="cmt">// Set the new state</span>
+    }
+  } <span class="kw">else</span> {
+    <span class="kw">val</span> initialState = ...
+    state.update(initialState)  <span class="cmt">// Set the initial state</span>
+  }
+  ... <span class="cmt">// return something</span>
+}</pre><p>Java example of using <code>State</code>:</p><pre><span class="cmt">// A mapping function that maintains an integer state and returns a String</span>
+Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt; mappingFunction =
+   <span class="kw">new</span> Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt;() {
+
+     @Override
+     public <span class="std">String</span> call(<span class="std">String</span> key, Optional&lt;Integer&gt; value, State&lt;Integer&gt; state) {
+       <span class="kw">if</span> (state.exists()) {
+         int existingState = state.get(); <span class="cmt">// Get the existing state</span>
+         boolean shouldRemove = ...; <span class="cmt">// Decide whether to remove the state</span>
+         <span class="kw">if</span> (shouldRemove) {
+           state.remove(); <span class="cmt">// Remove the state</span>
+         } <span class="kw">else</span> {
+           int newState = ...;
+           state.update(newState); <span class="cmt">// Set the new state</span>
+         }
+       } <span class="kw">else</span> {
+         int initialState = ...; <span class="cmt">// Set the initial state</span>
+         state.update(initialState);
+       }
+       <span class="cmt">// return something</span>
+     }
+   };</pre></div><dl class="paramcmts block"><dt class="tparam">S</dt><dd class="cmt"><p>Class of the state</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.streaming.StateSpec" visbl="pub" data-isabs="true" fullComment="yes" group="Ungrouped">
+      <a id="StateSpec[KeyType,ValueType,StateType,MappedType]extendsSerializable"></a>
+      <a id="StateSpec[KeyType,ValueType,StateType,MappedType]:StateSpec[KeyType,ValueType,StateType,MappedType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StateSpec.html"><span class="name">StateSpec</span></a><span class="tparams">[<span name="KeyType">KeyType</span>, <span name="ValueType">ValueType</span>, <span name="StateType">StateType</span>, <span name="MappedType">MappedType</span>]</span><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@StateSpec[KeyType,ValueType,StateType,MappedType]extendsSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Abstract class representing all the specifications of the DStream transformation
+<code>mapWithState</code> operation of a
+<a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala) or a
+<a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Abstract class representing all the specifications of the DStream transformation
+<code>mapWithState</code> operation of a
+<a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala) or a
+<a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).
+Use <code>org.apache.spark.streaming.StateSpec.function()</code> factory methods
+to create instances of this class.</p><p>Example in Scala:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a String</span>
+<span class="kw">def</span> mappingFunction(key: <span class="std">String</span>, value: <span class="std">Option</span>[<span class="std">Int</span>], state: State[<span class="std">Int</span>]): <span class="std">Option</span>[<span class="std">String</span>] = {
+  <span class="cmt">// Use state.exists(), state.get(), state.update() and state.remove()</span>
+  <span class="cmt">// to manage state, and return the necessary string</span>
+}
+
+<span class="kw">val</span> spec = StateSpec.function(mappingFunction).numPartitions(<span class="num">10</span>)
+
+<span class="kw">val</span> mapWithStateDStream = keyValueDStream.mapWithState[StateType, MappedType](spec)</pre><p>Example in Java:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a string</span>
+Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt; mappingFunction =
+    <span class="kw">new</span> Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt;() {
+        @Override
+        public Optional&lt;<span class="std">String</span>&gt; call(Optional&lt;Integer&gt; value, State&lt;Integer&gt; state) {
+            <span class="cmt">// Use state.exists(), state.get(), state.update() and state.remove()</span>
+            <span class="cmt">// to manage state, and return the necessary string</span>
+        }
+    };
+
+ JavaMapWithStateDStream&lt;<span class="std">String</span>, Integer, Integer, <span class="std">String</span>&gt; mapWithStateDStream =
+     keyValueDStream.mapWithState(StateSpec.function(mappingFunc));</pre></div><dl class="paramcmts block"><dt class="tparam">KeyType</dt><dd class="cmt"><p>Class of the state key</p></dd><dt class="tparam">ValueType</dt><dd class="cmt"><p>Class of the state value</p></dd><dt class="tparam">StateType</dt><dd class="cmt"><p>Class of the state data</p></dd><dt class="tparam">MappedType</dt><dd class="cmt"><p>Class of the mapped elements</p></dd></dl><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.streaming.StreamingContext" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StreamingContextextendsLogging"></a>
+      <a id="StreamingContext:StreamingContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingContext.html"><span class="name">StreamingContext</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@StreamingContextextendsLogging" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Main entry point for Spark Streaming functionality.</p><div class="fullcomment"><div class="comment cmt"><p>Main entry point for Spark Streaming functionality. It provides methods used to create
+<a href="dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">org.apache.spark.streaming.dstream.DStream</a>s from various input sources. It can be either
+created by providing a Spark master URL and an appName, or from a org.apache.spark.SparkConf
+configuration (see core Spark documentation), or from an existing org.apache.spark.SparkContext.
+The associated SparkContext can be accessed using <code>context.sparkContext</code>. After
+creating and transforming DStreams, the streaming computation can be started and stopped
+using <code>context.start()</code> and <code>context.stop()</code>, respectively.
+<code>context.awaitTermination()</code> allows the current thread to wait for the termination
+of the context by <code>stop()</code> or by an exception.
+</p></div></div>
+    </li><li name="org.apache.spark.streaming.StreamingContextState" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingContextStateextendsEnum[org.apache.spark.streaming.StreamingContextState]"></a>
+      <a id="StreamingContextState:StreamingContextState"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingContextState.html"><span class="name">StreamingContextState</span></a><span class="result"> extends <span class="extype" name="java.lang.Enum">Enum</span>[<a href="StreamingContextState.html" class="extype" name="org.apache.spark.streaming.StreamingContextState">StreamingContextState</a>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@StreamingContextStateextendsEnum[org.apache.spark.streaming.StreamingContextState]" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.Time" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="TimeextendsProductwithSerializable"></a>
+      <a id="Time:Time"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="Time.html"><span class="name">Time</span></a><span class="params">(<span name="millis">millis: <span class="extype" name="scala.Long">Long</span></span>)</span><span class="result"> extends <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@TimeextendsProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is a simple class that represents an absolute instant of time.</p><div class="fullcomment"><div class="comment cmt"><p>This is a simple class that represents an absolute instant of time.
+Internally, it represents time as the difference, measured in milliseconds, between the current
+time and midnight, January 1, 1970 UTC. This is the same format as what is returned by
+System.currentTimeMillis.
+</p></div></div>
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.streaming.Durations" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Durations"></a>
+      <a id="Durations:Durations"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Durations$.html"><span class="name">Durations</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@Durations" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.Milliseconds" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Milliseconds"></a>
+      <a id="Milliseconds:Milliseconds"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Milliseconds$.html"><span class="name">Milliseconds</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@Milliseconds" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper object that creates instance of <a href="Duration.html" class="extype" name="org.apache.spark.streaming.Duration">org.apache.spark.streaming.Duration</a> representing
+a given number of milliseconds.</p>
+    </li><li name="org.apache.spark.streaming.Minutes" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Minutes"></a>
+      <a id="Minutes:Minutes"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Minutes$.html"><span class="name">Minutes</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@Minutes" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper object that creates instance of <a href="Duration.html" class="extype" name="org.apache.spark.streaming.Duration">org.apache.spark.streaming.Duration</a> representing
+a given number of minutes.</p>
+    </li><li name="org.apache.spark.streaming.Seconds" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Seconds"></a>
+      <a id="Seconds:Seconds"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Seconds$.html"><span class="name">Seconds</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@Seconds" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Helper object that creates instance of <a href="Duration.html" class="extype" name="org.apache.spark.streaming.Duration">org.apache.spark.streaming.Duration</a> representing
+a given number of seconds.</p>
+    </li><li name="org.apache.spark.streaming.SnappyStreamingContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SnappyStreamingContext"></a>
+      <a id="SnappyStreamingContext:SnappyStreamingContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyStreamingContext$.html"><span class="name">SnappyStreamingContext</span></a><span class="result"> extends <a href="../Logging.html" class="extype" name="org.apache.spark.Logging">Logging</a> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@SnappyStreamingContext" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.StateSpec" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="StateSpec"></a>
+      <a id="StateSpec:StateSpec"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StateSpec$.html"><span class="name">StateSpec</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@StateSpec" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">:: Experimental ::
+Builder object for creating instances of <code>org.apache.spark.streaming.StateSpec</code>
+that is used for specifying the parameters of the DStream transformation <code>mapWithState</code>
+that is used for specifying the parameters of the DStream transformation
+<code>mapWithState</code> operation of a
+<a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala) or a
+<a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).</p><div class="fullcomment"><div class="comment cmt"><p>:: Experimental ::
+Builder object for creating instances of <code>org.apache.spark.streaming.StateSpec</code>
+that is used for specifying the parameters of the DStream transformation <code>mapWithState</code>
+that is used for specifying the parameters of the DStream transformation
+<code>mapWithState</code> operation of a
+<a href="dstream/PairDStreamFunctions.html" class="extype" name="org.apache.spark.streaming.dstream.PairDStreamFunctions">pair DStream</a> (Scala) or a
+<a href="api/java/JavaPairDStream.html" class="extype" name="org.apache.spark.streaming.api.java.JavaPairDStream">JavaPairDStream</a> (Java).</p><p>Example in Scala:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a String</span>
+<span class="kw">def</span> mappingFunction(key: <span class="std">String</span>, value: <span class="std">Option</span>[<span class="std">Int</span>], state: State[<span class="std">Int</span>]): <span class="std">Option</span>[<span class="std">String</span>] = {
+  <span class="cmt">// Use state.exists(), state.get(), state.update() and state.remove()</span>
+  <span class="cmt">// to manage state, and return the necessary string</span>
+}
+
+<span class="kw">val</span> spec = StateSpec.function(mappingFunction).numPartitions(<span class="num">10</span>)
+
+<span class="kw">val</span> mapWithStateDStream = keyValueDStream.mapWithState[StateType, MappedType](spec)</pre><p>Example in Java:</p><pre><span class="cmt">// A mapping function that maintains an integer state and return a string</span>
+Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt; mappingFunction =
+    <span class="kw">new</span> Function3&lt;<span class="std">String</span>, Optional&lt;Integer&gt;, State&lt;Integer&gt;, <span class="std">String</span>&gt;() {
+        @Override
+        public Optional&lt;<span class="std">String</span>&gt; call(Optional&lt;Integer&gt; value, State&lt;Integer&gt; state) {
+            <span class="cmt">// Use state.exists(), state.get(), state.update() and state.remove()</span>
+            <span class="cmt">// to manage state, and return the necessary string</span>
+        }
+    };
+
+ JavaMapWithStateDStream&lt;<span class="std">String</span>, Integer, Integer, <span class="std">String</span>&gt; mapWithStateDStream =
+     keyValueDStream.mapWithState(StateSpec.function(mappingFunc));</pre></div><dl class="attributes block"> <dt>Annotations</dt><dd>
+                <span class="name">@<a href="../annotation/Experimental.html" class="extype" name="org.apache.spark.annotation.Experimental">Experimental</a></span><span class="args">()</span>
+              
+        </dd></dl></div>
+    </li><li name="org.apache.spark.streaming.StreamUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamUtils"></a>
+      <a id="StreamUtils:StreamUtils"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamUtils$.html"><span class="name">StreamUtils</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@StreamUtils" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Some utility methods for streaming operations.</p>
+    </li><li name="org.apache.spark.streaming.StreamingContext" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="StreamingContext"></a>
+      <a id="StreamingContext:StreamingContext"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="StreamingContext$.html"><span class="name">StreamingContext</span></a><span class="result"> extends <span class="extype" name="org.apache.spark.internal.Logging">internal.Logging</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@StreamingContext" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">StreamingContext object contains a number of utility functions related to the
+StreamingContext class.</p>
+    </li><li name="org.apache.spark.streaming.Time" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Time"></a>
+      <a id="Time:Time"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Time$.html"><span class="name">Time</span></a><span class="result"> extends <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@Time" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.api" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="api"></a>
+      <a id="api:api"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="api/package.html"><span class="name">api</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@api" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.dstream" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="dstream"></a>
+      <a id="dstream:dstream"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="dstream/package.html"><span class="name">dstream</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@dstream" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Various implementations of DStream's.</p><div class="fullcomment"><div class="comment cmt"><p>Various implementations of DStream's.</p></div><dl class="attributes block"> <dt>See also</dt><dd><span class="cmt"><p><a href="dstream/DStream.html" class="extype" name="org.apache.spark.streaming.dstream.DStream">org.apache.spark.streaming.dstream.DStream</a></p></span></dd></dl></div>
+    </li><li name="org.apache.spark.streaming.flume" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="flume"></a>
+      <a id="flume:flume"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="flume/package.html"><span class="name">flume</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@flume" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Spark streaming receiver for Flume.</p>
+    </li><li name="org.apache.spark.streaming.receiver" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="receiver"></a>
+      <a id="receiver:receiver"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="receiver/package.html"><span class="name">receiver</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@receiver" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.scheduler" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="scheduler"></a>
+      <a id="scheduler:scheduler"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="scheduler/package.html"><span class="name">scheduler</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@scheduler" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.streaming.util" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="util"></a>
+      <a id="util:util"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="util/package.html"><span class="name">util</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../index.html#org.apache.spark.streaming.package@util" title="Permalink" target="_top">
+        <img src="../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>

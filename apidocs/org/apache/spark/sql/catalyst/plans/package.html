@@ -1,0 +1,422 @@
+<!DOCTYPE html >
+<html>
+        <head>
+          <title>plans - snappydata_2.11 1.1.0-HF-1 API - org.apache.spark.sql.catalyst.plans</title>
+          <meta name="description" content="plans - snappydata 2.11 1.1.0 - HF - 1 API - org.apache.spark.sql.catalyst.plans" />
+          <meta name="keywords" content="plans snappydata 2.11 1.1.0 HF 1 API org.apache.spark.sql.catalyst.plans" />
+          <meta http-equiv="content-type" content="text/html; charset=UTF-8" />
+          
+      <link href="../../../../../../lib/template.css" media="screen" type="text/css" rel="stylesheet" />
+      <link href="../../../../../../lib/diagrams.css" media="screen" type="text/css" rel="stylesheet" id="diagrams-css" />
+      <script type="text/javascript" src="../../../../../../lib/jquery.js" id="jquery-js"></script>
+      <script type="text/javascript" src="../../../../../../lib/jquery-ui.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/template.js"></script>
+      <script type="text/javascript" src="../../../../../../lib/tools.tooltip.js"></script>
+      
+      <script type="text/javascript">
+         if(top === self) {
+            var url = '../../../../../../index.html';
+            var hash = 'org.apache.spark.sql.catalyst.plans.package';
+            var anchor = window.location.hash;
+            var anchor_opt = '';
+            if (anchor.length >= 1)
+              anchor_opt = '@' + anchor.substring(1);
+            window.location.href = url + '#' + hash + anchor_opt;
+         }
+   	  </script>
+    
+        </head>
+        <body class="value">
+      <div id="definition">
+        <img alt="Package" src="../../../../../../lib/package_big.png" />
+        <p id="owner"><a href="../../../../../package.html" class="extype" name="org">org</a>.<a href="../../../../package.html" class="extype" name="org.apache">apache</a>.<a href="../../../package.html" class="extype" name="org.apache.spark">spark</a>.<a href="../../package.html" class="extype" name="org.apache.spark.sql">sql</a>.<a href="../package.html" class="extype" name="org.apache.spark.sql.catalyst">catalyst</a></p>
+        <h1>plans</h1><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      </div>
+
+      <h4 id="signature" class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <span class="name">plans</span>
+      </span>
+      </h4>
+      
+          <div id="comment" class="fullcommenttop"><div class="comment cmt"><p>A collection of common abstractions for query plans as well as
+a base logical plan representation.
+</p></div><div class="toggleContainer block">
+          <span class="toggle">Linear Supertypes</span>
+          <div class="superTypes hiddenContent"><a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a>, <span class="extype" name="scala.Any">Any</span></div>
+        </div></div>
+        
+
+      <div id="mbrsel">
+        <div id="textfilter"><span class="pre"></span><span class="input"><input id="mbrsel-input" type="text" accesskey="/" /></span><span class="post"></span></div>
+        <div id="order">
+              <span class="filtertype">Ordering</span>
+              <ol>
+                
+                <li class="alpha in"><span>Alphabetic</span></li>
+                <li class="inherit out"><span>By Inheritance</span></li>
+              </ol>
+            </div>
+        <div id="ancestors">
+                <span class="filtertype">Inherited<br />
+                </span>
+                <ol id="linearization">
+                  <li class="in" name="org.apache.spark.sql.catalyst.plans"><span>plans</span></li><li class="in" name="scala.AnyRef"><span>AnyRef</span></li><li class="in" name="scala.Any"><span>Any</span></li>
+                </ol>
+              </div><div id="ancestors">
+            <span class="filtertype"></span>
+            <ol>
+              <li class="hideall out"><span>Hide All</span></li>
+              <li class="showall in"><span>Show All</span></li>
+            </ol>
+          </div>
+        <div id="visbl">
+            <span class="filtertype">Visibility</span>
+            <ol><li class="public in"><span>Public</span></li><li class="all out"><span>All</span></li></ol>
+          </div>
+      </div>
+
+      <div id="template">
+        <div id="allMembers">
+        
+
+        <div id="types" class="types members">
+              <h3>Type Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.plans.ExistenceJoin" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="ExistenceJoinextendsJoinTypewithProductwithSerializable"></a>
+      <a id="ExistenceJoin:ExistenceJoin"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="ExistenceJoin.html"><span class="name">ExistenceJoin</span></a><span class="params">(<span name="exists">exists: <a href="../expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a></span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@ExistenceJoinextendsJoinTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.InnerLike" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="InnerLikeextendsJoinType"></a>
+      <a id="InnerLike:InnerLike"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="InnerLike.html"><span class="name">InnerLike</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@InnerLikeextendsJoinType" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">The explicitCartesian flag indicates if the inner join was constructed with a CROSS join
+indicating a cartesian product has been explicitly requested.</p>
+    </li><li name="org.apache.spark.sql.catalyst.plans.JoinType" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="JoinTypeextendsAnyRef"></a>
+      <a id="JoinType:JoinType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">sealed abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="JoinType.html"><span class="name">JoinType</span></a><span class="result"> extends <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@JoinTypeextendsAnyRef" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.NaturalJoin" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="NaturalJoinextendsJoinTypewithProductwithSerializable"></a>
+      <a id="NaturalJoin:NaturalJoin"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="NaturalJoin.html"><span class="name">NaturalJoin</span></a><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@NaturalJoinextendsJoinTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan" visbl="pub" data-isabs="true" fullComment="no" group="Ungrouped">
+      <a id="QueryPlan[PlanType&lt;:org.apache.spark.sql.catalyst.plans.QueryPlan[PlanType]]extendsTreeNode[PlanType]"></a>
+      <a id="QueryPlan[PlanType&lt;:QueryPlan[PlanType]]:QueryPlan[PlanType]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">abstract </span>
+        <span class="kind">class</span>
+      </span>
+      <span class="symbol">
+        <a href="QueryPlan.html"><span class="name">QueryPlan</span></a><span class="tparams">[<span name="PlanType">PlanType &lt;: <a href="QueryPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan">QueryPlan</a>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan.PlanType">PlanType</span>]</span>]</span><span class="result"> extends <a href="../trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a>[<span class="extype" name="org.apache.spark.sql.catalyst.plans.QueryPlan.PlanType">PlanType</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@QueryPlan[PlanType&lt;:org.apache.spark.sql.catalyst.plans.QueryPlan[PlanType]]extendsTreeNode[PlanType]" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.UsingJoin" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="UsingJoinextendsJoinTypewithProductwithSerializable"></a>
+      <a id="UsingJoin:UsingJoin"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">case class</span>
+      </span>
+      <span class="symbol">
+        <a href="UsingJoin.html"><span class="name">UsingJoin</span></a><span class="params">(<span name="tpe">tpe: <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a></span>, <span name="usingColumns">usingColumns: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>)</span><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@UsingJoinextendsJoinTypewithProductwithSerializable" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        <div id="values" class="values members">
+              <h3>Value Members</h3>
+              <ol><li name="org.apache.spark.sql.catalyst.plans.Cross" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Cross"></a>
+      <a id="Cross:Cross"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Cross$.html"><span class="name">Cross</span></a><span class="result"> extends <a href="InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@Cross" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.FullOuter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="FullOuter"></a>
+      <a id="FullOuter:FullOuter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="FullOuter$.html"><span class="name">FullOuter</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@FullOuter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.Inner" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="Inner"></a>
+      <a id="Inner:Inner"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="Inner$.html"><span class="name">Inner</span></a><span class="result"> extends <a href="InnerLike.html" class="extype" name="org.apache.spark.sql.catalyst.plans.InnerLike">InnerLike</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@Inner" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.JoinType" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="JoinType"></a>
+      <a id="JoinType:JoinType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="JoinType$.html"><span class="name">JoinType</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@JoinType" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.LeftAnti" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LeftAnti"></a>
+      <a id="LeftAnti:LeftAnti"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LeftAnti$.html"><span class="name">LeftAnti</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@LeftAnti" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.LeftExistence" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LeftExistence"></a>
+      <a id="LeftExistence:LeftExistence"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LeftExistence$.html"><span class="name">LeftExistence</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@LeftExistence" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.LeftOuter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LeftOuter"></a>
+      <a id="LeftOuter:LeftOuter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LeftOuter$.html"><span class="name">LeftOuter</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@LeftOuter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.LeftSemi" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="LeftSemi"></a>
+      <a id="LeftSemi:LeftSemi"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="LeftSemi$.html"><span class="name">LeftSemi</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@LeftSemi" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.RightOuter" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="RightOuter"></a>
+      <a id="RightOuter:RightOuter"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="RightOuter$.html"><span class="name">RightOuter</span></a><span class="result"> extends <a href="JoinType.html" class="extype" name="org.apache.spark.sql.catalyst.plans.JoinType">JoinType</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@RightOuter" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.logical" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="logical"></a>
+      <a id="logical:logical"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="logical/package.html"><span class="name">logical</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@logical" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.catalyst.plans.physical" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="physical"></a>
+      <a id="physical:physical"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">package</span>
+      </span>
+      <span class="symbol">
+        <a href="physical/package.html"><span class="name">physical</span></a>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../../index.html#org.apache.spark.sql.catalyst.plans.package@physical" title="Permalink" target="_top">
+        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li></ol>
+            </div>
+
+        
+
+        
+        </div>
+
+        <div id="inheritedMembers">
+        <div class="parent" name="scala.AnyRef">
+              <h3>Inherited from <a href="../../../../../../scala/package.html#AnyRef=Object" class="extmbr" name="scala.AnyRef">AnyRef</a></h3>
+            </div><div class="parent" name="scala.Any">
+              <h3>Inherited from <span class="extype" name="scala.Any">Any</span></h3>
+            </div>
+        
+        </div>
+
+        <div id="groupedMembers">
+        <div class="group" name="Ungrouped">
+              <h3>Ungrouped</h3>
+              
+            </div>
+        </div>
+
+      </div>
+
+      <div id="tooltip"></div>
+
+      <div id="footer">  </div>
+
+
+    </body>
+      </html>
