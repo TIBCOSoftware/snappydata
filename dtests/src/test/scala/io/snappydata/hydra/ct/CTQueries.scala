@@ -186,42 +186,28 @@ object CTQueries {
   )
 
   def orders_details_df(sqlContext: SQLContext, isSpark: Boolean = false): DataFrame = {
-   if (isSpark) {
-     sqlContext.read.format("com.databricks.spark.csv")
-         .option("header", "true")
-         .option("inferSchema", "false")
-         .option("nullValue", "NULL")
-         .option("maxCharsPerColumn", "4096")
-         .schema(structFieldsOrdersDetails)
-         .load(s"${snc.getConf("dataFilesLocation")}/ORDERS_DETAILS.dat")
-   } else {
-     sqlContext.read.format("com.databricks.spark.csv")
-         .option("header", "true")
-         .option("inferSchema", "false")
-         .option("nullValue", "NULL")
-         .option("maxCharsPerColumn", "4096")
-         .load(s"${snc.getConf("dataFilesLocation")}/ORDERS_DETAILS.dat")
-   }
+      val df = sqlContext.read.format("com.databricks.spark.csv")
+          .option("header", "true")
+          .option("inferSchema", "false")
+          .option("nullValue", "NULL")
+          .option("maxCharsPerColumn", "4096")
+      if (isSpark) {
+          df.schema(structFieldsOrdersDetails)
+      }
+      df.load(s"${snc.getConf("dataFilesLocation")}/ORDERS_DETAILS.dat")
   }
 
-  def exec_details_df(sqlContext: SQLContext, isSpark: Boolean = false): DataFrame = {
-    if (isSpark) {
-      sqlContext.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .option("inferSchema", "false")
-          .option("nullValue", "NULL")
-          .option("maxCharsPerColumn", "4096")
-          .schema(structFieldsExecDetails)
-          .load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
-    } else {
-      sqlContext.read.format("com.databricks.spark.csv")
-          .option("header", "true")
-          .option("inferSchema", "false")
-          .option("nullValue", "NULL")
-          .option("maxCharsPerColumn", "4096")
-          .load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
+    def exec_details_df(sqlContext: SQLContext, isSpark: Boolean = false): DataFrame = {
+        val df = sqlContext.read.format("com.databricks.spark.csv")
+            .option("header", "true")
+            .option("inferSchema", "false")
+            .option("nullValue", "NULL")
+            .option("maxCharsPerColumn", "4096")
+        if (isSpark) {
+            df.schema(structFieldsExecDetails)
+        }
+        df.load(s"${snc.getConf("dataFilesLocation")}/EXEC_DETAILS.dat")
     }
-  }
 
   val create_diskStore_ddl = "CREATE DISKSTORE OverflowDiskStore"
 
