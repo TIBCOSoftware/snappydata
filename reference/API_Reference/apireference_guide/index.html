@@ -2395,7 +2395,7 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 </tr>
 <tr>
 <td>allowExisting</td>
-<td></td>
+<td>When set to <strong>true</strong>, tables with the same name are ignored, else an <strong>AnalysisException</strong> is thrown stating that the table already exists.</td>
 </tr>
 </tbody>
 </table>
@@ -2486,7 +2486,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <p><a id= createsampletableapi> </a></p>
 <h3 id="createsampletable">createSampleTable</h3>
 <p>Creates a stratified sample table.</p>
-<p>!!! Note This API is not supported in the Smart Connector mode. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<p>This API is not supported in the Smart Connector mode. </p>
 <p><strong>Syntax</strong></p>
 <pre><code>createSampleTable(tableName: String,
       baseTable: Option[String],
@@ -2535,7 +2538,10 @@ snappySession.createTable(tableName, &quot;column&quot;, dataDF.schema, props)
 <p><a id= createaproxtstopkapi> </a></p>
 <h3 id="createapproxtstopk">createApproxTSTopK</h3>
 <p>Creates an approximate structure to query top-K with time series support.</p>
-<p>!!! Note This API is not supported in the Smart Connector mode.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<p>This API is not supported in the Smart Connector mode.</p>
 <p><strong>Syntax</strong></p>
 <pre><code>createApproxTSTopK(topKName: String, baseTable: Option[String],  keyColumnName: String, inputDataSchema: StructType,       topkOptions: Map[String, String], allowExisting: Boolean = false)
 
@@ -2780,7 +2786,10 @@ snappySession.insert(&quot;t1&quot;, row)
 <p><a id= queryapproxtstapi> </a></p>
 <h3 id="queryapproxtstopk">queryApproxTSTopK</h3>
 <p>Fetches the topK entries in the<strong> Approx TopK</strong> synopsis for the specified time interval. The time interval specified here should not be less than the minimum time interval used when creating the TopK synopsis.</p>
-<p>!!! Note This API is not supported in the Smart Connector mode.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+</div>
+<p>This API is not supported in the Smart Connector mode.</p>
 <p><strong>Syntax</strong></p>
 <pre><code>queryApproxTSTopK(topKName: String,
       startTime: String = null, endTime: String = null,

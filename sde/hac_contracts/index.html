@@ -2136,19 +2136,19 @@
 <p>When an error constraint is not met, the action to be taken is defined in the behavior clause. </p>
 <h2 id="behavior-clause">Behavior Clause</h2>
 <p>Synopsis Data Engine has HAC support using the following behavior clause. </p>
-<h3 id="ltdo_nothinggt"><code>&lt;do_nothing&gt;</code></h3>
+<h3 id="do_nothing"><code>&lt;do_nothing&gt;</code></h3>
 <p>The SDE engine returns the estimate as is. </p>
 <p><img alt="DO NOTHING" src="../../Images/aqp_donothing.png" /></p>
-<h3 id="ltlocal_omitgt"><code>&lt;local_omit&gt;</code></h3>
+<h3 id="local_omit"><code>&lt;local_omit&gt;</code></h3>
 <p>For aggregates that do not satisfy the error criteria, the value is replaced by a special value like "null". 
 <img alt="LOCAL OMIT" src="../../Images/aqp_localomit.png" /></p>
-<h3 id="ltstrictgt"><code>&lt;strict&gt;</code></h3>
+<h3 id="strict"><code>&lt;strict&gt;</code></h3>
 <p>If any of the aggregate column in any of the rows do not meet the HAC requirement, the system throws an exception. 
 <img alt="Strict" src="../../Images/aqp_strict.png" /></p>
-<h3 id="ltrun_on_full_tablegt"><code>&lt;run_on_full_table&gt;</code></h3>
+<h3 id="run_on_full_table"><code>&lt;run_on_full_table&gt;</code></h3>
 <p>If any of the single output row exceeds the specified error, then the full query is re-executed on the base table.</p>
 <p><img alt="RUN OF FULL TABLE" src="../../Images/aqp_runonfulltable.png" /></p>
-<h3 id="ltpartial_run_on_base_tablegt"><code>&lt;partial_run_on_base_table&gt;</code></h3>
+<h3 id="partial_run_on_base_table"><code>&lt;partial_run_on_base_table&gt;</code></h3>
 <p>If the error is more than what is specified in the query, for any of the output rows (that is sub-groups for a group by query), the query is re-executed on the base table for those sub-groups.  This result is then merged (without any duplicates) with the result derived from the sample table. 
 <img alt="PARTIAL RUN ON BASE TABLE" src="../../Images/aqp_partialrunonbasetable.png" /></p>
 <p>In the following example, any one of the above behavior clause can be applied. </p>

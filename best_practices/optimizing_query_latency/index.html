@@ -2194,8 +2194,8 @@ For examples refer to, <a href="../../howto/perform_a_colocated_join/">How to co
 <p>The number of buckets has an impact on query performance, storage density, and ability to scale the system as data volumes grow.
 Before deciding the total number of buckets in a table, you must consider the size of the largest bucket required for a table. The total time taken by a query is roughly equal to the scheduling delay plus the time needed to scan the largest bucket for that query. If too many queries are simultaneously executed in the system, scheduling delay can be higher even if the time to scan the bucket is low. In case of an extremely large bucket, the time to scan the bucket will be large even if the query gets scheduled immediately.</p>
 <p>The following principles should be considered when you set the total number of buckets for a table:
-*   Ensure that data is evenly distributed among the buckets.
-*   If a query on the table is frequent with low latency requirement and those queries scan all the buckets,  then ensure that the total number of the buckets is either greater than or equal to the total number of physical cores in a cluster.
+<em>   Ensure that data is evenly distributed among the buckets.
+</em>   If a query on the table is frequent with low latency requirement and those queries scan all the buckets,  then ensure that the total number of the buckets is either greater than or equal to the total number of physical cores in a cluster.
 *   If the query is frequent and the query gets pruned to some particular buckets, that is if the query has partitioning columns in predicate, then the total number of buckets can be low if the concurrency is high. </p>
 <p>When a new server joins or an existing server leaves the cluster, buckets are moved around to ensure that data is balanced across the nodes where the table is defined.</p>
 <!---The  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>--->

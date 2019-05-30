@@ -2378,13 +2378,7 @@ public class ProcessEvents implements SnappyStreamSink {
 <th>LAST_OFFSET</th>
 </tr>
 </thead>
-<tbody>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-</tbody>
+<tbody></tbody>
 </table>
 <p>Initially, the table contains no rows. The connector inserts a row for the table with minimum offset queried from the database. On subsequent intervals, it consults this table to get the offset number. </br>
 If connector application crashes, it refers to this table on a restart to query further.</p>
