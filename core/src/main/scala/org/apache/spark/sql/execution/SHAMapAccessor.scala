@@ -83,6 +83,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val byteBufferClass = classOf[ByteBuffer].getName
     val unsafeClass = classOf[UnsafeRow].getName
     val castTerm = SHAMapAccessor.getNullBitsCastTerm(numBytesForNullBits)
+    val indexesOfInts = if (isKey && nestingLevel == 0) {
+      dataTypes.zipWithIndex.filter {
+        case (dt, index) => dt == IntegerType
+      }.map(_._2)
+    } else Nil
+    val pairedIndexes = indexesOfInts.dropRight(indexesOfInts.length % 2)
+
     dataTypes.zip(varNames).zipWithIndex.map { case ((dt, varName), i) =>
       val nullVar = if (isKey) {
         if (nestingLevel == 0 && skipNullBitsCode) {
@@ -160,8 +167,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
               s"""$varName = $plaformClass.getShort($vdBaseObjectTerm, $currentValueOffsetTerm);
               """.stripMargin
             case t if t =:= typeOf[Int] =>
-              s"""$varName = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
+              if (pairedIndexes.contains(i)) {
+                ""
+              } else {
+                s"""$varName = $plaformClass.getInt($vdBaseObjectTerm, $currentValueOffsetTerm);
                """.stripMargin
+              }
             case t if t =:= typeOf[Long] =>
               s"""$varName = $plaformClass.getLong($vdBaseObjectTerm,$currentValueOffsetTerm);
               """.stripMargin
@@ -194,8 +205,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
               }
 
             case _ => throw new UnsupportedOperationException("unknown type " + dt)
-          }) +
+          }) + (if (!pairedIndexes.contains(i)) {
             s"""$currentValueOffsetTerm += ${dt.defaultSize};"""
+          } else "")
         }
         case ArrayType(elementType, containsNull) =>
           val isExploded = ctx.freshName("isExplodedArray")
@@ -553,29 +565,56 @@ case class SHAMapAccessor(@transient session: SnappySession,
           |// move current offset to end of null bits
           |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
-
-    val intToLongOptimzationCode = if (nestingLevel == 0) {
-      val indexesOfInts = dataTypes.zipWithIndex.filter{
+    val pairedIndexes = if (nestingLevel == 0 && isKey) {
+      val temp = dataTypes.zipWithIndex.filter {
         case (dt, index) => dt == IntegerType
       }.map(_._2)
-      val pairedIndexes = indexesOfInts.dropRight(indexesOfInts.length % 2)
+      temp.dropRight(temp.length % 2)
+    } else Nil
+
+    val intToLongOptimzationCode = if (nestingLevel == 0 && isKey) {
       pairedIndexes.grouped(2).map {
-        case indx1::indx2::Nil =>
+        seq => val indx1 = seq(0)
+          val indx2 = seq(1)
+          val expr1 = varsToWrite(indx1)
+          val expr2 = varsToWrite(indx2)
+          val temp = ctx.freshName("temp")
           val bothNotNullWritingCode =
             s"""
+               |long $temp = ${expr1.value};
                |$plaformClass.putLong($baseObjectTerm, $offsetTerm,
-               |(${varsToWrite(indx1).value} << 32L) | (${varsToWrite(indx2).value} & 0xffffffffL));
+               |($temp << 32L) | (${expr2.value} & 0xffffffffL));
                |$offsetTerm += ${LongType.defaultSize};
              """.stripMargin
-          if (skipNullEvalCode) {
+          if (skipNullEvalCode || ((expr1.isNull.isEmpty || expr1.isNull == "false") &&
+            (expr2.isNull.isEmpty || expr2.isNull == "false"))) {
             bothNotNullWritingCode
           } else {
-            
+            val nullEval1 = SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullKeyBits,
+              varsToWrite(indx1), indx1, nullKeysBitsetTerm, "", null, true, "")
+            val nullEval2 = SHAMapAccessor.evaluateNullBitsAndEmbedWrite(numBytesForNullKeyBits,
+              varsToWrite(indx2), indx2, nullKeysBitsetTerm, "", null, true, "")
+            val isNull1Term = if (expr1.isNull.isEmpty) "false" else expr1.isNull
+            val isNull2Term = if (expr2.isNull.isEmpty) "false" else expr2.isNull
+            s"""
+               |$nullEval1
+               |$nullEval2
+               |if (!($isNull1Term || $isNull2Term)) {
+                  |$bothNotNullWritingCode
+               |} else if ($isNull1Term && !$isNull2Term) {
+                  |$plaformClass.putInt($baseObjectTerm, $offsetTerm, ${expr2.value} );
+                  |$offsetTerm += ${IntegerType.defaultSize};
+               |} else if ($isNull2Term && !$isNull1Term) {
+                  |$plaformClass.putInt($baseObjectTerm, $offsetTerm, ${expr1.value} );
+                  |$offsetTerm += ${IntegerType.defaultSize};
+               |}
+             """.stripMargin
           }
-      }
+      }.mkString("\n")
     } else ""
 
     s"""$storeNullBitStartOffsetAndRepositionOffset
+       |$intToLongOptimzationCode
        |${dataTypes.zip(varsToWrite).zipWithIndex.map {
          case ((dt, expr), i) =>
           val variable = expr.value
@@ -602,10 +641,14 @@ case class SHAMapAccessor(@transient session: SnappySession,
                      |$offsetTerm += ${dt.defaultSize};
                   """.stripMargin
                 case t if t =:= typeOf[Int] =>
-                  s"""
-                  $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);
-                 $offsetTerm += ${dt.defaultSize};
-                 """.stripMargin
+                  if (pairedIndexes.contains(i)) {
+                     ""
+                  } else {
+                    s"""
+                     $plaformClass.putInt($baseObjectTerm, $offsetTerm, $variable);
+                     $offsetTerm += ${dt.defaultSize};
+                    """.stripMargin
+                  }
                 case t if t =:= typeOf[Long] =>
                   s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm, $variable);
                      |$offsetTerm += ${dt.defaultSize};

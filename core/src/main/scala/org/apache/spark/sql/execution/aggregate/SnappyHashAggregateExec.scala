@@ -574,6 +574,8 @@ case class SnappyHashAggregateExec(
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${readIntOptimizedPair(this.groupingAttributes.map(_.dataType),
+        iterValueOffsetTerm, keyBufferVars)}
        $evaluateKeyVars
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
@@ -598,6 +600,9 @@ case class SnappyHashAggregateExec(
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${readIntOptimizedPair(this.groupingAttributes.map(_.dataType),
+           iterValueOffsetTerm, keyBufferVars)
+        }
        $evaluateKeyVars
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullAggsBitsetTerm, byteBufferAccessor.numBytesForNullAggBits)}
@@ -622,10 +627,53 @@ case class SnappyHashAggregateExec(
       s"""
        ${byteBufferAccessor.readNullBitsCode(iterValueOffsetTerm,
         byteBufferAccessor.nullKeysBitsetTerm, byteBufferAccessor.numBytesForNullKeyBits)}
+       ${readIntOptimizedPair(this.groupingAttributes.map(_.dataType), iterValueOffsetTerm,
+        keyBufferVars)
+       }
        $evaluateKeyVars
        ${consume(ctx, resultVars)}
        """
     }
+  }
+
+  private def readIntOptimizedPair(keysDataTypes: Seq[DataType], offsetTerm: String,
+    keyVars: Seq[ExprCode]): String = {
+    val indexesOfInts = keysDataTypes.zipWithIndex.filter {
+        case (dt, index) => dt == IntegerType
+      }.map(_._2)
+    val pairedIndexes = indexesOfInts.dropRight(indexesOfInts.length % 2)
+
+    val platformClass = classOf[Platform].getName
+
+    pairedIndexes.grouped(2).map {
+     seq => val indx1 = seq(0)
+       val indx2 = seq(1)
+        val expr1 = keyVars(indx1)
+        val expr2 = keyVars(indx2)
+        val isNull1 = SHAMapAccessor.getExpressionForNullEvalFromMask(indx1,
+          byteBufferAccessor.numBytesForNullKeyBits, byteBufferAccessor.nullKeysBitsetTerm)
+        val isNull2 = SHAMapAccessor.getExpressionForNullEvalFromMask(indx2,
+          byteBufferAccessor.numBytesForNullKeyBits, byteBufferAccessor.nullKeysBitsetTerm)
+        s"""
+           | if (!( ($isNull1) || ($isNull2) ) ) {
+           |   long temp = $platformClass.getLong(${byteBufferAccessor.vdBaseObjectTerm},
+           |    $offsetTerm);
+           |    ${expr2.value} = (int)temp;
+           |    ${expr1.value} =  (int)(temp >>> 32L);
+           |    $offsetTerm += ${LongType.defaultSize};
+           | } else if (!($isNull1)) {
+           |   ${expr1.value} = $platformClass.getInt(${byteBufferAccessor.vdBaseObjectTerm},
+           |               $offsetTerm);
+           |   $offsetTerm += ${IntegerType.defaultSize};
+           | }else if (!($isNull2)) {
+           |   ${expr2.value} = $platformClass.getInt(${byteBufferAccessor.vdBaseObjectTerm},
+           |               $offsetTerm);
+           |   $offsetTerm += ${IntegerType.defaultSize};
+           | }
+         """.stripMargin
+    }.mkString("\n")
+
+
   }
 
   private def doProduceWithKeysForSHAMap(ctx: CodegenContext): String = {
@@ -904,9 +952,11 @@ case class SnappyHashAggregateExec(
     val keysExpr = byteBufferAccessor.getBufferVars(keysDataType, KeyBufferVars,
       localIterValueOffsetTerm, true, byteBufferAccessor.nullKeysBitsetTerm,
       byteBufferAccessor.numBytesForNullKeyBits, byteBufferAccessor.numBytesForNullKeyBits == 0)
+
     val aggsExpr = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
       aggregateBufferVars, localIterValueOffsetTerm, false, byteBufferAccessor.nullAggsBitsetTerm,
       byteBufferAccessor.numBytesForNullAggBits, false)
+
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
 
