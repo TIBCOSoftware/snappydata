@@ -32,6 +32,7 @@ import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.expressions.{Ascending, Attribute, SortOrder}
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, BlockAndExecutorId, SQLContext, SnappyContext, SnappySession}
 
@@ -322,7 +323,7 @@ object StoreUtils {
 
   val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
-  def getPrimaryKeyClause(parameters: scala.collection.Map[String, String],
+  def getPrimaryKeyClause(parameters: CaseInsensitiveMutableHashMap[String],
       schema: StructType): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
     val stringPKCols = new mutable.ArrayBuffer[StructField](1)
@@ -359,7 +360,7 @@ object StoreUtils {
     (sb.toString(), stringPKCols)
   }
 
-  def ddlExtensionString(parameters: mutable.Map[String, String],
+  def ddlExtensionString(parameters: CaseInsensitiveMutableHashMap[String],
       isRowTable: Boolean, isShadowTable: Boolean): String = {
     val sb = new StringBuilder()
 
@@ -487,7 +488,7 @@ object StoreUtils {
   }
 
   def getAndSetPartitioningAndKeyColumns(session: SnappySession,
-      schema: StructType, parameters: mutable.Map[String, String]): Seq[String] = {
+      schema: StructType, parameters: CaseInsensitiveMutableHashMap[String]): Seq[String] = {
     // parse the PARTITION_BY and KEYCOLUMNS and store the parsed result back in parameters
 
     // Use a new parser instance since parser may itself invoke DataSource.resolveRelation.
@@ -530,8 +531,7 @@ object StoreUtils {
     SortOrder(batchIdColumn, Ascending)
   }
 
-  def validateConnProps(
-      parameters: ExternalStoreUtils.CaseInsensitiveMutableHashMap[String]): Unit = {
+  def validateConnProps(parameters: CaseInsensitiveMutableHashMap[String]): Unit = {
     parameters.keys.foreach { k =>
       if (!k.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY) &&
           k != SnappyExternalCatalog.BASETABLE_PROPERTY &&

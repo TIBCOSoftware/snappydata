@@ -42,7 +42,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, DynamicInSet, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
@@ -479,6 +479,8 @@ object ExternalStoreUtils {
       checkIndexedColumn(a, indexedCols).map(expressions.StartsWith(_, v))
     case expressions.In(a: Attribute, v) =>
       checkIndexedColumn(a, indexedCols).map(expressions.In(_, v))
+    case DynamicInSet(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(DynamicInSet(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
     // Commenting out the below conditions for SNAP-2463. This needs to be fixed
