@@ -35,6 +35,7 @@ class HiveThriftServer extends SnappySQLJob {
   var rsMetaData : ResultSetMetaData = null
   var stmt : Statement = null
   var printLog : Boolean = false
+  var isFailed : Boolean = false
 
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
@@ -61,19 +62,89 @@ class HiveThriftServer extends SnappySQLJob {
     executeShowSchemas(hiveThriftServer, "ShoW DaTAbasEs", snc, pw, sqlContext)
 
     pw.println("-------------------------------------------------------------------------------")
-    pw.println("Case 1 : Create table from beeline, insert,update,deleter from beeline...")
+    pw.println("Use Default Schema")
+    pw.println("Case 1 : Create row table from beeline, insert,update,deleter from beeline...")
     executeUseSchema(hiveThriftServer, "default", snc, spark)
     createRowOrColumnTableFromBeeline(hiveThriftServer,
-      "create TablE if not exists EmpBeeline(id long, name String) using row", pw)
-    insertIntoRowOrColumnTableFromBeeline(hiveThriftServer, "insert into EmpBeeline select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(500000)", snc, spark, pw, sqlContext)
+      "create TablE if not exists Emp1(id long, name String) using row", pw)
+    insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp1 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(500000)", snc, spark, pw, sqlContext, "Emp1")
     executeShowTables(hiveThriftServer, "show TabLES in default", pw)
-    updateRowOrColumnTableFromBeeline(hiveThriftServer,
-      "update EmpBeeline set id = " +
-        "id+5 where id < 100", snc, spark, pw, sqlContext)
-    deleteFromRowOrColumnTableFromBeeline(hiveThriftServer, "delete from EmpBeeline",
-      snc, spark, pw, sqlContext)
-    executeDropTables(hiveThriftServer, "drop table if exists EmpBeeline")
+    updateTableFromBeeline(hiveThriftServer,
+      "update Emp1 set id = " +
+        "id+5 where id < 100", snc, spark, pw, sqlContext, "Emp1")
+    deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp1",
+      snc, spark, pw, sqlContext, "Emp1")
+    executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp1")
+    if(isFailed) {
+      pw.println("## CASE 1 FAILED ##")
+    }
+    else {
+      pw.println("## Case 1 Passed ##")
+    }
+    pw.println()
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 2 : Create column table from beeline, insert,update,delete from Snappy...")
+    createRowOrColumnTableFromBeeline(hiveThriftServer,
+      "create TablE if not exists Emp2(id long, name String) using column", pw)
+    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp2 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(600000)", snc, spark, pw, sqlContext, "Emp2")
+    executeShowTables(hiveThriftServer, "show TabLES in default", pw)
+    updateTableFromSnappy(hiveThriftServer,
+      "update Emp2 set name = " +
+        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp2")
+    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp2",
+      snc, spark, pw, sqlContext, "Emp2")
+    executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp2")
+    if(isFailed) {
+      pw.println("## CASE 2 FAILED ##")
+    }
+    else {
+      pw.println("## Case 2 Passed ##")
+    }
+    pw.println()
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 3 : Create row table from Snappy, insert,update,delete from BeeLine...")
+    createRowOrColumnTableFromSnappy(snc,
+      "create TablE if not exists Emp3(id long, name String) using row", pw)
+    insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp3 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(500000)", snc, spark, pw, sqlContext, "Emp3")
+    executeShowTables(hiveThriftServer, "show TabLES in default", pw)
+    updateTableFromBeeline(hiveThriftServer,
+      "update Emp3 set id = " +
+        "id+5 where id < 100", snc, spark, pw, sqlContext, "Emp3")
+    deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp3",
+      snc, spark, pw, sqlContext, "Emp3")
+    executeDropTableFromSnappy(snc, "drop table if exists Emp3")
+    if(isFailed) {
+      pw.println("## CASE 3 FAILED ##")
+    }
+    else {
+      pw.println("## Case 3 Passed ##")
+    }
+    pw.println()
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 4 : Create column table from Snappy, insert,update,delete from Snappy...")
+    createRowOrColumnTableFromSnappy(snc,
+      "create TablE if not exists Emp4(id long, name String) using column", pw)
+    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp4 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(600000)", snc, spark, pw, sqlContext, "Emp4")
+    executeShowTables(hiveThriftServer, "show TabLES in default", pw)
+    updateTableFromSnappy(hiveThriftServer,
+      "update Emp4 set name = " +
+        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp4")
+    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp4",
+      snc, spark, pw, sqlContext, "Emp4")
+    executeDropTableFromSnappy(snc, "drop table if exists Emp4")
+    if(isFailed) {
+      pw.println("## CASE 4 FAILED ##")
+    }
+    else {
+      pw.println("## Case 4 Passed ##")
+    }
     pw.println()
 
     executeShowTables(hiveThriftServer, "ShoW tAbLES iN DEFAULT", pw)
@@ -98,6 +169,7 @@ class HiveThriftServer extends SnappySQLJob {
 
   def executeShowSchemas(hts : HiveThriftServer, command : String,
                          snc : SnappyContext, pw : PrintWriter, sqlContext : SQLContext) : Unit = {
+    hts.isFailed = false
     hts.stmt = hts.connection.createStatement()
     hts.rs = hts.stmt.executeQuery(command)
     hts.rsMetaData = hts.rs.getMetaData
@@ -118,19 +190,26 @@ class HiveThriftServer extends SnappySQLJob {
 
   def createRowOrColumnTableFromBeeline(hts : HiveThriftServer, command : String,
                                         pw : PrintWriter) : Unit = {
-    pw.println("Creating the table...")
+    pw.println("Creating the table from BeeLine...")
     hts.stmt = hts.connection.createStatement()
     hts.stmt.executeQuery(command)
   }
 
-  def insertIntoRowOrColumnTableFromBeeline(hts : HiveThriftServer, command : String,
-                                            snc : SnappyContext, spark : SparkSession,
-                                            pw : PrintWriter, sqlContext : SQLContext) : Unit = {
+  def createRowOrColumnTableFromSnappy(snc : SnappyContext, command : String,
+                                        pw : PrintWriter) : Unit = {
+    pw.println("Creating the table from Snappy...")
+    snc.sql(command)
+  }
+
+  def insertIntoTableFromBeeline(hts : HiveThriftServer, command : String,
+                                 snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
+                                 sqlContext : SQLContext, table : String) : Unit = {
+    hts.isFailed = false
     pw.println("Inserting into the table...")
     hts.stmt = hts.connection.createStatement()
     hts.stmt.executeQuery(command)
-    var insertChk1 : String = "select count(*) as Total from EmpBeeline"
-    var insertChk2 : String = "select * from EmpBeeline where id > 495000 order by id DESC"
+    var insertChk1 : String = "select count(*) as Total from " + table
+    var insertChk2 : String = "select * from " + table + " where id > 495000 order by id DESC"
     ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
     ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
     insertChk1 = null
@@ -145,33 +224,79 @@ class HiveThriftServer extends SnappySQLJob {
 //  "Row", pw, spark, false)
   }
 
-  def updateRowOrColumnTableFromBeeline(hts : HiveThriftServer, command : String,
-                                        snc : SnappyContext, spark : SparkSession,
-                                        pw : PrintWriter, sqlContext : SQLContext) : Unit = {
+  def updateTableFromBeeline(hts : HiveThriftServer, command : String,
+                             snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
+                             sqlContext : SQLContext, table : String) : Unit = {
+      hts.isFailed = false
       pw.println("Update the table...")
       hts.stmt = hts.connection.createStatement()
       hts.stmt.executeQuery(command)
-      var insertChk1 : String = "select count(*) as Total from EmpBeeline"
-      var insertChk2 : String = "select * from EmpBeeline where id < 500 order by id ASC"
+      var insertChk1 : String = "select count(*) as Total from " + table
+      var insertChk2 : String = "select * from " + table + " where id < 500 order by id ASC"
       ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
       ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
       insertChk1 = null
       insertChk2 = null
  }
 
-  def deleteFromRowOrColumnTableFromBeeline(hts : HiveThriftServer, command : String,
-                                            snc : SnappyContext, spark : SparkSession,
-                                            pw : PrintWriter, sqlContext : SQLContext) : Unit = {
-      pw.println("Deleter from table...")
+  def deleteFromTableFromBeeline(hts : HiveThriftServer, command : String,
+                                 snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
+                                 sqlContext : SQLContext, table : String) : Unit = {
+      hts.isFailed = false
+      pw.println("Delete from table...")
       hts.stmt = hts.connection.createStatement()
       hts.stmt.executeQuery(command)
-      var insertChk1 : String = "select count(*) as Total from EmpBeeline"
-      var insertChk2 : String = "select * from EmpBeeline"
+      var insertChk1 : String = "select count(*) as Total from " + table
+      var insertChk2 : String = "select * from " + table
       ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
       ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
       insertChk1 = null
       insertChk2 = null
   }
+
+  def insertIntoTableFromSnappy(hts : HiveThriftServer, command : String,
+                                snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
+                                sqlContext : SQLContext, table : String) : Unit = {
+    hts.isFailed = false
+    pw.println("Inserting into the table...")
+    snc.sql(command)
+    var insertChk1 : String = "select count(*) as Total from " + table
+    var insertChk2 : String = "select id, name from " + table +
+      " where id > 498000 order by id DESC"
+    ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
+    ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
+    insertChk1 = null
+    insertChk2 = null
+  }
+
+  def updateTableFromSnappy(hts : HiveThriftServer, command : String,
+                            snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
+                            sqlContext : SQLContext, table : String) : Unit = {
+    hts.isFailed = false
+    pw.println("Update the table...")
+    snc.sql(command)
+    var insertChk1 : String = "select count(*) as Total from " + table
+    var insertChk2 : String = "select id, name from " + table + " where id < 500 order by id ASC"
+    ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
+    ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
+    insertChk1 = null
+    insertChk2 = null
+  }
+
+  def deleteFromTableFromSnappy(hts : HiveThriftServer, command : String,
+                                snc : SnappyContext, spark : SparkSession, pw : PrintWriter,
+                                sqlContext : SQLContext, table : String) : Unit = {
+    hts.isFailed = false
+    pw.println("Delete from table...")
+    snc.sql(command)
+    var insertChk1 : String = "select count(*) as Total from " + table
+    var insertChk2 : String = "select * from " + table
+    ValidateHiveThriftServer.validateSelectCountQuery(insertChk1, snc, hts, pw)
+    ValidateHiveThriftServer.validateSelectQuery(insertChk2, snc, hts, pw)
+    insertChk1 = null
+    insertChk2 = null
+  }
+
 
   def executeShowTables(hts : HiveThriftServer, command : String, pw : PrintWriter) : Unit = {
     result = ""
@@ -182,13 +307,17 @@ class HiveThriftServer extends SnappySQLJob {
       hts.rsMetaData.getColumnName(2) + "\t" + hts.rsMetaData.getColumnName(3) + "\n"
     while(hts.rs.next()) {
         result = result + hts.rs.getString("schemaName") + "\t"  +
-        hts.rs.getString("tableName") + "\t" + hts.rs.getString("isTemporary") + "\n"
+        hts.rs.getString("tableName") + "\t" + hts.rs.getString("isTemporary")
     }
     pw.println("show tables : " + "\n" + result)
   }
 
-  def executeDropTables(hts : HiveThriftServer, command : String) : Unit = {
+  def executeDropTableFromBeeLine(hts : HiveThriftServer, command : String) : Unit = {
     hts.stmt = hts.connection.createStatement()
     hts.stmt.executeQuery(command)
+  }
+
+  def executeDropTableFromSnappy(snc : SnappyContext, command : String) : Unit = {
+    snc.sql(command)
   }
 }

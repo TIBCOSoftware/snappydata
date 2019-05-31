@@ -65,9 +65,11 @@ object ValidateHiveThriftServer {
       if ((dfResult.count() == counter) && (result.equals(snappyResult))) {
         pw.println("Row counts and Row contents are matched between Snappy and Beeline" +
           " for command : " + command)
+        hts.isFailed = false
        }
       else {
         pw.println("ROW COUNTS AND ROW CONTENTS AREN'T MATCHED FOR COMMAND : " + command)
+        hts.isFailed = true
       }
     }
   }
@@ -97,10 +99,12 @@ object ValidateHiveThriftServer {
       pw.println("Row count for query  -- " + query +
         " -- are  equal between Snappy and Beeline. " +
         "Total Row count is : " + calculateBeelineCount )
+      hts.isFailed = false
     }
     else {
       pw.println("ROW COUNT FOR QUERY  -- " + query +
         " -- ARE NOT EQUAL BETWEEN Snappy AND Beeline.")
+      hts.isFailed = true
     }
     calculateBeelineCount = null
     calculateSnappyCount = null
@@ -121,16 +125,20 @@ object ValidateHiveThriftServer {
     var snappyString = snc.sql(query).collect().mkString
     if(beeLineString.equals(snappyString)) {
       pw.println("Data between BeeLine and Snappy are matched for " + query)
+      hts.isFailed = false
     }
     else {
       pw.println("DATA BETWEEN BeeLine AND Snappy ARE NOT MATCHED FOR " + query)
+      hts.isFailed = true
     }
 
     if(snc.sql(query).count() == index) {
       pw.println("Counts of query : -- " + query + " -- are equal.")
+      hts.isFailed = false
     }
     else {
       pw.println("COUNTS OF QUERY : " + query + " are NOT EQUAL.")
+      hts.isFailed = true
     }
     if (hts.printLog) {
       println("Beeline count : " + index)
