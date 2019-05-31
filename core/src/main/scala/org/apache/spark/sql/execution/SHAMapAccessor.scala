@@ -553,6 +553,28 @@ case class SHAMapAccessor(@transient session: SnappySession,
           |// move current offset to end of null bits
           |$offsetTerm += ${SHAMapAccessor.sizeForNullBits(numBytesForNullBits)};""".stripMargin
     }
+
+    val intToLongOptimzationCode = if (nestingLevel == 0) {
+      val indexesOfInts = dataTypes.zipWithIndex.filter{
+        case (dt, index) => dt == IntegerType
+      }.map(_._2)
+      val pairedIndexes = indexesOfInts.dropRight(indexesOfInts.length % 2)
+      pairedIndexes.grouped(2).map {
+        case indx1::indx2::Nil =>
+          val bothNotNullWritingCode =
+            s"""
+               |$plaformClass.putLong($baseObjectTerm, $offsetTerm,
+               |(${varsToWrite(indx1).value} << 32L) | (${varsToWrite(indx2).value} & 0xffffffffL));
+               |$offsetTerm += ${LongType.defaultSize};
+             """.stripMargin
+          if (skipNullEvalCode) {
+            bothNotNullWritingCode
+          } else {
+            
+          }
+      }
+    } else ""
+
     s"""$storeNullBitStartOffsetAndRepositionOffset
        |${dataTypes.zip(varsToWrite).zipWithIndex.map {
          case ((dt, expr), i) =>
