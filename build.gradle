@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.0'
+  version = '1.1.0-HF-1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {

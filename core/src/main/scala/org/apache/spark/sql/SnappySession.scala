@@ -44,7 +44,7 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
-import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
@@ -66,7 +66,7 @@ import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNes
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.HiveClientUtil
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal._
 import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -203,10 +203,18 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-  final def prepareSQL(sqlText: String): LogicalPlan = {
+  final def prepareSQL(sqlText: String, skipPromote: Boolean = false): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
-    sessionState.analyzerPrepare.execute(logical)
+    var ap: Analyzer = null
+    if (!skipPromote) {
+      ap = sessionState.analyzerPrepare
+    } else {
+      ap = sessionState.analyzerWithoutPromote
+    }
+    // logInfo(s"KN: Batches ${ap.batches.filter(
+    //  _.name.equalsIgnoreCase("Resolution")).mkString("_")}")
+    ap.execute(logical)
   }
 
   private[sql] final def executePlan(plan: LogicalPlan, retryCnt: Int = 0): QueryExecution = {
@@ -218,7 +226,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case e: AnalysisException =>
         val unresolvedNodes = plan.expressions.filter(
           x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
-        if (e.getMessage().contains("cannot resolve") && unresolvedNodes.size > 0) {
+        if (e.getMessage().contains("cannot resolve") && unresolvedNodes.nonEmpty) {
           reAnalyzeForUnresolvedAttribute(plan, e, retryCnt) match {
             case Some(p) => return executePlan(p, retryCnt + 1)
             case None => //
@@ -259,11 +267,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
     val errMsg = e.getMessage().split('\n').map(_.trim.filter(_ >= ' ')).mkString
     val newPlan = originalPlan transformExpressions {
-      case us@UnresolvedStar(option) if (option.isDefined) =>
+      case us@UnresolvedStar(option) if option.isDefined =>
         val targetString = option.get.mkString(".")
         var matched = false
         errMsg match {
-          case SnappySession.unresolvedStarRegex(first, schema, table, last) =>
+          case SnappySession.unresolvedStarRegex(_, schema, table, _) =>
             if (sessionCatalog.tableExists(tableIdentifier(s"$schema.$table"))) {
               val qname = s"$schema.$table"
               if (qname.equalsIgnoreCase(targetString)) {
@@ -279,7 +287,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         var uqc = ""
         var matched = false
         errMsg match {
-          case SnappySession.unresolvedColRegex(first, schema, table, col, last) =>
+          case SnappySession.unresolvedColRegex(_, schema, table, col, _) =>
             if (sessionCatalog.tableExists(tableIdentifier(s"$schema.$table"))) {
               val qname = s"$schema.$table.$col"
               if (qname.equalsIgnoreCase(targetString)) matched = true
@@ -1871,8 +1879,10 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
-  val unresolvedStarRegex = """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
-  val unresolvedColRegex = """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
+  private val unresolvedStarRegex =
+    """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
+  private val unresolvedColRegex =
+    """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
 
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)

@@ -21,7 +21,7 @@ You can use the Maven or the SBT dependencies to get the latest released version
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.0.2.2</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 

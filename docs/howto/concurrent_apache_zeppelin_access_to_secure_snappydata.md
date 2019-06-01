@@ -54,7 +54,7 @@ Log on to Zeppelin from your web browser and configure the [JDBC Interpreter](ht
     |default.user|user1|The JDBC username|
 
 3. **Dependency settings**</br> Since Zeppelin includes only PostgreSQL driver jar by default, you need to add the Client (JDBC) JAR file path for	 SnappyData. The SnappyData Client (JDBC) JAR file (TIB_compute-jdbc-2.11_1.1.0.jar) is available on [the release page](https://github.com/SnappyDataInc/snappydata/releases/latest). </br>
-	The SnappyData Client (JDBC) JAR file can also be placed under **<ZEPPELIN_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
+	The SnappyData Client (JDBC) JAR file (snappydata-jdbc_2.11-1.1.0.jar)can also be placed under **<ZEPPELIN_HOME>/interpreter/jdbc** before starting Zeppelin instead of providing it in the dependency setting.
 
 4. If required, edit other properties, and then click **Save** to apply your changes. 
 
