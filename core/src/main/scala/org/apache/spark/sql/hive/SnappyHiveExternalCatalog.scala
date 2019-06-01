@@ -96,9 +96,11 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
-    if (t != null) {
+    if (t ne null) {
       val tClass = t.getClass.getName
       tClass.contains("DisconnectedException") ||
+          // NPE can be seen if catalog object is being dropped concurrently
+          t.isInstanceOf[NullPointerException] ||
           tClass.contains("DisconnectException") ||
           (tClass.contains("MetaException") && t.getMessage.contains("retries")) ||
           isDisconnectException(t.getCause)
@@ -127,8 +129,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
           hiveClient = hiveClient.newSession()
         }
         function
-      case e: InvocationTargetException => throw e.getCause
-      case e: ExecutionException => throw e.getCause
+      case e: InvocationTargetException =>
+        if (e.getCause ne null) throw e.getCause else throw e
+      case e: ExecutionException =>
+        if (e.getCause ne null) throw e.getCause else throw e
     } finally {
       skipFlags.skipDDLocks = oldSkipLocks
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
