@@ -564,7 +564,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     getAllTables().filter(_.provider.exists(_.equalsIgnoreCase("policy"))).foreach { table =>
       val applyToStr = table.properties(PolicyProperties.policyApplyTo)
       if (applyToStr.nonEmpty) {
-        val applyTo = applyToStr.split(",")
+        val applyTo = applyToStr.split(',')
         if (applyTo.contains(qualifiedLdapGroup)) {
           val expandedApplyTo = ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
           val newProperties = table.properties +

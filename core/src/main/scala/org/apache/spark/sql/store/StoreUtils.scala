@@ -324,7 +324,7 @@ object StoreUtils {
   val pkDisallowdTypes = Seq(StringType, BinaryType, ArrayType, MapType, StructType)
 
   def getPrimaryKeyClause(parameters: CaseInsensitiveMutableHashMap[String],
-      schema: StructType): (String, Seq[StructField]) = {
+      schema: StructType, session: SnappySession): (String, Seq[StructField]) = {
     val sb = new StringBuilder()
     val stringPKCols = new mutable.ArrayBuffer[StructField](1)
     sb.append(parameters.get(PARTITION_BY).map(v => {
@@ -333,7 +333,9 @@ object StoreUtils {
           case _ if v.trim().equalsIgnoreCase(PRIMARY_KEY) => ""
           case _ =>
             val schemaFields = Utils.schemaFields(schema)
-            val cols = v.split(",") map (_.trim)
+            // Use a new parser instance since parser may itself invoke DataSource.resolveRelation
+            val parser = session.snappyParser.newInstance()
+            val cols = parser.parseSQLOnly(v, parser.parseIdentifiers.run())
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               cols, columnType = "partition")
 
@@ -499,7 +501,7 @@ object StoreUtils {
         if (schema eq null) { // row table
           throw new AnalysisException(s"$KEY_COLUMNS specified for a row table (use PRIMARY KEY)")
         }
-        val keyCols = k.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+        val keyCols = parser.parseSQLOnly(k, parser.parseIdentifiers.run())
         // check for validity of columns
         val schemaFields = Utils.schemaFields(schema)
         ExternalStoreUtils.pruneSchema(schemaFields, keyCols, "key")
@@ -518,7 +520,7 @@ object StoreUtils {
         parameters.put(PARTITION_BY, PRIMARY_KEY)
         PRIMARY_KEY :: Nil
       case Some(p) =>
-        val partCols = p.split(",").map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+        val partCols = parser.parseSQLOnly(p, parser.parseIdentifiers.run())
         parameters.put(PARTITION_BY, partCols.mkString(","))
         partCols
     }

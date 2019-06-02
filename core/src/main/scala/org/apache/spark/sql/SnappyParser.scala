@@ -365,6 +365,10 @@ class SnappyParser(session: SnappySession)
     ws ~ identifier ~ EOI
   }
 
+  final def parseIdentifiers: Rule1[Seq[String]] = rule {
+    ws ~ (identifier + commaSep) ~ EOI
+  }
+
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*

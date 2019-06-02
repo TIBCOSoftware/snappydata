@@ -117,7 +117,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val relation = resolveRelation(tableIdent)
     val keyColumns = relation match {
       case LogicalRelation(mutable: MutableRelation, _, _) =>
-        val keyCols = mutable.getPrimaryKeyColumns
+        val keyCols = mutable.getPrimaryKeyColumns(snappySession)
         if (keyCols.isEmpty) {
           Nil
         } else {
@@ -587,7 +587,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
      */
     PolicyProperties.createFilterPlan(filterExpression, tableIdent,
       table.properties(PolicyProperties.policyOwner),
-      table.properties(PolicyProperties.expandedPolicyApplyTo).split(",").
+      table.properties(PolicyProperties.expandedPolicyApplyTo).split(',').
           toSeq.filterNot(_.isEmpty))
   }
 

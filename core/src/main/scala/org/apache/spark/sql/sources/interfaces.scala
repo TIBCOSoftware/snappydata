@@ -83,7 +83,7 @@ trait BulkPutRelation extends DestroyRelation {
 
   def table: String
 
-  def getPutKeys: Option[Seq[String]]
+  def getPutKeys(session: SnappySession): Option[Seq[String]]
 
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
@@ -121,7 +121,7 @@ trait MutableRelation extends DestroyRelation {
   /**
     * Get the "primary key" of the row table and "key columns" of the  column table
   */
-  def getPrimaryKeyColumns: Seq[String]
+  def getPrimaryKeyColumns(session: SnappySession): Seq[String]
 
   /** Get the partitioning columns for the table, if any. */
   def partitionColumns: Seq[String]

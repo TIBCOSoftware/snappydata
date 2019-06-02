@@ -129,9 +129,8 @@ object Utils {
 
   def ERROR_NO_QCS(module: String): String = s"$module: QCS is empty"
 
-  def parseCSVList(s: String, parser: SnappyParser): Array[String] = {
-    s.split(',').map(c => Utils.toLowerCase(parser.parseSQLOnly(
-      c, parser.parseIdentifier.run())))
+  def parseCSVList(s: String, parser: SnappyParser): Seq[String] = {
+    parser.parseSQLOnly(s, parser.parseIdentifiers.run()).map(Utils.toLowerCase)
   }
 
   def qcsOf(qa: Array[String], cols: Array[String],
@@ -147,7 +146,7 @@ object Utils {
       case qi: Array[Int] => (qi, qi.map(fieldNames))
       case qs: String =>
         if (qs.isEmpty) throw analysisException(ERROR_NO_QCS(module))
-        else qcsOf(parseCSVList(qs, new SnappyParser(session = null)), fieldNames, module)
+        else qcsOf(parseCSVList(qs, new SnappyParser(session = null)).toArray, fieldNames, module)
       case qa: Array[String] => qcsOf(qa, fieldNames, module)
       case q => throw analysisException(
         s"$module: Cannot parse 'qcs'='$q'")

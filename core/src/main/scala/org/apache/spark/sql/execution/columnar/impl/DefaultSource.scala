@@ -122,7 +122,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     // change the schema to use VARCHAR for StringType for partitioning columns
     // so that the row buffer table can use it as part of primary key
     val (primaryKeyClause, stringPKCols) = StoreUtils.getPrimaryKeyClause(
-      parameters, specifiedSchema)
+      parameters, specifiedSchema, session)
     val schema = if (stringPKCols.isEmpty) specifiedSchema
     else {
       StructType(specifiedSchema.map { field =>

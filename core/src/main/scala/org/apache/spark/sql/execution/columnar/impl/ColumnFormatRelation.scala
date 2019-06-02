@@ -29,6 +29,7 @@ import io.snappydata.{Constant, Property}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -68,7 +69,7 @@ abstract class BaseColumnFormatRelation(
     _userSchema: StructType,
     val schemaExtensions: String,
     val ddlExtensionForShadowTable: String,
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _externalStore: ExternalStore,
     val partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -218,11 +219,13 @@ abstract class BaseColumnFormatRelation(
   }
 
   /** Get key columns of the column table */
-  override def getPrimaryKeyColumns: Seq[String] = {
-    val keyColsOptions = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
-    if (keyColsOptions.isDefined) {
-      keyColsOptions.get.split(",")
-    } else Nil
+  override def getPrimaryKeyColumns(session: SnappySession): Seq[String] = {
+    origOptions.get(ExternalStoreUtils.KEY_COLUMNS) match {
+      case None => Nil
+      case Some(keyCols) =>
+        val parser = session.snappyParser
+        parser.parseSQLOnly(keyCols, parser.parseIdentifiers.run())
+    }
   }
 
   /**
@@ -361,8 +364,7 @@ abstract class BaseColumnFormatRelation(
     if (isInfoEnabled) {
       val schemaString = JdbcExtendedUtils.schemaString(userSchema, connProperties.dialect)
       val optsString = if (origOptions.nonEmpty) {
-        origOptions.filter(p => !Utils.toLowerCase(p._1).startsWith(
-          SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
+        origOptions.filter(p => !p._1.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
           p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
       } else ""
       logInfo(s"Executing DDL: CREATE TABLE $fullName " +
@@ -430,7 +432,7 @@ class ColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -575,10 +577,12 @@ class ColumnFormatRelation(
     ColumnPutIntoExec(insertPlan, updatePlan)
   }
 
-  override def getPutKeys: Option[Seq[String]] = {
+  override def getPutKeys(session: SnappySession): Option[Seq[String]] = {
     val keys = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     keys match {
-      case Some(x) => Some(x.split(",").toSeq)
+      case Some(x) =>
+        val parser = session.snappyParser
+        Some(parser.parseSQLOnly(x, parser.parseIdentifiers.run()))
       case None => None
     }
   }
@@ -595,7 +599,7 @@ class IndexColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,

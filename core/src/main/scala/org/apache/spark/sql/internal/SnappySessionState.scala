@@ -100,9 +100,8 @@ class SnappySessionState(val snappySession: SnappySession)
       case _ => Once
     }
 
-    override lazy val batches: Seq[Batch] = analyzer.batches.map {
-      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
-    }
+    override lazy val batches: Seq[Batch] = analyzer.batches.map(batch =>
+      Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*))
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
@@ -566,7 +565,7 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeMutableOperations(sparkSession: SparkSession,
+  case class AnalyzeMutableOperations(session: SnappySession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
     private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
@@ -675,13 +674,13 @@ class SnappySessionState(val snappySession: SnappySession)
             keyColumns = keyAttrs.map(_.toAttribute))
         }
       case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
-        ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
+        ColumnTableBulkOps.transformDeletePlan(session, d)
       case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
-        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
+        ColumnTableBulkOps.transformPutPlan(session, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
-      val qe = sparkSession.sessionState.executePlan(query)
+      val qe = session.sessionState.executePlan(query)
       qe.assertAnalyzed()
       qe.analyzed
     }
@@ -1253,7 +1252,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
 
-          val keyColumns = dr.getPrimaryKeyColumns
+          val keyColumns = dr.getPrimaryKeyColumns(state.snappySession)
           val childOutput = keyColumns.map(col =>
             child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
               case Some(a: Attribute) => a

@@ -49,7 +49,7 @@ class RowFormatRelation(
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _context: SQLContext)
     extends JDBCMutableRelation(_connProperties,
       _table,

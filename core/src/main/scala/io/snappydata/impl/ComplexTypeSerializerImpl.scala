@@ -372,11 +372,9 @@ final class GenericValidatingConverter(dataType: DataType,
       case _: MatchError =>
         throw new IllegalArgumentException("Cannot convert value of " +
             s"${v.getClass} to ${dataType.typeName} for " +
-            s"$table($column). Supported types: ${
-              ValidatingConverter
-                  .objectCompatibilityMap(dataType.getClass).map(_.getName)
-                  .mkString(", ")
-            }")
+            s"$table($column). Supported types: ${ValidatingConverter
+                .objectCompatibilityMap(dataType.getClass).map(_.getName)
+                .mkString(", ")}")
     }
   }
 }

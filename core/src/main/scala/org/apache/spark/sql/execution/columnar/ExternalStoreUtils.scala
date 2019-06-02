@@ -282,7 +282,7 @@ object ExternalStoreUtils {
             s"unsupported pool implementation '${poolImpl.get}' " +
             s"(supported values: tomcat, hikari)")
     }
-    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+    val poolProps = poolProperties.map(p => Map(p.split(',').map { s =>
       val eqIndex = s.indexOf('=')
       if (eqIndex >= 0) {
         (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
@@ -514,8 +514,8 @@ object ExternalStoreUtils {
    * @return A Catalyst schema corresponding to columns in the given order.
    */
   def pruneSchema(fieldMap: scala.collection.Map[String, StructField],
-      columns: Array[String], columnType: String): StructType = {
-    new StructType(columns.map { col =>
+      columns: Seq[String], columnType: String): StructType = {
+    StructType(columns.map { col =>
       fieldMap.get(col) match {
         case None => throw new AnalysisException("Cannot resolve " +
             s"""$columnType column name "$col" among (${fieldMap.keys.mkString(", ")})""")
