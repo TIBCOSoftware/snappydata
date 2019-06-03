@@ -151,124 +151,77 @@ object SPVATestUtil {
                                    sqlContext: SQLContext): Unit = {
     for (q <- SPVAQueries.queries) {
       q._1 match {
-        case "Q1_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_1, "Q1_1", tableType,
+        case "Q1_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_1, "Q1_1", pw, sqlContext)
+        case "Q1_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_2, "Q1_2", pw, sqlContext)
+        case "Q1_3" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_3, "Q1_3", pw, sqlContext)
+        case "Q1_4" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_4, "Q1_4", pw, sqlContext)
+        case "Q1_5" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_5, "Q1_5", pw, sqlContext)
+        case "Q1_6" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_6, "Q1_6", pw, sqlContext)
+        case "Q1_7" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_7, "Q1_7", pw, sqlContext)
+        case "Q1_8" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_8, "Q1_8", pw, sqlContext)
+        case "Q1_9" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q1_9, "Q1_9", pw, sqlContext)
+        case "Q2_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_1, "Q2_1", pw, sqlContext)
+        case "Q2_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_2, "Q2_2", pw, sqlContext)
+        case "Q2_3" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_3, "Q2_3", pw, sqlContext)
+        case "Q2_4" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_4, "Q2_4", pw, sqlContext)
+        case "Q2_5" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_5, "Q2_5", pw, sqlContext)
+        case "Q2_6" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_6, "Q2_6", pw, sqlContext)
+        case "Q2_7" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_7, "Q2_7", pw, sqlContext)
+        case "Q2_8" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_8, "Q2_8", pw, sqlContext)
+        case "Q2_9" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_9, "Q2_9", pw, sqlContext)
+        case "Q2_10" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_10, "Q2_10", pw, sqlContext)
+        case "Q2_11" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_11, "Q2_11", pw, sqlContext)
+        case "Q2_12" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_12, "Q2_12", pw, sqlContext)
+        case "Q2_13" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q2_13, "Q2_13", pw, sqlContext)
+        case "Q3_1_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_1_2, "Q3_1_2",
           pw, sqlContext)
-        case "Q1_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_2, "Q1_2", tableType,
+        case "Q3_2_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_2_2, "Q3_2_2",
           pw, sqlContext)
-        case "Q1_3" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_3, "Q1_3", tableType,
+        case "Q3_3" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_3, "Q3_3", pw, sqlContext)
+        case "Q3_4_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_4_1, "Q3_4_1",
           pw, sqlContext)
-        case "Q1_4" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_4, "Q1_4", tableType,
+        case "Q3_4_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_4_2, "Q3_4_2",
           pw, sqlContext)
-        case "Q1_5" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_5, "Q1_5", tableType,
+        case "Q3_4_3" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_4_3, "Q3_4_3",
           pw, sqlContext)
-        case "Q1_6" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_6, "Q1_6", tableType,
+        case "Q3_5" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_5, "Q3_5", pw, sqlContext)
+        case "Q3_6" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_6, "Q3_6", pw, sqlContext)
+        case "Q3_7_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_7_1, "Q3_7_1",
           pw, sqlContext)
-        case "Q1_7" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_7, "Q1_7", tableType,
+        case "Q3_7_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_7_2, "Q3_7_2",
           pw, sqlContext)
-        case "Q1_8" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_8, "Q1_8", tableType,
+        case "Q3_7_3" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_7_3, "Q3_7_3",
           pw, sqlContext)
-        case "Q1_9" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q1_9, "Q1_9", tableType,
+        case "Q3_7_4" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_7_4, "Q3_7_4",
           pw, sqlContext)
-        case "Q2_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_1, "Q2_1", tableType,
+        case "Q3_7_5" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_7_5, "Q3_7_5",
           pw, sqlContext)
-        case "Q2_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_2, "Q2_2", tableType,
+        case "Q3_8" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_8, "Q3_8", pw, sqlContext)
+        case "Q3_9" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_9, "Q3_9", pw, sqlContext)
+        case "Q3_10" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_10, "Q3_10", pw, sqlContext)
+        case "Q3_11" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_11, "Q3_11", pw, sqlContext)
+        case "Q3_12" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_12, "Q3_12", pw, sqlContext)
+        case "Q3_13" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_13, "Q3_13", pw, sqlContext)
+        case "Q3_14" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q3_14, "Q3_14", pw, sqlContext)
+        case "Q4_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q4_1, "Q4_1", pw, sqlContext)
+        case "Q4_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q4_2, "Q4_2", pw, sqlContext)
+        case "Q5_1_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q5_1_1, "Q5_1_1",
           pw, sqlContext)
-        case "Q2_3" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_3, "Q2_3", tableType,
+        case "Q5_1_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q5_1_2, "Q5_1_2",
           pw, sqlContext)
-        case "Q2_4" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_4, "Q2_4", tableType,
-          pw, sqlContext)
-        case "Q2_5" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_5, "Q2_5", tableType,
-          pw, sqlContext)
-        case "Q2_6" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_6, "Q2_6", tableType,
-          pw, sqlContext)
-        case "Q2_7" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_7, "Q2_7", tableType,
-          pw, sqlContext)
-        case "Q2_8" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_8, "Q2_8", tableType,
-          pw, sqlContext)
-        case "Q2_9" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_9, "Q2_9", tableType,
-          pw, sqlContext)
-        case "Q2_10" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_10, "Q2_10", tableType,
-          pw, sqlContext)
-        case "Q2_11" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_11, "Q2_11", tableType,
-          pw, sqlContext)
-        case "Q2_12" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_12, "Q2_12", tableType,
-          pw, sqlContext)
-        case "Q2_13" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q2_13, "Q2_13", tableType,
-          pw, sqlContext)
-        case "Q3_1_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_1_2, "Q3_1_2", tableType,
-          pw, sqlContext)
-        case "Q3_2_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_2_2, "Q3_2_2", tableType,
-          pw, sqlContext)
-        case "Q3_3" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_3, "Q3_3", tableType,
-          pw, sqlContext)
-        case "Q3_4_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_4_1, "Q3_4_1", tableType,
-          pw, sqlContext)
-        case "Q3_4_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_4_2, "Q3_4_2", tableType,
-          pw, sqlContext)
-        case "Q3_4_3" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_4_3, "Q3_4_3", tableType,
-          pw, sqlContext)
-        case "Q3_5" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_5, "Q3_5", tableType,
-          pw, sqlContext)
-        case "Q3_6" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_6, "Q3_6", tableType,
-          pw, sqlContext)
-        case "Q3_7_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_7_1, "Q3_7_1", tableType,
-          pw, sqlContext)
-        case "Q3_7_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_7_2, "Q3_7_2", tableType,
-          pw, sqlContext)
-        case "Q3_7_3" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_7_3, "Q3_7_3", tableType,
-          pw, sqlContext)
-        case "Q3_7_4" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_7_4, "Q3_7_4", tableType,
-          pw, sqlContext)
-        case "Q3_7_5" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_7_5, "Q3_7_5", tableType,
-          pw, sqlContext)
-        case "Q3_8" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_8, "Q3_8", tableType,
-          pw, sqlContext)
-        case "Q3_9" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_9, "Q3_9", tableType,
-          pw, sqlContext)
-        case "Q3_10" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_10, "Q3_10", tableType,
-          pw, sqlContext)
-        case "Q3_11" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_11, "Q3_11", tableType,
-          pw, sqlContext)
-        case "Q3_12" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_12, "Q3_12", tableType,
-          pw, sqlContext)
-        case "Q3_13" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_13, "Q3_13", tableType,
-          pw, sqlContext)
-        case "Q3_14" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q3_14, "Q3_14", tableType,
-          pw, sqlContext)
-        case "Q4_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q4_1, "Q4_1", tableType,
-          pw, sqlContext)
-        case "Q4_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q4_2, "Q4_2", tableType,
-          pw, sqlContext)
-        case "Q5_1_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q5_1_1, "Q5_1_1", tableType,
-          pw, sqlContext)
-        case "Q5_1_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q5_1_2, "Q5_1_2", tableType,
-          pw, sqlContext)
-        case "Q5_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q5_2, "Q5_2", tableType,
-          pw, sqlContext)
-        case "Q6_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q6_1, "Q6_1", tableType,
-          pw, sqlContext)
-        case "Q6_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q6_2, "Q6_2", tableType,
-          pw, sqlContext)
-        case "Q7_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q7_1, "Q7_1", tableType,
-          pw, sqlContext)
-        case "Q7_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q7_2, "Q7_2", tableType,
-          pw, sqlContext)
-        case "Q8_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q8_1, "Q8_1", tableType,
-          pw, sqlContext)
-        case "Q8_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q8_2, "Q8_2", tableType,
-          pw, sqlContext)
-        case "Q9_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q9_1, "Q9_1", tableType,
-          pw, sqlContext)
-        case "Q9_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q9_2, "Q9_2", tableType,
-          pw, sqlContext)
-        case "Q10" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q10, "Q10",
-          tableType, pw, sqlContext)
-        case "Q11_1" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q11_1, "Q11_1",
-          tableType, pw, sqlContext)
-        case "Q11_2" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q11_2, "Q11_2", tableType,
-          pw, sqlContext)
-        case "Q12" => SnappyTestUtils.assertQueryFullResultSet(snc, SPVAQueries.Q12, "Q12",
-          tableType, pw, sqlContext)
+        case "Q5_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q5_2, "Q5_2", pw, sqlContext)
+        case "Q6_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q6_1, "Q6_1", pw, sqlContext)
+        case "Q6_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q6_2, "Q6_2", pw, sqlContext)
+        case "Q7_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q7_1, "Q7_1", pw, sqlContext)
+        case "Q7_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q7_2, "Q7_2", pw, sqlContext)
+        case "Q8_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q8_1, "Q8_1", pw, sqlContext)
+        case "Q8_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q8_2, "Q8_2", pw, sqlContext)
+        case "Q9_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q9_1, "Q9_1", pw, sqlContext)
+        case "Q9_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q9_2, "Q9_2", pw, sqlContext)
+        case "Q10" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q10, "Q10", pw, sqlContext)
+        case "Q11_1" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q11_1, "Q11_1", pw, sqlContext)
+        case "Q11_2" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q11_2, "Q11_2", pw, sqlContext)
+        case "Q12" => SnappyTestUtils.assertQuery(snc, SPVAQueries.Q12, "Q12", pw, sqlContext)
         // scalastyle:off println
         case _ => println("OK")
       }
