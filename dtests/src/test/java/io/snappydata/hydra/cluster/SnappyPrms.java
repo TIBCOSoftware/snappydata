@@ -16,7 +16,7 @@
  */
 package io.snappydata.hydra.cluster;
 
-import java.util.List;
+import org.apache.commons.lang.StringUtils;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -802,40 +802,29 @@ public class SnappyPrms extends BasePrms {
 
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
-    Vector<String> leaderLauncherPropList = BasePrms.tasktab().vecAt(key,
-        BasePrms.tab().vecAt(key, null));
-    String props = "";
-    if(leaderLauncherPropList != null && !leaderLauncherPropList.isEmpty()){
-      for(int i = 0 ; i< leaderLauncherPropList.size(); i ++)
-        props = props + " " + leaderLauncherPropList.get(i);
-      return props;
-    } else return "";
+    Vector<String> leaderLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
+        null));
+    if (leaderLauncherPropList != null && !leaderLauncherPropList.isEmpty())
+      return StringUtils.join(leaderLauncherPropList, " ");
+    else return "";
   }
 
   public static String getServerLauncherProps() {
     Long key = serverLauncherProps;
     Vector<String> serverLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    String props = "";
-    if(serverLauncherPropList != null && !serverLauncherPropList.isEmpty()){
-      for(int i = 0 ; i< serverLauncherPropList.size(); i ++)
-        props = props + " " + serverLauncherPropList.get(i);
-      return props;
-    }
+    if (serverLauncherPropList != null && !serverLauncherPropList.isEmpty())
+      return StringUtils.join(serverLauncherPropList, " ");
     else return "";
   }
 
   public static String getLocatorLauncherProps() {
     Long key = locatorLauncherProps;
-    Vector<String> locatorLauncherPropList = BasePrms.tasktab().vecAt(key,
-        BasePrms.tab().vecAt(key,
+    Vector<String> locatorLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    String props = "";
-    if(locatorLauncherPropList != null && !locatorLauncherPropList.isEmpty()){
-      for(int i = 0 ; i< locatorLauncherPropList.size(); i ++)
-        props = props + " " + locatorLauncherPropList.get(i);
-      return props;
-    } else return "";
+    if (locatorLauncherPropList != null && !locatorLauncherPropList.isEmpty())
+      return StringUtils.join(locatorLauncherPropList, " ");
+    else return "";
   }
 
   public static String getSparkSubmitExtraPrms() {
