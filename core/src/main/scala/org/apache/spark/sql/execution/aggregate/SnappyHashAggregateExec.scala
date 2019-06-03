@@ -762,8 +762,9 @@ case class SnappyHashAggregateExec(
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
-    val hashSetClassName = classOf[SHAMap].getName
 
+    val shaMapClassName = classOf[SHAMap].getName
+    val customShaMapClassName = ctx.freshName("CustomSHAMap")
 
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
@@ -875,8 +876,7 @@ case class SnappyHashAggregateExec(
     } else ""
 
 
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
-
+    val allStringGroupKeys = keysDataType.forall(_ == StringType)
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
@@ -890,21 +890,23 @@ case class SnappyHashAggregateExec(
     // and get map access methods
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
+
     val numValueBytes = SHAMapAccessor.getSizeOfValueBytes(aggBuffDataTypes,
       numBytesForNullAggsBits)
+
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
       valueOffsetTerm, numKeyBytesTerm, numValueBytes, currentValueOffSetTerm,
       valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
-      numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
+      numBytesForNullAggsBits, nullAggsBitsetTerm,
+      sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
-      skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
+      skipLenForAttrib, codeForLenOfSkippedTerm,
+      valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
-      aggregateBufferVars, keyHolderCapacityTerm)
-
-
+      aggregateBufferVars, keyHolderCapacityTerm, allStringGroupKeys)
 
     val keyValSize = groupingAttributes.foldLeft(0)((len, attrib) =>
       len + attrib.dataType.defaultSize +
@@ -913,11 +915,35 @@ case class SnappyHashAggregateExec(
        -  (if (skipLenForAttrib != -1) 4 else 0)
 
 
+    if (allStringGroupKeys) {
+      ctx.addMutableState(customShaMapClassName, hashMapTerm, "")
+      ctx.addNewFunction(customShaMapClassName, byteBufferAccessor.
+        generateCustomSHAMapClass(customShaMapClassName, keysDataType.length))
+
+    } else {
+      ctx.addMutableState(shaMapClassName, hashMapTerm, "")
+    }
+
+
+   val hashMapCreatorCode = if (allStringGroupKeys) {
+     s"""
+        |$hashMapTerm = new $customShaMapClassName($keyValSize);
+      """.stripMargin
+   } else {
+     s"""
+        |$hashMapTerm = new $shaMapClassName($keyValSize);
+      """.stripMargin
+   }
+
+
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
+
     ctx.addNewFunction(doAgg,
       s"""private void $doAgg() throws java.io.IOException {
-           |$hashMapTerm = new $hashSetClassName($keyValSize);
+
+           |$hashMapCreatorCode
+
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
            |$byteBufferClass $keyBytesHolderVar = null;
@@ -977,9 +1003,7 @@ case class SnappyHashAggregateExec(
       }
     } else ""
 
-
-
-    s"""
+   s"""
       if (!$initAgg) {
         $initAgg = true;
         long $beforeAgg = System.nanoTime();

@@ -25,6 +25,7 @@ import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.array.ByteArrayMethods
+import org.apache.spark.unsafe.types.UTF8String
 
 /**
  * A HashMap implementation using a serialized ByteBuffer for key data and
@@ -64,12 +65,12 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected var valueDataPosition: Long = 0L) {
 
   // round to word size adding 8 bytes for header (offset + hashcode)
-  private val fixedKeySize = ((keySize + 15) >>> 3) << 3
-  private var _capacity = SharedUtils.nextPowerOf2(initialCapacity)
-  private var _size = 0
-  private var growThreshold = (loadFactor * _capacity).toInt
+  protected val fixedKeySize = ((keySize + 15) >>> 3) << 3
+  protected var _capacity = SharedUtils.nextPowerOf2(initialCapacity)
+  protected var _size = 0
+  protected var growThreshold = (loadFactor * _capacity).toInt
 
-  private var mask = _capacity - 1
+  protected var mask = _capacity - 1
 
   if (keyData eq null) {
     val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
@@ -148,6 +149,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     0 // not expected to reach
   }
 
+
   final def reset(): Unit = {
     keyData.reset(clearMemory = true)
     // no need to clear valueData since it will be overwritten completely
@@ -193,6 +195,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     // return the relative offset to the start excluding numKeyBytes
     (dataSize + 4).toInt
   }
+
 
   /**
    * Double the table's size and re-hash everything.

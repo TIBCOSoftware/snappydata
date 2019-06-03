@@ -22,7 +22,7 @@ import scala.reflect.runtime.universe._
 
 import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import io.snappydata.Property
-import io.snappydata.collection.ByteBufferData
+import io.snappydata.collection.{ByteBufferData, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -30,8 +30,10 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, GenericInternalRow, UnsafeArrayData, UnsafeRow}
 import org.apache.spark.sql.catalyst.util.GenericArrayData
+import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.Platform
+import org.apache.spark.unsafe.array.ByteArrayMethods
 import org.apache.spark.unsafe.types.UTF8String
 
 case class SHAMapAccessor(@transient session: SnappySession,
@@ -46,10 +48,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
   keyBytesHolderVarTerm: String, baseKeyObject: String,
   baseKeyHolderOffset: String, keyExistedTerm: String,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
-  valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
-  storedKeyNullBitsTerm: Option[String],
-  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String)
-  extends CodegenSupport {
+   valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
+  storedKeyNullBitsTerm: Option[String],aggregateBufferVars: Seq[String],
+  keyHolderCapacityTerm: String, allStringGroupKeys: Boolean) extends CodegenSupport {
+
+
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
     get(session.sessionState.conf)
@@ -428,13 +431,11 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |$numKeyBytesTerm = ${generateKeySizeCode(keyVars, keysDataType, numBytesForNullKeyBits)};
 
         |// prepare the key
-        |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes,
-           keyVars, keysDataType, aggregateDataTypes, valueInitVars)
-          }
-        // insert or lookup
-        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
-        | $baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
-        | ${hashVar(0)});
+
+        |${generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm, numValueBytes,
+          keyVars, keysDataType, hashVar)}
+
+
         |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
         |if (!$keyExistedTerm) {
           |$valueOffsetTerm = -1 * $valueOffsetTerm;
@@ -453,6 +454,35 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin
 
+  }
+
+  def generateKeyBytesHolderAndMapInsertCode(numKeyBytesTerm: String, numValueBytes: Int,
+    keyVars: Seq[ExprCode], keysDataType: Seq[DataType], hashVar: Array[String]): String = {
+    if (allStringGroupKeys) {
+        val nullKeyBitsEvalCode = if (numBytesForNullKeyBits == 0) ""
+        else {
+          keyVars.zip(keysDataType).zipWithIndex.map {
+            case ((exprCode, dt), i) => SHAMapAccessor.evaluateNullBitsAndEmbedWrite(
+              numBytesForNullKeyBits, exprCode, i, nullKeysBitsetTerm,
+              "", dt, true, "")
+          }.mkString("\n")
+        }
+
+        s"""
+           |$nullKeyBitsEvalCode
+           |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent(
+           |${keyVars.map(_.value).mkString(",")},
+            $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)}
+             ${if (numBytesForNullKeyBits == 0) "" else s", $nullKeysBitsetTerm" });
+       """.stripMargin
+    } else {
+      s"""
+         |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes, keyVars, keysDataType)}
+         |        // insert or lookup
+         |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
+         |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm, ${hashVar(0)});
+       """.stripMargin
+    }
   }
 
   // handle arraydata , map , object
@@ -861,18 +891,21 @@ case class SHAMapAccessor(@transient session: SnappySession,
 
   }
 
+
   def generateKeyBytesHolderCode(numKeyBytesVar: String, numValueBytes: Int,
-    keyVars: Seq[ExprCode], keysDataType: Seq[DataType],
-    aggregatesDataType: Seq[DataType], valueInitVars: Seq[ExprCode]): String = {
+    keyVars: Seq[ExprCode], keysDataType: Seq[DataType]): String = {
+
 
     val byteBufferClass = classOf[ByteBuffer].getName
     val currentOffset = ctx.freshName("currentOffset")
     val plaformClass = classOf[Platform].getName
     s"""
         if ($keyBytesHolderVarTerm == null || $keyHolderCapacityTerm <
-      $numKeyBytesVar + $numValueBytes) {
-          //$keyBytesHolderVarTerm =
+
+          $numKeyBytesVar + $numValueBytes) {
+           //$keyBytesHolderVarTerm =
            //$allocatorTerm.allocate($numKeyBytesVar + $numValueBytes, "SHA");
+
           //$baseKeyObject = $allocatorTerm.baseObject($keyBytesHolderVarTerm);
           //$baseKeyHolderOffset = $allocatorTerm.baseOffset($keyBytesHolderVarTerm);
            $keyHolderCapacityTerm = $numKeyBytesVar + $numValueBytes;
@@ -1041,6 +1074,227 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }.unzip
 
 
+
+  def generateCustomSHAMapClass(className: String, numUtf8StringParams: Int): String = {
+    val shaMapClass = classOf[SHAMap].getName
+    val byteArrayEqualsClass = classOf[ByteArrayMethods].getName
+    val params = Array.fill[String](numUtf8StringParams)(ctx.freshName("utf8param"))
+    val utf8StringClass = classOf[UTF8String].getName
+    val args = params.map(prm => s"$utf8StringClass $prm").mkString(",")
+    val platformClass = classOf[Platform].getName
+    val columnEncodingClass = ColumnEncoding.getClass.getName + ".MODULE$"
+    val bbDataClass = classOf[ByteBufferData].getName
+    val nullKeyBitsParamName = if (numBytesForNullKeyBits == 0) "" else ctx.freshName("nullKeyBits")
+    val nullKeyBitsArg = if (numBytesForNullKeyBits == 0) ""
+    else s", ${SHAMapAccessor.getNullBitsCastTerm(numBytesForNullKeyBits)}  $nullKeyBitsParamName"
+    val nullKeyBitsParam = if (numBytesForNullKeyBits == 0) ""
+    else s", $nullKeyBitsParamName"
+    def generatePutIfAbsent(): String =
+        s"""
+           | public int putBufferIfAbsent($args, int numKeyBytes, int numBytes, int hash
+           |  $nullKeyBitsArg) {
+           |    $bbDataClass keyData = this.keyData();
+           |    Object mapKeyObject = keyData.baseObject();
+           |    long mapKeyBaseOffset = keyData.baseOffset();
+           |    int fixedKeySizeLocal = fixedKeySize();
+           |    int localMask = this.mask();
+           |    int pos = hash & localMask;
+           |    int delta = 1;
+           |    while (true) {
+           |      long mapKeyOffset = mapKeyBaseOffset + fixedKeySizeLocal * pos;
+           |      long mapKey = $platformClass.getLong(mapKeyObject, mapKeyOffset);
+           |      // offset will at least be 4 so mapKey can never be zero when occupied
+           |      if (mapKey != 0L) {
+           |        // first compare the hash codes followed by "equalsSize" that will
+           |        // include the check for 4 bytes of numKeyBytes itself
+           |        int valueStartOffset = (int)(mapKey >>> 32L) - 4;
+           |        if (hash == (int)mapKey && equalsSize(valueStartOffset,
+           |         ${params.mkString(",")}, numKeyBytes $nullKeyBitsParam)) {
+           |          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4);
+           |        } else {
+           |          // quadratic probing (increase delta)
+           |          pos = (pos + delta) & localMask;
+           |          delta += 1;
+           |        }
+           |      } else {
+           |        // insert into the map and rehash if required
+           |        long relativeOffset = customNewInsert(${params.mkString(",")}, numKeyBytes,
+           |         numBytes $nullKeyBitsParam);
+           |        $platformClass.putLong(mapKeyObject, mapKeyOffset,
+           |          (relativeOffset << 32L) | (hash & 0xffffffffL));
+           |        return handleNew(mapKeyObject, mapKeyOffset, (int)relativeOffset);
+           |      }
+           |    }
+           |   // return 0; // not expected to reach
+           |  }
+       """.stripMargin
+
+
+    def generateCustomNewInsert(): String = {
+      val sizeOfNullKeyBits = SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)
+      val snippet0 = if (sizeOfNullKeyBits == 0) ""
+      else if (sizeOfNullKeyBits == 1) {
+        s"""$platformClass.putByte(valueBaseObject, position, $nullKeyBitsParamName);
+            position += 1;
+         """
+      } else if (sizeOfNullKeyBits == 2) {
+        s"""$platformClass.putShort(valueBaseObject, position, $nullKeyBitsParamName);
+            position += 2;
+         """
+      } else if (sizeOfNullKeyBits == 4) {
+        s"""$platformClass.putInt(valueBaseObject, position, $nullKeyBitsParamName);
+            position += 4;
+         """
+      } else if (sizeOfNullKeyBits == 8) {
+        s"""$platformClass.putLong(valueBaseObject, position, $nullKeyBitsParamName);
+            position += 8;
+         """
+      } else {
+        s"""$platformClass.copyMemory($nullKeyBitsParamName, ${Platform.BYTE_ARRAY_OFFSET},
+              valueBaseObject, position, $sizeOfNullKeyBits);
+            position += $sizeOfNullKeyBits;
+         """
+      }
+
+
+      val snippet1 = params.take(params.length -1).map(param => {
+      val partLen = ctx.freshName("partLength")
+        s"""
+           |if ($param != null) {
+             |int $partLen = $param.numBytes();
+             |$platformClass.putInt(valueBaseObject, position, $partLen);
+             |position += 4;
+             |$platformClass.copyMemory($param.getBaseObject(), $param.getBaseOffset(),
+              |valueBaseObject, position, $partLen);
+             |position += $partLen;
+           |}
+        """.stripMargin
+      } ).mkString("\n")
+      val partLen2 = ctx.freshName("partLength")
+      val lastParam = params.last
+      val snippet2 =
+        s"""
+           |if ($lastParam != null) {
+             |int $partLen2 = $lastParam.numBytes();
+             |$platformClass.copyMemory($lastParam.getBaseObject(), $lastParam.getBaseOffset(),
+              |valueBaseObject, position, $partLen2);
+             |position += $partLen2;
+           |}
+        """.stripMargin
+      s"""
+         |public int customNewInsert($args, int numKeyBytes, int numBytes $nullKeyBitsArg ) {
+           |long position = valueDataPosition();
+           |$bbDataClass valueDataLocal = this.valueData();
+           |long dataSize = position - valueDataLocal.baseOffset();
+           |if (position + numBytes + 4 > valueDataLocal.endPosition()) {
+             |valueDataLocal = valueDataLocal.resize(numBytes + 4, allocator());
+             |valueData_$$eq(valueDataLocal);
+             |position = valueDataLocal.baseOffset() + dataSize;
+           |}
+           |Object valueBaseObject = valueDataLocal.baseObject();
+           |// write the key size followed by the full key+value bytes
+           |$columnEncodingClass.writeInt(valueBaseObject, position, numKeyBytes);
+           |position += 4;
+           |long startPosition = position;
+           |$snippet0
+           |$snippet1
+           |$snippet2
+           |valueDataPosition_$$eq(startPosition + numBytes);
+           |// return the relative offset to the start excluding numKeyBytes
+           |return (int)(dataSize + 4);
+         |}
+       """.stripMargin
+    }
+
+    def generateEqualSize(): String = {
+      val sizeOfNullKeyBits = SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)
+      val nullKeyBitsCheck = if (sizeOfNullKeyBits == 0) ""
+      else if (sizeOfNullKeyBits == 1) {
+        s" && $nullKeyBitsParamName == $platformClass.getByte(baseObject, offset + 4) "
+      } else if (sizeOfNullKeyBits == 2) {
+        s" && $nullKeyBitsParamName == $platformClass.getShort(baseObject, offset + 4) "
+      } else if (sizeOfNullKeyBits == 4) {
+        s" && $nullKeyBitsParamName == $platformClass.getInt(baseObject, offset + 4) "
+      } else if (sizeOfNullKeyBits == 8) {
+        s" && $nullKeyBitsParamName == $platformClass.getLong(baseObject, offset + 4) "
+      } else {
+        s""" && $byteArrayEqualsClass.arrayEquals($nullKeyBitsParamName,
+              ${Platform.BYTE_ARRAY_OFFSET}, baseObject, offset + 4, $sizeOfNullKeyBits)"""
+      }
+
+      s"""
+         |public boolean equalsSize(int srcOffset, $args, int size $nullKeyBitsArg) {
+           |$bbDataClass valueData = this.valueData();
+           |Object baseObject = valueData.baseObject();
+           |long offset = valueData.baseOffset() + srcOffset;
+           |// below is ColumnEncoding.readInt and not Platform.readInt because the
+           |// write is using ColumnEncoding.writeUTF8String which writes the size
+           |// using former (which respects endianness)
+           |return $columnEncodingClass.readInt(baseObject, offset) == size $nullKeyBitsCheck &&
+           | stringEquals(baseObject, offset + 4 + $sizeOfNullKeyBits, ${params.mkString(",")});
+           |
+         |}
+       """.stripMargin
+    }
+
+    def generateStringEquals(): String = {
+      val snippet1 = params.take(params.length -1).map(param => {
+        val partLen = ctx.freshName("partLength")
+        s"""
+          |if ($param != null) {
+            |int $partLen = $param.numBytes();
+            |if ($partLen != $platformClass.getInt(leftBase,
+              |currentLeftOffset)) {
+              |return false;
+            |}
+            |currentLeftOffset += 4;
+            |if (!$byteArrayEqualsClass.arrayEquals(leftBase, currentLeftOffset,
+              |$param.getBaseObject(), $param.getBaseOffset(), $partLen)) {
+              |return false;
+            |}
+            |currentLeftOffset += $partLen;
+          |}
+        """.stripMargin
+      } ).mkString("\n")
+
+      val partLen2 = ctx.freshName("partLength")
+      val lastParam = params.last
+      val snippet2 =
+        s"""
+           |if ($lastParam != null) {
+             |int $partLen2 = $lastParam.numBytes();
+             |if (!$byteArrayEqualsClass.arrayEquals(leftBase, currentLeftOffset,
+               $lastParam.getBaseObject(), $lastParam.getBaseOffset(), $partLen2)) {
+               |return false;
+             |}
+           |}
+           |return true;
+        """.stripMargin
+
+
+      s"""
+         |public boolean stringEquals(Object leftBase, long leftOffset, $args) {
+           |long currentLeftOffset = leftOffset;
+           |$snippet1
+           |$snippet2
+         |}
+       """.stripMargin
+
+    }
+
+    s"""
+       |static class $className extends $shaMapClass {
+       |   public $className(int valueSize) {
+       |     super(valueSize);
+       |   }
+       |${generatePutIfAbsent()}
+       |${generateCustomNewInsert()}
+       |${generateEqualSize()}
+       |${generateStringEquals()}
+       |}
+     """.stripMargin
+
+  }
 
 
   /**
@@ -1294,8 +1548,10 @@ object SHAMapAccessor {
     "short"
   } else if (numBytesForNullBits <= 4) {
     "int"
-  } else {
+  } else if (numBytesForNullBits <= 8) {
     "long"
+  } else {
+    "byte[]"
   }
 
   def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
