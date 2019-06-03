@@ -2877,7 +2877,7 @@ public class SnappyTest implements Serializable {
   }
 
   public void checkSuspectStrings() {
-    String hasOOMEORJVMCrash = checkForJVMCrashOrOOME();
+    String hasOOMEOrJVMCrash = checkForJVMCrashOrOOME();
     String checkSuspectOutPut = getCurrentDirPath() + File.separator + "suspectStrings.txt";
     File suspectStringFile = new File(checkSuspectOutPut);
     StringBuilder cmd = new StringBuilder();
@@ -2905,9 +2905,6 @@ public class SnappyTest implements Serializable {
     if(suspectStringFile.length() != 0){
       try {
         StringBuilder exceptionList = new StringBuilder();
-        if(cycleVms){
-
-        }
         BufferedReader reader = new BufferedReader(new FileReader(suspectStringFile));
         String line = "";
         while((line = reader.readLine()) != null)
@@ -2915,13 +2912,13 @@ public class SnappyTest implements Serializable {
         throw new TestException("Unknown Exceptions observed in the run " + exceptionList
             .toString());
       } catch(FileNotFoundException fe) {
-
+        throw new TestException("Got exception while checking for suspect strings." , fe);
       } catch(IOException ie) {
-
+        throw new TestException("Got exception while checking for suspect strings." , ie);
       }
     }
-    if(hasOOMEORJVMCrash.length()>0){
-      throw new TestException(hasOOMEORJVMCrash);
+    if(hasOOMEOrJVMCrash.length()>0){
+      throw new TestException(hasOOMEOrJVMCrash);
     }
   }
 
@@ -3014,7 +3011,6 @@ public class SnappyTest implements Serializable {
       String s = "problem occurred while retriving destination logFile path " + log;
       throw new TestException(s, e);
     }
-
   }
 
   /**
@@ -3194,10 +3190,10 @@ public class SnappyTest implements Serializable {
           try {
             if (vmName.equalsIgnoreCase("lead"))
               vms = stopStartVMs(numToKill, "lead", isDmlOp, restart, rebalance);
-            else if (vmName.equalsIgnoreCase("server")) vms = stopStartVMs(numToKill, "server",
-                isDmlOp, restart, rebalance);
-            else if (vmName.equalsIgnoreCase("locator")) vms = stopStartVMs(numToKill,
-                "locator", isDmlOp, restart, rebalance);
+            else if (vmName.equalsIgnoreCase("server"))
+              vms = stopStartVMs(numToKill, "server", isDmlOp, restart, rebalance);
+            else if (vmName.equalsIgnoreCase("locator"))
+              vms = stopStartVMs(numToKill, "locator", isDmlOp, restart, rebalance);
             break;
           } catch (TestException te) {
             throw te;
