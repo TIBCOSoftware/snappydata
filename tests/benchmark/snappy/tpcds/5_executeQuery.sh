@@ -8,4 +8,14 @@ source PerfRun.conf
 cp PerfRun.conf $leadDir
 
 echo "******************start Executing Query******************"
-. $SnappyData/bin/snappy-job.sh submit --lead $leads:8090 --app-name QueryExecution --class io.snappydata.benchmark.snappy.tpcds.QueryExecutionJob --app-jar $appJar --conf queries=$queries --conf sparkSqlProps=sparkSqlProps --conf resultCollection=$ResultCollection --conf warmUpIterations=$WarmupRuns --conf actualRuns=$AverageRuns --conf queryPath=$queryPath
+. $SnappyData/bin/snappy-job.sh submit \
+--lead $leads:8090 \
+--app-name QueryExecution \
+--class io.snappydata.benchmark.snappy.tpcds.QueryExecutionJob \
+--app-jar $appJar \
+--conf queries=$queries \
+--conf sparkSqlProps=sparkSqlProps \
+--conf resultCollection=$ResultCollection \
+--conf warmUpIterations=$WarmupRuns \
+--conf actualRuns=$AverageRuns \
+--conf queryPath=$queryPath

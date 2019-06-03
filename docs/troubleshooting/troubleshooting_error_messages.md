@@ -1,4 +1,4 @@
-# Troubleshooting Error Messages
+an# Troubleshooting Error Messages
 Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
@@ -14,7 +14,8 @@ The following topics are covered in this section:
 * [Region {0} bucket {1} has persistent data that is no longer online stored at these locations: {2}](#persistent-data)
 
 * [ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"](#no-data-store)
-* [Node went down or data no longer available while iterating the results](#queryfailiterate).
+* [Node went down or data no longer available while iterating the results](#queryfailiterate)
+* [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -32,7 +33,7 @@ The status of the member is displayed as *waiting* in such cases when you [check
 </diagnosis>
 
 <action> **Solution:** </br>
-The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [SnappyData Pulse UI](../monitoring/monitoring.md).
+The status of the waiting members change to online once all the members are online and the status of the waiting members is updated. Users can check whether the status is changed from *waiting* to *online* by using the `snappy-status-all.sh` command or by checking the [SnappyData Monitoring Console](../monitoring/monitoring.md).
 </action>
 
 <!-- --------------------------------------------------------------------------- -->
@@ -113,4 +114,56 @@ In cases where a node fails while a JDBC/ODBC client or job is consuming result 
 
 <action> **Solution:** </br>
 This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
+</action>
+
+<a id="smartconnectorcatalog"></a>
+<error> **Message:** </error> 
+<error-text>
+SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+In the Smart Connector mode, this error message is seen in the logs if SnappyData catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, SnappyData Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in SnappyData embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
+</diagnosis>
+
+<action> **Solution:** </br>
+If the user application is performing DataFrame/DataSet operations, you will have to recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException **and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. 
+Check the following code snippet to get better understanding of how this scenario should be handled:
+
+```pre
+int retryCount = 0;
+int maxRetryAttempts = 5;
+while (true) {
+    try {
+        // dataset/dataframe operations goes here (e.g. deleteFrom, putInto)
+        return;
+    } catch (Exception ex) {
+        if (retryCount >= maxRetryAttempts || !isRetriableException(ex)) {
+            throw ex;
+        } else {
+            log.warn("Encountered a retriable exception. Will retry processing batch." +
+                " maxRetryAttempts:"+maxRetryAttempts+", retryCount:"+retryCount+"", ex);
+            retryCount++;
+        }
+    }
+}
+
+private boolean isRetriableException(Exception ex) {
+    Throwable cause = ex;
+    do {
+        if ((cause instanceof SQLException &&
+            ((SQLException)cause).getSQLState().equals("X0Z39"))
+            || cause instanceof CatalogStaleException
+            || (cause instanceof TaskCompletionListenerException && cause.getMessage()
+            .startsWith("java.sql.SQLException: (SQLState=X0Z39"))) {
+            return true;
+        }
+        cause = cause.getCause();
+    } while (cause != null);
+    return false;
+}
+
+```
+
 </action>

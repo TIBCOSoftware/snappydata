@@ -32,19 +32,22 @@ object TableCreationSmartConnector {
 
     val sc: SparkSession = SparkSession
         .builder
+        .appName("TPCH_Spark_SmartConnector")
         .getOrCreate
 
     val tpchDataPath = args(0)
     val numberOfLoadStages = args(1).toInt
     val isParquet = args(2).toBoolean
-    val buckets_Order_Lineitem = args(3)
-    val buckets_Cust_Part_PartSupp = args(4)
-    val isSupplierColumn = args(5).toBoolean
-    val buckets_Supplier = args(6)
-    val redundancy = args(7)
-    val persistence = args(8).toBoolean
-    val persistence_Type = args(9)
-    val threadNumber = args(10).toInt
+    val createParquet = args(3).toBoolean
+    val buckets_Order_Lineitem = args(4)
+    val buckets_Cust_Part_PartSupp = args(5)
+    val isSupplierColumn = args(6).toBoolean
+    val buckets_Supplier = args(7)
+    val redundancy = args(8)
+    val persistence = args(9).toBoolean
+    val persistence_Type = args(10)
+    val traceEvents = args(11).toBoolean
+    val threadNumber = args(12).toInt
 
     var usingOptionString = " USING row OPTIONS ()"
     if(persistence){
@@ -69,37 +72,45 @@ object TableCreationSmartConnector {
     snSession.dropTable("LINEITEM", ifExists = true)
     snSession.dropTable("ORDERS", ifExists = true)
 
-    TPCHColumnPartitionedTable.createPopulateOrderTable(snSession.sqlContext, tpchDataPath, true,
-      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-      numberOfLoadStages.toInt, isParquet)
-
-    TPCHColumnPartitionedTable.createPopulateLineItemTable(snSession.sqlContext, tpchDataPath, true,
-      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-      numberOfLoadStages.toInt, isParquet)
-    TPCHColumnPartitionedTable.createPopulateCustomerTable(snSession.sqlContext, tpchDataPath, true,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-      numberOfLoadStages.toInt, isParquet)
-    TPCHColumnPartitionedTable.createPopulatePartTable(snSession.sqlContext, tpchDataPath, true,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-      numberOfLoadStages.toInt, isParquet)
-    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snSession.sqlContext, tpchDataPath, true,
-      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-      numberOfLoadStages.toInt, isParquet)
-
     TPCHReplicatedTable.createPopulateRegionTable(usingOptionString, snSession.sqlContext,
-      tpchDataPath, true, loadPerfPrintStream)
+      tpchDataPath, true, loadPerfPrintStream, trace = traceEvents, cacheTables = false)
     TPCHReplicatedTable.createPopulateNationTable(usingOptionString, snSession.sqlContext,
-      tpchDataPath, true, loadPerfPrintStream)
+      tpchDataPath, true, loadPerfPrintStream, trace = traceEvents, cacheTables = false)
 
     if (isSupplierColumn) {
       TPCHColumnPartitionedTable.createAndPopulateSupplierTable(snSession.sqlContext, tpchDataPath,
         true, buckets_Supplier, loadPerfPrintStream, redundancy, persistence, persistence_Type,
-        numberOfLoadStages.toInt, isParquet)
+        numberOfLoadStages.toInt, isParquet, createParquet = createParquet,
+        trace = traceEvents, cacheTables = false)
     } else {
       TPCHReplicatedTable.createPopulateSupplierTable(usingOptionString, snSession.sqlContext,
         tpchDataPath, true, loadPerfPrintStream, numberOfLoadStages.toInt)
     }
 
+    TPCHColumnPartitionedTable.createPopulateOrderTable(snSession.sqlContext, tpchDataPath, true,
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_Type,
+      numberOfLoadStages.toInt, isParquet, createParquet = createParquet,
+      trace = traceEvents, cacheTables = false)
+
+    TPCHColumnPartitionedTable.createPopulateLineItemTable(snSession.sqlContext, tpchDataPath, true,
+      buckets_Order_Lineitem, loadPerfPrintStream, redundancy, persistence, persistence_Type,
+      numberOfLoadStages.toInt, isParquet, createParquet = createParquet,
+      trace = traceEvents, cacheTables = false)
+    TPCHColumnPartitionedTable.createPopulateCustomerTable(snSession.sqlContext, tpchDataPath, true,
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
+      numberOfLoadStages.toInt, isParquet, createParquet = createParquet,
+      trace = traceEvents, cacheTables = false)
+    TPCHColumnPartitionedTable.createPopulatePartTable(snSession.sqlContext, tpchDataPath, true,
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
+      numberOfLoadStages.toInt, isParquet, createParquet = createParquet,
+      trace = traceEvents, cacheTables = false)
+    TPCHColumnPartitionedTable.createPopulatePartSuppTable(snSession.sqlContext, tpchDataPath, true,
+      buckets_Cust_Part_PartSupp, loadPerfPrintStream, redundancy, persistence, persistence_Type,
+      numberOfLoadStages.toInt, isParquet, createParquet = createParquet,
+      trace = traceEvents, cacheTables = false)
+
+    loadPerfPrintStream.close()
+    loadPerfFileStream.close()
     sc.stop()
 
   }
