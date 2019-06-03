@@ -22,7 +22,7 @@ Do the following to connect TIBCO Data Virtulization (TDV) to TIBCO ComputeDB:
 <a id= copyjdbcdriver> </a>
 ## Copy the JDBC Driver
 
-1.	Download TIBCO ComputeDB JDBC driver from TIBCO edelivery site. This is available as **TIB_compute-jdbc...jar**.
+1.	Download the JDBC driver from [here](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.1.0). The JDBC driver is available as **snappydata-jdbc_2.11-1.1.0.jar**.
 2.	Copy the jar file to the Adapter location that is specified while creating the TDV Data Source Adapter. This location must default in a similar pattern to **C:/Program Files/TIBCO/TDV Server 8.1/conf/adapters/custom/tibco_computedb**.
 3.	Restart the TDV Server to load the JDBC driver.
 
@@ -33,10 +33,10 @@ Do the following to connect TIBCO Data Virtulization (TDV) to TIBCO ComputeDB:
 2.	Find **TIBCO ComputeDB** and select **Next**.
 3.	Enter the following details:
 	*	Datasource Name: Name that is used to identify the instance of TIBCO ComputeDB.
-	*	Host: URL of the serer location.
+	*	Host: URL of the server location.
 	*	Port: usually 1527 or 1528 
 	*	Database Name: This can be left blank.
 	*	Login and Password details.
 4.	Select **Create and Introspect**.
 5.	Select the required tables and then click **Next**.
-6.	Click **Finished**. 
+6.	Click **Finished**.
