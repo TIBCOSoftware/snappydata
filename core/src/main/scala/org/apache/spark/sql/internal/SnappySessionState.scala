@@ -101,13 +101,26 @@ class SnappySessionState(val snappySession: SnappySession)
     }
 
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  lazy val analyzerWithoutPromote: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
-            false
-          } else {
-            true
-          }
+          case PromoteStrings => false
           case _ => true
         }): _*)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
