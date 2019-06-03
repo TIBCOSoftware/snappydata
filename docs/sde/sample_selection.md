@@ -1,6 +1,6 @@
 # Sample Selection
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 Sample selection logic selects most appropriate sample, based on this relatively simple logic in the current version:
 
