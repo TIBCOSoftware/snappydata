@@ -304,6 +304,11 @@ class HiveThriftServer extends SnappySQLJob {
       case e : SQLException => pw.println(e.getMessage)
     }
 
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 13 : Use sys Schema. " +
+      "Run the command from BeeLine and Snappy. Verify the table Name.")
+    showTablesInSys(hiveThriftServer, snc, "show tables in sys", pw)
+
     pw.flush()
     pw.close()
     disconnectToBeeline(hiveThriftServer)
@@ -322,6 +327,13 @@ class HiveThriftServer extends SnappySQLJob {
     }
   }
 
+  def showTablesInSys(hts : HiveThriftServer, snc : SnappyContext,
+                      command : String, pw : PrintWriter) : Unit = {
+    hts.stmt = hts.connection.createStatement()
+    hts.rs = hts.stmt.executeQuery(command)
+    ValidateHiveThriftServer.validateShowTablesInSys(command, hts, snc, pw, hts.rs)
+  }
+
   def executeShowSchemas(hts : HiveThriftServer, command : String,
                          snc : SnappyContext, pw : PrintWriter, sqlContext : SQLContext) : Unit = {
     hts.isFailed = false
@@ -329,6 +341,15 @@ class HiveThriftServer extends SnappySQLJob {
     hts.rs = hts.stmt.executeQuery(command)
     hts.rsMetaData = hts.rs.getMetaData
     ValidateHiveThriftServer.validate_ShowSchema_Showdatabases(command, hts, snc, pw)
+  }
+
+  def executeShowTablesInSys(hts : HiveThriftServer, command : String, snc : SnappyContext,
+                             pw : PrintWriter, sqlContext : SQLContext) : Unit = {
+    hts.isFailed = false
+    hts.stmt = hts.connection.createStatement()
+    hts.rs = hts.stmt.executeQuery(command)
+
+
   }
 
   def executeUseSchema(hts : HiveThriftServer, command : String, snc : SnappyContext,

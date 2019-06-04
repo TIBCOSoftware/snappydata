@@ -16,12 +16,43 @@
  */
 package io.snappydata.hydra.hiveThriftServer
 
-import java.io.{FileOutputStream, PrintWriter, File}
+import java.io.{File, FileOutputStream, PrintWriter}
+import java.sql.ResultSet
 import org.apache.spark.sql.SnappyContext
 
 object ValidateHiveThriftServer {
 
   // scalastyle:off println
+
+  def validateShowTablesInSys(command : String, hts : HiveThriftServer,
+                              snc : SnappyContext, pw : PrintWriter, rs : ResultSet) : Unit = {
+    var result = ""
+    var snappyResult = ""
+    var count = 0
+
+    while(rs.next()) {
+      result = result + rs.getString("schemaName") + "," +  rs.getString("tableName") +
+       "," + rs.getString("isTemporary") + "\n"
+      count += 1
+    }
+
+    val sysTables = snc.sql(command).collect()
+    for(index <- 0 until sysTables.length) {
+      snappyResult = (snappyResult + sysTables(index))
+        .replace("[", "").replace("]", "") + "\n"
+    }
+
+    if(count.equals(sysTables.size) && result.equals(snappyResult)) {
+      hts.isFailed = false
+      pw.println("For  -- show tables in sys --  counts and data are matched." +
+        " Total table is : " + count )
+    }
+    else {
+      hts.isFailed = true
+      pw.println("FOR -- SHOW TABLES IN SYS -- COUNTS AND DATA AREN'T MATCHED." +
+        "TOTAL TABLE COUNT IS : " + count)
+    }
+  }
 
   def validate_ShowSchema_Showdatabases(command : String, hts : HiveThriftServer,
                                         snc : SnappyContext, pw : PrintWriter) : Unit = {
