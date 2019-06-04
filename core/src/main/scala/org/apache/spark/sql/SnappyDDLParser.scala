@@ -552,8 +552,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     val catalogTable = session.sessionState.catalog.getTempViewOrPermanentTableMetadata(id)
     if (catalogTable.tableType != CatalogTableType.VIEW) {
       val objectType = CatalogObjectType.getTableType(catalogTable)
-      // may alter commands are not support for tables backed by snappy-store and topK
-      // or all builtin types
+      // many alter commands are not supported for tables backed by snappy-store and topK
       if ((allBuiltins && !(objectType == CatalogObjectType.External ||
           objectType == CatalogObjectType.Hive)) ||
           (!allBuiltins && (CatalogObjectType.isTableBackedByRegion(objectType) ||
