@@ -22,7 +22,6 @@ import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -604,12 +603,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   def tableIdentifier(table: String): TableIdentifier = {
     // hive meta-store is case-insensitive so always use upper case names for object names
-    val normalizedTable = Utils.toUpperCase(table)
-    val dotIndex = normalizedTable.indexOf('.')
+    val fullName = sessionCatalog.formatTableName(table)
+    val dotIndex = fullName.indexOf('.')
     if (dotIndex > 0) {
-      new TableIdentifier(normalizedTable.substring(dotIndex + 1),
-        Some(normalizedTable.substring(0, dotIndex)))
-    } else new TableIdentifier(normalizedTable, None)
+      new TableIdentifier(fullName.substring(dotIndex + 1),
+        Some(fullName.substring(0, dotIndex)))
+    } else new TableIdentifier(fullName, None)
   }
 
   /**
@@ -706,7 +705,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
   /**
@@ -746,9 +745,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       samplingOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
-      Some(sessionCatalog.normalizeSchema(schema)), schemaDDL = None,
+      Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
   /**
@@ -790,9 +789,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       topkOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(topKName), SnappyContext.TOPK_SOURCE,
-      Some(sessionCatalog.normalizeSchema(inputDataSchema)), schemaDDL = None,
+      Some(JdbcExtendedUtils.normalizeSchema(inputDataSchema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), topkOptions) +
+      addBaseTableOption(baseTable, topkOptions) +
           ("key" -> keyColumnName), isBuiltIn = true)
   }
 
@@ -836,7 +835,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     createTableInternal(tableIdentifier(topKName), SnappyContext.TOPK_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), topkOptions) +
+      addBaseTableOption(baseTable, topkOptions) +
           ("key" -> keyColumnName), isBuiltIn = true)
   }
 
@@ -998,7 +997,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       options: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider,
-      Some(sessionCatalog.normalizeSchema(schema)), schemaDDL = None,
+      Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isBuiltIn = true)
   }
 
@@ -1268,7 +1267,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       parameters.get(StoreUtils.COLOCATE_WITH) match {
         case None =>
         case Some(b) => fullOptions += SnappyExternalCatalog.BASETABLE_PROPERTY ->
-            sessionCatalog.resolveTableIdentifier(tableIdentifier(b)).unquotedString
+            sessionCatalog.resolveExistingTable(b).unquotedString
       }
     }
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
@@ -1295,9 +1294,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     df
   }
 
-  private[sql] def addBaseTableOption(baseTable: Option[TableIdentifier],
+  private[sql] def addBaseTableOption(baseTable: Option[String],
       options: Map[String, String]): Map[String, String] = baseTable match {
-    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY -> t.unquotedString)
+    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY ->
+        sessionCatalog.resolveExistingTable(t).unquotedString)
     case _ => options
   }
 
@@ -1359,11 +1359,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
       defaultValue: Option[String]): Unit = {
     val tableIdent = tableIdentifier(tableName)
-    if (sessionCatalog.caseSensitiveAnalysis) {
-      alterTable(tableIdent, isAddColumn, column, defaultValue)
-    } else {
-      alterTable(tableIdent, isAddColumn, sessionCatalog.normalizeField(column), defaultValue)
-    }
+    alterTable(tableIdent, isAddColumn, column, defaultValue)
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
@@ -1460,11 +1456,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       baseTable: String,
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): Unit = {
-
-    // normalize index column names for API calls
-    val columnsWithDirection = indexColumns.map(p => sessionCatalog.formatName(p._1) -> p._2)
-    createIndex(tableIdentifier(indexName), tableIdentifier(baseTable),
-      columnsWithDirection, options)
+    createIndex(tableIdentifier(indexName), tableIdentifier(baseTable), indexColumns, options)
   }
 
   private[sql] def createPolicy(policyName: TableIdentifier, tableName: TableIdentifier,
@@ -1477,7 +1469,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     */
 
-    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
+    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.lower)) {
       throw new AnalysisException("Currently Policy only For Select is supported")
     }
 
@@ -1611,7 +1603,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(this), mutable.Map.empty[String, String])
+      Some(this), ExternalStoreUtils.emptyCIMutableMap)
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -1792,7 +1784,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def defaultConnectionProps: ConnectionProperties =
-    ExternalStoreUtils.validateAndGetAllProps(Some(this), mutable.Map.empty[String, String])
+    ExternalStoreUtils.validateAndGetAllProps(Some(this), ExternalStoreUtils.emptyCIMutableMap)
 
   private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
     ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))

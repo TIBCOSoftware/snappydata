@@ -561,6 +561,7 @@ subprojects {
   configurations.testRuntime {
     // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-i18n')
   }
 
   task packageTests(type: Jar, dependsOn: testClasses) {

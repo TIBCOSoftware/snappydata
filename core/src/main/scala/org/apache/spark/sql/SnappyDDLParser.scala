@@ -21,7 +21,6 @@ import java.io.File
 
 import scala.util.Try
 
-import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, QueryHint}
@@ -46,7 +45,6 @@ import org.apache.spark.sql.streaming.StreamPlanProvider
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming._
-import org.apache.spark.sql.execution.InvalidateCachedPlans
 
 abstract class SnappyDDLParser(session: SparkSession)
     extends SnappyBaseParser(session) {
@@ -336,26 +334,27 @@ abstract class SnappyDDLParser(session: SparkSession)
     (FOR ~ capture(ALL | SELECT | UPDATE | INSERT | DELETE)).? ~> ((forOpt: Any) =>
       forOpt match {
         case Some(v) => v.asInstanceOf[String].trim
-        case None => SnappyParserConsts.SELECT.upper
+        case None => SnappyParserConsts.SELECT.lower
       })
   }
 
   protected final def policyTo: Rule1[Seq[String]] = rule {
     (TO ~
         (capture(CURRENT_USER) |
-            (LDAPGROUP ~ ':' ~ ws ~
-                push(SnappyParserConsts.LDAPGROUP.upper + ':')).? ~
-                identifier ~ ws ~> {(ldapOpt: Any, x) =>
-              ldapOpt.asInstanceOf[Option[String]].map(_ + x).getOrElse(x)}
+            (LDAPGROUP ~ ':' ~ ws ~ push(true)).? ~
+                identifier ~ ws ~> ((ldapOpt: Any, id) => ldapOpt match {
+              case None => IdUtil.getUserAuthorizationId(id)
+              case _ => IdUtil.getUserAuthorizationId(SnappyParserConsts.LDAPGROUP.lower) +
+                  ':' + IdUtil.getUserAuthorizationId(id)
+            })
         ). + (commaSep) ~> {
         (policyTo: Any) => policyTo.asInstanceOf[Seq[String]].map(_.trim)
           }).? ~> { (toOpt: Any) =>
       toOpt match {
         case Some(x) => x.asInstanceOf[Seq[String]]
-        case _ => Seq(SnappyParserConsts.CURRENT_USER.upper)
+        case _ => SnappyParserConsts.CURRENT_USER.lower :: Nil
       }
     }
-
   }
 
   protected def createPolicy: Rule1[LogicalPlan] = rule {
@@ -364,7 +363,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         tableName: TableIdentifier, policyFor: String,
         applyTo: Seq[String], filterExp: Expression, filterStr: String) => {
       val applyToAll = applyTo.exists(_.equalsIgnoreCase(
-        SnappyParserConsts.CURRENT_USER.upper))
+        SnappyParserConsts.CURRENT_USER.lower))
       val expandedApplyTo = if (applyToAll) Nil
       else ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
       /*
@@ -553,8 +552,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     val catalogTable = session.sessionState.catalog.getTempViewOrPermanentTableMetadata(id)
     if (catalogTable.tableType != CatalogTableType.VIEW) {
       val objectType = CatalogObjectType.getTableType(catalogTable)
-      // may alter commands are not support for tables backed by snappy-store and topK
-      // or all builtin types
+      // many alter commands are not supported for tables backed by snappy-store and topK
       if ((allBuiltins && !(objectType == CatalogObjectType.External ||
           objectType == CatalogObjectType.Hive)) ||
           (!allBuiltins && (CatalogObjectType.isTableBackedByRegion(objectType) ||
@@ -612,7 +610,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
         DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
         capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
-          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedNormalizedId(r)} $s"))
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedUppercaseId(r)} $s"))
     )
   }
 
@@ -722,7 +720,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     (GRANT | REVOKE | (CREATE | DROP) ~ DISK_STORE | ("{".? ~ (CALL | EXECUTE))) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
         (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
-          Some(SchemaDescriptor.IBM_SYSTEM_SCHEMA_NAME)),
+          Some(JdbcExtendedUtils.SYSIBM_SCHEMA)),
           LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
             Map(SnappyExternalCatalog.DBTABLE_PROPERTY -> JdbcExtendedUtils
                 .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))

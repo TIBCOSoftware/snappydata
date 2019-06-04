@@ -20,10 +20,4 @@ import org.apache.spark.sql.sources.PathOptionSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyPathOptionSuite extends PathOptionSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    // data is not moved over due to small-case name used by hive client by default
-    "path option always represent the value of table location"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

@@ -36,7 +36,7 @@ class PolicyTest extends PolicyTestBase {
   val rowTableName: String = s"$tableOwner.RowTable"
   var ownerContext: SnappyContext = _
 
-  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+  protected override def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     val conf = new org.apache.spark.SparkConf()
         .setAppName("PolicyTest")
         .setMaster("local[4]")
@@ -350,18 +350,16 @@ class PolicyTest extends PolicyTestBase {
     snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, "UserX")
     val q1 = s"select * from $tableName tab1 , $tableName tab2 " +
         s"where tab1.id < 6 and tab2.id < 6 "
-    var rs = snc2.sql(q1).collect()
+    val rs = snc2.sql(q1).collect()
     assertEquals(4, rs.length)
-    var idResults = rs.map(x => x.getInt(1) -> x.get(3))
+    val idResults = rs.map(x => x.getInt(1) -> x.get(3))
     assertTrue(idResults.contains((4, 4)))
     assertTrue(idResults.contains((4, 5)))
     assertTrue(idResults.contains((5, 4)))
     assertTrue(idResults.contains((5, 5)))
     ownerContext.sql("drop policy testPolicy1")
     ownerContext.sql(s"drop table $mappingTable")
-
   }
-
 
   private def testRecursionBug(tableName: String): Unit = {
     ownerContext.sql(s"create policy testPolicy1 on  " +
@@ -475,12 +473,12 @@ class PolicyTest extends PolicyTestBase {
 
   // return true if a policy exists for a table else false
   private def checkIfPoliciesOnTableExist(tableName: String): Boolean = {
-    val policies = Misc.getMemStore.getExternalCatalog.getPolicies()
+    val policies = Misc.getMemStore.getExternalCatalog.getPolicies
     val it = policies.listIterator()
     while (it.hasNext) {
       val p = it.next()
       //      println("Actual tablename:" + tableName + ", tableName in policy:" + p.tableName)
-      if ((p.schemaName + "." + p.tableName).equals(tableName.toUpperCase)) {
+      if ((p.schemaName + "." + p.tableName).equalsIgnoreCase(tableName)) {
         return true
       }
     }

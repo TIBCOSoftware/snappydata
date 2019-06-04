@@ -35,7 +35,6 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
@@ -366,6 +365,10 @@ class SnappyParser(session: SnappySession)
     ws ~ identifier ~ EOI
   }
 
+  final def parseIdentifiers: Rule1[Seq[String]] = rule {
+    ws ~ (identifier + commaSep) ~ EOI
+  }
+
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
@@ -646,7 +649,7 @@ class SnappyParser(session: SnappySession)
     tableIdentifier ~ (
         '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
             ((ident: TableIdentifier, e: Any) => UnresolvedTableValuedFunction(
-              Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]])) |
+              ident.unquotedString, e.asInstanceOf[Seq[Expression]])) |
         streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
           window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
             case None => UnresolvedRelation(tableIdent, None)
@@ -964,10 +967,10 @@ class SnappyParser(session: SnappySession)
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
         val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
         fn match {
-          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
+          case f if f.funcName.equalsIgnoreCase("timestampadd") =>
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
-                exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
+                exprs.head.asInstanceOf[UnresolvedAttribute].name.equalsIgnoreCase("sql_tsi_day"))
             DateAdd(exprs(2), exprs(1))
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
@@ -1167,7 +1170,7 @@ class SnappyParser(session: SnappySession)
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     capture(INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
         capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
-        UnresolvedRelation(r), s"$c ${quotedNormalizedId(r)} $s"))
+        UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
   }
 
   // It can be the following patterns:
@@ -1302,8 +1305,8 @@ class SnappyParser(session: SnappySession)
     parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw new ParseException(formatError(e, new ErrorFormatter(
-          showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
+        throw new ParseException(formatError(e, new ErrorFormatter(showTraces =
+            (session ne null) && Property.ParserTraceError.get(session.sessionState.conf))))
       case Failure(e) =>
         throw new ParseException(e.toString, Some(e))
     }
