@@ -40,11 +40,11 @@ import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{Filter, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, IdentifierWithDatabase, TableIdentifier}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.command.DDLUtils
 import org.apache.spark.sql.execution.datasources.{DataSource, FindDataSourceTable, LogicalRelation}
 import org.apache.spark.sql.policy.PolicyProperties
-import org.apache.spark.sql.sources.{DestroyRelation, MutableRelation, RowLevelSecurityRelation}
+import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, MutableRelation, RowLevelSecurityRelation}
 import org.apache.spark.sql.types._
 import org.apache.spark.util.MutableURLClassLoader
 
@@ -60,7 +60,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     functionResourceLoader: FunctionResourceLoader,
     functionRegistry: FunctionRegistry,
     sqlConf: SQLConf,
-    hadoopConf: Configuration)
+    val hadoopConf: Configuration)
     extends SessionCatalog(
       externalCatalog,
       globalTempViewManager,
@@ -96,20 +96,17 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   final def getCurrentSchema: String = getCurrentDatabase
 
   /**
-   * Format table name. Hive meta-store is case-insensitive so always convert to upper case.
+   * Format table name. Hive meta-store is case-insensitive so always convert to lower case.
    */
-  override def formatTableName(name: String): String = Utils.toUpperCase(name)
+  override def formatTableName(name: String): String = JdbcExtendedUtils.toLowerCase(name)
 
   /**
-   * Format schema name. Hive meta-store is case-insensitive so always convert to upper case.
+   * Format schema name. Hive meta-store is case-insensitive so always convert to lower case.
    */
-  override def formatDatabaseName(name: String): String = Utils.toUpperCase(name)
+  override def formatDatabaseName(name: String): String = JdbcExtendedUtils.toLowerCase(name)
 
-  final def caseSensitiveAnalysis: Boolean = sqlConf.caseSensitiveAnalysis
-
-  def formatName(name: String): String = {
-    if (caseSensitiveAnalysis) name else Utils.toUpperCase(name)
-  }
+  final def formatName(name: String): String =
+    if (sqlConf.caseSensitiveAnalysis) name else JdbcExtendedUtils.toLowerCase(name)
 
   /** API to get primary key or Key Columns of a SnappyData table */
   def getKeyColumns(table: String): Seq[Column] = getKeyColumnsAndPositions(table).map(_._1)
@@ -120,7 +117,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val relation = resolveRelation(tableIdent)
     val keyColumns = relation match {
       case LogicalRelation(mutable: MutableRelation, _, _) =>
-        val keyCols = mutable.getPrimaryKeyColumns
+        val keyCols = mutable.getPrimaryKeyColumns(snappySession)
         if (keyCols.isEmpty) {
           Nil
         } else {
@@ -134,7 +131,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
           fieldsInMetadata.map { p =>
             val c = p._1
             new Column(
-              name = Utils.toUpperCase(c.name),
+              name = c.name,
               description = c.getComment().orNull,
               dataType = c.dataType.catalogString,
               nullable = c.nullable,
@@ -145,33 +142,6 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       case _ => Nil
     }
     keyColumns
-  }
-
-  private def normalizeType(dataType: DataType): DataType = dataType match {
-    case a: ArrayType => a.copy(elementType = normalizeType(a.elementType))
-    case m: MapType => m.copy(keyType = normalizeType(m.keyType),
-      valueType = normalizeType(m.valueType))
-    case s: StructType => normalizeSchema(s)
-    case _ => dataType
-  }
-
-  protected[sql] def normalizeField(f: StructField): StructField = {
-    val name = formatName(f.name)
-    val dataType = normalizeType(f.dataType)
-    f.copy(name = name, dataType = dataType)
-  }
-
-  def normalizeSchema(schema: StructType): StructType = {
-    if (caseSensitiveAnalysis) {
-      schema
-    } else {
-      val fields = schema.fields
-      if (fields.exists(f => Utils.hasLowerCase(f.name))) {
-        StructType(fields.map(normalizeField))
-      } else {
-        schema
-      }
-    }
   }
 
   def compatibleSchema(schema1: StructType, schema2: StructType): Boolean = {
@@ -256,6 +226,13 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     TableIdentifier(formatTableName(identifier.table), Some(getSchemaName(identifier)))
   }
 
+  /** Convert a table name to TableIdentifier for an existing table. */
+  final def resolveExistingTable(name: String): TableIdentifier = {
+    val identifier = snappySession.tableIdentifier(name)
+    if (isTemporaryTable(identifier)) identifier
+    else TableIdentifier(identifier.table, Some(getSchemaName(identifier)))
+  }
+
   /**
    * Lookup relation and resolve to a LogicalRelation if not a temporary view.
    */
@@ -297,11 +274,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   protected[sql] def validateSchemaName(schemaName: String, checkForDefault: Boolean): Unit = {
     if (schemaName == globalTempViewManager.database) {
-      throw new AnalysisException(s"$schemaName is a system reserved schema for global " +
+      throw new AnalysisException(s"$schemaName is a system preserved database/schema for global " +
           s"temporary tables. You cannot create, drop or set a schema with this name.")
     }
     if (checkForDefault && schemaName == SnappyExternalCatalog.SPARK_DEFAULT_SCHEMA) {
-      throw new AnalysisException(s"$schemaName is a system reserved schema.")
+      throw new AnalysisException(s"$schemaName is a system preserved database/schema.")
     }
   }
 
@@ -343,10 +320,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    * Drop all the objects in a schema. The provided schema must already be formatted
    * with a call to [[formatDatabaseName]].
    */
-  def dropAllSchemaObjects(schemaName: String, ignoreIfNotExists: Boolean,
+  def dropAllSchemaObjects(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
+    val schemaName = formatDatabaseName(schema)
     if (schemaName == SnappyExternalCatalog.SYS_SCHEMA) {
-      throw new AnalysisException(s"$schemaName is a system reserved schema")
+      throw new AnalysisException(s"$schemaName is a system preserved database/schema")
     }
 
     if (!externalCatalog.databaseExists(schemaName)) {
@@ -366,8 +344,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         var tables = others
         while (tables.nonEmpty) {
           val (leaves, remaining) = tables.partition(t => t.tableType == CatalogTableType.VIEW ||
-              externalCatalog.getDependents(formatDatabaseName(t.database), formatTableName(
-                t.identifier.table), t, Nil, CatalogObjectType.Policy :: Nil).isEmpty)
+              externalCatalog.getDependents(t.database, t.identifier.table, t,
+                Nil, CatalogObjectType.Policy :: Nil).isEmpty)
           leaves.foreach(t => snappySession.dropTable(t.identifier, ifExists = true,
             t.tableType == CatalogTableType.VIEW))
           tables = remaining
@@ -545,7 +523,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     checkSchemaPermission(newSchemaName, newName.table, defaultUser = null)
 
     // in-built tables don't support rename yet
-    super.getTableMetadataOption(oldName) match {
+    if (externalCatalog.databaseExists(oldSchemaName)) getTableMetadataOption(oldName) match {
       case Some(table) if DDLUtils.isDatasourceTable(table) &&
           SnappyContext.isBuiltInProvider(table.provider.get) =>
         throw new UnsupportedOperationException(
@@ -609,7 +587,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
      */
     PolicyProperties.createFilterPlan(filterExpression, tableIdent,
       table.properties(PolicyProperties.policyOwner),
-      table.properties(PolicyProperties.expandedPolicyApplyTo).split(",").
+      table.properties(PolicyProperties.expandedPolicyApplyTo).split(',').
           toSeq.filterNot(_.isEmpty))
   }
 

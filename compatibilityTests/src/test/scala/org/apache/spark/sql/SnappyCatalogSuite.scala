@@ -20,19 +20,4 @@ import org.apache.spark.sql.internal.CatalogSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyCatalogSuite extends CatalogSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "current database",
-    "list databases",
-    "list tables",
-    "list tables with database",
-    "list functions with database",
-    "list columns",
-    "list columns in database",
-    "get database",
-    "get table",
-    "get function",
-    "table exists"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyXPathFunctionsSuite extends XPathFunctionsSuite  with SharedSnappySessionContext{
-
-}
+class SnappyXPathFunctionsSuite extends XPathFunctionsSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

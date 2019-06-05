@@ -17,8 +17,7 @@
 
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDataFramePivotSuite extends DataFramePivotSuite with SharedSnappySessionContext {
-
-}
+class SnappyDataFramePivotSuite extends DataFramePivotSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil
