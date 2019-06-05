@@ -31,7 +31,6 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
@@ -43,7 +42,7 @@ import org.apache.spark.util.SnappyUtils
 class SparkSQLPrepareImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version) extends SparkSQLExecute {
 
   if (Thread.currentThread().getContextClassLoader != null) {
     val loader = SnappyUtils.getSnappyStoreContextLoader(
