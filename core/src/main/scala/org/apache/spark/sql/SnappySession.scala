@@ -1325,8 +1325,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case BinaryType => "binary"
       case v: VarcharType => s"varchar(${v.length})"
       case a: ArrayType => s"array<${a.elementType}>"
-      case m: MapType => s"map<${m.keyType, m.valueType}>"
-      case s: StructType => s"struct<${s.}>"
+      case m: MapType => s"map<${m.keyType}, ${m.valueType}>"
+      case s: StructType => {
+        val structFields = s.fields.map(f => s" ${f.name}:${f.dataType} ").mkString(",")
+        s"struct<${structFields}>"
+      }
     }
   }
 

@@ -342,7 +342,7 @@ object RecoveryService extends Logging {
         }
       }
     })
-    for (elem <- schemaMap) {)
+    for (elem <- schemaMap) {
       // take it out after testing ... modify to a method
       val schema = colParser.parseSQLOnly(elem._2, colParser.tableSchemaOpt.run()).map(StructType(_))
       match {
