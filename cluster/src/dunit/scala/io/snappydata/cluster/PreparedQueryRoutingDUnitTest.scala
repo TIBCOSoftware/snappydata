@@ -17,15 +17,17 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Date, DriverManager, ResultSet}
+import java.sql._
 import java.time.LocalDate
+import java.util.concurrent.atomic.AtomicBoolean
 
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.test.dunit.AvailablePortHelper
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
+
+import scala.util.Random
 
 /**
  * Tests for query routing from JDBC client driver.
@@ -692,5 +694,114 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     // scalastyle:on println
     val snc = SnappyContext(sc)
     PreparedQueryRoutingSingleNodeSuite.equalityOnStringColumn(snc, s"localhost:$serverHostPort")
+  }
+
+  def test_prepStmntManyThreads(): Unit = {
+    serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"test2: network server started at $serverHostPort")
+    // scalastyle:on println
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"query1_test2: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    createTableAndPopulateSomeData(conn)
+    val keepRunning = new AtomicBoolean(true)
+    createNThreadsAndPrepExecute(10, keepRunning)
+    assert(keepRunning.get())
+  }
+
+  def createTableAndPopulateSomeData(conn: Connection): Boolean = {
+    val stmnt = conn.createStatement()
+    stmnt.execute("create table test(col1 int, col2 int not null, col3 string, " +
+        "col4 long, col5 date, col6 timestamp not null, col7 decimal(4, 2))" +
+        " using column options()")
+    val prepStmntInsert = conn.prepareCall("insert into test values(?, ?, ?, ?, ?, ?, ?)")
+    for ( i <- 0 until 10000) {
+      prepStmntInsert.setInt(1, i)
+      prepStmntInsert.setInt(2, i*2)
+      prepStmntInsert.setString(3, s"aaa$i")
+      prepStmntInsert.setLong(4, i*100L)
+      prepStmntInsert.setString(5, "2019-05-23")
+      prepStmntInsert.setString(6, "2019-05-23 00:01:10")
+      prepStmntInsert.setDouble(7, 10.22)
+      prepStmntInsert.executeUpdate()
+    }
+    true
+  }
+
+  def createNThreadsAndPrepExecute(i: Int, keepRunning: AtomicBoolean): Unit = {
+    val queries = scala.Array("select * from test where col1 < ? and col3 = ?",
+      "select col1 from test where col2 in (?, ?, ?)",
+      "select col1 from test where col1 = ? and (col2 > ? or col2 < ?)",
+      "select * from test where col7 = ?",
+      "select avg(col1) from test")
+
+    class Runner extends Runnable {
+      override def run(): Unit = {
+        var cnt = 0;
+        val conn = DriverManager.getConnection(
+          "jdbc:snappydata://localhost:" + serverHostPort)
+        try {
+          while ((cnt < 20) && keepRunning.get()) {
+            cnt += 1
+            val qNum = Random.nextInt(5)
+            val prepquery = conn.prepareCall(queries(qNum))
+            qNum match {
+              case 0 =>
+                prepquery.setInt(1, 10)
+                prepquery.setString(2, "aaa10")
+                prepquery.execute()
+                val rs = prepquery.getResultSet
+                assert(rs.next())
+                rs.close()
+              case 1 =>
+                prepquery.setInt(1, 100)
+                prepquery.setInt(2, 10)
+                prepquery.setInt(3, 1000)
+                prepquery.execute()
+                val rs = prepquery.getResultSet
+                assert(rs != null)
+                assert(rs.next())
+                assert(rs.next())
+                assert(rs.next())
+                rs.close()
+              case 2 =>
+                prepquery.setInt(1, 100)
+                prepquery.setInt(2, 10)
+                prepquery.setInt(3, 1000)
+                prepquery.execute()
+                val rs = prepquery.getResultSet
+                assert(rs != null)
+                rs.close()
+              case 3 =>
+                prepquery.setInt(1, 1000)
+                prepquery.execute()
+                val rs = prepquery.getResultSet
+                assert(rs != null)
+                assert(rs.next())
+                rs.close()
+              case 4 =>
+                prepquery.execute()
+                val rs = prepquery.getResultSet
+                assert(rs.next())
+                rs.close()
+            }
+          }
+        } catch {
+          case se: SQLException =>
+            logInfo(s"exception got = $se with state ${se.getSQLState}", se)
+            keepRunning.set(false)
+        }
+      }
+    }
+    val allThreads: scala.Array[Thread] = scala.Array.ofDim(i)
+    for ( t <- 0 until i) allThreads(t) = new Thread(new Runner())
+    for ( t <- 0 until i) allThreads(t).start()
+    for ( t <- 0 until i) allThreads(t).join(180000)
+    assert(keepRunning.get())
   }
 }

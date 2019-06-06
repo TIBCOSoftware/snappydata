@@ -39,7 +39,7 @@ import org.apache.spark.SparkContext
 import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.CatalogTableType
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
@@ -56,12 +56,14 @@ import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
-    baseTable: Option[TableIdentifier],
+    baseTable: Option[String],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     mode: SaveMode,
     options: Map[String, String],
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
     isBuiltIn: Boolean) extends RunnableCommand {
 
@@ -69,7 +71,7 @@ case class CreateTableUsingCommand(
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, query)
+      schemaDDL, mode, allOptions, isBuiltIn, partitionColumns, bucketSpec, query)
     Nil
   }
 }
@@ -117,7 +119,7 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val conn = session.defaultPooledConnection(schema)
     try {
       val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
+      stmt.executeUpdate(s"""CREATE SCHEMA "${Utils.toUpperCase(schema)}"$authClause""")
       stmt.close()
     } catch {
       case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
@@ -156,7 +158,7 @@ case class DropSchemaCommand(schemaName: String, ifExists: Boolean, cascade: Boo
     val conn = session.defaultPooledConnection(schema)
     try {
       val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "${Utils.toUpperCase(schema)}" RESTRICT""")
       stmt.close()
     } finally {
       conn.close()
@@ -413,9 +415,7 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (!hiveCompatible) {
-      // current schema name will be upper-case so convert all to lower-case for consistency
-      return super.run(sparkSession).map(r => Row(Utils.toLowerCase(r.getString(0)),
-        r.getString(1), r.getBoolean(2)))
+      return super.run(sparkSession)
     }
 
     val catalog = sparkSession.sessionState.catalog
@@ -472,9 +472,9 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
         else {
           val viewSchema = viewIdent.database match {
             case None => ""
-            case Some(s) => Utils.toLowerCase(s)
+            case Some(s) => s
           }
-          Row(viewSchema, Utils.toLowerCase(viewIdent.table), isTemp, isGlobalTemp)
+          Row(viewSchema, viewIdent.table, isTemp, isGlobalTemp)
         }
     }
   }

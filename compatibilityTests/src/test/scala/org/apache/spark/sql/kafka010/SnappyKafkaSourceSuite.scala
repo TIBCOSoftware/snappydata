@@ -21,22 +21,16 @@ import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil, TestSnappySession}
 
 class SnappyKafkaSourceSuite extends KafkaSourceSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] =
-    Seq("deserialization of initial offset written by Spark 2.1.0")
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
 
 class SnappyKafkaSourceStressSuite extends KafkaSourceStressSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
 
 class SnappyKafkaSourceStressForDontFailOnDataLossSuite
     extends KafkaSourceStressForDontFailOnDataLossSuite
         with SharedSnappySessionContext with SnappySparkTestUtil {
 
-  override def createSparkSession(): SnappySession = {
+  override def createSparkSession: SnappySession = {
     // Set maxRetries to 3 to handle NPE from `poll` when deleting a topic
     new TestSnappySession(
       new SparkContext("local[2,3]", "test-sql-context", sparkConf))
