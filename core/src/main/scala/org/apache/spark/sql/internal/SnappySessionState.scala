@@ -296,7 +296,8 @@ class SnappySessionState(val snappySession: SnappySession)
           case e if e.foldable => foldExpression(e)
           // Like Spark's OptimizeIn but uses DynamicInSet to allow for tokenized literals
           // to be optimized too.
-          case expr@In(v, l) if !disableStoreOptimizations =>
+          case expr@In(v, l) if !disableStoreOptimizations && l.forall(e =>
+            e.isInstanceOf[Literal] || e.isInstanceOf[DynamicReplacableConstant] || e.foldable) =>
             val list = l.collect {
               case e@(_: Literal | _: DynamicReplacableConstant) => e
               case e if e.foldable => foldExpression(e)
@@ -615,7 +616,7 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeMutableOperations(sparkSession: SparkSession,
+  case class AnalyzeMutableOperations(session: SnappySession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
     private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
@@ -677,8 +678,8 @@ class SnappySessionState(val snappySession: SnappySession)
         else {
           // check that partitioning or key columns should not be updated
           val nonUpdatableColumns = (relation.relation.asInstanceOf[MutableRelation]
-              .partitionColumns.map(Utils.toUpperCase) ++
-              keyAttrs.map(k => Utils.toUpperCase(k.name))).toSet
+              .partitionColumns.map(Utils.toLowerCase) ++
+              keyAttrs.map(k => Utils.toLowerCase(k.name))).toSet
           // resolve the columns being updated and cast the expressions if required
           val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
             val attr = analysis.withPosition(relation) {
@@ -686,7 +687,7 @@ class SnappySessionState(val snappySession: SnappySession)
                 c.name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
-            val colName = Utils.toUpperCase(c.name)
+            val colName = Utils.toLowerCase(c.name)
             if (nonUpdatableColumns.contains(colName)) {
               throw new AnalysisException("Cannot update partitioning/key column " +
                   s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
@@ -733,13 +734,13 @@ class SnappySessionState(val snappySession: SnappySession)
             keyColumns = keyAttrs.map(_.toAttribute))
         }
       case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
-        ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
+        ColumnTableBulkOps.transformDeletePlan(session, d)
       case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
-        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
+        ColumnTableBulkOps.transformPutPlan(session, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
-      val qe = sparkSession.sessionState.executePlan(query)
+      val qe = session.sessionState.executePlan(query)
       qe.assertAnalyzed()
       qe.analyzed
     }
@@ -1233,13 +1234,17 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
       val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
       val provider = tableDesc.provider.get
-      // treat saveAsTable with mode=Append as insertInto
-      if (mode == SaveMode.Append && queryOpt.isDefined && state.catalog.tableExists(tableIdent)) {
-        new Insert(table = UnresolvedRelation(tableDesc.identifier),
+      val isBuiltin = SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)
+      // treat saveAsTable with mode=Append as insertInto for builtin tables and "normal" cases
+      // where no explicit bucket/partitioning has been specified
+      if (mode == SaveMode.Append && queryOpt.isDefined && (isBuiltin ||
+          (tableDesc.bucketSpec.isEmpty && tableDesc.partitionColumnNames.isEmpty)) &&
+          state.catalog.tableExists(tableIdent)) {
+        new Insert(table = UnresolvedRelation(tableIdent),
           partition = Map.empty, child = queryOpt.get,
           overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
-      } else if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) {
+      } else if (isBuiltin) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
         if (tableName.indexOf(',') != -1) {
@@ -1249,11 +1254,13 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
             (SnappyExternalCatalog.DBTABLE_PROPERTY -> tableName)
         if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(provider))) {
           // add default batchSize and maxDeltaRows options for column tables
-          if (!newOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
+          val parameters = new ExternalStoreUtils.CaseInsensitiveMutableHashMap[String](
+            tableDesc.storage.properties)
+          if (!parameters.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
             newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
                 ExternalStoreUtils.defaultColumnMaxDeltaRows(state.snappySession).toString)
           }
-          if (!newOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
+          if (!parameters.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
             newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
                 ExternalStoreUtils.defaultColumnBatchSize(state.snappySession).toString)
           }
@@ -1305,7 +1312,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
 
-          val keyColumns = dr.getPrimaryKeyColumns
+          val keyColumns = dr.getPrimaryKeyColumns(state.snappySession)
           val childOutput = keyColumns.map(col =>
             child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
               case Some(a: Attribute) => a

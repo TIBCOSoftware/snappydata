@@ -258,7 +258,7 @@ with Logging with Retries {
     val (out, err) = executeProcess(name, sparkSubmit, Some(commandOutput))
 
     if (checkException(out) || checkException(err)) {
-      throw new Exception(s"Failed to submit $appClass")
+      throw new Exception(s"Failed to submit $appClass. Output = $out. Error = $err.")
     }
   }
 

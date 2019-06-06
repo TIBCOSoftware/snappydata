@@ -80,16 +80,16 @@ assert(rs.toSeq.sortBy(_.getLong(0)) == allRows1)
 // complex return type
 rs = spark.snappyQuery("select id, collect_list(data) dataList from testTable1 group by id").collect()
 assert(rs.length == allRows1.length)
-assert(rs.toSeq.sortBy(_.getLong(0)) == Seq(Row(0, """{"COL_0":["col0"]}"""),
-                                            Row(1, """{"COL_0":["col1"]}""")))
+assert(rs.toSeq.sortBy(_.getLong(0)) == Seq(Row(0, """{"col_0":["col0"]}"""),
+                                            Row(1, """{"col_0":["col1"]}""")))
 
 // test table having complex types
 
 val allRows2 = Seq(
-  Row(1, "one", new BigDecimal("1.2"), """{"COL_0":[3,4]}""",
-      """{"COL_1":{"3":"three","5":"five"}}""", """{"COL_2":{"ID":6,"S":"six","DEC":7.1000}}"""),
-  Row(2, "two", new BigDecimal("2.3"), """{"COL_0":[5,6]}""",
-      """{"COL_1":{"6":"six","8":"eight"}}""", """{"COL_2":{"ID":9,"S":"nine","DEC":8.2000}}"""))
+  Row(1, "one", new BigDecimal("1.2000"), """{"col_0":[3,4]}""",
+      """{"col_1":{"3":"three","5":"five"}}""", """{"col_2":{"id":6,"s":"six","dec":7.1000}}"""),
+  Row(2, "two", new BigDecimal("2.3000"), """{"col_0":[5,6]}""",
+      """{"col_1":{"6":"six","8":"eight"}}""", """{"col_2":{"id":9,"s":"nine","dec":8.2000}}"""))
 
 rs = spark.snappyQuery("select * from testTable2").collect()
 assert(rs.length == allRows2.length)
@@ -113,8 +113,8 @@ assert(rs.toSeq.sortBy(_.getLong(0)) == allRows2.map(r => Row(r.get(0), r.get(2)
 rs = spark.snappyQuery("""select id, collect_list(data1) d1, max(data3[0]) d3,
        last(data4) d4, collect_list(data5.s) d5 from testTable2 group by id""").collect()
 val expected2_1 = Seq(
-  Row(1, """{"COL_0":["one"]}""", 3, """{"COL_1":{"3":"three","5":"five"}}""", """{"COL_2":["six"]}"""),
-  Row(2, """{"COL_0":["two"]}""", 5, """{"COL_1":{"6":"six","8":"eight"}}""", """{"COL_2":["nine"]}"""))
+  Row(1, """{"col_0":["one"]}""", 3, """{"col_1":{"3":"three","5":"five"}}""", """{"col_2":["six"]}"""),
+  Row(2, """{"col_0":["two"]}""", 5, """{"col_1":{"6":"six","8":"eight"}}""", """{"col_2":["nine"]}"""))
 assert(rs.length == expected2_1.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_1)
 
@@ -123,8 +123,8 @@ rs = spark.snappyQuery("""select id, d1, d3[1], IfNull(d4[5], d4[6]) d4, d5.dec 
        (select id, collect_list(data1) d1, first(data3) d3, last(data4) d4,
         first(data5) d5 from testTable2 group by id)""", host, port, userName, password).collect()
 val expected2_2 = Seq(
-  Row(1, """{"COL_0":["one"]}""", 4, "five", new BigDecimal("7.1")),
-  Row(2, """{"COL_0":["two"]}""", 6, "six", new BigDecimal("8.2")))
+  Row(1, """{"col_0":["one"]}""", 4, "five", new BigDecimal("7.1")),
+  Row(2, """{"col_0":["two"]}""", 6, "six", new BigDecimal("8.2")))
 assert(rs.length == expected2_2.length)
 assert(rs.toSeq.sortBy(_.getLong(0)) == expected2_2)
 
@@ -159,10 +159,10 @@ connProps.setProperty("pool.maxTotal", "50")
 connProps.setProperty("pool.maxIdle", "20")
 connProps.setProperty("pool.initialSize", "50")
 connProps.setProperty("pool.minActive", "50")
-connProps.setProperty("pool.minIdleSize", "10")
+connProps.setProperty("pool.minIdle", "10")
 connProps.setProperty("driver", "io.snappydata.jdbc.ClientPoolDriver")
-connProps.setProperty("pool.user", userName)
-connProps.setProperty("pool.password", password)
+connProps.setProperty("user", userName)
+connProps.setProperty("password", password)
 
 val df = spark.read.jdbc(JDBC_URL, "testTable1", connProps)
 val result = df.select("id").groupBy("id").avg("id").orderBy("id").collect()
@@ -173,8 +173,8 @@ val df1 = spark.read.jdbc(JDBC_URL, "testTable1", connProps).select("id", "data"
 assert(df1.length == 1) // expected rows
 assert(df1(0).getAs("id") == 1) // expected result
 
-val df2 = spark.read.jdbc(url = JDBC_URL,table = "testTable2",columnName = "id",
-lowerBound = 0,upperBound = 100,numPartitions = 16, connectionProperties = connProps).collect()
+val df2 = spark.read.jdbc(url = JDBC_URL, table = "testTable2", columnName = "id",
+lowerBound = 0, upperBound = 100, numPartitions = 16, connectionProperties = connProps).collect()
 assert(df2.length == 2, "expected length is 2") // expected rows
 assert(df2.toSeq.sortBy(_.getLong(0)) == allRows2)
 
