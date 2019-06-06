@@ -59,7 +59,7 @@ import org.apache.spark.sql.execution.aggregate.CollectAggregateExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, InMemoryTableScanExec}
-import org.apache.spark.sql.execution.command.{CreateDataSourceTableAsSelectCommand, ExecutedCommandExec, UncacheTableCommand}
+import org.apache.spark.sql.execution.command.{CreateDataSourceTableAsSelectCommand, ExecutedCommandExec, ShowCreateTableCommand, UncacheTableCommand}
 import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
@@ -1274,7 +1274,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     val orgSqlText = getContextObject[String]("orgSqlText") match {
       case Some(s) => s
-      case None => ""
+      case None => {
+        userSpecifiedSchema match {
+          case Some(schema) => s"create table ${resolvedName.table} (${getDDLSchema(schema)})"
+          case None => ""
+        }
+      }
     }
     // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
     val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
@@ -1299,6 +1304,30 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     snappyContextFunctions.postRelationCreation(relation, this)
     df
+  }
+
+  def getDDLSchema(schema: StructType): String = {
+    schema.fields.map(f => s"${f.name} ${getSQLType(f.dataType)}").mkString(", ")
+  }
+
+  def getSQLType(dataType: DataType): String = {
+    dataType match {
+      case IntegerType => "integer"
+      case LongType => "long"
+      case StringType => "string"
+      case FloatType => "float"
+      case DoubleType => "double"
+      case DateType => "date"
+      case TimestampType => "timestamp"
+      case BooleanType => "boolean"
+      case ByteType => "byte"
+      case ShortType => "short"
+      case BinaryType => "binary"
+      case v: VarcharType => s"varchar(${v.length})"
+      case a: ArrayType => s"array<${a.elementType}>"
+      case m: MapType => s"map<${m.keyType, m.valueType}>"
+      case s: StructType => s"struct<${s.}>"
+    }
   }
 
   private[sql] def addBaseTableOption(baseTable: Option[String],
@@ -1376,7 +1405,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     val orgSqlText = getContextObject[String]("orgSqlText") match {
       case Some(str) => str
-      case None => ""
+      case None => {
+        if (isAddColumn) {
+          s"alter table ${tableIdent.table} add column ${column.name} ${getSQLType(column.dataType)}"
+        } else {
+          s"alter table ${tableIdent.table} drop column ${column.name}"
+        }
+      }
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
