@@ -33,7 +33,7 @@ object QueryExecutionSmartConnector {
         .getOrCreate
 
     val queries = args(0).split("-")
-    val sparkSqlProps = args(0).split(",")
+    val sparkSqlProps = args(1).split(",")
     val isDynamic = args(2).toBoolean
     val isResultCollection = args(3).toBoolean
     val warmUpIterations = args(4).toInt
@@ -49,7 +49,7 @@ object QueryExecutionSmartConnector {
     for(prop <- sparkSqlProps) {
       // scalastyle:off println
       println(prop)
-      sc.sql(s"set $prop")
+      snSession.sql(s"set $prop")
     }
 
     for (i <- 1 to 1) {
@@ -58,7 +58,11 @@ object QueryExecutionSmartConnector {
           threadNumber, isDynamic, warmUpIterations, actualRuns, avgPrintStream)
       }
     }
+
+    avgPrintStream.close()
+    avgFileStream.close()
     QueryExecutor.close
+
     sc.stop()
 
   }

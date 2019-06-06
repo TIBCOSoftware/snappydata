@@ -1,5 +1,5 @@
 ## Introduction
-SnappyData fuses Apache Spark with an in-memory database to deliver a compute+data engine capable of stream processing, transactions, interactive analytics and prediction in a single cluster.
+SnappyData™ fuses Apache Spark with an in-memory database to deliver a compute+data engine capable of stream processing, transactions, interactive analytics and prediction in a single cluster.
 
 !!! Attention
 	This document assumes that you have familiarity with Apache Spark and its concepts. If you are new to Apache Spark, refer to the [Apache Spark documentation](https://spark.apache.org/docs/2.1.1/) to learn more about using Apache Spark.</br>

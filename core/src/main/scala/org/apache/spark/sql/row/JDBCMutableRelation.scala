@@ -26,6 +26,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.plans.logical.OverwriteOptions
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -52,7 +53,7 @@ abstract case class JDBCMutableRelation(
     mode: SaveMode,
     userSpecifiedString: String,
     parts: Array[Partition],
-    origOptions: Map[String, String],
+    origOptions: CaseInsensitiveMap,
     @transient override val sqlContext: SQLContext)
     extends BaseRelation
     with PrunedUnsafeFilteredScan
@@ -184,7 +185,7 @@ abstract case class JDBCMutableRelation(
   }
 
   /** Get primary keys of the row table */
-  override def getPrimaryKeyColumns: Seq[String] = relationInfo.pkCols
+  override def getPrimaryKeyColumns(session: SnappySession): Seq[String] = relationInfo.pkCols
 
   override def insert(data: DataFrame, overwrite: Boolean): Unit = {
     // use the Insert plan for best performance
@@ -400,6 +401,7 @@ abstract case class JDBCMutableRelation(
       isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit = {
     val conn = connFactory()
     try {
+      val columnName = JdbcExtendedUtils.toUpperCase(column.name)
       val sql = if (isAddColumn) {
         val defaultColumnValue = defaultValue match {
           case Some(v) =>
@@ -413,10 +415,10 @@ abstract case class JDBCMutableRelation(
 
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
-           | add column "${column.name}"
+           | add column "$columnName"
            |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
       } else {
-        s"""alter table ${quotedName(table)} drop column "${column.name}""""
+        s"""alter table ${quotedName(table)} drop column "$columnName""""
       }
       if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
