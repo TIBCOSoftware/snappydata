@@ -145,7 +145,7 @@ class QueryTest extends SnappyFunSuite {
 
     snc.conf.set("spark.sql.caseSensitive", "true")
     try {
-      snc.table("columnTable").select("col3", "col2", "a/b").collect()
+      snc.table("columnTable").select("col3", "col2", "A/b").collect()
       fail("expected to fail for case-sensitive=true")
     } catch {
       case _: AnalysisException => // expected
@@ -169,10 +169,12 @@ class QueryTest extends SnappyFunSuite {
       case _: AnalysisException => // expected
     }
     // hive meta-store is case-insensitive so column table names are not
-    snc.sql("select COL2, COL3, \"a/b\" from columnTable").collect()
-    snc.sql("select COL2, COL3, `a/b` from ColumnTable").collect()
-    snc.table("columnTable").select("COL3", "COL2", "a/b").collect()
-    snc.table("COLUMNTABLE").select("COL3", "COL2", "a/b").collect()
+    snc.sql("select col2, col3, \"a/b\" from columnTable").collect()
+    snc.sql("select col2, col3, `a/b` from ColumnTable").collect()
+    snc.table("columnTable").select("col3", "col2", "a/b").collect()
+    snc.table("COLUMNTABLE").select("col3", "col2", "a/b").collect()
+
+    snc.conf.set("spark.sql.caseSensitive", "false")
   }
 
   private def setupTestData(session: SnappySession): Unit = {
@@ -356,8 +358,8 @@ class QueryTest extends SnappyFunSuite {
         case e: ShuffleExchange if e.outputPartitioning.numPartitions > 1 => e
       }
       assert(exchanges.length === 2)
-      assert(exchanges.head.treeString.contains("TEST1"))
-      assert(exchanges(1).treeString.contains("TEST2"))
+      assert(exchanges.head.treeString.toLowerCase.contains("test1"))
+      assert(exchanges(1).treeString.toLowerCase.contains("test2"))
 
       var result = df.collect()
       assert(result.length === 2)
@@ -375,8 +377,8 @@ class QueryTest extends SnappyFunSuite {
       }
       assert(broadcasts.length === 1)
       // both sides are small enough to be broadcast
-      val broadcastString = broadcasts.head.treeString
-      assert(broadcastString.contains("TEST2") || broadcastString.contains("TEST1"))
+      val broadcastString = broadcasts.head.treeString.toLowerCase
+      assert(broadcastString.contains("test2") || broadcastString.contains("test1"))
       result = df.collect()
       assert(result.length === 2)
       assert(result(0).getLong(0) === 19800)

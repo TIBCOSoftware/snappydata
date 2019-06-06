@@ -555,7 +555,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       partitionId: Int): Connection => Unit = {
     connection: Connection => {
       val gen = CodeGeneration.compileCode(
-        tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
+        tableName + ".columnTable.decompress", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
           val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
             otherRDDs = Nil, numBuckets = -1,
