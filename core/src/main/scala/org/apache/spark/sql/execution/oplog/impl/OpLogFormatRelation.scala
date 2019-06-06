@@ -18,8 +18,6 @@ package org.apache.spark.sql.execution.oplog.impl
 
 import io.snappydata.Constant
 import io.snappydata.recovery.RecoveryService
-import io.snappydata.recovery.RecoveryService.mostRecentMemberObject
-import io.snappydata.thrift.CatalogTableObject
 
 import org.apache.spark.Logging
 import org.apache.spark.rdd.RDD
@@ -32,28 +30,15 @@ import org.apache.spark.sql.types.StructType
 import org.eclipse.collections.impl.map.mutable.primitive.ObjectLongHashMap
 
 class OpLogFormatRelation(
-    dbTableName: String,
-    _table: String,
-    _userSchema: StructType,
+    fqtn: String,
+    _schema: StructType,
     _partitioningColumns: Seq[String],
     _context: SQLContext) extends BaseRelation with TableScan with Logging {
-  var schema: StructType = _userSchema
-  // TODO need sanity checks after split
-  var schemaName: String = _table.split('.')(0)
-  var tableName: String = _table.split('.')(1)
-
-  def refreshTableSchema: Unit = {
-    val sc = _context.sparkContext
-    val catalog = HiveClientUtil.getOrCreateExternalCatalog(sc, sc.conf)
-    schemaName = _table.split("\\.")(0)
-    tableName = _table.split("\\.")(1)
-    val catalogTable = catalog.getTable(schemaName, tableName)
-    schema = catalogTable.schema
-  }
-
+  val schema = _schema
+  var schemaName: String = fqtn.split('.')(0)
+  var tableName: String = fqtn.split('.')(1)
 
   def columnBatchTableName(session: Option[SparkSession] = None): String = {
-
     schemaName + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
         tableName + Constant.SHADOW_TABLE_SUFFIX
   }
@@ -65,18 +50,26 @@ class OpLogFormatRelation(
     (0 until schema.length).foreach(i =>
       fieldNames.put(Utils.toLowerCase(schema(i).name), i + 1))
     val projection = null
+    //      requiredColumns.map { c =>
+    //      val index = fieldNames.get(Utils.toLowerCase(c))
+    //      if (index == 0) Utils.analysisException(s"Column $c does not exist in $tableName")
+    //      index.toInt
+    //    }
 
-    logWarning(s"1891; getcolumnbatchrdd schema is null ${_userSchema}")
-
-    val provider = RecoveryService.getProvider(dbTableName)
+    logWarning(s"1891; getcolumnbatchrdd schema is null ${schema}")
+    logInfo(s"PP: OpLogFormatRelation: dbTableName: $fqtn ; tableName: $tableName")
+    val provider = RecoveryService.getProvider(fqtn)
     val snappySession = SparkSession.builder().getOrCreate().asInstanceOf[SnappySession]
-    val schemaStructMap = RecoveryService.getSchemaStructMap()
+
+    val tableSchemas = RecoveryService.getSchemaStructMap()
     val versionMap = RecoveryService.getVersionMap()
     val tableColIdsMap = RecoveryService.getTableColumnIds()
-    (new OpLogRdd(snappySession, dbTableName, tableName, _userSchema, provider, projection,
-      filters, (filters eq null) || filters.length == 0, prunePartitions, schemaStructMap,
-      versionMap, tableColIdsMap), projection)
+
+    (new OpLogRdd(snappySession, fqtn, tableName, schema,
+      provider, projection, filters, (filters eq null) || filters.length == 0,
+      prunePartitions, tableSchemas, versionMap, tableColIdsMap), projection)
   }
+
 
   override def sqlContext: SQLContext = _context
 

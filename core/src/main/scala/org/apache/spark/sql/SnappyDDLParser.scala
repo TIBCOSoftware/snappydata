@@ -21,6 +21,8 @@ import java.io.File
 
 import scala.util.Try
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, QueryHint}
@@ -916,12 +918,16 @@ abstract class SnappyDDLParser(session: SparkSession)
         ((pairs: Any) => pairs.asInstanceOf[Seq[(String, String)]].toMap)
   }
 
+  protected final def isNotRecoveryMode: Rule0 = rule {
+    MATCH ~> (() => test(!Misc.getGemFireCache.isSnappyRecoveryMode))
+  }
+
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTableLike | createTable | describe | refreshTable | dropTable | truncateTable |
+    describe | isNotRecoveryMode ~ (createTableLike | createTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView | alterView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough
+    createIndex | dropIndex | createFunction | dropFunction | passThrough)
   }
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]

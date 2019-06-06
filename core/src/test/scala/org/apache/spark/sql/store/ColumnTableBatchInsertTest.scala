@@ -37,6 +37,12 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     snc.dropTable("ColumnTable2", true)
   }
 
+  test ("1891: test") {
+    snc.sql("create table test(id integer, val string, comp Array<int>)")
+    snc.sql("insert into test select 1, 'one', Array(1,1,1)")
+    snc.sql("select * from test")
+  }
+
   test("test the shadow table creation") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
