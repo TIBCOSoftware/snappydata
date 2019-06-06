@@ -76,7 +76,7 @@ SYS                 |GET_EVICTION_HEAP_PERCENTAGE  |com.pivotal.gemfire&
 SYS                 |GET_EVICTION_OFFHEAP_PERCENTA&|com.pivotal.gemfire&
 SYS                 |GET_IS_NATIVE_NANOTIMER       |com.pivotal.gemfire&
 SYS                 |GET_NATIVE_NANOTIMER_TYPE     |com.pivotal.gemfire&
-SYS                 |GET_SNAPSHOT_TXID             |com.pivotal.gemfire&
+SYS                 |GET_SNAPSHOT_TXID_AND_HOSTURL |com.pivotal.gemfire&
 SYS                 |GET_TABLE_VERSION             |com.pivotal.gemfire&
 SYS                 |HDFS_LAST_MAJOR_COMPACTION    |com.pivotal.gemfire&
 SYSCS_UTIL          |CHECK_TABLE                   |com.pivotal.gemfire&

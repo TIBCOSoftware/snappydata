@@ -16,10 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDataFrameNaFunctionsSuite
-    extends DataFrameNaFunctionsSuite
-        with SharedSnappySessionContext {
-
-}
+class SnappyDataFrameNaFunctionsSuite extends DataFrameNaFunctionsSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

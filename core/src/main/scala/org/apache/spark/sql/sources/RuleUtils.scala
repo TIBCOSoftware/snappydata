@@ -22,35 +22,44 @@ import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.{AbstractRegion, ColocationHelper, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.sql.catalog.CatalogObjectType
 
 import org.apache.spark.sql.catalyst.analysis.{UnresolvedAlias, UnresolvedAttribute, UnresolvedFunction, UnresolvedGenerator, UnresolvedStar}
+import org.apache.spark.sql.catalyst.catalog.CatalogTable
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeMap, AttributeReference, AttributeSet, Coalesce, Expression, Literal, PredicateHelper, SubqueryExpression, UnresolvedWindowExpression}
 import org.apache.spark.sql.catalyst.optimizer.ReorderJoin
 import org.apache.spark.sql.catalyst.plans.Inner
 import org.apache.spark.sql.catalyst.plans.logical.{Join, LogicalPlan, SubqueryAlias}
 import org.apache.spark.sql.catalyst.{expressions, plans}
+import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.row.RowFormatRelation
-import org.apache.spark.sql.hive.SnappyStoreHiveCatalog
+import org.apache.spark.sql.internal.SnappySessionCatalog
 import org.apache.spark.sql.sources.Entity.{INDEX, INDEX_RELATION, TABLE}
 import org.apache.spark.sql.{AnalysisException, SnappySession}
 
 object RuleUtils extends PredicateHelper {
 
-  private def getIndex(catalog: SnappyStoreHiveCatalog, name: String) = {
-    val relation = catalog.lookupRelation(catalog.newQualifiedTableName(name))
+  private def getIndex(catalog: SnappySessionCatalog, table: CatalogTable): Option[INDEX] = {
+    val relation = catalog.resolveRelation(table.identifier)
     relation match {
-      case LogicalRelation(i: IndexColumnFormatRelation, _, _) => Some(relation)
+      case LogicalRelation(_: IndexColumnFormatRelation, _, _) => Some(relation)
       case _ => None
     }
   }
 
   def fetchIndexes(snappySession: SnappySession,
-      table: LogicalPlan): Seq[(LogicalPlan, Seq[LogicalPlan])] = table.collect {
-    case l@LogicalRelation(p: ParentRelation, _, _) =>
-      val catalog = snappySession.sessionCatalog
-      (l.asInstanceOf[LogicalPlan], p.getDependents(catalog).flatMap(getIndex(catalog, _)))
+      table: LogicalPlan): Seq[(LogicalPlan, Seq[LogicalPlan])] = {
+    val catalog = snappySession.sessionCatalog
+    table.collect {
+      case l@LogicalRelation(p: PartitionedDataSourceScan, _, _) =>
+        val (schemaName, table) = JdbcExtendedUtils.getTableWithSchema(
+          p.table, null, Some(snappySession))
+        (l.asInstanceOf[LogicalPlan], catalog.externalCatalog.getDependentsFromProperties(
+          schemaName, table, includeTypes = CatalogObjectType.Index :: Nil)
+            .flatMap(getIndex(catalog, _)))
+    }
   }
 
   def getJoinKeys(left: LogicalPlan,
@@ -200,19 +209,21 @@ object RuleUtils extends PredicateHelper {
             r.collectFirst { case a: AttributeReference => a }
           }
     }.groupBy(_.map(_.qualifier)).collect { case (table, cols)
-      if table.nonEmpty & table.get.nonEmpty => (
+      if table.nonEmpty && table.get.nonEmpty => (
         table.get.get,
         cols.collect { case a if a.nonEmpty => a.get })
     }
 
+    val currentSchema = snappySession.getCurrentSchema
     val satisfyingPartitionColumns = for {
       (table, indexes) <- RuleUtils.fetchIndexes(snappySession, child)
       filterCols <- columnGroups.collectFirst {
         case (t, predicates) if predicates.nonEmpty =>
           table match {
-            case LogicalRelation(b: ColumnFormatRelation, _, _) if b.table.indexOf(t) > 0 =>
+            case LogicalRelation(b: ColumnFormatRelation, _, _)
+              if b.table.equalsIgnoreCase(t) || b.table.equalsIgnoreCase(s"$currentSchema.$t") =>
               predicates
-            case SubqueryAlias(alias, _, _) if alias.equals(t) =>
+            case SubqueryAlias(alias, _, _) if alias.equalsIgnoreCase(t) =>
               predicates
             case _ => Nil
           }
@@ -610,4 +621,3 @@ case class PartialPlan(curPlan: LogicalPlan, replaced: Seq[Replacement], outputS
 }
 
 case class CompletePlan(plan: LogicalPlan, replaced: Seq[Replacement]) extends SubPlan
-

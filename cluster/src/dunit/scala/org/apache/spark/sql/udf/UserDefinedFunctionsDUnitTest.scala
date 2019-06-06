@@ -279,7 +279,7 @@ object UserDefinedFunctionsDUnitTest {
 
   def createUDFClass(name: String, code: String): File = {
     TestUtils.createCompiledClass(name, destDir,
-      getJavaSourceFromString(name, code), Seq.empty[URL])
+      getJavaSourceFromString(name, code), Nil)
   }
 
   def createJarFile(files: Seq[File]): String = {

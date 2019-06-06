@@ -21,6 +21,7 @@ import java.util.Properties
 
 import scala.language.postfixOps
 import scala.sys.process._
+import scala.util.Random
 
 import com.gemstone.gemfire.internal.shared.NativeCalls
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -70,6 +71,7 @@ abstract class ClusterManagerTestBase(s: String)
   bootProps.setProperty("critical-heap-percentage", "95")
   bootProps.setProperty("gemfirexd.max-lock-wait", "60000")
   bootProps.setProperty("member-timeout", "5000")
+  bootProps.setProperty("snappydata.sql.planCaching", random.nextBoolean().toString)
 
   // reduce startup time
   // sysProps.setProperty("p2p.discoveryTimeout", "1000")
@@ -112,6 +114,9 @@ abstract class ClusterManagerTestBase(s: String)
 
   override def beforeClass(): Unit = {
     super.beforeClass()
+    val logger = LoggerFactory.getLogger(getClass)
+    logger.info("Boot properties:" + bootProps)
+
     doSetUp()
     val locNetPort = locatorNetPort
     val locNetProps = locatorNetProps
@@ -251,6 +256,7 @@ abstract class ClusterManagerTestBase(s: String)
 object ClusterManagerTestBase extends Logging {
   final def locatorPort: Int = DistributedTestBase.getDUnitLocatorPort
   final lazy val locPort: Int = locatorPort
+  private val random = new Random()
 
   /* SparkContext is initialized on the lead node and hence,
   this can be used only by jobs running on Lead node */
@@ -304,8 +310,8 @@ object ClusterManagerTestBase extends Logging {
     if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
-      TestUtils.dropAllTables(snc.snappySession)
-      TestUtils.dropAllFunctions(snc.snappySession)
+      TestUtils.resetAllFunctions(snc.snappySession)
+      TestUtils.dropAllSchemas(snc.snappySession)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")

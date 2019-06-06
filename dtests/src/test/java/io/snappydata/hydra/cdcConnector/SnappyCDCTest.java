@@ -495,14 +495,14 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void runIngestionApp() {
     try {
-      CDCIngestionApp app = new CDCIngestionApp();
+    //  CDCIngestionApp app = new CDCIngestionApp();
       Integer threadCnt = SnappyCDCPrms.getThreadCnt();
       Integer sRange = SnappyCDCPrms.getInitStartRange();
       Integer eRange = SnappyCDCPrms.getInitEndRange();
       String queryPath = SnappyCDCPrms.getDataLocation();
       String sqlServer = SnappyCDCPrms.getSqlServerInstance();
       List<String> endpoints = validateLocatorEndpointData();
-      app.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0));
+      CDCIngestionApp.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0));
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runIngestionApp() method");
     }

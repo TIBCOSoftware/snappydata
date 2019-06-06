@@ -1,15 +1,15 @@
-# SnappyData Pulse
+# SnappyData Monitoring Console
 
-SnappyData Pulse is a dashboard that provides a real time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to easily navigate, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
-All the usage details are automatically refreshed after every 5 seconds.
+SnappyData Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
+All the usage details are automatically refreshed after every five seconds.
 
 
-To access SnappyData Pulse, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
+To access SnappyData Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
 !!!Note
 	`<leadhost>` is the hostname or IP of the lead node in your cluster which is provided in the **conf/leads** file.
 
-![Dashboard](../Images/Dashboard.png)
+![Dashboard](../Images/MonitoringUI/SnappyData-UI-Dashboard.png)
 
 The following topics are covered in this section:
 
@@ -33,13 +33,14 @@ The following topics are covered in this section:
 !!! Note
 	When connecting to a SnappyData cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode [here](../affinity_modes/connector_mode.md).
 
-On the top-right side of the SnappyData Pulse page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
+On the top-right side of the SnappyData Monitoring Console page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
-![](../Images/snapshot.png)
+![](../Images/MonitoringUI/SnappyData-UI-About-Box1.png)
 
 <a id="dashboard"></a>
 ## Dashboard
-The Dashboard page graphically presents various cluster level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page are automatically updated after every 5 seconds.
+The Dashboard page graphically presents various cluster-level statistics that can be used to monitor the current health status of a cluster. The statistics on the dashboard page can be set to update automatically after every five seconds.  If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner.
+![](../Images/AutoRefresh-is-ON.png)
 
 You can view the total number of physical CPU cores present in your cluster on the top-right side of the page.
 ![](../Images/CPU_cores.png)
@@ -55,7 +56,7 @@ The **Dashboard** page displays the following sections:
 
 * [External Tables](#external-table)
 
-You can use the search and sort functionalities in any of the sections, except for the **Cluster** section.  Sorting is enabled to sort items in an ascending and descending order. Further you can also set the number of items that must be listed in each of these sections.
+You can use the search and sort functionalities in any of the sections, except for the **Cluster** section.  Sorting is enabled to sort items in an ascending and descending order. Further, you can also set the number of items that must be listed in each of these sections.
 
 <a id="cluster"></a>
 ### Cluster
@@ -72,8 +73,8 @@ In the **Cluster** section, you can view the following graphs which are automati
 
 <a id="member"></a>
 ### Members
-In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every 5 seconds.
-![Members](../Images/Dashboard-MembersList.png)
+In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every five seconds.
+![Members](../Images/MonitoringUI/SnappyData-UI-Dashboard-Members.png)
 
 This table provides member details in the following columns:
 
@@ -83,8 +84,8 @@ This table provides member details in the following columns:
 |  **Status**     |  Displays the status of the members, which can be either [Running or Stopped](#statusofmembers).    |
 |   **Member**       |   Displays a brief description of the member. Click the link in the column to view the [Member Details](#memberdetails) where the usage trends and statistics of the members are shown along with the [Member Logs](#memberlogs). Click the drop-down arrow to find information such as the IP address of the host, the current working directory, and the Process ID number.  |
 |     **Type**   |     Displays the type of the member. The type can be LEAD, LOCATOR, or DATA SERVER. The name of the active lead member is displayed in bold letters. |
-|     **CPU Usage**        |      Displays the CPU utilized by the member's host.  |
-|     **Memory Usage**       |      Displays the collective Heap and Off-Heap memory utilization of a cluster member. |
+|     **CPU Usage**        |     Displays the CPU utilized by the member's host and it's trend over last 15 mins.  |
+|     **Memory Usage**       |      Displays the collective Heap and Off-Heap memory utilization of a cluster member and it's trend over last 15 mins.|
 |  **Heap Memory**       | Displays the member's utilized Heap memory versus total Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Heap Memory for storage, execution, and JVM. |
 |    **Off-Heap Memory**     |     Displays the member's used Off-Heap memory and total Off-Heap memory. Click the down arrow in this column to view the detailed distribution of the member's Off-Heap memory for storage and execution.  |
 
@@ -98,9 +99,9 @@ This table provides member details in the following columns:
 
 <a id="table"></a>
 ### Tables
-The **Tables** section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every 5 seconds.
+The **Tables** section lists all the tables in the cluster along with their corresponding statistical details. All these details are automatically refreshed after every five seconds.
 
-![Tables](../Images/Dashboard-TablesList.png)
+![Tables](../Images/MonitoringUI/SnappyData-UI-Dashboard-Tables.png)
 
 The following columns are displayed in this section:
 
@@ -110,12 +111,13 @@ The following columns are displayed in this section:
 |   **Storage Model**     |    Displays the data storage model of the data table. Possible models are **ROW** and **COLUMN**.    |
 |   **Distribution Type**     |      Displays the data distribution type for the table. Possible values are: <ul><li>PARTITION</li><li>REPLICATE</li> </ul> |
 |   **Row Count**     |   Displays the row count, which is the number of records present in the data table.|
-|**Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
+|**In-Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
+|**Spill-to-Disk Size**|Displays size of data overflown to disk|
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
 |      **Buckets**  |  Displays the total number of buckets in the data table.|
 
 ### External Tables
-The **External Tables** section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after each 5 seconds.
+The **External Tables** section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after every five seconds.
 
 ![External Tables](../Images/Dashboard-Ext-Tables.png)
 
@@ -124,15 +126,17 @@ The following columns are displayed in this section:
 | Column | Description |
 |--------|--------|
 |     **Name**   |   Displays the name of the external table.     |
-|      **Provider**  |  Displays the data store provider that is used when the external table was created. For example, Parquet, CSV, JDBC etc.      |
+|      **Provider**  |  Displays the data store provider that is used when the external table was created. For example, Parquet, CSV, JDBC, etc.      |
 |  **Source**      |For Parquet and CSV format, the path of the data file used to create the external table is displayed. For JDBC, the name of the client driver is displayed.   |
 
 <a id="memberdetails"></a>
 ## Member Details
 
 The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generated for a cluster member.
+The usage trends and the statistics of a specific member are auto updated periodically after every five seconds. If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner. You can view, on demand, the latest logs by clicking on the **Load New** button provided at the bottom of the logs. You can also click the **Load More** button to view the older logs.
 
-![Member Detail View](../Images/memberdetailview.png)
+![Member Detail View](../Images/MonitoringUI/SnappyData-UI-MemberDetails.png)
+
 
 <a id="memberstat"></a>
 ### Member Statistics
@@ -147,7 +151,7 @@ The following member specific statistics are displayed:
 |**Heap Memory**|Displays the total available heap memory, used heap memory, their distribution into heap storage, heap execution memory and their utilization.|
 |**Off-Heap Memory Usage**|Displays the members total off-heap memory, used off-heap memory, their distribution into off-heap storage and off-heap execution memory, and their utilization.|
 
-The usage trends of the member is represented in the following graphs:
+The usage trends of the member are represented in the following graphs:
 
 |Graphs|Description|
 |--------|--------|
@@ -177,7 +181,7 @@ The following details are included:
 The SQL section shows all the queries and their corresponding details along with their execution plans and stagewise breakups.
 
 
-![](../Images/query_analysis_sql.png)
+![](../Images/MonitoringUI/query_analysis_sql.png)
 
 | Item  | Description |
 |--------|--------|
@@ -210,7 +214,7 @@ The Environment page provides detailed configurations for Spark environment incl
 
 <a id="executors"></a>
 ## Executors
-Executors are the entities that performs the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.
+Executors are the entities that perform the tasks within a Spark job. Each Spark job is divided into multiple stages which can have one or more tasks depending on the number of partitions to be processed. All these tasks are scheduled on executor nodes which actually run them.
 
 <a id="jobs"></a>
 ## Jobs
@@ -218,11 +222,11 @@ The **Jobs** page lists all the Spark jobs. Each Spark action is translated as a
 
 [comment]: <> (Need a brief introduction here.)
 
-![](../Images/query_analysis_job.png)
+![](../Images/MonitoringUI/query_analysis_job.png)
 
 * **Status**: Displays the status of the job.
 
-* **Stages**: Click on the stage to view its details. The table displays the time taken for completion of each stage. 
+* **Stages**: Click on the stage to view its details. The table displays the time taken for the completion of each stage. 
 
 !!! Tip
 	You can cancel a long running job, using the **Kill** option. </br>![kill](../Images/kill_job.png)
@@ -233,12 +237,12 @@ The **Stages** page displays the stage details of a Spark Job. Each Spark job is
 
 On this page, you can view the total time required for all the tasks in a job to complete. You can also view if any of the tasks got delayed for completion. This may occur in case of uneven data distribution.
 
-![](../Images/query_analysis_stage.png)
+![](../Images/MonitoringUI/query_analysis_stage.png)
 
-* **Scheduler Delay** indicates the waiting period for the task. Delays can  be caused if there are too many concurrent jobs.
+* **Scheduler Delay** indicates the waiting period for the task. Delays can be caused if there are too many concurrent jobs.
 
 * **Shuffle reads and writes**: Shuffles are written to disk and can take a lot of time to write and read. This can be avoided by using colocated and replicated tables. You can use high-performance SSD drives for temporary storage (spark.local.dir) to improve shuffle time.
 
 * **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
 
-* **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory (especially when you have row tables).
+* **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.

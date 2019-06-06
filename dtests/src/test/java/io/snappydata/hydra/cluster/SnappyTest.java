@@ -53,6 +53,8 @@ import sql.dmlStatements.DMLStmtIF;
 import sql.sqlutil.DMLStmtsFactory;
 import util.*;
 
+import static hydra.Prms.maxResultWaitSec;
+
 public class SnappyTest implements Serializable {
 
   private static transient SnappyContext snc = SnappyContext.apply(SnappyContext
@@ -94,6 +96,7 @@ public class SnappyTest implements Serializable {
   private static String primaryLocator = null;
   public static String leadHost = null;
   public static Long waitTimeBeforeStreamingJobStatus = TestConfig.tab().longAt(SnappyPrms.streamingJobExecutionTimeInMillis, 6000);
+  public static long maxResultWaitSecs = TestConfig.tab().longAt(maxResultWaitSec);
   private static Boolean logDirExists = false;
   private static Boolean doneCopying = false;
   protected static Boolean doneRandomizing = false;
@@ -206,6 +209,7 @@ public class SnappyTest implements Serializable {
 
   protected String getStoreTestsJar() {
     String storeTestsJar = hd.getTestDir() + hd.getFileSep() + ".." + hd.getFileSep() + ".." +
+        hd.getFileSep() + ".." +
         hd.getFileSep() + "libs" + hd.getFileSep() + "snappydata-store-hydra-tests-" +
         ProductVersionHelper.getInfo().getProperty(ProductVersionHelper.SNAPPYRELEASEVERSION) +
         "-all.jar";
@@ -375,12 +379,9 @@ public class SnappyTest implements Serializable {
             + SnappyPrms.getConserveSockets() +
             " -J-Dgemfirexd.table-default-partitioned=" +
             SnappyPrms.getTableDefaultDataPolicy() + SnappyPrms.getTimeStatistics() +
-            SnappyPrms.getLogLevel() + SnappyPrms.getCriticalHeapPercentage() +
-            SnappyPrms.getEvictionHeapPercentage() + SnappyPrms.getPersistIndexes() +
+            SnappyPrms.getLogLevel() + SnappyPrms.getPersistIndexes() +
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
-            " -J-XX:+DisableExplicitGC" +
-            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
             SnappyPrms.getGCOptions(dirPath) + " " +
             SnappyPrms.getServerLauncherProps() +
             " -classpath=" + getStoreTestsJar();
@@ -406,8 +407,7 @@ public class SnappyTest implements Serializable {
                         + SnappyPrms.getCompressedInMemoryColumnarStorage() +*/
             SnappyPrms.getColumnBatchSize() + SnappyPrms.getConserveSockets() +
             " -table-default-partitioned=" + SnappyPrms.getTableDefaultDataPolicy() +
-            " -J-XX:+DisableExplicitGC" + SnappyPrms.getTimeStatistics() +
-            " -J-XX:+HeapDumpOnOutOfMemoryError -J-XX:HeapDumpPath=" + dirPath +
+            SnappyPrms.getTimeStatistics() +
             SnappyPrms.getLogLevel() + SnappyPrms.getNumBootStrapTrials() +
             SnappyPrms.getClosedFormEstimates() + SnappyPrms.getZeppelinInterpreter() +
             " -classpath=" + getStoreTestsJar() +
@@ -548,6 +548,31 @@ public class SnappyTest implements Serializable {
   public static void HydraTask_writeLocatorConfigData() {
     snappyTest.writeLocatorConfigData("locators", "locatorLogDir");
     if (isLongRunningTest) writeLocatorConnectionInfo();
+  }
+
+  /**
+   * This method checks whether primary lead node is up and running in the cluster.
+   *
+   * @return Lead node status
+   */
+  public static boolean isPrimaryLeadUpAndRunning() {
+    boolean isLeadNodeRunning = false;
+    ResultSet rs;
+    try {
+      Connection conn = getLocatorConnection();
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
+      while (rs.next()) {
+        Log.getLogWriter().info("Checking the Lead node status...");
+        if (rs.getString("STATUS").equals("RUNNING")) {
+          isLeadNodeRunning = true;
+          SnappyBB.getBB().getSharedMap().put("PrimaryLeadPID", rs.getString("PID"));
+          Log.getLogWriter().info("Primary Lead node is up and running...");
+        }
+      }
+    } catch (SQLException se) {
+      throw new TestException("Got SQLException while running the query on sys.members: " + se.getMessage());
+    }
+    return isLeadNodeRunning;
   }
 
   /**
@@ -1729,9 +1754,7 @@ public class SnappyTest implements Serializable {
 
       for (int i = 0; i < scriptNames.size(); i++) {
         String userScript = (String) scriptNames.elementAt(i);
-        Log.getLogWriter().info("SS - userScript: " + userScript);
         String filePath = snappyTest.getScriptLocation(userScript);
-        Log.getLogWriter().info("SS - filePath: " + filePath);
         log = new File(".");
         String dest = log.getCanonicalPath() + File.separator + "scriptResult_" +
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
@@ -1739,7 +1762,6 @@ public class SnappyTest implements Serializable {
         String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
         String command = filePath + " " + comma_separated_args_list;
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-        Log.getLogWriter().info("SS - command is: " + pb.command());
         snappyTest.executeProcess(pb, logFile);
       }
     } catch (IOException e) {
@@ -1810,7 +1832,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-   public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
+  public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
     try {
       File log = new File(".");
@@ -2183,9 +2205,17 @@ public class SnappyTest implements Serializable {
         String userJob = (String) jobClassNames.elementAt(i);
         String APP_PROPS = null;
         if (SnappyPrms.getCommaSepAPPProps() == null) {
-          APP_PROPS = "logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+          APP_PROPS = "logFileName=" + logFileName;
         } else {
-          APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName + ",shufflePartitions=" + SnappyPrms.getShufflePartitions();
+          APP_PROPS = SnappyPrms.getCommaSepAPPProps() + ",logFileName=" + logFileName;
+        }
+        if (SnappyPrms.useJDBCConnInSnappyJob()) {
+          String primaryLocatorHost = getPrimaryLocatorHost();
+          String primaryLocatorPort = getPrimaryLocatorPort();
+          APP_PROPS = "\"" + APP_PROPS + ",primaryLocatorHost=" + primaryLocatorHost + ",primaryLocatorPort=" + primaryLocatorPort + "\"";
+        }
+        if (SnappyPrms.isLongRunningJob()) {
+          APP_PROPS = "\"" + APP_PROPS + ",maxResultWaitSec=" + maxResultWaitSecs + "\"";
         }
         if (SnappyPrms.hasDynamicAppProps()) {
           String dmlProps = dynamicAppProps.get(getMyTid());
@@ -2211,25 +2241,29 @@ public class SnappyTest implements Serializable {
         snappyTest.executeProcess(pb, logFile);
       }
       boolean retry = snappyTest.getSnappyJobsStatus(snappyJobScript, logFile, leadPort);
-      if (retry && jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
-        jobSubmissionCount++;
-        Thread.sleep(180000);
-        Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
-            " the job to new primary lead node.....");
-        retrievePrimaryLeadHost();
-        HydraTask_executeSnappyJob();
+      if (retry) {
+        if (jobSubmissionCount <= SnappyPrms.getRetryCountForJob()) {
+          jobSubmissionCount++;
+          Thread.sleep(60000);
+          Log.getLogWriter().info("Job failed due to primary lead node failover. Resubmitting" +
+              " the job to new primary lead node.....");
+          retrievePrimaryLeadHost();
+          HydraTask_executeSnappyJob();
+        } else {
+          throw new TestException("Failed to start Snappy Job. Please check the logs.");
+        }
       }
     } catch (IOException e) {
       throw new TestException("IOException occurred while retriving destination logFile path " +
           log + "\nError Message:" + e.getMessage());
     } catch (InterruptedException e) {
-      throw new TestException("Exception occurred while waiting for the snappy streaming job  " +
+      throw new TestException("Exception occurred while waiting for the snappy job  " +
           "process re-execution." + "\nError Message:" + e.getMessage());
     }
   }
 
   public String setCDCSparkAppCmds(String userAppArgs, String commonArgs, String snappyJobScript,
-      String userJob, String masterHost, String masterPort, File logFileName) {
+                                   String userJob, String masterHost, String masterPort, File logFileName) {
     String appName = SnappyCDCPrms.getAppName();
     if (appName.equals("CDCIngestionApp2")) {
       int BBfinalStart2 = (Integer) SnappyBB.getBB().getSharedMap().get("START_RANGE_APP2");
@@ -2294,8 +2328,8 @@ public class SnappyTest implements Serializable {
           userAppArgs = userAppArgs + " " + dmlProps;
         }
         if (SnappyCDCPrms.getIsCDC()) {
-            command = setCDCSparkAppCmds(userAppArgs,commonArgs,snappyJobScript,userJob,masterHost,masterPort,logFile);
-       } else {
+          command = setCDCSparkAppCmds(userAppArgs, commonArgs, snappyJobScript, userJob, masterHost, masterPort, logFile);
+        } else {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
               SnappyPrms.getExecutorMemory() + " " +
@@ -2311,7 +2345,7 @@ public class SnappyTest implements Serializable {
           try {
             Thread.sleep(120000);
           } catch (InterruptedException ie) {
-             Log.getLogWriter().info("Caught exception in cdc thread.sleep " + ie.getMessage());
+            Log.getLogWriter().info("Caught exception in cdc thread.sleep " + ie.getMessage());
           }
           Log.getLogWriter().info("Inside getIsCDCStream : " + SnappyCDCPrms.getIsCDCStream());
           return;
@@ -2457,6 +2491,10 @@ public class SnappyTest implements Serializable {
           jobID = jobID.substring(1, jobID.length() - 2);
           jobIds.add(jobID);
         }
+      }
+      if(jobIds==null) {
+        Log.getLogWriter().info("Failed to start the snappy job.");
+        return true;
       }
       inputFile.close();
       for (String str : jobIds) {
@@ -3042,7 +3080,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected List<ClientVmInfo> stopStartVMs(int numToKill, String vmName, boolean isDmlOp,
-      boolean restart, boolean rebalance) {
+                                            boolean restart, boolean rebalance) {
     if (vmName.equalsIgnoreCase("lead")) {
       log().info("stopStartVMs : cycle lead vm starts at: " + System.currentTimeMillis());
       return stopStartVMs(numToKill, cycleLeadVMTarget, vmName, isDmlOp, restart, rebalance);
@@ -3118,7 +3156,7 @@ public class SnappyTest implements Serializable {
   }
 
   protected void recycleVM(String vmDir, String stopMode, String clientName, String vmName,
-      boolean isDmlOp, boolean restart, boolean rebalance) {
+                           boolean isDmlOp, boolean restart, boolean rebalance) {
     if (isDmlOp && vmName.equalsIgnoreCase("locator") && !restart) {
       SnappyLocatorHATest.ddlOpDuringLocatorHA(vmDir, clientName, vmName);
     } else if (isDmlOp && vmName.equalsIgnoreCase("locator") && restart) {
@@ -3420,20 +3458,38 @@ public class SnappyTest implements Serializable {
     Set<String> fileContent = new LinkedHashSet<String>();
     fileContent = snappyTest.getFileContents("leadLogDir", fileContent);
     boolean found = false;
+    String primaryLeadPid = null;
     for (String nodeConfig : fileContent) {
       if (nodeConfig.contains(vmDir)) {
         //check for active lead member dir
-        String searchString1 = "Primary lead lock acquired";
-        String searchString2 = "Resuming startup sequence from STANDBY";
+        boolean isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+        // try to query the sys.members three times for primary lead node status in case not 'Running' in normal senario
+        if (!isPrimaryLeadUp) {
+          for (int i = 0; i < 3; i++) {
+            if (isPrimaryLeadUp) break;
+            isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+          }
+        }
+        if (cycleVms && !isPrimaryLeadUp) {
+          do {
+            isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
+          } while (isPrimaryLeadUp);
+        }
+        if (!isPrimaryLeadUp) {
+          throw new TestException("Primary lead node is not up and running in the cluster.");
+        }
+        primaryLeadPid = (String) SnappyBB.getBB().getSharedMap().get("PrimaryLeadPID");
+        String searchString1 = primaryLeadPid;
+        Log.getLogWriter().info("primaryLeadPID: " + primaryLeadPid);
         File dirFile = new File(vmDir);
         for (File srcFile : dirFile.listFiles()) {
-          if (srcFile.getAbsolutePath().contains("snappyleader.log")) {
+          if (srcFile.getAbsolutePath().contains("snappyleader.pid")) {
             try {
               FileInputStream fis = new FileInputStream(srcFile);
               BufferedReader br = new BufferedReader(new InputStreamReader(fis));
               String str = null;
               while ((str = br.readLine()) != null && !found) {
-                if (str.toLowerCase().contains(searchString1.toLowerCase()) || str.toLowerCase().contains(searchString2.toLowerCase())) {
+                if (str.toLowerCase().contains(searchString1.toLowerCase())) {
                   found = true;
                 }
               }

@@ -41,7 +41,7 @@ private[sql] final class MapPartitionsPreserveRDD[U: ClassTag, T: ClassTag](
 private[sql] final class PreserveLocationsRDD[U: ClassTag, T: ClassTag](
     prev: RDD[T],
     f: (TaskContext, Int, Iterator[T]) => Iterator[U],
-    preservesPartitioning: Boolean = false, p: (Int) => Seq[String])
+    preservesPartitioning: Boolean = false, p: Int => Seq[String])
     extends MapPartitionsRDD[U, T](prev, f, preservesPartitioning) {
 
   override def getPreferredLocations(split: Partition): Seq[String] = p(split.index)
@@ -79,8 +79,8 @@ class DelegateRDD[T: ClassTag](
 }
 
 case class EmptyIteratorWithRowCount[U](rowCount : Long) extends Iterator[U] {
-  def hasNext: Boolean = Iterator.empty.hasNext
-  def next(): Nothing = Iterator.empty.next()
+  def hasNext: Boolean = false
+  def next(): Nothing = throw new NoSuchElementException("next on empty iterator")
 }
 
 object RDDs {

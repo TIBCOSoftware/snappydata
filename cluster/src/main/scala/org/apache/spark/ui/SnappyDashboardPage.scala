@@ -98,12 +98,18 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <div id="AutoUpdateErrorMsg">
       </div>
     </div>
-    <div id="CPUCoresContainer" style="position: absolute; width: 100%;">
-      <div id="CPUCoresDetails">
-        <div id="TotalCoresHolder">
-          <span style="padding-left: 5px;"> Total CPU Cores: </span>
-          <span id="totalCores"> </span>
+    <div id="autorefreshswitch-container">
+      <div id="autorefreshswitch-holder">
+        <div class="onoffswitch">
+          <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox"
+                 id="myonoffswitch" checked="checked" />
+          <label class="onoffswitch-label" for="myonoffswitch" data-toggle="tooltip" title=""
+                 data-original-title="ON/OFF Switch for Auto Update of Statistics">
+            <span class="onoffswitch-inner"></span>
+            <span class="onoffswitch-switch"></span>
+          </label>
         </div>
+        <div id="autorefreshswitch-label">Auto Refresh:</div>
       </div>
     </div>
     <div class="row-fluid">
@@ -111,6 +117,14 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         <h3 class="page-title-node-h3">
           {title}
         </h3>
+      </div>
+    </div>
+    <div id="CPUCoresContainer">
+      <div id="CPUCoresDetails">
+        <div id="TotalCoresHolder">
+          <span style="padding-left: 5px;"> Total CPU Cores: </span>
+          <span id="totalCores"> </span>
+        </div>
       </div>
     </div>
   }
@@ -152,6 +166,15 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
       <table id="memberStatsGrid" class="table table-bordered table-condensed table-striped">
         <thead>
           <tr>
+            <th style="width: 5px;">
+              <div style="padding: 0px 5px 10px 5px; text-align: center; cursor: pointer;"
+                   onclick="toggleAllRowsAddOnDetails();" data-toggle="tooltip" title=""
+                   data-original-title={
+                     SnappyDashboardPage.memberStatsColumn("expandCollapseTooltip")
+                   }>
+                <span id="expandallrows-btn" class="row-caret-downward"></span>
+              </div>
+            </th>
             <th class="table-th-col-heading" style="width: 60px;">
               <span data-toggle="tooltip" title=""
                     data-original-title={
@@ -328,7 +351,7 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
 }
 
 object SnappyDashboardPage {
-  val pageHeaderText = "SnappyData Dashboard"
+  val pageHeaderText = "Dashboard"
 
   object Status {
     val normal = "Normal"
@@ -340,7 +363,7 @@ object SnappyDashboardPage {
   val ValueNotApplicable = "N/A"
 
   val clusterStatsTitle = "Cluster"
-  val clusterStatsTitleTooltip = "SnappyData Clusters Summary"
+  val clusterStatsTitleTooltip = "Clusters Summary"
   val clusterStats = scala.collection.mutable.HashMap.empty[String, Any]
   clusterStats += ("status" -> "Cluster Status")
   clusterStats += ("members" -> "Members")
@@ -361,8 +384,9 @@ object SnappyDashboardPage {
   clusterStats += ("jvmHeapUsageTooltip" -> "Clusters Total JVM Heap Usage")
 
   val membersStatsTitle = "Members"
-  val membersStatsTitleTooltip = "SnappyData Members Summary"
+  val membersStatsTitleTooltip = "Members Summary"
   val memberStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
+  memberStatsColumn += ("expandCollapseTooltip" -> "Expand/Collapse All Rows")
   memberStatsColumn += ("status" -> "Status")
   memberStatsColumn += ("statusTooltip" -> "Members Status")
   memberStatsColumn += ("id" -> "Id")
@@ -409,7 +433,7 @@ object SnappyDashboardPage {
   memberStatsColumn += ("jvmHeapMemoryTooltip" -> "Members used and total JVM Heap")
 
   val tablesStatsTitle = "Tables"
-  val tablesStatsTitleTooltip = "SnappyData Tables Summary"
+  val tablesStatsTitleTooltip = "Tables Summary"
   val tableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   tableStatsColumn += ("id" -> "Id")
   tableStatsColumn += ("idTooltip" -> "Tables unique Identifier")
@@ -433,7 +457,7 @@ object SnappyDashboardPage {
   tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
 
   val extTablesStatsTitle = "External Tables"
-  val extTablesStatsTitleTooltip = "SnappyData ExternalTables Summary"
+  val extTablesStatsTitleTooltip = "External Tables Summary"
   val extTableStatsColumn = scala.collection.mutable.HashMap.empty[String, String]
   extTableStatsColumn += ("id" -> "Id")
   extTableStatsColumn += ("idTooltip" -> "External Tables unique Identifier")

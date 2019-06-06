@@ -53,7 +53,7 @@ def createPartitionedTableUsingSQL(snappy):
 def applyKMeans(snappy):
     # Selects and parses the data from the table created earlier
     data = snappy.sql("SELECT id, WeatherDegrees FROM WEATHER")
-    parsedData = data.rdd.map(lambda row: (row["ID"], str(row["WEATHERDEGREES"])))
+    parsedData = data.rdd.map(lambda row: (row["id"], str(row["weatherdegrees"])))
     result = sorted(parsedData.collect(), key=lambda tup: tup[0])
 
     # Writes the data into the parsedData text file for training
