@@ -1,6 +1,6 @@
 # Working with Stratified Samples
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 ## Create Sample Tables
 

@@ -69,6 +69,17 @@ scalaTest {
   }
 }
 
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
 test.dependsOn ':cleanJUnit'
 
 archivesBaseName = 'snappydata-encoders_' + scalaBinaryVersion

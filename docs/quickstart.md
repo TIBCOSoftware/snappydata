@@ -3,10 +3,6 @@
 Welcome to the Getting Started section! <br>
 In this section, multiple options are provided for getting started with SnappyData.
 
-<heading2>Before you begin<heading2>
-
-You must first [download and extract](install.md) the SnappyData product distribution, navigate to the SnappyData product root directory and [start the cluster](howto/start_snappy_cluster.md).
-
 Depending on your preference, you can try any of the following options:
 
 
