@@ -7,6 +7,7 @@
 
     | SnappyData Zeppelin Interpreter | Apache Zeppelin Binary Package | SnappyData Release|
 	|--------|--------|--------|
+    |[Version 0.7.3.5](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.5) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.1.0](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.1.0)|
     |[Version 0.7.3.4](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.4) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2.1](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2.1)|
     |[Version 0.7.3.2](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3.2) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.2](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.2)|
     |[Version 0.7.3](https://github.com/SnappyDataInc/zeppelin-interpreter/releases/tag/v0.7.3) |[Version 0.7.3](http://archive.apache.org/dist/zeppelin/zeppelin-0.7.3/zeppelin-0.7.3-bin-netinst.tgz) |[Release 1.0.1](https://github.com/SnappyDataInc/snappydata/releases/tag/v1.0.1)|
@@ -21,7 +22,7 @@
     - In the classpath option, define the location where the SnappyData Interpreter is downloaded by adding</br>
     `-classpath=/<download_location>/snappydata-zeppelin-<version_number>.jar`
 
-    - In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the [SnappyData Pulse UI](../monitoring/monitoring.md) from outside the network.
+    - In the **conf/spark-env.sh** file, set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing the [SnappyData Monitoring Console](../monitoring/monitoring.md) from outside the network.
 
 4. [Start the SnappyData cluster](start_snappy_cluster.md).
 

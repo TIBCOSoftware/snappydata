@@ -14,4 +14,4 @@ You can check the SnappyData UI by opening `http://<leadHostname>:5050` in your 
 
 **Related Topics**
 
-* [SnappyData Pulse](../monitoring/monitoring.md)
+* [SnappyData Monitoring Console](../monitoring/monitoring.md)

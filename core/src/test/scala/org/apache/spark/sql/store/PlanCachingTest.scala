@@ -53,7 +53,7 @@ class PlanCachingTest extends SnappyFunSuite
 
     val columns = dataFrame.schema.fields.map(_.name)
 
-    assert(columns sameElements Array("COL1", "TMP_VALUE_CATEGORY"))
+    assert(columns sameElements Array("col1", "tmp_value_category"))
 
     assert(cacheMap.size() == 2)
 

@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyExtraStrategiesSuite extends ExtraStrategiesSuite with SharedSnappySessionContext {
-
-}
+class SnappyExtraStrategiesSuite extends ExtraStrategiesSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

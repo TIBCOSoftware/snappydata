@@ -29,7 +29,7 @@ Refer to [User Names for Authentication, Authorization, and Membership](user_nam
 
 * [Configuring Network Encryption and Authentication using SSL](configuring_network_encryption_and_authentication_using_ssl.md)
 
-* [Securing SnappyData Pulse UI Connection](../configuring_cluster/securinguiconnection.md)
+* [Securing SnappyData Monitoring Console Connection](../configuring_cluster/securinguiconnection.md)
 
 * [User Names for Authentication, Authorization, and Membership](user_names_for_authentication_authorization_and_membership.md)
 

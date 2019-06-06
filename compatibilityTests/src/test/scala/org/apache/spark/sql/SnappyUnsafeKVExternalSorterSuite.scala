@@ -17,10 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.UnsafeKVExternalSorterSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyUnsafeKVExternalSorterSuite
-    extends UnsafeKVExternalSorterSuite with
-        SharedSnappySessionContext{
-
-}
+class SnappyUnsafeKVExternalSorterSuite extends UnsafeKVExternalSorterSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

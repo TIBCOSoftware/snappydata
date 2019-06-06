@@ -20,7 +20,4 @@ import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUti
 import org.apache.spark.sql.util.DataFrameCallbackSuite
 
 class SnappyDataFrameCallbackSuite extends DataFrameCallbackSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq("get numRows metrics by callback")
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
