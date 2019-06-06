@@ -14,10 +14,10 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql
+package com.fruit.eyephone
 
-import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
-import org.apache.spark.sql.util.DataFrameCallbackSuite
+import org.apache.hadoop.io.NullWritable
+import org.apache.hadoop.mapred.lib.NullOutputFormat
 
-class SnappyDataFrameCallbackSuite extends DataFrameCallbackSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil
+/** Dummy OutputFormat implementation for catalog tests */
+class CameraOutputFormat extends NullOutputFormat[NullWritable, NullWritable]
