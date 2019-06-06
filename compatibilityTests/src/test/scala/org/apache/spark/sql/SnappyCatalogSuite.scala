@@ -15,27 +15,9 @@
  * LICENSE file.
  */
 package org.apache.spark.sql
+
 import org.apache.spark.sql.internal.CatalogSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyCatalogSuite extends CatalogSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "current database",
-    "list databases",
-    "list tables",
-    "list tables with database",
-    "list functions",
-    "list functions with database",
-    "list columns",
-    "list columns in database",
-    "createExternalTable should fail if path is not given for file-based data source",
-    "dropTempView should not un-cache and drop metastore table if a same-name table exists",
-    "get database",
-    "get table",
-    "get function",
-    "table exists",
-    "function exists"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

@@ -131,8 +131,10 @@ If the cluster is secure, you also need to specify all the security properties a
 The only difference is that any valid user can run this command. That is, the user does not have to be a snappydata cluster administrator to run the backup command.
 
 For example:
+
 ```
 ./bin/snappy backup   /snappydata_backup_location/   -locators=locatorhostname:10334  -auth-provider=LDAP  -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:389/  -user=<username>  -password=<password>  -gemfirexd.auth-ldap-search-base=<search-base-values>  -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
+
 ```
 Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is [how you can encrypt the password](https://snappydatainc.github.io/snappydata/security/specify_encrypt_passwords_conf_client/#using-encrypted-password-in-client-connections)
 
@@ -210,6 +212,6 @@ To ensure that your backup is successful, you can try the following options:
 
 * Execute the `select count(*) from <TableName>;` query and verify the total number of rows.
 
-* Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
+* Verify the table details in the [SnappyData Monitoring Console](../../monitoring/monitoring.md#table).
 
 * If you have done updates, you can verify to see if those specific updates are available.

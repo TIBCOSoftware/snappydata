@@ -1,7 +1,7 @@
 io/snappydata/hydra/clusterRecovery/newNodeStartingFirstTest.conf
     A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
     logPath="/nfs/users/spillai"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery/selectQuery.sql"
     snappyFileLoc="$GEMFIRE/../snappy"
@@ -11,7 +11,7 @@ io/snappydata/hydra/clusterRecovery/newNodeStartingFirstTest.conf
 io/snappydata/hydra/clusterRecovery/allLocatorsDownRebalanceTest.conf
     A=snappy snappyHosts=3 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
     logPath="/nfs/users/spillai"
     snappyPath="$GEMFIRE/../snappy"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery/selectQuery.sql"
@@ -21,7 +21,7 @@ io/snappydata/hydra/clusterRecovery/allLocatorsDownRebalanceTest.conf
 io/snappydata/hydra/clusterRecovery/newNodeRebalanceMeanKill.conf
     A=snappy snappyHosts=3 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
     insertQueryPath1="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery"
     logPath="/nfs/users/spillai"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery/selectQuery.sql"
@@ -31,7 +31,7 @@ io/snappydata/hydra/clusterRecovery/newNodeRebalanceMeanKill.conf
 io/snappydata/hydra/clusterRecovery/clusterRestartWithMinMem.conf
     A=snappy snappyHosts=3 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
     logPath="/nfs/users/spillai"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery/selectQuery.sql"
     newNode="dev1"
@@ -40,7 +40,7 @@ io/snappydata/hydra/clusterRecovery/clusterRestartWithMinMem.conf
 io/snappydata/hydra/clusterRecovery/colocationChainDropTest.conf
     A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
     logPath="/nfs/users/spillai"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery/selectQuery.sql"
     snappyPath="$GEMFIRE/../snappy"
@@ -48,7 +48,7 @@ io/snappydata/hydra/clusterRecovery/colocationChainDropTest.conf
 io/snappydata/hydra/clusterRecovery/missingDiskStoreRecoveryTest.conf
     A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=10
     testJar="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-    dataFilesLocation="/export/shared/QA_DATA/TMG_Data_20G"
+    dataFilesLocation="/export/shared/QA_DATA/USER2_Data_20G"
     logPath="/nfs/users/spillai"
     queryPath="$GEMFIRE/../../../dtests/src/resources/scripts/clusterRecovery/selectQuery.sql"
     snappyPath="$GEMFIRE/../snappy"

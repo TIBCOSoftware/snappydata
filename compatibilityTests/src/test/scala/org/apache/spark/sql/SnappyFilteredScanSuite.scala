@@ -23,12 +23,9 @@ class SnappyFilteredScanSuite extends FilteredScanSuite
     with SharedSnappySessionContext with SnappySparkTestUtil {
 
   override def ignored: Seq[String] = Seq(
-    "PushDown Returns 3: SELECT a FROM oneToTenFiltered WHERE a + b > 9 AND b < 16 AND c IN ('bbbbbBBBBB', 'cccccCCCCC', 'dddddDDDDD', 'foo') "
+    // disabled because SnappySession converts filter to a more efficient DynamicInSet
+    // which is not handled in SimpleFilteredScan.unhandledFilters
+    "PushDown Returns 3: SELECT a FROM oneToTenFiltered WHERE a + b > 9 AND b < 16 " +
+        "AND c IN ('bbbbbBBBBB', 'cccccCCCCC', 'dddddDDDDD', 'foo') "
   )
-
-  override def beforeAll() {
-    super.beforeAll()
-    spark.conf.set("snappydata.sql.planCaching", "false")
-  }
-
 }

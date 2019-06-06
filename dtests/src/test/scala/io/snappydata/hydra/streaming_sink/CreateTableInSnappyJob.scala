@@ -31,7 +31,7 @@ class CreateTableInSnappyJob extends SnappySQLJob{
     val outputFile = "CreateTablesJob_output.txt"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
     var isPartitioned: Boolean = false
-    if(jobConfig.getBoolean("isPartitioned") != null ) {
+    if (jobConfig.getBoolean("isPartitioned") != null) {
       isPartitioned = jobConfig.getBoolean("isPartitioned")
     }
     // scalastyle:off println

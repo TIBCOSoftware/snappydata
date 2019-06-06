@@ -19,7 +19,7 @@ package org.apache.spark.sql.store
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{Data, TestData2}
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -39,11 +39,14 @@ class TokenizationTest
   val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
+  var planCaching : Boolean = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
+    planCaching = Property.PlanCaching.get(snc.sessionState.conf)
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
@@ -51,6 +54,7 @@ class TokenizationTest
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
+    Property.PlanCaching.set(snc.sessionState.conf, planCaching)
     super.afterAll()
   }
 
@@ -278,7 +282,6 @@ class TokenizationTest
     res = snc.sql(s"select quartile, avg(c) as avgC, max(c) as maxC" +
         s" from (select c, ntile(4) over (order by c) as quartile from $table ) x " +
         s"group by quartile order by quartile").collect()
-    // res.foreach(println)
 
     // Unix timestamp
     val df = snc.sql(s"select * from $table where UNIX_TIMESTAMP('2015-01-01 12:00:00') > a")
@@ -398,7 +401,6 @@ class TokenizationTest
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 1)
-
       newSession.sql(s"set snappydata.sql.planCaching=false").collect()
       assert(cacheMap.size() == 1)
 
@@ -414,8 +416,7 @@ class TokenizationTest
       var res2 = newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
-      newSession.sql(s"set snappydata.sql.planCachingAll=false").collect()
-      assert(cacheMap.size() == 0)
+      cacheMap.clear()
 
       q.zipWithIndex.foreach { case (x, i) =>
         var result = newSession.sql(x).collect()
@@ -429,8 +430,7 @@ class TokenizationTest
       cacheMap.clear()
 
       val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession2.sql(s"set snappydata.sql.planCachingAll=true").collect()
-
+      Property.PlanCaching.set(newSession2.sessionState.conf, true)
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -441,14 +441,15 @@ class TokenizationTest
         })
       }
 
-      assert(cacheMap.size() == 1)
+      assert(SnappySession.getPlanCache.asMap().size() == 1)
       newSession.clear()
       newSession2.clear()
       cacheMap.clear()
 
       val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
-
+      newSession3.sql(s"set snappydata.sql.tokenize=false")
+      // check that SQLConf property names are case-insensitive
+      newSession3.sql(s"set snappydata.sql.plancaching=true")
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -480,20 +481,18 @@ class TokenizationTest
         s"select * from $table where a = $x"
       }
       val start = System.currentTimeMillis()
-      // scalastyle:off println
       q.zipWithIndex.foreach  { case (x, i) =>
         var result = snc.sql(x).collect()
         assert(result.length === 1)
         result.foreach( r => {
-          println(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, ${i}")
+          logInfo(s"${r.get(0)}, ${r.get(1)}, ${r.get(2)}, $i")
           assert(r.get(0) == r.get(1) && r.get(2) == i)
         })
       }
       val end = System.currentTimeMillis()
 
       // snc.sql(s"select * from $table where a = 1200").collect()
-      println("Time taken = " + (end - start))
-      // scalastyle:on println
+      logInfo("Time taken = " + (end - start))
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert( cacheMap.size() == 1)
@@ -672,9 +671,8 @@ class TokenizationTest
     var query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 5 limit 2"
     // snc.sql("set spark.sql.autoBroadcastJoinThreshold=-1")
     val result1 = snc.sql(query).collect()
-    // scalastyle:off println
     result1.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+      logInfo(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
           ", " + r.get(5))
     })
     val cacheMap = SnappySession.getPlanCache.asMap()
@@ -684,10 +682,9 @@ class TokenizationTest
     query = s"select * from $table t1, $table2 t2 where t1.a = t2.a and t1.b = 7 limit 2"
     val result2 = snc.sql(query).collect()
     result2.foreach( r => {
-      println(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
+      logInfo(r.get(0) + ", " + r.get(1) + r.get(2) + ", " + r.get(3) + r.get(4) +
           ", " + r.get(5))
     })
-    // scalastyle:on println
     assert( cacheMap.size() == 1)
     assert(!result1.sameElements(result2))
     assert(result1.length > 0)
@@ -854,7 +851,6 @@ class TokenizationTest
 
       val rows1 = rs1.collect()
       assert(rows0.sameElements(rows1))
-      // rows1.foreach(println)
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 0)

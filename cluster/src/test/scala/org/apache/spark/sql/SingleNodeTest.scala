@@ -19,11 +19,11 @@ package org.apache.spark.sql
 import io.snappydata.benchmark.TPCHColumnPartitionedTable
 import io.snappydata.{PlanTest, SnappyFunSuite}
 import org.scalatest.BeforeAndAfterEach
-
 import org.apache.spark.rdd.ZippedPartitionsPartition
 import org.apache.spark.sql.catalyst.plans.physical.SinglePartition
 import org.apache.spark.sql.collection.MultiBucketExecutorPartition
 import org.apache.spark.sql.execution.columnar.ColumnTableScan
+import org.apache.spark.sql.execution.row.RowTableScan
 
 class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEach {
 
@@ -41,14 +41,18 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
     super.afterAll()
   }
 
-  test("Nodes Pruning") {
+  test("Nodes Pruning for column table") {
     val earlierValue = io.snappydata.Property.ColumnBatchSize.get(snc.sessionState.conf)
     try {
       io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, "1000")
-      SingleNodeTest.testNodesPruning(snc)
+      SingleNodeTest.testNodesPruning(snc, "column")
     } finally {
       io.snappydata.Property.ColumnBatchSize.set(snc.sessionState.conf, earlierValue)
     }
+  }
+
+  test("Nodes Pruning for row table") {
+    SingleNodeTest.testNodesPruning(snc, "row")
   }
 
   test("case when generation") {
@@ -78,12 +82,39 @@ class SingleNodeTest extends SnappyFunSuite with PlanTest with BeforeAndAfterEac
 
 
 object SingleNodeTest {
-  def testNodesPruning(snc: SnappyContext): Unit = {
+
+  val query0 = "select * from orders where o_orderkey = 1 or o_orderkey = 1"
+
+  val query1 = "select * from orders where o_orderkey = "
+
+  val query2 = "select * from orders where o_orderkey = {fn substring('d1xxd2', 2, 1)} "
+
+  val query3 = "select * from orders where o_orderkey = substring('acbc801xx', 5, 3) "
+
+  val query4 = "select * from orders where o_orderkey = {fn trim(" +
+               "substring(' acbc801xx', length(' 12345'), length('801'))) }"
+
+  val query5 = "select * from orders where o_orderkey = trim(" +
+               "substring(' acbc1410xx', length(' 12345'), length('1410'))) "
+
+  val query6 = "select O_ORDERDATE, {fn TIMESTAMPADD(SQL_TSI_DAY," +
+            " {fn FLOOR((-1 * {fn DAYOFYEAR(O_ORDERDATE)} - 1))}, O_ORDERDATE)}" +
+            " from orders where O_ORDERKEY = 32"
+
+  def testNodesPruning(snc: SnappyContext, tblProvider: String = "column"): Unit = {
     // scalastyle:off println
     val tpchDataPath = TPCHColumnPartitionedTable.getClass.getResource("/TPCH").getPath
     val buckets_Order_Lineitem = "5"
     TPCHColumnPartitionedTable.createPopulateOrderTable(snc, tpchDataPath,
-      isSnappy = true, buckets_Order_Lineitem, null)
+      isSnappy = true, buckets_Order_Lineitem, null, provider = tblProvider)
+
+    tblProvider match {
+      case "row" => SmartConnectorFunctions.verifyRowTablePruning(snc)
+      case "column" => testColumnTablePruning(snc)
+    }
+  }
+
+  private def testColumnTablePruning(snc: SnappyContext): Unit = {
 
     def validateSinglePartition(df: DataFrame, bucketId: Int): Unit = {
       val plan = df.queryExecution.executedPlan.collectFirst {
@@ -103,7 +134,7 @@ object SingleNodeTest {
         case zp: ZippedPartitionsPartition => zp.partitionValues.map {
           case mb: MultiBucketExecutorPartition => mb.bucketsString
         }
-        case _ => Seq.empty
+        case _ => Nil
       }
 
       // each BucketExecutor must have only one bucket.
@@ -124,70 +155,34 @@ object SingleNodeTest {
             s" is expected to be exactly 1.")
     }
 
-    var df = snc.sql("select * from orders where o_orderkey = 1 ")
-    assert(df.collect()(0).getLong(0) == 1)
-    validateSinglePartition(df, 4)
-
-    df = snc.sql("select * from orders where o_orderkey = 32 ")
-    assert(df.collect()(0).getLong(0) == 32)
-    validateSinglePartition(df, 0)
-
-    df = snc.sql("select * from orders where o_orderkey = 801 ")
-    assert(df.collect()(0).getLong(0) == 801)
-    validateSinglePartition(df, 4)
-
+    validateSinglePartition(executeQuery(snc, query1 + 1, 1), 4)
+    validateSinglePartition(executeQuery(snc, query1 + 32, 32), 0)
+    validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
     // repeating the query deliberately
-    df = snc.sql("select * from orders where o_orderkey = 801 ")
-    assert(df.collect()(0).getLong(0) == 801)
-    validateSinglePartition(df, 4)
+    validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
+    validateSinglePartition(executeQuery(snc, query1 + 1408, 1408), 0)
+    validateSinglePartition(executeQuery(snc, query1 + 1409, 1409), 2)
+    validateSinglePartition(executeQuery(snc, query1 + 1410, 1410), 0)
+    validateSinglePartition(executeQuery(snc, query1 + 1796, 1796), 4)
+    validateSinglePartition(executeQuery(snc, query1 + 801, 801), 4)
+    executeQuery(snc, query1 + "'1'", 1)
+    executeQuery(snc, query1 + "'32'", 32)
+    executeQuery(snc, query2, 1)
+    executeQuery(snc, query3, 801)
+    executeQuery(snc, query4, 801)
+    executeQuery(snc, query5, 1410)
 
-    df = snc.sql("select * from orders where o_orderkey = 1408 ")
-    assert(df.collect()(0).getLong(0) == 1408)
-    validateSinglePartition(df, 0)
-
-    df = snc.sql("select * from orders where o_orderkey = 1409 ")
-    assert(df.collect()(0).getLong(0) == 1409)
-    validateSinglePartition(df, 2)
-
-    df = snc.sql("select * from orders where o_orderkey = 1410 ")
-    assert(df.collect()(0).getLong(0) == 1410)
-    validateSinglePartition(df, 0)
-
-    df = snc.sql("select * from orders where o_orderkey = 1796 ")
-    assert(df.collect()(0).getLong(0) == 1796)
-    validateSinglePartition(df, 4)
-
-    df = snc.sql("select * from orders where o_orderkey = 801 ")
-    assert(df.collect()(0).getLong(0) == 801)
-    validateSinglePartition(df, 4)
-
-    df = snc.sql("select * from orders where o_orderkey = '1' ")
-    assert(df.collect()(0).getLong(0) == 1)
-    // validateSinglePartition(df, 4) investigate why cast(order_key as double) gets introduced.
-
-    df = snc.sql("select * from orders where o_orderkey = '32' ")
-    assert(df.collect()(0).getLong(0) == 32)
-
-    df = snc.sql("select * from orders where o_orderkey = {fn substring('d1xxd2', 2, 1)} ")
-    assert(df.collect()(0).getLong(0) == 1)
-
-    df = snc.sql("select * from orders where o_orderkey = substring('acbc801xx', 5, 3) ")
-    assert(df.collect()(0).getLong(0) == 801)
-
-    df = snc.sql("select * from orders where o_orderkey = {fn trim(" +
-        "substring(' acbc801xx', length(' 12345'), length('801'))) }")
-    assert(df.collect()(0).getLong(0) == 801)
-
-    df = snc.sql("select * from orders where o_orderkey = trim(" +
-        "substring(' acbc1410xx', length(' 12345'), length('1410'))) ")
-    assert(df.collect()(0).getLong(0) == 1410)
-
-    df = snc.sql("select O_ORDERDATE, {fn TIMESTAMPADD(SQL_TSI_DAY," +
-        " {fn FLOOR((-1 * {fn DAYOFYEAR(O_ORDERDATE)} - 1))}, O_ORDERDATE)}" +
-        " from orders where O_ORDERKEY = 32")
+    val df = executeQuery(snc, query6, 32, false)
     val r = df.collect()(0)
     assert(r.getDate(0).toString.equals("1995-07-16"))
     assert(r.getDate(1).toString.equals("1994-12-30"))
-    // scalastyle:on println
   }
+
+  private def executeQuery(snc: SnappyContext, sql: String, orderKey: Int,
+                           doAssert: Boolean = true) : DataFrame = {
+    val df = snc.sql(sql)
+    if(doAssert) assert(df.collect()(0).getLong(0) == orderKey)
+    df
+  }
+
 }

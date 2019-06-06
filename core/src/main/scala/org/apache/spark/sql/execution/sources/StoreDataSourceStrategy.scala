@@ -44,7 +44,7 @@ import org.apache.spark.sql.catalyst.plans.physical.UnknownPartitioning
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, analysis, expressions}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.execution.{PartitionedDataSourceScan, RowDataSourceScanExec}
-import org.apache.spark.sql.sources.{Filter, IsNotNull, PrunedUnsafeFilteredScan}
+import org.apache.spark.sql.sources.{Filter, PrunedUnsafeFilteredScan}
 import org.apache.spark.sql.{AnalysisException, SnappySession, SparkSession, Strategy, execution, sources}
 
 /**
@@ -72,7 +72,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
           0,
           Nil,
           (a, f) => t.buildUnsafeScan(a.map(_.name).toArray, f.toArray)) :: Nil
-      case LogicalRelation(_, _, _) => {
+      case LogicalRelation(_, _, _) =>
         var foundParamLiteral = false
         val tp = plan.transformAllExpressions {
           case pl: ParamLiteral =>
@@ -86,7 +86,6 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
         } else {
           Nil
         }
-      }
       case _ => Nil
     }
     case _ => Nil
@@ -290,7 +289,7 @@ private[sql] object StoreDataSourceStrategy extends Strategy {
 
       // Because we only convert In to InSet in Optimizer when there are more than certain
       // items. So it is possible we still get an In expression here that needs to be pushed down.
-      case expressions.In(a: Attribute, list) if !list.exists(!TokenLiteral.isConstant(_)) =>
+      case expressions.In(a: Attribute, list) if list.forall(TokenLiteral.isConstant) =>
         val hSet = list.map(e => e.eval(EmptyRow))
         val toScala = CatalystTypeConverters.createToScalaConverter(a.dataType)
         Some(sources.In(a.name, hSet.toArray.map(toScala)))
