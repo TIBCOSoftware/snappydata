@@ -32,6 +32,18 @@ if [ -z "$SNAPPY_ENV_LOADED" ]; then
   # Returns the parent of the directory this script lives in.
   parent_dir="`absPath "$FWDIR/.."`"
 
+  if [ -z "$MALLOC_ARENA_MAX" ]; then
+    export MALLOC_ARENA_MAX=4
+  fi
+
+  if [ -z "$MALLOC_MMAP_THRESHOLD_" ]; then
+    export MALLOC_MMAP_THRESHOLD_=131072
+  fi
+
+  if [ -z "$MALLOC_MMAP_MAX_" ]; then
+    export MALLOC_MMAP_MAX_=2147483647
+  fi
+
   user_conf_dir="${SPARK_CONF_DIR:-"$parent_dir"/conf}"
 
   if [ -f "${user_conf_dir}/snappy-env.sh" ]; then
@@ -40,6 +52,7 @@ if [ -z "$SNAPPY_ENV_LOADED" ]; then
     . "${user_conf_dir}/snappy-env.sh"
     set +a
   fi
+
 fi
 
 # Setting SPARK_SCALA_VERSION if not already set.

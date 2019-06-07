@@ -64,7 +64,7 @@ Lead Nodes primarily runs the SnappyData managed Spark driver. There is one prim
 Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>/conf** directory.
 
 !!! Note
-	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Pulse from outside the network.
+	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Monitoring Console from outside the network.
 
 ### List of Lead Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
@@ -86,6 +86,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
 |-memory-size|<a id="memory-size"></a>Specifies the total memory that can be used by the node for column storage and execution in off-heap. However, lead member do not need off-heap memory.  You can configure the off-heap memory for leads only when you are planning to increase the broadcast limit to a large value. This is generally not recommended and you must preferably limit the broadcast to a smaller value. The default off-heap size for leads is 0.|
 |-snappydata.column.batchSize|The default size of blocks to use for storage in the SnappyData column store. The default value is 24M.|
+|snappydata.hiveServer.enabled|Enables the Hive Thrift server for SnappyData. This is enabled by default when you start the cluster. Thus it adds an additional 10 seconds to the cluster startup time. To avoid this additional time, you can set the property to false.|
 |spark.context-settings.num-cpu-cores| The number of cores that can be allocated. The default is 4. |
 |spark.context-settings.memory-per-node| The executor memory per node (-Xmx style. For example: 512m, 1G). The default is 512m. |
 |spark.context-settings.streaming.batch_interval| The batch interval for Spark Streaming contexts in milliseconds. The default is 1000.|
@@ -107,7 +108,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-spark.ssl.trustStore<a id="ssl_spark_trustore"></a>|Path to the trust store file. The path can be absolute or relative to the directory in which the process is started.|
 |-spark.ssl.trustStorePassword<a id="truststorepassword"></a>|The password used to access the truststore.|
 |-spark.ssl.protocol<a id="ssl_spark_ssl_protocol"></a>|The protocol that must be supported by JVM. For example, TLS.|
-|-spark.ui.port|Port for your SnappyData Pulse, which shows tables, memory and workload data. The default is 5050.|
+|-spark.ui.port|Port for your SnappyData Monitoring Console, which shows tables, memory and workload data. The default is 5050.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md). </br> These properties need not be added to  the Lead members in case of a client-server connection.|
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
@@ -161,7 +162,6 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system.|
 |-log-file|Path of the file to which this member writes log messages. The default is **snappyserver.log** in the working directory. In case logging is set via log4j, the default log file is **snappydata.log**.|
 |-member-timeout<a id="member-timeout"></a>|Uses the [member-timeout](../best_practices/important_settings.md#member-timeout) server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the are you alive datagram within the period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000..600000.|
-|-rebalance<a id="rebalance"></a>|Causes the new member to trigger a rebalancing operation for all partitioned tables in the system. </br>The system always tries to satisfy the redundancy of all partitioned tables on new member startup regardless of this option. Usually rebalancing is triggered when the overall capacity is increased or reduced through member startup, shut down, or failure.|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md).|
 |-thrift-ssl<a id="thrift-properties"></a>|Specifies if you want to enable or disable SSL. Values: true or false|
@@ -212,7 +212,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 ```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-	--packages 'SnappyDataInc:snappydata:1.0.2.1-s_2.11'
+	--packages 'SnappyDataInc:snappydata:1.1.0-s_2.11'
 ```
 <a id="environment"></a>
 ## Environment Settings

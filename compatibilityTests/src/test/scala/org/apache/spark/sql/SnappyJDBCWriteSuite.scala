@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.jdbc.JDBCWriteSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyJDBCWriteSuite extends JDBCWriteSuite with SharedSnappySessionContext{
-
-}
+class SnappyJDBCWriteSuite extends JDBCWriteSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

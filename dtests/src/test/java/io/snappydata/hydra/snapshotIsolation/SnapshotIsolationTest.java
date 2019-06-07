@@ -996,7 +996,7 @@ public class SnapshotIsolationTest extends SnappyTest {
       s.close();
       commit(conn);
     } catch (SQLException se) {
-      if (se.getSQLState().equals("X0Y68")) {
+      if (se.getSQLState().equals("X0Y68") || se.getSQLState().equals("42000")) {
         Log.getLogWriter().info("got schema existing exception if multiple threads" +
             " try to create schema, continuing tests");
       } else

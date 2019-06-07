@@ -80,6 +80,11 @@ object ServiceUtils {
       if (storeProps.getProperty("spark.locality.wait") == null) {
         storeProps.setProperty("spark.locality.wait", "10s")
       }
+      // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
+      if (storeProps.getProperty("spark.sql.files.maxPartitionBytes") == null) {
+        storeProps.setProperty("spark.sql.files.maxPartitionBytes", "33554432")
+      }
+
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
     if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {

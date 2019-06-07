@@ -3,6 +3,7 @@ source PerfRun.conf
 
 directory=$outputLocation/GeneratedResults/$(date "+%Y.%m.%d-%H.%M.%S")
 mkdir -p $directory
+mkdir -p $directory/conf
 
 cp PerfRun.conf $directory/
 cp $leadDir/* $directory/
@@ -21,6 +22,9 @@ echo snappy-store = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestP
 cd ../spark-jobserver
 echo spark-jobserver = $(git rev-parse HEAD)_$(git log -1 --format=%cd) >> $latestProp
 cd $SnappyData/../../../tests/benchmark/snappy/dynamic
+
+cd $SnappyData/conf
+cp leads locators servers *.properties $directory/conf/
 
 echo SPARK_PROPERTIES = $sparkProperties >> $latestProp
 echo SPARK_SQL_PROPERTIES = $sparkSqlProperties >> $latestProp

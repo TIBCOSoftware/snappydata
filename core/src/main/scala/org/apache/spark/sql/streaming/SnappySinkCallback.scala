@@ -20,8 +20,6 @@ package org.apache.spark.sql.streaming
 import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
-import scala.collection.mutable
-
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
@@ -86,7 +84,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
   private def isSecurityEnabled(sparkSession: SparkSession) = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sparkSession),
-      mutable.Map.empty)
+      ExternalStoreUtils.emptyCIMutableMap)
     val (user, _) = ExternalStoreUtils.getCredentials(sparkSession)
     if (!user.isEmpty) {
       true
