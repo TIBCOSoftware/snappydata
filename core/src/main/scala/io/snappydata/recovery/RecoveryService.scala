@@ -24,57 +24,103 @@ import java.util.function.BiConsumer
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.ddl.{DDLConflatable, GfxdDDLQueueEntry, GfxdDDLRegionQueue}
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode
 import com.pivotal.gemfirexd.internal.engine.distributed.message.PersistentStateInRecoveryMode.RecoveryModePersistentView
 import com.pivotal.gemfirexd.internal.engine.sql.execute.RecoveredMetadataRequestMessage
-import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
-import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject, CatalogTableObject}
 import scala.collection.JavaConverters.asScalaBufferConverter
 import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.impl.jdbc.Util
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 
-import org.apache.spark.sql.SnappyContext
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable}
-import org.apache.spark.sql.hive.HiveClientUtil
-import java.net.URI
-import java.util.Map.Entry
-import java.util.function.{BiConsumer, Consumer}
-
-import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
-import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject, CatalogTableObject}
-import scala.collection.JavaConverters.asScalaBufferConverter
-import scala.collection.mutable
-
-import com.pivotal.gemfirexd.internal.engine.Misc
-
 import org.apache.spark.sql.{SnappyContext, SnappyParser, SnappySession}
+import io.snappydata.sql.catalog.ConnectorExternalCatalog
+import io.snappydata.thrift.{CatalogFunctionObject, CatalogMetadataDetails, CatalogSchemaObject, CatalogTableObject}
+
+import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable}
+import org.apache.spark.sql.types.{DataType, MetadataBuilder, StructField, StructType}
 import org.apache.spark.{Logging, SparkContext}
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
-import org.apache.spark.sql.types.StructType
 
 object RecoveryService extends Logging {
 
-  def getHiveDDLs: Array[String] = {
-    null
+  private def isGrantRevokeStatement(conflatable: DDLConflatable) = {
+    val sqlText = conflatable.getValueToConflate
+    // return (sqlText != null && GRANTREVOKE_PATTERN.matcher(sqlText).matches());
+    sqlText != null && (sqlText.toUpperCase.startsWith("GRANT")
+        || sqlText.toUpperCase.startsWith("REVOKE"))
   }
 
   def getAllDDLs(): mutable.Buffer[String] = {
     val ddlBuffer: mutable.Buffer[String] = List.empty.toBuffer
-    val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
 
-    otherDdls.foreach(ddl => {
-      val ddlLowerCase = ddl.toLowerCase()
-      if (!"create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isEmpty ||
-          !"create[ ]+index".r.findFirstIn(ddlLowerCase).isEmpty ||
-          ddlLowerCase.trim.contains("^grant")) {
-        ddlBuffer.append(ddl)
+    if (!Misc.getGemFireCache.isSnappyRecoveryMode) {
+      import scala.collection.JavaConversions._
+
+      val dd = Misc.getMemStore.getDatabase.getDataDictionary
+      if (dd == null) {
+        throw Util.generateCsSQLException(SQLState.SHUTDOWN_DATABASE, Attribute.GFXD_DBNAME)
       }
-    })
+      dd.lockForReadingRT(null)
+      val ddlQ = new GfxdDDLRegionQueue(Misc.getMemStore.getDDLStmtQueue.getRegion)
+      ddlQ.initializeQueue(dd)
+      val allDDLs: java.util.List[GfxdDDLQueueEntry] = ddlQ.peekAndRemoveFromQueue(-1, -1)
+      val preprocessedqueue = ddlQ
+          .getPreprocessedDDLQueue(allDDLs, null, null, null, false).iterator;
+
+      for (entry <- preprocessedqueue) {
+        logInfo(s"------------------------------" +
+            s"-\nPP:RecoveryService:preprocessedQueue:entry ${entry.getValue.toString} =" +
+            s"=> ${entry.getValue.asInstanceOf[DDLConflatable].getValueToConflate}\n-" +
+            s"----------------------------")
+
+        // todo add to ddlbuffer
+        val qEntry = entry
+        val qVal = qEntry.getValue
+        if (qVal.isInstanceOf[DDLConflatable]) {
+          val conflatable = qVal.asInstanceOf[DDLConflatable]
+          val schema = conflatable.getSchemaForTableNoThrow
+          if (conflatable.isCreateDiskStore) {
+            ddlBuffer.add(conflatable.getValueToConflate)
+          } else if (Misc.SNAPPY_HIVE_METASTORE == schema
+              || Misc.SNAPPY_HIVE_METASTORE == conflatable.getCurrentSchema
+              || Misc.SNAPPY_HIVE_METASTORE == conflatable.getRegionToConflate) {
+          } else if (conflatable.isAlterTable || conflatable.isCreateIndex ||
+              isGrantRevokeStatement(conflatable) ||
+              conflatable.isCreateTable || conflatable.isDropStatement ||
+              conflatable.isCreateSchemaText) {
+            val ddl = conflatable.getValueToConflate
+            val ddlLowerCase = ddl.toLowerCase()
+            if (!"create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isEmpty ||
+                !"create[ ]+index".r.findFirstIn(ddlLowerCase).isEmpty ||
+                ddlLowerCase.trim.contains("^grant") ||
+                ddlLowerCase.trim.contains("^revoke")) {
+              ddlBuffer.add(ddl)
+            }
+          }
+        }
+      }
+
+    } else {
+      val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
+
+      otherDdls.foreach(ddl => {
+        // todo add grant revoke above.. in if
+        val ddlLowerCase = ddl.toLowerCase()
+        if (!"create[ ]+diskstore".r.findFirstIn(ddlLowerCase).isEmpty ||
+            !"create[ ]+index".r.findFirstIn(ddlLowerCase).isEmpty ||
+            ddlLowerCase.trim.contains("^grant") ||
+            ddlLowerCase.trim.contains("^revoke")) {
+          ddlBuffer.append(ddl)
+        }
+      })
+    }
 
     val snappyContext = SnappyContext()
     val snappySession = snappyContext.snappySession
@@ -82,10 +128,12 @@ object RecoveryService extends Logging {
         .getOrCreateExternalCatalog(snappyContext.sparkContext, snappyContext.sparkContext.getConf)
     val dbList = snappyHiveExternalCatalog.listDatabases("*").filter(dbName =>
       !(dbName.equalsIgnoreCase("SYS") || dbName.equalsIgnoreCase("DEFAULT")))
+    logInfo(s"PP:RecoveryService : dbList : $dbList")
 
     val allFunctions = dbList.flatMap(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
         .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
     val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
+    logInfo(s"PP:RecoveryService : allDatabases : $allDatabases")
     allFunctions.foreach(func => {
       val funcClass = func.className.split("_")(0)
       val funcRetType = func.className.split("_")(1)
@@ -94,30 +142,45 @@ object RecoveryService extends Logging {
       ddlBuffer.append(funcDdl)
     })
     allDatabases.foreach(db => {
+      logInfo(s"PP:RecoveryService : db : $db")
       db.properties.get("orgSqlText") match {
         case Some(str) => if (!str.isEmpty) ddlBuffer.append(str)
         case None => ""
       }
     })
 
+
+    val tempViewBuffer: mutable.Buffer[String] = List.empty.toBuffer
+    val tempTableBuffer: mutable.Buffer[(String, String)] = List.empty.toBuffer
+
     val allTables = snappyHiveExternalCatalog.getAllTables()
     allTables.foreach(table => {
       // covers create, alter statements
-      for (elem <- table.properties) {
-        if (elem._1.contains("orgSqlText")) {
-          ddlBuffer append (elem._2)
-        } else if (elem._1.contains("alt")) {
-          ddlBuffer append (elem._2)
-        } else {
-          logError(s"1891: unknown table ${table.qualifiedName}")
+      val allkeys = table.properties.keys
+          .filter(f => f.contains("orgSqlText") || f.contains("altTxt"))
+          .toSeq.sortBy(_.split("_")(1).toLong)
+
+      for (key <- allkeys) {
+        if (key.contains("orgSqlText")) {
+          tempTableBuffer append ((key, table.properties(key)))
+        } else if (key.contains("alt")) {
+          tempTableBuffer append ((key, table.properties(key)))
         }
       }
-      // create view statements
+      // covers create view statements
       table.viewOriginalText match {
-        case Some(ddl) => ddlBuffer.append(s"create view ${table.identifier} as $ddl")
+        case Some(ddl) => tempViewBuffer.append(s"create view ${table.identifier} as $ddl")
         case None => ""
       }
     })
+
+    // view ddls should be at the end so that tables
+    // on which these views depend are already captured.
+
+    ddlBuffer.appendAll(tempViewBuffer)
+    val sortedTempTableBuffer = tempTableBuffer.sortBy(tup => tup._1.split("_")(1).toLong).map(_._2)
+    ddlBuffer.appendAll(sortedTempTableBuffer)
+
 
     val biConsumer = new BiConsumer[String, String] {
       def accept(alias: String, cmd: String) = {
@@ -137,10 +200,13 @@ object RecoveryService extends Logging {
     }
     Misc.getMemStore.getGlobalCmdRgn.forEach(biConsumer)
 
-
     logInfo(s"--PP: buffer ready.\n $ddlBuffer")
-    logInfo(s"\n\n-- PP : RecoveryService - to compare with the buffer --" +
-        s" \n${mostRecentMemberObject.getOtherDDLs.asScala}\n\n")
+
+    if (Misc.getGemFireCache.isSnappyRecoveryMode) {
+      logInfo(s"\n\n-- PP : RecoveryService - to compare with the buffer --" +
+          s" \n${mostRecentMemberObject.getOtherDDLs.asScala}\n\n")
+
+    }
     ddlBuffer
   }
 
@@ -223,21 +289,20 @@ object RecoveryService extends Logging {
       InternalDistributedMember, PersistentStateInRecoveryMode] = mutable.Map.empty
   var mostRecentMemberObject: PersistentStateInRecoveryMode = null;
   var memberObject: PersistentStateInRecoveryMode = null;
-  var schemaMap: mutable.Map[String, String] = mutable.Map.empty[String, String]
-  var tableSchemas: mutable.Map[String, StructType] = mutable.Map.empty
+  var schemaStructMap: mutable.Map[String, StructType] = mutable.Map.empty
   private val versionMap: mutable.Map[String, Int] = collection.mutable.Map.empty
-  private val tableSchemaIds: mutable.Map[String, Array[Int]] = mutable.Map.empty
+  private val tableColumnIds: mutable.Map[String, Array[Int]] = mutable.Map.empty
 
   def getTableColumnIds(): mutable.Map[String, Array[Int]] = {
-    this.tableSchemaIds
+    this.tableColumnIds
   }
 
   def getVersionMap(): mutable.Map[String, Int] = {
-   this.versionMap
+    this.versionMap
   }
 
   def getSchemaStructMap(): mutable.Map[String, StructType] = {
-    this.tableSchemas
+    this.schemaStructMap
   }
 
   def createSchemasMap(snappyHiveExternalCatalog: SnappyHiveExternalCatalog): Unit = {
@@ -246,114 +311,97 @@ object RecoveryService extends Logging {
     var schemaString = ""
 
     snappyHiveExternalCatalog.getAllTables().foreach(table => {
-      if (table.tableType.name.equals("VIEW")) {
-        // view objects. dont need schema versions
-      } else {
-        val fqtn = table.storage.properties.get("dbtable") match {
-          case Some(name) => name
-          case None => ""
-        }
-        // table created via sql statement
-        // SCHEMADDL.part.0 will contain sql table's initial schema
-        if (table.storage.properties.contains("SCHEMADDL.part.0")) {
-          // version stored along with row record starts from 1
-          var schemaVersion = 1
-          // TODO handle missing case
-          var schemaString = table.storage.properties("SCHEMADDL.part.0").toUpperCase()
-          val schema = colParser
-              .parseSQLOnly(schemaString, colParser.tableSchemaOpt.run())
-              .map(StructType(_)) match {
-            case Some(StructType(e)) => StructType(e)
-            case None => null
-          }
-          // create statement is captured, alters if any are pending
-          logInfo("1891: adding to tableschemas fqtn=" + fqtn + " -> " + schema)
-          tableSchemas.put(s"${schemaVersion}#${fqtn}", schema)
-          tableSchemaIds.put(s"$schemaVersion#$fqtn", Range(0, schema.fields.length).toArray)
-          versionMap.put(fqtn, schemaVersion)
-          schemaVersion += 1
+      if (!table.tableType.name.equalsIgnoreCase("view")) {
+        // Create statements
+        var versionCnt = 1
 
-          // alter statements can be versioned by sorting them according to
-          // timestamp when executed. example: altTxt_<ts millis>
-          val tablePropKeys = table.properties.keys
-          val alterKeys = tablePropKeys
-              .filter(_.contains(s"altTxt_")).toSeq
-          val alterKeysSorted = if (alterKeys.size > 0) {
-            alterKeys.sortBy(_.split("_")(1).toLong)
-          } else alterKeys
+        // todo: filter view and external tables - we don't have to export data for them?!?
 
-          alterKeysSorted.foreach(k => {
-            val originalSql = table.properties(k).toUpperCase()
-            // TODO find better alternate to string manipulation to get schema string
-            if (originalSql.contains("ADD COLUMN")) {
-              // TODO replace ; at the end
-              schemaString = schemaString
-                  .patch(schemaString.length - 1,
-                    ", " + originalSql.substring(originalSql.indexOf("ADD COLUMN ") + 11), 0).toUpperCase()
-            } else if (originalSql.contains("DROP COLUMN ")) {
-              val col = originalSql.substring(originalSql.indexOf("DROP COLUMN ") + 12)
-              val regex = s"([ ]*$col[ ]+[a-zA-Z][a-zA-Z0-9]+(\\([0-9]+(,?[0-9]+)?\\))?[ ]*,?)|(,[ ]*$col[ ]+[a-zA-Z][a-zA-Z0-9]+(\\([0-9]+(,?[0-9]+)?\\))?[ ]*)".r
-              schemaString = regex.replaceAllIn(schemaString, "").toUpperCase()
+        // -----------
+        table.properties.get("schemaJson") match {
+          case Some(schemaJsonStr) => {
+            val fqtn = table.identifier.database match {
+              case Some(schName) => schName + "_" + table.identifier.table
+              case None =>
+                throw new Exception(s"Schema name not found for the table ${table.identifier.table}")
             }
-            val schema = colParser
-                .parseSQLOnly(schemaString, colParser.tableSchemaOpt.run())
-                .map(StructType(_)) match {
-              case Some(StructType(e)) => StructType(e)
-              case None => null
-            }
-            logInfo(s"1891: adding to tableschemas ${fqtn} -> ${schema}")
-            tableSchemas.put(s"${schemaVersion}#${fqtn}", schema)
-            versionMap.put(fqtn, schemaVersion)
-            schemaVersion += 1
-            val currSchemaIds = new Array[Int](schema.fields.length)
-            val prevSchema = getSchemaStructMap.getOrElse(s"${schemaVersion - 1}#${fqtn}", null)
-            val prevSchemaIds: Array[Int] =
-              tableSchemaIds.getOrElse(s"${schemaVersion - 1}#${fqtn}", null)
-            assert(prevSchema != null && prevSchemaIds != null)
+            var schema: StructType = DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
 
-            for (i <- 0 until schema.fields.length) {
-              val prevId = prevSchema.fields.indexOf(schema.fields(i))
-              currSchemaIds(i) = if (prevId == -1) {
-                // new col. alter add case. generate new id
-                assert(i == prevSchema.length) // add can only append
-                val prevSchemaMaxId = currSchemaIds(i - 1)
-                prevSchemaMaxId + 1
-              } else {
-                prevSchemaIds(prevId)
+            schemaStructMap.put(s"${versionCnt}#${fqtn}", schema)
+            tableColumnIds.put(s"$versionCnt#$fqtn", Range(0, schema.fields.length).toArray)
+            versionMap.put(fqtn, versionCnt)
+            versionCnt += 1
+            // Alter statements
+
+            val altStmtKeys = table.properties.keys
+                .filter(_.contains(s"altTxt_")).toSeq
+                .sortBy(_.split("_")(1).toLong)
+            altStmtKeys.foreach(k => {
+              val stmt = table.properties(k).toUpperCase()
+              var alteredSchema: StructType = null
+              if (stmt.contains(" ADD COLUMN ")) {
+                // TODO replace ; at the end also add regex match instead of contains
+
+                val columnString = stmt.substring(stmt.indexOf("ADD COLUMN ") + 11)
+                val colNameAndType = (columnString.split("[ ]+")(0), columnString.split("[ ]+")(1))
+                val colString = if (columnString.toLowerCase().contains("not null")) {
+                  (s"(${colNameAndType._1} ${colNameAndType._2}) not null")
+                } else {
+                  s"(${colNameAndType._1} ${colNameAndType._2})"
+                }
+                val field = colParser.parseSQLOnly(colString, colParser.tableSchemaOpt.run())
+                match {
+                  case Some(fieldSeq) => {
+                    val field = fieldSeq.head
+                    val builder = new MetadataBuilder
+                    builder.withMetadata(field.metadata)
+                        .putString("originalSqlType", colNameAndType._2.trim.toLowerCase())
+                    StructField(field.name, field.dataType, field.nullable, builder.build())
+                  }
+                  case None => throw
+                      new IllegalArgumentException("alter statement contains no parsable field")
+                }
+                alteredSchema = new StructType((schema ++ new StructType(Array(field))).toArray)
+
+              } else if (stmt.contains("DROP COLUMN ")) {
+                val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
+                // loop through schema and delete sruct field matching name and type
+                logInfo(s"PP:REcoveryservice : createSchema: dropcolName: $dropColName\n schema $schema")
+                val indx = schema.fieldIndex(dropColName)
+                alteredSchema = new StructType(schema.toArray.filter(
+                  field => !field.name.toUpperCase.equals(dropColName.toUpperCase)))
+
+                logInfo(s"PP:REcoveryservice : createSchema: alteredSchema: $alteredSchema")
               }
-            }
-            tableSchemaIds.put(s"${schemaVersion}#${fqtn}", currSchemaIds)
-          })
-        } else {
-          // table created via api
-          var schemaVersion = 1
-          val otherDdls = mostRecentMemberObject.getOtherDDLs.asScala
-          otherDdls.foreach(ddl => {
-            if (ddl.toLowerCase.contains("create table") &&
-                ddl.toLowerCase.contains(fqtn)) {
-              // TODO also handle alter commands
-              logInfo(s"1891: adding to tableschemas ${fqtn} -> ${table.schema}")
-              tableSchemas.put(s"${schemaVersion}#${fqtn}", table.schema)
-              schemaVersion += 1
-            } else {
-              logError("api table not found in ddlqueue")
-            }
-          })
+              schema = alteredSchema
+
+              schemaStructMap.put(s"${versionCnt}#${fqtn}", alteredSchema)
+              val idArray: Array[Int] = new Array[Int](alteredSchema.fields.length)
+              val prevSchema = getSchemaStructMap.getOrElse(s"${versionCnt - 1}#${fqtn}", null)
+              val prevIdArray: Array[Int] =
+                tableColumnIds.getOrElse(s"${versionCnt - 1}#${fqtn}", null)
+
+              assert(prevSchema != null && prevIdArray != null)
+
+              for (i <- 0 until alteredSchema.fields.length) {
+                val prevId = prevSchema.fields.indexOf(alteredSchema.fields(i))
+                idArray(i) = if (prevId == -1) {
+                  // Alter Add column case
+                  idArray(i - 1) + 1
+                } else {
+                  // Common column to previous schema
+                  prevIdArray(prevId)
+                }
+              }
+              tableColumnIds.put(s"${versionCnt}#${fqtn}", idArray)
+              versionMap.put(fqtn, versionCnt)
+              versionCnt += 1
+            })
+          }
+          case None => ""
         }
       }
     })
-    for (elem <- schemaMap) {
-      // take it out after testing ... modify to a method
-      val schema = colParser.parseSQLOnly(elem._2, colParser.tableSchemaOpt.run()).map(StructType(_))
-      match {
-        case Some(StructType(e)) => StructType(e)
-        case None => null
-      }
-      logInfo(s"1891: adding to tableschemas ${elem._1} $schema")
-      tableSchemas.put(elem._1, schema)
-    }
-
-    logInfo(s"PP: RecoveryService : schemaStructMap - $getSchemaStructMap")
   }
 
 
@@ -361,6 +409,7 @@ object RecoveryService extends Logging {
     val memberContainsRegion = memberObject
         .getPrToNumBuckets.containsKey(s"/${schemaName}/${tableName}")
     import collection.JavaConversions._
+
     for ((k, v) <- memberObject.getPrToNumBuckets) {
       logInfo(s"1891: PrToNumBuckets map values = ${k} -> ${v}")
     }
@@ -441,25 +490,24 @@ object RecoveryService extends Logging {
           ConnectorExternalCatalog.convertToCatalogDatabase(catDBObj)
         }
         case catTabObj: CatalogTableObject => {
-          logInfo(s"1891: RecoveryService catalogthriftObj = $catTabObj and numbuckets = ${catTabObj.getNumBuckets}")
-          val ctobj = ConnectorExternalCatalog.convertToCatalogTable(
+          ConnectorExternalCatalog.convertToCatalogTable(
             catalogMetadataDetails.setCatalogTable(catTabObj), snapCon.sparkSession)._1
-          val str = ctobj.properties.mkString(":")
-          logInfo(s"1891: RecoveryService catalogTableObj = $ctobj and properties = ${str}")
-          ctobj
         }
       }
     })
 
     RecoveryService.populateCatalog(catalogArr, snapCon.sparkContext)
+
+    // may be remove the log line later -------- * /
     val dbList = snappyHiveExternalCatalog.listDatabases("*")
     val allFunctions = dbList.map(dbName => snappyHiveExternalCatalog.listFunctions(dbName, "*")
         .map(func => snappyHiveExternalCatalog.getFunction(dbName, func)))
     val allDatabases = dbList.map(snappyHiveExternalCatalog.getDatabase)
-
     logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
         + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
         + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
+     //    -------- * /
+
     createSchemasMap(snappyHiveExternalCatalog)
   }
 
@@ -469,12 +517,18 @@ object RecoveryService extends Logging {
     val res = mostRecentMemberObject.getCatalogObjects.asScala.filter(x => {
       x.isInstanceOf[CatalogTableObject] && {
         val cbo = x.asInstanceOf[CatalogTableObject]
-        val fqtn = s"${cbo.getSchemaName}.${cbo.getTableName}"
+        val fqtn = s"${
+          cbo.getSchemaName
+        }.${
+          cbo.getTableName
+        }"
         logInfo(s"RecoveryService.getProvider fqtn $fqtn")
         fqtn.equalsIgnoreCase(tableName)
       }
     }).head.asInstanceOf[CatalogTableObject]
-    logInfo(s"RecoveryService.getProvider provider for $tableName is ${res.getProvider}")
+    logInfo(s"RecoveryService.getProvider provider for $tableName is ${
+      res.getProvider
+    }")
     res.getProvider
   }
 
@@ -491,15 +545,21 @@ object RecoveryService extends Logging {
     catalogObjSeq.foreach {
       case catDB: CatalogDatabase =>
         extCatalog.createDatabase(catDB, ignoreIfExists = true)
-        logInfo(s"Inserting catalog database: ${catDB.name} in the catalog.")
+        logInfo(s"Inserting catalog database: ${
+          catDB.name
+        } in the catalog.")
       case catFunc: CatalogFunction =>
         extCatalog.createFunction(catFunc.identifier.database
             .getOrElse(Constant.DEFAULT_SCHEMA), catFunc)
-        logInfo(s"Inserting catalog function: ${catFunc.identifier.funcName} in the catalog.")
+        logInfo(s"Inserting catalog function: ${
+          catFunc.identifier.funcName
+        } in the catalog.")
       case catTab: CatalogTable =>
         val opLogTable = catTab.copy(provider = Option("oplog"))
         extCatalog.createTable(opLogTable, ignoreIfExists = true)
-        logInfo(s"Inserting catalog table: ${catTab.identifier.table} in the catalog.")
+        logInfo(s"Inserting catalog table: ${
+          catTab.identifier.table
+        } in the catalog.")
     }
   }
 }

@@ -20,6 +20,7 @@ import java.io.{BufferedWriter, File, FileWriter, InputStream, PrintWriter}
 import java.lang
 import java.util.{Iterator => JIterator}
 
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Try
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
@@ -155,12 +156,20 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     }
     logDebug(s"Using connection ID: $connId\n Export path:" +
         s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
+
+    val filePath = if (exportUri.endsWith(File.separator)) {
+      exportUri.substring(0, exportUri.length - 1) +
+          s"_${System.currentTimeMillis()}" + File.separator
+    } else {
+      exportUri + s"_${System.currentTimeMillis()}" + File.separator
+    }
+
     tablesArr.foreach(f = table => {
       Try {
         val tableData = session.sql(s"select * from $table;")
         logDebug(s"Querying table $table.")
         tableData.write.mode(SaveMode.Overwrite).format(formatType)
-            .save(exportUri + table.toUpperCase)
+            .save(filePath + File.separator + table.toUpperCase)
       } match {
         case scala.util.Success(value) =>
         case scala.util.Failure(exception) => {
@@ -170,28 +179,24 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
           }
         }
       }
-
     })
   }
 
-  override def recoverDDLs(exportUri: String): Unit = {
-    new File(exportUri).mkdir()
-    val dirPath = if (exportUri.endsWith("/")) {
-      exportUri + "RECOVERED_DDLs_.txt"
+  override def recoverDDLs(connId: lang.Long, exportUri: String): Unit = {
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+    val filePath = if (exportUri.endsWith(File.separator)) {
+      exportUri.substring(0, exportUri.length - 1) +
+          s"_${System.currentTimeMillis()}" + File.separator
+    } else {
+      exportUri + s"_${System.currentTimeMillis()}" + File.separator
     }
-    else {
-      exportUri + File.separator + "RECOVERED_DDLs.txt"
-    }
-    try {
-      val pw = new PrintWriter(new File(dirPath))
-      RecoveryService.getAllDDLs().foreach(ddl => {
-        pw.append(ddl + "\n")
-      })
-      pw.close()
-    }
-    catch {
-      case e: Exception => throw new Exception(e)
-    }
+    val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
+
+    RecoveryService.getAllDDLs().foreach(ddl => {
+      arrBuf.append(ddl + ";\n")
+    })
+    session.sparkContext.parallelize((arrBuf), 1).saveAsTextFile(filePath)
+
   }
 
   override def setLeadClassLoader(): Unit = {
