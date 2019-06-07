@@ -61,16 +61,52 @@ case class CreateTableUsingCommand(
     provider: String,
     mode: SaveMode,
     options: Map[String, String],
-    partitionColumns: Array[String],
+    partitionColumns: Seq[String],
     bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
-    isBuiltIn: Boolean) extends RunnableCommand {
+    isExternal: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, partitionColumns, bucketSpec, query)
+      schemaDDL, mode, allOptions, isExternal, partitionColumns, bucketSpec, query)
+    Nil
+  }
+}
+
+case class CreateTableUsingLikeCommand(
+    targetTable: TableIdentifier,
+    sourceTable: TableIdentifier,
+    allowExisting: Boolean,
+    provider: Option[String],
+    options: Option[Map[String, String]],
+    partitionColumns: Seq[String],
+    bucketSpec: Option[BucketSpec]) extends RunnableCommand {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+    val session = sparkSession.asInstanceOf[SnappySession]
+    val catalog = session.sessionState.catalog
+    val sourceTableDesc = catalog.getTempViewOrPermanentTableMetadata(sourceTable)
+    val newProvider = provider match {
+      case None =>
+        if (sourceTableDesc.tableType == CatalogTableType.VIEW ||
+            sourceTableDesc.provider.isEmpty) {
+          SnappyParserConsts.DEFAULT_SOURCE
+        } else {
+          sourceTableDesc.provider.get
+        }
+      case Some(p) => p
+    }
+    val newOptions = if (options.isEmpty) sourceTableDesc.storage.properties else options.get
+    val newPartitionColumns =
+      if (partitionColumns.isEmpty) sourceTableDesc.partitionColumnNames else partitionColumns
+    val newBucketSpec = if (bucketSpec.isEmpty) sourceTableDesc.bucketSpec else bucketSpec
+
+    val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
+    session.createTableInternal(targetTable, newProvider, Some(sourceTableDesc.schema),
+      schemaDDL = None, mode, newOptions, isExternal = false, newPartitionColumns,
+      newBucketSpec, query = None)
     Nil
   }
 }

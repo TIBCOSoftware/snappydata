@@ -255,7 +255,7 @@ abstract class SnappyDDLParser(session: SparkSession)
   // DDLs, SET etc
 
   final type TableEnd = (Option[String], Option[Map[String, String]],
-      Array[String], Option[BucketSpec], Option[LogicalPlan])
+      Seq[String], Option[BucketSpec], Option[LogicalPlan])
 
   protected final def ifNotExists: Rule1[Boolean] = rule {
     (IF ~ NOT ~ EXISTS ~ push(true)).? ~> ((o: Any) => o != None)
@@ -296,14 +296,16 @@ abstract class SnappyDDLParser(session: SparkSession)
       // the save mode will be ignore.
       val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
       CreateTableUsingCommand(tableIdent, None, userSpecifiedSchema, schemaDDL,
-        provider, mode, options, remaining._3, remaining._4, remaining._5, external == None)
+        provider, mode, options, remaining._3, remaining._4, remaining._5, external != None)
     }
   }
 
   protected def createTableLike: Rule1[LogicalPlan] = rule {
-    CREATE ~ TABLE ~ ifNotExists ~ tableIdentifier ~ LIKE ~ tableIdentifier ~>
-        ((allowExisting: Boolean, targetIdent: TableIdentifier, sourceIdent: TableIdentifier) =>
-          CreateTableLikeCommand(targetIdent, sourceIdent, allowExisting))
+    CREATE ~ TABLE ~ ifNotExists ~ tableIdentifier ~ dataSourceClause ~ LIKE ~ tableIdentifier ~>
+        ((allowExisting: Boolean, targetIdent: TableIdentifier, ds: (Option[String],
+            Option[Map[String, String]], Seq[String], Option[BucketSpec]),
+            sourceIdent: TableIdentifier) => CreateTableUsingLikeCommand(
+          targetIdent, sourceIdent, allowExisting, ds._1, ds._2, ds._3, ds._4))
   }
 
   protected final def booleanLiteral: Rule1[Boolean] = rule {
@@ -403,17 +405,25 @@ abstract class SnappyDDLParser(session: SparkSession)
       })
   }
 
-  protected final def ddlEnd: Rule1[TableEnd] = rule {
-    ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~
+  protected final def dataSourceClause: Rule1[(Option[String], Option[Map[String, String]],
+      Seq[String], Option[BucketSpec])] = rule {
+    (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~
         (PARTITIONED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~
-        bucketSpec.? ~ (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
-        ((provider: Any, options: Any, parts: Any, buckets: Any, asQuery: Any) => {
-          val partitions = parts match {
-            case None => Utils.EMPTY_STRING_ARRAY
-            case Some(p) => p.asInstanceOf[Seq[String]].toArray
-          }
-          (provider, options, partitions, buckets, asQuery).asInstanceOf[TableEnd]
-        })
+        bucketSpec.? ~> ((provider: Any, opts: Any, parts: Any, buckets: Any) => {
+      val partitions = parts match {
+        case None => Nil
+        case Some(p) => p.asInstanceOf[Seq[String]]
+      }
+      (provider.asInstanceOf[Option[String]], opts.asInstanceOf[Option[Map[String, String]]],
+          partitions, buckets.asInstanceOf[Option[BucketSpec]])
+    })
+  }
+
+  protected final def ddlEnd: Rule1[TableEnd] = rule {
+    ws ~ dataSourceClause ~ (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
+        ((ds: (Option[String], Option[Map[String, String]],
+            Seq[String], Option[BucketSpec]), asQuery: Any) =>
+          (ds._1, ds._2, ds._3, ds._4, asQuery.asInstanceOf[Option[LogicalPlan]]))
   }
 
   protected final def tableEnd1: Rule[StringBuilder :: HNil,
@@ -631,8 +641,8 @@ abstract class SnappyDDLParser(session: SparkSession)
         // for both builtin as well as external implementations
         val mode = if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists
         CreateTableUsingCommand(streamIdent, None, specifiedSchema, None,
-          provider, mode, opts, partitionColumns = Utils.EMPTY_STRING_ARRAY,
-          bucketSpec = None, query = None, isBuiltIn = true)
+          provider, mode, opts, partitionColumns = Nil, bucketSpec = None,
+          query = None, isExternal = false)
     }
   }
 

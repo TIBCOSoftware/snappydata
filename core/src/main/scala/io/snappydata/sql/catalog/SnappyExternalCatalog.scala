@@ -111,7 +111,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
     }
   }
 
-  override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
+  def getTableOptionImpl(schema: String, table: String): Option[CatalogTable] = {
     try {
       Some(getTable(schema, table))
     } catch {
@@ -176,7 +176,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
     val dependents = new mutable.ArrayBuffer[CatalogTable]
     for (dep <- allDependents) {
       val (depSchema, depTable) = getTableWithSchema(dep, schema)
-      getTableOption(depSchema, depTable) match {
+      getTableOptionImpl(depSchema, depTable) match {
         case None => // skip tables no longer present
         case Some(t) =>
           val tableType = CatalogObjectType.getTableType(t)
@@ -228,7 +228,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
   def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] = {
     listDatabases().flatMap(schema =>
       if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else listTables(schema).flatMap(table => getTableOption(schema, table)))
+      else listTables(schema).flatMap(table => getTableOptionImpl(schema, table)))
   }
 
   /**

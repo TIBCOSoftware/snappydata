@@ -276,6 +276,11 @@ class Spark232Internals extends SparkInternals {
     new ResolvedPlanWithHints23(child, hints)
   }
 
+  override def newTableSample(lowerBound: Double, upperBound: Double, withReplacement: Boolean,
+      seed: Long, child: LogicalPlan): Sample = {
+    Sample(lowerBound, upperBound, withReplacement, seed, child)
+  }
+
   override def isHintPlan(plan: LogicalPlan): Boolean = plan.isInstanceOf[ResolvedHint]
 
   override def getHints(plan: LogicalPlan): Map[QueryHint.Type, HintName.Type] = plan match {
@@ -688,7 +693,7 @@ final class SnappySessionCatalog23(override val snappySession: SnappySession,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
-    override val sqlConf: SQLConf, override val hadoopConf: Configuration)
+    override val sqlConf: SQLConf, hadoopConf: Configuration)
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionRegistry,
       sqlConf, hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog {
 

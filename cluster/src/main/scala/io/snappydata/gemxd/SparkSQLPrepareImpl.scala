@@ -68,7 +68,7 @@ class SparkSQLPrepareImpl(val sql: String,
     val paramLiterals = new mutable.HashSet[ParamLiteral]()
     SparkSQLPrepareImpl.allParamLiterals(aplan, paramLiterals)
     if (paramLiterals.size != questionMarkCounter) {
-      aplan = session.prepareSQL(sql, true)
+      aplan = session.prepareSQL(sql, skipPromote = true)
     }
     aplan
   }

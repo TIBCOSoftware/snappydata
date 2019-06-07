@@ -357,6 +357,11 @@ class Spark210Internals extends SparkInternals {
     new PlanWithHints(child, hints)
   }
 
+  override def newTableSample(lowerBound: Double, upperBound: Double, withReplacement: Boolean,
+      seed: Long, child: LogicalPlan): Sample = {
+    Sample(lowerBound, upperBound, withReplacement, seed, child)(isTableSample = true)
+  }
+
   override def isHintPlan(plan: LogicalPlan): Boolean = plan.isInstanceOf[BroadcastHint]
 
   override def getHints(plan: LogicalPlan): Map[QueryHint.Type, HintName.Type] = plan match {
@@ -603,6 +608,10 @@ class SnappyEmbeddedHiveCatalog21(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
 
+  override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
+    getTableOptionImpl(schema, table)
+  }
+
   override protected def baseCreateDatabase(schemaDefinition: CatalogDatabase,
       ignoreIfExists: Boolean): Unit = super.createDatabase(schemaDefinition, ignoreIfExists)
 
@@ -680,6 +689,10 @@ class SnappyEmbeddedHiveCatalog21(override val conf: SparkConf,
 class SmartConnectorExternalCatalog21(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
+  override def getTableOption(schema: String, table: String): Option[CatalogTable] = {
+    getTableOptionImpl(schema, table)
+  }
+
   override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
     createDatabaseImpl(schemaDefinition, ignoreIfExists)
 
@@ -727,7 +740,7 @@ final class SnappySessionCatalog21(override val snappySession: SnappySession,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
-    override val sqlConf: SQLConf, override val hadoopConf: Configuration)
+    override val sqlConf: SQLConf, hadoopConf: Configuration)
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionResourceLoader,
       functionRegistry, sqlConf, hadoopConf) with SnappySessionCatalog {
 

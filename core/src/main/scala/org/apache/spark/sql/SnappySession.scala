@@ -700,7 +700,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isExternal = false)
   }
 
   /**
@@ -742,7 +742,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isExternal = false)
   }
 
   /**
@@ -787,7 +787,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       Some(JdbcExtendedUtils.normalizeSchema(inputDataSchema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, topkOptions) +
-          ("key" -> keyColumnName), isBuiltIn = true)
+          ("key" -> keyColumnName), isExternal = false)
   }
 
   /**
@@ -831,7 +831,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
       addBaseTableOption(baseTable, topkOptions) +
-          ("key" -> keyColumnName), isBuiltIn = true)
+          ("key" -> keyColumnName), isExternal = false)
   }
 
   /**
@@ -883,7 +883,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       allowExisting: Boolean): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider, userSpecifiedSchema = None,
       schemaDDL = None, if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options, isBuiltIn = true)
+      options, isExternal = false)
   }
 
   /**
@@ -904,7 +904,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       allowExisting: Boolean): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider, userSpecifiedSchema = None,
       schemaDDL = None, if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options, isBuiltIn = false)
+      options, isExternal = false)
   }
 
   /**
@@ -993,7 +993,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider,
       Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
-      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isBuiltIn = true)
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isExternal = false)
   }
 
   /**
@@ -1017,7 +1017,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       options: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider, Some(schema), schemaDDL = None,
-      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isBuiltIn = false)
+      if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isExternal = true)
   }
 
   /**
@@ -1139,7 +1139,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     }
     createTableInternal(tableIdentifier(tableName), provider, userSpecifiedSchema = None,
       Some(schemaStr), if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      options, isBuiltIn = true)
+      options, isExternal = false)
   }
 
   /**
@@ -1209,13 +1209,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
       schemaDDL: Option[String],
       mode: SaveMode,
       options: Map[String, String],
-      isBuiltIn: Boolean,
-      partitionColumns: Array[String] = Utils.EMPTY_STRING_ARRAY,
+      isExternal: Boolean,
+      partitionColumns: Seq[String] = Nil,
       bucketSpec: Option[BucketSpec] = None,
       query: Option[LogicalPlan] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
     if (providerIsBuiltIn) {
-      if (!isBuiltIn) {
+      if (isExternal) {
         throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
             s"used for inbuilt provider '$provider'")
       }
