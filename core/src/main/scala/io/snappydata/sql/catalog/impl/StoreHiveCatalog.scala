@@ -239,13 +239,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
           }
         }
 
-      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOption(
+      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOptionImpl(
         formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.schema.json.asInstanceOf[R]
       }
 
-      case GET_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
+      case GET_TABLE => externalCatalog.getTableOptionImpl(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.asInstanceOf[R]
       }
@@ -318,7 +318,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
       case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
         ignoreIfNotExists = true, purge = false).asInstanceOf[R]
 
-      case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
+      case GET_COL_TABLE => externalCatalog.getTableOptionImpl(
+        formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(table) =>
           val qualifiedName = table.identifier.unquotedString
@@ -496,7 +497,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging with SparkSupport {
       metadata(result.setNames(externalCatalog.listDatabases(pattern(request)).asJava))
 
     case snappydataConstants.CATALOG_GET_TABLE =>
-      externalCatalog.getTableOption(request.getSchemaName, request.getNameOrPattern) match {
+      externalCatalog.getTableOptionImpl(request.getSchemaName, request.getNameOrPattern) match {
         case None => metadata(result)
         case Some(table) =>
           val tableObj = ConnectorExternalCatalog.convertFromCatalogTable(table)

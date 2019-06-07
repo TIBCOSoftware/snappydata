@@ -595,7 +595,8 @@ class SnappyParser(session: SnappySession)
     if (!(fraction >= 0.0 - eps && fraction <= 1.0 + eps)) {
       throw new ParseException(s"Sampling fraction ($fraction) must be on interval [0, 1]")
     }
-    Sample(0.0, fraction, withReplacement = false, (math.random * 1000).toInt, child)(true)
+    internals.newTableSample(0.0, fraction, withReplacement = false,
+      (math.random * 1000).toInt, child)
   }
 
   protected final def toDouble(s: String): Double =
@@ -637,6 +638,14 @@ class SnappyParser(session: SnappySession)
             internals.newUnresolvedColumnAliases(optAlias.get._2,
                 internals.newUnresolvedRelation(tableIdent, Some(optAlias.get._1)))
           }
+        case u: UnresolvedTableValuedFunction =>
+          assertNoQueryHint(rel, optAlias)
+          if (optAlias.isEmpty) u
+          else {
+            internals.newSubqueryAlias(optAlias.get._1,
+              internals.newUnresolvedTableValuedFunction(u.functionName,
+                u.functionArgs, optAlias.get._2))
+          }
         case w@WindowLogicalPlan(_, _, u: UnresolvedRelation, _) =>
           val tableIdent = u.tableIdentifier
           updatePerTableQueryHint(tableIdent, optAlias)
@@ -663,8 +672,8 @@ class SnappyParser(session: SnappySession)
   protected final def relationLeaf: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ (
         '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
-            ((ident: TableIdentifier, e: Any) => UnresolvedTableValuedFunction(
-              ident.unquotedString, e.asInstanceOf[Seq[Expression]])) |
+            ((ident: TableIdentifier, e: Any) => internals.newUnresolvedTableValuedFunction(
+              ident.unquotedString, e.asInstanceOf[Seq[Expression]], Nil)) |
         streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
           window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
             case None => internals.newUnresolvedRelation(tableIdent, None)

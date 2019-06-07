@@ -30,7 +30,7 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame}
 import org.apache.spark.sql.catalyst.json.JSONOptions
-import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, InsertIntoTable, LogicalPlan, RepartitionByExpression, Statistics, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.{ColumnStat, InsertIntoTable, LogicalPlan, RepartitionByExpression, Sample, Statistics, SubqueryAlias}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.command.RunnableCommand
@@ -310,6 +310,12 @@ trait SparkInternals extends Logging {
    */
   def newLogicalPlanWithHints(child: LogicalPlan,
       hints: Map[QueryHint.Type, HintName.Type]): LogicalPlanWithHints
+
+  /**
+   * Create a new TABLESAMPLE operator.
+   */
+  def newTableSample(lowerBound: Double, upperBound: Double, withReplacement: Boolean,
+      seed: Long, child: LogicalPlan): Sample
 
   /**
    * Return true if the given LogicalPlan encapsulates a child plan with query hint(s).

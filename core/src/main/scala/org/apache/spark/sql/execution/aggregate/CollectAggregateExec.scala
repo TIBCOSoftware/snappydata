@@ -31,7 +31,7 @@ import org.apache.spark.sql.{CachedDataFrame, SparkSupport}
  * an exchange for simple aggregates.
  */
 case class CollectAggregateExec(child: SparkPlan)(
-    @transient basePlan: SnappyHashAggregateExec) extends UnaryExecNode with SparkSupport {
+    @transient val basePlan: SnappyHashAggregateExec) extends UnaryExecNode with SparkSupport {
 
   override val output: Seq[Attribute] = basePlan.output
 
