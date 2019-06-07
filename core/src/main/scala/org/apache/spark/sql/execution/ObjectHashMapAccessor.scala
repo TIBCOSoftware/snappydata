@@ -1304,9 +1304,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // copy just reference of the object if underlying byte[] is immutable
       ObjectHashMapAccessor.cloneStringIfRequired(resultVar.value, colVar, doCopy)
     case _: ArrayType | _: MapType | _: StructType if doCopy =>
-      s"$colVar = ${resultVar.value} != null ? ${resultVar.value}.copy() : null;"
+      val javaType = ctx.javaType(dataType)
+      s"$colVar = ($javaType)(${resultVar.value} != null ? ${resultVar.value}.copy() : null);"
     case _: BinaryType if doCopy =>
-      s"$colVar = ${resultVar.value} != null ? ${resultVar.value}.clone() : null;"
+      s"$colVar = (byte[])(${resultVar.value} != null ? ${resultVar.value}.clone() : null);"
     case _ =>
       s"$colVar = ${resultVar.value};"
   }

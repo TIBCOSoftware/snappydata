@@ -27,6 +27,8 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{And, Ascending, Attribute, Descending, EqualTo, Expression, In, SortDirection}
 import org.apache.spark.sql.catalyst.{InternalRow, analysis}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.columnar.impl.SmartConnectorRowRDD
 import org.apache.spark.sql.execution.columnar.{ConnectionType, ExternalStoreUtils}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
@@ -47,7 +49,7 @@ class RowFormatRelation(
     _mode: SaveMode,
     _userSpecifiedString: String,
     _parts: Array[Partition],
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMutableHashMap[String],
     _context: SQLContext)
     extends JDBCMutableRelation(_connProperties,
       _table,
@@ -59,7 +61,7 @@ class RowFormatRelation(
     with PartitionedDataSourceScan
     with RowPutRelation {
 
-  override def toString: String = s"RowFormatRelation[$table]"
+  override def toString: String = s"RowFormatRelation[${Utils.toLowerCase(table)}]"
 
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
@@ -115,6 +117,7 @@ class RowFormatRelation(
     val handledFilters = filters.flatMap(ExternalStoreUtils.handledFilter(_, indexedColumns
       ++ pushdownPKColumns(filters)) )
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+
     val rdd = connectionType match {
       case ConnectionType.Embedded =>
         val region = schemaName match {
@@ -131,6 +134,9 @@ class RowFormatRelation(
           useResultSet = pushProjections,
           connProperties,
           handledFilters,
+          partitionPruner = () => Utils.getPrunedPartition(partitionColumns,
+            filters, schema,
+            numBuckets, relationInfo.partitioningCols.length),
           commitTx = true, delayRollover = false,
           projection = Array.emptyIntArray, region = region)
 
@@ -143,6 +149,9 @@ class RowFormatRelation(
           connProperties,
           handledFilters,
           _partEval = () => relationInfo.partitions,
+          () => Utils.getPrunedPartition(partitionColumns,
+          filters, schema,
+          numBuckets, relationInfo.partitioningCols.length),
           relationInfo.catalogSchemaVersion,
           _commitTx = true, _delayRollover = false)
     }
@@ -201,12 +210,11 @@ class RowFormatRelation(
   }
 
   private def getColumnStr(colWithDirection: (String, Option[SortDirection])): String = {
-    "\"" + colWithDirection._1 + "\" " + (colWithDirection._2 match {
+    "\"" + Utils.toUpperCase(colWithDirection._1) + "\" " + (colWithDirection._2 match {
       case Some(Ascending) => "ASC"
       case Some(Descending) => "DESC"
       case None => ""
     })
-
   }
 
   override protected def constructSQL(indexName: String,
@@ -214,14 +222,12 @@ class RowFormatRelation(
       indexColumns: Map[String, Option[SortDirection]],
       options: Map[String, String]): String = {
 
-    val parameters = internals.newCaseInsensitiveMap(options)
     val columns = indexColumns.tail.foldLeft[String](
       getColumnStr(indexColumns.head))((cumulative, colsWithDirection) =>
       cumulative + "," + getColumnStr(colsWithDirection))
 
-
-    val indexType = parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
-      case Some(x) => x
+    val indexType = options.find(_._1.equalsIgnoreCase(ExternalStoreUtils.INDEX_TYPE)) match {
+      case Some(x) => x._2
       case None => ""
     }
     s"CREATE $indexType INDEX ${quotedName(indexName)} ON ${quotedName(baseTable)} ($columns)"

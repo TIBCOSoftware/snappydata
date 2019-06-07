@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.DDLTestSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDDLTestSuite extends DDLTestSuite with SharedSnappySessionContext {
-
-}
+class SnappyDDLTestSuite extends DDLTestSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

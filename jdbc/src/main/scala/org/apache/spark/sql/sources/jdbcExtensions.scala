@@ -21,17 +21,19 @@ import java.sql.{Connection, ResultSet, ResultSetMetaData, Types}
 import java.util.Properties
 
 import scala.annotation.tailrec
+import scala.collection.JavaConverters._
 import scala.collection.{mutable, Map => SMap}
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
 import io.snappydata.Constant
+import org.apache.commons.collections.map.CaseInsensitiveMap
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.datasources.jdbc.JdbcUtils
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcType}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
-import org.apache.spark.sql.types.{DataType, Metadata, MetadataBuilder, StructField, StructType, UserDefinedType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, DataFrameWriter, SQLContext, SnappyDataBaseDialect, SnappyDataPoolDialect, SparkSession}
 
 /**
@@ -75,8 +77,10 @@ abstract class JdbcExtendedDialect extends JdbcDialect {
 
 object JdbcExtendedUtils extends Logging {
 
-  val DUMMY_TABLE_NAME: String = "SYSDUMMY1"
-  val DUMMY_TABLE_QUALIFIED_NAME: String = "SYSIBM." + DUMMY_TABLE_NAME
+  val SYSIBM_SCHEMA: String = "sysibm"
+  val DUMMY_TABLE_NAME: String = "sysdummy1"
+  val DUMMY_TABLE_QUALIFIED_NAME: String = toUpperCase(s"$SYSIBM_SCHEMA.$DUMMY_TABLE_NAME")
+  val EMPTY_SCHEMA: StructType = StructType(Nil)
 
   def executeUpdate(sql: String, conn: Connection): Unit = {
     val stmt = conn.createStatement()
@@ -125,12 +129,28 @@ object JdbcExtendedUtils extends Logging {
   }
 
   /**
+   * Convert column names to upper-case for snappy-store or lower-case for spark.
+   */
+  private[sql] def normalizeType(dataType: DataType, forSpark: Boolean): DataType = dataType match {
+    case a: ArrayType => a.copy(elementType = normalizeType(a.elementType, forSpark))
+    case m: MapType => m.copy(keyType = normalizeType(m.keyType, forSpark),
+      valueType = normalizeType(m.valueType, forSpark))
+    case s: StructType => StructType(s.fields.map(f =>
+      f.copy(name = if (forSpark) toLowerCase(f.name) else toUpperCase(f.name),
+        dataType = normalizeType(f.dataType, forSpark))))
+    case _ => dataType
+  }
+
+  def normalizeSchema(schema: StructType, forSpark: Boolean = true): StructType =
+    normalizeType(schema, forSpark).asInstanceOf[StructType]
+
+  /**
    * Compute the schema string for this RDD. This is different from JdbcUtils.schemaString
    * in having its own getJdbcType that can honour metadata for VARCHAR/CHAR types.
    */
   def schemaString(schema: StructType, dialect: JdbcDialect): String = {
     val sb = new StringBuilder()
-    schema.foreach { field =>
+    normalizeSchema(schema, forSpark = false).foreach { field =>
       val jdbcType = getJdbcType(field.dataType, field.metadata, dialect)
       sb.append(s""", "${field.name}" ${jdbcType.databaseTypeDefinition}""")
       if (!field.nullable) sb.append(" NOT NULL")
@@ -158,11 +178,17 @@ object JdbcExtendedUtils extends Logging {
 
   def readSplitProperty(propertyName: String,
       options: SMap[String, String]): Option[String] = {
+    val params = options match {
+      case _ if options.getClass.getName.contains("CaseInsensitiveMap") => options
+      case _ if options.getClass.getName.contains("CaseInsensitiveMutableHashMap") => options
+      case _ => new CaseInsensitiveMap(options.toMap.asJava)
+          .asInstanceOf[java.util.Map[String, String]].asScala
+    }
     // read the split schema DDL string from hive metastore table parameters
-    options.get(s"$propertyName.numParts") map { numParts =>
+    params.get(s"$propertyName.numParts") map { numParts =>
       (0 until numParts.toInt).map { index =>
         val partProp = s"$propertyName.part.$index"
-        options.get(partProp) match {
+        params.get(partProp) match {
           case Some(part) => part
           case None => throw new AnalysisException("Could not read " +
               s"$propertyName from metastore because it is corrupted " +
@@ -173,8 +199,9 @@ object JdbcExtendedUtils extends Logging {
     }
   }
 
+  // when forSpark=false then values will be converted to upper-case for snappy-store
   def getTableWithSchema(table: String, conn: Connection,
-      session: Option[SparkSession]): (String, String) = {
+      session: Option[SparkSession], forSpark: Boolean = true): (String, String) = {
     val dotIndex = table.indexOf('.')
     val schemaName = if (dotIndex > 0) {
       table.substring(0, dotIndex)
@@ -185,8 +212,11 @@ object JdbcExtendedUtils extends Logging {
       case None => ""
     }
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
-    // hive meta-store is case-insensitive
-    (if (!schemaName.isEmpty) toUpperCase(schemaName) else schemaName, toUpperCase(tableName))
+    // hive meta-store is case-insensitive so convert to upper-case for snappy-store
+    if (forSpark) {
+      (toLowerCase(if (!schemaName.isEmpty) schemaName else schemaName), toLowerCase(tableName))
+    }
+    else (toUpperCase(if (!schemaName.isEmpty) schemaName else schemaName), toUpperCase(tableName))
   }
 
   private def getTableMetadataResultSet(schemaName: String, tableName: String,
@@ -213,13 +243,14 @@ object JdbcExtendedUtils extends Logging {
   }
 
   def getTableSchema(schemaName: String, tableName: String, conn: Connection,
-      session: Option[SparkSession]): Seq[StructField] = {
-    val rs = conn.getMetaData.getColumns(null, schemaName, tableName, null)
+      session: Option[SparkSession]): StructType = {
+    val rs = conn.getMetaData.getColumns(null, toUpperCase(schemaName),
+      toUpperCase(tableName), null)
     if (rs.next()) {
       val cols = new mutable.ArrayBuffer[StructField]()
       do {
         // COLUMN_NAME
-        val columnName = rs.getString(4)
+        val columnName = toLowerCase(rs.getString(4))
         // DATA_TYPE
         val jdbcType = rs.getInt(5)
         // TYPE_NAME
@@ -236,15 +267,15 @@ object JdbcExtendedUtils extends Logging {
           size, scale, metadataBuilder, session)
         cols += StructField(columnName, columnType, nullable, metadataBuilder.build())
       } while (rs.next())
-      cols
-    } else Nil
+      normalizeSchema(StructType(cols))
+    } else EMPTY_SCHEMA
   }
 
   def tableExistsInMetaData(schemaName: String, tableName: String,
       conn: Connection, skipType: String = ""): Boolean = {
     try {
       // using the JDBC meta-data API
-      val rs = getTableMetadataResultSet(schemaName, tableName, conn)
+      val rs = getTableMetadataResultSet(toUpperCase(schemaName), toUpperCase(tableName), conn)
       if (skipType.isEmpty) {
         rs.next()
       } else {
@@ -306,7 +337,7 @@ object JdbcExtendedUtils extends Logging {
 
   def isRowLevelSecurityEnabled(table: String, conn: Connection, dialect: JdbcDialect,
       context: SQLContext): Boolean = {
-    val (schemaName, tableName) = getTableWithSchema(table, conn, None)
+    val (schemaName, tableName) = getTableWithSchema(table, conn, None, forSpark = false)
     val q = s"select 1 from sys.systables s where s.tablename = '$tableName' and " +
         s" s.tableschemaname = '$schemaName' and s.rowlevelsecurityenabled = true "
     conn.createStatement().executeQuery(q).next()
@@ -336,7 +367,7 @@ object JdbcExtendedUtils extends Logging {
   /** get the table name in SQL quoted form e.g. "APP"."TABLE1" */
   def quotedName(table: String, escapeQuotes: Boolean = false): String = {
     // always expect fully qualified name
-    val (schema, tableName) = getTableWithSchema(table, conn = null, None)
+    val (schema, tableName) = getTableWithSchema(table, conn = null, None, forSpark = false)
     if (escapeQuotes) {
       val sb = new java.lang.StringBuilder(schema.length + tableName.length + 9)
       if (!schema.isEmpty) {
@@ -370,10 +401,11 @@ object JdbcExtendedUtils extends Logging {
     }
     var fieldsLeft = rddSchema.fields.length
     rddSchema.fields.foreach { field =>
+      val columnName = toUpperCase(field.name)
       if (escapeQuotes) {
-        sql.append("""\"""").append(field.name).append("""\"""")
+        sql.append("""\"""").append(columnName).append("""\"""")
       } else {
-        sql.append('"').append(field.name).append('"')
+        sql.append('"').append(columnName).append('"')
       }
       if (fieldsLeft > 1) sql.append(',') else sql.append(')')
       fieldsLeft -= 1
@@ -396,9 +428,9 @@ object JdbcExtendedUtils extends Logging {
     var fieldsLeft = fields.length
     fields.foreach { field =>
       if (escapeQuotes) {
-        sql.append("""\"""").append(field).append("""\"""")
+        sql.append("""\"""").append(toUpperCase(field)).append("""\"""")
       } else {
-        sql.append('"').append(field).append('"')
+        sql.append('"').append(toUpperCase(field)).append('"')
       }
       sql.append("=?")
       if (fieldsLeft > 1) sql.append(separator)
@@ -417,7 +449,12 @@ object JdbcExtendedUtils extends Logging {
           s"Neither $sparkProp nor ${Constant.CONNECTION_PROPERTY} set for SnappyData connect")
       }
     }
-    s"${Constant.POOLED_THIN_CLIENT_URL}$hostPort"
+    // convert to host[port] format that handles ipv6 addresses correctly
+    val colonIndex = hostPort.lastIndexOf(':')
+    val hostPortNormalized =
+      if (colonIndex == -1) hostPort
+      else s"${hostPort.substring(0, colonIndex)}[${hostPort.substring(colonIndex + 1)}]"
+    s"${Constant.POOLED_THIN_CLIENT_URL}$hostPortNormalized"
   }
 
   val PREFIXES: Array[String] = Array(

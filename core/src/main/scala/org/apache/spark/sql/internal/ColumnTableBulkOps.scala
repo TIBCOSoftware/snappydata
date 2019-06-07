@@ -37,7 +37,7 @@ import org.apache.spark.sql.{AnalysisException, Dataset, Row, SnappySession, Spa
  */
 object ColumnTableBulkOps extends SparkSupport {
 
-  def transformPutPlan(sparkSession: SparkSession, originalPlan: PutIntoTable): LogicalPlan = {
+  def transformPutPlan(session: SnappySession, originalPlan: PutIntoTable): LogicalPlan = {
     validateOp(originalPlan)
     val table = originalPlan.table
     val subQuery = originalPlan.child
@@ -46,12 +46,12 @@ object ColumnTableBulkOps extends SparkSupport {
     table.collectFirst {
       case lr: LogicalRelation if lr.relation.isInstanceOf[BulkPutRelation] =>
         val mutable = lr.relation.asInstanceOf[BulkPutRelation]
-        val putKeys = mutable.getPutKeys match {
+        val putKeys = mutable.getPutKeys(session) match {
           case None => throw new AnalysisException(
             s"PutInto in a column table requires key column(s) but got empty string")
           case Some(k) => k
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, putKeys)
+        val condition = prepareCondition(session, table, subQuery, putKeys)
 
         val keyColumns = getKeyColumns(table)
         var updateSubQuery: LogicalPlan = Join(table, subQuery, Inner, condition)
@@ -64,26 +64,25 @@ object ColumnTableBulkOps extends SparkSupport {
         }
 
         val cacheSize = ExternalStoreUtils.sizeAsBytes(
-          Property.PutIntoInnerJoinCacheSize.get(sparkSession.sqlContext.conf),
+          Property.PutIntoInnerJoinCacheSize.get(session.sqlContext.conf),
           Property.PutIntoInnerJoinCacheSize.name, -1, Long.MaxValue)
 
         val updatePlan = Update(table, updateSubQuery, Nil,
           updateColumns, updateExpressions)
-        val updateDS = new Dataset(sparkSession, updatePlan, RowEncoder(updatePlan.schema))
+        val updateDS = new Dataset(session, updatePlan, RowEncoder(updatePlan.schema))
         var analyzedUpdate = updateDS.queryExecution.analyzed.asInstanceOf[Update]
         updateSubQuery = analyzedUpdate.child
 
         // explicitly project out only the updated expression references and key columns
         // from the sub-query to minimize cache (if it is selected to be done)
-        val analyzer = sparkSession.sessionState.analyzer
+        val analyzer = session.sessionState.analyzer
         val updateReferences = AttributeSet(updateExpressions.flatMap(_.references))
         updateSubQuery = Project(updateSubQuery.output.filter(a =>
           updateReferences.contains(a) || keyColumns.contains(a.name) ||
               putKeys.exists(k => analyzer.resolver(a.name, k))), updateSubQuery)
 
-        val insertChild = sparkSession.asInstanceOf[SnappySession].cachePutInto(
-          internals.getStatistics(subQuery).sizeInBytes <= cacheSize,
-          updateSubQuery, mutable.table) match {
+        val insertChild = session.cachePutInto(internals.getStatistics(subQuery)
+            .sizeInBytes <= cacheSize, updateSubQuery, mutable.table) match {
           case None => subQuery
           case Some(newUpdateSubQuery) =>
             if (updateSubQuery ne newUpdateSubQuery) {
@@ -155,7 +154,7 @@ object ColumnTableBulkOps extends SparkSupport {
     }
   }
 
-  def transformDeletePlan(sparkSession: SparkSession,
+  def transformDeletePlan(session: SnappySession,
       originalPlan: DeleteFromTable): LogicalPlan = {
     val table = originalPlan.table
     val subQuery = originalPlan.child
@@ -163,15 +162,15 @@ object ColumnTableBulkOps extends SparkSupport {
 
     table.collectFirst {
       case lr: LogicalRelation if lr.relation.isInstanceOf[MutableRelation] =>
-        val ks = lr.relation.asInstanceOf[MutableRelation].getPrimaryKeyColumns
+        val ks = lr.relation.asInstanceOf[MutableRelation].getPrimaryKeyColumns(session)
         if (ks.isEmpty) {
           throw new AnalysisException(
             s"DeleteFrom operation requires key columns(s) or primary key defined on table.")
         }
-        val condition = prepareCondition(sparkSession, table, subQuery, ks)
+        val condition = prepareCondition(session, table, subQuery, ks)
         val exists = Join(subQuery, table, Inner, condition)
         val deletePlan = Delete(table, exists, Nil)
-        val deleteDs = new Dataset(sparkSession, deletePlan, RowEncoder(deletePlan.schema))
+        val deleteDs = new Dataset(session, deletePlan, RowEncoder(deletePlan.schema))
         transFormedPlan = deleteDs.queryExecution.analyzed.asInstanceOf[Delete]
     }
     transFormedPlan

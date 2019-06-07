@@ -49,7 +49,7 @@ class SnappyHydraTestRunner extends SnappyTestRunner {
     val c7 = "grep -v newDisconnectedException"
     val c8 = "grep -v CacheClosedException"
     val c12 = "grep -v java.io.FileNotFoundException"
-    val c13 = "egrep -v (org.apache.spark.shuffle.FetchFailedException|" +
+    val c13 = "egrep -v (org.apache.spark.shuffle.FetchFailedException|withHiveExceptionHandling|" +
         "org.glassfish.jersey.server.internal.MappableExceptionWrapperInterceptor)"
     val c14 = "grep -v java.lang.reflect.InvocationTargetException"
     val c15 = "grep -v org.apache.spark.storage.ShuffleBlockFetcherIterator." +

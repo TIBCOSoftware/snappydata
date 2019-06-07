@@ -17,8 +17,6 @@
 
 package io.snappydata
 
-import scala.collection.mutable
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 
@@ -42,7 +40,7 @@ object SnappyDataFunctions {
     SnappyContext.globalSparkContext) match {
     case _: ThinClientConnectorMode =>
       val session = Utils.getActiveSession
-      ExternalStoreUtils.validateAndGetAllProps(session, mutable.Map.empty[String, String])
+      ExternalStoreUtils.validateAndGetAllProps(session, ExternalStoreUtils.emptyCIMutableMap)
     case _ => null
   }
 

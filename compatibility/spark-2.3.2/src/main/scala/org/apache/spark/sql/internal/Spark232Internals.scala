@@ -172,7 +172,11 @@ class Spark232Internals extends SparkInternals {
   }
 
   override def newDescribeTableCommand(table: TableIdentifier,
-      partitionSpec: Map[String, String], isExtended: Boolean): RunnableCommand = {
+      partitionSpec: Map[String, String], isExtended: Boolean,
+      isFormatted: Boolean): RunnableCommand = {
+    if (isFormatted) {
+      throw new ParseException(s"DESCRIBE FORMATTED TABLE not supported in Spark $version")
+    }
     DescribeTableCommand(table, partitionSpec, isExtended)
   }
 
@@ -197,7 +201,7 @@ class Spark232Internals extends SparkInternals {
   override def newInsertPlanWithCountOutput(table: LogicalPlan,
       partition: Map[String, Option[String]], child: LogicalPlan,
       overwrite: Boolean, ifNotExists: Boolean): InsertIntoTable = {
-    new Insert(table, partition, child, overwrite, ifNotExists)
+    new Insert23(table, partition, child, overwrite, ifNotExists)
   }
 
   override def getOverwriteOption(insert: InsertIntoTable): Boolean = insert.overwrite
@@ -269,13 +273,13 @@ class Spark232Internals extends SparkInternals {
 
   override def newLogicalPlanWithHints(child: LogicalPlan,
       hints: Map[QueryHint.Type, HintName.Type]): LogicalPlanWithHints = {
-    new ResolvedPlanWithHints(child, hints)
+    new ResolvedPlanWithHints23(child, hints)
   }
 
   override def isHintPlan(plan: LogicalPlan): Boolean = plan.isInstanceOf[ResolvedHint]
 
   override def getHints(plan: LogicalPlan): Map[QueryHint.Type, HintName.Type] = plan match {
-    case p: ResolvedPlanWithHints => p.allHints
+    case p: ResolvedPlanWithHints23 => p.allHints
     case _: ResolvedHint =>
       // only broadcast supported
       Map(QueryHint.JoinType -> HintName.JoinType_Broadcast)
@@ -329,12 +333,12 @@ class Spark232Internals extends SparkInternals {
 
   override def newCodegenSparkFallback(child: SparkPlan,
       session: SnappySession): CodegenSparkFallback = {
-    new CodegenSparkFallbackImpl(child, session)
+    new CodegenSparkFallback23(child, session)
   }
 
   override def newLogicalDStreamPlan(output: Seq[Attribute], stream: DStream[InternalRow],
       streamingSnappy: SnappyStreamingContext): LogicalDStreamPlan = {
-    new LogicalDStreamPlanImpl(output, stream)(streamingSnappy)
+    new LogicalDStreamPlan23(output, stream)(streamingSnappy)
   }
 
   override def newCatalogDatabase(name: String, description: String,
@@ -428,12 +432,12 @@ class Spark232Internals extends SparkInternals {
 
   override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyEmbeddedHiveCatalogImpl(conf, hadoopConf, createTime)
+    new SnappyEmbeddedHiveCatalog23(conf, hadoopConf, createTime)
   }
 
   override def newSmartConnectorExternalCatalog(
       session: SparkSession): SmartConnectorExternalCatalog = {
-    new SmartConnectorExternalCatalogImpl(session)
+    new SmartConnectorExternalCatalog23(session)
   }
 
   override def newSnappySessionCatalog(sessionState: SnappySessionState,
@@ -445,7 +449,7 @@ class Spark232Internals extends SparkInternals {
       case c: SnappyHiveExternalCatalog => new HiveSessionResourceLoader(session, c.client())
       case _ => new SessionResourceLoader(session)
     }
-    new SnappySessionCatalogImpl(session, externalCatalog, globalTempViewManager,
+    new SnappySessionCatalog23(session, externalCatalog, globalTempViewManager,
       functionResourceLoader, functionRegistry, sessionState.sqlParser, conf, hadoopConf)
   }
 
@@ -496,7 +500,7 @@ class Spark232Internals extends SparkInternals {
     PreWriteCheck
   }
 
-  override def newCacheManager(): CacheManager = new SnappyCacheManager
+  override def newCacheManager(): CacheManager = new SnappyCacheManager23
 
   override def buildConf(key: String): ConfigBuilder = SQLConf.buildConf(key)
 }
@@ -505,7 +509,7 @@ class Spark232Internals extends SparkInternals {
 /**
  * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
  */
-final class SnappyCacheManager extends CacheManager {
+final class SnappyCacheManager23 extends CacheManager {
 
   override def cacheQuery(query: Dataset[_], tableName: Option[String],
       storageLevel: StorageLevel): Unit = {
@@ -530,7 +534,7 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-final class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
+final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
 
@@ -622,7 +626,7 @@ final class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
     renameFunctionImpl(schema, oldName, newName)
 }
 
-final class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
+final class SmartConnectorExternalCatalog23(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
   override protected def doCreateDatabase(schemaDefinition: CatalogDatabase,
@@ -679,12 +683,12 @@ final class SmartConnectorExternalCatalogImpl(override val session: SparkSession
     renameFunctionImpl(schema, oldName, newName)
 }
 
-final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
+final class SnappySessionCatalog23(override val snappySession: SnappySession,
     override val snappyExternalCatalog: SnappyExternalCatalog,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
-    override val sqlConf: SQLConf, hadoopConf: Configuration)
+    override val sqlConf: SQLConf, override val hadoopConf: Configuration)
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionRegistry,
       sqlConf, hadoopConf, parser, functionResourceLoader) with SnappySessionCatalog {
 
@@ -715,7 +719,7 @@ final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
   }
 }
 
-final class CodegenSparkFallbackImpl(child: SparkPlan,
+final class CodegenSparkFallback23(child: SparkPlan,
     session: SnappySession) extends CodegenSparkFallback(child, session) {
 
   override def generateTreeString(depth: Int, lastChildren: Seq[Boolean], builder: StringBuilder,
@@ -724,7 +728,7 @@ final class CodegenSparkFallbackImpl(child: SparkPlan,
   }
 }
 
-final class LogicalDStreamPlanImpl(output: Seq[Attribute],
+final class LogicalDStreamPlan23(output: Seq[Attribute],
     stream: DStream[InternalRow])(streamingSnappy: SnappyStreamingContext)
     extends LogicalDStreamPlan(output, stream)(streamingSnappy) {
 

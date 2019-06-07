@@ -1,10 +1,6 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-#rm -rf $SnappyData/work/$leads-lead-1/*.out
-#> $SnappyData/work/$leads-lead-1/Average.out
-#export APP_PROPS="queries=$queries,queryPlan=$queryPlan,sparkSqlProps=$sparkSqlProperties,useIndex=$UseIndex"
-
 cp PerfRun.conf $leadDir
 
 echo "******************start Executing Query******************"

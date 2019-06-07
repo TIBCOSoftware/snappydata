@@ -52,7 +52,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
@@ -129,7 +129,7 @@ object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging 
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
           if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+              !schema(schema.length - 1).name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
@@ -287,8 +287,8 @@ object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging 
           if (batchIterator.currentVal.remaining() == 0) batchIterator.moveNext()
           else if (filterPredicate ne null) {
             // first check the full stats
-            val statsRow = Utils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
-            val deltaStatsRow = Utils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
+            val statsRow = SharedUtils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
+            val deltaStatsRow = SharedUtils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
               numColumnsInStatBlob)
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
@@ -545,7 +545,7 @@ object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging 
     SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
   }
 
-  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+  override def checkSchemaPermission(schemaName: String, currentUser: String): String = {
     val ms = Misc.getMemStoreBootingNoThrow
     val userId = IdUtil.getUserAuthorizationId(currentUser)
     if (ms ne null) {
@@ -557,6 +557,7 @@ object StoreCallbacksImpl extends StoreCallbacks with SparkSupport with Logging 
           conn = GemFireXDUtils.getTSSConnection(false, true, false)
           conn.getTR.setupContextStack()
           contextSet = true
+          val schema = Utils.toUpperCase(schemaName)
           val sd = dd.getSchemaDescriptor(
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd eq null) {

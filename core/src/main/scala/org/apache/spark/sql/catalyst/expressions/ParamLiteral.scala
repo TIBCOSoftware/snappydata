@@ -211,6 +211,11 @@ final class TokenLiteral(_value: Any, _dataType: DataType)
 
   override def jsonFields: List[JField] = super.jsonFields
 
+  override def equals(other: Any): Boolean = other match {
+    case l: Literal => foldable == l.foldable && super.equals(other)
+    case _ => super.equals(other)
+  }
+
   override def write(kryo: Kryo, output: Output): Unit = {
     kryo.writeClassAndObject(output, value)
     StructTypeSerializer.writeType(kryo, output, dataType)
@@ -409,7 +414,7 @@ object TokenLiteral {
         case _: DynamicReplacableConstant | _: Literal => true
         case _ => false
       }
-      isConstant & c.dataType.isInstanceOf[AtomicType]
+      isConstant && c.dataType.isInstanceOf[AtomicType]
     case _ => false
   }
 
