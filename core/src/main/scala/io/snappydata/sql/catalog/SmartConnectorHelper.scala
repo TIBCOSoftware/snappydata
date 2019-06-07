@@ -34,7 +34,7 @@ import io.snappydata.{Constant, Property}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.datasources.jdbc.{DriverRegistry, JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Logging, Partition, SparkContext}
@@ -106,7 +106,7 @@ class SmartConnectorHelper(session: SparkSession, jdbcUrl: String) extends Loggi
           logWarning(s"could not add path $jarpath to SparkContext as the file is not readable")
         }
       })
-      val newClassLoader = Utils.newMutableURLClassLoader(mutableList.toArray)
+      val newClassLoader = SharedUtils.newMutableURLClassLoader(mutableList.toArray)
       Thread.currentThread().setContextClassLoader(newClassLoader)
     }
   }

@@ -77,7 +77,7 @@ object CompressionUtils {
   }
 
   def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
-      result: ByteBuffer): ByteBuffer = {
+      result: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     val position = input.position()
     val resultLen = try codecId match {
       case CompressionCodecId.LZ4_ID =>
@@ -104,6 +104,7 @@ object CompressionUtils {
       result.limit(resultLen + COMPRESSION_HEADER_SIZE)
       result
     } else {
+      allocator.release(result)
       input
     }
   }

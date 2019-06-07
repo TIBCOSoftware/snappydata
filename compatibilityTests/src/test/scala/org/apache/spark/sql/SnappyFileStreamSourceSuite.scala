@@ -20,14 +20,7 @@ import org.apache.spark.sql.streaming.{FileStreamSourceStressTestSuite, FileStre
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyFileStreamSourceSuite extends FileStreamSourceSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "FileStreamSource offset - read Spark 2.1.0 offset json format",
-    "FileStreamSource offset - read Spark 2.1.0 offset long format",
-    "FileStreamSourceLog - read Spark 2.1.0 log format"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
 
 class SnappyFileStreamSourceStressTestSuite extends FileStreamSourceStressTestSuite
     with SharedSnappySessionContext with SnappySparkTestUtil

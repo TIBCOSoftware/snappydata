@@ -17,10 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.TakeOrderedAndProjectSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyTakeOrderedAndProjectSuite
-    extends TakeOrderedAndProjectSuite
-        with SharedSnappySessionContext{
-
-}
+class SnappyTakeOrderedAndProjectSuite extends TakeOrderedAndProjectSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

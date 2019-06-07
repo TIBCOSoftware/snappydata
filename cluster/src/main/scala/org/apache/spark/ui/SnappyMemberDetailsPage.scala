@@ -452,7 +452,7 @@ private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
 }
 
 object SnappyMemberDetailsPage {
-  val pageHeaderText = "SnappyData Member Details"
+  val pageHeaderText = "Member Details"
 
   object Status {
     val stopped = "Stopped"
