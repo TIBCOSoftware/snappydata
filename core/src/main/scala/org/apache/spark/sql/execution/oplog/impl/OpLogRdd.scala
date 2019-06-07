@@ -18,6 +18,7 @@ package org.apache.spark.sql.execution.oplog.impl
 
 import java.sql.Timestamp
 
+import scala.annotation.meta.param
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.Breaks._
@@ -25,7 +26,9 @@ import scala.util.control.Breaks._
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.internal.cache._
+import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.catalog.UUID
+import com.pivotal.gemfirexd.internal.client.am.Types
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store._
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.{ColumnDescriptor, ColumnDescriptorList}
@@ -133,7 +136,7 @@ class OpLogRdd(
         }
       }
     }
-
+    // todo : handle properly
     tableColIdsMap.getOrElse(s"$maxVersion#$fqtn", null)(index)
 
   }
@@ -194,7 +197,6 @@ class OpLogRdd(
     }
     val schemaName = tblName.split("\\.")(0)
     val tableName = tblName.split("\\.")(1)
-    logInfo(s"PP: OplogRdd: columndescriptor list - $cdl with versionNum = $versionNum")
     val rf = new RowFormatter(cdl, schemaName, tableName, versionNum, null, false)
     rf
   }
@@ -254,22 +256,37 @@ class OpLogRdd(
           // schema.indexOf(field)
           val array = valueArr(complexFieldIndex)
           val data = new SerializedArray(8)
-          data.pointTo(array, Platform.BYTE_ARRAY_OFFSET, array.length)
-          data.toArray(a.elementType)
+          if (array != null) {
+            data.pointTo(array, Platform.BYTE_ARRAY_OFFSET, array.length)
+            data.toArray(a.elementType)
+          } else {
+            null
+          }
+
         case m: MapType =>
           assert(field.dataType == m)
           val map = valueArr(complexFieldIndex)
           val data = new SerializedMap()
-          data.pointTo(map, Platform.BYTE_ARRAY_OFFSET)
-          val jmap = new java.util.HashMap[Any, Any](data.numElements())
-          data.foreach(m.keyType, m.valueType, (k, v) => jmap.put(k, v))
-          jmap
+          logInfo(s"PP: oplogrdd- dvd $dvd\nmap ${map.toSeq}\nfield $field\ncomplexFIndex $complexFieldIndex")
+          if (map != null) {
+            data.pointTo(map, Platform.BYTE_ARRAY_OFFSET)
+            val jmap = new java.util.HashMap[Any, Any](data.numElements())
+            data.foreach(m.keyType, m.valueType, (k, v) => jmap.put(k, v))
+            jmap
+          } else {
+            null
+          }
+
         case s: StructType =>
           assert(field.dataType == s)
           val struct = valueArr(complexFieldIndex)
-          val data = new SerializedRow(4, s.length)
-          data.pointTo(struct, Platform.BYTE_ARRAY_OFFSET, struct.length)
-          data
+          if (struct != null) {
+            val data = new SerializedRow(4, s.length)
+            data.pointTo(struct, Platform.BYTE_ARRAY_OFFSET, struct.length)
+            data
+          } else {
+            null
+          }
         case BinaryType =>
           val blobValue = dvd.getObject.asInstanceOf[HarmonySerialBlob]
           Source.fromInputStream(blobValue.getBinaryStream).map(e => e.toByte).toArray
@@ -406,108 +423,120 @@ class OpLogRdd(
    */
   def iterateColData(phdrCol: PlaceHolderDiskRegion): Iterator[Row] = {
     val regMap = phdrCol.getRegionMap
-    regMap.keySet().iterator().asScala.flatMap {
-      case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
-        // get required info about deletes
-        val delKey = k.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
-        val delEntry = regMap.getEntry(delKey)
-        val (deleteBuffer, deleteDecoder) = if (delEntry ne null) {
-          val regValue = DiskEntry.Helper.readValueFromDisk(delEntry.asInstanceOf[DiskEntry],
-            phdrCol).asInstanceOf[ColumnFormatValue]
-          val valueBuffer = regValue.asInstanceOf[ColumnFormatValue]
-              .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
-          valueBuffer -> new ColumnDeleteDecoder(valueBuffer)
-        } else (null, null)
+    if (regMap != null) {
+      if (regMap.regionEntries().size() > 0) {
 
-        // get required info about columns
-        var columnIndex = 1
-        var hasTombstone = false
-        val decodersAndValues = sch.map { field =>
-          val columnKey = k.withColumnIndex(columnIndex)
-          columnIndex += 1
-          val entry = regMap.getEntry(columnKey)
-          if (!hasTombstone && entry.isTombstone) {
-            hasTombstone = true
-          }
-          if (hasTombstone) null
-          else {
-            var valueBuffer = entry._getValue().asInstanceOf[ColumnFormatValue]
-                .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
-            val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
-            val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
-              logWarning(s"1891: valueBuffers is direct : ${valueBuffer.isDirect}")
-              null
-            } else {
-              valueBuffer.array()
+        regMap.keySet().iterator().asScala.flatMap {
+          case k: ColumnFormatKey if k.getColumnIndex == ColumnFormatEntry.STATROW_COL_INDEX =>
+            // get required info about deletes
+            val delKey = k.withColumnIndex(ColumnFormatEntry.DELETE_MASK_COL_INDEX)
+            val delEntry = regMap.getEntry(delKey)
+            val (deleteBuffer, deleteDecoder) = if (delEntry ne null) {
+              val regValue = DiskEntry.Helper.readValueFromDisk(delEntry.asInstanceOf[DiskEntry],
+                phdrCol).asInstanceOf[ColumnFormatValue]
+              val valueBuffer = regValue.asInstanceOf[ColumnFormatValue]
+                  .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+              valueBuffer -> new ColumnDeleteDecoder(valueBuffer)
+            } else (null, null)
+
+            // get required info about columns
+            var columnIndex = 1
+            var hasTombstone = false
+            val decodersAndValues = sch.map { field =>
+              val columnKey = k.withColumnIndex(columnIndex)
+              columnIndex += 1
+              val entry = regMap.getEntry(columnKey)
+              if (!hasTombstone && entry.isTombstone) {
+                hasTombstone = true
+              }
+              if (hasTombstone) null
+              else {
+                var valueBuffer = entry._getValue().asInstanceOf[ColumnFormatValue]
+                    .getValueRetain(FetchRequest.DECOMPRESS).getBuffer
+                val decoder = ColumnEncoding.getColumnDecoder(valueBuffer, field)
+                val valueArray = if (valueBuffer == null || valueBuffer.isDirect) {
+                  logWarning(s"1891: valueBuffers is direct : ${valueBuffer.isDirect}")
+                  null
+                } else {
+                  valueBuffer.array()
+                }
+                decoder -> valueArray
+              }
             }
-            decoder -> valueArray
-          }
+
+            if (hasTombstone) Iterator.empty
+            else {
+              val statsEntry = regMap.getEntry(k)
+              val statsValue = DiskEntry.Helper.readValueFromDisk(statsEntry.asInstanceOf[DiskEntry],
+                phdrCol).asInstanceOf[ColumnFormatValue]
+              val numStatsColumns = sch.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
+              val stats = org.apache.spark.sql.collection.SharedUtils
+                  .toUnsafeRow(statsValue.getBuffer, numStatsColumns)
+              val numOfRows = stats.getInt(0)
+              val deletedCount = if ((deleteDecoder ne null) && (deleteBuffer ne null)) {
+                val allocator = ColumnEncoding.getAllocator(deleteBuffer)
+                ColumnEncoding.readInt(allocator.baseObject(deleteBuffer),
+                  allocator.baseOffset(deleteBuffer) + deleteBuffer.position() + 8)
+              } else 0
+              var numDeleted = 0
+              val colNullCounts = Array.fill[Int](sch.size)(0)
+
+              val updatedDecoders = sch.indices.map { colIndx =>
+                val deltaColIndex = ColumnDelta.deltaColumnIndex(colIndx, 0)
+                val deltaEntry1 = regMap.getEntry(k.withColumnIndex(deltaColIndex))
+                val delta1 = if (deltaEntry1 ne null) {
+                  DiskEntry.Helper.readValueFromDisk(deltaEntry1.asInstanceOf[DiskEntry],
+                    phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
+                } else null
+
+                val deltaEntry2 = regMap.getEntry(k.withColumnIndex(deltaColIndex - 1))
+                val delta2 = if (deltaEntry2 ne null) {
+                  DiskEntry.Helper.readValueFromDisk(deltaEntry2.asInstanceOf[DiskEntry],
+                    phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
+                } else null
+
+                val updateDecoder = if ((delta1 ne null) || (delta2 ne null)) {
+                  UpdatedColumnDecoder(decodersAndValues(colIndx)._1, sch(colIndx), delta1, delta2)
+                } else null
+                updateDecoder
+              }
+
+              (0 until (numOfRows - deletedCount)).map { i =>
+                while ((deleteDecoder ne null) && deleteDecoder.deleted(i + numDeleted)) {
+                  numDeleted += 1
+                }
+                Row.fromSeq(sch.indices.map { colIndx =>
+                  val decoderAndValue = decodersAndValues(colIndx)
+                  val colDecoder = decoderAndValue._1
+                  val colArray = decoderAndValue._2
+                  val colNextNullPosition = colDecoder.getNextNullPosition
+
+                  if ((i + numDeleted) == colNextNullPosition) {
+                    colNullCounts(colIndx) += 1
+                    colDecoder.findNextNullPosition(
+                      decoderAndValue._2, colNextNullPosition, colNullCounts(colIndx))
+                  }
+                  val updatedDecoder = updatedDecoders(colIndx)
+                  if ((updatedDecoder ne null) &&
+                      !updatedDecoder.unchanged(i + numDeleted - colNullCounts(colIndx)) &&
+                      updatedDecoder.readNotNull) {
+                    getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, sch(colIndx))
+                  } else {
+                    getDecodedValue(colDecoder, colArray, sch(colIndx).dataType, i + numDeleted)
+                  }
+                })
+              }.toIterator
+            }
+          case _ => Iterator.empty
         }
 
-        if (hasTombstone) Iterator.empty
-        else {
-          val statsEntry = regMap.getEntry(k)
-          val statsValue = DiskEntry.Helper.readValueFromDisk(statsEntry.asInstanceOf[DiskEntry],
-            phdrCol).asInstanceOf[ColumnFormatValue]
-          val numStatsColumns = sch.size * ColumnStatsSchema.NUM_STATS_PER_COLUMN + 1
-          val stats = org.apache.spark.sql.collection.SharedUtils
-              .toUnsafeRow(statsValue.getBuffer, numStatsColumns)
-          val numOfRows = stats.getInt(0)
-          val deletedCount = if ((deleteDecoder ne null) && (deleteBuffer ne null)) {
-            val allocator = ColumnEncoding.getAllocator(deleteBuffer)
-            ColumnEncoding.readInt(allocator.baseObject(deleteBuffer),
-              allocator.baseOffset(deleteBuffer) + deleteBuffer.position() + 8)
-          } else 0
-          var numDeleted = 0
-          val colNullCounts = Array.fill[Int](sch.size)(0)
-
-          val updatedDecoders = sch.indices.map { colIndx =>
-            val deltaColIndex = ColumnDelta.deltaColumnIndex(colIndx, 0)
-            val deltaEntry1 = regMap.getEntry(k.withColumnIndex(deltaColIndex))
-            val delta1 = if (deltaEntry1 ne null) {
-              DiskEntry.Helper.readValueFromDisk(deltaEntry1.asInstanceOf[DiskEntry],
-                phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
-            } else null
-
-            val deltaEntry2 = regMap.getEntry(k.withColumnIndex(deltaColIndex - 1))
-            val delta2 = if (deltaEntry2 ne null) {
-              DiskEntry.Helper.readValueFromDisk(deltaEntry2.asInstanceOf[DiskEntry],
-                phdrCol).asInstanceOf[ColumnFormatValue].getBuffer
-            } else null
-
-            val updateDecoder = if ((delta1 ne null) || (delta2 ne null)) {
-              UpdatedColumnDecoder(decodersAndValues(colIndx)._1, sch(colIndx), delta1, delta2)
-            } else null
-            updateDecoder
-          }
-
-          (0 until (numOfRows - deletedCount)).map { i =>
-            while ((deleteDecoder ne null) && deleteDecoder.deleted(i + numDeleted)) {
-              numDeleted += 1
-            }
-            Row.fromSeq(sch.indices.map { colIndx =>
-              val decoderAndValue = decodersAndValues(colIndx)
-              val colDecoder = decoderAndValue._1
-              val colArray = decoderAndValue._2
-              val colNextNullPosition = colDecoder.getNextNullPosition
-
-              if ((i + numDeleted) == colNextNullPosition) {
-                colNullCounts(colIndx) += 1
-                colDecoder.findNextNullPosition(
-                  decoderAndValue._2, colNextNullPosition, colNullCounts(colIndx))
-              }
-              val updatedDecoder = updatedDecoders(colIndx)
-              if ((updatedDecoder ne null) &&
-                  !updatedDecoder.unchanged(i + numDeleted - colNullCounts(colIndx)) &&
-                  updatedDecoder.readNotNull) {
-                getUpdatedValue(updatedDecoder.getCurrentDeltaBuffer, sch(colIndx))
-              } else {
-                getDecodedValue(colDecoder, colArray, sch(colIndx).dataType, i + numDeleted)
-              }
-            })
-          }.toIterator
-        }
-      case _ => Iterator.empty
+      } else {
+        val emptyRes: Seq[Row] = Seq()
+        emptyRes.iterator
+      }
+    } else {
+      val emptyRes: Seq[Row] = Seq()
+      emptyRes.iterator
     }
   }
 

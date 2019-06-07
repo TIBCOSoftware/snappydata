@@ -1293,7 +1293,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       storage = storage,
       schema = schema,
       provider = Some(provider),
-      properties = Map(("orgSqlText" -> orgSqlText)),
+      properties = Map((s"orgSqlText_${System.currentTimeMillis()}" -> orgSqlText)),
       partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))

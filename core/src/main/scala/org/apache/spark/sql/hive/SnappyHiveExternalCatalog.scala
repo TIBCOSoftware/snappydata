@@ -356,7 +356,14 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     }
 
     try {
-      withHiveExceptionHandling(super.createTable(catalogTable, ifExists))
+      val catalogTable_ = if (catalogTable.properties.contains("schemaJson")) {
+        // schemaJson is already added during preprocessed queue replay and hence we skip in lead
+        catalogTable
+      } else {
+        catalogTable.copy(properties =
+            catalogTable.properties ++ Map(s"schemaJson" -> s"${catalogTable.schema.json}"))
+      }
+      withHiveExceptionHandling(super.createTable(catalogTable_, ifExists))
     } catch {
       case _: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
