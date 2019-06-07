@@ -34,10 +34,10 @@ dependencies {
     exclude(group: 'org.scala-lang', module: 'scala-compiler')
   }
 
-  compile "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
-  compile "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}"
-  compile "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
-  compile "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
 
   compile project(":snappy-jdbc_${scalaBinaryVersion}")
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -66,6 +66,17 @@ scalaTest {
   doLast {
     // cleanup files since scalatest plugin does not honour workingDir yet
     cleanIntermediateFiles(project.path)
+  }
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
   }
 }
 

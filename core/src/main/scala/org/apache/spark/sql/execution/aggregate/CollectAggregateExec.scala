@@ -30,10 +30,12 @@ import org.apache.spark.sql.{CachedDataFrame, SparkSupport}
  * Special plan to collect top-level aggregation on driver itself and avoid
  * an exchange for simple aggregates.
  */
-case class CollectAggregateExec(
-    @transient basePlan: SnappyHashAggregateExec,
-    child: SparkPlan,
-    override val output: Seq[Attribute]) extends UnaryExecNode with SparkSupport {
+case class CollectAggregateExec(child: SparkPlan)(
+    @transient basePlan: SnappyHashAggregateExec) extends UnaryExecNode with SparkSupport {
+
+  override val output: Seq[Attribute] = basePlan.output
+
+  override protected def otherCopyArgs: Seq[AnyRef] = basePlan :: Nil
 
   override def nodeName: String = "CollectAggregate"
 

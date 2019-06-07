@@ -63,8 +63,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): RowFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val schemaString = getSchemaString(options, session.sessionCatalog.normalizeSchema(
-      data.schema), sqlContext.sparkContext)
+    val schemaString = getSchemaString(options, data.schema, sqlContext.sparkContext)
     val relation = createRelation(session, mode, options, schemaString)
     var success = false
     try {
@@ -72,7 +71,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       // on the servers to determine table properties like compression etc.
       // SnappyExternalCatalog will alter the definition for final entry if required.
       session.sessionCatalog.createTableForBuiltin(relation.resolvedName,
-        getClass.getCanonicalName, relation.schema, relation.origOptions,
+        getClass.getCanonicalName, relation.schema, relation.origOptions.toMap,
         mode != SaveMode.ErrorIfExists)
       // SaveMode.Overwrite already taken care by createTable to truncate
       relation.insert(data, overwrite = false)
@@ -93,11 +92,11 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], schemaString: String): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
+    val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)
-    val tableOptions = internals.newCaseInsensitiveMap(parameters.toMap)
+    val tableOptions = new CaseInsensitiveMutableHashMap[String](parameters.toMap)
     val ddlExtension = StoreUtils.ddlExtensionString(parameters,
       isRowTable = true, isShadowTable = false)
     val schemaExtension = s"$schemaString $ddlExtension"

@@ -204,7 +204,7 @@ trait SparkInternals extends Logging {
    * Create a [[LogicalPlan]] for DESCRIBE TABLE.
    */
   def newDescribeTableCommand(table: TableIdentifier, partitionSpec: Map[String, String],
-      isExtended: Boolean): RunnableCommand
+      isExtended: Boolean, isFormatted: Boolean): RunnableCommand
 
   /**
    * Create a [[LogicalPlan]] for CLEAR CACHE.

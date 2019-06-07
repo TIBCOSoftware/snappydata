@@ -27,7 +27,7 @@ import org.apache.spark.sql.types.LongType
  * Unlike Spark's InsertIntoTable this plan provides the count of rows
  * inserted as the output.
  */
-final class Insert(
+final class Insert23(
     table: LogicalPlan,
     partition: Map[String, Option[String]],
     child: LogicalPlan,
@@ -42,8 +42,8 @@ final class Insert(
       partition: Map[String, Option[String]] = partition,
       child: LogicalPlan = child,
       overwrite: Boolean = overwrite,
-      ifNotExists: Boolean = ifNotExists): Insert = {
-    new Insert(table, partition, child, overwrite, ifNotExists)
+      ifNotExists: Boolean = ifNotExists): Insert23 = {
+    new Insert23(table, partition, child, overwrite, ifNotExists)
   }
 }
 
@@ -51,7 +51,7 @@ final class Insert(
  * An extension to [[ResolvedHint]] to encapsulate any kind of hint rather
  * than just broadcast.
  */
-class ResolvedPlanWithHints(child: LogicalPlan,
+class ResolvedPlanWithHints23(child: LogicalPlan,
     override val allHints: Map[QueryHint.Type, HintName.Type])
     extends ResolvedHint(child, HintInfo(JoinStrategy.hasBroadcastHint(allHints)))
         with LogicalPlanWithHints {

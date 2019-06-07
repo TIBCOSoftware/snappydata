@@ -17,20 +17,22 @@
 
 package org.apache.spark.sql.streaming
 
-import java.sql.SQLException
+import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
 import io.snappydata.Property._
-import io.snappydata.StreamingConstants.EventType._
-import io.snappydata.StreamingConstants._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
 import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
+import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
+import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
 import org.apache.spark.sql.types.StructType
-import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappySession, _}
+import org.apache.spark.sql.{DataFrame, Dataset, Row, SnappyContext, SnappySession, _}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.util.Utils
 
@@ -64,7 +66,12 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       parameters: Map[String, String],
       partitionColumns: Seq[String],
       outputMode: OutputMode): Sink = {
-    createSinkStateTableIfNotExist(sqlContext)
+    val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
+    if (stateTableSchema.isEmpty && isSecurityEnabled(sqlContext.sparkSession)) {
+      val msg = s"'$STATE_TABLE_SCHEMA' is a mandatory option when security is enabled."
+      throw new IllegalStateException(msg)
+    }
+    createSinkStateTableIfNotExist(sqlContext, stateTableSchema)
     val cc = try {
       Utils.classForName(parameters(SINK_CALLBACK)).newInstance()
     } catch {
@@ -75,54 +82,100 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
       cc.asInstanceOf[SnappySinkCallback])
   }
 
-  private def createSinkStateTableIfNotExist(sqlContext: SQLContext) = {
+  private def isSecurityEnabled(sparkSession: SparkSession) = {
+    val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sparkSession),
+      ExternalStoreUtils.emptyCIMutableMap)
+    val (user, _) = ExternalStoreUtils.getCredentials(sparkSession)
+    if (!user.isEmpty) {
+      true
+    } else {
+      try {
+        val connection = DriverManager.getConnection(connProperties.url, connProperties.connProps)
+        connection.close()
+        false
+      } catch {
+        case ex: SQLException if ex.getSQLState.equals(LOGIN_FAILED) => true
+      }
+    }
+  }
+
+  private def createSinkStateTableIfNotExist(sqlContext: SQLContext,
+      stateTableSchema: Option[String]) = {
     sqlContext.asInstanceOf[SnappyContext].snappySession.sql(s"create table if not exists" +
-        s" $SINK_STATE_TABLE (" +
-        " stream_query_id varchar(200)," +
-        " batch_id long, " +
-        " PRIMARY KEY (stream_query_id)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
+        s" ${stateTable(stateTableSchema)} (" +
+        s" $QUERY_ID_COLUMN varchar(200)," +
+        s" $BATCH_ID_COLUMN long, " +
+        s" PRIMARY KEY ($QUERY_ID_COLUMN)) using row options(DISKSTORE 'GFXD-DD-DISKSTORE')")
   }
 
   @Override
-  def shortName(): String = SNAPPY_SINK_NAME
+  def shortName(): String = SnappyContext.SNAPPY_SINK_NAME
+}
 
+private[streaming] object SnappyStoreSinkProvider {
+
+  val EVENT_TYPE_COLUMN = "_eventType"
+  val SINK_STATE_TABLE = "SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val TABLE_NAME = "tableName"
+  val QUERY_NAME = "queryName"
+  val SINK_CALLBACK = "sinkCallback"
+  val STATE_TABLE_SCHEMA = "stateTableSchema"
+  val CONFLATION = "conflation"
+  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
+  val QUERY_ID_COLUMN = "stream_query_id"
+  val BATCH_ID_COLUMN = "batch_id"
+
+  object EventType {
+    val INSERT = 0
+    val UPDATE = 1
+    val DELETE = 2
+  }
+
+  def stateTable(schema: Option[String]): String = schema.map(s => s"$s.$SINK_STATE_TABLE")
+      .getOrElse(SINK_STATE_TABLE)
 }
 
 case class SnappyStoreSink(snappySession: SnappySession, parameters: Map[String, String],
     sinkCallback: SnappySinkCallback) extends Sink with SparkSupport {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
-    val streamQueryId = snappySession.sessionCatalog.formatName(parameters(STREAM_QUERY_ID))
-
-    val updated = snappySession.sql(s"update $SINK_STATE_TABLE " +
-        s"set batch_id=$batchId where stream_query_id='$streamQueryId' and batch_id != $batchId")
-        .collect()(0).getAs("count").asInstanceOf[Long]
-
-    // TODO: use JDBC connection here
-    var posDup = false
-
-    if (updated == 0) {
-      try {
-        snappySession.insert(SINK_STATE_TABLE, Row(streamQueryId, batchId))
-        posDup = false
-      }
-      catch {
-        case e: SQLException if e.getSQLState.equals("23505") => posDup = true
-      }
-    }
-
+    val message = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
+    val queryName = snappySession.sessionCatalog
+        .formatName(parameters.getOrElse(QUERY_NAME, throw new IllegalStateException(message)))
+    val possibleDuplicate = updateStateTable(queryName, batchId)
     val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
     if (hashAggregateSizeIsDefault) {
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
-      sinkCallback.process(snappySession, parameters, batchId, convert(data), posDup)
+      sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
     } finally {
       if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
       }
     }
+  }
+
+  def updateStateTable(queryName: String, batchId: Long): Boolean = {
+    val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
+    val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
+        s"set $BATCH_ID_COLUMN=$batchId where $QUERY_ID_COLUMN='$queryName' " +
+        s"and $BATCH_ID_COLUMN != $batchId")
+        .collect()(0).getAs("count").asInstanceOf[Long]
+
+    // TODO: use JDBC connection here
+    var posDup = false
+    if (updated == 0) {
+      try {
+        snappySession.insert(stateTable(stateTableSchema), Row(queryName, batchId))
+        posDup = false
+      }
+      catch {
+        case e: SQLException if e.getSQLState.equals("23505") => posDup = true
+      }
+    }
+    posDup
   }
 
   /**
@@ -166,11 +219,15 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
-      val dataFrame: DataFrame = if (conflationEnabled) getConflatedDf else df
-      if (eventTypeColumnAvailable) {
-        processDataWithEventType(dataFrame)
-      } else {
-        if (persist(dataFrame).count() != 0) dataFrame.write.putInto(tableName)
+      val dataFrame: DataFrame = persist(if (conflationEnabled) getConflatedDf else df)
+      try {
+        if (eventTypeColumnAvailable) {
+          processDataWithEventType(dataFrame)
+        } else {
+          if (dataFrame.count() != 0) dataFrame.write.putInto(tableName)
+        }
+      } finally {
+        dataFrame.unpersist()
       }
     }
     else {
@@ -222,7 +279,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
             .agg(exprs.head, exprs.tail: _*)
             .select(columns: _*)
       }
-      conflatedDf.cache()
+      conflatedDf
     }
 
     def persist(df: DataFrame) = if (ServiceUtils.isOffHeapStorageAvailable(snappySession)) {
@@ -230,25 +287,29 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
     } else df.persist()
 
     def processDataWithEventType(dataFrame: DataFrame): Unit = {
-      val hasUpdateOrDeleteEvents = persist(dataFrame)
-          .filter(dataFrame(EVENT_TYPE_COLUMN).isin(List(DELETE, UPDATE): _*))
-          .count() > 0
-      if (hasUpdateOrDeleteEvents) {
+      val incomingEventTypes = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN)
+          .isin(INSERT, UPDATE, DELETE)).groupBy(dataFrame(EVENT_TYPE_COLUMN)).count()
+          .select(EVENT_TYPE_COLUMN).collect().map(r => r(0).asInstanceOf[Int]).toSet[Int]
+      if (incomingEventTypes.contains(DELETE)) {
         val deleteDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === DELETE)
             .drop(EVENT_TYPE_COLUMN)
         deleteDf.write.deleteFrom(tableName)
       }
       if (posDup) {
-        val upsertEventTypes = List(INSERT, UPDATE)
-        val upsertDf = dataFrame
-            .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
-            .drop(EVENT_TYPE_COLUMN)
-        upsertDf.write.putInto(tableName)
+        if (incomingEventTypes.contains(INSERT) || incomingEventTypes.contains(UPDATE)) {
+          val upsertEventTypes = List(INSERT, UPDATE)
+          val upsertDf = dataFrame
+              .filter(dataFrame(EVENT_TYPE_COLUMN).isin(upsertEventTypes: _*))
+              .drop(EVENT_TYPE_COLUMN)
+          upsertDf.write.putInto(tableName)
+        }
       } else {
-        val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === INSERT)
-            .drop(EVENT_TYPE_COLUMN)
-        insertDf.write.insertInto(tableName)
-        if (hasUpdateOrDeleteEvents) {
+        if (incomingEventTypes.contains(INSERT)) {
+          val insertDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === INSERT)
+              .drop(EVENT_TYPE_COLUMN)
+          insertDf.write.insertInto(tableName)
+        }
+        if (incomingEventTypes.contains(UPDATE)) {
           val updateDf = dataFrame.filter(dataFrame(EVENT_TYPE_COLUMN) === UPDATE)
               .drop(EVENT_TYPE_COLUMN)
           updateDf.write.putInto(tableName)

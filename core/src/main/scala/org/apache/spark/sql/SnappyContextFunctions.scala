@@ -23,7 +23,7 @@ import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.catalyst.expressions.{Expression, ExpressionInfo}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow}
-import org.apache.spark.sql.policy.CurrentUser
+import org.apache.spark.sql.policy.{CurrentUser, LdapGroupsOfCurrentUser}
 import org.apache.spark.sql.sources.BaseRelation
 import org.apache.spark.sql.streaming.StreamBaseRelation
 import org.apache.spark.sql.types.StructType
@@ -59,6 +59,11 @@ class SnappyContextFunctions extends SparkSupport {
         "current SQL statement."
     registerNArgFunction(session, 0, "CURRENT_USER", classOf[CurrentUser],
       usageStr, _ => CurrentUser())
+
+    usageStr = "_FUNC_() - Returns the ldap groups of, which the user " +
+      "who is executing the current SQL statement, is a member of."
+    registerNArgFunction(session, 0, "CURRENT_USER_LDAP_GROUPS", classOf[LdapGroupsOfCurrentUser],
+      usageStr, _ => LdapGroupsOfCurrentUser())
   }
 
   def createTopK(session: SnappySession, tableName: String,

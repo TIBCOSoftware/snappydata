@@ -38,8 +38,8 @@ import io.snappydata.util.ServiceUtils
 import org.apache.spark.SparkContext
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.CatalogTableType
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
@@ -55,12 +55,14 @@ import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
-    baseTable: Option[TableIdentifier],
+    baseTable: Option[String],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     mode: SaveMode,
     options: Map[String, String],
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
     isBuiltIn: Boolean) extends RunnableCommand {
 
@@ -68,7 +70,7 @@ case class CreateTableUsingCommand(
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, query)
+      schemaDDL, mode, allOptions, isBuiltIn, partitionColumns, bucketSpec, query)
     Nil
   }
 }
@@ -116,7 +118,7 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val conn = session.defaultPooledConnection(schema)
     try {
       val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""CREATE SCHEMA "$schema"$authClause""")
+      stmt.executeUpdate(s"""CREATE SCHEMA "${Utils.toUpperCase(schema)}"$authClause""")
       stmt.close()
     } catch {
       case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
@@ -155,7 +157,7 @@ case class DropSchemaCommand(schemaName: String, ifExists: Boolean, cascade: Boo
     val conn = session.defaultPooledConnection(schema)
     try {
       val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "$schema" RESTRICT""")
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "${Utils.toUpperCase(schema)}" RESTRICT""")
       stmt.close()
     } finally {
       conn.close()
@@ -378,9 +380,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
             // while avoiding creation of any new SparkPlan.
-            memoryPlan.cachedColumnBuffers.count()
-            (Unit, System.nanoTime() - start)
-          }))._2) :: Nil
+            (memoryPlan.cachedColumnBuffers.count(), System.nanoTime() - start)
+          }))._1) :: Nil
       } finally {
         if (previousJobDescription ne null) {
           localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, previousJobDescription)
@@ -412,7 +413,9 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
   }
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
-    if (!hiveCompatible) return super.run(sparkSession)
+    if (!hiveCompatible) {
+      return super.run(sparkSession)
+    }
 
     val catalog = sparkSession.sessionState.catalog
     val schemaName = schemaOpt match {
@@ -465,7 +468,13 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     tables.map(tableIdent => tableIdent -> getViewType(tableIdent, session)).collect {
       case (viewIdent, Some((isTemp, isGlobalTemp))) =>
         if (hiveCompatible) Row(viewIdent.table)
-        else Row(viewIdent.database.getOrElse(""), viewIdent.table, isTemp, isGlobalTemp)
+        else {
+          val viewSchema = viewIdent.database match {
+            case None => ""
+            case Some(s) => s
+          }
+          Row(viewSchema, viewIdent.table, isTemp, isGlobalTemp)
+        }
     }
   }
 }
@@ -474,7 +483,7 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
  * This extends Spark's describe to add support for CHAR and VARCHAR types.
  */
 case class DescribeSnappyTableCommand(table: TableIdentifier, partitionSpec: TablePartitionSpec,
-    isExtended: Boolean) extends RunnableCommand with SparkSupport {
+    isExtended: Boolean, isFormatted: Boolean) extends RunnableCommand with SparkSupport {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val catalog = sparkSession.asInstanceOf[SnappySession].sessionCatalog
@@ -482,7 +491,8 @@ case class DescribeSnappyTableCommand(table: TableIdentifier, partitionSpec: Tab
       // set the flag to return CharStringType if present
       catalog.convertCharTypesInMetadata = true
       try {
-        internals.newDescribeTableCommand(table, partitionSpec, isExtended).run(sparkSession)
+        internals.newDescribeTableCommand(table, partitionSpec,
+          isExtended, isFormatted).run(sparkSession)
       } finally {
         catalog.convertCharTypesInMetadata = false
       }

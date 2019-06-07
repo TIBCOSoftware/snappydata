@@ -42,11 +42,11 @@ import io.snappydata.ResultSetWithNull
 
 import org.apache.spark.rdd.{RDD, UnionPartition}
 import org.apache.spark.sql.SnappySession
-import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
 import org.apache.spark.sql.catalyst.dsl.expressions._
 import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, ExpressionCanonicalizer}
-import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier}
+import org.apache.spark.sql.collection.{SharedUtils, Utils}
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.encoding._
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnDelta}
@@ -220,8 +220,8 @@ private[sql] final case class ColumnTableScan(
     // (or an extension of it if some special treatment is required)?
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
-    val (weightVarName, weightAssignCode) = if (output.exists(_.name ==
-        Utils.WEIGHTAGE_COLUMN_NAME)) {
+    val (weightVarName, weightAssignCode) = if (output.exists(_.name.equalsIgnoreCase(
+        Utils.WEIGHTAGE_COLUMN_NAME))) {
       val varName = internals.addClassField(ctx, "long", "weightage", v => s"$v = 0;")
       (varName, s"$varName = $wrappedRow.weight();")
     } else ("", "")
@@ -493,8 +493,10 @@ private[sql] final case class ColumnTableScan(
     val statsRow = ctx.freshName("statsRow")
     val deltaStatsRow = ctx.freshName("deltaStatsRow")
     val colNextBytes = ctx.freshName("colNextBytes")
-    val numTableColumns = if (ordinalIdTerm eq null) relationSchema.size
-    else relationSchema.size - ColumnDelta.mutableKeyNames.length // for update/delete
+    val numTableColumns = if (relationSchema.exists(
+      _.name.equalsIgnoreCase(ColumnDelta.mutableKeyNames.head))) {
+      relationSchema.length - ColumnDelta.mutableKeyNames.length // for update/delete
+    } else relationSchema.length
     val numColumnsInStatBlob = ColumnStatsSchema.numStatsColumns(numTableColumns)
 
     val incrementBatchOutputRows = if (numOutputRows ne null) {
@@ -512,9 +514,9 @@ private[sql] final case class ColumnTableScan(
     val batchAssign =
       s"""
         final java.nio.ByteBuffer $colNextBytes = (java.nio.ByteBuffer)$colInput.next();
-        UnsafeRow $statsRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
+        UnsafeRow $statsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colNextBytes, $numColumnsInStatBlob);
-        UnsafeRow $deltaStatsRow = ${Utils.getClass.getName}.MODULE$$.toUnsafeRow(
+        UnsafeRow $deltaStatsRow = ${SharedUtils.getClass.getName}.MODULE$$.toUnsafeRow(
           $colInput.getCurrentDeltaStats(), $numColumnsInStatBlob);
         final int $numFullRows = $statsRow.getInt($countIndexInSchema);
         int $numDeltaRows = $deltaStatsRow != null ? $deltaStatsRow.getInt(
@@ -738,8 +740,8 @@ private[sql] final case class ColumnTableScan(
       case _: ArrayType => "Array"
       case _: MapType => "Map"
       case t: StructType =>
-        colAssign = s"$col = $decoder.readStruct($buffer, ${t.size}, $nonNullPosition);"
-        updatedAssign = s"readStruct(${t.size})"
+        colAssign = s"$col = $decoder.readStruct($buffer, ${t.length}, $nonNullPosition);"
+        updatedAssign = s"readStruct(${t.length})"
         "Struct"
       case _ =>
         throw new UnsupportedOperationException(s"unknown type $sqlType")
@@ -782,7 +784,7 @@ private[sql] final case class ColumnTableScan(
            |if ($unchangedCode) $colAssign
            |else $updatedAssign
         """.stripMargin
-      if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
+      if (weightVar != null && attr.name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
         code += s"if ($col == 1) $col = $weightVar;\n"
       }
       ExprCode(code, "false", col)

@@ -210,22 +210,23 @@ object RuleUtils extends PredicateHelper with SparkSupport {
             r.collectFirst { case a: AttributeReference => a }
           }
     }.groupBy(_.map(_.qualifier)).collect { case (table, cols)
-      if table.nonEmpty & table.get.nonEmpty => (
+      if table.nonEmpty && table.get.nonEmpty => (
         table.get.get,
         cols.collect { case a if a.nonEmpty => a.get })
     }
 
     var ir: IndexColumnFormatRelation = null
+    val currentSchema = snappySession.getCurrentSchema
     val satisfyingPartitionColumns = for {
       (table, indexes) <- RuleUtils.fetchIndexes(snappySession, child)
       filterCols <- columnGroups.collectFirst {
         case (t, predicates) if predicates.nonEmpty =>
           table match {
             case lr: LogicalRelation if lr.relation.isInstanceOf[ColumnFormatRelation] &&
-                lr.relation.asInstanceOf[ColumnFormatRelation].table.indexOf(t) > 0 =>
-              predicates
-            case s: SubqueryAlias if s.alias.equals(t) =>
-              predicates
+                (lr.relation.asInstanceOf[ColumnFormatRelation].table.equalsIgnoreCase(t) ||
+                    lr.relation.asInstanceOf[ColumnFormatRelation].table.equalsIgnoreCase(
+                      s"$currentSchema.$t")) => predicates
+            case s: SubqueryAlias if s.alias.equalsIgnoreCase(t) => predicates
             case _ => Nil
           }
       } if filterCols.nonEmpty

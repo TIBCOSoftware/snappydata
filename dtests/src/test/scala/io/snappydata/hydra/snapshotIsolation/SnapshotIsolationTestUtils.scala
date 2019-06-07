@@ -60,7 +60,7 @@ class SnapshotIsolationTestUtils {
     val dupList: util.List[Row] = new util.ArrayList[Row]()
     for (row <- rowList) {
       pw.println(s"${row}")
-      val count = row.getAs("COUNT")
+      val count = row.getAs("count")
       if (count > 1) {
         dupFound = true
         pw.print("This is a duplicate row");

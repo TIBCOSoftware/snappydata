@@ -234,8 +234,9 @@ class Spark210Internals extends SparkInternals {
   }
 
   override def newDescribeTableCommand(table: TableIdentifier,
-      partitionSpec: Map[String, String], isExtended: Boolean): RunnableCommand = {
-    DescribeTableCommand(table, partitionSpec, isExtended, isFormatted = false)
+      partitionSpec: Map[String, String], isExtended: Boolean,
+      isFormatted: Boolean): RunnableCommand = {
+    DescribeTableCommand(table, partitionSpec, isExtended, isFormatted)
   }
 
   override def newClearCacheCommand(): LogicalPlan = ClearCacheCommand
@@ -406,12 +407,12 @@ class Spark210Internals extends SparkInternals {
 
   override def newCodegenSparkFallback(child: SparkPlan,
       session: SnappySession): CodegenSparkFallback = {
-    new CodegenSparkFallbackImpl(child, session)
+    new CodegenSparkFallback21(child, session)
   }
 
   override def newLogicalDStreamPlan(output: Seq[Attribute], stream: DStream[InternalRow],
       streamingSnappy: SnappyStreamingContext): LogicalDStreamPlan = {
-    new LogicalDStreamPlanImpl(output, stream)(streamingSnappy)
+    new LogicalDStreamPlan21(output, stream)(streamingSnappy)
   }
 
   override def newCatalogDatabase(name: String, description: String,
@@ -498,19 +499,19 @@ class Spark210Internals extends SparkInternals {
 
   override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyEmbeddedHiveCatalogImpl(conf, hadoopConf, createTime)
+    new SnappyEmbeddedHiveCatalog21(conf, hadoopConf, createTime)
   }
 
   override def newSmartConnectorExternalCatalog(
       session: SparkSession): SmartConnectorExternalCatalog = {
-    new SmartConnectorExternalCatalogImpl(session)
+    new SmartConnectorExternalCatalog21(session)
   }
 
   override def newSnappySessionCatalog(sessionState: SnappySessionState,
       externalCatalog: SnappyExternalCatalog, globalTempViewManager: GlobalTempViewManager,
       functionRegistry: FunctionRegistry, conf: SQLConf,
       hadoopConf: Configuration): SnappySessionCatalog = {
-    new SnappySessionCatalogImpl(sessionState.snappySession, externalCatalog, globalTempViewManager,
+    new SnappySessionCatalog21(sessionState.snappySession, externalCatalog, globalTempViewManager,
       sessionState.functionResourceLoader, functionRegistry, sessionState.snappySqlParser,
       conf, hadoopConf)
   }
@@ -546,7 +547,7 @@ class Spark210Internals extends SparkInternals {
       session: Option[SparkSession]): JSONOptions = new JSONOptions(parameters)
 
   override def newSnappySessionState(snappySession: SnappySession): SnappySessionState = {
-    new SnappySessionStateImpl(snappySession)
+    new SnappySessionState21(snappySession)
   }
 
   override def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer = {
@@ -560,7 +561,7 @@ class Spark210Internals extends SparkInternals {
     PreWriteCheck(sessionState.conf, sessionState.catalog)
   }
 
-  override def newCacheManager(): CacheManager = new SnappyCacheManager
+  override def newCacheManager(): CacheManager = new SnappyCacheManager21
 
   override def buildConf(key: String): ConfigBuilder = SQLConfigBuilder(key)
 }
@@ -568,7 +569,7 @@ class Spark210Internals extends SparkInternals {
 /**
  * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
  */
-final class SnappyCacheManager extends CacheManager {
+final class SnappyCacheManager21 extends CacheManager {
 
   override def cacheQuery(query: Dataset[_], tableName: Option[String],
       storageLevel: StorageLevel): Unit = {
@@ -598,7 +599,7 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
+class SnappyEmbeddedHiveCatalog21(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
 
@@ -676,7 +677,7 @@ class SnappyEmbeddedHiveCatalogImpl(override val conf: SparkConf,
     renameFunctionImpl(schema, oldName, newName)
 }
 
-class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
+class SmartConnectorExternalCatalog21(override val session: SparkSession)
     extends SmartConnectorExternalCatalog {
 
   override def createDatabase(schemaDefinition: CatalogDatabase, ignoreIfExists: Boolean): Unit =
@@ -721,12 +722,12 @@ class SmartConnectorExternalCatalogImpl(override val session: SparkSession)
     renameFunctionImpl(schema, oldName, newName)
 }
 
-final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
+final class SnappySessionCatalog21(override val snappySession: SnappySession,
     override val snappyExternalCatalog: SnappyExternalCatalog,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,
     override val functionRegistry: FunctionRegistry, override val parser: SnappySqlParser,
-    override val sqlConf: SQLConf, hadoopConf: Configuration)
+    override val sqlConf: SQLConf, override val hadoopConf: Configuration)
     extends SessionCatalog(snappyExternalCatalog, globalTempViewManager, functionResourceLoader,
       functionRegistry, sqlConf, hadoopConf) with SnappySessionCatalog {
 
@@ -749,7 +750,7 @@ final class SnappySessionCatalogImpl(override val snappySession: SnappySession,
     makeFunctionBuilderImpl(name, functionClassName)
 }
 
-class SnappySessionStateImpl(override val snappySession: SnappySession)
+class SnappySessionState21(override val snappySession: SnappySession)
     extends SessionState(snappySession) with SnappySessionState {
 
   self =>
@@ -757,7 +758,7 @@ class SnappySessionStateImpl(override val snappySession: SnappySession)
   protected def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
     AnalyzeCreateTable(snappySession) ::
         new PreprocessTable(this) ::
-        // ResolveRelationsExtended ::
+        ResolveRelationsExtended ::
         ResolveAliasInGroupBy ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
@@ -772,7 +773,31 @@ class SnappySessionStateImpl(override val snappySession: SnappySession)
     Seq(ConditionalPreWriteCheck(internals.newPreWriteCheck(self)), PrePutCheck)
   }
 
+  override val analyzerBuilder: () => Analyzer = () => new Analyzer(catalog, conf) {
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
   override val analyzerPrepareBuilder: () => Analyzer = () => new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map(batch =>
+      Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*))
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  override val analyzerWithoutPromoteBuilder: () => Analyzer = () => new Analyzer(catalog, conf) {
 
     def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
       case analyzer.FixedPoint(_) => fixedPoint
@@ -782,23 +807,11 @@ class SnappySessionStateImpl(override val snappySession: SnappySession)
     override lazy val batches: Seq[Batch] = analyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
-            false
-          } else {
-            true
-          }
+          case PromoteStrings => false
           case _ => true
         }): _*)
       case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
     }
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
-  override val analyzerBuilder: () => Analyzer = () => new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
@@ -843,7 +856,7 @@ class SnappySessionStateImpl(override val snappySession: SnappySession)
 
 }
 
-final class CodegenSparkFallbackImpl(child: SparkPlan,
+final class CodegenSparkFallback21(child: SparkPlan,
     session: SnappySession) extends CodegenSparkFallback(child, session) {
 
   override def generateTreeString(depth: Int, lastChildren: Seq[Boolean], builder: StringBuilder,
@@ -852,7 +865,7 @@ final class CodegenSparkFallbackImpl(child: SparkPlan,
   }
 }
 
-final class LogicalDStreamPlanImpl(output: Seq[Attribute],
+final class LogicalDStreamPlan21(output: Seq[Attribute],
     stream: DStream[InternalRow])(streamingSnappy: SnappyStreamingContext)
     extends LogicalDStreamPlan(output, stream)(streamingSnappy) {
 

@@ -48,7 +48,11 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
     val iterator = internals.addClassField(ctx, "scala.collection.Iterator", "iterator",
       v => s"$v = inputs[0];")
 
-    val javaTypeName = encoder.clsTag.runtimeClass.getName
+    val javaClass = encoder.clsTag.runtimeClass
+    val javaTypeName =
+      if (javaClass.isPrimitive) ctx.boxedType(javaClass.getTypeName)
+      else javaClass.getTypeName
+
     val objVar = ctx.freshName("object")
 
     val expressions = encoder.serializer.map(
@@ -132,7 +136,6 @@ case class EncoderScanExec(rdd: RDD[Any], encoder: ExpressionEncoder[Any],
       // null ints
       // Hence the below code was erronous and after fixing null handing in above date field
       // it works for all cases.
-      
       /* if (ctx.isPrimitiveType(dataType)) {
         ev.copy(isNull = "false")
       } else {

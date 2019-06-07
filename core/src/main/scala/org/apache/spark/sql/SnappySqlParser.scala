@@ -20,6 +20,7 @@ import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.catalyst.parser.AbstractSqlParser
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.internal.VariableSubstitution
 import org.apache.spark.sql.types.DataType
 
 class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
@@ -30,6 +31,13 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
   @transient protected[sql] val sqlParser: SnappyParser =
     new SnappyParser(session)
 
+  @transient private val substitutor =
+    new VariableSubstitution(session.sessionState.conf)
+
+  private def withSubstitution(sqlText: String): String = {
+    substitutor.substitute(sqlText)
+  }
+
   /** Creates/Resolves DataType for a given SQL string. */
   override def parseDataType(sqlText: String): DataType = {
     sqlParser.parse(sqlText, sqlParser.parseDataType.run())
@@ -37,7 +45,7 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
 
   /** Creates Expression for a given SQL string. */
   override def parseExpression(sqlText: String): Expression = {
-    sqlParser.parse(sqlText, sqlParser.parseExpression.run())
+    sqlParser.parse(withSubstitution(sqlText), sqlParser.parseExpression.run())
   }
 
   /** Creates TableIdentifier for a given SQL string. */
@@ -46,10 +54,10 @@ class SnappySqlParser(session: SnappySession) extends AbstractSqlParser {
   }
 
   override def parsePlan(sqlText: String): LogicalPlan = {
-    sqlParser.parse(sqlText, sqlParser.sql.run())
+    sqlParser.parse(withSubstitution(sqlText), sqlParser.sql.run())
   }
 
   def parsePlan(sqlText: String, clearExecutionData: Boolean): LogicalPlan = {
-    sqlParser.parse(sqlText, sqlParser.sql.run(), clearExecutionData)
+    sqlParser.parse(withSubstitution(sqlText), sqlParser.sql.run(), clearExecutionData)
   }
 }

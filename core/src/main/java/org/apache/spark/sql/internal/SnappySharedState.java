@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.internal;
 
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.ClusterMode;
@@ -25,9 +26,6 @@ import org.apache.spark.sql.SparkSession;
 import org.apache.spark.sql.SparkSupport$;
 import org.apache.spark.sql.ThinClientConnectorMode;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
-import org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager;
-import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
-import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.CacheManager;
 import org.apache.spark.sql.hive.HiveClientUtil$;
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
@@ -40,8 +38,6 @@ import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
  */
 public final class SnappySharedState extends SharedState {
 
-  public static String SPARK_DEFAULT_SCHEMA = Utils.toUpperCase(SessionCatalog.DEFAULT_DATABASE());
-
   /**
    * Instance of SnappyData extended {@link CacheManager} to enable clearing cached plans.
    */
@@ -51,12 +47,6 @@ public final class SnappySharedState extends SharedState {
    * The ExternalCatalog implementation used for SnappyData in embedded mode.
    */
   private final SnappyHiveExternalCatalog embedCatalog;
-
-  /**
-   * Overrides to use upper-case "database" name as assumed by SnappyData
-   * conventions to follow other normal DBs.
-   */
-  private final GlobalTempViewManager globalViewManager;
 
   /**
    * Used to skip initializing meta-store in super's constructor.
@@ -90,14 +80,11 @@ public final class SnappySharedState extends SharedState {
     if (clusterMode instanceof ThinClientConnectorMode) {
       this.embedCatalog = null;
     } else {
+      // ensure store catalog is initialized
+      Misc.getMemStoreBooting().getExistingExternalCatalog();
       this.embedCatalog = HiveClientUtil$.MODULE$.getOrCreateExternalCatalog(
           sparkContext, sparkContext.conf());
     }
-
-    // Initialize global temporary view manager with upper-case schema name to match
-    // the convention used by SnappyData.
-    String globalSchemaName = Utils.toUpperCase(super.globalTempViewManager().database());
-    this.globalViewManager = new GlobalTempViewManager(globalSchemaName);
 
     this.initialized = true;
   }
@@ -163,16 +150,6 @@ public final class SnappySharedState extends SharedState {
     } else {
       // in super constructor, no harm in returning super's value at this point
       return super.externalCatalog();
-    }
-  }
-
-  @Override
-  public GlobalTempViewManager globalTempViewManager() {
-    if (this.initialized) {
-      return this.globalViewManager;
-    } else {
-      // in super constructor, no harm in returning super's value at this point
-      return super.globalTempViewManager();
     }
   }
 }

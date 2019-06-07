@@ -21,24 +21,6 @@ import scala.reflect.ClassTag
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
-object StreamingConstants {
-
-  val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = s"SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
-  val SNAPPY_SINK_NAME = "snappysink"
-  val TABLE_NAME = "tablename"
-  val STREAM_QUERY_ID = "streamqueryid"
-  val SINK_CALLBACK = "sinkcallback"
-  val CONFLATION = "conflation"
-  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
-
-  object EventType {
-    val INSERT = 0
-    val UPDATE = 1
-    val DELETE = 2
-  }
-}
-
 /**
  * Property names should be as per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
@@ -108,7 +90,8 @@ object Property extends Enumeration {
 
   val HiveServerEnabled: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
-        "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
+        "embedded HiveServer2 with thrift access will be started in foreground. Default is true " +
+        "but starts the service in background.", Some(true), prefix = null)
 
   val HiveCompatible: SQLValue[Boolean] = SQLVal(
     s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +

@@ -112,6 +112,9 @@ object QueryExecutionJob extends SnappySQLJob with Logging {
           logError("Exception in job", e)
       }
     }
+    avgPrintStream.close()
+    avgFileStream.close()
+    QueryExecutor.close
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {

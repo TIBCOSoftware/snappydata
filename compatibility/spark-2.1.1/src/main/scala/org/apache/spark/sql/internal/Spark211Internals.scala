@@ -75,21 +75,21 @@ class Spark211Internals extends Spark210Internals {
 
   override def newEmbeddedHiveCatalog(conf: SparkConf, hadoopConf: Configuration,
       createTime: Long): SnappyHiveExternalCatalog = {
-    new SnappyEmbeddedHiveCatalog211Impl(conf, hadoopConf, createTime)
+    new SnappyEmbeddedHiveCatalog211(conf, hadoopConf, createTime)
   }
 
   override def newSmartConnectorExternalCatalog(
       session: SparkSession): SmartConnectorExternalCatalog = {
-    new SmartConnectorExternalCatalog211Impl(session)
+    new SmartConnectorExternalCatalog211(session)
   }
 
-  override def newCacheManager(): CacheManager = new SnappyCacheManager
+  override def newCacheManager(): CacheManager = new SnappyCacheManager211
 }
 
 /**
  * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
  */
-final class SnappyCacheManager extends CacheManager {
+final class SnappyCacheManager211 extends CacheManager {
 
   override def cacheQuery(query: Dataset[_], tableName: Option[String],
       storageLevel: StorageLevel): Unit = {
@@ -114,16 +114,16 @@ final class SnappyCacheManager extends CacheManager {
   }
 }
 
-final class SnappyEmbeddedHiveCatalog211Impl(conf: SparkConf,
+final class SnappyEmbeddedHiveCatalog211(conf: SparkConf,
     hadoopConf: Configuration, createTime: Long)
-    extends SnappyEmbeddedHiveCatalogImpl(conf, hadoopConf, createTime) {
+    extends SnappyEmbeddedHiveCatalog21(conf, hadoopConf, createTime) {
 
   override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
     alterTableSchemaImpl(schemaName, table, newSchema)
 }
 
-final class SmartConnectorExternalCatalog211Impl(session: SparkSession)
-    extends SmartConnectorExternalCatalogImpl(session) {
+final class SmartConnectorExternalCatalog211(session: SparkSession)
+    extends SmartConnectorExternalCatalog21(session) {
 
   override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
     alterTableSchemaImpl(schemaName, table, newSchema)

@@ -127,7 +127,13 @@ Below is the list of all the configuration properties and links for each propert
 
 - [gemfirexd.query-timeout](snappydata.query-timeout.md)
 
-- [ssl](ssl.md)
+- [ssl-enabled](ssl_enabled.md)
+
+- [ssl-ciphers](ssl_ciphers.md)
+
+- [ssl-protocols](ssl_protocols.md)
+
+- [ssl-require-authentication](ssl_require_auth.md)
 
 - [start-locator](start-locator.md)
 
