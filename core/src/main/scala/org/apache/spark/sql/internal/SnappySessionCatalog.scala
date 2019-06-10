@@ -331,7 +331,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
     if (cascade) {
       // drop all the tables in order first, dependents followed by others
       val allTables = snappyExternalCatalog.listTables(schemaName).flatMap(
-        table => snappyExternalCatalog.getTableOptionImpl(schemaName, formatTableName(table)))
+        table => snappyExternalCatalog.getTableIfExists(schemaName, formatTableName(table)))
       // keep dropping leaves until empty
       if (allTables.nonEmpty) {
         // drop streams at the end
@@ -449,7 +449,7 @@ trait SnappySessionCatalog extends SessionCatalog with SparkSupport {
       val table = formatTableName(name.table)
       checkSchemaPermission(schema, table, defaultUser = null)
       // resolve the table and destroy underlying storage if possible
-      snappyExternalCatalog.getTableOptionImpl(schema, table) match {
+      snappyExternalCatalog.getTableIfExists(schema, table) match {
         case None =>
           if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
         case Some(metadata) =>
