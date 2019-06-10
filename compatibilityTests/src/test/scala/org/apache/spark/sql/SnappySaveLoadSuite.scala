@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.SaveLoadSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappySaveLoadSuite extends SaveLoadSuite with SharedSnappySessionContext{
-
-}
+class SnappySaveLoadSuite extends SaveLoadSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

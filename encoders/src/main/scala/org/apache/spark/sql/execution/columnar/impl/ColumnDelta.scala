@@ -245,16 +245,16 @@ object ColumnDelta {
    */
   val USED_MAX_DEPTH = 2
 
-  val mutableKeyNamePrefix = "SNAPPYDATA_INTERNAL_COLUMN_"
+  val mutableKeyNamePrefix = "snappydata_internal_column_"
   /**
    * These are the virtual columns that are injected in the select plan for
    * update/delete so that those operations can actually apply the changes.
    */
   val mutableKeyNames: Seq[String] = Seq(
-    mutableKeyNamePrefix + "ROW_ORDINAL",
-    mutableKeyNamePrefix + "BATCH_ID",
-    mutableKeyNamePrefix + "BUCKET_ORDINAL",
-    mutableKeyNamePrefix + "BATCH_NUMROWS"
+    mutableKeyNamePrefix + "row_ordinal",
+    mutableKeyNamePrefix + "batch_id",
+    mutableKeyNamePrefix + "bucket_ordinal",
+    mutableKeyNamePrefix + "batch_numrows"
   )
   val mutableKeyFields: Seq[StructField] = Seq(
     StructField(mutableKeyNames.head, LongType, nullable = false),
