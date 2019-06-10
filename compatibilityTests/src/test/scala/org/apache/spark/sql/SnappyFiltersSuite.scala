@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.FiltersSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyFiltersSuite extends FiltersSuite with SharedSnappySessionContext{
-
-}
+class SnappyFiltersSuite extends FiltersSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

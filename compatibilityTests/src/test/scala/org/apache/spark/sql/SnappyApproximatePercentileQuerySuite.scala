@@ -18,13 +18,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyApproximatePercentileQuerySuite
-    extends ApproximatePercentileQuerySuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "percentile_approx, array of percentile value",
-    "percentile_approx, multiple records with the minimum value in a partition",
-    "percentile_approx, supports constant folding for parameter accuracy and percentages"
-  )
-}
+class SnappyApproximatePercentileQuerySuite extends ApproximatePercentileQuerySuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

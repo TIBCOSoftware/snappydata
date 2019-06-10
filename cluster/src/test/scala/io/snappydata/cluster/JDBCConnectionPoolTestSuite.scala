@@ -221,8 +221,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       properties.setProperty("pool.minIdle", "1")
       properties.setProperty("pool.maxActive", "3")
       properties.setProperty("pool.initialSize", "1")
-      properties.setProperty("pool.user", "app")
-      properties.setProperty("pool.password", "app")
+      properties.setProperty("user", "app")
+      properties.setProperty("password", "app")
 
       val url = s"jdbc:snappydata:pool://$serverHostPort"
       // scalastyle:off

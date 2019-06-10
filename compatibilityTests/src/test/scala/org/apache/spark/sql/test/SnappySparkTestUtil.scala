@@ -31,8 +31,8 @@ trait SnappySparkTestUtil extends SparkFunSuite {
     new File(dirName).mkdir()
   }
 
-  def excluded: Seq[String] = Seq.empty[String]
-  def ignored: Seq[String] = Seq.empty[String]
+  def excluded: Seq[String] = Nil
+  def ignored: Seq[String] = Nil
 
   override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
     if (!excluded.contains(testName)) {
