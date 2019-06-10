@@ -21,6 +21,7 @@ import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.sql.types.{DataType, DecimalType, FloatType, IntegerType, LongType, StringType}
 import org.apache.spark.sql.{AnalysisException, Row}
+import org.junit.Assert._
 
 class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfterAll
     with BeforeAndAfter {
@@ -59,6 +60,13 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     assertForAnalysisException("update testTable set int_col = 1 + '1'")
   }
 
+  test("Arithmetic operator, one operand is some column") {
+    snc.sql("update testTable set int_col = int_col + 1").collect()
+    val rows = snc.sql("select * from testTable order by id").collect()
+    assertResult(Array(Row(1, 2, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 3, 2, new java.math.BigDecimal("1.20"))))(rows)
+  }
+
   test("Arithmetic operator, second operand is string type and is a numeric literal" +
       " casted as int ") {
     snc.sql("update testTable set int_col = 1 + cast('200' as int)").collect()
@@ -90,22 +98,22 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
 
   test("Plain assignment, assigning string typed non numeric literal") {
     assertForAnalysisException("update testTable set int_col = 'some_string'",
-      "INT_COL", IntegerType, StringType)
+      "int_col", IntegerType, StringType)
   }
 
   test("Plain assignment, assigning string typed numeric literal") {
     assertForAnalysisException("update testTable set int_col = '1'",
-      "INT_COL", IntegerType, StringType)
+      "int_col", IntegerType, StringType)
   }
 
   test("Plain assignment, assigning wider integral type to narrower integral type") {
     assertForAnalysisException("update testTable set int_col = 10000000000000000",
-      "INT_COL", IntegerType, LongType)
+      "int_col", IntegerType, LongType)
   }
 
   test("Plain assignment, assigning wider decimal to a narrower decimal") {
     assertForAnalysisException("update testTable set dec_col = 104.123",
-      "DEC_COL", DecimalType(5, 2), DecimalType(6, 3))
+      "dec_col", DecimalType(5, 2), DecimalType(6, 3))
   }
 
   test("Plain assignment, assigning narrower decimal to a wider decimal") {
@@ -131,7 +139,7 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
 
   test("Plain assignment, assigning float to a decimal") {
     assertForAnalysisException("update testTable set dec_col = CAST(104.123 as float)",
-      "DEC_COL", DecimalType(5, 2), FloatType)
+      "dec_col", DecimalType(5, 2), FloatType)
   }
 
   test("Plain assignment, assigning string typed numeric literal cast as int") {
@@ -157,7 +165,7 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
       case e: AnalysisException =>
         val expectedMessage = s"Data type of expression ($exprDt) is not compatible" +
             s" with the data type of attribute '$attrName' ($attrDt)"
-        assert(e.message.equals(expectedMessage))
+        assertEquals(expectedMessage, e.message)
     }
   }
 
@@ -169,7 +177,7 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     } catch {
       case e: AnalysisException =>
         val expectedMessage = s"Implicit type casting is not performed for update statements"
-        assert(e.message.equals(expectedMessage))
+        assertEquals(expectedMessage, e.message)
     }
   }
 }
