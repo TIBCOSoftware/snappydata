@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.sources.ResolvedDataSourceSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyResolvedDataSourceSuite extends ResolvedDataSourceSuite with SharedSnappySessionContext{
-
-}
+class SnappyResolvedDataSourceSuite extends ResolvedDataSourceSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

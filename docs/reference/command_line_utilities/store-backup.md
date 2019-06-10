@@ -212,6 +212,6 @@ To ensure that your backup is successful, you can try the following options:
 
 * Execute the `select count(*) from <TableName>;` query and verify the total number of rows.
 
-* Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
+* Verify the table details in the [SnappyData Monitoring Console](../../monitoring/monitoring.md#table).
 
 * If you have done updates, you can verify to see if those specific updates are available.

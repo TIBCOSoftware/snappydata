@@ -590,15 +590,28 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     var ds = session.sql("select ds, dr from domaindata where id = 40L")
     SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcinewsemail.com']", "[]")))
+    ds = session.sql("select ds, dr from domaindata where id = 418")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['taskbuckes.com']", "[]")))
 
-    ds = session.sql("UPDATE domaindata SET ds = '[''cbcin.com'']', dr = '[]' WHERE id = 40")
+    // check for escape character (\) and two single-quote escape in string literal
+
+    ds = session.sql("UPDATE domaindata SET ds = '''cbcin''.com\\']', dr = '[]' WHERE id = 40")
     // below checks both the result and partition pruning (only one row)
     SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
 
     ds = session.sql("select ds, dr from domaindata where id = 40")
     // below checks both the result and partition pruning (only one row)
     assert(ds.rdd.getNumPartitions === 1)
-    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("'cbcin'.com']", "[]")))
+
+    ds = session.sql("UPDATE domaindata SET ds = '\\'taskbuck''.com''', dr = '[]' WHERE id = 418")
+    // below checks both the result and partition pruning (only one row)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
+
+    ds = session.sql("select ds, dr from domaindata where id = 418")
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("'taskbuck'.com'", "[]")))
 
     ds = session.sql("delete from domaindata where id = 40")
     // below checks both the result and partition pruning (only one row)

@@ -16,6 +16,7 @@ The following prerequisites must be met to deploy SnappyData on Kubernetes:
 *	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher.
 
 *	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
+*	**Docker image**</br> Helm charts use the Docker images to launch the container on Kubernetes. [You can refer to these steps](./getting_started_with_docker_image.md#build-your-docker) to build your Docker image for SnappyData, provided you have its tarball with you. TIBCO does not provide a Docker image for SnappyData.
 
 
 <a id= deploykubernetes> </a>

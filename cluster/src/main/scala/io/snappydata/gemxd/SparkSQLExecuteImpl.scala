@@ -197,7 +197,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private def getColumnTypes: Array[(Int, Int, Int)] =
     querySchema.map(f => {
       SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, Utils.toUpperCase(f.name), allAsClob, columnsAsClob)
+        f.metadata, Utils.toLowerCase(f.name), allAsClob, columnsAsClob)
     }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
@@ -377,7 +377,7 @@ object SparkSQLExecuteImpl {
         val writer = new CharArrayWriter()
         writers += writer
         generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
-          s"COL_$size", writer)
+          s"col_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)

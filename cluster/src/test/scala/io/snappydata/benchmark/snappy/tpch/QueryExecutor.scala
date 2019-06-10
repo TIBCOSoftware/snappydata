@@ -65,8 +65,8 @@ object QueryExecutor {
           }
           queryPrintStream.println()
         }
-        println(s"NUmber of results : $count")
-        println(s"$queryNumber Result Collected in file $queryNumber.out")
+        println(s"Number of results : $count")
+        println(s"$queryNumber Result collected in file $queryNumber.out")
         if (queryNumber.equals("13")) {
           stmt.execute("drop view ViewQ13")
         }

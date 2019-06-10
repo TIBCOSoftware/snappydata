@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.streaming.MemorySourceStressSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyMemorySourceStressSuite extends MemorySourceStressSuite with SharedSnappySessionContext{
-
-}
+class SnappyMemorySourceStressSuite extends MemorySourceStressSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

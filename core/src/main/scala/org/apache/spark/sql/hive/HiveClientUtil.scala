@@ -60,7 +60,7 @@ object HiveClientUtil extends Logging {
     }
     // check store boot properties
     if (user.isEmpty) {
-      val bootProperties = Misc.getMemStore.getBootProperties
+      val bootProperties = Misc.getMemStoreBooting.getBootProperties
       bootProperties.get(USERNAME_ATTR).asInstanceOf[String] match {
         case null =>
         case u =>

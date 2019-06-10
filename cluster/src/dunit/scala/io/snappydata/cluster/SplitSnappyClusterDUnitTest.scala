@@ -716,9 +716,9 @@ object SplitSnappyClusterDUnitTest
     val rs = connectorSnc.sql("select * from t1 order by c1").collect()
 
     assert(rs.length == 5)
-    assert(rs(0).getAs[Int]("C1") == 1)
-    assert(rs(0).getAs[Int]("C2") == 1)
-    assert(rs(0).getAs[Int]("C3") == 1)
+    assert(rs(0).getAs[Int]("c1") == 1)
+    assert(rs(0).getAs[Int]("c2") == 1)
+    assert(rs(0).getAs[Int]("c3") == 1)
   }
 
   override def verifyTableFormInSplitMOde(locatorPort: Int,
@@ -734,8 +734,8 @@ object SplitSnappyClusterDUnitTest
 
     val rs = resultDF.collect()
     assert(rs.length == 5, s"Expected 5 but got ${rs.length}")
-    assert(rs(0).getAs[String]("COL1").equals("AA"))
-    assert(rs(0).getAs[String]("COL2").equals("AA"))
+    assert(rs(0).getAs[String]("col1").equals("AA"))
+    assert(rs(0).getAs[String]("col2").equals("AA"))
 
     connectorSnc.dropTable("APP.T1")
   }

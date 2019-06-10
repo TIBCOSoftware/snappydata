@@ -23,12 +23,12 @@ import java.util.GregorianCalendar
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.util.control.NonFatal
+
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
 import com.gemstone.gemfire.cache.IsolationLevel
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.shared.ClientSharedData
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.{AbstractCompactExecRow, GemFireContainer, RawStoreResultSet, RegionEntryUtils}
@@ -36,8 +36,9 @@ import com.pivotal.gemfirexd.internal.iapi.sql.conn.Authorizer
 import com.pivotal.gemfirexd.internal.iapi.types.RowLocation
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedResultSet
 import com.zaxxer.hikari.pool.ProxyResultSet
+
 import org.apache.spark.serializer.ConnectionPropertiesSerializer
-import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.expressions.Expression
 import org.apache.spark.sql.collection.{MultiBucketExecutorPartition, Utils}
 import org.apache.spark.sql.execution.columnar.{ExternalStoreUtils, ResultSetIterator}
@@ -45,7 +46,6 @@ import org.apache.spark.sql.execution.sources.StoreDataSourceStrategy.translateT
 import org.apache.spark.sql.execution.{RDDKryo, SecurityUtils}
 import org.apache.spark.sql.sources.JdbcExtendedUtils.quotedName
 import org.apache.spark.sql.sources._
-import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.{Partition, TaskContext, TaskContextImpl, TaskKilledException}
 
 /**
@@ -96,49 +96,52 @@ class RowFormatScanRDD(@transient val session: SnappySession,
     field
   }
 
+  private def appendCol(sb: StringBuilder, col: String): StringBuilder =
+    sb.append(Utils.toUpperCase(col))
+
   // below should exactly match ExternalStoreUtils.handledFilter
   private def compileFilter(f: Filter, sb: StringBuilder,
-      args: ArrayBuffer[Any], addAnd: Boolean): Unit = f match {
+      args: ArrayBuffer[Any], addAnd: Boolean, literal: String = ""): Unit = f match {
     case EqualTo(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" = ?")
+      appendCol(sb, col).append(" = ?")
       args += value
     case LessThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" < ?")
+      appendCol(sb, col).append(" < ?")
       args += value
     case GreaterThan(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" > ?")
+      appendCol(sb, col).append(" > ?")
       args += value
     case LessThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" <= ?")
+      appendCol(sb, col).append(" <= ?")
       args += value
     case GreaterThanOrEqual(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" >= ?")
+      appendCol(sb, col).append(" >= ?")
       args += value
     case StringStartsWith(col, value) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(s" LIKE $value%")
+      appendCol(sb, col).append(s" LIKE $value%")
     case In(col, values) =>
       if (addAnd) {
         sb.append(" AND ")
       }
-      sb.append(col).append(" IN (")
+      appendCol(sb, col).append(" IN (")
       (1 until values.length).foreach(_ => sb.append("?,"))
       sb.append("?)")
       args ++= values
@@ -147,20 +150,21 @@ class RowFormatScanRDD(@transient val session: SnappySession,
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "TRUE")
       sb.append(") AND (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "TRUE")
       sb.append(')')
     case Or(left, right) =>
       if (addAnd) {
         sb.append(" AND ")
       }
       sb.append('(')
-      compileFilter(left, sb, args, addAnd = false)
+      compileFilter(left, sb, args, addAnd = false, "FALSE")
       sb.append(") OR (")
-      compileFilter(right, sb, args, addAnd = false)
+      compileFilter(right, sb, args, addAnd = false, "FALSE")
       sb.append(')')
-    case _ => // no filter pushdown
+    case _ => sb.append(literal)
+     // no filter pushdown
   }
 
   /**
@@ -172,7 +176,7 @@ class RowFormatScanRDD(@transient val session: SnappySession,
       val sb = new StringBuilder()
       columns.foreach { s =>
         if (sb.nonEmpty) sb.append(',')
-        sb.append('"').append(s).append('"')
+        appendCol(sb.append('"'), s).append('"')
       }
       sb.toString()
     } else "1"

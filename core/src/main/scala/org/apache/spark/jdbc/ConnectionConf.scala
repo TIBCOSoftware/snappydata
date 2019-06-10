@@ -18,8 +18,8 @@ package org.apache.spark.jdbc
 
 import java.io.{IOException, ObjectOutputStream}
 
-
 import scala.collection.mutable
+
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -48,6 +48,7 @@ class ConnectionConfBuilder(session: SnappySession) {
   /**
    * Set the URL for connection. For SnappyData you can skip setting this.
    * SnappyData will automatically set the URL based on the cluster
+   *
    * @param url URL for JDBC connection
    */
   def setURL(url: String): ConnectionConfBuilder = {
@@ -58,6 +59,7 @@ class ConnectionConfBuilder(session: SnappySession) {
   /**
    * Set the driver for the connection. For SnappyData no need to set this.
    * SnappyData will automatically set the driver based on the cluster
+   *
    * @param driver driver for the connection
    */
   def setDriver(driver: String): ConnectionConfBuilder = {
@@ -88,7 +90,7 @@ class ConnectionConfBuilder(session: SnappySession) {
    * @param prop  property name
    * @param value property value
    */
-  def setPoolConf(prop: String, value: String) : ConnectionConfBuilder = {
+  def setPoolConf(prop: String, value: String): ConnectionConfBuilder = {
     poolSettings.put(prop, value)
     this
   }
