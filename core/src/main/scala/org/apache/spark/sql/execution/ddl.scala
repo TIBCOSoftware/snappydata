@@ -41,7 +41,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Cast, Expression, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -50,9 +50,11 @@ import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCo
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.BypassRowLevelSecurity
 import org.apache.spark.sql.sources.DestroyRelation
-import org.apache.spark.sql.types.{BooleanType, LongType, NullType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
+import org.apache.spark.sql.functions._
+import org.apache.spark.unsafe.types.CalendarInterval
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
@@ -623,5 +625,72 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     ToolsCallbackInit.toolsCallback.removePackage(alias)
     Nil
+  }
+}
+
+case class PutIntoValuesColumnTable(identifier: TableIdentifier,
+    colNames: Option[Seq[String]],
+    values: Seq[Expression])
+    extends RunnableCommand {
+
+  def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
+    case BooleanType => value.toBoolean
+    case BinaryType => value.toCharArray().map(ch => ch.toByte)
+    case ByteType => value.toByte
+    case DoubleType => value.toDouble
+    case FloatType => value.toFloat
+    case ShortType => value.toShort
+    case IntegerType => value.toInt
+    case LongType => value.toLong
+    case DateType => java.sql.Date.valueOf(value)
+    case TimestampType => java.sql.Timestamp.valueOf(value)
+    case CalendarIntervalType => CalendarInterval.fromString(value)
+    case t: DecimalType =>
+      val d = Decimal(value)
+      assert(d.changePrecision(t.precision, t.scale))
+      d
+    case _ => value
+  }
+
+  override lazy val output: Seq[Attribute] = AttributeReference("count", LongType)() :: Nil
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+
+    val snc = sparkSession.asInstanceOf[SnappySession]
+    val sc = sparkSession.sparkContext
+    val tableName = identifier.identifier
+    var v1 = values.zipWithIndex.map { case (e, ci) =>
+      if (e != null) Cast(e, StringType).eval() else null
+    }
+    var schema = sparkSession.sharedState
+        .externalCatalog.getTable(snc.getCurrentSchema, tableName).schema
+    import snappy._
+    var rowRdd = List.empty[Any]
+    val valuesList = v1.toList
+    if (colNames == None) {
+      rowRdd = valuesList.zip(schema)
+          .map { case (value, struct) =>
+            if (value != null) convertTypes(value.toString, struct) else null
+          }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      var someDF1 = snc.createDataFrame(rdd1, schema)
+      Seq(Row(someDF1.write.putInto(tableName)))
+    }
+    else {
+      var colSchema = StructType(colNames.head.toList
+          .map(column => schema.fields.find(_.name
+              .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
+            s"Field $column does not exist in $tableName with schema=$schema."))))
+      rowRdd = valuesList.zip(colSchema)
+          .map { case (value, struct) =>
+            if (value != null) convertTypes(value.toString, struct) else null
+          }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      var someDF = snc.createDataFrame(rdd1, colSchema)
+      val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
+      var df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
+        df.withColumn(c.name, lit(null).cast(c.dataType)))
+      Seq(Row(df2.write.putInto(tableName)))
+    }
   }
 }
