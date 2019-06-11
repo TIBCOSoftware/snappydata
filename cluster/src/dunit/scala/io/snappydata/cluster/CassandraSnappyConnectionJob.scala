@@ -29,7 +29,7 @@ object CassandraSnappyConnectionJob extends SnappySQLJob {
     // scalastyle:off println
     val df = sc.read.format("org.apache.spark.sql.cassandra").
         options(Map("table" -> "customer", "keyspace" -> "test")).load
-    df.write.format("column").mode(SaveMode.Append).saveAsTable("CUSTOMER")
+    df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("CUSTOMER")
     val showDF = sc.sql("select * from CUSTOMER").collect()
     println("Printing the contents of the CUSTOMER table")
     showDF.foreach(println)
