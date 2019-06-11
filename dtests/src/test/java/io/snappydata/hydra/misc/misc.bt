@@ -1,0 +1,6 @@
+//SNAP-3028 - onverting dataframe to dataset fails in embedded job
+
+io/snappydata/hydra/misc/snap3028.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
