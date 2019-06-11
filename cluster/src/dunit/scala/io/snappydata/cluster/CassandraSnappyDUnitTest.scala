@@ -78,8 +78,9 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
 
-    FileUtils.moveDirectory(new File(s"$snappyProductDir/work"), new File
-    (s"$snappyProductDir/workTestCassandraSnappy"))
+    /* FileUtils.moveDirectory(new File(s"$snappyProductDir/work"), new File
+    (s"$snappyProductDir/workTestCassandraSnappy")) */
+    s"rm -rf $snappyProductDir/work".!!
 
     logInfo("Stopping cassandra cluster")
     val p = Runtime.getRuntime.exec("pkill -f cassandra")
@@ -211,6 +212,7 @@ class CassandraSnappyDUnitTest(val s: String)
       Seq("connect client 'localhost:1527';",
         "deploy package cassandraJar 'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'" +
             s" path '$userHome/.ivy2';",
+        "drop table if exists customer2;",
         "create external table customer2 using org.apache.spark.sql.cassandra" +
             " options (table 'customer1', keyspace 'test1'," +
             " spark.cassandra.input.fetch.size_in_rows '200000'," +
