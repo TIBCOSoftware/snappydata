@@ -198,6 +198,7 @@ class SnappySessionState(val snappySession: SnappySession)
       plan match {
         case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
           updateExpressions.foreach {
+            case e if !e.childrenResolved =>
             case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
               throw new AnalysisException("Implicit type casting is not performed for update" +
                   " statements")
