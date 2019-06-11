@@ -19,11 +19,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyDatasetSuite extends DatasetSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "groupBy single field class, count",
-    "Kryo encoder",
-    "Java encoder"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

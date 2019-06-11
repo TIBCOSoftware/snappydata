@@ -224,15 +224,10 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     if (resultObtained) {
       // Return updated tableSizeInfo
       // Map to hold hive table type against table names as keys
-      val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
-      hiveTables.foreach(ht => {
-        val key = ht.schema.toString + "." + ht.entityName
-        tableTypesMap.put(key, ht.tableType)
-      })
-
+      val tableTypes = hiveTables.map(ht =>
+        Utils.toUpperCase(s"${ht.schema}.${ht.entityName}") -> ht.tableType).toMap
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
-        val tableName = rs.getTableName
-        try tableTypesMap.get(tableName) match {
+        try tableTypes.get(Utils.toUpperCase(rs.getTableName)) match {
           case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
             Utils.toUpperCase(t))) => rs.setColumnTable(true)
           case _ => rs.setColumnTable(false)

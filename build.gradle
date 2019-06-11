@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -38,6 +38,8 @@ apply plugin: 'distribution'
 apply plugin: 'nebula.ospackage-base'
 apply plugin: "nebula.ospackage"
 
+def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
+
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
@@ -70,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.0'
+  version = '1.1.0-HF-1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -97,12 +99,16 @@ allprojects {
   javadoc.options.charSet = 'UTF-8'
 
   ext {
-    productName = 'TIBCO ComputeDB'
-    vendorName = 'TIBCO, Inc.'
+    if (isEnterpriseProduct) {
+      productName = 'TIBCO ComputeDB'
+    } else {
+      productName = 'SnappyData'
+    }
+    vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.5'
+    snappySparkVersion = '2.1.1.6'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
@@ -210,7 +216,6 @@ allprojects {
 }
 
 
-def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
@@ -501,7 +506,7 @@ subprojects {
 
   // apply default manifest
   if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'TIBCO, Inc.'
+    createdBy = 'TIBCO Software Inc.'
   }
   jar {
     manifest {
@@ -556,6 +561,7 @@ subprojects {
   configurations.testRuntime {
     // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
     exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-i18n')
   }
 
   task packageTests(type: Jar, dependsOn: testClasses) {
@@ -606,7 +612,11 @@ subprojects {
           }
 
           pom.project {
-            name 'TIBCO ComputeDB'
+            if (isEnterpriseProduct) {
+              name 'TIBCO ComputeDB'
+            } else {
+              name 'SnappyData'
+            }
             packaging 'jar'
             // optionally artifactId can be defined here
             description 'TIBCO ComputeDB distributed data store and execution engine'
@@ -738,6 +748,7 @@ gradle.taskGraph.whenReady { graph ->
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
           'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+          'SPARK_TESTING': '1',
           'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
@@ -1061,7 +1072,11 @@ if (rootProject.hasProperty('copyToDir')) {
 
 distributions {
   main {
-    baseName = 'tib-compute'
+    if (isEnterpriseProduct) {
+      baseName = 'tib-compute'
+    } else {
+      baseName = 'snappydata'
+    }
     contents {
       from { snappyProductDir }
     }
@@ -1134,9 +1149,11 @@ buildDeb {
 }
 
 distTar {
-  archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
+  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
   if (isEnterpriseProduct) {
     archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.tar.gz'
+  } else {
+    classifier 'bin'
   }
   dependsOn product
   // also package VSD
@@ -1144,7 +1161,6 @@ distTar {
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
-  // classifier 'bin'
   compression = Compression.GZIP
   extension = 'tar.gz'
   if (rootProject.hasProperty('hadoop-provided')) {
@@ -1153,9 +1169,11 @@ distTar {
 }
 
 distZip {
-  archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
+  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
   if (isEnterpriseProduct) {
     archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.zip'
+  } else {
+    classifier 'bin'
   }
   dependsOn product
   // also package VSD
@@ -1163,7 +1181,6 @@ distZip {
   if (rootProject.hasProperty('enablePublish')) {
     dependsOn ':packageZeppelinInterpreter'
   }
-  // classifier 'bin'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
@@ -1188,7 +1205,7 @@ task jdbcJar {
 
   doLast {
     def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
-    String jdbcName = "TIB_compute-ce-jdbc-${scalaBinaryVersion}_${version}.jar"
+    String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
     if (isEnterpriseProduct) {
       jdbcName = "TIB_compute-jdbc-${scalaBinaryVersion}_${version}.jar"
     }
@@ -1208,7 +1225,7 @@ task copyShadowJars {
 
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
-    String coreName = "TIB_compute-ce-core-${scalaBinaryVersion}_${version}.jar"
+    String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
     if (isEnterpriseProduct) {
       coreName = "TIB_compute-core-${scalaBinaryVersion}_${version}.jar"
     }
@@ -1330,7 +1347,7 @@ int getLast(includeTestFiles, pattern) {
 }
 
 task packageZeppelinInterpreter { doLast {
-  String zeppelinInterpreterJarName = "TIB_compute-ce-zeppelin-${scalaBinaryVersion}_${zeppelinInterpreterVersion}.jar"
+  String zeppelinInterpreterJarName = "snappydata-zeppelin_${scalaBinaryVersion}-${zeppelinInterpreterVersion}.jar"
   String zeppelinInterpreterDir = System.env.ZEPPELIN_INTERPRETER_DIR
 
   if (zeppelinInterpreterDir == null || zeppelinInterpreterDir.length() == 0) {

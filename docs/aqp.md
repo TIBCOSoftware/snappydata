@@ -3,7 +3,7 @@
 <ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
 
 !!! Note
-	This is the beta version of the SDE feature which is still undergoing final testing before its official release. 
+	This is the beta version of the SDE feature which is still undergoing final testing before its official release. This feature is not supported in the Smart Connector mode.
 
 The following topics are covered in this section:
 

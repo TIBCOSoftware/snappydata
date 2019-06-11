@@ -80,7 +80,7 @@ final class ColumnBatchCreator(
       try {
         // the lookup key does not depend on tableName since the generated
         // code does not (which is passed in the references separately)
-        val gen = CodeGeneration.compileCode("COLUMN_TABLE.BATCH", schema.fields, () => {
+        val gen = CodeGeneration.compileCode("columnTable.batch", schema.fields, () => {
           val tableScan = RowTableScan(schema.toAttributes, schema,
             dataRDD = null, numBuckets = -1, partitionColumns = Nil,
             partitionColumnAliases = Nil, tableName, baseRelation = null, caseSensitive = true)
@@ -134,7 +134,7 @@ final class ColumnBatchCreator(
    */
   def createColumnBatchBuffer(columnBatchSize: Int,
       columnMaxDeltaRows: Int): ColumnBatchRowsBuffer = {
-    val gen = CodeGeneration.compileCode(columnTableName + ".BUFFER", schema.fields, () => {
+    val gen = CodeGeneration.compileCode(columnTableName + ".buffer", schema.fields, () => {
       val bufferPlan = CallbackColumnInsert(schema)
       // no puts into row buffer for now since it causes split of rows held
       // together and thus failures in ClosedFormAccuracySuite etc

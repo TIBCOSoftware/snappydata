@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.SparkSqlParserSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappySparkSqlParserSuite extends SparkSqlParserSuite with SharedSnappySessionContext{
-
-}
+class SnappySparkSqlParserSuite extends SparkSqlParserSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

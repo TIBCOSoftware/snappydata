@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.streaming.StreamingQuerySuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyStreamingQuerySuite extends StreamingQuerySuite with SharedSnappySessionContext{
-
-}
+class SnappyStreamingQuerySuite extends StreamingQuerySuite
+    with SharedSnappySessionContext with SnappySparkTestUtil
