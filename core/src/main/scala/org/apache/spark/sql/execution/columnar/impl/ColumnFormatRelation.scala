@@ -22,7 +22,6 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
 
@@ -656,9 +655,6 @@ object ColumnFormatRelation extends Logging with StoreCallback {
     schema + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
         tableName + Constant.SHADOW_TABLE_SUFFIX
   }
-
-  final def getTableName(columnBatchTableName: String): String =
-    GemFireContainer.getRowBufferTableName(columnBatchTableName)
 
   final def isColumnTable(tableName: String): Boolean = {
     tableName.contains(Constant.SHADOW_SCHEMA_NAME_WITH_PREFIX) &&
