@@ -42,8 +42,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
   // scalastyle:off println
 
   val sparkSession = SparkSession.builder().master("local[*]").getOrCreate()
-  // snc.sql("set snappydata.sql.tokenize=false")
-  // snc.sql("set snappydata.sql.planCaching=false")
+  // snc.sql("set snappydata.sql.tokenize=true")
+  // snc.sql("set snappydata.sql.planCaching=true")
 
   val pw = new PrintWriter(new FileOutputStream(
     new File("SQLFunctionTestSuite.out"), true))
@@ -223,96 +223,66 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     }
   }
 
-  def assertQueryFullResultSet(snc: SnappyContext, sparkQuery: String,
-      snappyQuery: String, numRows: Int,
-      queryNum: String, tableType: String,
-      pw: PrintWriter, sqlContext: SparkSession): Any = {
+  def validateResult(sparkDf: DataFrame, snappyDf: DataFrame): Unit = {
+    // expects results are sorted on some common key
+    val sparkSchema = sparkDf.schema
+    val snappySchema = snappyDf.schema
+    assert(sparkSchema == snappySchema, "schemas from spark and snappy are not equal")
 
-    var snappyDF = snc.sql(snappyQuery)
-    val snappyQueryFileName = s"Snappy_$queryNum.out"
-    val sparkQueryFileName = s"Spark_$queryNum.out"
-    val snappyDest = getTempDir("snappyQueryFiles_" + tableType, onlyOnce = false)
-    val sparkDest = getTempDir("sparkQueryFiles", onlyOnce = true)
-    val sparkFile = new File(sparkDest, sparkQueryFileName)
-    val snappyFile = new File(snappyDest, snappyQueryFileName)
-    val col1 = snappyDF.schema.fieldNames(0)
-    val col = snappyDF.schema.fieldNames.tail
-    // snappyDF = snappyDF.sort(col1, col: _*)
-    writeToFile(snappyDF, snappyFile, snc)
-    pw.println(s"$queryNum Result Collected in files with prefix $snappyFile")
-    if (!new File(s"$sparkFile").exists()) {
-      var sparkDF = sqlContext.sql(sparkQuery)
-      val col = sparkDF.schema.fieldNames(0)
-      val cols = sparkDF.schema.fieldNames.tail
-      // sparkDF = sparkDF.sort(col, cols: _*)
-      writeToFile(sparkDF, sparkFile, snc)
-      pw.println(s"$queryNum Result Collected in files with prefix $sparkFile")
-    }
-    val expectedFiles = getSortedFiles(sparkFile).toIterator
-    val actualFiles = getSortedFiles(snappyFile).toIterator
-    val expectedLineSet = expectedFiles.flatMap(Source.fromFile(_).getLines())
-    val actualLineSet = actualFiles.flatMap(Source.fromFile(_).getLines())
-    var numLines = 0
-    while (expectedLineSet.hasNext && actualLineSet.hasNext) {
-      val expectedLine = expectedLineSet.next()
-      val actualLine = actualLineSet.next()
-      if (!actualLine.equals(expectedLine)) {
-        pw.println(s"\n** For $queryNum result mismatch observed**")
-        pw.println(s"\nExpected Result \n: $expectedLine")
-        pw.println(s"\nActual Result   \n: $actualLine")
-        pw.println(s"\nSnappy Query =" + snappyQuery + " Table Type : " + tableType)
-        pw.println(s"\nSpark Query =" + sparkQuery + " Table Type : " + tableType)
-        assert(false, s"\n** For $queryNum result mismatch observed** \n" +
-            s"Expected Result \n: $expectedLine \n" +
-            s"Actual Result   \n: $actualLine \n" +
-            s"Query =" + snappyQuery + " Table Type : " + tableType)
-      }
-      numLines += 1
-    }
-    if (actualLineSet.hasNext || expectedLineSet.hasNext) {
-      pw.println(s"\nFor $queryNum result count mismatch observed")
-      assert(false, s"\nFor $queryNum result count mismatch observed")
-    }
-    assert(numLines == numRows, s"\nFor $queryNum result count mismatch " +
-        s"observed: Expected=$numRows, Got=$numLines")
-    pw.flush()
-    val snFile: String = snappyFile.toString + ".0"
-    val spFile: String = sparkFile.toString + ".0"
-    logInfo("Query executed successfully" + snFile + " " + spFile)
-    Files.delete(Paths.get(snFile))
-    logInfo(snappyFile.toString + " file deleted")
-    Files.delete(Paths.get(spFile))
-    logInfo(sparkFile.toString + " file deleted")
+    val fields = sparkSchema.map(_.name.toUpperCase())
 
+    assert(sparkDf.count() == snappyDf.count(), "counts from spark and snappy are not equal")
+
+    val sparkResult = sparkDf.collect()
+    val snappyResult = snappyDf.collect()
+
+    var i = 0
+    while(i < sparkResult.size - 1) {
+      val snRow = snappyResult(i)
+      val spRow = sparkResult(i)
+      sparkSchema.foreach(f => {
+        val fieldIndex = fields.indexOf(f.name.toUpperCase())
+        assert(fieldIndex >= 0, s"field not found in schema. " +
+          s"fieldname=${f.name} fields=${fields.toSeq}")
+        val snField: Any = snRow.getAs(fieldIndex)
+        val spField: Any = spRow.getAs(fieldIndex)
+        assert(snField == spField,
+          s"field from spark row and snappy row are not equal. field name=${f.name} at index=${i}")
+      })
+      i += 1
+    }
   }
 
   test("abs") {
 
     query = "select abs(-1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "abs_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "select abs(1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "abs_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "select abs(1.1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "abs_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "select abs(-1.1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "abs_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "select abs(0.0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "abs_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -320,25 +290,27 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT COALESCE(NULL,NULL,NULL,'abc',NULL,'Example.com')"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "coalesce_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT COALESCE(NULL, 1, 2, 'abc')"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "coalesce_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT COALESCE(1, 2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "coalesce_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT COALESCE(NULL, NULL)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "coalesce_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("cast") {
@@ -350,54 +322,59 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
     query = "select cast('NaN' as double)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cast_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT CAST(25.65 AS varchar(12))"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cast_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT cast('10' as int)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cast_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT CAST('2017-08-25' AS date)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cast_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
   test("explode") {
 
     query = "SELECT explode(array(10, 20))"
-    assertQueryFullResultSet(snc, query, query, 2,
-      "cast_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    var snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT explode(array(0))"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cast_q2", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT explode(array(NULL,1))"
-    assertQueryFullResultSet(snc, query, query, 2,
-      "cast_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("greatest") {
 
     query = "SELECT greatest(10, 9, 2, 4, 3)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "greatest_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT greatest(0, NULL)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "greatest_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -408,13 +385,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT if(1 < 2, 'a', 'b')"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "if_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT if(0 < NULL, 'a', 'b')"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "if_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -425,13 +402,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT inline(array(struct(1, 'a'), struct(2, 'b')))"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 2,
-      "inline_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT inline(array(struct(1), struct(2)))"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 2,
-      "inline_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -442,13 +419,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT isnan(cast('NaN' as double))"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnan_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT isnan(123)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnan_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -459,13 +436,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT ifnull(NULL, array('2'))"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ifnull_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ifnull(2, 3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ifnull_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -476,55 +453,57 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT isnull(1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnull_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT isnull('abc')"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnull_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT isnull(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnull_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("isnotnull") {
 
     query = "SELECT isnotnull(1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnotnull_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT isnotnull('abc')"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnotnull_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT isnotnull(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "isnotnull_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("least") {
 
     query = "SELECT least(10, 9, 2, 4, 3)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "least_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT least(null, 9, 3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "least_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -535,8 +514,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT nanvl(cast('NaN' as double), 123)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nanvl_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     // On snappy shell throws error for below query
     // snappy> SELECT nanvl(cast('NaN' as double), cast('NaN' as double));
@@ -545,8 +524,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
     query = "SELECT nanvl(cast('NaN' as double), cast('NaN' as double))"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nanvl_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -557,8 +536,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // (Server=localhost/127.0.0.1[1528] Thread=ThriftProcessor-0)
     // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
     query = "SELECT nanvl('NaN','NaN')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nanvl_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -566,38 +546,40 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT nullif(2, 2)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nullif_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT nullif( 9, 3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nullif_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT nullif( 9, 9, 4)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nullif_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT nullif( 9, 9, 9)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nullif_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
   test("nvl") {
     query = "SELECT nvl(NULL, array('2'))"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nvl_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT nvl( 9, 3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nvl_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -608,13 +590,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT nvl2(NULL, 2, 1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nvl2_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT nvl2( 9, 3, 1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "nvl2_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -624,12 +606,14 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
   test("posexplode") {
 
     query = "SELECT posexplode(array(10,20))"
-    assertQueryFullResultSet(snc, query, query, 2,
-      "posexplode_q1", "", pw, sparkSession)
+    var snappyDf = snc.sql(s"$query")
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT posexplode(array(10,0,null))"
-    assertQueryFullResultSet(snc, query, query, 3,
-      "posexplode_q2", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("rand") {
@@ -730,25 +714,27 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
   test("stack") {
 
     query = "SELECT stack(2, 1, 2, 3)"
-    assertQueryFullResultSet(snc, query, query, 2,
-      "stack_q1", "", pw, sparkSession)
+    var snappyDf = snc.sql(s"$query")
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT stack(2, 1, 2, 3, 4)"
-    assertQueryFullResultSet(snc, query, query, 2,
-      "stack_q2", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("when") {
 
     query = "SELECT case when 2>1 then 2 else 1 end"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "when_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT case when 2<1 then 1 else 2 end"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "when_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -764,41 +750,45 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
     query = "select acos(2)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "acos_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT acos(1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "acos_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT acos(-1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "acos_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT acos(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "acos_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT acos(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "acos_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT acos(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "acos_q6", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("asin") {
 
     query = "SELECT asin(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "asin_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     // On snappy shell throws below error
     // snappy> SELECT asin(2);
@@ -807,274 +797,297 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
     query = "SELECT asin(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "asin_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT asin(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "asin_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT asin(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "asin_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT asin(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "asin_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("atan") {
 
     query = "SELECT atan(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT atan(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT atan(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT atan(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT atan(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("atan2") {
 
     query = "SELECT atan2(0, 0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan2_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT atan2(2, 3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan2_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT atan2(2, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan2_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT atan2(2.2, 3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "atan2_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("bin") {
 
     query = "SELECT bin(13)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bin_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT bin(-13)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bin_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT bin(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bin_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT bin(13.3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bin_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("bround") {
 
     query = "SELECT bround(2.5, 0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bround_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
-    query = "SELECT bround(2.5, 3)"
+    query = "SELECT bround(2.5, 3) as col2"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bround_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT bround(2.5, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bround_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT round(0, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "bround_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("cbrt") {
 
     query = "SELECT cbrt(25)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cbrt_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cbrt(0)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cbrt_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT cbrt(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cbrt_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cbrt(27.0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cbrt_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("ceil") {
 
     query = "SELECT ceil(-0.1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceil_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ceil(5)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceil_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT ceil(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceil_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ceil(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceil_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("ceiling") {
 
     query = "SELECT ceiling(-0.1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceiling_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ceiling(5)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceiling_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT ceiling(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceiling_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ceiling(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ceiling_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("cos") {
 
     query = "SELECT cos(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cos_q1", "", pw, sparkSession)
-
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
     query = "SELECT cos(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cos_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT cos(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cos_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cos(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cos_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cos(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cos_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("cosh") {
 
     query = "SELECT cosh(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cosh_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cosh(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cosh_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT cosh(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cosh_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cosh(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cosh_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT cosh(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "cosh_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("conv") {
 
     query = "SELECT conv('100', 2, 10)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "conv_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT conv(-10, 16, -10)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "conv_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
@@ -1085,238 +1098,256 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT degrees(3.141592653589793)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "degrees_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT degrees(6.283185307179586 )"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "degrees_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT degrees(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "degrees_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT degrees(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "degrees_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("e") {
 
     query = "SELECT e()"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "e_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    var snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("exp") {
 
     query = "SELECT exp(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "exp_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT exp(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "exp_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT exp(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "exp_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("expm1") {
 
     query = "SELECT expm1(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "expm1_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT expm1(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "expm1_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT expm1(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "expm1_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("floor") {
 
     query = "SELECT floor(5)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "floor_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT floor(null)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "floor_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT floor(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "floor_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT floor(-0.1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "floor_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("factorial") {
 
     query = "SELECT factorial(5)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "factorial_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT factorial(-5)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "factorial_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT factorial(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "factorial_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT factorial(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "factorial_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("hex") {
 
     query = "SELECT hex(17)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hex_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT hex(0)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hex_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT hex(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hex_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT hex('Spark SQL')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hex_q4", "", pw, sparkSession)
-
-
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("hypot") {
 
     query = "SELECT hypot(3, 4)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hypot_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT hypot(7,8)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hypot_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT hypot(0,0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hypot_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT hypot(0,null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hypot_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT hypot(null,null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "hypot_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("log") {
 
     query = "SELECT log(10, 100)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log(10,1000)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT log(10,0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log(10,null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log(10, 1000.234)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("log10") {
 
     query = "SELECT log10(10)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log10_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log10(0)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log10_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT log10(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log10_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log10(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log10_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log10(1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log10_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -1324,190 +1355,211 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT log1p(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log1p_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log1p(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log1p_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT log1p(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log1p_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log1p(1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log1p_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log1p(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log1p_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("log2") {
 
     query = "SELECT log2(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log2_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log2(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log2_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT log2(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log2_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log2(1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log2_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT log2(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "log2_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("ln") {
 
     query = "SELECT ln(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ln_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ln(1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ln_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT ln(-1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ln_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ln(1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ln_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ln(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ln_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("negative") {
 
     query = "SELECT negative(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "negative_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT negative(1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "negative_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT negative(-1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "negative_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT negative(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "negative_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT negative(1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "negative_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT negative(-1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "negative_q6", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
   test("pi") {
 
     query = "SELECT pi()"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pi_q1", "", pw, sparkSession)
+    var snappyDf = snc.sql(s"$query")
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("pmod") {
 
     query = "SELECT pmod(10,3)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pmod_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT pmod(-10,3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pmod_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT pmod(0,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pmod_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT pmod(null,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pmod_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT pmod(1.2,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pmod_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("positive") {
 
     query = "SELECT positive(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "positive_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT positive(1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "positive_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT positive(-1)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "positive_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT positive(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "positive_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT positive(1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "positive_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT positive(-1.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "positive_q6", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -1515,348 +1567,382 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT pow(3,2)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pow_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT pow(-10,3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pow_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT pow(0,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pow_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT pow(null,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pow_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT pow(1.2,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "pow_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("power") {
 
     query = "SELECT power(3,2)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "power_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT power(-10,3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "power_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT power(0,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "power_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT power(null,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "power_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT power(1.2,3)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "power_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("radians") {
 
     query = "SELECT radians(360.0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "radians_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT radians(180)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "radians_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT radians(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "radians_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT radians(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "radians_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("rint") {
 
     query = "SELECT rint(12.3456)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "rint_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT rint(-12.3456)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "rint_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT rint(180)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "rint_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT rint(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "rint_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT rint(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "rint_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("round") {
 
     query = "SELECT round(2.5, 0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "round_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT round(2.5, 3)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "round_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT round(2.5, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "round_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT round(0, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "round_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("shiftleft") {
 
     query = "SELECT shiftleft(4, 1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftleft_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftleft(0, 1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftleft_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT shiftleft(null, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftleft_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftleft(2.2, 2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftleft_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftleft(2.2, 0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftleft_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("shiftright") {
 
     query = "SELECT shiftright(4, 1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftright_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftright(0, 1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftright_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT shiftright(null, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftright_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftright(2.2, 2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftright_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftright(2.2, 0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftright_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("shiftrightunsigned") {
 
     query = "SELECT shiftrightunsigned(4, 1)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftrightunsigned_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftrightunsigned(0, 1)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftrightunsigned_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT shiftrightunsigned(null, null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftrightunsigned_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftrightunsigned(2.2, 2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftrightunsigned_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT shiftrightunsigned(2.2, 0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "shiftrightunsigned_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("sign") {
 
     query = "SELECT sign(40)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sign_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sign(-40)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sign_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT sign(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sign_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sign(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sign_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sign(-4.20)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sign_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("signum") {
 
     query = "SELECT signum(40)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "signum_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT signum(-40)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "signum_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT signum(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "signum_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT signum(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "signum_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT signum(-4.20)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "signum_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("sin") {
 
     query = "SELECT sin(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sin_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sin(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sin_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT sin(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sin_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sin(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sin_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sin(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sin_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("sinh") {
 
     query = "SELECT sinh(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sinh_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sinh(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sinh_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT sinh(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sinh_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sinh(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sinh_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sinh(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sinh_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("str_to_map") {
 
     query = "SELECT str_to_map(null)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "str_to_map_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     // throws below error
     // org.apache.spark.sql.AnalysisException:
@@ -1864,33 +1950,36 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // operations(intersect, except, etc.), but the type of
     // column str_to_map(CAST(NULL AS STRING), ,, :) is map<string,string>;;
     query = "SELECT str_to_map('a:1,b:2,c:3', ',', ':')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "str_to_map_q2", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT str_to_map('a')"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "str_to_map_q3", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT str_to_map('-1.2:a')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "str_to_map_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT str_to_map(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "str_to_map_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("sqrt") {
 
     query = "SELECT sqrt(4)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sqrt_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     // On snappy shell throws below error for this query
     // snappy> select sqrt(-4);
@@ -1899,307 +1988,341 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     // The resulting value is outside the range for data type 'DOUBLE' column 'null'.
     query = "SELECT sqrt(-4)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sqrt_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT sqrt(0)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sqrt_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sqrt(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sqrt_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT sqrt(4.4)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sqrt_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("tan") {
 
     query = "SELECT tan(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tan_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tan(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tan_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT tan(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tan_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tan(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tan_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tan(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tan_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tan(-2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tan_q6", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("tanh") {
 
     query = "SELECT tanh(0)"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tanh_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tanh(2)"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tanh_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT tanh(-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tanh_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tanh(null)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tanh_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tanh(2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tanh_q5", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT tanh(-2.2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "tanh_q6", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("+") {
 
     query = "SELECT (1+1)+3"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op+_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 1.2+3+(4.5+2)"
 
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op+_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT 0+0"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op+_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 0+null"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op+_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("-") {
 
     query = "SELECT 1-1-1"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op-_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 0-0"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op-_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT 0-null"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op-_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 1.2-3-(4.5-2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op-_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("*") {
 
     query = "SELECT 4*2"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op*_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 0*0"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op*_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT 0*null"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op*_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 1.2*3*(4.5*2)"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op*_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("/") {
 
     query = "SELECT 4/2"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op/_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 0/0"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op/_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT 0/null"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op/_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 4.5/2"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op/_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("%") {
 
     query = "SELECT 4%2"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op%_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 0%0"
     var snappyDf1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op%_q2", "", pw, sparkSession)
+    var sparkDf1 = sparkSession.sql(s"$query")
+    validateResult(sparkDf1, snappyDf1)
 
     val c1s = snappyDf.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     query = "SELECT 0%null"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op%_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT 4.5%2"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "op%_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("avg") {
 
     var sparkQuery = "SELECT avg(intcol) from sparktable"
     var snappyQuery = "SELECT avg(intcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "avg_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT avg(intcol) from sparktable"
     snappyQuery = "SELECT avg(intcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "avg_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("count") {
 
     var sparkQuery = "SELECT count(*) from sparktable"
     var snappyQuery = "SELECT count(*) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "count_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT count(intcol) from sparktable"
     var snappyQuery1 = "SELECT count(intcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
-      "count_q2", "RowTable", pw, sparkSession)
-
-    var snappyDf = snc.sql(s"$snappyQuery")
+    sparkDf = sparkSession.sql(s"$sparkQuery")
     var snappyDf1 = snc.sql(s"$snappyQuery1")
+    validateResult(sparkDf, snappyDf1)
 
-    val c1s = snappyDf.columns
+    var snappyDF = snc.sql(s"$snappyQuery")
+    var snappyDF1 = snc.sql(s"$snappyQuery1")
+
+    val c1s = snappyDF.columns
     val c2s = snappyDf1.columns
     assert(!c1s.sameElements(c2s))
 
     sparkQuery = "SELECT count(distinct(intcol)) from sparktable"
     snappyQuery = "SELECT count(distinct(intcol)) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "count_q3", "RowTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT count(*) from sparktable"
     snappyQuery = "SELECT count(*) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "count_q4", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT count(intcol) from sparktable"
     snappyQuery = "SELECT count(intcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "count_q5", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT count(distinct(intcol)) from sparktable"
     snappyQuery = "SELECT count(distinct(intcol)) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "count_q6", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("first") {
 
     var sparkQuery = "SELECT first(stringcol) from sparktable"
     var snappyQuery = "SELECT first(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "first_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT first(stringcol, true) from sparktable"
     var snappyQuery1 = "SELECT first(stringcol, true) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
-      "first_q2", "RowTable", pw, sparkSession)
-
-    var snappyDf = snc.sql(s"$snappyQuery")
+    sparkDf = sparkSession.sql(s"$sparkQuery")
     var snappyDf1 = snc.sql(s"$snappyQuery1")
+    validateResult(sparkDf, snappyDf1)
 
-    val c1s = snappyDf.columns
-    val c2s = snappyDf1.columns
+    var snappyDF = snc.sql(s"$snappyQuery")
+    var snappyDF1 = snc.sql(s"$snappyQuery1")
+
+    val c1s = snappyDF.columns
+    val c2s = snappyDF1.columns
     assert(!c1s.sameElements(c2s))
 
     sparkQuery = "SELECT first(stringcol) from sparktable"
     snappyQuery = "SELECT first(stringcol) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "first_q3", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT first(stringcol, true) from sparktable"
     snappyQuery = "SELECT first(stringcol, true) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "first_q4", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("first_value") {
 
     var sparkQuery = "SELECT first_value(stringcol) from sparktable"
     var snappyQuery = "SELECT first_value(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "first_value_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     // throws below error
     //  org.apache.spark.sql.AnalysisException:
@@ -2208,13 +2331,15 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     try {
       sparkQuery = "SELECT first_value(stringcol, true) from sparktable"
       var snappyQuery1 = "SELECT first_value(stringcol, true) from rowtable"
-      assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
-        "first_value_q2", "RowTable", pw, sparkSession)
-      var snappyDf = snc.sql(s"$snappyQuery")
+      sparkDf = sparkSession.sql(s"$sparkQuery")
       var snappyDf1 = snc.sql(s"$snappyQuery1")
+      validateResult(sparkDf, snappyDf1)
 
-      val c1s = snappyDf.columns
-      val c2s = snappyDf1.columns
+      var snappyDF = snc.sql(s"$snappyQuery")
+      var snappyDF1 = snc.sql(s"$snappyQuery1")
+
+      val c1s = snappyDF.columns
+      val c2s = snappyDF1.columns
       assert(!c1s.sameElements(c2s))
     } catch {
       case e: Exception => {
@@ -2224,8 +2349,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     sparkQuery = "SELECT first_value(stringcol) from sparktable"
     snappyQuery = "SELECT first_value(stringcol) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "first_value_q3", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     // throws below error
     //  org.apache.spark.sql.AnalysisException:
@@ -2233,8 +2359,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     try {
       sparkQuery = "SELECT first_value(stringcol, true) from sparktable"
       snappyQuery = "SELECT first_value(stringcol, true) from columntable"
-      assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-        "first_value_q4", "ColumnTable", pw, sparkSession)
+      sparkDf = sparkSession.sql(s"$sparkQuery")
+      snappyDf = snc.sql(s"$snappyQuery")
+      validateResult(sparkDf, snappyDf)
     } catch {
       case e: Exception => {
         e.printStackTrace()
@@ -2246,38 +2373,43 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     var sparkQuery = "SELECT last(stringcol) from sparktable"
     var snappyQuery = "SELECT last(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "last_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT last(stringcol, true) from sparktable"
     var snappyQuery1 = "SELECT last(stringcol, true) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
-      "last_q2", "RowTable", pw, sparkSession)
-
-    var snappyDf = snc.sql(s"$snappyQuery")
+    sparkDf = sparkSession.sql(s"$sparkQuery")
     var snappyDf1 = snc.sql(s"$snappyQuery1")
+    validateResult(sparkDf, snappyDf1)
 
-    val c1s = snappyDf.columns
-    val c2s = snappyDf1.columns
+    var snappyDF = snc.sql(s"$snappyQuery")
+    var snappyDF1 = snc.sql(s"$snappyQuery1")
+
+    val c1s = snappyDF.columns
+    val c2s = snappyDF1.columns
     assert(!c1s.sameElements(c2s))
 
     sparkQuery = "SELECT last(stringcol) from sparktable"
     snappyQuery = "SELECT last(stringcol) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "last_q3", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT last(stringcol, true) from sparktable"
     snappyQuery = "SELECT last(stringcol, true) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "last_q4", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("last_value") {
 
     var sparkQuery = "SELECT last_value(stringcol) from sparktable"
     var snappyQuery = "SELECT last_value(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "last_value_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     // throws below error
     // snappy> SELECT last_value(stringcol, true) from columntable;
@@ -2289,10 +2421,12 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     try {
       sparkQuery = "SELECT last_value(stringcol, true) from sparktable"
       var snappyQuery1 = "SELECT last_value(stringcol, true) from rowtable"
-      assertQueryFullResultSet(snc, sparkQuery, snappyQuery1, 1,
-        "last_value_q2", "RowTable", pw, sparkSession)
-      var snappyDf = snc.sql(s"$snappyQuery")
+      sparkDf = sparkSession.sql(s"$sparkQuery")
       var snappyDf1 = snc.sql(s"$snappyQuery1")
+      validateResult(sparkDf, snappyDf1)
+
+      var snappyDF = snc.sql(s"$snappyQuery")
+      var snappyDF1 = snc.sql(s"$snappyQuery1")
 
       val c1s = snappyDf.columns
       val c2s = snappyDf1.columns
@@ -2305,8 +2439,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     sparkQuery = "SELECT last_value(stringcol) from sparktable"
     snappyQuery = "SELECT last_value(stringcol) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "last_value_q3", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     // throws below error
     //  org.apache.spark.sql.AnalysisException:
@@ -2315,8 +2450,9 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     try {
       sparkQuery = "SELECT last_value(stringcol, true) from sparktable"
       snappyQuery = "SELECT last_value(stringcol, true) from columntable"
-      assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-        "last_value_q4", "ColumnTable", pw, sparkSession)
+      sparkDf = sparkSession.sql(s"$sparkQuery")
+      snappyDf = snc.sql(s"$snappyQuery")
+      validateResult(sparkDf, snappyDf)
     } catch {
       case e: Exception => {
         e.printStackTrace()
@@ -2328,77 +2464,90 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     var sparkQuery = "SELECT max(intcol) from sparktable"
     var snappyQuery = "SELECT max(intcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "max_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT max(intcol) from sparktable"
     snappyQuery = "SELECT max(intcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "max_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("min") {
 
     var sparkQuery = "SELECT min(intcol) from sparktable"
     var snappyQuery = "SELECT min(intcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "min_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT min(intcol) from sparktable"
     snappyQuery = "SELECT min(intcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "min_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("sum") {
 
     var sparkQuery = "SELECT sum(intcol) from sparktable"
     var snappyQuery = "SELECT sum(intcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "sum_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT sum(intcol) from sparktable"
     snappyQuery = "SELECT sum(intcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "sum_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("length") {
 
     var sparkQuery = "SELECT length(stringcol) from sparktable"
     var snappyQuery = "SELECT length(stringcol) from columntable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "length_q1", "ColumnTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT length(stringcol) from sparktable"
     snappyQuery = "SELECT length(stringcol) from rowTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "length_q2", "RowTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT length('Spark SQL')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "length_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("lower") {
 
     var sparkQuery = "SELECT lower(stringcol) from sparktable"
     var snappyQuery = "SELECT lower(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "lower_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT lower(stringcol) from sparktable"
     snappyQuery = "SELECT lower(stringcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "lower_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT lower('Spark SQL')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "lower_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT lower('abcABC123@#$%^&')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "lower_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -2406,63 +2555,75 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     var sparkQuery = "SELECT lcase(stringcol) from sparktable"
     var snappyQuery = "SELECT lcase(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "lcase_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT lcase(stringcol) from sparktable"
     snappyQuery = "SELECT lcase(stringcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "lcase_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT lcase('Spark SQL')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "lcase_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT lcase('abcABC123@#$%^&')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "lcase_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("upper") {
 
     var sparkQuery = "SELECT upper(stringcol) from sparktable"
     var snappyQuery = "SELECT upper(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "upper_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT upper(stringcol) from sparktable"
     snappyQuery = "SELECT upper(stringcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "upper_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT upper('Spark SQL')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "upper_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT upper('abcABC123@#$%^&')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "upper_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("ucase") {
 
     var sparkQuery = "SELECT ucase(stringcol) from sparktable"
     var snappyQuery = "SELECT ucase(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "ucase_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT ucase(stringcol) from sparktable"
     snappyQuery = "SELECT ucase(stringcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "ucase_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ucase('Spark SQL')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ucase_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT ucase('abcABC123@#$%^&')"
-    assertQueryFullResultSet(snc, query, query, 1,
-      "ucase_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    snappyDf = snc.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -2471,8 +2632,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT sort_array(array('b', 'd', 'c', 'a'))"
     var snappyDf = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "sort_array_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDf)
 
     // ERROR : org.apache.spark.sql.AnalysisException: cannot resolve
     // 'sort_array(array('b', 'd', 'c', 'a'), true)' due to data type
@@ -2483,8 +2644,8 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     try {
       query = "SELECT sort_array(array('b', 'd', 'c', 'a'), true) as res1"
       var snappyDf1 = snc.sql(s"$query")
-      assertQueryFullResultSet(snc, query, query, 1,
-        "sort_array_q2", "", pw, sparkSession)
+      var sparkDf1 = sparkSession.sql(s"$query")
+      validateResult(sparkDf1, snappyDf1)
 
       val c1s = snappyDf.columns
       val c2s = snappyDf1.columns
@@ -2501,36 +2662,42 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     var sparkQuery = "SELECT collect_list(stringcol) from sparktable"
     var snappyQuery = "SELECT collect_list(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "collect_list_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT collect_list(stringcol) from sparktable"
     snappyQuery = "SELECT collect_list(stringcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "collect_list_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
   }
 
   test("collect_set") {
 
     var sparkQuery = "SELECT collect_set(stringcol) from sparktable"
     var snappyQuery = "SELECT collect_set(stringcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "collect_set_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT collect_set(stringcol) from sparktable"
     snappyQuery = "SELECT collect_set(stringcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "collect_set_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT collect_set(intcol) from sparktable"
     snappyQuery = "SELECT collect_set(intcol) from rowtable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "collect_set_q3", "RowTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT collect_set(intcol) from sparktable"
     snappyQuery = "SELECT collect_set(intcol) from columnTable"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 1,
-      "collect_set_q4", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
   }
 
@@ -2538,23 +2705,25 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     var sparkQuery = "SELECT concat(stringcol,intcol) from sparktable order by intcol asc"
     var snappyQuery = "SELECT concat(stringcol,intcol) from rowtable order by intcol asc"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "concat_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT concat(stringcol,intcol) from sparktable order by intcol asc"
     snappyQuery = "SELECT concat(stringcol,intcol) from columnTable order by intcol asc"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "concat_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT concat('Spark', 'SQL')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "concat_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF)
 
     query = "SELECT concat('Spark', 123)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "concat_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2566,23 +2735,25 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
     var sparkQuery = "SELECT concat_ws(' ',stringcol,intcol)" +
         " from sparktable order by intcol asc"
     var snappyQuery = "SELECT concat_ws(' ',stringcol,intcol) from rowtable order by intcol asc"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "concat_ws_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT concat_ws(' ',stringcol,intcol) from sparktable order by intcol asc"
     snappyQuery = "SELECT concat_ws(' ',stringcol,intcol) from columnTable order by intcol asc"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "concat_ws_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT concat_ws(' ','Spark', 'SQL')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "concat_ws_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF)
 
     query = "SELECT concat_ws(' ','Spark', 123)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "concat_ws_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2593,13 +2764,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT elt(1,'Spark','sql')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "elt_q1", "", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF)
 
     query = "SELECT elt(2,'Spark', 123)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "elt_q2", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2610,13 +2781,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT find_in_set('c','abc,b,ab,c,def')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "find_in_set_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT find_in_set(1, '2,3,1')"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "find_in_set_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2627,13 +2798,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT format_number(12332.123456, 4)"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "format_number_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT format_number(12332.123456, 1)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "format_number_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2644,13 +2815,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT format_string('Hello World %d %s', 100, 'days')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "format_string_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT format_string('Hello World %d', 10)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "format_string_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2661,13 +2832,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT initcap('sPark sql')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "initcap_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT initcap('ssssPark sql')"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "initcap_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2678,13 +2849,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT instr('SparkSQL', 'SQL')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "instr_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT instr('123abcABC', 'ab')"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "instr_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2695,13 +2866,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT levenshtein('kitten', 'sitting')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "levenshtein_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT levenshtein('Snappy', 'Spark')"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "levenshtein_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2712,13 +2883,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT locate('bar', 'foobarbar', 5)"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "locate_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT locate('abc', 'defghrih', 2)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "locate_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2729,13 +2900,13 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     query = "SELECT lpad('hi', 5, '??')"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "lpad_q1", "", pw, sparkSession)
+    var sparkDF = sparkSession.sql(s"$query")
+    validateResult(sparkDF, snappyDF)
 
     query = "SELECT lpad('hi', 1, '??')"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "lpad_q2", "", pw, sparkSession)
+    var sparkDF1 = sparkSession.sql(s"$query")
+    validateResult(sparkDF1, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
@@ -2746,23 +2917,25 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
     var sparkQuery = "SELECT add_months(datecol,1) from sparktable order by datecol asc"
     var snappyQuery = "SELECT add_months(datecol,1) from rowtable order by datecol asc"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "add_months_q1", "RowTable", pw, sparkSession)
+    var sparkDf = sparkSession.sql(s"$sparkQuery")
+    var snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     sparkQuery = "SELECT add_months(datecol,1) from sparktable order by datecol asc"
     snappyQuery = "SELECT add_months(datecol,1) from columnTable order by datecol asc"
-    assertQueryFullResultSet(snc, sparkQuery, snappyQuery, 2,
-      "add_months_q2", "ColumnTable", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$sparkQuery")
+    snappyDf = snc.sql(s"$snappyQuery")
+    validateResult(sparkDf, snappyDf)
 
     query = "SELECT add_months('2016-08-31', 1)"
     var snappyDF = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "add_months_q3", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF)
 
     query = "SELECT add_months('2016-08-31', 0)"
     var snappyDF1 = snc.sql(s"$query")
-    assertQueryFullResultSet(snc, query, query, 1,
-      "add_months_q4", "", pw, sparkSession)
+    sparkDf = sparkSession.sql(s"$query")
+    validateResult(sparkDf, snappyDF1)
 
     val c1s = snappyDF.columns
     val c2s = snappyDF1.columns
