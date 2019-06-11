@@ -5,7 +5,7 @@ Developers can write programs in Python to use SnappyData features.
 
 **First create a SnappySession**:
 
-```no-highlight
+```pre
  from pyspark.sql.snappy import SnappySession
  from pyspark import SparkContext, SparkConf
 
@@ -16,7 +16,7 @@ Developers can write programs in Python to use SnappyData features.
 
 **Create table using SnappySession**:
 
-```no-highlight
+```pre
 # Creating partitioned table PARTSUPP using SQL
 snappy.sql("DROP TABLE IF EXISTS PARTSUPP")
 # "PARTITION_BY" attribute specifies partitioning key for PARTSUPP table(PS_PARTKEY),
@@ -32,7 +32,7 @@ snappy.sql("CREATE TABLE PARTSUPP ( " +
 
 **Inserting data in table using INSERT query**:
 
-```no-highlight
+```pre
 snappy.sql("INSERT INTO PARTSUPP VALUES(100, 1, 5000, 100)")
 snappy.sql("INSERT INTO PARTSUPP VALUES(200, 2, 50, 10)")
 snappy.sql("INSERT INTO PARTSUPP VALUES(300, 3, 1000, 20)")
@@ -43,7 +43,7 @@ snappy.sql("SELECT * FROM PARTSUPP").show()
 
 **Update the data using SQL**:
 
-```no-highlight
+```pre
 # Update the available quantity for PARTKEY 100
 snappy.sql("UPDATE PARTSUPP SET PS_AVAILQTY = 50000 WHERE PS_PARTKEY = 100")
 # Printing the contents of the PARTSUPP table after update
@@ -51,7 +51,7 @@ snappy.sql("SELECT * FROM PARTSUPP").show()
 ```    
 
 **Delete records from the table**:
-```no-highlight
+```pre
 # Delete the records for PARTKEY 400
 snappy.sql("DELETE FROM PARTSUPP WHERE PS_PARTKEY = 400")
 # Printing the contents of the PARTSUPP table after delete
@@ -61,7 +61,7 @@ snappy.sql("SELECT * FROM PARTSUPP").show()
 **Create table using API**:
 This same table can be created by using createTable API. First create a schema and then create the table, and then mutate the table data using API:
 
-```no-highlight
+```pre
 # drop the table if it exists
 snappy.dropTable('PARTSUPP', True)
 

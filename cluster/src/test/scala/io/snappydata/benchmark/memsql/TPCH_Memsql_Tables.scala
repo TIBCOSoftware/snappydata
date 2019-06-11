@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -26,18 +26,25 @@ object TPCH_Memsql_Tables {
 
      val host = args(0)
      val port = args(1)
+     val dataDirectory = args(2)
+     val numberOfDataLoadingStages : String = args(3)
+
      val dbName = "TPCH"
      val user = "root"
      val password = ""
 
-     Class.forName("com.mysql.jdbc.Driver")
+     //Class.forName("com.mysql.jdbc.Driver")
+     Class.forName("com.mysql.cj.jdbc.Driver")
      val dbAddress = "jdbc:mysql://" + host + ":" + port + "/"
      val conn = DriverManager.getConnection(dbAddress, user, password)
      val stmt = conn.createStatement
 
+     // Create TPC-H database and tables
+
      stmt.execute("DROP DATABASE IF EXISTS " + dbName)
      stmt.execute("CREATE DATABASE IF NOT EXISTS " + dbName)
      stmt.execute("USE " + dbName)
+     println("---------------------------------------------------")
 
      TPCHReplicatedTable.createRegionTable_Memsql(stmt)
 
@@ -56,13 +63,43 @@ object TPCH_Memsql_Tables {
      TPCHColumnPartitionedTable.createLineItemTable_Memsql(stmt)
 
      var rs = stmt.executeQuery("SHOW TABLES")
-     println("Tables" + rs)
+     println("---------------------------------------------------")
+     println(System.lineSeparator() + "Tables in TPC-H database:")
+     println("---------------------------------------------------")
      while (rs.next()) {
        System.out.println(rs.getString(1));
      }
+     println("---------------------------------------------------")
+
+     // Load data into TPC-H tables
+
+     val smallTables = List("REGION", "NATION")
+     val largeTables = List("PART", "PARTSUPP", "CUSTOMER", "ORDERS", "LINEITEM", "SUPPLIER")
+
+     // replicated/ reference tables are small and are loaded from a single file (in a single stage)
+     for(table <- smallTables){
+       println(s"Loading data from '${dataDirectory}/${table.toLowerCase}.tbl' into table ${table}");
+       stmt.execute(s"LOAD DATA INFILE '${dataDirectory}/${table.toLowerCase}.tbl' INTO TABLE ${table} COLUMNS TERMINATED BY '|' LINES TERMINATED BY '|\n' ");
+       println(s"Finished loading data in ${table}")
+     }
+
+     // partitioned tables can be read in one or multiple stages - i.e. from one or multiple files/ chunks
+     for(table <- largeTables){
+       val stages : Int = numberOfDataLoadingStages.toInt
+
+       if(stages == 1){
+         println(s"Loading data from '${dataDirectory}/${table.toLowerCase}.tbl' into table ${table}");
+         stmt.execute(s"LOAD DATA INFILE '${dataDirectory}/${table.toLowerCase}.tbl' INTO TABLE ${table} COLUMNS TERMINATED BY '|' LINES TERMINATED BY '|\n' ");
+       }
+       else{
+         for(stage <- 1 to numberOfDataLoadingStages.toInt){
+           println(s"Loading data from '${dataDirectory}/${table.toLowerCase}.tbl.${stage}' into table ${table}");
+           stmt.execute(s"LOAD DATA INFILE '${dataDirectory}/${table.toLowerCase}.tbl.${stage}' INTO TABLE ${table} COLUMNS TERMINATED BY '|' LINES TERMINATED BY '|\n' ");
+         }
+       }
+       println(s"Finished loading data in ${table}")
+     }
 
      stmt.close();
-
-
    }
  }

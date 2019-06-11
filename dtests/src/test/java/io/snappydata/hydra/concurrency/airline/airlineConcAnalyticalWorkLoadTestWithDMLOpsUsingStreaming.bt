@@ -1,0 +1,24 @@
+io/snappydata/hydra/concurrency/airline/airlineAnalyticalConcQueriesWithDMLOpsUsingStreaming.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  B=snappyClientA snappyClientAHosts=10 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  propPath="$GEMFIRE/../../../dtests/src/resources/scripts/concurrency/airline/app.properties"
+
+io/snappydata/hydra/concurrency/airline/airlineAnalyticalConcQueriesWithDMLOpsUsingStreaming.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  B=snappyClientA snappyClientAHosts=20 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  propPath="$GEMFIRE/../../../dtests/src/resources/scripts/concurrency/airline/app.properties"
+
+io/snappydata/hydra/concurrency/airline/airlineAnalyticalConcQueriesWithDMLOpsUsingStreaming.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  B=snappyClientA snappyClientAHosts=30 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  propPath="$GEMFIRE/../../../dtests/src/resources/scripts/concurrency/airline/app.properties"
+
+io/snappydata/hydra/concurrency/airline/airlineAnalyticalConcQueriesWithDMLOpsUsingStreaming.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  B=snappyClientA snappyClientAHosts=40 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  propPath="$GEMFIRE/../../../dtests/src/resources/scripts/concurrency/airline/app.properties"
+
+io/snappydata/hydra/concurrency/airline/airlineAnalyticalConcQueriesWithDMLOpsUsingStreaming.conf
+  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=2
+  B=snappyClientA snappyClientAHosts=50 snappyClientAVMsPerHost=1 snappyClientAThreadsPerVM=1
+  propPath="$GEMFIRE/../../../dtests/src/resources/scripts/concurrency/airline/app.properties"

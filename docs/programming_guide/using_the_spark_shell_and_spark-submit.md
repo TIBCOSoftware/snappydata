@@ -9,7 +9,7 @@ To support such cases it is also possible to run native Spark jobs that access a
 
 To run all SnappyData functionalities, you need to create a [SnappySession](http://snappydatainc.github.io/snappydata/apidocs/#org.apache.spark.sql.SnappySession).
 
-```no-highlight
+```pre
 // from the SnappyData base directory  
 // Start the Spark shell in local mode. Pass SnappyData's locators host:clientPort as a conf parameter.
 $ ./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=locatorhost:clientPort --conf spark.ui.port=4041
@@ -22,11 +22,11 @@ scala> val resultset = snappy.sql("select * from airline")
 
 Any Spark application can also use the SnappyData as store and Spark as a computational engine by providing the `spark.snappydata.connection` property as mentioned below:
 
-```no-highlight
+```pre
 // Start the Spark standalone cluster from SnappyData base directory
 $ ./sbin/start-all.sh 
 // Submit AirlineDataSparkApp to Spark Cluster with snappydata's locator host port.
-$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort --conf  $SNAPPY_HOME/examples/jars/quickstart.jar
+$ ./bin/spark-submit --class io.snappydata.examples.AirlineDataSparkApp --master spark://masterhost:7077 --conf spark.snappydata.connection=locatorhost:clientPort $SNAPPY_HOME/examples/jars/quickstart.jar
 
 // The results can be seen on the command line.
 ```

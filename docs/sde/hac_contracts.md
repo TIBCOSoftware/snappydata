@@ -34,7 +34,7 @@ If the error is more than what is specified in the query, for any of the output 
 
 In the following example, any one of the above behavior clause can be applied. 
 
-```
+```pre
 SELECT sum(ArrDelay) ArrivalDelay, Month_ from airline group by Month_ order by Month_  with error <fraction> [CONFIDENCE <fraction>] [BEHAVIOR <behavior>]
 ```
 
@@ -55,7 +55,7 @@ Confidence is the probability that the value of a parameter falls within a speci
 
 For example:
 
-```
+```pre
 SELECT avg(ArrDelay) as AvgArr ,absolute_error(AvgArr),relative_error(AvgArr),lower_bound(AvgArr), upper_bound(AvgArr),
 UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ERROR 0.12 confidence 0.9
 ```
@@ -66,11 +66,11 @@ UniqueCarrier FROM airline GROUP BY UniqueCarrier order by UniqueCarrier WITH ER
 In addition to using SQL syntax in the queries, you can use data frame API as well. 
 For example, if you have a data frame for the airline table, then the below query can equivalently also be written as :
 
-```
+```pre
 select AVG(ArrDelay) arrivalDelay, relative_error(arrivalDelay), absolute_error(arrivalDelay), Year_ from airline group by Year_ order by Year_ with error 0.10 confidence 0.95
 ```
 
-```
+```pre
 snc.table(basetable).groupBy("Year_").agg( avg("ArrDelay").alias("arrivalDelay), relative_error("arrivalDelay"), absolute_error("arrivalDelay"), col("Year_")).withError(0.10, .95).sort(col("Year_").asc) 
 ```
 

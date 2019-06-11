@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -36,18 +36,26 @@ fi
 
 BACKGROUND=-bg
 clustermode=
+CONF_DIR_ARG=
 
 while (( "$#" )); do
   param="$1"
   case $param in
+    # Check for background/foreground start
     -bg | --background)
-      # Check for background start
       BACKGROUND=-bg
     ;;
     -fg | --foreground)
-      # Check for foreground start
-      BACKGROUND=""
+      BACKGROUND=-fg
     ;;
+    -conf | --config)
+      conf_dir="$2"
+      if [ ! -d $conf_dir ] ; then
+        echo "Conf directory $conf_dir does not exist"
+        exit 1
+      fi
+      CONF_DIR_ARG="--config $conf_dir"
+      shift ;;
     rowstore)
       clustermode="rowstore"
     ;;
@@ -59,12 +67,12 @@ done
 
 
 # Start Locators
-"$sbin"/snappy-locators.sh start $clustermode "$@"
+"$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND $CONF_DIR_ARG start $clustermode "$@"
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh start
+  "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
 fi

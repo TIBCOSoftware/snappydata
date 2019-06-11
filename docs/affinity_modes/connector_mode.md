@@ -46,19 +46,33 @@ You can either start SnappyData members using the `snappy_start_all` script or y
 **Step 2: Launch the Apache Spark program**
 
 ***_In the Local mode_***
-```no-highlight
 
-./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
+```pre
+
+./bin/spark-shell  --master local[*] --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.1.0-s_2.11"
 ```
-!!! Note: 
+!!! Note 
 	*  The `spark.snappydata.connection` property points to the locator of a running SnappyData cluster. The value of this property is a combination of locator host and JDBC client port on which the locator listens for connections (default is 1527).
  
  	* In the Smart Connector mode, all `snappydata.*` SQL configuration properties should be prefixed with `spark`. For example, `spark.snappydata.column.batchSize`.
 
-This opens a Scala Shell. Create a SnappySession to interact with the SnappyData store.
-```no-highlight
-// Create a SnappySession to work with SnappyData store
-$scala > val snSession = new SnappySession(spark.sparkContext)
+This opens a Scala Shell.
+
+**Step 3: Import any or all of the following:** 
+
+*	**SQL Context**
+*	**SnappyContext**
+*	**SnappySession**
+
+```
+import org.apache.spark.sql.{SQLContext,SnappyContext,SnappySession}
+```
+
+ This starts the SnappyData cluster with Smart Connector mode. Create a SnappySession to interact with the SnappyData store.
+
+```pre
+	// Create a SnappySession to work with SnappyData store
+	$scala > val snSession = new SnappySession(spark.sparkContext)
 ```
 
 The code example for writing a Smart Connector application program is located in [SmartConnectorExample](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/SmartConnectorExample.scala)
@@ -67,23 +81,23 @@ The code example for writing a Smart Connector application program is located in
 
 **Cluster mode**
 
-```no-highlight
-./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
+```pre
+./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.1.0-s_2.11"
 ```
 **Client mode**
-```no-highlight
-./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.0.1-s_2.11"
+```pre
+./bin/spark-submit --class somePackage.someClass  --master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 --packages "SnappyDataInc:snappydata:1.1.0-s_2.11"
 ```
 
 
 ***_Using YARN as a Cluster Manager_***
 
 **Cluster mode**
-```no-highlight
+```pre
 ./spark-submit --master yarn  --deploy-mode cluster --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```
 
 **Client mode**
-```no-highlight
+```pre
 ./spark-submit --master yarn  --deploy-mode client --conf spark.driver.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --conf spark.executor.extraClassPath=/home/snappyuser/snappydata-0.6-SNAPSHOT-bin/jars/* --class MainClass SampleProjectYarn.jar
 ```

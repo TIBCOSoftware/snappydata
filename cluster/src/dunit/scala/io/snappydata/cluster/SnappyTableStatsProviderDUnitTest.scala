@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,7 +36,7 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
-  val table = "TEST.TEST_TABLE"
+  val table = "test.test_table"
 
   override def afterClass(): Unit = {
     ClusterManagerTestBase.stopSpark()
@@ -183,7 +183,7 @@ object SnappyTableStatsProviderDUnitTest {
 
   def getDetailsForPR(table: String, isColumnBatchTable: Boolean,
       stats: SnappyRegionStats): SnappyRegionStats = {
-    val region = Misc.getRegionForTable(table, true).asInstanceOf[PartitionedRegion]
+    val region = Misc.getRegionForTable(table.toUpperCase, true).asInstanceOf[PartitionedRegion]
     val managementService = ManagementService.getManagementService(Misc.getGemFireCache).
         asInstanceOf[SystemManagementService]
     val regionBean = managementService.getLocalRegionMBean(region.getFullPath)
@@ -214,11 +214,13 @@ object SnappyTableStatsProviderDUnitTest {
     entryOverhead *= entryCount
     stats.setSizeInMemory(stats.getSizeInMemory + memSize + entryOverhead)
     stats.setTotalSize(stats.getTotalSize + totalSize + entryOverhead)
+    stats.setSizeSpillToDisk(stats.getTotalSize - stats.getSizeInMemory)
     stats
   }
 
   def getReplicatedRegionStats(tableName: String): SnappyRegionStats = {
-    val region = Misc.getRegionForTable(tableName, true).asInstanceOf[DistributedRegion]
+    val region = Misc.getRegionForTable(tableName.toUpperCase, true)
+        .asInstanceOf[DistributedRegion]
     val result = new SnappyRegionStats(tableName)
     val managementService =
       ManagementService.getManagementService(Misc.getGemFireCache)
@@ -249,6 +251,7 @@ object SnappyTableStatsProviderDUnitTest {
     totalSize += overhead * result.getRowCount
     result.setSizeInMemory(totalSize)
     result.setTotalSize(totalSize)
+    result.setSizeSpillToDisk(0)
     result
   }
 
@@ -285,16 +288,17 @@ object SnappyTableStatsProviderDUnitTest {
   def verifyResults(snc: SnappyContext, table: String,
       tableType: String = "C", expectedRowCount: Int = 7000): Unit = {
     SnappyEmbeddedTableStatsProviderService.publishColumnTableRowCountStats()
-    val isColumnTable = if (tableType.equals("C")) true else false
-    val isReplicatedTable = if (tableType.equals("R")) true else false
+    val isColumnTable = tableType.equals("C")
+    val isReplicatedTable = tableType.equals("R")
     def expected = SnappyTableStatsProviderDUnitTest.getExpectedResult(snc, table,
       isReplicatedTable, isColumnTable)
     def actual = SnappyTableStatsProviderService.getService.
-        getAggregatedStatsOnDemand._1(table)
+        getAggregatedStatsOnDemand._1(table.toUpperCase)
 
-    assert(actual.getTableName == expected.getTableName)
-    assert(actual.isColumnTable == expected.isColumnTable)
-
+    assert(actual.getTableName.toLowerCase == expected.getTableName)
+    assert(actual.isColumnTable == expected.isColumnTable,
+      s"Actual=${actual.isColumnTable} expected=${expected.isColumnTable} for $table")
+    
     ClusterManagerTestBase.waitForCriterion(actual.getSizeInMemory == expected.getSizeInMemory
         && actual.getSizeInMemory == expected.getSizeInMemory
         && actual.getRowCount == expected.getRowCount,

@@ -5,7 +5,7 @@
 Other than `create` and `drop` table, rest are all based on the Spark SQL Data Source APIs.
 
 ### Scala
-```no-highlight
+```pre
  val props = Map("BUCKETS" -> "8")// Number of partitions to use in the SnappyStore
 
  case class Data(COL1: Int, COL2: Int, COL3: Int)
@@ -30,7 +30,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 ```
 
 ### Java
-```no-highlight
+```pre
  Map<String, String> props1 = new HashMap<>();
  props1.put("buckets", "16");
 
@@ -69,7 +69,7 @@ Other than `create` and `drop` table, rest are all based on the Spark SQL Data S
 
 ### Python
 
-```no-highlight
+```pre
 from pyspark.sql.types import *
 
 data = [(1,2,3),(7,8,9),(9,2,3),(4,2,3),(5,6,7)]
@@ -99,7 +99,7 @@ For more details about the properties ('props1' map in above example) and `creat
 
 ## Create Row Tables using API, Update the Contents of Row Table
 
-```no-highlight
+```pre
 // create a row format table called ROW_TABLE
 snappy.dropTable("ROW_TABLE", ifExists = true)
 // "row" is the table format
@@ -135,7 +135,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 
 
 ### Scala
-```no-highlight
+```pre
  import org.apache.spark.sql._
  import org.apache.spark.streaming._
  import scala.collection.mutable
@@ -169,7 +169,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 ```
 
 ### Java
-```no-highlight
+```pre
  StructType schema = new StructType(new StructField[]{
      new StructField("id", DataTypes.IntegerType, false, Metadata.empty()),
      new StructField("text", DataTypes.StringType, false, Metadata.empty())
@@ -209,7 +209,7 @@ SnappyData extends Spark streaming so stream definitions can be declaratively wr
 ```
 
 ### Python
-```no-highlight
+```pre
 from pyspark.streaming.snappy.context import SnappyStreamingContext
 from pyspark.sql.types import *
 

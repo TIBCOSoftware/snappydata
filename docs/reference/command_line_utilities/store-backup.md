@@ -8,8 +8,8 @@ An online backup saves the following:
 - Configuration files from the member startup.
 - A restore script (restore.sh) copies the files back to their original locations.
 
-!!! Note:
-	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
+!!! Note
+	- SnappyData does not support backing up disk stores on systems with live transactions, or when concurrent DML statements are being executed. </br>If a backup of the live transaction or concurrent DML operations, is performed, there is a possibility of partial commits or partial changes of DML operations appearing in the backups.
 	- SnappyData does not support taking incremental backups on systems with live transactions, or when concurrent DML statements are being executed.
 
 - [Guidelines](#guidelines)
@@ -55,7 +55,7 @@ You can use one of two formats:
 ## Backup Directory Structure and Contents
 The backup directory contains a backup of the persistent data.  Below is the structure of files and directories backed up in a distributed system:
 
-```no-highlight
+```pre
 2018-03-15-05-31-46:
 10_80_141_112_10715_ec_v0_7393 10_80_141_112_10962_v1_57099
 
@@ -77,7 +77,7 @@ GFXD-DD-DISKSTORE_76705038-10de-4b3e-955b-446546fe4036 GFXD-DEFAULT-DISKSTORE_15
 | Directory  | Contents                                                     |
 | ---------- | ------------------------------------------------------------ |
 | config     | For internal use                                             |
-| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using the [CREATE DISKSTORE](../reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
+| diskstores | - GFXD-DD-DISKSTORE: Diskstores created for DataDictionary  </br> - GFXD-DEFAULT-DISKSTORE: The default diskstore. </br>- USERDISKSTORE: Generated for diskstores created by users using [CREATE DISKSTORE](/reference/sql_reference/create-diskstore) command.</br>- USERDISKSTORE-SNAPPY-DELTA: Created for delta regions. |
 | user       | For internal use                                             |
 | README.txt | The file contains information about other files in a directory. |
 | restore.sh | Script that copies files back to their original locations.   |
@@ -114,7 +114,7 @@ To perform a full backup:
 
 If the operation is successful, you see a message like this:
 
-```no-highlight
+```pre
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
 	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
@@ -124,8 +124,19 @@ The following disk stores were backed up:
 Backup successful.
 ```
 
-If the operation does not succeed, a message is displayed indicating that the backup was incomplete, and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. </br>
+If the operation does not succeed, a message is displayed indicating that the backup was incomplete and is noted in the ending status message. It leaves the file INCOMPLETE_BACKUP in its highest level backup directory. 
 Offline members leave nothing, so you only have this message from the backup operation itself. Although offline members cannot back up their disk stores, a complete backup can be obtained if at least one copy of the data is available in a running member.
+
+If the cluster is secure, you also need to specify all the security properties as command-line arguments to the backup command. The security properties you need to provide are the same as those mentioned in the configuration files in the **conf** directory (locators, servers or leads) when the cluster is launched.
+The only difference is that any valid user can run this command. That is, the user does not have to be a snappydata cluster administrator to run the backup command.
+
+For example:
+
+```
+./bin/snappy backup   /snappydata_backup_location/   -locators=locatorhostname:10334  -auth-provider=LDAP  -gemfirexd.auth-ldap-server=ldap://<ldap-server-host>:389/  -user=<username>  -password=<password>  -gemfirexd.auth-ldap-search-base=<search-base-values>  -gemfirexd.auth-ldap-search-dn=<search-dn-values> -gemfirexd.auth-ldap-search-pw=<password>
+
+```
+Optionally, you can encrypt the user's password first and use it in the above command to explicitly avoid putting the password in plain text in the command-line. Here is [how you can encrypt the password](https://snappydatainc.github.io/snappydata/security/specify_encrypt_passwords_conf_client/#using-encrypted-password-in-client-connections)
 
 <a id="incremental-backup"></a>
 ## Performing an Incremental backup
@@ -136,13 +147,13 @@ If members are missing from the baseline directory because they were offline or 
 
 To perform an incremental backup, execute the backup command but specify the baseline directory as well as your incremental backup directory (both can be the same directory). </br>For example:
 
-```no-highlight
+```pre
 ./bin/snappy backup -baseline=<SnappyBackupLocation> <SnappyBackupLocation> -locators=<peer-discovery-address>
 ```
 
 The tool reports on the success of the operation. If the operation is successful, you see a message like this:
 
-```no-highlight
+```pre
 The following disk stores were backed up:
 	1f5dbd41-309b-4997-a50b-95890183f8ce [<hostname>:/<LocatorLogDirectory>/datadictionary]
 	5cb9afc3-12fd-4be8-9c0c-cc6c7fdec86e [<hostname>:/<LocatorLogDirectory>]
@@ -187,7 +198,7 @@ You can also do this manually:
 
 1.  Restore your disk stores when your members are offline and the system is down.
 
-2.  Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts does not copy over files with the same names.
+2.  Read the restore scripts to see where the files are placed and make sure the destination locations are ready. The restore scripts do not copy over files with the same names.
 
 3.  Run the restore scripts. Run each script on the host where the backup originated.
 
@@ -201,6 +212,6 @@ To ensure that your backup is successful, you can try the following options:
 
 * Execute the `select count(*) from <TableName>;` query and verify the total number of rows.
 
-* Verify the table details in the [Snappy Pulse UI](../../monitoring/monitoring.md#table).
+* Verify the table details in the [SnappyData Monitoring Console](../../monitoring/monitoring.md#table).
 
 * If you have done updates, you can verify to see if those specific updates are available.

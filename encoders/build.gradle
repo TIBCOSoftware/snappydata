@@ -1,0 +1,85 @@
+/*
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you
+ * may not use this file except in compliance with the License. You
+ * may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or
+ * implied. See the License for the specific language governing
+ * permissions and limitations under the License. See accompanying
+ * LICENSE file.
+ */
+apply plugin: 'scala'
+
+compileScala.options.encoding = 'UTF-8'
+// fix scala+java mix to all use compileScala which uses correct dependency order
+sourceSets.main.scala.srcDir 'src/main/java'
+sourceSets.test.scala.srcDirs = ['src/test/java', 'src/test/scala',
+                                 'src/dunit/java', 'src/dunit/scala']
+sourceSets.main.java.srcDirs = []
+sourceSets.test.java.srcDirs = []
+
+dependencies {
+
+  compileOnly 'org.scala-lang:scala-library:' + scalaVersion
+
+  compile("org.parboiled:parboiled_${scalaBinaryVersion}:${parboiledVersion}") {
+    exclude(group: 'org.scala-lang', module: 'scala-library')
+    exclude(group: 'org.scala-lang', module: 'scala-reflect')
+    exclude(group: 'org.scala-lang', module: 'scala-compiler')
+  }
+
+  compileOnly "org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}"
+  compileOnly "org.apache.spark:spark-hive_${scalaBinaryVersion}:${sparkVersion}"
+
+  compile project(":snappy-jdbc_${scalaBinaryVersion}")
+  if (new File(rootDir, 'store/build.gradle').exists()) {
+    compile project(':snappy-store:snappydata-store-core')
+  } else {
+    compile group: 'io.snappydata', name: 'snappydata-store-core', version: snappyStoreVersion
+  }
+
+  compile "org.eclipse.collections:eclipse-collections-api:${eclipseCollectionsVersion}"
+  compile "org.eclipse.collections:eclipse-collections:${eclipseCollectionsVersion}"
+  compile "org.apache.tomcat:tomcat-jdbc:${tomcatJdbcVersion}"
+  compile "com.zaxxer:HikariCP:${hikariCPVersion}"
+
+  testCompile project(':dunit')
+  testCompile 'org.scala-lang:scala-actors:' + scalaVersion
+  testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+  testRuntime files("${projectDir}/../tests/common/src/main/resources")
+}
+
+scalaTest {
+  dependsOn ':cleanScalaTest'
+  doFirst {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+  doLast {
+    // cleanup files since scalatest plugin does not honour workingDir yet
+    cleanIntermediateFiles(project.path)
+  }
+}
+
+task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
+  classifier = 'javadoc'
+  from scaladoc
+}
+
+if (rootProject.hasProperty('enablePublish')) {
+  artifacts {
+    archives packageScalaDocs, packageSources
+  }
+}
+
+test.dependsOn ':cleanJUnit'
+
+archivesBaseName = 'snappydata-encoders_' + scalaBinaryVersion

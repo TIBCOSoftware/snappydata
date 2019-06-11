@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -26,11 +26,23 @@ function absPath() {
 }
 FWDIR="$(dirname "$(absPath "$0")")"
 
-if [ -z "$SPARK_ENV_LOADED" ]; then
-  export SPARK_ENV_LOADED=1
+if [ -z "$SNAPPY_ENV_LOADED" ]; then
+  export SNAPPY_ENV_LOADED=1
 
   # Returns the parent of the directory this script lives in.
   parent_dir="`absPath "$FWDIR/.."`"
+
+  if [ -z "$MALLOC_ARENA_MAX" ]; then
+    export MALLOC_ARENA_MAX=4
+  fi
+
+  if [ -z "$MALLOC_MMAP_THRESHOLD_" ]; then
+    export MALLOC_MMAP_THRESHOLD_=131072
+  fi
+
+  if [ -z "$MALLOC_MMAP_MAX_" ]; then
+    export MALLOC_MMAP_MAX_=2147483647
+  fi
 
   user_conf_dir="${SPARK_CONF_DIR:-"$parent_dir"/conf}"
 
@@ -40,6 +52,7 @@ if [ -z "$SPARK_ENV_LOADED" ]; then
     . "${user_conf_dir}/snappy-env.sh"
     set +a
   fi
+
 fi
 
 # Setting SPARK_SCALA_VERSION if not already set.

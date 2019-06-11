@@ -17,7 +17,7 @@ Network partition detection in SnappyData is based on the concept of a lead memb
 You enable network partition detection by setting the [enable-network-partition-detection](/reference/configuration_parameters/enable-network-partition-detection.md) distributed system property to **true**. Enable network partition detection in all locators and in any other process that should be sensitive to network partitioning. Processes that do not have network partition detection enabled are not eligible to be the lead member, so their failure does not trigger declaration of a network partition.
 
 <note-sub>
-!!! Note:
+!!! Note
 	The distributed system must contain locators to enable network partition detection.
 </note-sub>
 

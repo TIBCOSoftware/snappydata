@@ -1,6 +1,6 @@
 # DROP SYNONYM
 
-```no-highlight
+```pre
 DROP SYNONYM [ IF EXISTS ] [schema-name.]synonym-name;
 ```
 
@@ -10,7 +10,7 @@ Removes the specified synonym. Include the `IF EXISTS` clause to execute the sta
 
 ## Example
 
-```no-highlight
+```pre
 DROP SYNONYM IF EXISTS app.myairline;
 ```
 

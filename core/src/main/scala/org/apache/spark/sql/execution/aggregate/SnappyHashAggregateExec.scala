@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -46,6 +46,7 @@ import org.apache.spark.sql.catalyst.expressions.codegen._
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.metric.SQLMetrics
+import org.apache.spark.sql.types.{ArrayType, BinaryType, MapType, StringType, StructType}
 import org.apache.spark.sql.{SnappySession, collection}
 import org.apache.spark.util.Utils
 
@@ -113,15 +114,6 @@ case class SnappyHashAggregateExec(
         AttributeSet(resultExpressions.diff(groupingExpressions)
             .map(_.toAttribute)) ++
         AttributeSet(aggregateBufferAttributes)
-
-  private def getAliases(expressions: Seq[Expression],
-      existing: Seq[Seq[Attribute]]): Seq[Seq[Attribute]] = {
-    expressions.zipWithIndex.map { case (e, i) =>
-      resultExpressions.collect {
-        case a@Alias(c, _) if c.semanticEquals(e) => a.toAttribute
-      } ++ (if (existing.isEmpty) Nil else existing(i))
-    }
-  }
 
   override def outputPartitioning: Partitioning = {
     child.outputPartitioning
@@ -270,9 +262,9 @@ case class SnappyHashAggregateExec(
   }
 
   // The variables used as aggregation buffer
-  @transient private var bufVars: Seq[ExprCode] = _
+  @transient protected var bufVars: Seq[ExprCode] = _
   // code to update buffer variables with current values
-  @transient private var bufVarUpdates: String = _
+  @transient protected var bufVarUpdates: String = _
 
   private def doProduceWithoutKeys(ctx: CodegenContext): String = {
     val initAgg = ctx.freshName("initAgg")
@@ -282,6 +274,8 @@ case class SnappyHashAggregateExec(
     val functions = aggregateExpressions.map(_.aggregateFunction
         .asInstanceOf[DeclarativeAggregate])
     val initExpr = functions.flatMap(f => f.initialValues)
+    ctx.INPUT_ROW = null
+    ctx.currentVars = null
     bufVars = initExpr.map { e =>
       val isNull = ctx.freshName("bufIsNull")
       val value = ctx.freshName("bufValue")
@@ -369,6 +363,22 @@ case class SnappyHashAggregateExec(
      """.stripMargin
   }
 
+  protected def genAssignCodeForWithoutKeys(ctx: CodegenContext, ev: ExprCode, i: Int,
+      doCopy: Boolean, inputAttrs: Seq[Attribute]): String = {
+    if (doCopy) {
+      inputAttrs(i).dataType match {
+        case StringType =>
+          ObjectHashMapAccessor.cloneStringIfRequired(ev.value, bufVars(i).value, doCopy = true)
+        case d@(_: ArrayType | _: MapType | _: StructType) =>
+          val javaType = ctx.javaType(d)
+          s"${bufVars(i).value} = ($javaType)(${ev.value} != null ? ${ev.value}.copy() : null);"
+        case _: BinaryType =>
+          s"${bufVars(i).value} = (byte[])(${ev.value} != null ? ${ev.value}.clone() : null);"
+        case _ => s"${bufVars(i).value} = ${ev.value};"
+      }
+    } else s"${bufVars(i).value} = ${ev.value};"
+  }
+
   private def doConsumeWithoutKeys(ctx: CodegenContext,
       input: Seq[ExprCode]): String = {
     // only have DeclarativeAggregate
@@ -382,6 +392,7 @@ case class SnappyHashAggregateExec(
         case PartialMerge | Final => aggregate.mergeExpressions
       }
     }
+    ctx.INPUT_ROW = null
     ctx.currentVars = bufVars ++ input
     val boundUpdateExpr = updateExpr.map(BindReferences.bindReference(_,
       inputAttrs))
@@ -392,10 +403,12 @@ case class SnappyHashAggregateExec(
       boundUpdateExpr.map(_.genCode(ctx))
     }
     // aggregate buffer should be updated atomic
+    // make copy of results for types that can be wrappers and thus mutable
+    val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
     val updates = aggVals.zipWithIndex.map { case (ev, i) =>
       s"""
          | ${bufVars(i).isNull} = ${ev.isNull};
-         | ${bufVars(i).value} = ${ev.value};
+         | ${genAssignCodeForWithoutKeys(ctx, ev, i, doCopy, inputAttrs)}
       """.stripMargin
     }
     s"""
@@ -498,6 +511,8 @@ case class SnappyHashAggregateExec(
     // generate variables for HashMap data array and mask
     mapDataTerm = ctx.freshName("mapData")
     maskTerm = ctx.freshName("hashMapMask")
+    val maxMemory = ctx.freshName("maxMemory")
+    val peakMemory = metricTerm(ctx, "peakMemory")
 
     // generate the map accessor to generate key/value class
     // and get map access methods
@@ -522,6 +537,11 @@ case class SnappyHashAggregateExec(
           $childProduce
 
           $iterTerm = $hashMapTerm.iterator();
+          long $maxMemory = $hashMapTerm.maxMemory();
+          $peakMemory.add($maxMemory);
+          if ($hashMapTerm.taskContext() != null) {
+            $hashMapTerm.taskContext().taskMetrics().incPeakExecutionMemory($maxMemory);
+          }
         }
        """)
 
@@ -580,6 +600,8 @@ case class SnappyHashAggregateExec(
     }
 
     // generate class for key, buffer and hash code evaluation of key columns
+    ctx.INPUT_ROW = null
+    ctx.currentVars = null
     val inputAttr = aggregateBufferAttributesForGroup ++ child.output
     val initVars = ctx.generateExpressions(declFunctions.flatMap(
       bufferInitialValuesForGroup(_).map(BindReferences.bindReference(_,

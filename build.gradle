@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,42 +15,44 @@
  * LICENSE file.
  */
 
-import groovy.json.JsonSlurper
 import org.gradle.api.tasks.testing.logging.*
 import org.gradle.internal.logging.*
 
-apply plugin: 'wrapper'
-apply plugin: 'distribution'
-
-if (JavaVersion.current().isJava8Compatible()) {
-  allprojects {
-    tasks.withType(Javadoc) {
-      options.addStringOption('Xdoclint:none', '-quiet')
-      /*
-      if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
-        options.addBooleanOption("-allow-script-in-comments", true)
-      }
-      */
-    }
-  }
-}
 buildscript {
   repositories {
     maven { url 'https://plugins.gradle.org/m2' }
     mavenCentral()
   }
   dependencies {
-    classpath 'io.snappydata:gradle-scalatest:0.16'
-    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.8.2'
-    classpath "net.rdrei.android.buildtimetracker:gradle-plugin:0.8.+"
-    classpath 'com.netflix.nebula:gradle-ospackage-plugin:4.4.+'
+    classpath 'io.snappydata:gradle-scalatest:0.23'
+    classpath 'org.github.ngbinh.scalastyle:gradle-scalastyle-plugin_2.11:0.9.0'
+    classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.3'
+    classpath 'de.undercouch:gradle-download-task:3.4.3'
+    classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.+'
+    classpath 'com.netflix.nebula:gradle-ospackage-plugin:5.2.+'
   }
 }
+
+apply plugin: 'wrapper'
+apply plugin: 'distribution'
+apply plugin: 'nebula.ospackage-base'
+apply plugin: "nebula.ospackage"
+
+def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 
 allprojects {
   // We want to see all test results.  This is equivalent to setting --continue
   // on the command line.
   gradle.startParameter.continueOnFailure = true
+
+  tasks.withType(Javadoc) {
+    options.addStringOption('Xdoclint:none', '-quiet')
+    /*
+    if (javax.tools.ToolProvider.getSystemDocumentationTool().isSupportedOption("--allow-script-in-comments") == 0) {
+      options.addBooleanOption("-allow-script-in-comments", true)
+    }
+    */
+  }
 
   repositories {
     mavenCentral()
@@ -65,13 +67,12 @@ allprojects {
   apply plugin: 'java'
   apply plugin: 'maven'
   apply plugin: 'scalaStyle'
+  apply plugin: 'com.github.johnrengelman.shadow'
   apply plugin: 'idea'
   apply plugin: "build-time-tracker"
-  apply plugin: "nebula.ospackage"
-  apply plugin: 'nebula.ospackage-base'
 
   group = 'io.snappydata'
-  version = '1.0.2-SNAPSHOT'
+  version = '1.1.0-HF-1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -81,87 +82,140 @@ allprojects {
     options.compilerArgs << '-XDignore.symbol.file'
     options.fork = true
     options.forkOptions.javaHome = file(System.properties['java.home'])
+    options.forkOptions.jvmArgs = [ '-J-Xmx2g', '-J-Xms2g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
   }
   tasks.withType(ScalaCompile) {
+    options.fork = true
+    options.forkOptions.jvmArgs = [ '-Xmx2g', '-Xms2g', '-XX:ReservedCodeCacheSize=512m', '-Djava.net.preferIPv4Stack=true' ]
     // scalaCompileOptions.optimize = true
     // scalaCompileOptions.useAnt = false
-    // scalaCompileOptions.fork = false
     scalaCompileOptions.deprecation = false
     scalaCompileOptions.additionalParameters = [ '-feature' ]
     options.encoding = 'UTF-8'
   }
 
+  jar.duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+
   javadoc.options.charSet = 'UTF-8'
 
-  gradle.taskGraph.whenReady( { graph ->
-    tasks.withType(Tar).each { tar ->
-      tar.compression = Compression.GZIP
-      tar.extension = 'tar.gz'
-    }
-  })
-
   ext {
-    productName = 'SnappyData'
-    vendorName = 'SnappyData, Inc.'
+    if (isEnterpriseProduct) {
+      productName = 'TIBCO ComputeDB'
+    } else {
+      productName = 'SnappyData'
+    }
+    vendorName = 'TIBCO Software Inc.'
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.1'
+    snappySparkVersion = '2.1.1.6'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
+    sparkCurrentVersion = '2.3.2'
+    sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
     log4jVersion = '1.2.17'
     slf4jVersion = '1.7.25'
     junitVersion = '4.12'
-    hadoopVersion = '2.7.3'
+    mockitoVersion = '1.10.19'
+    hadoopVersion = '2.7.7'
     scalatestVersion = '2.2.6'
-    jettyVersion = '9.2.22.v20170606'
+    jettyVersion = '9.2.26.v20180806'
     guavaVersion = '14.0.1'
     kryoVersion = '4.0.1'
     thriftVersion = '0.9.3'
-    metricsVersion = '3.2.5'
+    metricsVersion = '4.0.3'
+    metrics2Version = '2.2.0'
     janinoVersion = '3.0.8'
-    derbyVersion = '10.12.1.1'
+    derbyVersion = '10.14.2.0'
+    parboiledVersion = '2.1.5'
+    tomcatJdbcVersion = '8.5.37'
+    hikariCPVersion = '2.7.9'
+    twitter4jVersion = '4.0.7'
+    objenesisVersion = '3.0.1'
+    rabbitMqVersion = '4.9.1'
+    akkaVersion = '2.3.16'
+    sprayVersion = '1.3.4'
+    sprayJsonVersion = '1.3.5'
+    sprayShapelessVersion = '1.3.3'
+    sprayTestkitVersion = '1.3.4'
+    jodaVersion = '2.1.2'
+    jodaTimeVersion = '2.10.1'
+    slickVersion = '2.1.0'
+    h2Version = '1.3.176'
+    commonsIoVersion = '2.6'
+    commonsPoolVersion = '1.6'
+    dbcpVersion = '1.4'
+    shiroVersion = '1.2.6'
+    flywayVersion = '3.2.1'
+    typesafeConfigVersion = '1.3.3'
+    mssqlVersion = '7.0.0.jre8'
+    antlr2Version = '2.7.7'
+
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.2-SNAPSHOT'
+    snappyStoreVersion = '1.6.3'
     snappydataVersion = version
     pulseVersion = '1.5.1'
+    zeppelinInterpreterVersion = '0.7.3.5'
+
     buildFlags = ''
     createdBy = System.getProperty('user.name')
     osArch = System.getProperty('os.arch')
     osName = org.gradle.internal.os.OperatingSystem.current()
+    osFamilyName = osName.getFamilyName().replace(' ', '').toLowerCase()
     osVersion = System.getProperty('os.version')
     buildDate = new Date().format('yyyy-MM-dd HH:mm:ss Z')
     buildNumber = new Date().format('MMddyy')
     jdkVersion = System.getProperty('java.version')
-    sparkJobServerVersion = '0.6.2.6'
-    kolobokeVersion = '1.0.0'
+    sparkJobServerVersion = '0.6.2.9'
+    eclipseCollectionsVersion = '9.2.0'
+    fastutilVersion = '8.2.2'
 
     gitCmd = "git --git-dir=${rootDir}/.git --work-tree=${rootDir}"
     gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
     commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
     sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
     buildIdPrefix = System.env.USER + ' '
+
+    sparkDistDir = "${project.gradle.gradleUserHomeDir}/sparkDist"
+    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
   }
 
   if (!buildRoot.isEmpty()) {
     buildDir = new File(buildRoot, 'scala-' + scalaBinaryVersion + '/' +  project.path.replace(':', '/'))
   } else {
-    // default output directory like in sbt/maven
+    // default output directory suffix like in sbt/maven
     buildDir = 'build-artifacts/scala-' + scalaBinaryVersion
   }
   if (rootProject.hasProperty('enablePublish')) {
     buildIdPrefix = "${vendorName} "
   }
+  if (rootProject.hasProperty('sparkDistDir')) {
+    sparkDistDir = rootProject.property('sparkDistDir')
+    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+    sparkCurrentProductDir = "${sparkDistDir}/${sparkCurrentDistName}"
+  }
 
   ext {
     testResultsBase = "${rootProject.buildDir}/tests/snappy"
     snappyProductDir = "${rootProject.buildDir}/snappy"
-    sparkDistDir = "${rootProject.projectDir}/dist"
-    sparkProductDir = "${sparkDistDir}/${sparkDistName}"
+  }
+
+  // force same output directory for IDEA and gradle
+  idea {
+    module {
+      def projOutDir = file("${projectDir}/src/main/scala").exists()
+        ? "${project.sourceSets.main.java.outputDir}/../../scala/main"
+        : project.sourceSets.main.java.outputDir
+      def projTestOutDir = file("${projectDir}/src/test/scala").exists()
+        ? "${project.sourceSets.test.java.outputDir}/../../scala/test"
+        : project.sourceSets.test.java.outputDir
+      outputDir file(projOutDir)
+      testOutputDir file(projTestOutDir)
+    }
   }
 }
 
 
-def isEnterpriseProduct = rootProject.hasProperty('snappydata.enterprise')
 def hasAqpProject = new File(rootDir, 'aqp/build.gradle').exists()
 def aqpProject = isEnterpriseProduct ? project(":snappy-aqp_${scalaBinaryVersion}") : null
 def hasJdbcConnectorProject = new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()
@@ -196,7 +250,7 @@ configure(subprojects.findAll {!(it.name ==~ /snappy-spark.*/ ||
     inputEncoding = 'UTF-8'
     outputEncoding = 'UTF-8'
     outputFile = "${buildDir}/scalastyle-output.xml"
-    includeTestSourceDirectory = false
+    includeTestSourceDirectory = true
     source = 'src/main/scala'
     testSource = 'src/test/scala'
     failOnViolation = true
@@ -235,6 +289,7 @@ task cleanDUnit { doLast {
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanSecurityDUnit { doLast {
   String workingDir = "${testResultsBase}/dunit-security"
@@ -243,6 +298,7 @@ task cleanSecurityDUnit { doLast {
   // clean spark cluster directories
   delete "${snappyProductDir}/work", "${snappyProductDir}/logs"
   delete "${sparkProductDir}/work", "${sparkProductDir}/logs"
+  delete "${sparkCurrentProductDir}/work", "${sparkCurrentProductDir}/logs"
 } }
 task cleanAllReports { doLast {
   String workingDir = "${testResultsBase}/combined-reports"
@@ -267,11 +323,12 @@ subprojects {
       args = params.split(',') as List
     }
     classpath = sourceSets.main.runtimeClasspath + sourceSets.test.runtimeClasspath
-    jvmArgs '-Xmx2g'
+    jvmArgs '-Xmx2g', '-Xms2g'
   }
 
   task scalaTest(type: Test) {
-    actions = [ new com.github.maiflai.ScalaTestAction() ]
+    def factory = new com.github.maiflai.BackwardsCompatibleJavaExecActionFactory(gradle.gradleVersion)
+    actions = [ new com.github.maiflai.ScalaTestAction(factory) ]
     // top-level default is single process run since scalatest does not
     // spawn separate JVMs
     maxParallelForks = 1
@@ -288,6 +345,7 @@ subprojects {
     testLogging.exceptionFormat = TestExceptionFormat.FULL
     testLogging.events = TestLogEvent.values() as Set
 
+    extensions.add(com.github.maiflai.ScalaTestAction.TAGS, new org.gradle.api.tasks.util.PatternSet())
     List<String> suites = []
     extensions.add(com.github.maiflai.ScalaTestAction.SUITES, suites)
     extensions.add('suite', { String name -> suites.add(name) } )
@@ -299,11 +357,11 @@ subprojects {
 
     def output = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTOUTPUT, output)
-    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) } )
+    extensions.add('testOutput', { String name -> output.setLength(0); output.append(name) })
 
     def errorOutput = new StringBuilder()
     extensions.add(com.github.maiflai.ScalaTestAction.TESTERROR, errorOutput)
-    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) } )
+    extensions.add('testError', { String name -> errorOutput.setLength(0); errorOutput.append(name) })
 
     // running a single scala suite
     if (rootProject.hasProperty('singleSuite')) {
@@ -311,7 +369,7 @@ subprojects {
     }
     workingDir = "${testResultsBase}/scalatest"
 
-    testResult '/dev/tty'
+    // testResult '/dev/tty'
     testOutput "${workingDir}/output.txt"
     testError "${workingDir}/error.txt"
     binResultsDir = file("${workingDir}/binary/${project.name}")
@@ -359,39 +417,20 @@ subprojects {
     minHeapSize '1536m'
     maxHeapSize '1536m'
 
+    // limit netty buffer arenas to avoid occasional OOMEs with 1.5g heap
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors())
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
-               '-XX:+CMSClassUnloadingEnabled', '-ea']
-
-    def single = System.getProperty('dunit.single')
-    if (single == null || single.length() == 0) {
-      single = rootProject.hasProperty('dunit.single') ?
-          rootProject.property('dunit.single') : null
-    }
-    if (single == null || single.length() == 0) {
-      def dunitTests = fileTree(dir: testClassesDir,
-          includes: ['**/*DUnitTest.class', '**/*DUnit.class'],
-          excludes: ['**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
-      FileTree includeTestFiles = dunitTests
-      int dunitFrom = rootProject.hasProperty('dunit.from') ?
-          getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
-      int dunitTo = rootProject.hasProperty('dunit.to') ?
-          getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
-
-      int begin = dunitFrom != -1 ? dunitFrom : 0
-      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
-      if (begin != 0 || end != includeTestFiles.size()) {
-        println("Picking tests :")
-        filteredSet.each { a -> println(a) }
-      }
-      include filteredSet
-    } else {
-      include single
-    }
-    exclude '**/*Suite.class'
-    exclude '**/*DUnitSecurityTest.class'
+               '-XX:+CMSClassUnloadingEnabled', '-ea',
+               '-Dspark.sql.codegen.cacheSize=1000',
+               '-Dspark.ui.retainedStages=500',
+               '-Dspark.ui.retainedJobs=500',
+               '-Dspark.sql.ui.retainedExecutions=500',
+               '-Dio.netty.allocator.pageSize=8192',
+               '-Dio.netty.allocator.maxOrder=10',
+               "-Dio.netty.allocator.numHeapArenas=${numArenas}",
+               "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
 
     workingDir = "${testResultsBase}/dunit"
 
@@ -433,40 +472,20 @@ subprojects {
     minHeapSize '1536m'
     maxHeapSize '1536m'
 
+    // limit netty buffer arenas to avoid occasional OOMEs with 1.5g heap
+    int numArenas = Math.min(8, Runtime.getRuntime().availableProcessors())
     jvmArgs = ['-XX:+HeapDumpOnOutOfMemoryError',
                '-XX:+UseParNewGC', '-XX:+UseConcMarkSweepGC',
                '-XX:CMSInitiatingOccupancyFraction=50',
-               '-XX:+CMSClassUnloadingEnabled', '-ea']
-
-    def single = rootProject.hasProperty('dunitSecurity.single') ?
-        rootProject.property('dunitSecurity.single') : null
-    if (single == null || single.length() == 0) {
-      def dunitSecurityTests = fileTree(dir: testClassesDir,
-          includes: ['**/*DUnitSecurityTest.class'],
-          excludes: ['**/*DUnitTest.class', '**/NCJ*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class'])
-      FileTree includeTestFiles = dunitSecurityTests
-      int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
-          getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
-      int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
-          getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
-
-      int begin = dunitFrom != -1 ? dunitFrom : 0
-      int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
-      def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
-      if (begin != 0 || end != includeTestFiles.size()) {
-        println("Picking tests :")
-        filteredSet.each { a -> println(a) }
-      }
-      include filteredSet
-    } else {
-      include single
-    }
-    exclude '**/*Suite.class'
-    exclude '**/*DUnitTest.class'
-    exclude '**/*DUnit.class'
-    if (!rootProject.hasProperty('snappydata.enterprise')) {
-      exclude '**/*DUnitSecurityTest.class'
-    }
+               '-XX:+CMSClassUnloadingEnabled', '-ea',
+               '-Dspark.sql.codegen.cacheSize=1000',
+               '-Dspark.ui.retainedStages=500',
+               '-Dspark.ui.retainedJobs=500',
+               '-Dspark.sql.ui.retainedExecutions=500',
+               '-Dio.netty.allocator.pageSize=8192',
+               '-Dio.netty.allocator.maxOrder=10',
+               "-Dio.netty.allocator.numHeapArenas=${numArenas}",
+               "-Dio.netty.allocator.numDirectArenas=${numArenas}"]
 
     workingDir = "${testResultsBase}/dunit-security"
 
@@ -485,14 +504,235 @@ subprojects {
     }
   }
 
-  gradle.taskGraph.whenReady({ graph ->
-    tasks.withType(Jar).each { pack ->
-      if (pack.name == 'packageTests') {
-        pack.from(pack.project.sourceSets.test.output.classesDir, sourceSets.test.resources.srcDirs)
+  // apply default manifest
+  if (rootProject.hasProperty('enablePublish')) {
+    createdBy = 'TIBCO Software Inc.'
+  }
+  jar {
+    manifest {
+      attributes(
+        'Manifest-Version'  : '1.0',
+        'Created-By'        : createdBy,
+        'Title'             : rootProject.name,
+        'Version'           : version,
+        'Vendor'            : vendorName
+      )
+    }
+  }
+
+  configurations {
+    testOutput {
+      extendsFrom testCompile
+      description 'a dependency that exposes test artifacts'
+    }
+    /*
+    all {
+      resolutionStrategy {
+        // fail eagerly on version conflict (includes transitive dependencies)
+        // e.g. multiple different versions of the same dependency (group and name are equal)
+        failOnVersionConflict()
       }
     }
-    tasks.withType(Test).each { test ->
+    */
+  }
+
+  // force versions for some dependencies that get pulled multiple times
+  configurations.all {
+    resolutionStrategy.force "com.google.guava:guava:${guavaVersion}",
+      "org.apache.derby:derby:${derbyVersion}",
+      "org.apache.hadoop:hadoop-annotations:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-auth:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-client:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-api:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-client:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-server-common:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
+      "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
+    exclude(group: 'org.mortbay.jetty', module: 'servlet-api')
+  }
+  configurations.testRuntime {
+    // below is included indirectly by hadoop deps and conflicts with embedded 1.5.7 apacheds
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-kerberos-codec')
+    exclude(group: 'org.apache.directory.server', module: 'apacheds-i18n')
+  }
+
+  task packageTests(type: Jar, dependsOn: testClasses) {
+    description 'Assembles a jar archive of test classes.'
+    classifier = 'tests'
+  }
+  artifacts {
+    testOutput packageTests
+  }
+
+  dependencies {
+    compile 'log4j:log4j:' + log4jVersion
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+
+    testCompile "junit:junit:${junitVersion}"
+  }
+}
+
+// maven publish tasks
+subprojects {
+
+  apply plugin: 'signing'
+
+  task packageSources(type: Jar, dependsOn: classes) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+  }
+  task packageDocs(type: Jar, dependsOn: javadoc) {
+    classifier = 'javadoc'
+    from javadoc
+  }
+  if (rootProject.hasProperty('enablePublish')) {
+    signing {
+      sign configurations.archives
+    }
+
+    uploadArchives {
+      repositories {
+        mavenDeployer {
+          beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+
+          repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
+            authentication(userName: ossrhUsername, password: ossrhPassword)
+          }
+          snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
+            authentication(userName: ossrhUsername, password: ossrhPassword)
+          }
+
+          pom.project {
+            if (isEnterpriseProduct) {
+              name 'TIBCO ComputeDB'
+            } else {
+              name 'SnappyData'
+            }
+            packaging 'jar'
+            // optionally artifactId can be defined here
+            description 'TIBCO ComputeDB distributed data store and execution engine'
+            url 'http://www.snappydata.io'
+
+            scm {
+              connection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
+              developerConnection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
+              url 'https://github.com/SnappyDataInc/snappydata'
+            }
+
+            licenses {
+              license {
+                name 'The Apache License, Version 2.0'
+                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+              }
+            }
+
+            developers {
+              developer {
+                id 'smenon'
+                name 'Sudhir Menon'
+                email 'sumenon@tibco.com'
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+// apply common test and misc configuration
+gradle.taskGraph.whenReady { graph ->
+
+  String dunitSingle = System.getProperty('dunit.single')
+  if (dunitSingle == null || dunitSingle.length() == 0) {
+    dunitSingle = rootProject.hasProperty('dunit.single') ?
+        rootProject.property('dunit.single') : null
+  }
+  String dunitSecSingle = System.getProperty('dunitSecurity.single')
+  if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+    dunitSecSingle = rootProject.hasProperty('dunitSecurity.single') ?
+        rootProject.property('dunitSecurity.single') : null
+  }
+
+  def allTasks = subprojects.collect { it.tasks }.flatten()
+  allTasks.each { task ->
+    if (task instanceof Tar) {
+      def tar = (Tar)task
+      tar.compression = Compression.GZIP
+      tar.extension = 'tar.gz'
+    } else if (task instanceof Jar) {
+      def pack = (Jar)task
+      if (pack.name == 'packageTests') {
+        pack.from(pack.project.sourceSets.test.output.classesDirs, pack.project.sourceSets.test.resources.srcDirs)
+      }
+    } else if (task instanceof Test) {
+      def test = (Test)task
       test.configure {
+
+        if (test.name == 'dunitTest') {
+          includes.clear()
+          excludes.clear()
+          if (dunitSingle == null || dunitSingle.length() == 0) {
+            def dunitTests = testClassesDirs.asFileTree.matching {
+              includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class',
+                  '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
+                  '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
+            }
+            FileTree includeTestFiles = dunitTests
+            int dunitFrom = rootProject.hasProperty('dunit.from') ?
+                getLast(includeTestFiles, rootProject.property('dunit.from')) : 0
+            int dunitTo = rootProject.hasProperty('dunit.to') ?
+                getLast(includeTestFiles, rootProject.property('dunit.to')) : includeTestFiles.size()
+
+            int begin = dunitFrom != -1 ? dunitFrom : 0
+            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            if (begin != 0 || end != includeTestFiles.size()) {
+              println("Picking tests :")
+              filteredSet.each { a -> println(a) }
+            }
+            include filteredSet
+          } else {
+            include dunitSingle
+          }
+        } else if (test.name == 'dunitSecurityTest') {
+          includes.clear()
+          excludes.clear()
+          if (!rootProject.hasProperty('snappydata.enterprise')) {
+            excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+          } else if (dunitSecSingle == null || dunitSecSingle.length() == 0) {
+            def dunitSecurityTests = testClassesDirs.asFileTree.matching {
+              includes = [ '**/*DUnitSecurityTest.class' ]
+              excludes = [ '**/*Suite.class', '**/*DUnitTest.class', '**/*DUnit.class' ]
+            }
+            FileTree includeTestFiles = dunitSecurityTests
+            int dunitFrom = rootProject.hasProperty('dunitSecurity.from') ?
+                getLast(includeTestFiles, rootProject.property('dunitSecurity.from')) : 0
+            int dunitTo = rootProject.hasProperty('dunitSecurity.to') ?
+                getLast(includeTestFiles, rootProject.property('dunitSecurity.to')) : includeTestFiles.size()
+
+            int begin = dunitFrom != -1 ? dunitFrom : 0
+            int end = dunitTo != -1 ? dunitTo : includeTestFiles.size()
+            def filteredSet = includeTestFiles.drop(begin).take(end-begin+1).collect {f -> "**/" + f.name}
+            if (begin != 0 || end != includeTestFiles.size()) {
+              println("Picking tests :")
+              filteredSet.each { a -> println(a) }
+            }
+            include filteredSet
+          } else {
+            include dunitSecSingle
+          }
+        }
 
         String logLevel = System.getProperty('logLevel')
         if (logLevel != null && logLevel.length() > 0) {
@@ -507,7 +747,9 @@ subprojects {
 
         environment 'SNAPPY_HOME': snappyProductDir,
           'APACHE_SPARK_HOME': sparkProductDir,
-          'SNAPPY_DIST_CLASSPATH': "${sourceSets.test.runtimeClasspath.asPath}"
+          'APACHE_SPARK_CURRENT_HOME': sparkCurrentProductDir,
+          'SPARK_TESTING': '1',
+          'SNAPPY_DIST_CLASSPATH': test.classpath.asPath
 
         def failureCount = new java.util.concurrent.atomic.AtomicInteger(0)
         def progress = new File(workingDir, 'progress.txt')
@@ -563,142 +805,9 @@ subprojects {
         }
       }
     }
-  })
-
-  // apply default manifest
-  if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'SnappyData Build Team'
-  }
-  jar {
-    manifest {
-      attributes(
-        'Manifest-Version'  : '1.0',
-        'Created-By'        : createdBy,
-        'Title'             : rootProject.name,
-        'Version'           : version,
-        'Vendor'            : vendorName
-      )
-    }
-  }
-
-  configurations {
-    testOutput {
-      extendsFrom testCompile
-      description 'a dependency that exposes test artifacts'
-    }
-    /*
-    all {
-      resolutionStrategy {
-        // fail eagerly on version conflict (includes transitive dependencies)
-        // e.g. multiple different versions of the same dependency (group and name are equal)
-        failOnVersionConflict()
-      }
-    }
-    */
-  }
-
-  // force versions for some dependencies that get pulled multiple times
-  configurations.all {
-    resolutionStrategy.force "com.google.guava:guava:${guavaVersion}",
-      "org.apache.derby:derby:${derbyVersion}",
-      "org.apache.hadoop:hadoop-annotations:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-auth:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-client:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-common:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-hdfs:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-mapreduce-client-app:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-mapreduce-client-common:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-mapreduce-client-core:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-mapreduce-client-jobclient:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-mapreduce-client-shuffle:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-yarn-api:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-yarn-client:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-yarn-common:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-yarn-server-common:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-yarn-server-nodemanager:${hadoopVersion}",
-      "org.apache.hadoop:hadoop-yarn-server-web-proxy:${hadoopVersion}"
-  }
-
-  task packageTests(type: Jar, dependsOn: testClasses) {
-    description 'Assembles a jar archive of test classes.'
-    classifier = 'tests'
-  }
-  artifacts {
-    testOutput packageTests
-  }
-
-  dependencies {
-    compile 'log4j:log4j:' + log4jVersion
-    compile 'org.slf4j:slf4j-api:' + slf4jVersion
-    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
-
-    testCompile "junit:junit:${junitVersion}"
   }
 }
 
-// maven publish tasks
-subprojects {
-
-  apply plugin: 'signing'
-
-  task packageSources(type: Jar, dependsOn: classes) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
-  }
-  task packageDocs(type: Jar, dependsOn: javadoc) {
-    classifier = 'javadoc'
-    from javadoc
-  }
-  if (rootProject.hasProperty('enablePublish')) {
-    signing {
-      sign configurations.archives
-    }
-
-    uploadArchives {
-      repositories {
-        mavenDeployer {
-          beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
-
-          repository(url: 'https://oss.sonatype.org/service/local/staging/deploy/maven2/') {
-            authentication(userName: ossrhUsername, password: ossrhPassword)
-          }
-          snapshotRepository(url: 'https://oss.sonatype.org/content/repositories/snapshots/') {
-            authentication(userName: ossrhUsername, password: ossrhPassword)
-          }
-
-          pom.project {
-            name 'SnappyData'
-            packaging 'jar'
-            // optionally artifactId can be defined here
-            description 'SnappyData distributed data store and execution engine'
-            url 'http://www.snappydata.io'
-
-            scm {
-              connection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
-              developerConnection 'scm:git:https://github.com/SnappyDataInc/snappydata.git'
-              url 'https://github.com/SnappyDataInc/snappydata'
-            }
-
-            licenses {
-              license {
-                name 'The Apache License, Version 2.0'
-                url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-              }
-            }
-
-            developers {
-              developer {
-                id 'smenon'
-                name 'Sudhir Menon'
-                email 'smenon@snappydata.io'
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
 
 task publishLocal {
   dependsOn subprojects.findAll { p -> p.name != 'snappydata-native' &&
@@ -718,8 +827,9 @@ task publishMaven {
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
-  dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:product"
+  dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
+  dependsOn ':jdbcJar'
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
@@ -737,7 +847,6 @@ task product(type: Zip) {
     if (hasGemFireConnectorProject){
        dependsOn ":gemfire-connector:product"
     }
-
   }
 
 
@@ -806,10 +915,10 @@ task product(type: Zip) {
     }
 
     if (rootProject.hasProperty('hadoop-provided')) {
-      releaseFile.append("SnappyData ${version}${gitRevision} " +
+      releaseFile.append("TIBCO ComputeDB ${version}${gitRevision} " +
               "built with Hadoop ${hadoopVersion} but hadoop not bundled.\n")
     } else {
-      releaseFile.append("SnappyData ${version}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
+      releaseFile.append("TIBCO ComputeDB ${version}${gitRevision} built for Hadoop ${hadoopVersion}.\n")
     }
     releaseFile.append("Build flags:${buildFlags}\n")
 
@@ -845,12 +954,10 @@ task product(type: Zip) {
     if (new File(rootDir, 'store/build.gradle').exists()) {
       // copy snappy-store shared libraries for JNI calls
       def storeCoreProject = project(':snappy-store:snappydata-store-core')
-      if (osName.isLinux()) {
-        copy {
-          from "${storeCoreProject.projectDir}/lib"
-          into "${snappyProductDir}/jars"
-          exclude '*_sol*.so'
-        }
+      copy {
+        from "${storeCoreProject.projectDir}/lib"
+        into "${snappyProductDir}/jars"
+        exclude '*_sol*.so'
       }
       copy {
         from "${storeCoreProject.projectDir}/../quickstart"
@@ -858,17 +965,48 @@ task product(type: Zip) {
         exclude '.git*'
       }
     }
-    if (isEnterpriseProduct && hasAqpProject) {
-      // copy enterprise shared libraries for optimized JNI calls
-      copy {
-        from aqpProject.projectDir.path + '/lib'
-        into "${snappyProductDir}/jars"
+    if (isEnterpriseProduct) {
+      if (hasAqpProject) {
+        // copy enterprise shared libraries for optimized JNI calls
+        copy {
+          from aqpProject.projectDir.path + '/lib'
+          into "${snappyProductDir}/jars"
+        }
+        copy {
+          from aqpProject.projectDir
+          into snappyProductDir
+          include 'NOTICE'
+          include '*EULA*'
+        }
       }
-      copy {
-        from aqpProject.projectDir
-        into snappyProductDir
-        include 'NOTICE'
-        include '*EULA*'
+
+      def jdbcConnectorProject = project(":snappy-jdbc-connector_${scalaBinaryVersion}")
+      def gemfireConnectorProject = project(":gemfire-connector")
+      def gfeConnectorProject = project(":gemfire-connector:connector_${scalaBinaryVersion}")
+      def gfeFunctionProject = project(":gemfire-connector:gfeFunctions")
+      if (hasJdbcConnectorProject) {
+        copy {
+          from jdbcConnectorProject.jar.destinationDir
+          into "${snappyProductDir}/connectors"
+          include "*.jar"
+        }
+      }
+      if (hasGemFireConnectorProject) {
+        copy {
+          from gfeConnectorProject.jar.destinationDir
+          into "${snappyProductDir}/connectors"
+          include "*.jar"
+        }
+        copy {
+          from gfeFunctionProject.jar.destinationDir
+          into "${snappyProductDir}/connectors"
+          include "*.jar"
+        }
+        copy {
+          from "${gemfireConnectorProject.projectDir}/examples/quickstart/data"
+          into "${snappyProductDir}/connectors"
+          include "persons.jar"
+        }
       }
     }
     copy {
@@ -897,10 +1035,27 @@ task product(type: Zip) {
       from("${examplesProject.projectDir}/src")
       into "${snappyProductDir}/quickstart/src"
     }
-
     copy {
       from("${clusterProject.projectDir}/benchmark")
       into "${snappyProductDir}/benchmark"
+    }
+
+    if (rootProject.hasProperty('R.enable')) {
+      def targetRDir = "${snappyProductDir}/R"
+      copy {
+        from("${project(":snappy-spark").projectDir}/R")
+        into targetRDir
+      }
+
+      exec {
+        environment "SPARK_HOME", snappyProductDir
+        environment "NO_TESTS", "1"
+        environment "CLEAN_INSTALL", "1"
+        workingDir targetRDir
+        commandLine "${targetRDir}/check-cran.sh"
+      }
+
+      fileTree(targetRDir).exclude('lib').visit { delete it.file }
     }
   }
 }
@@ -917,7 +1072,11 @@ if (rootProject.hasProperty('copyToDir')) {
 
 distributions {
   main {
-    baseName = 'snappydata'
+    if (isEnterpriseProduct) {
+      baseName = 'tib-compute'
+    } else {
+      baseName = 'snappydata'
+    }
     contents {
       from { snappyProductDir }
     }
@@ -957,11 +1116,14 @@ ospackage {
 }
 
 buildRpm {
+  dependsOn ':packageVSD'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
   requires('glibc')
   requires('bash')
   requires('perl')
   requires('curl')
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without_hadoop'
   }
@@ -970,12 +1132,15 @@ buildRpm {
 }
 
 buildDeb {
+  dependsOn ':packageVSD'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
   requires('libc6')
   requires('bash')
   requires('perl')
   requires('curl')
   recommends('java8-sdk')
-  dependsOn ':packageVSD'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop'
   }
@@ -984,24 +1149,46 @@ buildDeb {
 }
 
 distTar {
+  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.tar.gz'
+  if (isEnterpriseProduct) {
+    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.tar.gz'
+  } else {
+    classifier 'bin'
+  }
   dependsOn product
   // also package VSD
   dependsOn ':packageVSD'
-  classifier 'bin'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
+  compression = Compression.GZIP
+  extension = 'tar.gz'
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
 }
 
 distZip {
+  // archiveName = 'TIB_compute-ce_' + version + '_' + osFamilyName + '.zip'
+  if (isEnterpriseProduct) {
+    archiveName = 'TIB_compute_' + version + '_' + osFamilyName + '.zip'
+  } else {
+    classifier 'bin'
+  }
   dependsOn product
   // also package VSD
   dependsOn ':packageVSD'
-  classifier 'bin'
+  if (rootProject.hasProperty('enablePublish')) {
+    dependsOn ':packageZeppelinInterpreter'
+  }
   if (rootProject.hasProperty('hadoop-provided')) {
     classifier 'without-hadoop-bin'
   }
 }
+
+// disable distZip by default
+assemble.dependsOn.clear()
+assemble.dependsOn product, distTar
 
 task distRpm {
   dependsOn product
@@ -1013,28 +1200,40 @@ task distDeb {
   dependsOn buildDeb
 }
 
+task jdbcJar {
+  dependsOn ":snappy-jdbc_${scalaBinaryVersion}:shadowJar"
+
+  doLast {
+    def jdbcProject = project(":snappy-jdbc_${scalaBinaryVersion}")
+    String jdbcName = "snappydata-jdbc_${scalaBinaryVersion}-${version}.jar"
+    if (isEnterpriseProduct) {
+      jdbcName = "TIB_compute-jdbc-${scalaBinaryVersion}_${version}.jar"
+    }
+    // copy the snappy-jdbc shadow jar into distributions
+    copy {
+      from jdbcProject.shadowJar.destinationDir
+      into "${rootProject.buildDir}/distributions"
+      include jdbcProject.shadowJar.archiveName
+      rename { filename -> jdbcName }
+    }
+  }
+}
+
 task copyShadowJars {
-  dependsOn ':snappy-store:snappydata-store-client:shadowJar'
+  dependsOn jdbcJar
   dependsOn ":snappy-core_${scalaBinaryVersion}:shadowJar"
 
   doLast {
     def coreProject = project(":snappy-core_${scalaBinaryVersion}")
     String coreName = "snappydata-core_${scalaBinaryVersion}-${version}.jar"
-    // copy the snappy-core shadow jar into distributions
+    if (isEnterpriseProduct) {
+      coreName = "TIB_compute-core-${scalaBinaryVersion}_${version}.jar"
+    }
     copy {
       from coreProject.shadowJar.destinationDir
       into "${rootProject.buildDir}/distributions"
       include coreProject.shadowJar.archiveName
       rename { filename -> coreName }
-    }
-    if (new File(rootDir, 'store/build.gradle').exists()) {
-      // copy the JDBC client jar separately into distributions
-      def clientProject = project(':snappy-store:snappydata-store-client')
-      copy {
-        from clientProject.shadowJar.destinationDir
-        into "${rootProject.buildDir}/distributions"
-        include clientProject.shadowJar.archiveName
-      }
     }
   }
 }
@@ -1047,32 +1246,38 @@ task distInstallers {
 
 // use the task below to prepare final release bits
 task distProduct {
-  dependsOn product, distTar, distZip
-  dependsOn distInstallers
+  dependsOn product, distTar, distZip dependsOn distInstallers
   dependsOn copyShadowJars
 }
 
-def copyTestsCommonResources(def bdir) {
-  String outdir = "${bdir}/resources/test"
-  file(outdir).mkdirs()
-
-  copy {
-    from "${rootDir}/tests/common/src/main/resources"
-    into outdir
-  }
-}
-
-task copyResourcesAll { doLast {
-  copyTestsCommonResources(project(":snappy-core_${scalaBinaryVersion}").buildDir)
-  copyTestsCommonResources(project(":snappy-cluster_${scalaBinaryVersion}").buildDir)
-  if (isEnterpriseProduct && hasAqpProject) {
-    copyTestsCommonResources(project(":snappy-aqp_${scalaBinaryVersion}").buildDir)
-  }
-} }
-
 task generateSources {
   dependsOn ':snappy-spark:generateSources', ':snappy-store:generateSources'
-  dependsOn copyResourcesAll
+  // copy all resource files into build classes path because new versions of IDEA
+  // do not include separate resources path in CLASSPATH if output path has been customized
+  doLast {
+    subprojects.collect { proj ->
+      String resourcesDir = proj.sourceSets.main.output.resourcesDir
+      if (file(resourcesDir).exists()) {
+        def projOutDir = file("${proj.projectDir}/src/main/scala").exists()
+          ? "${proj.sourceSets.main.java.outputDir}/../../scala/main"
+          : proj.sourceSets.main.java.outputDir
+        copy {
+          from resourcesDir
+          into projOutDir
+        }
+      }
+      resourcesDir = proj.sourceSets.test.output.resourcesDir
+      if (file(resourcesDir).exists()) {
+        def projOutDir = file("${proj.projectDir}/src/test/scala").exists()
+          ? "${proj.sourceSets.test.java.outputDir}/../../scala/test"
+          : proj.sourceSets.test.java.outputDir
+        copy {
+          from resourcesDir
+          into projOutDir
+        }
+      }
+    }
+  }
 }
 
 task cleanAll {
@@ -1101,11 +1306,14 @@ task checkAll {
   if (!rootProject.hasProperty('aqp.skip') && hasAqpProject && isEnterpriseProduct) {
     dependsOn ":snappy-aqp_${scalaBinaryVersion}:check"
   }
-  if (isEnterpriseProduct && hasGemFireConnectorProject) {
+  if (!rootProject.hasProperty('connectors.skip') && hasGemFireConnectorProject && isEnterpriseProduct) {
     dependsOn ":gemfire-connector:check"
   }
   if (!rootProject.hasProperty('smoke.skip')) {
-    dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:scalaTest"
+    dependsOn buildDtests, ":snappy-dtests_${scalaBinaryVersion}:check"
+  }
+  if (!rootProject.hasProperty('compatibility.skip')) {
+    dependsOn ":snappy-compatibility-tests_${scalaBinaryVersion}:check"
   }
   mustRunAfter buildAll
 }
@@ -1115,9 +1323,9 @@ task allReports(type: TestReport) {
   destinationDir = file("${testResultsBase}/combined-reports")
   mustRunAfter checkAll
 }
-gradle.taskGraph.whenReady({ graph ->
+gradle.taskGraph.whenReady { graph ->
   tasks.getByName('allReports').reportOn rootProject.subprojects.collect{ it.tasks.withType(Test) }.flatten()
-})
+}
 
 def writeProperties(def parent, def name, def comment, def propsMap) {
   parent.exists() || parent.mkdirs()
@@ -1137,6 +1345,34 @@ int getLast(includeTestFiles, pattern) {
     File f -> f.name.indexOf(pattern) >= 0
   }
 }
+
+task packageZeppelinInterpreter { doLast {
+  String zeppelinInterpreterJarName = "snappydata-zeppelin_${scalaBinaryVersion}-${zeppelinInterpreterVersion}.jar"
+  String zeppelinInterpreterDir = System.env.ZEPPELIN_INTERPRETER_DIR
+
+  if (zeppelinInterpreterDir == null || zeppelinInterpreterDir.length() == 0) {
+    zeppelinInterpreterDir = "${projectDir}/../zeppelin-interpreter"
+  }
+
+  String zeppelinInterpreterLibDir = "${zeppelinInterpreterDir}/build-artifacts/libs"
+  if (file(zeppelinInterpreterDir).canWrite()) {
+    exec {
+      executable "${zeppelinInterpreterDir}/gradlew"
+      workingDir = zeppelinInterpreterDir
+      args "clean", "product", "distTar", "-PenablePublish"
+    }
+    println ''
+    println "Copying Zeppelin Interpreter jar from ${zeppelinInterpreterLibDir} to ${snappyProductDir}/jars"
+    println ''
+    copy {
+      from "${zeppelinInterpreterLibDir}"
+      into "${snappyProductDir}/jars"
+      include "${zeppelinInterpreterJarName}"
+    }
+  } else {
+    println "Skipping including Zeppelin Interpreter jar due to unwritable ${zeppelinInterpreterDir}"
+  }
+} }
 
 task packagePulse { doLast {
   String pulseWarName = "pulse-${pulseVersion}.war"
@@ -1199,6 +1435,7 @@ task sparkPackage {
 
 packagePulse.mustRunAfter product
 packageVSD.mustRunAfter product
+packageZeppelinInterpreter.mustRunAfter product
 
 distTar.mustRunAfter clean, cleanAll, product
 distZip.mustRunAfter clean, cleanAll, product
@@ -1213,6 +1450,9 @@ task deleteDocsDir(type: Delete) {
 
 task docs(type: ScalaDoc) {
   apply plugin: 'scala'
+
+  scalaDocOptions.additionalParameters = [ '-J-Xmx7g', '-J-XX:ReservedCodeCacheSize=512m', '-J-Djava.net.preferIPv4Stack=true' ]
+
   dependsOn deleteDocsDir
   Set<String> allSource = []
   def docProjects = rootProject.subprojects.collectMany { project ->
@@ -1229,6 +1469,7 @@ task docs(type: ScalaDoc) {
             !project.name.contains('gemfire-examples') &&
             !project.name.contains('trove') &&
             !project.name.contains('kafka') &&
+            !project.name.contains('encoders') &&
             // exclude tests
             !project.name.contains('tests')) {
       allSource.addAll(project.sourceSets.main.allJava.findAll {
@@ -1238,7 +1479,8 @@ task docs(type: ScalaDoc) {
       if (project.plugins.hasPlugin('scala')) {
         allSource.addAll(project.sourceSets.main.allScala.findAll {
           !it.getPath().matches('.*org/apache/spark/sql/execution/joins/HashedRelation.*') &&
-          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*')
+          !it.getPath().matches('.*org/apache/spark/sql/execution/debug/package.*') &&
+          !it.getPath().matches('.*org/apache/spark/sql/store/CodeGeneration.*')
         })
       }
       [ project ]
@@ -1288,26 +1530,21 @@ if (rootProject.hasProperty('trackBuildTime') ) {
   }
 }
 
-// log build output to buildOutput.log
+// log build output to buildOutput.log in addition to console output
 
 def buildOutput = new File("${rootDir}/buildOutput.log")
-
 // delete build output file if it has become large
 if (buildOutput.length() > 1000000) {
   delete buildOutput
 }
-
-gradle.services.get(LoggingOutputInternal).addStandardOutputListener (new StandardOutputListener () {
+def gradleLogger = new org.gradle.api.logging.StandardOutputListener() {
   void onOutput(CharSequence output) {
     buildOutput << output
   }
-})
-
-gradle.services.get(LoggingOutputInternal).addStandardErrorListener (new StandardOutputListener () {
-  void onOutput(CharSequence output) {
-    buildOutput << output
-  }
-})
+}
+def loggerService = gradle.services.get(LoggingOutputInternal)
+loggerService.addStandardOutputListener(gradleLogger)
+loggerService.addStandardErrorListener(gradleLogger)
 
 println()
 println('-------------------------------------------------')

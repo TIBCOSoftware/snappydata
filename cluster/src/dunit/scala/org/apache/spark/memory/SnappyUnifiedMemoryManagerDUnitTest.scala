@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,7 +19,6 @@ package org.apache.spark.memory
 
 import java.sql.DriverManager
 import java.util.Properties
-import java.util.function.ObjLongConsumer
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -27,6 +26,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
+import org.eclipse.collections.api.block.procedure.primitive.ObjectLongProcedure
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionConfBuilder, ConnectionUtil}
@@ -308,7 +308,7 @@ class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestB
         val stmt = conn.createStatement()
         val columnTable = ColumnFormatRelation.columnBatchTableName(tableName.toUpperCase)
         stmt.execute(s"CALL SYS.SET_BUCKETS_FOR_LOCAL_EXECUTION('$columnTable', " +
-            s"'${(0 until numBuckets).mkString(",")}', 0)")
+            s"'${(0 until numBuckets).mkString(",")}', -1)")
         val rs = stmt.executeQuery(s"CALL SYS.COLUMN_TABLE_SCAN('$columnTable', " +
             s"'${(1 to numColumns).mkString(",")}', null)")
         var n = 0
@@ -524,8 +524,8 @@ object SnappyUnifiedMemoryManagerDUnitTest {
         SparkEnv.get.memoryManager
             .asInstanceOf[SnappyUnifiedMemoryManager].logStats()
         var sum = 0L
-        mMap.forEach(new ObjLongConsumer[MemoryOwner] {
-          override def accept(key: MemoryOwner, value: Long): Unit = {
+        mMap.forEachKeyValue(new ObjectLongProcedure[MemoryOwner] {
+          override def value(key: MemoryOwner, value: Long): Unit = {
             if (key.owner.toLowerCase().contains(tableName.toLowerCase())) {
               sum += value
             }

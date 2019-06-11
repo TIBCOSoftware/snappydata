@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,6 +49,7 @@ with Logging with Retries {
   var snappyHome = ""
   var localHostName = ""
   var currWorkingDir = ""
+  private val commandOutput = "command-output.txt"
 
   // One can ovveride this method to pass other parameters like heap size.
   def servers: String = s"$localHostName\n$localHostName"
@@ -88,10 +89,10 @@ with Logging with Retries {
   }
 
   def stopCluster(): Unit = {
-    executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-stop-all.sh")
+    executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-stop-all.sh", Some(commandOutput))
     new File(s"$snappyHome/conf/servers").delete()
     new File(s"$snappyHome/conf/leads").delete()
-    executeProcess("sparkCluster", s"$snappyHome/sbin/stop-all.sh")
+    executeProcess("sparkCluster", s"$snappyHome/sbin/stop-all.sh", Some(commandOutput))
   }
 
   def startupCluster(): Unit = {
@@ -108,21 +109,29 @@ with Logging with Retries {
     }
     leadFile.deleteOnExit()
 
-    val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh")
+    val (out, _) = executeProcess("snappyCluster", s"$snappyHome/sbin/snappy-start-all.sh",
+      Some(commandOutput))
 
     if (!out.contains(clusterSuccessString)) {
-      throw new Exception(s"Failed to start Snappy cluster")
+      throw new Exception(s"Failed to start Snappy cluster: " + out)
     }
-    executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh")
+    executeProcess("sparkCluster", s"$snappyHome/sbin/start-all.sh", Some(commandOutput))
   }
 
   // scalastyle:off println
-  def executeProcess(name: String , command: String): (String, String) = {
+  def executeProcess(name: String , command: String,
+      outFile: Option[String] = None): (String, String) = {
     val stdoutStream = new ByteArrayOutputStream
     val stderrStream = new ByteArrayOutputStream
 
-    val teeOut = new TeeOutputStream(stdout, new BufferedOutputStream(stdoutStream))
-    val teeErr = new TeeOutputStream(stderr, new BufferedOutputStream(stderrStream))
+    val (out, err) = outFile match {
+      case None => stdout -> stderr
+      case Some(f) =>
+        val writer = new BufferedOutputStream(new FileOutputStream(f, true))
+        writer -> writer
+    }
+    val teeOut = new TeeOutputStream(out, new BufferedOutputStream(stdoutStream))
+    val teeErr = new TeeOutputStream(err, new BufferedOutputStream(stderrStream))
 
     val stdoutWriter = new PrintStream(teeOut, true)
     val stderrWriter = new PrintStream(teeErr, true)
@@ -136,6 +145,9 @@ with Logging with Retries {
       "PYTHONPATH" -> s"$snappyHome/python/lib/py4j-0.10.4-src.zip:$snappyHome/python") !
       ProcessLogger(stdoutWriter.println, stderrWriter.println)
     var stdoutStr = stdoutStream.toString
+    if (out ne stdout) {
+      out.close()
+    }
     if (code != 0) {
       // add an exception to the output to force failure
       stdoutStr += s"\n***** Exit with Exception code = $code\n"
@@ -145,16 +157,22 @@ with Logging with Retries {
 
 
   def SnappyShell(name: String, sqlCommand: Seq[String]): Unit = {
-    sqlCommand pipe snappyShell foreach (s => {
-      println(s)
-      if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
-        throw new Exception(s"Failed to run Query: $s")
-      }
-    })
+    val writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream(commandOutput, true))))
+    try {
+      sqlCommand pipe snappyShell foreach (s => {
+        writer.println(s)
+        if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
+          throw new Exception(s"Failed to run Query: $s")
+        }
+      })
+    } finally {
+      writer.close()
+    }
   }
 
   def Job(jobClass: String, lead: String, jarPath: String,
-      confs: Seq[String] = Seq.empty[String]): Unit = {
+      confs: Seq[String] = Nil): Unit = {
 
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
 
@@ -165,7 +183,7 @@ with Logging with Retries {
     val jobCommand: String = s"$jobSubmit --app-name " +
         s"${jobClass}_${System.currentTimeMillis()} --class $jobClass $confStr"
 
-    val (out, err) = executeProcess("snappyCluster", jobCommand)
+    val (out, err) = executeProcess("snappyCluster", jobCommand, Some(commandOutput))
 
     val jobSubmitStr = out
 
@@ -178,14 +196,13 @@ with Logging with Retries {
         map.asInstanceOf[Map[String, Map[String, Any]]]("result")("jobId")
       case other => throw new Exception(s"bad result : $jsonStr")
     }
-    println("jobID " + jobID)
-
+    logInfo("jobID " + jobID)
 
     var status = "RUNNING"
     while (status == "RUNNING") {
       Thread.sleep(3000)
       val statusCommand = s"$jobStatus $jobID"
-      val (out, err) = executeProcess("snappyCluster", statusCommand)
+      val (out, err) = executeProcess("snappyCluster", statusCommand, Some(commandOutput))
 
       val jobSubmitStatus = out
 
@@ -193,7 +210,7 @@ with Logging with Retries {
       statusjson match {
         case Some(map: Map[_, _]) =>
           val v = map.asInstanceOf[Map[String, Any]]("status")
-          println("Current status of job: " + v)
+          logInfo("Current status of job: " + v)
           status = v.toString
         case other => "bad Result"
       }
@@ -230,7 +247,7 @@ with Logging with Retries {
 
   def SparkSubmit(name: String, appClass: String,
                   master: Option[String],
-                  confs: Seq[String] = Seq.empty[String],
+                  confs: Seq[String] = Nil,
                   appJar: String): Unit = {
 
     val sparkHost = InetAddress.getLocalHost.getHostName
@@ -238,18 +255,18 @@ with Logging with Retries {
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val classStr = if (appClass.isEmpty) "" else s"--class  $appClass"
     val sparkSubmit = s"$snappyHome/bin/spark-submit $classStr --master $masterStr $confStr $appJar"
-    val (out, err) = executeProcess(name, sparkSubmit)
+    val (out, err) = executeProcess(name, sparkSubmit, Some(commandOutput))
 
     if (checkException(out) || checkException(err)) {
-      throw new Exception(s"Failed to submit $appClass")
+      throw new Exception(s"Failed to submit $appClass. Output = $out. Error = $err.")
     }
   }
 
   def RunExample(name: String, exampleClas: String,
-                 args: Seq[String] = Seq.empty[String]): Unit = {
+                 args: Seq[String] = Nil): Unit = {
     val argsStr = args.mkString(" ")
     val runExample = s"$snappyHome/bin/run-example $exampleClas $argsStr"
-    val (out, err) = executeProcess(name, runExample)
+    val (out, err) = executeProcess(name, runExample, Some(commandOutput))
 
     if (checkException(out) || checkException(err)) {
       throw new Exception(s"Failed to run $exampleClas")
@@ -259,7 +276,7 @@ with Logging with Retries {
   def SparkShell(confs: Seq[String], options: String, scriptFile : String): Unit = {
     val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
     val shell = s"$sparkShell $confStr $options -i $scriptFile"
-    val (out, err) = executeProcess("snappyCluster", shell)
+    val (out, err) = executeProcess("snappyCluster", shell, Some(commandOutput))
     if (checkException(out) || checkException(err)) {
       throw new Exception(s"Failed to run $shell")
     }
@@ -267,13 +284,19 @@ with Logging with Retries {
 
   def SparkShell(confs: Seq[String], options: String,
       scalaStatements: Seq[String]): Unit = {
-    val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
-    scalaStatements pipe s"$snappyShell $confStr $options" foreach (s => {
-      println(s)
-      if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
-        throw new Exception(s"Failed to run Scala statement")
-      }
-    })
+    val writer = new PrintWriter(new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream(commandOutput, true))))
+    try {
+      val confStr = if (confs.size > 0) confs.foldLeft("")((r, c) => s"$r --conf $c") else ""
+      scalaStatements pipe s"$sparkShell $confStr $options" foreach (s => {
+        writer.println(s)
+        if (s.toString.contains("ERROR") || s.toString.contains("Failed")) {
+          throw new Exception(s"Failed to run Scala statement")
+        }
+      })
+    } finally {
+      writer.close()
+    }
   }
 
 /*

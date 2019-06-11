@@ -1,31 +1,81 @@
-# Do not change the way of queries, sparkProperties, sparkSqlProperties. Just change the values inside strings
+#Do not change the way of queries, sparkProperties, sparkSqlProperties. Just change the values inside strings
 
 #queries to be run
-queries="\"1,3,4,5,6,7,8,10,11,12,13,14,15,16,17,18,19,20,22\""
+queries="1-2-3-4-5-6-7-8-9-10-11-12-13-14-15-16-17-18-19-20-22-21"
+#queries=10
+#queries="\"1-3-14\""
 
-sparkProperties="--driver-memory 2g --conf spark.executor.memory=10g --conf spark.network.timeout=300s --conf spark.driver.maxResultSize=2g --conf spark.shuffle.sort.bypassMergeThreshold=3 --conf spark.sql.shuffle.partitions=4 --conf spark.sql.inMemoryColumnarStorage.compressed=false"
 
-#sparkProperties="--conf spark.network.timeout=300s --conf spark.driver.maxResultSize=2g --conf spark.shuffle.sort.bypassMergeThreshold=3 --conf spark.sql.shuffle.partitions=4 --conf spark.sql.inMemoryColumnarStorage.compressed=false"
+#spark Properties spefied in lead
+#spark-executor-cores has nothing to do with CPU cores available.
+#sparkProperties="-J-Xmx2g -spark.network.timeout=300s -spark.driver.maxResultSize=2g -spark.shuffle.sort.bypassMergeThreshold=28"
+sparkProperties="--driver-memory 2g --conf spark.executor.memory=3g"
+
+#Spark Sql properties are specified while executing query
+#spark.sql.shuffle.partitions=${shufflePartitions},spark.sql.inMemoryColumnarStorage.compressed=${inMemoryColumnarStorageCompressed}
+#spark.sql.inMemoryColumnarStorage.compressed=false
+sparkSqlProperties="\"\""
+
 #location of checkout
-SnappyData=/home/kishor/snappy/snappy-commons
+sparkHome=<Spark-build-path>
+
+#Whether to repartition dataframe
+rePartition=false
+
+#number of buckets for order and lineitem tables
+buckets_Order_Lineitem=128
+
+#number of buckets for Customer, Part and PartSupplier tables
+buckets_Cust_Part_PartSupp=128
+
+#Are Nation, Region, Supplier tables column tables?
+IsSupplierColumnTable=true
+
+#number of buckets for Nation, Region, Supplier
+buckets_Supplier=128
+
+#Loading from parquet or csv file
+Parquet=true
+
+#From how many files data should be loaded in table
+#NumberOfLoadStages=10
+NumberOfLoadStages=1
 
 #Machine Setup
-master=localhost
-slaves=(localhost)
-client=localhost
+master=<host1>
+slaves=(<host2> <host3> <host4>)
+client=<host1>
+
+#represent whether query should use dynamic paramters or static
+IsDynamic=true
+
+#Whether to collect results.For performance testing this should be false.
+ResultCollection=false
+
+#warmUpIterations
+WarmupRuns=3
+#Actual runs whose average will be taken and repordted as performance
+AverageRuns=4
 
 # location of jar which has TPCH related class files
-TPCHJar=/home/kishor/snappy/snappy-commons/snappy-cluster/build-artifacts/scala-2.10/libs/snappy-cluster_2.10-0.1.0-SNAPSHOT-tests.jar
+TPCHJar=<TPCHJar-path>
 
 #Size of the TPCH data. Do not chage format
+#dataSize=1GB_Stages
 dataSize=1GB
 
 #Location of the TPCH Data. Make sure directory name is same as the dataSize specified above
-dataDir=/home/kishor/snappy/TPCH_APP/TPCH_Data/$dataSize
+dataDir=<data-directory-path>
 
 #Location where final output will be collected
-outputLocation=/home/kishor/snappy/TPCH_APP/TPCH_OUTPUT/spark
+outputLocation=<path-to-location-for-generating-results>
 
-#Whether to generate query plan
-queryPlan=false
+# Trace events to get granular timing info and report in loadPerfStream
+traceEvents=false
+
+# load tables in Spark cache
+cacheTables=true
+
+# seed value for random number used in generating query parameter data
+randomSeed=42
 

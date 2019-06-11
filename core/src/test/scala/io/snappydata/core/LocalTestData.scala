@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,7 @@
 package io.snappydata.core
 
 import scala.reflect.io.Path
+import scala.util.Random
 
 import org.apache.spark.SparkConf
 
@@ -77,10 +78,13 @@ object FileCleaner {
 /** Default SparkConf used for local testing. */
 object LocalSparkConf {
 
+  private val random = new Random()
+
   def newConf(addOn: (SparkConf) => SparkConf = null): SparkConf = {
     val conf = new SparkConf()
         .setIfMissing("spark.master", "local[4]")
         .setIfMissing("spark.memory.debugFill", "true")
+        .set("snappydata.sql.planCaching", random.nextBoolean().toString)
         .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)

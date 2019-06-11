@@ -12,13 +12,13 @@ You use JDBC connection properties, connection boot properties, and Java system 
 
 
 <a id="property-types"></a>
-#### Property Types
+### Property Types
 
 SnappyData configuration properties are divided into the following property types:
 
 -   **Connection properties**. Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive SnappyData session). You can also define connection properties in the `gemfirexd.properties` file or as Java system properties. For example, use -J-D*property_name*=*property_value* when you execute a `snappy` utility. Or, use the JAVA_ARGS environment variable to define a Java system property for an interactive `snappy` session (JAVA_ARGS="-D*property_name*=*property_value*"). 
    
-	!!! Note:
+	!!! Note
 		You must add a prefix to certain connection property names in order to specify those properties as Java system properties. See [Property Prefixes](#property-prefixes).
 
     Connection properties can be further categorized as either *boot properties* or *client properties*:
@@ -35,25 +35,25 @@ Certain properties have additional behaviors or restrictions. See the individual
 
 
 <a id="property-prefixes"></a>
-#### Property Prefixes
+### Property Prefixes
 
 You must add a prefix to connection and boot property names when you define those properties as Java system properties. The **Prefix** row in each property table lists a prefix value (`snappydata.` or `gemfire.`) when one is required. Do not use an indicated prefix when you specify the property in a connection string.
 
 If no prefix is specified, use only the indicated property name in all circumstances. For example, use "host-data" whether you define this property in gemfirexd.properties, as a Java system property, or as a property definition for FabricServer.
 
 <a id="non-ascii-strings"></a>
-#### Using Non-ASCII Strings in SnappyData Property Files
+### Using Non-ASCII Strings in SnappyData Property Files
 
 You can specify Unicode (non-ASCII) characters in SnappyData property files by using a `\uXXXX` escape sequence. For a supplementary character, you need two escape sequences, one for each of the two UTF-16 code units. The XXXX denotes the 4 hexadecimal digits for the value of the UTF-16 code unit. For example, a properties file might have the following entries:
 
-```no-highlight
+```pre
 s1=hello there
 s2=\u3053\u3093\u306b\u3061\u306f
-```
+pre
 
 For example, in `gemfirexd.properties`, you might write:
 
-```no-highlight
+```pre
 log-file=my\u00df.log
 ```
 
@@ -62,7 +62,7 @@ to indicate the desired property definition of `log-file=my.log`.
 If you have edited and saved the file in a non-ASCII encoding, you can convert it to ASCII with the `native2ascii` tool included in your Oracle Java distribution. For example, you might want to do this when editing a properties file in Shift_JIS, a popular Japanese encoding.
 
 <a id="property-names"></a>
-#### List of Property Names
+### List of Property Names
 Below is the list of all the configuration properties and links for each property reference page.
 
 - [ack-severe-alert-threshold](ack-severe-alert-threshold.md)
@@ -109,7 +109,31 @@ Below is the list of all the configuration properties and links for each propert
 
 - [skip-constraint-checks](skip-constraint-checks.md)
 
-- [ssl](ssl.md)
+- [skip-locks](skip-locks.md)
+
+- [socket-buffer-size](socket-buffer-size.md)
+
+- [socket-lease-time](socket-lease-time.md)
+
+- [gemfirexd.datadictionary.allow-startup-errors](snappydata.datadictionary.allow-startup-errors.md)
+
+- [gemfirexd.default-startup-recovery-delay](snappydata.default-startup-recovery-delay.md)
+
+- [snappy.history](snappy.history.md)
+
+- [gemfirexd.max-lock-wait](snappydata.max-lock-wait.md)
+
+- [gemfirexd.query-cancellation-interval](snappydata.query-cancellation-interval.md)
+
+- [gemfirexd.query-timeout](snappydata.query-timeout.md)
+
+- [ssl-enabled](ssl_enabled.md)
+
+- [ssl-ciphers](ssl_ciphers.md)
+
+- [ssl-protocols](ssl_protocols.md)
+
+- [ssl-require-authentication](ssl_require_auth.md)
 
 - [start-locator](start-locator.md)
 

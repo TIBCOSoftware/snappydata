@@ -1,28 +1,28 @@
-# Working with Hadoop YARN Cluster Manager 
+# Working with Hadoop YARN Cluster Manager
 
 The SnappyData embedded cluster uses its own cluster manager and as such cannot be managed using the YARN cluster manager. However, you can start the Spark cluster with the YARN cluster manager, which can interact with the SnappyData cluster in the [Smart Connector Mode](../affinity_modes/connector_mode.md).
 
-!!! Note:
+!!! Note
 	We assume that Apache Hadoop and YARN are already installed, and you want to bring in SnappyData cluster to work with YARN.
 
 You need to set the following environment variables:
 
-```no-highlight
+```pre
 export HADOOP_CONF_DIR=$HADOOP_HOME/etc/hadoop
 export YARN_CONF_DIR=$HADOOP_HOME/etc/hadoop
 
 ```
-## Launching spark-shell with Yarn - 
+## Launching spark-shell with YARN 
 
 Start a SnappyData default cluster using the `./sbin/snappy-start-all.sh` command
 
 To run SnappyData quickstart example using YARN, do the following:
 
-```no-highlight
+```pre
 ./bin/spark-shell --master yarn  --conf spark.snappydata.connection=localhost:1527 --conf spark.ui.port=4041 -i $SNAPPY_HOME/quickstart/scripts/Quickstart.scala
 ```
 
-!!!Note:
+!!! Note
 	YARN is mentioned as a master url.
     
 ## Submitting spark-jobs using YARN

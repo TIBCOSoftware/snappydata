@@ -1,5 +1,5 @@
-<a id="design-schema"></a>
 # Design Principles of Scalable, Partition-Aware Databases
+<a id="design-schema"></a>
 
 The general strategy for designing a SnappyData database is to identify the tables to partition or replicate in the SnappyData cluster, and then to determine the correct partitioning key(s) for partitioned tables. This usually requires an iterative process to produce the optimal design:
 

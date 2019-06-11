@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -310,21 +310,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$hashMapTerm.updateLimits(${keyVars(index).value}, $index);"
     }.mkString("\n")
 
-    // For SnappyData row tables there is no need to make a copy of
-    // non-primitive values into the map since they are immutable.
-    // Also checks for other common plans known to provide immutable objects.
-    // Cannot do the same for column tables since it will end up holding
-    // the whole column buffer for a single value which can cause doom
-    // for eviction. For off-heap it will not work at all and can crash
-    // unless a reference to the original column ByteBuffer is retained.
-    // TODO: can be extended for more plans as per their behaviour.
-    def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
-      case _: RowTableScan | _: HashJoinExec => true
-      case FilterExec(_, c) => providesImmutableObjects(c)
-      case ProjectExec(_, c) => providesImmutableObjects(c)
-      case _ => false
-    }
-    val doCopy = !providesImmutableObjects(child)
+    val doCopy = !ObjectHashMapAccessor.providesImmutableObjects(child)
 
     val multiValuesUpdateCode = if (valueClassName.isEmpty) {
       s"""
@@ -769,7 +755,8 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
   // scalastyle:off
   def generateMapLookup(entryVar: String, localValueVar: String,
-      keyIsUnique: String, numRows: String, nullMaskVars: Array[String],
+      mapSize: String, keyIsUnique: String, initMap: String,
+      initMapCode: String, numRows: String, nullMaskVars: Array[String],
       initCode: String, checkCond: (Option[ExprCode], String, Option[Expression]),
       streamKeys: Seq[Expression], streamKeyVars: Seq[ExprCode],
       streamOutput: Seq[Attribute], buildKeyVars: Seq[ExprCode],
@@ -806,6 +793,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // if a stream-side key is null then skip (or null for outer join)
     val nullStreamKey = streamKeyVars.filter(_.isNull != "false")
         .map(v => s"!${v.isNull}")
+    // continue to next entry on no match
+    val continueOnNull = joinType match {
+      case Inner | LeftSemi => true
+      case _ => false
+    }
     // filter as per min/max if provided; the min/max variables will be
     // initialized by the caller outside the loop after creating the map
     val minMaxFilter = integralKeys.zipWithIndex.map {
@@ -816,7 +808,11 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"$keyVar >= $minVar && $keyVar <= $maxVar"
     }
     // generate the initial filter condition from above two
-    val initFilters = nullStreamKey ++ minMaxFilter
+    // also add a mapSize check but when continueOnNull is true, then emit a continue immediately
+    val (checkMapSize, initFilters) = if (continueOnNull) {
+      (s"if ($mapSize == 0) continue;\n", nullStreamKey ++ minMaxFilter)
+    }
+    else ("", s"$mapSize != 0" +: (nullStreamKey ++ minMaxFilter))
     val initFilterCode = if (initFilters.isEmpty) ""
     else initFilters.mkString("if (", " &&\n", ")")
 
@@ -869,11 +865,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         }"""
     }
 
-    // continue to next entry on no match
-    val continueOnNull = joinType match {
-      case Inner | LeftSemi => true
-      case _ => false
-    }
     // optimized path for single key string column if dictionary is present
     val lookup = mapLookup(entryVar, hashVar(0), streamKeys, streamKeyVars,
       valueInit = null)
@@ -976,7 +967,10 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     }
 
     s"""
-      $className $entryVar = null;
+      if (!$initMap) {
+        $initMapCode
+      }
+      $checkMapSize$className $entryVar = null;
       $hashInit
       $mapLookupCode
       $entryConsume
@@ -1297,9 +1291,9 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       // copy just reference of the object if underlying byte[] is immutable
       val stringVar = resultVar.value
       val bytes = ctx.freshName("stringBytes")
-      s"""byte[] $bytes;
-        if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
-            && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
+      s"""byte[] $bytes = null;
+        if ($stringVar == null || ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
+            && ($bytes = (byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes())) {
           $colVar = $bytes;
         } else {
           $colVar = $stringVar.getBytes();
@@ -1307,17 +1301,12 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     // multimap holds a reference to UTF8String itself
     case StringType =>
       // copy just reference of the object if underlying byte[] is immutable
-      val stringVar = resultVar.value
-      s"""if ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
-            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes()) {
-          $colVar = $stringVar;
-        } else {
-          $colVar = ${if (doCopy) stringVar + ".clone()" else stringVar};
-        }"""
-    case (_: ArrayType | _: MapType | _: StructType) if doCopy =>
-      s"$colVar = ${resultVar.value}.copy();"
+      ObjectHashMapAccessor.cloneStringIfRequired(resultVar.value, colVar, doCopy)
+    case _: ArrayType | _: MapType | _: StructType if doCopy =>
+      val javaType = ctx.javaType(dataType)
+      s"$colVar = ($javaType)(${resultVar.value} != null ? ${resultVar.value}.copy() : null);"
     case _: BinaryType if doCopy =>
-      s"$colVar = ${resultVar.value}.clone();"
+      s"$colVar = (byte[])(${resultVar.value} != null ? ${resultVar.value}.clone() : null);"
     case _ =>
       s"$colVar = ${resultVar.value};"
   }
@@ -1443,5 +1432,40 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       s"""($notNullCode ? ($otherNotNullCode && $equalsCode)
            : !$otherNotNullCode)"""
     }
+  }
+}
+
+object ObjectHashMapAccessor {
+
+  /** return true if the plan returns immutable objects so copy can be avoided */
+  def providesImmutableObjects(plan: SparkPlan): Boolean = plan match {
+    // For SnappyData row tables there is no need to make a copy of
+    // non-primitive values into the map since they are immutable.
+    // Also checks for other common plans known to provide immutable objects.
+    // Cannot do the same for column tables since it will end up holding
+    // the whole column buffer for a single value which can cause doom
+    // for eviction. For off-heap it will not work at all and can crash
+    // unless a reference to the original column ByteBuffer is retained.
+    // TODO: can be extended for more plans as per their behaviour.
+    case _: RowTableScan | _: HashJoinExec => true
+    case FilterExec(_, c) => providesImmutableObjects(c)
+    case ProjectExec(_, c) => providesImmutableObjects(c)
+    case _ => false
+  }
+
+  def cloneStringIfRequired(stringVar: String, colVar: String, doCopy: Boolean): String = {
+    // If UTF8String is just a wrapper around a byte array then the underlying
+    // bytes are immutable, so can use a reference copy. This is because all cases
+    // of underlying bytes being mutable are when the UTF8String is part of a larger
+    // structure like UnsafeRow or byte array using ColumnEncoding or from Parquet buffer
+    // and in all those cases the UTF8String will point to a portion of the full buffer.
+    if (doCopy) {
+      s"""if ($stringVar == null || ($stringVar.getBaseOffset() == Platform.BYTE_ARRAY_OFFSET
+            && ((byte[])$stringVar.getBaseObject()).length == $stringVar.numBytes())) {
+          $colVar = $stringVar;
+        } else {
+          $colVar = $stringVar.clone();
+        }"""
+    } else s"$colVar = $stringVar;"
   }
 }

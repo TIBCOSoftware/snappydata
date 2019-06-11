@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,9 +27,11 @@ import _root_.com.gemstone.gemfire.distributed.internal.DistributionConfig.ENABL
 import _root_.com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import _root_.com.pivotal.gemfirexd.internal.engine.GfxdConstants
 import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import io.snappydata.{Constant, Property, ServerManager}
+import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProviderService}
 
-import org.apache.spark.SparkContext
+import org.apache.spark.memory.MemoryMode
+import org.apache.spark.sql.{SnappyContext, SparkSession, ThinClientConnectorMode}
+import org.apache.spark.{SparkContext, SparkEnv}
 import org.apache.spark.sql.collection.Utils
 
 /**
@@ -78,6 +80,11 @@ object ServiceUtils {
       if (storeProps.getProperty("spark.locality.wait") == null) {
         storeProps.setProperty("spark.locality.wait", "10s")
       }
+      // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
+      if (storeProps.getProperty("spark.sql.files.maxPartitionBytes") == null) {
+        storeProps.setProperty("spark.sql.files.maxPartitionBytes", "33554432")
+      }
+
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
     if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
@@ -92,12 +99,20 @@ object ServiceUtils {
 
   def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
-    val properties = getStoreProperties(sc.getConf.getAll)
+    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll)
     // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")
       // no DataDictionary persistence for non-embedded mode
       properties.setProperty("persist-dd", "false")
+    }
+    // set the log-level from initialized SparkContext's level if set to higher level than default
+    if (!properties.containsKey("log-level")) {
+      val level = org.apache.log4j.Logger.getRootLogger.getLevel
+      if ((level ne null) && level.isGreaterOrEqual(org.apache.log4j.Level.WARN)) {
+        properties.setProperty("log-level",
+          ClientSharedUtils.convertToJavaLogLevel(level).getName.toLowerCase)
+      }
     }
     ServerManager.getServerInstance.start(properties)
 
@@ -130,12 +145,28 @@ object ServiceUtils {
           org.apache.spark.sql.collection.Utils.getClientHostPort(locator._2)
         }).mkString(",")
 
-    "jdbc:" + Constant.SNAPPY_URL_PREFIX + (if (locatorUrl.contains(",")) {
+    Constant.DEFAULT_THIN_CLIENT_URL + (if (locatorUrl.contains(",")) {
       locatorUrl.substring(0, locatorUrl.indexOf(",")) +
           "/;secondary-locators=" + locatorUrl.substring(locatorUrl.indexOf(",") + 1)
     } else locatorUrl + "/")
   }
 
   def clearStaticArtifacts(): Unit = {
+  }
+
+  def isOffHeapStorageAvailable(sparkSession: SparkSession): Boolean = {
+    SnappyContext.getClusterMode(sparkSession.sparkContext) match {
+      case _: ThinClientConnectorMode =>
+        SparkEnv.get.memoryManager.tungstenMemoryMode == MemoryMode.OFF_HEAP
+      case _ =>
+        try {
+          SnappyTableStatsProviderService.getService.getMembersStatsFromService.
+              values.forall(member => !member.isDataServer ||
+              (member.getOffHeapMemorySize > 0))
+        }
+        catch {
+          case _: Throwable => false
+        }
+    }
   }
 }

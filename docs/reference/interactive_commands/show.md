@@ -4,7 +4,7 @@ Displays information about active connections and database objects.
 
 ## Syntax
 
-```no-highlight
+```pre
 SHOW
 {
    CONNECTIONS |
@@ -13,7 +13,6 @@ SHOW
    INDEXES [ IN schemaName | FROM table-Name ] |
    PROCEDURES [ IN schemaName ] |
    SCHEMAS |
-   SYNONYMS [ IN schemaName ] |
    TABLES [ IN schemaName ] |
    VIEWS [ IN schemaName ] |
 }
@@ -32,12 +31,9 @@ The following are covered in this section:
 
 - [SHOW SCHEMAS](#schemas)
 
-- [SHOW SYNONYMS](#synonyms)
-
 - [SHOW TABLES](#tables)
 
 - [SHOW VIEWS](#views)
-
 
 ## Description
 
@@ -52,7 +48,7 @@ Otherwise, the command displays a list of connection names and the URLs used to 
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show connections;
 CONNECTION0* - 	jdbc:snappydata:thrift://127.0.0.1[1527]
 * = current connection
@@ -67,7 +63,7 @@ Currently, UDF functions are not displayed in the list. This will be available i
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show functions;
 FUNCTION_SCHEM      |FUNCTION_NAME                 |REMARKS             
 ------------------------------------------------------------------------ 
@@ -80,7 +76,7 @@ SYS                 |GET_EVICTION_HEAP_PERCENTAGE  |com.pivotal.gemfire&
 SYS                 |GET_EVICTION_OFFHEAP_PERCENTA&|com.pivotal.gemfire&
 SYS                 |GET_IS_NATIVE_NANOTIMER       |com.pivotal.gemfire&
 SYS                 |GET_NATIVE_NANOTIMER_TYPE     |com.pivotal.gemfire&
-SYS                 |GET_SNAPSHOT_TXID             |com.pivotal.gemfire&
+SYS                 |GET_SNAPSHOT_TXID_AND_HOSTURL |com.pivotal.gemfire&
 SYS                 |GET_TABLE_VERSION             |com.pivotal.gemfire&
 SYS                 |HDFS_LAST_MAJOR_COMPACTION    |com.pivotal.gemfire&
 SYSCS_UTIL          |CHECK_TABLE                   |com.pivotal.gemfire&
@@ -107,7 +103,7 @@ Displays all foreign keys in the specified schema or table. If you omit the sche
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show importedkeys in app;
 PKTABLE_NAME   |PKCOLUMN_NAME   |PK_NAME              |FKTABLE_SCHEM   |FKTABLE_NAME   |FKCOLUMN_NAME   |FK_NAME        |KEY_SEQ
 -------------------------------------------------------------------------------------------------------------------------------- 
@@ -138,7 +134,7 @@ If `IN schemaName` is specified, only the indexes in the specified schema are di
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show indexes in app;
 TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
 ---------------------------------------------------------------------------- 
@@ -179,7 +175,7 @@ If `IN schemaName` is specified, only procedures in the specified schema are dis
 
 **Example**
 
-``` no-highlight
+``` pre
 snappy> show procedures in syscs_util;
 PROCEDURE_SCHEM     |PROCEDURE_NAME                |REMARKS             
 ------------------------------------------------------------------------ 
@@ -224,7 +220,7 @@ SHOW SCHEMAS displays all of the schemas in the current connection.
 
 **Example**
 
-```no-highlight
+```pre
 snappy> create schema sample;
 
 snappy> show schemas;
@@ -246,26 +242,6 @@ SYSSTAT
 12 rows selected
 ```
 
-<a id= synonyms> </a>
-<h4>**SHOW SYNONYMS**</h4>
-
-SHOW SYNONYMS displays all synonyms in the database that have been created with the CREATE SYNONYMS statement.
-
-If `IN schemaName` is specified, only synonyms in the specified schema are displayed.
-
-**Example**
-
-``` no-highlight
-snappy> CREATE SYNONYM myairline FOR airlineREF_1;
-
-snappy> SHOW SYNONYMS;
-TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE|REMARKS             
------------------------------------------------------------------------------------ 
-APP                 |MYAIRLINE                     |SYNONYM   |                    
-
-1 row selected
-```
-
 <a id= tables> </a>
 <h4>**SHOW TABLES**</h4>
 
@@ -275,7 +251,7 @@ If `IN schemaName` is specified, the tables in the given schema are displayed.
 
 **Example**
 
-```no-highlight
+```pre
 snappy> show tables in app;
 TABLE_SCHEM         |TABLE_NAME                    |TABLE_TYPE     |REMARKS
 ------------------------------------------------------------------------ 
@@ -299,7 +275,7 @@ If `IN schemaName` is specified, the views in the given schema are displayed.
 
 **Example**
 
-```no-highlight
+```pre
 snappy> create view v1 as select * from maps;
 
 snappy> show views;
@@ -317,6 +293,8 @@ APP                 |V2                            |VIEW      |
 
 2 rows selected
 ```
+!!!Note
+	SHOW VIEWS do not display the temporary and global temporary views.
 
 **Related Topics**</br>
 
@@ -332,8 +310,6 @@ APP                 |V2                            |VIEW      |
 
 * [CREATE SCHEMA](../sql_reference/create-schema/)
 
-* [CREATE SYNONYM]()
-
-* [CREATE TABLE using ](../sql_reference/create-table.md)
+* [CREATE TABLE](../sql_reference/create-table.md)
 
 * [CREATE VIEW]()

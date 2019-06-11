@@ -11,7 +11,7 @@ For example, in the code snippet below, the ORDERS table is colocated with the C
 
 **Get a SnappySession**:
 
-```no-highlight
+```pre
 val spark: SparkSession = SparkSession
     .builder
     .appName("ColocatedJoinExample")
@@ -23,7 +23,7 @@ val snSession = new SnappySession(spark.sparkContext)
 
 **Create Table Customer:**
 
-```no-highlight
+```pre
 snSession.sql("CREATE TABLE CUSTOMER ( " +
     "C_CUSTKEY     INTEGER NOT NULL," +
     "C_NAME        VARCHAR(25) NOT NULL," +
@@ -37,7 +37,7 @@ snSession.sql("CREATE TABLE CUSTOMER ( " +
 ```
 **Create Table Orders:**
 
-```no-highlight
+```pre
 snSession.sql("CREATE TABLE ORDERS  ( " +
     "O_ORDERKEY       INTEGER NOT NULL," +
     "O_CUSTKEY        INTEGER NOT NULL," +
@@ -54,7 +54,7 @@ snSession.sql("CREATE TABLE ORDERS  ( " +
 
 **Perform a Colocate join:** 
 
-```no-highlight
+```pre
 // Selecting orders for all customers
 val result = snSession.sql("SELECT C_CUSTKEY, C_NAME, O_ORDERKEY, O_ORDERSTATUS, O_ORDERDATE, " +
     "O_TOTALPRICE FROM CUSTOMER, ORDERS WHERE C_CUSTKEY = O_CUSTKEY").collect()

@@ -1,6 +1,6 @@
 # Key Concepts
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 SnappyData SDE relies on two methods for approximations - **Stratified Sampling** and **Sketching**. A brief introduction to these concepts is provided below.
 

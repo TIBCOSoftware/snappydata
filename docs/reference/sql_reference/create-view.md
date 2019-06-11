@@ -2,7 +2,7 @@
 
 ## SYNTAX
 
-```no-highlight
+```pre
 snappy> CREATE VIEW [view-name]  AS SELECT [column_name, column_name] FROM [table_name];
 
 snappy> CREATE VIEW [view-name] (column_name, column_name) AS SELECT column_name, column_name FROM [table_name];
@@ -10,12 +10,12 @@ snappy> CREATE VIEW [view-name] (column_name, column_name) AS SELECT column_name
 
 ## Description
 
-Views can be described as a virtual table that contain a set of definitions, which is build on top of table(s) or other view(s), but it does not physically store the data like a table.
-VIEW is persistent and visible in system catalog and therefore shared between all connections.
+The View can be described as a virtual table that contains a set of definitions, built on top of the table(s) or the other view(s), but it does not physically store the data like a table.
+View is persistent and visible in system catalog and therefore shared between all connections.
 
 ## Examples </br>
 
-``` no-highlight
+```pre
 snappy> CREATE VIEW TRADE.ORDERS1 AS SELECT ORDERID, ITEMID FROM TRADE.ORDERS;
 
 snappy> CREATE VIEW TRADE.ORDERS2 AS SELECT ORDERID, ITEMID FROM TRADE.ORDERS;
@@ -23,20 +23,20 @@ snappy> CREATE VIEW TRADE.ORDERS2 AS SELECT ORDERID, ITEMID FROM TRADE.ORDERS;
 
 ## CREATE TEMPORARY VIEW
 
-```no-highlight
+```pre
 snappy> CREATE TEMPORARY VIEW [temporary-view-name] AS SELECT [column-name], [column-name] FROM [schema].[table-name];
 
 snappy> CREATE TEMPORARY VIEW [temporary-view-name] USING PARQUET OPTIONS(PATH 'path-to-parquet');
 ```
 ### Description
-Creates a session-specific temporary view, when is dropped when the session ends.
+Creates a session-specific temporary view, which is dropped when the session ends.
 Temporary views have the same restrictions as permanent views, so you cannot perform insert, update, delete, or copy operations on these views.
 
 Local temporary views are session-scoped; the view drops automatically when the session ends. 
 
 ### Examples
 
-```no-highlight
+```pre
 snappy> CREATE TEMPORARY VIEW AIRLINEVIEW1 AS SELECT ORDERID, ITEMID FROM TRADE.ORDERS;
 
 snappy> CREATE TEMPORARY VIEW AIRLINEVIEW2 USING PARQUET OPTIONS(PATH '../../QUICKSTART/DATA/AIRLINEPARQUETDATA');
@@ -44,7 +44,7 @@ snappy> CREATE TEMPORARY VIEW AIRLINEVIEW2 USING PARQUET OPTIONS(PATH '../../QUI
 
 ## CREATE GLOBAL TEMPORARY VIEW
 
-```no-highlight
+```pre
 snappy> CREATE GLOBAL TEMPORARY VIEW [global-temporary-view-name] AS SELECT [column-name], [column-name] FROM [schema].[table-name];
 
 snappy> CREATE GLOBAL TEMPORARY VIEW [global-temporary-view-name] USING PARQUET OPTIONS(path 'path-to-parquet');
@@ -57,10 +57,10 @@ The optional GLOBAL keyword allows the view to be shared among all connections b
 
 ### Examples
 
-```no-highlight
+```pre
 snappy> CREATE GLOBAL TEMPORARY VIEW ORDER AS SELECT ORDERID, ITEMID FROM TRADE.ORDERS;
 
 snappy> CREATE GLOBAL TEMPORARY VIEW AIRLINEVIEW USING PARQUET OPTIONS(PATH '../../QUICKSTART/DATA/AIRLINEPARQUETDATA');
 ```
-!!!Note:
-	Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.
+!!! Note
+	Temporary views/tables are scoped to SQL connection or the Snappy Spark session that creates it. VIEW or TABLE are synonyms in this context with the former being the preferred usage. This table does not appear in the system catalog nor visible to other connections or sessions.

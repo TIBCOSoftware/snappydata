@@ -1,16 +1,17 @@
 # CREATE TABLE
 
-**To Create Row/Column Table:**
+Following is the syntax used to create a Row/Column table:
 
-```no-highlight
+```pre
 CREATE TABLE [IF NOT EXISTS] table_name 
     ( column-definition	[ , column-definition  ] * )	
-    USING [row | column]
+    USING [row | column] // If not specified, a row table is created.
     OPTIONS (
     COLOCATE_WITH 'table-name',  // Default none
     PARTITION_BY 'column-name', // If not specified, replicated table for row tables, and partitioned internally for column tables.
     BUCKETS  'num-partitions', // Default 128. Must be an integer.
-    REDUNDANCY        'num-of-copies' , // Must be an integer
+    COMPRESSION 'NONE', //By default COMPRESSION is 'ON'. 
+    REDUNDANCY       'num-of-copies' , // Must be an integer. By default, REDUNDANCY is set to 0 (zero). '1' is recommended value. Maximum limit is '3'
     EVICTION_BY 'LRUMEMSIZE integer-constant | LRUCOUNT interger-constant | LRUHEAPPERCENT',
     PERSISTENCE  'ASYNCHRONOUS | ASYNC | SYNCHRONOUS | SYNC | NONE’,
     DISKSTORE 'DISKSTORE_NAME', //empty string maps to default diskstore
@@ -23,14 +24,22 @@ CREATE TABLE [IF NOT EXISTS] table_name
 	[AS select_statement];
 ```
 
-Refer to these sections for more information on [Creating Sample Table](create-sample-table.md), [Creating External Table](create-external-table.md), [Creating Temporary Table](create-temporary-table.md), [Creating Stream Table](create-stream-table.md).
+Refer to the following sections for:
+
+*	[Creating Sample Table](create-sample-table.md)
+*	[Creating External Table](create-external-table.md)
+*	[Creating Temporary Table](create-temporary-table.md)
+*	[Creating Stream Table](create-stream-table.md).
+
+
+## Column Definition
 
 The column definition defines the name of a column and its data type.
 
 <a id="column-definition"></a>
 `column-definition` (for Column Table)
 
-```no-highlight
+```pre
 column-definition: column-name column-data-type [NOT NULL]
 
 column-name: 'unique column name'
@@ -39,7 +48,7 @@ column-name: 'unique column name'
 <a id="row-definition"></a>
 `column-definition` (for Row Table)
 
-```no-highlight
+```pre
 column-definition: column-definition-for-row-table | table-constraint
 
 column-definition-for-row-table: column-name column-data-type [ column-constraint ] *
@@ -49,12 +58,13 @@ column-definition-for-row-table: column-name column-data-type [ column-constrain
     [ column-constraint ] *
 ```
 
-Refer to the [identity](#id-columns) section for more information on GENERATED.</br>
-Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
+*	Refer to the [identity](#id-columns) section for more information on GENERATED.</br>
+*	Refer to the [constraint](#constraint) section for more information on table-constraint and column-constraint.
 
 `column-data-type`
+The following data types are supported:
 
-```no-highlight
+```pre
 column-data-type: 
 	BIGINT |
 	BINARY |
@@ -80,11 +90,33 @@ column-data-type:
 	VARCHAR |
 ```
 
-Column tables can also use ARRAY, MAP and STRUCT types.</br>
-Decimal and numeric has default precision of 38 and scale of 18.</br>
-In this release, LONG is supported only for column tables. It is recommended to use BEGINT for row tables instead.
+Column tables can also use **ARRAY**, **MAP** and **STRUCT** types.
 
-If no option is specified, default values are provided. 
+Decimal and numeric has default precision of 38 and scale of 18.
+
+## Using
+
+You can specify if you want to create a row table or a column table. If this is not specified, a row table is created by default. 
+
+## Options
+
+You can specify the following options when you create a table:
+
++	[COLOCATE_WITH](#colocate-with)
++	[PARTITION_BY](#partition-by)
++	[BUCKETS](#buckets)
++	[COMPRESSION](#compress)
++	[REDUNDANCY](#redundancy)
++	[EVICTION_BY](#eviction-by)
++	[PERSISTENCE](#persistence)
++	[DISKSTORE](#diskstore)
++	[OVERFLOW](#overflow)
++	[EXPIRE](#expire)
++	[COLUMN_BATCH_SIZE](#column-batch-size)
++	[COLUMN_MAX_DELTA_ROWS](#column-max-delta-rows)
+
+!!!Note
+	If options are not specified, then the default values are used to create the table.
 
 <a id="ddl"></a>
 <a id="colocate-with"></a>
@@ -94,24 +126,32 @@ The COLOCATE_WITH clause specifies a partitioned table with which the new partit
 <a id="partition-by"></a>
 `PARTITION_BY`</br>
 Use the PARTITION_BY {COLUMN} clause to provide a set of column names that determine the partitioning. </br>
-If not specified, for row table (mentioned further for case of column table) it is a 'replicated row table'.</br> 
+If not specified, for row table (mentioned further for the case of column table) it is a 'replicated row table'.</br> 
 Column and row tables support hash partitioning on one or more columns. These are specified as comma-separated column names in the PARTITION_BY option of the CREATE TABLE DDL or createTable API. The hashing scheme follows the Spark Catalyst Hash Partitioning to minimize shuffles in joins. If no PARTITION_BY option is specified for a column table, then, the table is still partitioned internally.</br> The default number of storage partitions (BUCKETS) is 128 in cluster mode for column and row tables, and 11 in local mode for column and partitioned row tables. This can be changed using the BUCKETS option in CREATE TABLE DDL or createTable API.
 
 <a id="buckets"></a>
 `BUCKETS` </br>
-The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of 5 nodes and bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers hosts all the data for this table. If not specified, the number of buckets defaults to 128. See [best practices](../../best_practices/optimizing_query_latency.md#partition-scheme) for more information. 
+The optional BUCKETS attribute specifies the fixed number of "buckets" to use for the partitioned row or column tables. Each data server JVM manages one or more buckets. A bucket is a container of data and is the smallest unit of partitioning and migration in the system. For instance, in a cluster of five nodes and a bucket count of 25 would result in 5 buckets on each node. But, if you configured the reverse - 25 nodes and a bucket count of 5, only 5 data servers hosts all the data for this table. If not specified, the number of buckets defaults to 128. See [best practices](../../best_practices/optimizing_query_latency.md#partition-scheme) for more information. 
 For row tables, `BUCKETS` must be created with the `PARTITION_BY` clause, else an error is reported.
+
+<a id="compress"></a>
+`COMPRESSION`</br>
+Column tables use compression of data by default. This reduces the total storage footprint for large tables. SnappyData column tables encode data for compression and hence require memory that is less than or equal to the on-disk size of the uncompressed data. By default, compression is on for column tables. To disable data compression, you can set the COMPRESSION option to `none` when you create a table. For example:
+```
+CREATE TABLE AIRLINE USING column OPTIONS(compression 'none')  AS (select * from STAGING_AIRLINE);
+```
+See [best practices](../../best_practices/memory_management.md#estimating-memory-size-for-column-and-row-tables) for more information.
 
 <a id="redundancy"></a>
 `REDUNDANCY`</br>
-Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that a redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero). See [best practices](../../best_practices/optimizing_query_latency.md#redundancy) for more information.
+Use the REDUNDANCY clause to specify the number of redundant copies that should be maintained for each partition, to ensure that the partitioned table is highly available even if members fail. It is important to note that redundancy of '1' implies two physical copies of data. By default, REDUNDANCY is set to 0 (zero). A REDUNDANCY value of '1' is recommended. A large value for REDUNDANCY clause has an adverse impact on performance, network usage, and memory usage. A maximum limit of '3' can be set for REDUNDANCY. See [best practices](../../best_practices/optimizing_query_latency.md#redundancy) for more information.
 
 <a id="eviction-by"></a>
 `EVICTION_BY`</br>
 Use the EVICTION_BY clause to evict rows automatically from the in-memory table based on different criteria. You can use this clause to create an overflow table where evicted rows are written to a local SnappyStore disk store. It is important to note that all tables (expected to host larger data sets) overflow to disk, by default. See [best practices](../../best_practices/optimizing_query_latency.md#overflow) for more information. The value for this parameter is set in MB.
 For column tables, the default eviction setting is `LRUHEAPPERCENT` and the default action is to overflow to disk. You can also specify the `OVERFLOW` parameter along with the `EVICTION_BY` clause.
 
-!!!Note:
+!!! Note
 	- EVICTION_BY is not supported for replicated tables.
 
 	- For column tables, you cannot use the LRUMEMSIZE or LRUCOUNT eviction settings. For row tables, no such defaults are set. Row tables allow all the eviction settings.
@@ -121,7 +161,7 @@ For column tables, the default eviction setting is `LRUHEAPPERCENT` and the defa
 `PERSISTENCE`</br>
 When you specify the PERSISTENCE keyword, SnappyData persists the in-memory table data to a local SnappyData disk store configuration. SnappyStore automatically restores the persisted table data to memory when you restart the member. 
 
-!!! Note:
+!!! Note
 
    	* By default, both row and column tables are persistent.
 
@@ -137,7 +177,7 @@ The disk directories where you want to persist the table data. By default, Snapp
 Use the OVERFLOW clause to specify the action to be taken upon the eviction event. For persistent tables, setting this to 'true' overflows the table evicted rows to disk based on the EVICTION_BY criteria. Setting this to 'false' is not allowed except when EVICTION_BY is set. In such case, the eviction itself is disabled.</br>
 When you configure an overflow table, only the evicted rows are written to disk. If you restart or shut down a member that hosts the overflow table, the table data that was in memory is not restored unless you explicitly configure persistence (or you configure one or more replicas with a partitioned table).
 
-!!! Note: 
+!!! Note 
 	The tables are evicted to disk by default, which means table data overflows to a local SnappyStore disk store.
 
 <a id="expire"></a>
@@ -165,7 +205,7 @@ For example, `create table if not exists Table1 (a int)` is equivalent to `creat
 ## Examples
 
 ### Example: Column Table Partitioned on a Single Column
-```no-highlight
+```pre
 snappy>CREATE TABLE CUSTOMER ( 
     C_CUSTKEY     INTEGER NOT NULL,
     C_NAME        VARCHAR(25) NOT NULL,
@@ -179,7 +219,7 @@ snappy>CREATE TABLE CUSTOMER (
 ```
 
 ### Example: Column Table Partitioned with 10 Buckets and Persistence Enabled
-```no-highlight
+```pre
 snappy>CREATE TABLE CUSTOMER ( 
     C_CUSTKEY     INTEGER NOT NULL,
     C_NAME        VARCHAR(25) NOT NULL,
@@ -193,7 +233,7 @@ snappy>CREATE TABLE CUSTOMER (
 ```
 
 ### Example: Replicated, Persistent Row Table
-```no-highlight
+```pre
 snappy>CREATE TABLE SUPPLIER ( 
       S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
       S_NAME STRING NOT NULL, 
@@ -206,7 +246,7 @@ snappy>CREATE TABLE SUPPLIER (
 ```
 
 ### Example: Row Table Partitioned with 10 Buckets and Overflow Enabled
-```no-highlight
+```pre
 snappy>CREATE TABLE SUPPLIER ( 
       S_SUPPKEY INTEGER NOT NULL PRIMARY KEY, 
       S_NAME STRING NOT NULL, 
@@ -224,7 +264,7 @@ snappy>CREATE TABLE SUPPLIER (
 
 ### Example: Create Table using Select Query
 
-```no-highlight
+```pre
 CREATE TABLE CUSTOMER_STAGING USING COLUMN OPTIONS (PARTITION_BY 'C_CUSTKEY') AS SELECT * FROM CUSTOMER ;
 ```
 
@@ -232,7 +272,7 @@ With this alternate form of the CREATE TABLE statement, you specify the column n
 
 If no column names are specified for the new table, then all the columns in the result of the query expression are used to create same-named columns in the new table, of the corresponding data type(s). If one or more column names are specified for the new table, the same number of columns must be present in the result of the query expression; the data types of those columns are used for the corresponding columns of the new table.
 
-Note that only the column names and datatypes from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.
+Note that only the column names and data types from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.
 
 ### Example: Create Table using Spark DataFrame API
 
@@ -240,7 +280,7 @@ For information on using the Apache Spark API, refer to [Using the Spark DataFra
 
 ### Example: Create Column Table with PUT INTO
 
-```no-highlight
+```pre
 snappy> CREATE TABLE COL_TABLE (
       PRSN_EVNT_ID BIGINT NOT NULL,
       VER bigint NOT NULL,
@@ -271,14 +311,13 @@ Use eviction settings to keep your table within a specified limit, either by rem
 
 	For example, to evict using LRU entry count and overflow evicted rows to a disk store (OverflowDiskStore):
 	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
-		USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (EVICTION_BY 'LRUCOUNT 2', OVERFLOW 'true', DISKSTORE 'OverflowDiskStore', PERSISTENCE 'async');
+
 	
     To create a table that simply removes evicted data from memory without persisting the evicted data, use the `DESTROY` eviction action. For example:
     Default in SnappyData for `synchronous` is `persistence`, `overflow` is `true` and `eviction_by` is `LRUHEAPPERCENT`.
     	
-        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) 
-		USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
+        CREATE TABLE Orders(OrderId INT NOT NULL,ItemId INT) USING row OPTIONS (PARTITION_BY 'OrderId', EVICTION_BY 'LRUMEMSIZE 1000');
 
 <a id="constraint"></a>
 ### Constraint (only for Row Tables)
@@ -297,7 +336,7 @@ Column and table constraints include:
 
 * UNIQUE— Specifies that values in the column must be unique. NULL values are not allowed.
 
-* FOREIGN KEY— Specifies that the values in the columns must correspond to values in referenced primary key or unique columns or that they are NULL. </br>If the foreign key consists of multiple columns and any column is NULL, then the whole key is considered NULL. SnappyData permits the insert no matter what is in the non-null columns.
+* FOREIGN KEY— Specifies that the values in the columns must correspond to values in the referenced primary key or unique columns or that they are NULL. </br>If the foreign key consists of multiple columns and any column is NULL, then the whole key is considered NULL. SnappyData permits the insert no matter what is in the non-null columns.
 
 * CHECK— Specifies rules for values in a column, or specifies a wide range of rules for values when included as a table constraint. The CHECK constraint has the same format and restrictions for column and table constraints.
 Column constraints and table constraints have the same function; the difference is where you specify them. Table constraints allow you to specify more than one column in a PRIMARY KEY, UNIQUE, CHECK, or FOREIGN KEY constraint definition. 
@@ -307,7 +346,7 @@ If you do not specify a name for a column or table constraint, then SnappyData g
 
 **Example**: The following example demonstrates how to create a table with `FOREIGN KEY`: </br>
 
-```no-highlight
+```pre
 snappy> create table trading.customers (cid int not null, cust_name varchar(100), since date, addr varchar(100), tid int, primary key (cid));
 
 snappy> create table trading.networth (cid int not null, cash decimal (30, 20), securities decimal (30, 20), loanlimit int, availloan decimal (30, 20),  tid int, constraint netw_pk primary key (cid), constraint cust_newt_fk foreign key (cid) references trading.customers (cid));
@@ -327,17 +366,17 @@ For a GENERATED ALWAYS identity column, SnappyData increments the default value 
 
 Consider a table with the following column definition:
 
-```no-highlight
+```pre
 create table greetings (i int generated always as identity, ch char(50)) using row;
 ```
 
 You can insert rows into the table using either the DEFAULT keyword or by omitting the identity column from the INSERT statement:
 
-```no-highlight
+```pre
 insert into greetings values (DEFAULT, 'hello');
 ```
 
-```no-highlight
+```pre
 insert into greetings(ch) values ('hi');
 ```
 
@@ -349,18 +388,18 @@ In contrast to GENERATED ALWAYS identity columns, with a GENERATED BY DEFAULT co
 
 For example, consider a table created using the statement:
 
-```no-highlight
+```pre
 create table greetings (i int generated by default as identity, ch char(50)); 
 ```
 
 The following statement specifies the value “1” for the identity column:
 
-```no-highlight
+```pre
 insert into greetings values (1, 'hi'); 
 ```
 These statements both use generated default values:
 
-```no-highlight
+```pre
 insert into greetings values (DEFAULT, 'hello');
 insert into greetings(ch) values ('bye');
 ```

@@ -6,11 +6,12 @@ This guide also provides general guidelines for tuning the performance of Snappy
 
 The following topics are covered in this section:
 
-* [SnappyData Pulse](monitoring.md)
+* [SnappyData Monitoring Console](monitoring.md)
 
 * [Configuring High Availability for a Partitioned Table](configure_high_availability.md)
 
 * [Configuring Logging](configure_logging.md)
 
-* [Getting Information from SnappyData System Tables
-](monitor-manage.md)
+* [Securing SnappyData Monitoring Console Connections](../configuring_cluster/securinguiconnection.md)
+
+* [Getting Information from SnappyData System Tables](monitor-manage.md)

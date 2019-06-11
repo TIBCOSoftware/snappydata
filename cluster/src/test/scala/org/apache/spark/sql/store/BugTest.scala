@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,88 +16,820 @@
  */
 package org.apache.spark.sql.store
 
+import java.io.{BufferedReader, FileReader}
+import java.sql.{DriverManager, SQLException}
 import java.util.Properties
 
-import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.security.{LdapTestServer, SecurityTestUtils}
-import io.snappydata.util.TestUtils
-import io.snappydata.{Constant, PlanTest, SnappyFunSuite}
+import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.SnappyFunSuite.resultSetToDataset
+import io.snappydata.{Property, SnappyFunSuite}
+import org.junit.Assert._
 import org.scalatest.BeforeAndAfterAll
-import org.junit.Assert.{assertEquals, assertFalse, assertTrue}
 
-import org.apache.spark.SparkConf
+import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
+import org.apache.spark.sql.catalog.Column
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
+import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
-  private val sysUser = "gemfire10"
 
   override def beforeAll(): Unit = {
-    this.stopAll()
-  }
-  
-  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
-    val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
-      getClass.getResource("/auth.ldif").getPath)
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.setProperty(k, ldapProperties.getProperty(k))
-    }
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-    System.setProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-    val conf = new org.apache.spark.SparkConf()
-        .setAppName("BugTest")
-        .setMaster("local[3]")
-        .set(Attribute.AUTH_PROVIDER, ldapProperties.getProperty(Attribute.AUTH_PROVIDER))
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR, sysUser)
-        .set(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR, sysUser)
-
-    if (addOn != null) {
-      addOn(conf)
-    } else {
-      conf
-    }
+    super.beforeAll()
   }
 
   override def afterAll(): Unit = {
-    this.stopAll()
-    val ldapServer = LdapTestServer.getInstance()
-    if (ldapServer.isServerStarted) {
-      ldapServer.stopService()
-    }
-    import com.pivotal.gemfirexd.Property.{AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE}
-    for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
-      System.clearProperty(k)
-      System.clearProperty("gemfirexd." + k)
-      System.clearProperty(Constant.STORE_PROPERTY_PREFIX  + k)
-    }
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.USERNAME_ATTR)
-    System.clearProperty(Constant.STORE_PROPERTY_PREFIX + Attribute.PASSWORD_ATTR)
-    System.setProperty("gemfirexd.authentication.required", "false")
+    super.afterAll()
   }
 
-  test("Bug SNAP-2255 connection pool exhaustion") {
-    val user1 = "gemfire1"
-    val user2 = "gemfire2"
+  test("SNAP-2342 nested query involving joins & union throws Exception") {
+    snc.sql(s"create table tab1 ( " +
+        "field1   string," +
+        "field2   string," +
+        "field3   string," +
+        "field4   string," +
+        "field5   string," +
+        "field6   string," +
+        "field7   string," +
+        "field8   string," +
+        "field9   string," +
+        "field10   string," +
+        "field11   string," +
+        "field12   string," +
+        "field13   string," +
+        "field14   string," +
+        "field15   string," +
+        "field16   string," +
+        "field17   string," +
+        "localfield8   string," +
+        "localfield9   string," +
+        "localfield10   string," +
+        "localfield11   string," +
+        "localfield15   string," +
+        "localfield16   string," +
+        "field18   string," +
+         "field19   string," +
+        "sfield13   string," +
+        "field20   string," +
+        "field21   string," +
+        "field22   string," +
+        "field23   string )")
 
-    val snc1 = snc.newSession()
-    snc1.snappySession.conf.set(Attribute.USERNAME_ATTR, user1)
-    snc1.snappySession.conf.set(Attribute.PASSWORD_ATTR, user1)
+    snc.sql("create table tab2 (" +
+        "field24   string," +
+        "field9   string," +
+        "field25   string," +
+        "field10   string," +
+        "field11   string," +
+        "field12   string," +
+        "field13   string," +
+        "field14   string," +
+        "field15   string," +
+        "field16   string," +
+        "field17   string," +
+        "localfield9   string," +
+        "localfield10   string," +
+        "localfield11   string," +
+        "localfield15   string," +
+        "localfield16   string," +
+        "field18   string," +
+        "localfield23   string," +
+        "field19   string," +
+        "sfield13   string," +
+        "field26   string," +
+        "field20   string," +
+         "field23   string)")
 
-    snc1.sql(s"create table test (id  integer," +
-        s" name STRING) using column")
-    snc1.sql("insert into test values (1, 'name1')")
-    snc1.sql(s"GRANT select ON TABLE  test TO  $user2")
+    snc.sql("create table tab3 (" +
+        "field27 string, " +
+        " field27description string, " +
+        " field28 string )")
 
-    // TODO : Use the actual connection pool limit
-    val limit = 500
+    snc.sql("create table tab4 (" +
+        " field29  string," +
+        "field29description  string," +
+        " field27 string, " +
+        " field27description string)")
 
-    for (i <- 1 to limit) {
-      val snc2 = snc.newSession()
-      snc2.snappySession.conf.set(Attribute.USERNAME_ATTR, user2)
-      snc2.snappySession.conf.set(Attribute.PASSWORD_ATTR, user2)
+    snc.sql("create table tab5 (" +
+        "field27 string," +
+        "field27description  string," +
+        "field30  string," +
+        "field30description  string)")
+
+    snc.sql("create table tab6 (" +
+        "field1   string," +
+        "field27   string," +
+        "field27description   string," +
+        "field28   string," +
+        "field31   string," +
+        "field32   string," +
+        "field32description   string)")
+
+    snc.sql(s"create or replace view view1 as " +
+        s"( select  field33,field27,first(field27Description) as field27Description, " +
+        s"first(field29) as field29, " +
+        s"first(field29Description) as field29Description,  first(field30) as field30, " +
+        s"first(field30Description) as field30Description, " +
+        s"first(field28) as field28," +
+        s"format_number(sum(field34),2) as field34," +
+        s" format_number(sum(field34),2) as field35,format_number(sum(total),2) as total from" +
+        s" ( select a.field14 as field33,a.field17 as leLocal," +
+        s" a.field19 as field36," +
+        s" a.field20 as field37,a.field11 as field27," +
+        s"a.localfield11 as field32," +
+        s" SUM(field12) as field35,SUM(sfield13) as field34,SUM(field13) as total," +
+        s" first(b.field27Description) as field27Description," +
+        s" first(b.field28) as field28," +
+        s" first((case when a.field20='x1' then e.field32Description " +
+        s" when a.field20='b1' then b.field27Description else '' end)) " +
+        s" as field32Description ," +
+        s" first(c.field29Description) as field29Description," +
+        s"first(d.field30Description) as field30Description, " +
+        s" first(c.field29) as field29, first(d.field30) as field30 from ( select field16," +
+        s"field14," +
+        s" field17,field19,field9,field20,localfield11," +
+        s" field11,last(localfield10),SUM(field13) as field13," +
+        s" SUM(field12) as field12,SUM(sfield13) as sfield13, field11 ," +
+        s" 'Y1' as field1,localfield11 as field32 from " +
+        s" ( select field16,field14,field17,field19,field9,field20," +
+        s" localfield11,field11,localfield10,field13,field12,sfield13" +
+        s"  from tab1  where field16='0L' and field14='7600' " +
+        s" AND field9='2017' and field8<=3 AND field20='b1'  union all" +
+        s" select field16,field14,field17,field19,field9,field20," +
+        s" localfield11,field11,localfield10,field13,field12," +
+        s" sfield13  from tab2  where field16='0L' and field14='7600'" +
+        s" AND field9='2017' AND field20='btb_latam' )  group by field16," +
+        s" field14,field17,field19,field9,field20," +
+        s" localfield11,field11 ) a" +
+        s" left join tab3 b on (a.field11=b.field27) left join " +
+        s" tab4 c " +
+        s" on (a.field11=c.field27)  left join tab5 d on (a.field11=d.field27)" +
+        s" left join tab6 e on(a.field1=e.field1 and " +
+        s"  a.field11 = e.field27 and a.field32 = e.field32 ) group by a.field14," +
+        s"a.field17," +
+        s" a.field19,a.field20,a.field11,a.localfield11," +
+        s"c.field29,d.field30) group by field33,field27)")
+
+    snc.sql("drop view view1")
+    snc.sql("drop table if exists tab1")
+    snc.sql("drop table if exists tab2")
+    snc.sql("drop table if exists tab3")
+    snc.sql("drop table if exists tab4")
+    snc.sql("drop table if exists tab5")
+    snc.sql("drop table if exists tab6")
+
+  }
+/////////
+  test("Bug SNAP-2332 . ParamLiteral found in First/Last Aggregate Function") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+
+    val insertDF = snappy.range(50).selectExpr("id", "(id * 12) as k",
+      "concat('val', cast(100 as string)) as s")
+
+    snappy.sql("drop table if exists test")
+    snappy.sql("create table test (id bigint, k bigint, s varchar(10)) " +
+        "using column options(buckets '8')")
+    insertDF.write.insertInto("test")
+    val query1 = "select sum(id) as summ, first(s, true) as firstt, last(s, true) as lastt" +
+        " from test having (first(s, true) = 'val100' or last(s, true) = 'val100' )"
 
 
-      val rs = snc2.sql(s"select * from $user1.test").collect()
-      assertEquals(1, rs.length)
+    var ps = conn.prepareStatement(query1)
+    var resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
     }
+
+    var rs = snappy.sql(query1)
+    rs.collect()
+    rs = snappy.sql(query1)
+    rs.collect()
+
+    resultset = stmt.executeQuery(query1)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    val query2 = "select sum(id) summ , first(s) firstt, last(s) lastt " +
+        " from test having (first(s) = 'val100' or last(s) = 'val100' )"
+
+    ps = conn.prepareStatement(query2)
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    resultset = stmt.executeQuery(query2)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    rs = snappy.sql(query2)
+    rs.collect()
+
+
+    stmt.execute(s"create or replace view X as ($query2)")
+    val query3 = "select * from X where summ > 0"
+    ps = conn.prepareStatement(query3)
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    rs = snappy.sql(query3)
+    rs.collect()
+    rs = snappy.sql(query3)
+    rs.collect()
+    resultset = stmt.executeQuery(query3)
+    while (resultset.next()) {
+      resultset.getDouble(1)
+    }
+
+    val table1 = s"create table tab1 ( " +
+        "field1   string," +
+        "field2   string," +
+        "field3   string," +
+        "field4   string," +
+        "field5   string," +
+        "field6   string," +
+        "field7   string," +
+        "field8   string," +
+        "field9   string," +
+        "field10   string," +
+        "field11   string," +
+        "field12   string," +
+        "field13   string," +
+        "field14   string," +
+        "field15   string," +
+        "field16   string," +
+        "field17   string," +
+        "localfield8   string," +
+        "localfield9   string," +
+        "localfield10   string," +
+        "localfield11   string," +
+        "localfield15   string," +
+        "localfield16   string," +
+        "field18   string," +
+        "field19   string," +
+        "sfield13   string," +
+        "field20   string," +
+        "field21   string," +
+        "field22   string," +
+        "field23   string )"
+
+    val table2 = "create table tab7 (" +
+        "globalfield16 string," +
+        "globalfield16description string," +
+        "localfield16 string, " +
+        "localfield16description string," +
+        "field20 string)"
+
+    val table3 = "create table field29_hier (" +
+        "field38 string," +
+        "field39 string," +
+        "field40 string," +
+        "field41 string," +
+        "field42 string," +
+        "field43 string," +
+        "subfield38 string," +
+        "subfield39 string," +
+        "field44 string," +
+        "field45 string," +
+        "field46 string)"
+
+    stmt.execute(table1)
+    stmt.execute(table2)
+    stmt.execute(table3)
+
+    val view = "CREATE or replace view view2 as (SELECT " +
+        "A.field9,first(A.field8) as field8,A.field14, A.localfield16," +
+        "A.field20,  A.field11,A.field3, A.field19, " +
+        " first(A.field15) as field15," +
+        " first(A.field23) as field23, first(A.field10) as field10," +
+        "SUM(A.field13 ) as field13,  " +
+        "first(B.globalfield16Description) as globalfield16Description," +
+        " first(C.field44) as field44," +
+        " first(C.field38) as field38,  " +
+        "first(C.field45) as field45," +
+        " first(C.subfield38) as subfield38, " +
+        "first(C.field40) as field40" +
+        " FROM tab1 A  LEFT JOIN tab7 B " +
+        " ON A.field20 = B.field20 AND " +
+        " B.globalfield16 = A.localfield16 LEFT JOIN field29_hier C ON " +
+        " A.field3 = field42 WHERE A.localfield16 ='0L' " +
+        " GROUP BY A.field14, A.field19, " +
+        "A.field9, A.field20, A.field11, A.field3, A.localfield16 " +
+        "having ( SUM(A.field13 ) > 0.001F or SUM(A.field13 ) < -0.001F) );"
+
+    stmt.execute(view)
+
+    val q = "SELECT field14 FROM view2 GROUP BY 1"
+    ps = conn.prepareStatement(q)
+
+    resultset = ps.executeQuery()
+    while (resultset.next()) {
+      resultset.getString(1)
+    }
+    stmt.execute("drop view view2")
+    snc.sql("drop table if exists tab1")
+    snc.sql("drop table if exists tab7")
+    snc.sql("drop table if exists field29_hier")
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+  test("big view") {
+    val snc = this.snc
+    val serverHostPort2 = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    val session = this.snc.snappySession
+
+    // check temporary view with USING and its meta-data
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    val stagingDF = snc.read.load(hfile)
+    snc.createTable("airline", "column", stagingDF.schema,
+      Map.empty[String, String])
+
+
+    // create a big view on it
+    val viewFile = getClass.getResource("/bigviewcase.sql")
+    val br = new BufferedReader(new FileReader(viewFile.getFile))
+    var viewSql = ""
+    var keepGoing = true
+    while(keepGoing) {
+      val x = br.readLine()
+      if (x != null) {
+        viewSql += x
+      } else {
+        keepGoing = false
+      }
+    }
+    val viewname = "AIRLINEBOGUSVIEW"
+
+    // check catalog cache is cleared for VIEWs
+    val cstmt = conn.prepareCall(s"call SYS.GET_COLUMN_TABLE_SCHEMA(?, ?, ?)")
+    cstmt.setString(1, "APP")
+    cstmt.setString(2, viewname)
+    cstmt.registerOutParameter(3, java.sql.Types.CLOB)
+    try {
+      cstmt.execute()
+      assert(cstmt.getString(3) === "")
+      fail("expected to fail")
+    } catch {
+      case se: SQLException if se.getSQLState == "XIE0M" =>
+    }
+
+    // create view
+    session.sql(viewSql)
+
+    // meta-data lookup should not fail now
+    cstmt.execute()
+    assert(cstmt.getString(3).contains(
+      "CASE WHEN (yeari > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+
+    // query on view
+    session.sql(s"select count(*) from $viewname").collect()
+    // check column names
+    val rs = conn.getMetaData.getColumns(null, null, viewname, "%")
+    var foundValidColumnName = false
+    while(rs.next() && !foundValidColumnName) {
+      val colName = rs.getString("COLUMN_NAME")
+      if  (colName == "yeari") {
+        foundValidColumnName = true
+      }
+    }
+    assert(foundValidColumnName)
+
+    snc.sql(s"drop view $viewname")
+    snc.sql("drop table airline")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
+  test("Column table creation test - SNAP-2577") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val session = this.snc.snappySession
+    stmt.execute(s"CREATE TABLE temp (username String, id Int) " +
+        s" USING column ")
+    val seq = Seq("USERX" -> 4, "USERX" -> 5, "USERX" -> 6, "USERY" -> 7,
+      "USERY" -> 8, "USERY" -> 9)
+    val rdd = sc.parallelize(seq)
+
+    val dataDF = session.createDataFrame(rdd)
+
+    dataDF.write.insertInto("temp")
+    snc.sql("drop table temp")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
+  test("Bug SNAP-2758 . view containing aggregate function & join throws error") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    snappy.sql("drop table if exists test1")
+    snappy.sql("create table test1 (col1_1 int, col1_2 int, col1_3 int, col1_4 string) " +
+        "using column ")
+
+    snappy.sql("create table test2 (col2_1 int, col2_2 int,  col2_3 int, col2_5 string) " +
+        "using column ")
+
+    snappy.sql(" CREATE OR REPLACE VIEW v1 as select col2_1, col2_2, " +
+        "col2_5 as longtext from test2 where col2_3 > 10")
+
+    val q1 = "select a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4 = '' THEN '#' ELSE a.col1_4 END functionalAreaCode," +
+        "b.longtext as name, " +
+        " sum(a.col1_3)" +
+        "from test1 a left outer join v1 as b on a.col1_1 = b.col2_1" +
+        " group by a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4  = '' THEN '#' ELSE a.col1_4  END," +
+        " b.longtext "
+    snappy.sql(q1)
+    snappy.sql(s" CREATE OR REPLACE VIEW v3 as $q1")
+
+    val q = "select a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4 = '' THEN '#' ELSE a.col1_4 END functionalAreaCode," +
+        "'#' as fsid,  " +
+        "b.longtext as name, " +
+        " sum(a.col1_3)" +
+        "from test1 a left outer join v1 as b on a.col1_1 = b.col2_1" +
+        " group by a.col1_1, a.col1_2, " +
+        " CASE WHEN a.col1_4  = '' THEN '#' ELSE a.col1_4  END," +
+        " '#'," +
+        " b.longtext "
+    snappy.sql(q)
+    snappy.sql(s" CREATE OR REPLACE VIEW v2 as $q")
+    snappy.sql("select count(*) from v2").collect()
+
+    stmt.execute("drop view v3")
+    stmt.execute("drop view v2")
+    stmt.execute("drop view v1")
+    snc.sql("drop table if exists test1")
+    snc.sql("drop table if exists test2")
+
+    conn.close()
+    TestUtil.stopNetServer()
+
+  }
+
+  test("Bug SNAP-2887") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    snappy.sql("drop table if exists portfolio")
+    snappy.sql(s"create table portfolio (cid int not null, sid int not null, " +
+      s"qty int not null,availQty int not null, subTotal int, tid int, " +
+      s"constraint portf_pk primary key (cid, sid))")
+
+    val insertStr = s"insert into portfolio values (?, ?, ?, ?, ? , ?)"
+    val ps = conn.prepareStatement(insertStr)
+    for (i <- 1 until 101) {
+      ps.setInt(1, i % 10)
+      ps.setInt(2, i * 10)
+      ps.setInt(3, i)
+      ps.setInt(4, i)
+      ps.setInt(5, i)
+      ps.setInt(6, 10)
+      ps.executeUpdate()
+    }
+    val query = s"select * from portfolio where cid = ? and Sid = ? and tid = ?"
+    val qps = conn.prepareStatement(query)
+    for (i <- 0 until 11) {
+      qps.setInt(1, 8)
+      qps.setInt(2, 20)
+      qps.setInt(3, 10)
+      val rs = qps.executeQuery()
+      var count = 0
+      while (rs.next()) {
+        count += 1
+      }
+      assert(count == 0)
+    }
+    snappy.sql(s"create index portfolio_sid  on portfolio (sId )")
+
+    for (i <- 0 until 11) {
+      qps.setInt(1, 8)
+      qps.setInt(2, 20)
+      qps.setInt(3, 10)
+      val rs = qps.executeQuery()
+      var count = 0
+      while (rs.next()) {
+
+        count += 1
+      }
+      assert(count == 0)
+    }
+    stmt.execute("drop index  if exists portfolio_sid")
+    stmt.execute("drop table if exists portfolio")
+  }
+
+  test("Bug SNAP-2890") {
+    snc
+    var serverHostPort2 = TestUtil.startNetServer()
+    var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+    var stmt = conn.createStatement()
+    val snappy = snc.snappySession
+    val numCols = 132
+    snappy.conf.set(Property.ColumnBatchSize.name, "256")
+    snappy.sql("drop table if exists test1")
+    val sb = new StringBuilder
+    for(i <- 1 until numCols + 1) {
+      sb.append(s"col$i string,")
+    }
+    sb.deleteCharAt(sb.length -1)
+
+    snappy.sql(s"create table test1 (${sb.toString()}) " +
+      "using column ")
+    val params = Array.fill(numCols)('?').mkString(",")
+    val insertStr = s"insert into test1 values (${params})"
+    val ps = conn.prepareStatement(insertStr)
+    for (i <- 0 until 1000) {
+      for (j <- 1 until numCols + 1) {
+        ps.setString(j, j.toString)
+      }
+      ps.addBatch()
+    }
+    ps.executeBatch()
+    snappy.sql(s"create table test2 using column as ( select * from test1)")
+    for(i <- 1 until numCols + 1) {
+      snappy.sql(s"select col${i} from test1").collect().foreach(r =>
+        assert(r.getString(0).toInt == i) )
+    }
+    for(i <- 1 until (numCols + 1)/2) {
+      snappy.sql(s"select col${i}, col${numCols - i + 1} from test1").collect().foreach(r =>
+        {
+          assert(r.getString(0).toInt == i)
+          assert(r.getString(1).toInt == numCols -i + 1)
+        } )
+    }
+    for(i <- 1 until numCols + 1) {
+      val projSeq = for (j <- 1 until i + 1) yield {
+        s"col${j}"
+      }
+      val projectionStr = projSeq.mkString(",")
+
+      snappy.sql(s"select $projectionStr from test1 limit 10").collect().foreach(r =>
+        for (j <- 1 until i + 1 ) {
+          assert(r.getString(j -1).toInt == j)
+        })
+    }
+    snappy.sql("select col126 from test2").collect()
+    snappy.sql("select col128 from test2").collect()
+    snappy.sql("select col127 from test2").collect()
+    snappy.sql("select col130 from test2").collect()
+    snappy.sql("select col129 from test2").collect()
+    snc.sql("drop table if exists test1")
+    snc.sql("drop table if exists test2")
+    conn.close()
+    TestUtil.stopNetServer()
+  }
+
+  test("SNAP-2718") {
+    snc
+    val path1 = getClass.getResource("/patients1000.csv").getPath
+    val df1 = snc.read.format("csv").option("header", "true").load(path1)
+    df1.registerTempTable("patients")
+    val path2 = getClass.getResource("/careplans1000.csv").getPath
+    val df2 = snc.read.format("csv").option("header", "true").load(path2)
+    df2.registerTempTable("careplans")
+
+    snc.sql("select p.first, p.last from (select patient from ( select *, " +
+      "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+      "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
+      "from careplans )c group by patient having sum(coverage) = 0)q " +
+      "join patients p on id = patient ").collect
+
+    df1.createOrReplaceTempView("patients_v")
+    df2.createOrReplaceTempView("careplans_v")
+
+    snc.sql("select p.first, p.last from (select patient from ( select *, " +
+      "case when description in ('Anti-suicide psychotherapy', 'Psychiatry care plan', " +
+      "'Major depressive disorder clinical management plan') then 1 else 0 end as coverage " +
+      "from careplans_v )c group by patient having sum(coverage) = 0)q " +
+      "join patients_v p on id = patient ").collect
+
+    snc.dropTempTable("patients")
+    snc.dropTempTable("careplans")
+    snc.sql("drop view patients_v")
+    snc.sql("drop view careplans_v")
+  }
+
+  test("SNAP-2368") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+      val stmt = conn.createStatement()
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", new Properties())
+      var rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      var tableType = rs.getString(1)
+      assertEquals("T", tableType)
+      stmt.execute("drop table names")
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      assertFalse(rs.next())
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      props.put("isolationLevel", "NONE")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
+  ignore("SNAP-2910") {
+    snc
+    try {
+      var serverHostPort2 = TestUtil.startNetServer()
+      var conn = DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
+      val schema = StructType(List(StructField("name", StringType, nullable = true)))
+      val data = Seq(
+        Row("abc"),
+        Row("def")
+      )
+
+      val stmt = conn.createStatement()
+
+      val sparkSession = SparkSession.builder.appName("test").
+        sparkContext(snc.sparkContext).getOrCreate()
+      val namesDF = sparkSession.createDataFrame(snc.sparkContext.parallelize(data), schema)
+      namesDF.createOrReplaceTempView("names")
+
+      val props = new Properties()
+      props.put("createTableOptions", " using column options( buckets '13')")
+      sparkSession.table("names").
+        write.mode(SaveMode.Overwrite).jdbc(
+        s"jdbc:snappydata://$serverHostPort2/", "names", props)
+
+      val rs = stmt.executeQuery("select tabletype from sys.systables where tablename = 'NAMES'")
+      rs.next()
+      val tableType = rs.getString(1)
+      assertEquals("C", tableType)
+      stmt.execute("drop table if exists test")
+    } finally {
+      TestUtil.stopNetServer
+    }
+  }
+
+  test("SNAP-2237") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1_1 int, col1_2 int, col1_3 int, col1_4 string) " +
+      "using column ")
+    val insertDF = snc.range(50).selectExpr("id", "id*2", "id * 3",
+      "cast (id as string)")
+    insertDF.write.insertInto("test1")
+    snc.sql("select col1_2, sum(col1_1) as summ from test1 group by col1_2 " +
+      "order by sum(col1_1)").collect
+    snc.sql("select col1_2, sum(col1_1) as summ from test1 " +
+      "group by col1_2 order by summ").collect
+    snc.sql("select lower(col1_2) as x, " +
+      "sum(col1_1) as summ from test1 group by lower(col1_2) ").collect
+    snc.sql("select lower(col1_2) as x, sum(col1_1) as summ from test1 " +
+      "group by x").collect
+    snc.dropTable("test1")
+  }
+
+  test("Verify number of tasks for limit query") {
+    val hfile: String = getClass.getResource("/2015.parquet").getPath
+    snc.sql(s"CREATE EXTERNAL TABLE STAGING_AIRLINE USING parquet options(path '$hfile')")
+    var numTasks = 0
+    snc.sparkContext.addSparkListener( new SparkListener {
+      override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = numTasks += 1
+    })
+    snc.sql(s"select * from STAGING_AIRLINE limit 1").collect()
+    // num tasks should be 1 as only 1 partition needs to be scanned to get 1 row
+    assert(numTasks == 1, s"numTasks should be 1. numTasks is $numTasks")
+
+    snc.sql(s"CREATE TABLE T1 (COL1 INT) using column options ('buckets' '3')")
+    snc.sql(s"INSERT INTO T1 VALUES (1)")
+    snc.sql(s"INSERT INTO T1 VALUES (2)")
+    snc.sql(s"INSERT INTO T1 VALUES (3)")
+    snc.sql(s"INSERT INTO T1 VALUES (4)")
+    snc.sql(s"INSERT INTO T1 VALUES (5)")
+    snc.sql(s"INSERT INTO T1 VALUES (6)")
+    numTasks = 0
+    snc.sql(s"select * from T1 limit 1").collect()
+    // num tasks should be 1 as only 1 partition needs to be scanned to get 1 row
+    assert(numTasks == 1, s"numTasks should be 1. numTasks is $numTasks")
+    snc.sql(s"drop table STAGING_AIRLINE")
+    snc.sql(s"drop table T1")
+  }
+
+  test("multi-partition limit") {
+    val snappy = snc.snappySession
+    snappy.sql("create table testLimit (id long, data string, data2 string) using column " +
+        "options (partition_by 'id', buckets '128') as " +
+        "select id, 'someTestData_' || id, 'someOtherData_' || id from range(10000)")
+    val schema = snappy.table("testLimit").schema
+    val port = TestUtil.startNetserverAndReturnPort()
+    val conn = DriverManager.getConnection(s"jdbc:snappydata://localhost:$port")
+    val stmt = conn.createStatement()
+    val rows = Utils.resultSetToSparkInternalRows(
+      stmt.executeQuery("select * from testLimit limit 5000"), schema)
+    assert(rows.length === 5000)
+    val res = snappy.sql("select * from testLimit limit 10000")
+    val expected = snappy.sql("select * from testLimit").collect()
+    checkAnswer(res, expected)
+    val res2 = SnappyFunSuite.resultSetToDataset(
+      snappy, stmt)("select * from testLimit limit 10000")
+    checkAnswer(res2, expected)
+
+    conn.close()
+    snappy.sql("drop table testLimit")
+    TestUtil.stopNetServer()
+  }
+
+  test("support for 'default' schema without explicit quotes") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    session.sql("create table default.t1(id bigint primary key, name varchar(10))")
+    var keys = session.sessionCatalog.getKeyColumns("default.t1")
+    assert(keys.length === 1)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
+
+    // also test from JDBC
+    val stmt = conn.createStatement()
+    stmt.execute("create table default.t2(id bigint not null primary key, name varchar(10))")
+    keys = session.sessionCatalog.getKeyColumns("default.t2")
+    assert(keys.length === 1)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
+
+    session.sql("insert into default.t1 values (1, 'name1'), (2, 'name2')")
+    var res = session.sql("select * from default.t1 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
+    res = session.sql("select * from default.t1 where id = 1").collect()
+    assert(res === Array(Row(1L, "name1")))
+    res = session.sql("select * from `DEFAULT`.t1 where id = 2").collect()
+    assert(res === Array(Row(2L, "name2")))
+    session.sql("insert into `default`.`t1` values (3, 'name3'), (4, 'name4')")
+    res = session.sql("select * from `default`.`t1` order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2"), Row(3L, "name3"), Row(4L, "name4")))
+    res = session.sql("select * from default.t1 where id = 3").collect()
+    assert(res === Array(Row(3L, "name3")))
+    res = session.sql("select * from `DEFAULT`.t1 where id = 4").collect()
+    assert(res === Array(Row(4L, "name4")))
+
+    stmt.execute("insert into default.t2 values (1, 'name1'), (2, 'name2')")
+    res = resultSetToDataset(session, stmt)("select * from default.t2 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
+    res = resultSetToDataset(session, stmt)("select * from default.t2 where id = 1").collect()
+    assert(res === Array(Row(1L, "name1")))
+    res = resultSetToDataset(session, stmt)("select * from `default`.t2 where id = 2").collect()
+    assert(res === Array(Row(2L, "name2")))
+    stmt.execute("insert into `DEFAULT`.`T2` values (3, 'name3'), (4, 'name4')")
+    res = resultSetToDataset(session, stmt)("select * from default.t2 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2"), Row(3L, "name3"), Row(4L, "name4")))
+    res = resultSetToDataset(session, stmt)("select * from default.t2 where id = 3").collect()
+    assert(res === Array(Row(3L, "name3")))
+    res = resultSetToDataset(session, stmt)("select * from `DEFAULT`.`t2` where id = 4").collect()
+    assert(res === Array(Row(4L, "name4")))
+
+    // check ALTER TABLE
+    session.sql("alter table default.t1 set eviction maxsize 1000")
+    session.sql("alter table `DEFAULT`.t2 set eviction maxsize 1000")
+    stmt.execute("alter table default.t1 set eviction maxsize 500")
+    stmt.execute("alter table \"default\".\"t2\" set eviction maxsize 500")
+
+    stmt.close()
+    conn.close()
+
+    TestUtil.stopNetServer()
   }
 }

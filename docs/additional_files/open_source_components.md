@@ -1,39 +1,30 @@
-# SnappyData Community Edition (Open Source) and Enterprise Edition
+# SnappyData Community Edition (Open Source) and TIBCO ComputeDB Enterprise Edition
 
-SnappyData offers a fully functional core OSS distribution that is Apache 2.0 licensed and includes the following capabilities:
+SnappyData offers a fully functional core OSS distribution, which is the **Community Edition**, that is Apache 2.0 licensed. The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the OSS version along with additional capabilities that are closed source and only available as part of a licensed subscription. You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
 
-* Mutable row and column store with support for SQL-92 and Spark SQL queries
+The capabilities of the **Community Edition** and the additional capabilities of the **Enterprise Edition** are listed in the following table:
 
-* 100% compatibility with Apache Spark which allows users to run compute and store data in a single cluster
-
-* Support for shared nothing persistence and high availability of data through replication in the data store
-
-* Support for the REST API to submit Spark jobs and a managed driver which provides fault tolerance for driver failure
-
-* Access to the system using JDBC (the JDBC driver is included in the OSS distribution) or the Spark API
-
-* Command line tools  to backup, restore and export data 
-
-* Extensions to the Spark console which provide useful information on the cluster
-
-* A complete library of statistics and a visual statistics viewer which can be used for both online and offline analysis of system performance and behavior
-
-* Support for transactions and indexing in Row Tables
-
-* SQL Extensions for stream processing
-
-<heading2>Additional Enterprise Edition Features</heading2>
-
-The Enterprise edition of the product includes everything that is offered in the OSS version and includes the following additional capabilities that are closed source and only available as part of a licensed subscription. Users can download the Enterprise version for evaluation after registering on the [SnappyData website](http://www.snappydata.io/download).
-
-* Synopsis Data Engine capabilities which provides users with the ability to run queries on samples and other summary structures built into the system and get statistically verified accurate results
-
-* ODBC driver that provides high concurrency
-
-* Support for off-heap data storage for column tables which provides higher performance, reduce garbage generation and reduces provisioning and capacity tuning complexity
-
-* CDC Stream receiver that allows data ingestion from Microsoft SQL Server into SnappyData
-
-* SnappyData connector for GemFire/ Apache Geode which allows SnappyData to work across multiple GemFire data grids
-
-* Implementation of the security interface that uses LDAP for authenticating and authorizing users in the system
+| Feature | Community | Enterprise|
+| ------------- |:-------------:| :-----:|
+|Mutable Row & Column Store| X | X |
+|Compatibility with Spark     | X | X |
+| Shared Nothing Persistence and HA | X | X |
+| REST API for Spark Job Submission | X | X |
+| Fault Tolerance for Driver | X | X |
+| Access to the system using JDBC Driver | X | X |
+| CLI for backup, restore, and export data | X | X |
+| Spark console extensions | X | X |
+| System Perf/Behavior statistics | X | X |
+| Support for transactions in Row tables | X | X |
+| Support for indexing in Row Tables | X | X |
+| SQL extensions for stream processing | X | X |
+| Runtime deployment of packages and jars | X  | X |
+| Synopsis Data Engine for Approximate Querying |  | X |
+| ODBC Driver with High Concurrency |  | X |
+| Off-heap data storage for column tabes |  | X |
+| CDC Stream receiver for SQL Server into SnappyData |  | X |
+| GemFire/Apache Geode connector |  | X |
+|Row Level Security|  | X |
+| Use encrypted password instead of clear text password |  | X |
+| Restrict Table, View, Function creation even in user’s own schema|  | X |
+| LDAP security interface |  | X |

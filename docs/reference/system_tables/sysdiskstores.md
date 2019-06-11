@@ -19,7 +19,7 @@ See [CREATE DISKSTORE](../sql_reference/create-diskstore.md).
 
 **Example** </br>
 
-```no-highlight
+```pre
 snappy> select * from sys.SYSDISKSTORES;
 NAME                       |MAXLOGSIZE          |AUTOCOMPACT|ALLOWFORCECOMPACTION|COMPACTIONTHRESHOLD|TIMEINTERVAL        |WRITEBUFFERSIZE|QUEUESIZE  |DIR_PATH_SIZE              
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
@@ -34,7 +34,7 @@ STORE1                     |1024                |true       |false              
 7 rows selected
 ```
 
-```no-highlight
+```pre
 snappy> select * from SYS.SYSDISKSTORES where NAME = 'STORE1';
 NAME                       |MAXLOGSIZE          |AUTOCOMPACT|ALLOWFORCECOMPACTION|COMPACTIONTHRESHOLD|TIMEINTERVAL        |WRITEBUFFERSIZE|QUEUESIZE  |DIR_PATH_SIZE              
 ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- 
@@ -43,7 +43,7 @@ STORE1                     |1024                |true       |false              
 1 row selected
 ```
 
-```no-highlight
+```pre
 snappy> select * from sys.sysdiskstores where DIR_PATH_SIZE like '%mytest%';
 NAME             |MAXLOGSIZE          |AUTOCOMPACT|ALLOWFORCECOMPACTION|COMPACTIONTHRESHOLD|TIMEINTERVAL        |WRITEBUFFERSIZE|QUEUESIZE  |DIR_PATH_SIZE
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ 

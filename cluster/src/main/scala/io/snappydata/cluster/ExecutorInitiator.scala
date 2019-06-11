@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,7 +36,7 @@ import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkEnv}
+import org.apache.spark.{Logging, SparkCallbacks, SparkEnv}
 
 /**
  * This class is responsible for initiating the executor process inside
@@ -51,7 +51,7 @@ object ExecutorInitiator extends Logging {
 
   var executorThread: Thread = new Thread(executorRunnable)
 
-  @volatile var snappyExecBackend: SnappyCoarseGrainedExecutorBackend = null
+  @volatile var snappyExecBackend: SnappyCoarseGrainedExecutorBackend = _
 
   class ExecutorRunnable() extends Runnable {
     private var driverURL: Option[String] = None
@@ -152,7 +152,7 @@ object ExecutorInitiator extends Logging {
                   SparkHadoopUtil.get.runAsSparkUser { () =>
 
                     // Fetch the driver's Spark properties.
-                    val executorConf = new SparkConf
+                    val executorConf = Utils.newClusterSparkConf()
                     Utils.setDefaultSerializerAndCodec(executorConf)
 
                     val port = executorConf.getInt("spark.executor.port", 0)
@@ -160,7 +160,7 @@ object ExecutorInitiator extends Logging {
                       SparkCallbacks.fetchDriverProperty(memberId, executorHost,
                       executorConf, port, url)
 
-                    val driverConf = new SparkConf
+                    val driverConf = Utils.newClusterSparkConf()
                     Utils.setDefaultSerializerAndCodec(driverConf)
 
                     for ((key, value) <- props) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,20 +17,27 @@
 
 package org.apache.spark.sql.execution
 
+import java.sql.SQLException
+
 import com.gemstone.gemfire.SystemFailure
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import org.codehaus.commons.compiler.CompileException
 
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.CodeGenerationException
+import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMode}
 
 /**
  * Catch exceptions in code generation of SnappyData plans and fallback
  * to Spark plans as last resort (including non-code generated paths).
  */
-case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
+case class CodegenSparkFallback(var child: SparkPlan,
+    @transient session: SnappySession) extends UnaryExecNode {
 
   override def output: Seq[Attribute] = child.output
 
@@ -38,33 +45,68 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   override def outputOrdering: Seq[SortOrder] = child.outputOrdering
 
+  @transient private[this] val execution =
+    session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
+
   protected[sql] def isCodeGenerationException(t: Throwable): Boolean = {
-    t match {
-      case e: Error =>
-        if (SystemFailure.isJVMFailureError(e)) {
-          SystemFailure.initiateFailure(e)
-          // If this ever returns, rethrow the error. We're poisoned
-          // now, so don't let this thread continue.
-          throw e
-        }
-        e match {
-          // assume all stack overflow failures are due to compilation issues in janino
-          // for very large code
-          case _: StackOverflowError => true
-          case _ => false
-        }
-      case _ =>
-        // search for any janino or code generation exception
-        var cause = t
-        do {
-          if (cause.isInstanceOf[CodeGenerationException] ||
-              cause.toString.contains("janino")) {
-            return true
+    // search for any janino or code generation exception
+    var cause = t
+    do {
+      cause match {
+        // assume all stack overflow failures are due to compilation issues in janino
+        // for very large code
+        case _: StackOverflowError | _: CodeGenerationException | _: CompileException =>
+          return true
+        case e: Error =>
+          if (SystemFailure.isJVMFailureError(e)) {
+            SystemFailure.initiateFailure(e)
+            // If this ever returns, rethrow the error. We're poisoned
+            // now, so don't let this thread continue.
+            throw e
           }
-          cause = cause.getCause
-        } while (cause ne null)
-        false
+        case _ if cause.toString.contains("janino") => return true
+        case _ =>
+      }
+      cause = cause.getCause
+    } while (cause ne null)
+    false
+  }
+
+  protected def isConnectorCatalogStaleException(t: Throwable, session: SnappySession): Boolean = {
+
+    // error check needed in SmartConnector mode only
+    val isSmartConnectorMode = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
     }
+    if (!isSmartConnectorMode) return false
+
+    var cause = t
+    do {
+      cause match {
+        case sqle: SQLException
+          if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
+          return true
+        case e: Error =>
+          if (SystemFailure.isJVMFailureError(e)) {
+            SystemFailure.initiateFailure(e)
+            // If this ever returns, rethrow the error. We're poisoned
+            // now, so don't let this thread continue.
+            throw e
+          }
+        case _ =>
+      }
+      cause = cause.getCause
+    } while (cause ne null)
+    false
+  }
+
+  private def catalogStaleFailure(cause: Throwable, session: SnappySession): Exception = {
+    logWarning(s"SmartConnector catalog is not up to date. " +
+        s"Please reconstruct the Dataset and retry the operation")
+    new CatalogStaleException("Smart connector catalog is out of date due to " +
+        "table schema change (DROP/CREATE/ALTER operation). " +
+        "Please reconstruct the Dataset and retry the operation", cause)
   }
 
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
@@ -79,24 +121,53 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
         // is still usable:
         SystemFailure.checkFailure()
 
-        if (!isCodeGenerationException(t)) throw t
-
-        // fallback to Spark plan
-        val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-        session.getContextObject[() => QueryExecution](SnappySession.ExecutionKey) match {
-          case Some(exec) =>
-            logInfo("SnappyData code generation failed. Falling back to Spark plans.")
-            session.sessionState.disableStoreOptimizations = true
-            try {
-              val plan = exec().executedPlan
-              val result = f(plan)
-              // update child for future executions
-              child = plan
-              result
-            } finally {
-              session.sessionState.disableStoreOptimizations = false
-            }
-          case None => throw t
+        val isCatalogStale = isConnectorCatalogStaleException(t, session)
+        if (isCatalogStale) {
+          session.externalCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          // fail immediate for insert/update/delete, else retry entire query
+          val action = plan.find {
+            case _: ExecutePlan | _: ExecutedCommandExec => true
+            case _ => false
+          }
+          if (action.isDefined) throw catalogStaleFailure(t, session)
+        }
+        if (isCatalogStale || isCodeGenerationException(t)) {
+          // fallback to Spark plan for code-generation exception
+          execution match {
+            case Some(exec) =>
+              if (!isCatalogStale) {
+                val msg = new StringBuilder
+                var cause = t
+                while (cause ne null) {
+                  if (msg.nonEmpty) msg.append(" => ")
+                  msg.append(cause)
+                  cause = cause.getCause
+                }
+                logInfo(s"SnappyData code generation failed due to $msg." +
+                    s" Falling back to Spark plans.")
+                session.sessionState.disableStoreOptimizations = true
+              }
+              try {
+                val plan = exec().executedPlan.transform {
+                  case CodegenSparkFallback(p, _) => p
+                }
+                val result = f(plan)
+                // update child for future executions
+                child = plan
+                result
+              } catch {
+                case t: Throwable if isConnectorCatalogStaleException(t, session) =>
+                  session.externalCatalog.invalidateAll()
+                  SnappySession.clearAllCache()
+                  throw catalogStaleFailure(t, session)
+              } finally if (!isCatalogStale) {
+                session.sessionState.disableStoreOptimizations = false
+              }
+            case _ => throw t
+          }
+        } else {
+          throw t
         }
     }
   }
@@ -122,8 +193,6 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
 
   // override def children: Seq[SparkPlan] = child.children
 
-  // override private[sql] def metrics = child.metrics
-
   // override private[sql] def metadata = child.metadata
 
   // override def subqueries: Seq[SparkPlan] = child.subqueries
@@ -131,4 +200,9 @@ case class CodegenSparkFallback(var child: SparkPlan) extends UnaryExecNode {
   override def nodeName: String = "CollectResults"
 
   override def simpleString: String = "CollectResults"
+
+  override def longMetric(name: String): SQLMetric = child match {
+    case w: WholeStageCodegenExec => w.child.longMetric(name)
+    case o => o.longMetric(name)
+  }
 }

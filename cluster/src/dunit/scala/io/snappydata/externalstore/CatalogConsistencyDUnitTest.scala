@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,7 +22,6 @@ import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
-import org.apache.spark.sql.row.GemFireXDClientDialect
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNotFoundException}
 
@@ -70,23 +69,13 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     try {
       // table should not exist in the Hive catalog
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.tableIdentifier("column_table1"))
     } catch {
       case t: TableNotFoundException => // expected exception
       case unknown: Throwable => throw unknown
     }
 
     val routeQueryDisabledConn = getClientConnection(netPort1, false)
-    // should throw an exception since the catalog is repaired and table entry
-    // should have been removed
-    try {
-      // table should not exist in the store DD
-      routeQueryDisabledConn.createStatement().executeQuery("select * from column_table1")
-    } catch {
-      case se: SQLException if (se.getSQLState.equals("42X05")) =>
-      case unknown: Throwable => throw unknown
-    }
-
     try {
       // make sure that the column buffer does not exist
       routeQueryDisabledConn.createStatement().executeQuery(
@@ -102,7 +91,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     assert(result.collect.length == 5)
     // below call should not throw an exception
     snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("tweetsTable"))
+      snc.snappySession.tableIdentifier("tweetsTable"))
   }
 
   def testHiveStoreEntryMissingForTable(): Unit = {
@@ -119,12 +108,12 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     createTables(snc)
 
     // remove column_table1 entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.dropTable(
+      snc.snappySession.tableIdentifier("column_table1"), ignoreIfNotExists = false, purge = false)
 
     try {
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.tableIdentifier("column_table1"))
     } catch {
       case t: TableNotFoundException => // expected exception
       case unknown: Throwable => throw unknown
@@ -132,7 +121,7 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
     // column_table1 should not be found in either catalog after repair
     assertTableDoesNotExist(netPort1, snc)
     // other tables should exist
@@ -160,19 +149,19 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     routeQueryDisabledConn.createStatement().execute("drop table column_table1")
 
     // make sure that the table exists in Hive metastore
-    assert(JdbcExtendedUtils.tableExistsInMetaData("APP.COLUMN_TABLE1",
-      routeQueryDisabledConn, GemFireXDClientDialect))
+    assert(JdbcExtendedUtils.tableExistsInMetaData("APP", "COLUMN_TABLE1", routeQueryDisabledConn))
 
     val connection = getClientConnection(netPort1)
     // repair the catalog
-    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG()")
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
     // column_table1 should not be found in either catalog after repair
     assertTableDoesNotExist(netPort1, snc)
     // other tables should exist
     verifyTables(snc)
   }
 
-  def testCatalogRepairedWhenLeadRestarted(): Unit = {
+  // Hive entry missing but DD entry exists
+  def testCatalogRepairedWhenLeadStopped1(): Unit = {
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
@@ -180,13 +169,59 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     createTables(snc)
     // remove column_table1 entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.dropTable(
+      snc.snappySession.tableIdentifier("column_table1"), ignoreIfNotExists = false, purge = false)
 
     // stop spark
     val sparkContext = SnappyContext.globalSparkContext
     if(sparkContext != null) sparkContext.stop()
     ClusterManagerTestBase.stopAny()
+
+    val connection = getClientConnection(netPort1)
+    // repair the catalog
+    // does not actually repair, just adds warning to log file
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('false', 'false')")
+    // actually repair the catalog
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
+
+    ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
+    snc = SnappyContext(sc)
+    // column_table1 should not be found in either catalog after repair
+    assertTableDoesNotExist(netPort1, snc)
+
+    // other tables should exist
+    verifyTables(snc)
+  }
+
+  // Hive entry exists but DD entry missing
+  def testCatalogRepairedWhenLeadStopped2(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+
+    var snc = SnappyContext(sc)
+
+    createTables(snc)
+ 
+    // drop column_table1 from store DD
+    val routeQueryDisabledConn = getClientConnection(netPort1, false)
+    routeQueryDisabledConn.createStatement().execute("drop table " +
+        ColumnFormatRelation.columnBatchTableName("app.column_table1"))
+    routeQueryDisabledConn.createStatement().execute("drop table column_table1")
+
+    // make sure that the table exists in Hive metastore
+    assert(JdbcExtendedUtils.tableExistsInMetaData("APP", "COLUMN_TABLE1", routeQueryDisabledConn))
+
+    // stop spark
+    val sparkContext = SnappyContext.globalSparkContext
+    if(sparkContext != null) sparkContext.stop()
+    ClusterManagerTestBase.stopAny()
+
+    val connection = getClientConnection(netPort1)
+    // repair the catalog
+    // does not actually repair, just adds warning to log file
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('false', 'false')")
+    // actually repair the catalog
+    connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
     snc = SnappyContext(sc)
@@ -241,8 +276,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
-        assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_ROW;"))
+        assert(ae.getMessage.contains("app.order_details_row cannot be dropped because of " +
+            "dependent objects: app.exec_details_row"))
     }
 
     // stop spark
@@ -259,8 +294,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
-        assert(ae.getMessage.equals("Object APP.ORDER_DETAILS_ROW cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_ROW;"))
+        assert(ae.getMessage.contains("app.order_details_row cannot be dropped because of " +
+            "dependent objects: app.exec_details_row"))
     }
 
     snc.sql(s"drop table $colloactedColumnTable")

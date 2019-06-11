@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,10 +17,10 @@
 package org.apache.spark.memory
 
 import java.util.Properties
-import java.util.function.ObjLongConsumer
 
 import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
+import org.eclipse.collections.api.block.procedure.primitive.ObjectLongProcedure
 
 import org.apache.spark.SparkEnv
 import org.apache.spark.sql.SnappyContext
@@ -189,8 +189,8 @@ object MemoryManagerRestartDUnitTest {
     val mMap = memoryManager.memoryForObject
     memoryManager.logStats()
     var sum = 0L
-    mMap.forEach(new ObjLongConsumer[MemoryOwner] {
-      override def accept(key: MemoryOwner, value: Long): Unit = {
+    mMap.forEachKeyValue(new ObjectLongProcedure[MemoryOwner] {
+      override def value(key: MemoryOwner, value: Long): Unit = {
         if (key.owner.toLowerCase().contains(tableName.toLowerCase())) {
           sum += value
         }

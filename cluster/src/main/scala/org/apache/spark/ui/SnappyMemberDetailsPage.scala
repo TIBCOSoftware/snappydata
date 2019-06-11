@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -23,225 +23,237 @@ import javax.servlet.http.HttpServletRequest
 
 import scala.collection.mutable
 import scala.util.control.Breaks._
-import scala.xml.{Unparsed, Node}
+import scala.xml.{Node, Unparsed}
 
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
-import com.pivotal.gemfirexd.internal.engine.sql.execute.{MemberLogsMessage}
+import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberLogsMessage
+import com.pivotal.gemfirexd.internal.engine.ui.MemberStatistics
 import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
 import org.apache.spark.util.Utils
 
 
-private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
+private[ui] class SnappyMemberDetailsPage(parent: SnappyDashboardTab)
     extends WebUIPage("memberDetails") with Logging {
 
   private var workDir: File = null
   private var logFileName: String = null
-  private val defaultBytes:Long = 1024 * 100
+  private val defaultBytes: Long = 1024 * 100
 
   private def createPageTitleNode(title: String): Seq[Node] = {
-
-    val sdf = new SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss")
-    val lastUpdatedOn = sdf.format(new Date())
-
+    <div id="AutoUpdateErrorMsgContainer">
+      <div id="AutoUpdateErrorMsg">
+      </div>
+    </div>
+    <div id="autorefreshswitch-container">
+      <div id="autorefreshswitch-holder">
+        <div class="onoffswitch">
+          <input type="checkbox" name="onoffswitch" class="onoffswitch-checkbox"
+                 id="myonoffswitch" checked="checked" />
+          <label class="onoffswitch-label" for="myonoffswitch" data-toggle="tooltip" title=""
+                 data-original-title="ON/OFF Switch for Auto Update of Statistics">
+            <span class="onoffswitch-inner"></span>
+            <span class="onoffswitch-switch"></span>
+          </label>
+        </div>
+        <div id="autorefreshswitch-label">Auto Refresh:</div>
+      </div>
+    </div>
     <div class="row-fluid">
       <div class="span12">
-        <h3 style="vertical-align: bottom; display: inline-block;">
+        <h3 class="page-title-node-h3">
           {title}
         </h3>
-        <span style="float:right; font-size: 12px;" data-toggle="tooltip" title=""
-              data-original-title="Reload page to refresh Dashboard." >Last updated on {
-          lastUpdatedOn
-          }</span>
       </div>
     </div>
   }
 
-  private def getMemberStats(memberDetails: mutable.Map[String, Any]): Seq[Node] = {
+  private def getMemberStats(memberDetails: MemberStatistics): Seq[Node] = {
 
-    val status = memberDetails.getOrElse("status", "")
+    val status = memberDetails.getStatus
 
-    val statusImgUri = if(status.toString.equalsIgnoreCase("running")) {
+    val statusImgUri = if (status.equalsIgnoreCase("running")) {
       "/static/snappydata/running-status-icon-70x68.png"
     } else {
       "/static/snappydata/warning-status-icon-70x68.png"
     }
 
     val memberType = {
-      if(memberDetails.getOrElse("lead", false).toString.toBoolean){
-        if(memberDetails.getOrElse("activeLead", false).toString.toBoolean)
+      if (memberDetails.isLead) {
+        if (memberDetails.isLeadActive) {
           "LEAD (Active)"
-        else
+        } else {
           "LEAD"
-      } else if(memberDetails.getOrElse("locator",false).toString.toBoolean){
+        }
+      } else if (memberDetails.isLocator) {
         "LOCATOR"
-      } else if(memberDetails.getOrElse("dataServer",false).toString.toBoolean){
+      } else if (memberDetails.isDataServer) {
         "DATA SERVER"
       } else {
         "CONNECTOR"
       }
     }
 
-    val cpuUsage = memberDetails.getOrElse("cpuActive",0).asInstanceOf[Integer].toDouble;
+    val cpuUsage = memberDetails.getCpuActive.toDouble;
 
-    val heapStoragePoolUsed = memberDetails.getOrElse("heapStoragePoolUsed", 0).asInstanceOf[Long]
-    val heapStoragePoolSize = memberDetails.getOrElse("heapStoragePoolSize", 0).asInstanceOf[Long]
-    val heapExecutionPoolUsed = memberDetails.getOrElse("heapExecutionPoolUsed", 0).asInstanceOf[Long]
-    val heapExecutionPoolSize = memberDetails.getOrElse("heapExecutionPoolSize", 0).asInstanceOf[Long]
+    val diskStoreDiskSpace = memberDetails.getDiskStoreDiskSpace
 
-    val offHeapStoragePoolUsed = memberDetails.getOrElse("offHeapStoragePoolUsed", 0).asInstanceOf[Long]
-    val offHeapStoragePoolSize = memberDetails.getOrElse("offHeapStoragePoolSize", 0).asInstanceOf[Long]
-    val offHeapExecutionPoolUsed = memberDetails.getOrElse("offHeapExecutionPoolUsed", 0).asInstanceOf[Long]
-    val offHeapExecutionPoolSize = memberDetails.getOrElse("offHeapExecutionPoolSize", 0).asInstanceOf[Long]
+    val heapStoragePoolUsed = memberDetails.getHeapStoragePoolUsed
+    val heapStoragePoolSize = memberDetails.getHeapStoragePoolSize
+    val heapExecutionPoolUsed = memberDetails.getHeapExecutionPoolUsed
+    val heapExecutionPoolSize = memberDetails.getHeapExecutionPoolSize
 
-    val heapMemorySize = memberDetails.getOrElse("heapMemorySize", 0).asInstanceOf[Long]
-    val heapMemoryUsed = memberDetails.getOrElse("heapMemoryUsed", 0).asInstanceOf[Long]
-    val offHeapMemorySize = memberDetails.getOrElse("offHeapMemorySize", 0).asInstanceOf[Long]
-    val offHeapMemoryUsed = memberDetails.getOrElse("offHeapMemoryUsed", 0).asInstanceOf[Long]
-    val jvmHeapSize = memberDetails.getOrElse("totalMemory", 0).asInstanceOf[Long]
-    val jvmHeapUsed = memberDetails.getOrElse("usedMemory",0).asInstanceOf[Long]
+    val offHeapStoragePoolUsed = memberDetails.getOffHeapStoragePoolUsed
+    val offHeapStoragePoolSize = memberDetails.getOffHeapStoragePoolSize
+    val offHeapExecutionPoolUsed = memberDetails.getOffHeapExecutionPoolUsed
+    val offHeapExecutionPoolSize = memberDetails.getOffHeapExecutionPoolSize
 
-    var memoryUsage:Long = 0
-    if((heapMemorySize + offHeapMemorySize) > 0) {
+    val heapMemorySize = memberDetails.getHeapMemorySize
+    val heapMemoryUsed = memberDetails.getHeapMemoryUsed
+    val offHeapMemorySize = memberDetails.getOffHeapMemorySize
+    val offHeapMemoryUsed = memberDetails.getOffHeapMemoryUsed
+    val jvmHeapSize = memberDetails.getJvmTotalMemory
+    val jvmHeapUsed = memberDetails.getJvmUsedMemory
+
+    var memoryUsage: Long = 0
+    if ((heapMemorySize + offHeapMemorySize) > 0) {
       memoryUsage = (heapMemoryUsed + offHeapMemoryUsed) * 100 /
           (heapMemorySize + offHeapMemorySize)
     }
-    var jvmHeapUsage:Long = 0
-    if(jvmHeapSize > 0) {
+    var jvmHeapUsage: Long = 0
+    if (jvmHeapSize > 0) {
       jvmHeapUsage = jvmHeapUsed * 100 / jvmHeapSize
     }
 
-    val heapHtmlContent = if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution : </span>
-          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
-        </div>
+    val memberBasicDetailsContent = {
+      <div class="basic-stats">
+        <span>Member :</span><br/>
+        <span class="basic-stats-value"> {memberDetails.getId} </span>
       </div>
-    } else {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>{ Utils.bytesToString(heapStoragePoolUsed).toString + " / " +
-              Utils.bytesToString(heapStoragePoolSize).toString }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution : </span>
-          <span>{ Utils.bytesToString(heapExecutionPoolUsed).toString + " / " +
-              Utils.bytesToString(heapExecutionPoolSize).toString }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>{ Utils.bytesToString(heapMemoryUsed).toString + " / " +
-              Utils.bytesToString(heapMemorySize).toString }</span>
-        </div>
+      <div class="basic-stats">
+        <span>Type :</span><br/>
+        <span class="basic-stats-value"> {memberType} </span>
+      </div>
+      <div class="basic-stats">
+        <span>Process ID :</span><br/>
+        <span class="basic-stats-value"> {memberDetails.getProcessId} </span>
+      </div>
+      <div class="basic-stats">
+        <span>Status :</span><br/>
+        <span class="basic-stats-value"> {status} </span>
       </div>
     }
 
-    val offHeapHtmlContent = if(memberType.toString.equalsIgnoreCase("LOCATOR")) {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution : </span>
-          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>{ SnappyMemberDetailsPage.ValueNotApplicable }</span>
-        </div>
+    val heapHtmlContent = if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
+      <div class="basic-stats">
+        <span>Storage Heap:</span><br/>
+        <span class="basic-stats-value"> {SnappyMemberDetailsPage.ValueNotApplicable} </span>
+      </div>
+      <div class="basic-stats">
+        <span>Execution Heap:</span><br/>
+        <span class="basic-stats-value"> {SnappyMemberDetailsPage.ValueNotApplicable} </span>
+      </div>
+      <div class="basic-stats">
+        <span>Total Heap:</span><br/>
+        <span class="basic-stats-value"> {SnappyMemberDetailsPage.ValueNotApplicable} </span>
       </div>
     } else {
-      <div class="keyStatsValue" style="border: 1px solid #e2e2e2; border-radius: 10px;">
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Storage :</span>
-          <span>{ Utils.bytesToString(offHeapStoragePoolUsed).toString + " / " +
-              Utils.bytesToString(offHeapStoragePoolSize).toString }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Execution : </span>
-          <span>{ Utils.bytesToString(offHeapExecutionPoolUsed).toString + " / " +
-              Utils.bytesToString(offHeapExecutionPoolSize).toString }</span>
-        </div>
-        <div style="text-align: left; padding: 5px;">
-          <span style="font-weight:bold;">Total :</span>
-          <span>{ Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
-              Utils.bytesToString(offHeapMemorySize).toString }</span>
-        </div>
+      <div class="basic-stats">
+        <span>Storage Heap:</span><br/>
+        <span id="currHeapStoragePool" class="basic-stats-value">
+          {Utils.bytesToString(heapStoragePoolUsed).toString + " / " +
+            Utils.bytesToString(heapStoragePoolSize).toString}
+        </span>
+      </div>
+      <div class="basic-stats">
+        <span>Execution Heap:</span><br/>
+        <span id="currHeapExecutionPool" class="basic-stats-value">
+          {Utils.bytesToString(heapExecutionPoolUsed).toString + " / " +
+            Utils.bytesToString(heapExecutionPoolSize).toString}
+        </span>
+      </div>
+      <div class="basic-stats">
+        <span>Total Heap:</span><br/>
+        <span id="currHeapMemory" class="basic-stats-value">
+          {Utils.bytesToString(heapMemoryUsed).toString + " / " +
+            Utils.bytesToString(heapMemorySize).toString}
+        </span>
       </div>
     }
 
-    <div class="row-fluid">
-      <div class="keyStates" style="width: 300px; margin: 0px 10px;">
-        <div class="keyStatesText" style="text-align: left;">
-          Member : <span>{memberDetails.getOrElse("id","NA")}</span>
-        </div>
-        <div class="keyStatesText" style="text-align: left;">
-          Type : <span>{memberType}</span>
-        </div>
-        <div class="keyStatesText" style="text-align: left;">
-          Process ID : <span>{memberDetails.getOrElse("processId","").toString}</span>
-        </div>
+    val offHeapHtmlContent = if (memberType.toString.equalsIgnoreCase("LOCATOR")) {
+      <div class="basic-stats">
+        <span>Storage Off-Heap:</span><br/>
+        <span class="basic-stats-value">
+          {SnappyMemberDetailsPage.ValueNotApplicable}
+        </span>
       </div>
-      <div class="keyStates" style="width: 250px; margin: 0px 10px;">
+      <div class="basic-stats">
+        <span>Execution Off-Heap:</span><br/>
+        <span class="basic-stats-value">
+          {SnappyMemberDetailsPage.ValueNotApplicable}
+        </span>
+      </div>
+      <div class="basic-stats">
+        <span>Total Off-Heap:</span><br/>
+        <span class="basic-stats-value">
+          {SnappyMemberDetailsPage.ValueNotApplicable}
+        </span>
+      </div>
+    } else {
+      <div class="basic-stats">
+          <span>Storage Off-Heap:</span><br/>
+          <span id="currOffHeapStoragePool" class="basic-stats-value">
+            {Utils.bytesToString(offHeapStoragePoolUsed).toString + " / " +
+              Utils.bytesToString(offHeapStoragePoolSize).toString}
+          </span>
+        </div>
+        <div class="basic-stats">
+          <span>Execution Off-Heap:</span><br/>
+          <span id="currOffHeapExecutionPool" class="basic-stats-value">
+            {Utils.bytesToString(offHeapExecutionPoolUsed).toString + " / " +
+              Utils.bytesToString(offHeapExecutionPoolSize).toString}
+          </span>
+        </div>
+        <div class="basic-stats">
+          <span>Total Off-Heap:</span><br/>
+          <span id="currOffHeapMemory" class="basic-stats-value">
+            {Utils.bytesToString(offHeapMemoryUsed).toString + " / " +
+              Utils.bytesToString(offHeapMemorySize).toString}
+          </span>
+        </div>
+    }
+
+    val diskSpaceHtmlContent = {
+      <div class="basic-stats">
+        <span>Disk Space:</span> <br/>
+        <span id="currDiskSpace" class="basic-stats-value">
+          {Utils.bytesToString(diskStoreDiskSpace).toString}
+        </span>
+      </div>
+    }
+
+    <div class="container-fluid" style="text-align: center;">
+      <div class="basic-stats-container">
+        {memberBasicDetailsContent}
+        <div class="basic-stats-separator"></div>
         {heapHtmlContent}
-        <div class="keyStatesText">Heap Memory</div>
-      </div>
-      <div class="keyStates" style="width: 250px; margin: 0px 10px;">
+        <div class="basic-stats-separator"></div>
         {offHeapHtmlContent}
-        <div class="keyStatesText">Off-Heap Memory</div>
+        <div class="basic-stats-separator"></div>
+        {diskSpaceHtmlContent}
       </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue"
-             style="width:50%; margin: auto;" data-toggle="tooltip" title=""
-             data-original-title={
-             SnappyMemberDetailsPage.memberStats("status").toString + ": " + status.toString
-             } >
-          <img style="padding-top: 15px;" src={statusImgUri} />
-        </div>
-        <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("status")}</div>
+    </div>
+    <div class="container-fluid" style="text-align: center;">
+      <div id="cpuUsageContainer" class="graph-container">
       </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue" id="cpuUsage" data-value={cpuUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-             SnappyMemberDetailsPage.memberStats("cpuUsageTooltip").toString
-             }>
-          <svg id="cpuUsageGauge" width="100%" height="100%" ></svg>
-        </div>
-        <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("cpuUsage")}</div>
+      <div id="heapUsageContainer" class="graph-container">
       </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue" id="memoryUsage" data-value={memoryUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-             SnappyMemberDetailsPage.memberStats("memoryUsageTooltip").toString
-             }>
-          <svg id="memoryUsageGauge" width="100%" height="100%" ></svg>
-        </div>
-        <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("memoryUsage")}</div>
+      <div id="offheapUsageContainer" class="graph-container">
       </div>
-      <div class="keyStates" style="margin: 0px 10px;">
-        <div class="keyStatsValue" id="jvmHeapUsage" data-value={jvmHeapUsage.toString}
-             data-toggle="tooltip" title=""
-             data-original-title={
-             SnappyMemberDetailsPage.memberStats("jvmHeapUsageTooltip").toString
-             }>
-          <svg id="jvmHeapUsageGauge" width="100%" height="100%" ></svg>
-        </div>
-        <div class="keyStatesText">{SnappyMemberDetailsPage.memberStats("jvmHeapUsage")}</div>
+      <div id="diskSpaceUsageContainer" class="graph-container">
       </div>
     </div>
   }
@@ -249,7 +261,8 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
   override def render(request: HttpServletRequest): Seq[Node] = {
 
     val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength = Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
+    val byteLength =
+      Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
 
     val memberId = Option(request.getParameter("memId")).map { memberId =>
       UIUtils.decodeURLParameter(memberId)
@@ -257,12 +270,12 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
       throw new IllegalArgumentException(s"Missing memId parameter")
     }
 
-    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsOnDemand
-    val memberDetails: scala.collection.mutable.Map[String, Any] = {
-      var mem = scala.collection.mutable.Map.empty[String, Any]
+    val allMembers = SnappyTableStatsProviderService.getService.getMembersStatsFromService
+    val memberDetails: MemberStatistics = {
+      var mem: MemberStatistics = null
       breakable {
         allMembers.foreach(m => {
-          if (m._2("id").toString.equalsIgnoreCase(memberId)) {
+          if (m._2.getId().equalsIgnoreCase(memberId)) {
             mem = m._2
             break
           }
@@ -271,15 +284,15 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
       mem
     }
 
-    if(memberDetails.isEmpty){
+    if (memberDetails == null) {
       throw new IllegalArgumentException(s"Missing memId parameter")
     }
 
     val memberStats = getMemberStats(memberDetails)
 
     // set members workDir and LogFileName
-    workDir = new File(memberDetails.getOrElse("userDir", "").toString)
-    logFileName = memberDetails.getOrElse("logFile", "").toString
+    workDir = new File(memberDetails.getUserDir)
+    logFileName = memberDetails.getLogFile
 
     // Get Log Details
     val collector = new GfxdListResultCollector(null, true)
@@ -289,7 +302,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
     msg.setLogDirectory(workDir);
     msg.setLogFileName(logFileName);
 
-    if(offset == None){
+    if (offset == None) {
       // set offset null
       msg.setOffset(null)
     } else {
@@ -353,7 +366,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
         <script>{Unparsed(jsOnload)}</script>
       </div>
 
-    val pageHeaderText : String  = SnappyMemberDetailsPage.pageHeaderText
+    val pageHeaderText: String = SnappyMemberDetailsPage.pageHeaderText
 
     // Generate Pages HTML
     val pageTitleNode = createPageTitleNode(pageHeaderText)
@@ -363,27 +376,34 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
     val memberLogTitle =
       <div class="row-fluid">
         <div class="span12">
-          <h4 style="vertical-align: bottom; display: inline-block;"
+          <h4 class="title-node-h4"
               data-toggle="tooltip" data-placement="top" title=""
               data-original-title="Member Logs">
             Member Logs
           </h4>
           <div style="margin-left:15px;">
             <span style="font-weight: bolder;">Location :</span>
-            {memberDetails.getOrElse("userDir", "")}/{memberDetails.getOrElse("logFile", "")}
+            {memberDetails.getUserDir}/{memberDetails.getLogFile}
           </div>
         </div>
       </div>
 
-    PageContent = pageTitleNode ++ memberStats ++ memberLogTitle ++ content
+    val jsScripts = <script src={
+                              UIUtils.prependBaseUri("/static/snappydata/snappy-memberdetails.js")
+                            }></script> ++
+                    <script>setMemberId('{Unparsed("%s".format(memberId))}');</script>
 
-    UIUtils.simpleSparkPageWithTabs(pageHeaderText, PageContent, parent, Some(500))
+    PageContent = jsScripts ++ pageTitleNode ++ memberStats ++ memberLogTitle ++ content
+
+    UIUtils.headerSparkPage(pageHeaderText, PageContent, parent, Some(500),
+      useDataTables = true, isSnappyPage = true)
   }
 
   def renderLog(request: HttpServletRequest): String = {
 
     val offset = Option(request.getParameter("offset")).map(_.toLong)
-    val byteLength = Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
+    val byteLength =
+      Option(request.getParameter("byteLength")).map(_.toLong).getOrElse(defaultBytes)
 
     val memberId = Option(request.getParameter("memId")).map { memberId =>
       UIUtils.decodeURLParameter(memberId)
@@ -399,7 +419,7 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
     msg.setLogDirectory(workDir)
     msg.setLogFileName(logFileName)
 
-    if(offset == None){
+    if (offset == None) {
       // set offset null
       msg.setOffset(null)
     } else {
@@ -422,7 +442,8 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
     val endByte = logData.get("endIndex").asInstanceOf[Long]
     val logLength = logData.get("totalLength").asInstanceOf[Long]
 
-    val pre = s"==== Bytes $startByte-$endByte of $logLength of ${workDir.getPath}/$logFileName ====\n"
+    val pre =
+      s"==== Bytes $startByte-$endByte of $logLength of ${workDir.getPath}/$logFileName ====\n"
 
     pre + logText
 
@@ -430,8 +451,8 @@ private[ui] class SnappyMemberDetailsPage (parent: SnappyDashboardTab)
 
 }
 
-object SnappyMemberDetailsPage{
-  val pageHeaderText = "SnappyData Member Details"
+object SnappyMemberDetailsPage {
+  val pageHeaderText = "Member Details"
 
   object Status {
     val stopped = "Stopped"

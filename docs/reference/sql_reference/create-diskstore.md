@@ -2,7 +2,7 @@
 
 Disk stores provide disk storage for tables that need to overflow or persist.
 
-```no-highlight
+```pre
 CREATE DISKSTORE diskstore_name
 
     [ MAXLOGSIZE max-log-size-in-mb ]
@@ -60,7 +60,7 @@ Sets the maximum number of row operations that SnappyData asynchronously queues 
 
 The optional `dir-name` entry defines a specific host system directory to use for the disk store. You can include one or more `dir-name` entries using the syntax:
 
-```no-highlight
+```pre
 [ ( 'dir-name' [ disk-space-in-mb ] [,'dir-name' [ disk-space-in-mb ] ]* ) ]
 ```
 
@@ -82,13 +82,13 @@ Create a separate diskstore and specify multiple directories. The data is spread
 
 This example uses the default base directory and parameter values to create a named disk store:
 
-```no-highlight
+```pre
 snappy> CREATE DISKSTORE STORE1;
 ```
 
 This example configures disk store parameters and specifies a storage directory:
 
-```no-highlight
+```pre
 snappy> CREATE DISKSTORE STORE1
       MAXLOGSIZE 1024 
       AUTOCOMPACT TRUE
@@ -102,7 +102,7 @@ snappy> CREATE DISKSTORE STORE1
 
 This example specifies multiple storage directories and directory sizes for oplog files:
 
-```no-highlight
+```pre
 snappy> CREATE DISKSTORE STORE1 
       WRITEBUFFERSIZE 19292393
       QUEUESIZE 17374

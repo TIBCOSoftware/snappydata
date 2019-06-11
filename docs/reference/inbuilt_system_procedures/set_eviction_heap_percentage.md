@@ -7,7 +7,7 @@ This procedure sets the percentage threshold for evicting table data from the Ja
 
 ## Syntax
 
-```no-highlight
+```pre
 SYS.SET_EVICTION_HEAP_PERCENTAGE (
 IN PERCENTAGE REAL NOT NULL
 )
@@ -20,7 +20,7 @@ The percentage of used heap space that triggers eviction on the local SnappyData
 
 This command triggers eviction on any SnappyData member when the local member's heap usage reaches 90%:
 
-```no-highlight
+```pre
 call sys.set_eviction_heap_percentage (90);
 ```
 
