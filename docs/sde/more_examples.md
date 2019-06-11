@@ -1,6 +1,6 @@
 # More Examples
 
-<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent>
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
 
 ## Example 1
 Create a sample table with qcs 'medallion' 

@@ -223,8 +223,8 @@ public class CDCPerfSparkJob {
         ps.setInt(2, CLIENT_ID);
         ResultSet rs = ps.executeQuery();
         while (rs.next()) {
-          String CITY = rs.getString("CTY");
-          String COUNTRY = rs.getString("CNTY");
+          String CITY = rs.getString("cty");
+          String COUNTRY = rs.getString("cnty");
         }
       }
       endTime = System.currentTimeMillis();
