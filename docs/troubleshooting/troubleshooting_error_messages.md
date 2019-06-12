@@ -1,4 +1,4 @@
-an# Troubleshooting Error Messages
+# Troubleshooting Error Messages
 Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
@@ -16,6 +16,7 @@ The following topics are covered in this section:
 * [ForcedDisconnectException Error: "No Data Store found in the distributed system for: {0}"](#no-data-store)
 * [Node went down or data no longer available while iterating the results](#queryfailiterate)
 * [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
+* [Cannot parse config: String: 1: Expecting end of input or a comma, got ':'](#jobsubmitsnap)
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -167,3 +168,42 @@ private boolean isRetriableException(Exception ex) {
 ```
 
 </action>
+<!-- --------------------------------------------------------------------------- -->
+
+<a id="jobsubmitsnap"></a>
+<error> **Error Message:** </error> 
+<error-text>
+Snappy job submission result:
+```
+{
+  "status": "ERROR",
+  "result": "Cannot parse config: String: 1: Expecting end of input or a comma, got ':' (if you intended ':' to be part of a key or string value, try enclosing the key or value in double quotes, or you may be able to rename the file .properties rather than .conf)"
+}
+```
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+This error message is reported when snappy-job submission configuration parameter contains a colon `:`. The typesafe configuration parser (used by job-server) cannot handle `:` as part of key or value unless it is enclosed in double quotes.
+Sample job-submit command:
+
+```
+./snappy-job.sh submit  --app-name app1 --conf kafka-brokers=localhost:9091 --class Test --app-jar "/path/to/app-jar"
+```
+
+!!!Note
+	Note that the `kafka-brokers` config value (localhost:9091) is having a `:`
+</diagnosis>
+
+<action> **Solution:** </br>
+To avoid this issue enclose the value containing colon `:` with double quotes so that the typesafe config parser can parse it. Also since the parameter is passed to the bash script (snappy-job) the quotes needs to be escaped properly otherwise it will get ignored by bash. Check the following example for the correct method of passing this configuration:
+
+```
+./snappy-job.sh submit  --app-name app1 --conf kafka-brokers=\"localhost:9091\" --class Test --app-jar "/path/to/app-jar"
+```
+
+!!!Note
+	Check the value of `kafka-brokers` property enclosed in escaped double quotes: `\"localhost:9091\"`
+
+</action>
+
+<!-- --------------------------------------------------------------------------- -->
