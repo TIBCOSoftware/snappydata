@@ -19,15 +19,15 @@ package org.apache.spark.sql.streaming
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import io.snappydata.{SnappyFunSuite, StreamingConstants}
-import org.apache.log4j.LogManager
-import org.apache.spark.sql.Row
+import scala.reflect.io.Path
+
+import io.snappydata.SnappyFunSuite
+import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
+
+import org.apache.spark.sql.{Row, SnappyContext}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.types._
-import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
-import scala.reflect.io.Path
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -275,6 +275,43 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData(Array(Row(1, "name999", 999, "lname1")))
   }
 
+  test("conflation enabled, _eventType column: absent") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch2 = Seq(Seq(1, "name2", 30, "lname1"), Seq(1, "name3", 30, "lname1"))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true,
+      withEventTypeColumn = false)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name3", 30, "lname1")))
+  }
+
+  test("conflation enabled, key columns : undefined") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable(withKeyColumn = false)()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch2 = Seq(Seq(1, "name2", 30, "lname1"), Seq(1, "name3", 30, "lname1"))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    val thrown = intercept[StreamingQueryException] {
+      val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true,
+        withEventTypeColumn = false)
+      streamingQuery.processAllAvailable()
+    }
+    val errorMessage = "Key column(s) or primary key must be defined on table in order " +
+        "to perform conflation."
+    assert(thrown.getCause.isInstanceOf[IllegalStateException])
+    assert(thrown.getCause.getMessage == errorMessage)
+  }
+
   test("[SNAP-2745]-conflation: delete,insert") {
     val testId = testIdGenerator.getAndIncrement()
     createTable()()
@@ -311,14 +348,31 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData(Array(Row(1, "name1", 1, "lname1")))
   }
 
+  test("queryName not specified") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, withQueryName = false)
+
+    try {
+      streamingQuery.processAllAvailable()
+      fail("StreamingQueryException expected.")
+    } catch {
+      case x: StreamingQueryException =>
+        val expectedMessage = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
+        assert(x.getCause.isInstanceOf[IllegalStateException])
+        assert(x.getCause.getMessage.equals(expectedMessage))
+    }
+  }
+
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
       retries: Int = 15): Unit = {
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sqlString = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
-        s"where stream_query_id = '${streamQueryId(testId)}'"
-    val batchIdFromTable = snc.sql(sqlString).collect()
+    val sqlString = s"select batch_id from APP.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
+        s"where stream_query_id = '${streamName(testId)}'"
+    val batchIdFromTable = session.sql(sqlString).collect()
 
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
       Thread.sleep(1000)
@@ -327,28 +381,26 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def assertData(expectedData: Array[Row]) = {
-    val actualData = session.sql("select * from " + tableName + " order by id, last_name").collect()
+    val actualData = session.sql(s"select * from $tableName order by id, last_name").collect()
     assertResult(expectedData)(actualData)
   }
 
   private def createTable(withKeyColumn: Boolean = true)(isRowTable: Boolean = false) = {
-    snc.sql("drop table if exists users")
-
     def provider = if (isRowTable) "row" else "column"
 
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
 
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id,last_name)" else ""
 
-    val s = s"create table users (id long , first_name varchar(40), age int, " +
+    val s = s"create table IF NOT EXISTS $tableName  (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
-    LogManager.getRootLogger.error(s)
-    snc.sql(s)
+    session.sql(s)
+    session.sql(s"truncate table $tableName")
   }
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
       withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
-      conflation: Boolean = false) = {
+      conflation: Boolean = false, withQueryName: Boolean = true) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -374,7 +426,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     implicit val encoder = RowEncoder(schema)
 
-    val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
+
+    var streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
         .map(_.split(","))
         .map(r => {
@@ -385,22 +438,24 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
           }
         })
         .writeStream
-        .format("snappysink")
-        .queryName(s"USERS_$testId")
-        .trigger(ProcessingTime("1 seconds"))
+        .format("snappySink")
+    if (withQueryName) {
+      streamWriter = streamWriter.queryName(streamName(testId))
+    }
+    streamWriter.trigger(ProcessingTime("1 seconds"))
         .option("tableName", tableName)
-        .option("streamQueryId", streamQueryId(testId))
         .option("checkpointLocation", checkpointDirectory)
     if (failBatch) {
-      streamWriter.option("internal___failBatch", "true").start()
-    } else if (conflation) {
-      streamWriter.option("conflation", conflation).start()
-    } else {
-      streamWriter.start()
+      streamWriter = streamWriter.option("internal___failBatch", "true")
     }
+    if (conflation) {
+      streamWriter = streamWriter.option("conflation", conflation)
+    }
+
+    streamWriter.start()
   }
 
-  private def streamQueryId(testId: Int) = {
-    s"USERS_$testId"
+  private def streamName(testId: Int) = {
+    s"users_$testId"
   }
 }

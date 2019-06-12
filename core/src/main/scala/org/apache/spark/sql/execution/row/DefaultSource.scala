@@ -64,8 +64,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
   override def createRelation(sqlContext: SQLContext, mode: SaveMode,
       options: Map[String, String], data: DataFrame): RowFormatRelation = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val schemaString = getSchemaString(options, session.sessionCatalog.normalizeSchema(
-      data.schema), sqlContext.sparkContext)
+    val schemaString = getSchemaString(options, data.schema, sqlContext.sparkContext)
     val relation = createRelation(session, mode, options, schemaString)
     var success = false
     try {
@@ -94,7 +93,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
       options: Map[String, String], schemaString: String): RowFormatRelation = {
 
     val parameters = new CaseInsensitiveMutableHashMap(options)
-    val fullTableName = ExternalStoreUtils.removeInternalProps(parameters)
+    val fullTableName = ExternalStoreUtils.removeInternalPropsAndGetTable(parameters)
     ExternalStoreUtils.getAndSetTotalPartitions(session, parameters,
       forManagedTable = true, forColumnTable = false)
     StoreUtils.getAndSetPartitioningAndKeyColumns(session, schema = null, parameters)

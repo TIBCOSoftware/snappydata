@@ -1,8 +1,8 @@
-# SnappyData Community Edition (Open Source) and Enterprise Edition
+# SnappyData Community Edition (Open Source) and TIBCO ComputeDB Enterprise Edition
 
-SnappyData offers a fully functional core OSS distribution, which is the **Community edition**, that is Apache 2.0 licensed. The **Enterprise edition **of the product includes everything that is offered in the OSS version along with additional capabilities that are closed source and only available as part of a licensed subscription. You can download the Enterprise version for evaluation after registering on the [SnappyData website](http://www.snappydata.io/download).
+SnappyData offers a fully functional core OSS distribution, which is the **Community Edition**, that is Apache 2.0 licensed. The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the OSS version along with additional capabilities that are closed source and only available as part of a licensed subscription. You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
 
-The capabilities of the Community edition and the additional capabilities of the Enterprise edition are listed in the following table:
+The capabilities of the **Community Edition** and the additional capabilities of the **Enterprise Edition** are listed in the following table:
 
 | Feature | Community | Enterprise|
 | ------------- |:-------------:| :-----:|
@@ -21,11 +21,10 @@ The capabilities of the Community edition and the additional capabilities of the
 | Runtime deployment of packages and jars | X  | X |
 | Synopsis Data Engine for Approximate Querying |  | X |
 | ODBC Driver with High Concurrency |  | X |
-| Off-heap data storage for column tables |  | X |
+| Off-heap data storage for column tabes |  | X |
 | CDC Stream receiver for SQL Server into SnappyData |  | X |
 | GemFire/Apache Geode connector |  | X |
 |Row Level Security|  | X |
 | Use encrypted password instead of clear text password |  | X |
 | Restrict Table, View, Function creation even in user’s own schema|  | X |
 | LDAP security interface |  | X |
-

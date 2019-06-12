@@ -365,7 +365,8 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
 
       executedPlan match {
         case plan: CollectLimitExec =>
-          CachedDataFrame.executeTake(getExecRDD, plan.limit, processPartition,
+          val takeRDD = if (isCached) cachedRDD else plan.child.execute()
+          CachedDataFrame.executeTake(takeRDD, plan.limit, processPartition,
             resultHandler, decodeResult, schema, snappySession)
 
         case plan: CollectAggregateExec =>
@@ -615,9 +616,7 @@ object CachedDataFrame
       val executionId = if (currentExecutionId >= 0) currentExecutionId
       else Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
       val executionIdStr = java.lang.Long.toString(executionId)
-      localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
-      localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+      SnappySession.setExecutionProperties(localProperties, executionIdStr, queryShortForm)
 
       val startTime = System.currentTimeMillis()
       var endTime = -1L
@@ -628,24 +627,24 @@ object CachedDataFrame
         endTime = System.currentTimeMillis()
         (result, endTime - startTime)
       } finally {
-        if (endTime == -1L) endTime = System.currentTimeMillis()
-        // the total duration displayed will be completion time provided below
-        // minus the start time of either above, or else the start time of
-        // original planning submission, so adjust the endTime accordingly
-        if (planEndTime != -1L) {
-          endTime -= (startTime - planEndTime)
+        try {
+          if (endTime == -1L) endTime = System.currentTimeMillis()
+          // the total duration displayed will be completion time provided below
+          // minus the start time of either above, or else the start time of
+          // original planning submission, so adjust the endTime accordingly
+          if (planEndTime != -1L) {
+            endTime -= (startTime - planEndTime)
+          }
+          // add the time of plan execution to the end time.
+          if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
+        } finally {
+          SnappySession.clearExecutionProperties(localProperties)
         }
-        // add the time of plan execution to the end time.
-        if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
-
-        localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
-        localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
-        localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
       }
     } else {
       // Don't support nested `withNewExecutionId`.
       throw new IllegalArgumentException(
-        s"${SQLExecution.EXECUTION_ID_KEY} is already set")
+        s"${SQLExecution.EXECUTION_ID_KEY} is already set to $oldExecutionId")
     }
   }
 
@@ -702,8 +701,8 @@ object CachedDataFrame
       decodeResult: R => Iterator[InternalRow]): Iterator[R] = {
     val takeResults = new ArrayBuffer[R](n)
     var numRows = 0
-    results.indices.foreach { index =>
-      val r = results(index)
+    results.indices.foreach { partitionId =>
+      val r = results(partitionId)
       if ((r ne null) && r._1 != null) {
         if (numRows + r._2 <= n) {
           takeResults += r._1
@@ -712,7 +711,7 @@ object CachedDataFrame
           // need to split this partition result to take only remaining rows
           val decoded = decodeResult(r._1).take(n - numRows)
           // encode back and add
-          takeResults += resultHandler(index,
+          takeResults += resultHandler(partitionId,
             processPartition(TaskContext.get(), decoded)._1)
           return takeResults.iterator
         }
@@ -764,7 +763,7 @@ object CachedDataFrame
         totalParts).toInt)
       val sc = session.sparkContext
       sc.runJob(takeRDD, processPartition, p, (index: Int, r: (U, Int)) => {
-        results(partsScanned + index) = (resultHandler(index, r._1), r._2)
+        results(partsScanned + index) = (resultHandler(partsScanned + index, r._1), r._2)
         numResults += r._2
       })
 

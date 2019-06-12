@@ -41,9 +41,16 @@ elif [ "$1" = "-fg" -o "$1" = "--foreground" ]; then
   shift
 fi
 
+# Check for conf dir  specification
+CONF_DIR_OPT=
+if [ "$1" = "--config" ]; then
+  CONF_DIR_OPT="--config $2"
+  shift 2
+fi
+
 # Launch the slaves
 if echo $@ | grep -qw start; then
-  "$sbin/snappy-nodes.sh" server $BACKGROUND cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@" $SERVER_STARTUP_OPTIONS
+  "$sbin/snappy-nodes.sh" server $BACKGROUND $CONF_DIR_OPT cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@" $SERVER_STARTUP_OPTIONS
 else
-  "$sbin/snappy-nodes.sh" server $BACKGROUND cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@"
+  "$sbin/snappy-nodes.sh" server $BACKGROUND $CONF_DIR_OPT cd "$SNAPPY_HOME" \; "$sbin/snappy-server.sh" "$@"
 fi

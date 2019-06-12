@@ -83,7 +83,7 @@ trait BulkPutRelation extends DestroyRelation {
 
   def table: String
 
-  def getPutKeys: Option[Seq[String]]
+  def getPutKeys(session: SnappySession): Option[Seq[String]]
 
   /**
     * Get a spark plan for puts. If the row is already present, it gets updated
@@ -121,7 +121,7 @@ trait MutableRelation extends DestroyRelation {
   /**
     * Get the "primary key" of the row table and "key columns" of the  column table
   */
-  def getPrimaryKeyColumns: Seq[String]
+  def getPrimaryKeyColumns(session: SnappySession): Seq[String]
 
   /** Get the partitioning columns for the table, if any. */
   def partitionColumns: Seq[String]
@@ -291,7 +291,7 @@ trait AlterableRelation {
    * @param column      Column to be added or dropped
    */
   def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField): Unit
+      isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit
 }
 
 trait RowLevelSecurityRelation {
@@ -379,11 +379,11 @@ trait NativeTableRowLevelSecurityRelation extends DestroyRelation with RowLevelS
     if (invalidateCached) session.externalCatalog.invalidate(schemaName -> tableName)
     _relationInfoAndRegion = null
     if (fetchFromStore) {
-      _schema = JDBCRDD.resolveTable(new JDBCOptions(
-        connProperties.url, table, connProperties.connProps.asScala.toMap))
+      _schema = JdbcExtendedUtils.normalizeSchema(JDBCRDD.resolveTable(new JDBCOptions(
+        connProperties.url, table, connProperties.connProps.asScala.toMap)))
     } else {
       session.externalCatalog.getTableOption(schemaName, tableName) match {
-        case None => _schema = SnappyExternalCatalog.EMPTY_SCHEMA
+        case None => _schema = JdbcExtendedUtils.EMPTY_SCHEMA
         case Some(t) => _schema = t.schema; assert(relationInfoAndRegion ne null)
       }
     }

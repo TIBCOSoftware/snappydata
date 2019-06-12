@@ -87,9 +87,8 @@ object StructuredStreamingCDCExample{
         .writeStream
         .format("snappysink")
         .outputMode("append")
-        .queryName("users")
+        .queryName("users")       // must be unique across the Snappydata cluster
         .trigger(ProcessingTime("1 seconds"))
-        .option("streamQueryId", "users")     // must be unique across the snappydata cluster
         .option("tableName", "users")
         .option("checkpointLocation", checkpointDirectory)
         .start()

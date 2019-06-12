@@ -273,12 +273,13 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
 
   override private[sql] def close(releaseData: Boolean): Unit = {
     realEncoder.close(releaseData)
-    /*
+  }
+
+  private def clearPositions(): Unit = {
     if (positionsArray ne null) {
       BufferAllocator.releaseBuffer(positionsArray)
       positionsArray = null
     }
-    */
   }
 
   private def consumeDecoder(decoder: ColumnDecoder, decoderNullPosition: Int,
@@ -413,7 +414,7 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     } else {
       positionIndex = 0
       maxSize = 0
-      positionsArray = null
+      clearPositions()
     }
 
     var position1 = ColumnEncoding.readInt(columnBytes1, positionCursor1)
@@ -546,8 +547,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     // finally copy the entire encoded data
     Platform.copyMemory(encodedBytes, deltaStart, columnBytes, cursor, deltaSize)
 
-    // release the intermediate buffer
+    // release the intermediate buffers
     allocator.release(encodedData)
+    clearPositions()
     close(releaseData = false)
 
     buffer
@@ -599,8 +601,9 @@ final class ColumnDeltaEncoder(val hierarchyDepth: Int) extends ColumnEncoder {
     }
     Platform.copyMemory(dataBuffer, dataBeginPosition, columnBytes, cursor, dataSize)
 
-    // release the old buffer
+    // release the old buffers
     dataAllocator.release(dataColumnBytes)
+    clearPositions()
     // clear the encoder
     close(releaseData = false)
     buffer

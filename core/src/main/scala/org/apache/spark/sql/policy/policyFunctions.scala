@@ -24,7 +24,9 @@ import io.snappydata.Constant
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.LeafExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
-import org.apache.spark.sql.types.{DataType, StringType}
+import org.apache.spark.sql.catalyst.util.ArrayData
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -48,4 +50,33 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
   }
 
   override def prettyName: String = "current_user"
+}
+
+
+case class LdapGroupsOfCurrentUser() extends LeafExpression
+    with CodegenFallback {
+  override def foldable: Boolean = true
+
+  override def nullable: Boolean = false
+
+  override def dataType: DataType = LdapGroupsOfCurrentUser.dataType
+
+  override def eval(input: InternalRow): Any = {
+    val snappySession = SparkSession.getActiveSession.getOrElse(
+      throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
+    var owner = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
+
+    owner = IdUtil.getUserAuthorizationId(
+      if (owner.isEmpty) Constant.DEFAULT_SCHEMA
+      else snappySession.sessionState.catalog.formatName(owner))
+
+    val array = ExternalStoreUtils.getLdapGroupsForUser(owner).map(UTF8String.fromString)
+    ArrayData.toArrayData(array)
+  }
+
+  override def prettyName: String = "current_user_ldap_groups"
+}
+
+object LdapGroupsOfCurrentUser {
+  val dataType: DataType = ArrayType(StringType)
 }

@@ -17,6 +17,7 @@
 package io.snappydata.core
 
 import scala.reflect.io.Path
+import scala.util.Random
 
 import org.apache.spark.SparkConf
 
@@ -77,10 +78,13 @@ object FileCleaner {
 /** Default SparkConf used for local testing. */
 object LocalSparkConf {
 
+  private val random = new Random()
+
   def newConf(addOn: (SparkConf) => SparkConf = null): SparkConf = {
     val conf = new SparkConf()
         .setIfMissing("spark.master", "local[4]")
         .setIfMissing("spark.memory.debugFill", "true")
+        .set("snappydata.sql.planCaching", random.nextBoolean().toString)
         .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)

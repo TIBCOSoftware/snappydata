@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 source PerfRun.conf
 
-ssh $leads mkdir $leadDir
+ssh $leads mkdir -p $leadDir
 echo "*****************Created dir for lead**********************"
-ssh $locator mkdir $locatorDir
+ssh $locator mkdir -p $locatorDir
 echo "*****************Created dir for locator**********************"
 COUNTER=1
 for element in "${servers[@]}";
   do
-        ssh $element mkdir $serverDir$COUNTER
+        ssh $element mkdir -p $serverDir$COUNTER
         COUNTER=$[$COUNTER +1]
  done
 echo "*****************Created dir for server**********************"
@@ -34,4 +34,4 @@ for element in "${servers[@]}";
 echo "******************Created conf/servers******************"
 
 
-sh $SNAPPY_HOME/sbin/snappy-start-all.sh 
+bash $SNAPPY_HOME/sbin/snappy-start-all.sh 
