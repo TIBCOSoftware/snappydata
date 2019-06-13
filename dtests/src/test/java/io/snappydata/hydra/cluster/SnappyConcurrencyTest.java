@@ -139,7 +139,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
     closeConnection(conn);
   }
 
-  public static void createAndLoadExternalTables(Vector externalTableNames, Vector dataPathList, Connection conn) throws SQLException {
+  public static void createAndLoadExternalTablesUsingParquet(Vector externalTableNames, Vector dataPathList, Connection conn) throws SQLException {
     String query;
     for (int k = 0; k < externalTableNames.size(); k++) {
       String externalTableName = (String) externalTableNames.elementAt(k);
@@ -148,6 +148,20 @@ public class SnappyConcurrencyTest extends SnappyTest {
       Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
       query = "CREATE EXTERNAL TABLE " + externalTableName + " USING parquet OPTIONS(path '" + dataPath + "')";
+      Log.getLogWriter().info("SS - query: " + query);
+      conn.createStatement().executeUpdate(query);
+    }
+  }
+
+  public static void createAndLoadExternalTablesUsingCSV(Vector externalTableNames, Vector dataPathList, Connection conn) throws SQLException {
+    String query;
+    for (int k = 0; k < externalTableNames.size(); k++) {
+      String externalTableName = (String) externalTableNames.elementAt(k);
+      String dataPath = (String) dataPathList.elementAt(k);
+      query = "drop table if exists " + externalTableName;
+      Log.getLogWriter().info("SS - query: " + query);
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE EXTERNAL TABLE " + externalTableName + " USING csv OPTIONS(path '" + dataPath + "' , header 'true', inferSchema 'true' )";
       Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
@@ -172,24 +186,16 @@ public class SnappyConcurrencyTest extends SnappyTest {
     String query;
     Vector tableNames = SnappyPrms.getTableList();
     Vector insertTableNames = SnappyPrms.getInsertTableList();
-    Vector externalTableNames = SnappyPrms.getExternalTableList();
+    Vector parquetExternalTableNames = SnappyPrms.getParquetExternalTableList();
+    Vector csvExternalTableNames = SnappyPrms.getCSVExternalTableList();
     Vector externalTableNamesForInsert = SnappyPrms.getExternalTableListForInsert();
-    Vector dataPathList = SnappyPrms.getDataPathList();
-    /* for (int i = 0; i < tableNames.size(); i++) {
-      String tableName = (String) tableNames.elementAt(i);
-      String externalTableName = (String) externalTableNames.elementAt(i);
-      String dataPath = (String) dataPathList.elementAt(i);
-      query = "drop table if exists " + tableName;
-      Log.getLogWriter().info("SS - query: " + query);
-      conn.createStatement().executeUpdate(query);
-      query = "CREATE EXTERNAL TABLE " + externalTableName + " USING parquet OPTIONS(path '" + dataPath + "')";
-      Log.getLogWriter().info("SS - query: " + query);
-      conn.createStatement().executeUpdate(query);
-      query = "CREATE TABLE " + tableName + " USING column OPTIONS() AS (SELECT * FROM " + externalTableName + ")";
-      Log.getLogWriter().info("SS - query: " + query);
-      conn.createStatement().executeUpdate(query);
-    } */
-    createAndLoadExternalTables(externalTableNames, dataPathList, conn);
+    Vector dataPathListForParquet = SnappyPrms.getDataPathListForParquet();
+    Vector dataPathListForCSV = SnappyPrms.getDataPathListForParquet();
+    Vector externalTableNames = null;
+    externalTableNames.addAll(parquetExternalTableNames);
+    externalTableNames.addAll(csvExternalTableNames);
+    createAndLoadExternalTablesUsingParquet(parquetExternalTableNames, dataPathListForParquet, conn);
+    createAndLoadExternalTablesUsingCSV(csvExternalTableNames, dataPathListForCSV, conn);
     createAndLoadColumnTables(externalTableNames, tableNames, conn);
     for (int i = 0; i < insertTableNames.size(); i++) {
       String insertTableName = (String) insertTableNames.elementAt(i);

@@ -594,10 +594,16 @@ public class SnappyPrms extends BasePrms {
   public static Long tableList;
 
   /**
-   * Parameter used to get the user specified external table List required for table creation.
-   * (VectorsetValues of Strings) A list of values for external table List
+   * Parameter used to get the user specified external table List required for table creation using parquet file format.
+   * (VectorsetValues of Strings) A list of values for external table List for parquet data format.
    */
-  public static Long externalTableList;
+  public static Long parquetExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using CSV file format.
+   * (VectorsetValues of Strings) A list of values for external table List for CSV data format
+   */
+  public static Long csvExternalTableList;
 
   /**
    * Parameter used to get the user specified external table List required for inserting data into existing column tables.
@@ -612,10 +618,16 @@ public class SnappyPrms extends BasePrms {
   public static Long insertTableList;
 
   /**
-   * Parameter used to get the user specified table List of data path required for loading data into extrenal table.
-   * (VectorsetValues of Strings) A list of values for data path List
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal parquet table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal parquet table.
    */
-  public static Long dataPathList;
+  public static Long dataPathListForParquet;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal CSV table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long dataPathListForCSV;
 
   /**
    * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
@@ -1070,8 +1082,13 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
-  public static Vector getExternalTableList() {
-    Long key = externalTableList;
+  public static Vector getParquetExternalTableList() {
+    Long key = parquetExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getCSVExternalTableList() {
+    Long key = csvExternalTableList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
@@ -1085,8 +1102,13 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
-  public static Vector getDataPathList() {
-    Long key = dataPathList;
+  public static Vector getDataPathListForParquet() {
+    Long key = dataPathListForParquet;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForCSV() {
+    Long key = dataPathListForCSV;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
