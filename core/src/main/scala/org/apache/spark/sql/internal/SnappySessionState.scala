@@ -157,26 +157,27 @@ class SnappySessionState(val snappySession: SnappySession)
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
 
-  private lazy val snappyAnalyzer: Analyzer = new Analyzer(catalog, conf) {
+  // This analyzer instance is used by the actual analyzer to get batches of rules
+  // and inject the StringPromotionCheckForUpdate rule right before PromoteStrings rule.
+  // This is done to avoid changes in the Analyzer's code which is part of Spark.
+  private lazy val tmpAnalyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
-
   }
 
-  override lazy val analyzer = new Analyzer(catalog, conf) {
+  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
 
-    private def getStrategy(strategy: snappyAnalyzer.Strategy): Strategy = strategy match {
-      case snappyAnalyzer.FixedPoint(_) => fixedPoint
+    private def getStrategy(strategy: tmpAnalyzer.Strategy): Strategy = strategy match {
+      case tmpAnalyzer.FixedPoint(_) => fixedPoint
       case _ => Once
     }
 
-    override lazy val batches: Seq[Batch] = snappyAnalyzer.batches.map {
+    override lazy val batches: Seq[Batch] = tmpAnalyzer.batches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
         val rules = batch.rules.flatMap {
-          // Prepending PreUpdateTypeConversionCheck rule before PromoteString rule
           case PromoteStrings =>
             StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] ::
                 PromoteStrings :: Nil
@@ -189,7 +190,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   // This Rule fails an update query when type of Arithmetic operators doesn't match. This
-  // need to be done because by default spark performs null safe implicit type
+  // need to be done because by default spark performs fail safe implicit type
   // conversion when type of two operands does't match and this can lead to null values getting
   // populated in the table.
   object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
@@ -198,7 +199,7 @@ class SnappySessionState(val snappySession: SnappySession)
       plan match {
         case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
           updateExpressions.foreach {
-            case e if !e.childrenResolved =>
+            case e if !e.childrenResolved => // do nothing
             case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
               throw new AnalysisException("Implicit type casting is not performed for update" +
                   " statements")
