@@ -65,6 +65,7 @@ The following topics are covered in this section:
 * [How to Access TIBCO ComputeDB from Various SQL Client Tools](howto/connect_oss_vis_client_tools.md)
 
 * [How to Connect TIBCO Spotfire® Desktop to TIBCO ComputeDB](howto/connecttibcospotfire.md)
+* [How to Connect TIBCO® Data Virtualization to TIBCO ComputeDB](/howto/connecttibcodv.md)
 
 * [How to Connect Tableau to TIBCO ComputeDB](howto/tableauconnect.md) 
 
