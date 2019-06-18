@@ -616,7 +616,7 @@ object CachedDataFrame
       val executionId = if (currentExecutionId >= 0) currentExecutionId
       else Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
       val executionIdStr = java.lang.Long.toString(executionId)
-      SnappySession.setExecutionProperties(localProperties, executionIdStr, queryShortForm)
+      SnappySession.setExecutionProperties(localProperties, executionIdStr, queryLongForm)
 
       val startTime = System.currentTimeMillis()
       var endTime = -1L
