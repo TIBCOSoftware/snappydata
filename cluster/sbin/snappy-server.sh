@@ -28,6 +28,7 @@ function absPath() {
 sbin="$(dirname "$(absPath "$0")")"
 
 mode=$1
+dir=
 shift
 
 . "$sbin/snappy-config.sh"
@@ -36,11 +37,25 @@ shift
 . "$SNAPPY_HOME/bin/load-spark-env.sh"
 . "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
-
+noOfInputsArgs=$#
 
 # Start up  the server instance
 function start_instance {
   "$SNAPPY_HOME"/bin/snappy server "$mode" "$@"
 }
 
+if [ $noOfInputsArgs -le 1 ]
+then
+  if [ $noOfInputsArgs -eq 0 ]
+  then  #if no arguments passed
+   echo "Please provide -dir argument"
+  elif [[ "$1" = -dir=* && -n $(echo $1 | cut -d'=' -f 2) ]] #check -dir is not empty  
+  then  
+   start_instance "$1"
+  else #agrument is given,but not -dir.
+   echo "Invalid argument"
+  fi
+else # when start by snappy-start-all.sh
 start_instance "$@"
+fi
+
