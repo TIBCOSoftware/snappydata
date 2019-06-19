@@ -46,14 +46,32 @@ function start_instance {
 
 if [ $noOfInputsArgs -le 1 ]
 then
-  if [ $noOfInputsArgs -eq 0 ]
-  then  #if no arguments passed
-   echo "Please provide -dir argument"
-  elif [[ "$1" = -dir=* && -n $(echo $1 | cut -d'=' -f 2) ]] #check -dir is not empty  
+  if [ $noOfInputsArgs -eq 0 ] #if no arguments passed
+  then 
+   hostIp=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+   dirfolder="$SNAPPY_HOME"/work/"$hostIp"-lead-1
+   if [ ! -d "$dirfolder" ]
+   then  
+	if [ ! -d "$SNAPPY_HOME/work" ]; then 
+	 mkdir work 
+	fi
+	mkdir $dirfolder
+   fi
+   dir="-dir=${dirfolder}"
+   start_instance "$dir"
+  elif [[ "$1" = -dir=* && -n $(echo $1 | cut -d'=' -f 2) ]] #check -dir is not empty or valid 
   then  
+     if [ ! -d "$1" ]
+     then
+     	echo "ERROR : $1 is not a directory"
+	echo $usage
+    	exit 1
+     fi
    start_instance "$1"
   else #agrument is given,but not -dir.
    echo "Invalid argument"
+   echo $usage
+   exit 1
   fi
 else # when start by snappy-start-all.sh
 start_instance "$@"
