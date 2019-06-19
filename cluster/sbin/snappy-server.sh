@@ -61,7 +61,7 @@ then
    start_instance "$dir"
   elif [[ "$1" = -dir=* && -n $(echo $1 | cut -d'=' -f 2) ]] #check -dir is not empty or valid 
   then  
-     if [ ! -d "$1" ]
+     if [ ! -d $(echo $1 | cut -d'=' -f 2) ]
      then
      	echo "ERROR : $1 is not a directory"
 	echo $usage
