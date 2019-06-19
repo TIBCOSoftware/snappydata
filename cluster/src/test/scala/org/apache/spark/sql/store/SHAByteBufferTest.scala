@@ -16,7 +16,9 @@
  */
 package org.apache.spark.sql.store
 
+import java.math.BigDecimal
 import java.sql.{Connection, Date, DriverManager, SQLException, SQLType, Timestamp, Types}
+import java.util.Random
 
 import scala.collection.mutable
 
@@ -1205,7 +1207,41 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("yes_with")
   }
 
-  test("oom") {
+  test("BigDecimal bug SNAP-3047") {
+    val rand = new Random(System.currentTimeMillis())
+    def getPrice(): BigDecimal = new BigDecimal(java.lang.Double.toString(
+      (rand.nextInt(10000) + 1) * .01))
+    snc
+    snc.sql("drop table if exists securities")
+    snc.sql("create table securities(sec_id int not null, symbol varchar(10) not null, " +
+      "price decimal (30, 20))")
+    val conn = getSqlConnection
+    val insertPs = conn.prepareStatement("insert into securities values (?, ?, ?)")
+    for (i <- 0 until 5000) {
+      insertPs.setInt(1, i)
+      insertPs.setString(2, s"symbol_${i % 10}" )
+      insertPs.setBigDecimal(3, getPrice())
+      insertPs.addBatch()
+    }
+    insertPs.executeBatch()
+    val query1 = "select cast(avg( distinct price) as decimal (30, 20)) as " +
+      "avg_distinct_price from securities "
+
+    val rs1 = snc.sql(query1).collect()(0)
+
+    val snc2 = snc.newSession()
+    snc2.setConf("snappydata.sql.disableBBMapInSHA", "true")
+
+    val rs2 = snc2.sql(query1).collect()(0)
+
+    println("with bb hashmap = " + rs1.getDecimal(0))
+    println("with non bb hashmap = " + rs2.getDecimal(0))
+    assertTrue(rs1.getDecimal(0).equals( rs2.getDecimal(0)))
+    snc.dropTable("securities")
+
+  }
+
+  ignore("oom") {
     snc
     snc.sql("drop table if exists part")
     snc.sql("CREATE EXTERNAL TABLE part using csv " +
@@ -1452,6 +1488,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql(q22_2).collect()*/
 
   }
+
 
 
   def getSqlConnection: Connection =
