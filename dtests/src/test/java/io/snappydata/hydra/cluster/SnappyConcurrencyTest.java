@@ -175,7 +175,11 @@ public class SnappyConcurrencyTest extends SnappyTest {
       query = "drop table if exists " + tableName;
       Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
-      query = "CREATE TABLE " + tableName + " USING column OPTIONS() AS (SELECT * FROM " + externalTableName + ")";
+      String columnOptions = SnappyPrms.getColumnTableOptions();
+      if (columnOptions.isEmpty())
+        query = "CREATE TABLE " + tableName + " USING column OPTIONS() AS (SELECT * FROM " + externalTableName + ")";
+      else
+        query = "CREATE TABLE " + tableName + " USING column OPTIONS(columnOptions) AS (SELECT * FROM " + externalTableName + ")";
       Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
@@ -190,7 +194,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
     Vector csvExternalTableNames = SnappyPrms.getCSVExternalTableList();
     Vector externalTableNamesForInsert = SnappyPrms.getExternalTableListForInsert();
     Vector dataPathListForParquet = SnappyPrms.getDataPathListForParquet();
-    Vector dataPathListForCSV = SnappyPrms.getDataPathListForParquet();
+    Vector dataPathListForCSV = SnappyPrms.getDataPathListForCSV();
     Vector externalTableNames = null;
     externalTableNames.addAll(parquetExternalTableNames);
     externalTableNames.addAll(csvExternalTableNames);
