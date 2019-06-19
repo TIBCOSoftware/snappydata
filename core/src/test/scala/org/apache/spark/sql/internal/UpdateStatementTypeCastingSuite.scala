@@ -48,8 +48,8 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     assertForAnalysisException("update testTable set int_col = 'some_string' + 1")
   }
 
-  test("Arithmetic operator, operand is string type and is a numeric literal") {
-    assertForAnalysisException("update testTable set int_col = 1 - ('1' + 1)")
+  test("Arithmetic operator, first operand is string type and is a numeric literal") {
+    assertForAnalysisException("update testTable set int_col = '1' + 1")
   }
 
   test("Arithmetic operator, second operand is string type and is not a numeric literal") {
