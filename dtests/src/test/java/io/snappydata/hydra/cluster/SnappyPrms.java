@@ -630,6 +630,11 @@ public class SnappyPrms extends BasePrms {
   public static Long dataPathListForCSV;
 
   /**
+   * (String) options parameters to be used while creating a column table. Defaults to empty string if not provided.
+   */
+  public static Long columnTableOptions;
+
+  /**
    * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
    * while starting the cluster with user specified confs.
    * (VectorsetValues of Strings) A list of values for hostName List
@@ -1110,6 +1115,13 @@ public class SnappyPrms extends BasePrms {
   public static Vector getDataPathListForCSV() {
     Long key = dataPathListForCSV;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static String getColumnTableOptions() {
+    String columnOptions = tasktab().stringAt(columnTableOptions, tab().stringAt
+        (columnTableOptions, null));
+    if (columnOptions == null) return "";
+    return columnOptions;
   }
 
   public static Vector getHostNameList() {
