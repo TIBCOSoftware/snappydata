@@ -4,3 +4,8 @@ io/snappydata/hydra/misc/snap3028.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+
+io/snappydata/hydra/misc/SNAP-2269-2762.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
