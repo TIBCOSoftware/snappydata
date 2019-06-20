@@ -1914,9 +1914,9 @@ object SnappySession extends Logging {
   }
 
   private[sql] def setExecutionProperties(localProperties: Properties,
-      executionIdStr: String, queryShortForm: String): Unit = {
+      executionIdStr: String, queryLongForm: String): Unit = {
     localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
+    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryLongForm)
     localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
   }
 
@@ -1949,7 +1949,7 @@ object SnappySession extends Logging {
     val executionIdStr = java.lang.Long.toString(executionId)
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
-    setExecutionProperties(localProperties, executionIdStr, sqlShortText)
+    setExecutionProperties(localProperties, executionIdStr, sqlText)
     var propertiesSet = true
     val start = System.currentTimeMillis()
     try {
