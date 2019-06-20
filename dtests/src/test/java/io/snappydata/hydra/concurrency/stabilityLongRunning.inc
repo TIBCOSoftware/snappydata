@@ -64,5 +64,7 @@ io.snappydata.hydra.cluster.SnappyPrms-dataPathListForCSV = /export/dev13a/users
 io.snappydata.hydra.cluster.SnappyPrms-parquetExternalTableList = STAGING_NYCTAXI STAGING_AIRLINE STAGING_REVIEWS;
 io.snappydata.hydra.cluster.SnappyPrms-csvExternalTableList = staging_patients staging_encounters staging_allergies staging_careplans staging_conditions staging_imaging_studies staging_immunizations staging_medications staging_observations staging_procedures staging_patients1 staging_encounters1 staging_allergies1 staging_careplans1 staging_conditions1 staging_imaging_studies1 staging_immunizations1 staging_medications1 staging_observations1 staging_procedures1;
 io.snappydata.hydra.cluster.SnappyPrms-tableList = NYCTAXI AIRLINE REVIEWS patients encounters allergies careplans conditions imaging_studies immunizations medications observations procedures;
+io.snappydata.hydra.cluster.SnappyPrms-tableType = column;
+//io.snappydata.hydra.cluster.SnappyPrms-tableOptions = "partition_by 'id'" ;
 io.snappydata.hydra.cluster.SnappyPrms-externalTableListForInsert = STAGING_NYCTAXI STAGING_AIRLINE STAGING_REVIEWS staging_patients1 staging_encounters1 staging_allergies1 staging_careplans1 staging_conditions1 staging_imaging_studies1 staging_immunizations1 staging_medications1 staging_observations1 staging_procedures1;
 io.snappydata.hydra.cluster.SnappyPrms-insertTableList =  NYCTAXI airline REVIEWS patients encounters allergies careplans conditions imaging_studies immunizations medications observations procedures;
