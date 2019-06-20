@@ -30,7 +30,7 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     // creating table with COLUMN_MAX_DELTA_ROWS = 1 to flush the records immediately on
     // column table because if all records will be in row buffer then spark's null safe type
     // casting doesn't kick in
-    snc.sql("create table testTable (id long, int_col int, long_col long, dec_col decimal(5,2)) " +
+    snc.sql("create table testTable (id long, int_col int, long_col long, dec_col decimal(15,7)) " +
         "using column options(COLUMN_MAX_DELTA_ROWS '1')")
   }
 
@@ -62,38 +62,38 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
 
   test("Arithmetic operator, one operand is some column") {
     snc.sql("update testTable set int_col = int_col + 1").collect()
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 2, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 3, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 2, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 3, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Arithmetic operator, second operand is string type and is a numeric literal" +
       " casted as int ") {
     snc.sql("update testTable set int_col = 1 + cast('200' as int)").collect()
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 201, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 201, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 201, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 201, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Arithmetic operator, both operands are numeric") {
     snc.sql("update testTable set int_col = 1 + 500")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 501, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 501, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 501, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 501, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Arithmetic operator in condition part, string promotion is supported") {
     snc.sql("update testTable set int_col = 100 where id = (1 + '1')")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 1, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 100, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 1, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 100, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Arithmetic operator in condition part, string typed operand is not a number") {
     snc.sql("update testTable set int_col = 100 where id = (1 + 'abc')")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 1, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 2, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 1, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 2, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Plain assignment, assigning string typed non numeric literal") {
@@ -112,48 +112,59 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
   }
 
   test("Plain assignment, assigning wider decimal to a narrower decimal") {
-    assertForAnalysisException("update testTable set dec_col = 104.123",
-      "dec_col", DecimalType(5, 2), DecimalType(6, 3))
+    assertForAnalysisException("update testTable set dec_col = 104.12356756887",
+      "dec_col", DecimalType(15, 7), DecimalType(14, 11))
   }
 
   test("Plain assignment, assigning narrower decimal to a wider decimal") {
     snc.sql("update testTable set dec_col = 10.1")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 1, 1, new java.math.BigDecimal("10.1")),
-      Row(2, 2, 2, new java.math.BigDecimal("10.1"))))(rows)
+    val expectedResult = Seq(Row(1, 1, 1, new java.math.BigDecimal("10.1")),
+      Row(2, 2, 2, new java.math.BigDecimal("10.1")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Plain assignment, assigning null") {
     snc.sql("update testTable set dec_col = null")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 1, 1, null),
-      Row(2, 2, 2, null)))(rows)
+    val expectedResult = Seq(Row(1, 1, 1, null), Row(2, 2, 2, null))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Plain assignment, assigning narrow integral type to wider integral type") {
     snc.sql("update testTable set long_col = 100")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 1, 100, new java.math.BigDecimal("1.20")),
-      Row(2, 2, 100, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 1, 100, new java.math.BigDecimal("1.20")),
+      Row(2, 2, 100, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Plain assignment, assigning float to a decimal") {
     assertForAnalysisException("update testTable set dec_col = CAST(104.123 as float)",
-      "dec_col", DecimalType(5, 2), FloatType)
+      "dec_col", DecimalType(15, 7), FloatType)
   }
 
   test("Plain assignment, assigning string typed numeric literal cast as int") {
     snc.sql("update testTable set int_col = cast('300' as int)")
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 300, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 300, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 300, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 300, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
   }
 
   test("Plain assignment, assigning number") {
     snc.sql("update testTable set int_col = 400").collect()
-    val rows = snc.sql("select * from testTable order by id").collect()
-    assertResult(Array(Row(1, 400, 1, new java.math.BigDecimal("1.20")),
-      Row(2, 400, 2, new java.math.BigDecimal("1.20"))))(rows)
+    val expectedResult = Seq(Row(1, 400, 1, new java.math.BigDecimal("1.20")),
+      Row(2, 400, 2, new java.math.BigDecimal("1.20")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
+  }
+
+  test("Plain assignment, assigning tighter numeric type to a decimal type") {
+    snc.sql("update testTable set dec_col = cast(1 as short)")
+    val expectedResult = Seq(Row(1, 1, 1, new java.math.BigDecimal("1")),
+      Row(2, 2, 2, new java.math.BigDecimal("1")))
+    checkAnswer(snc.sql("select * from testTable order by id"), expectedResult)
+  }
+
+  test("Plain assignment, assigning wider numeric type to a decimal type") {
+    assertForAnalysisException("update testTable set dec_col = cast(1 as int)",
+      "dec_col", DecimalType(15, 7), IntegerType)
   }
 
   def assertForAnalysisException(sql: String, attrName: String, attrDt: DataType,

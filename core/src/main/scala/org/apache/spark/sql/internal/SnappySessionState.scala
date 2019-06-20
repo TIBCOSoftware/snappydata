@@ -36,7 +36,7 @@ import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfig
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateSubqueryAliases, EliminateUnions, NoSuchTableException, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation}
 import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -91,24 +91,7 @@ class SnappySessionState(val snappySession: SnappySession)
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
-  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
-  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
-
-    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
-      case analyzer.FixedPoint(_) => fixedPoint
-      case _ => Once
-    }
-
-    override lazy val batches: Seq[Batch] = analyzer.batches.map {
-      case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        val rules = batch.rules.flatMap(_ match {
-          case PromoteStrings => StringPromotionCheckForUpdate :: PromoteStrings :: Nil
-          case a => Seq(a)
-        })
-        Batch(batch.name, getStrategy(batch.strategy), rules: _*)
-      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
-    }
+  lazy val analyzerPrepare: Analyzer = new SnappyAnalyzer(this) {
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
@@ -116,20 +99,14 @@ class SnappySessionState(val snappySession: SnappySession)
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
 
-  lazy val analyzerWithoutPromote: Analyzer = new Analyzer(catalog, conf) {
-
-    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
-      case analyzer.FixedPoint(_) => fixedPoint
-      case _ => Once
-    }
-
-    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+  lazy val analyzerWithoutPromote: Analyzer = new SnappyAnalyzer(this) {
+    override lazy val batches: Seq[Batch] = ruleBatches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+        Batch(batch.name, batch.strategy, batch.rules.filter(_ match {
           case PromoteStrings => false
           case _ => true
         }): _*)
-      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+      case batch => Batch(batch.name, batch.strategy, batch.rules: _*)
     }
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
@@ -157,58 +134,12 @@ class SnappySessionState(val snappySession: SnappySession)
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
 
-  // This analyzer instance is used by the actual analyzer to get batches of rules
-  // and inject the StringPromotionCheckForUpdate rule right before PromoteStrings rule.
-  // This is done to avoid changes in the Analyzer's code which is part of Spark.
-  private lazy val tmpAnalyzer: Analyzer = new Analyzer(catalog, conf) {
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-  }
-
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+  override lazy val analyzer: Analyzer = new SnappyAnalyzer(this) {
 
     override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
 
-    private def getStrategy(strategy: tmpAnalyzer.Strategy): Strategy = strategy match {
-      case tmpAnalyzer.FixedPoint(_) => fixedPoint
-      case _ => Once
-    }
-
-    override lazy val batches: Seq[Batch] = tmpAnalyzer.batches.map {
-      case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        val rules = batch.rules.flatMap {
-          case PromoteStrings =>
-            StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] ::
-                PromoteStrings :: Nil
-          case r => r :: Nil
-        }
-
-        Batch(batch.name, getStrategy(batch.strategy), rules: _*)
-      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
-    }
-  }
-
-  // This Rule fails an update query when type of Arithmetic operators doesn't match. This
-  // need to be done because by default spark performs fail safe implicit type
-  // conversion when type of two operands does't match and this can lead to null values getting
-  // populated in the table.
-  object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
-
-    override def apply(plan: LogicalPlan): LogicalPlan = {
-      plan match {
-        case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
-          updateExpressions.foreach {
-            case e if !e.childrenResolved => // do nothing
-            case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
-              throw new AnalysisException("Implicit type casting is not performed for update" +
-                  " statements")
-            case _ => // do nothing
-          }
-          Update(table, child, keyColumns, updateColumns, updateExpressions)
-        case _ => plan
-      }
-    }
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -699,10 +630,10 @@ class SnappySessionState(val snappySession: SnappySession)
               expr
             } else {
               expr.dataType match {
-                // allowing assignnment of narrower decimal expression to wider decimal attribute
-                case dt: DecimalType if attr.dataType.isInstanceOf[DecimalType]
-                    && dt.isTighterThan(attr.dataType) =>
-                    expr
+                // allowing assignment of narrower numeric expression to wider decimal attribute
+                case dt: NumericType if attr.dataType.isInstanceOf[DecimalType]
+                    && attr.dataType.asInstanceOf[DecimalType].isWiderThan(dt) =>
+                  Alias(Cast(expr, attr.dataType), attr.name)()
                 // allowing assignment of narrower numeric types to wider numeric types as far as
                 // precision is not compromised
                 case dt: NumericType if !attr.dataType.isInstanceOf[DecimalType]
@@ -711,7 +642,7 @@ class SnappySessionState(val snappySession: SnappySession)
                 // allowing assignment of null value
                 case _: NullType => Alias(Cast(expr, attr.dataType), attr.name)()
                 case dt =>
-                  throw new AnalysisException(s"Data type of expression (${dt}) is not compatible" +
+                  throw new AnalysisException(s"Data type of expression ($dt) is not compatible" +
                       s" with the data type of attribute '${attr.name}' (${attr.dataType})")
               }
             }
@@ -1500,4 +1431,91 @@ class LogicalPlanWithHints(_child: LogicalPlan, val hints: Map[String, String])
 
   override def simpleString: String =
     s"LogicalPlanWithHints[hints = $hints; child = ${child.simpleString}]"
+}
+
+
+class SnappyAnalyzer(sessionState: SnappySessionState)
+    extends Analyzer(sessionState.catalog, sessionState.conf) {
+
+  // This list of rule is exact copy of org.apache.spark.sql.catalyst.analysis.Analyzer.batches
+  // It is replicated to inject StringPromotionCheckForUpdate rule. Since Analyzer.batches is
+  // declared as a lazy val, it can not be accessed using super keywork.
+  lazy val ruleBatches = Seq(
+    Batch("Substitution", fixedPoint,
+      CTESubstitution,
+      WindowsSubstitution,
+      EliminateUnions,
+      new SubstituteUnresolvedOrdinals(sessionState.conf)),
+    Batch("Resolution", fixedPoint,
+      ResolveTableValuedFunctions ::
+          ResolveRelations ::
+          ResolveReferences ::
+          ResolveCreateNamedStruct ::
+          ResolveDeserializer ::
+          ResolveNewInstance ::
+          ResolveUpCast ::
+          ResolveGroupingAnalytics ::
+          ResolvePivot ::
+          ResolveOrdinalInOrderByAndGroupBy ::
+          ResolveMissingReferences ::
+          ExtractGenerator ::
+          ResolveGenerate ::
+          ResolveFunctions ::
+          ResolveAliases ::
+          ResolveSubquery ::
+          ResolveWindowOrder ::
+          ResolveWindowFrame ::
+          ResolveNaturalAndUsingJoin ::
+          ExtractWindowExpressions ::
+          GlobalAggregates ::
+          ResolveAggregateFunctions ::
+          TimeWindowing ::
+          ResolveInlineTables ::
+          TypeCoercion.typeCoercionRules ++
+              extendedResolutionRules : _*),
+    Batch("Nondeterministic", Once,
+      PullOutNondeterministic),
+    Batch("UDF", Once,
+      HandleNullInputsForUDF),
+    Batch("FixNullability", Once,
+      FixNullability),
+    Batch("Cleanup", fixedPoint,
+      CleanupAliases)
+  )
+
+  override lazy val batches: Seq[Batch] = ruleBatches.map {
+    case batch if batch.name.equalsIgnoreCase("Resolution") =>
+      val rules = batch.rules.flatMap {
+        case PromoteStrings =>
+          StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] ::
+              PromoteStrings :: Nil
+        case r => r :: Nil
+      }
+
+      Batch(batch.name, batch.strategy, rules: _*)
+    case batch => Batch(batch.name, batch.strategy, batch.rules: _*)
+  }
+
+
+  // This Rule fails an update query when type of Arithmetic operators doesn't match. This
+  // need to be done because by default spark performs fail safe implicit type
+  // conversion when type of two operands does't match and this can lead to null values getting
+  // populated in the table.
+  private object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
+
+    override def apply(plan: LogicalPlan): LogicalPlan = {
+      plan match {
+        case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
+          updateExpressions.foreach {
+            case e if !e.childrenResolved => // do nothing
+            case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
+              throw new AnalysisException("Implicit type casting is not performed for update" +
+                  " statements")
+            case _ => // do nothing
+          }
+          Update(table, child, keyColumns, updateColumns, updateExpressions)
+        case _ => plan
+      }
+    }
+  }
 }
