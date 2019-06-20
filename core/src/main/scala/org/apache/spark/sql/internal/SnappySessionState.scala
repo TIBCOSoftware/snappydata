@@ -91,14 +91,6 @@ class SnappySessionState(val snappySession: SnappySession)
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  lazy val analyzerPrepare: Analyzer = new SnappyAnalyzer(this) {
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
   lazy val analyzerWithoutPromote: Analyzer = new SnappyAnalyzer(this) {
     override lazy val batches: Seq[Batch] = ruleBatches.map {
       case batch if batch.name.equalsIgnoreCase("Resolution") =>

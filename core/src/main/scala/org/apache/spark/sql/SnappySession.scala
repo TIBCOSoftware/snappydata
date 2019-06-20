@@ -207,7 +207,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     SparkSession.setActiveSession(this)
     var ap: Analyzer = null
     if (!skipPromote) {
-      ap = sessionState.analyzerPrepare
+      ap = sessionState.analyzer
     } else {
       ap = sessionState.analyzerWithoutPromote
     }
