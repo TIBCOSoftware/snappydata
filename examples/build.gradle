@@ -24,7 +24,53 @@ sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = [ ]
 sourceSets.test.scala.srcDir 'src/test/scala'
 
-dependencies {
+if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
+  ext {
+    scalaBinaryVersion = '2.11'
+    scalaVersion = scalaBinaryVersion + '.8'
+    sparkVersion = '2.1.1'
+    snappyVersion = '1.1.0'
+    snappySparkVersion = '2.1.1.6'
+    sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
+    sparkCurrentVersion = '2.3.2'
+    sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
+    log4jVersion = '1.2.17'
+    slf4jVersion = '1.7.25'
+    junitVersion = '4.12'
+    sparkJobServerVersion = '0.6.2.9'
+  }
+
+  repositories {
+    mavenCentral()
+    maven { url 'https://dl.bintray.com/big-data/maven' }
+    maven { url "https://repo.spring.io/libs-release" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'http://repository.snappydata.io/repository/internal' }
+    maven { url 'http://repository.snappydata.io/repository/snapshots' }
+    maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
+  }
+
+  dependencies {
+
+    compile 'org.scala-lang:scala-library:' + '2.11.8'
+    compile 'org.scala-lang:scala-reflect:' + '2.11.8'
+    testCompile "org.scalatest:scalatest_2.11:2.2.6"
+    compile 'log4j:log4j:' + log4jVersion
+    compile 'org.slf4j:slf4j-api:' + slf4jVersion
+    compile 'org.slf4j:slf4j-log4j12:' + slf4jVersion
+    testCompile "junit:junit:${junitVersion}"
+
+    compile "io.snappydata:snappydata-core_2.11:${snappyVersion}"
+    compile "io.snappydata:snappydata-cluster_2.11:${snappyVersion}"
+    compile "io.snappydata:snappy-spark-core_2.11:${sparkVersion}"
+    compile "io.snappydata:snappy-spark-catalyst_2.11:${sparkVersion}"
+    compile "io.snappydata:snappy-spark-sql_2.11:${sparkVersion}"
+  }
+
+  archivesBaseName = 'snappydata-examples_' + '2.11'
+
+} else {
+  dependencies {
 
   compile project(":snappy-cluster_${scalaBinaryVersion}")
 
@@ -33,7 +79,8 @@ dependencies {
   }
 
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
-  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile "commons-io:commons-io:2.6"
+  testCompile "io.snappydata:gemfire-core:1.6.3"
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -78,3 +125,4 @@ scalaTest {
 }
 
 check.dependsOn scalaTest
+}
