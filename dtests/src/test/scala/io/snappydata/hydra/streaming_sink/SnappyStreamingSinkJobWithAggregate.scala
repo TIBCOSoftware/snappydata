@@ -24,7 +24,7 @@ import com.typesafe.config.Config
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 
-class SnappyStreamingSinkJob extends SnappySQLJob {
+class SnappyStreamingSinkJobWithAggregate extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
 
@@ -35,7 +35,7 @@ class SnappyStreamingSinkJob extends SnappySQLJob {
     val tableName: String = jobConfig.getString("tableName")
     val isConflationTest: Boolean = jobConfig.getBoolean("isConflation")
     val useCustomCallback: Boolean = false // jobConfig.getBoolean("useCustomCallback")
-
+    val outputMode: String = jobConfig.getString("outputMode")
     val outputFile = "KafkaStreamingJob_output" + tid + "_" + System.currentTimeMillis() + ".txt"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
 
@@ -44,8 +44,8 @@ class SnappyStreamingSinkJob extends SnappySQLJob {
     pw.println("Starting stream query...")
     pw.flush()
 
-    StructuredStreamingTestUtil.createAndStartStreamingQuery(snc, tableName, brokerList,
-      kafkaTopic, tid, pw, isConflationTest, true, useCustomCallback)
+    StructuredStreamingTestUtil.createAndStartAggStreamingQuery(snc, tableName, brokerList,
+      kafkaTopic, tid, pw, isConflationTest, true, useCustomCallback, outputMode)
 
     pw.println("started streaming query")
     pw.flush()
