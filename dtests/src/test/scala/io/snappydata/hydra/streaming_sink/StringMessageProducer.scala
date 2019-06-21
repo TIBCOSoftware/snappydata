@@ -125,7 +125,12 @@ extends Runnable {
       val bloodGrp: String = bloodGrpArr(random.nextInt(bloodGrpArr.length))
       val occupation: String = occupationArr(random.nextInt(occupationArr.length))
       val country: String = countryArr(random.nextInt(countryArr.length))
-      val address: String = randomAlphanumeric(20)
+      var j = 0
+      val address: Array[String] = null
+      for (j <- 0 to 3 )
+      {
+        address(j) = randomAlphanumeric(20)
+      }
       val email: String = randomAlphanumeric(10) + "@" + randomAlphanumeric(5) + "." +
           randomAlphanumeric(3)
       val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))

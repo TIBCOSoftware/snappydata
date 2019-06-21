@@ -26,6 +26,7 @@ class CreateTableInSnappyJob extends SnappySQLJob{
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
+    val tableName = jobConfig.getString("tableName")
     val isRowTable: Boolean = jobConfig.getBoolean("isRowTable")
     val withKeyColumn: Boolean = jobConfig.getBoolean("withKeyColumn")
     val outputFile = "CreateTablesJob_output.txt"
@@ -50,7 +51,7 @@ class CreateTableInSnappyJob extends SnappySQLJob{
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id)"
     else ""
     options = options + ")"
-    val s = s"create table persoon (" +
+    val s = s"create table $tableName (" +
         s"id long, " +
         s"firstName varchar(30), " +
         s"middleName varchar(30), " +
