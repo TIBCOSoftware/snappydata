@@ -34,7 +34,7 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = i
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
             io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.benchmark.snappy.tpch.TableCreationJob
             io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer =
-            "dataLocation=${dataLocation},Buckets_Order_Lineitem=${buckets_Order_Lineitem},Buckets_Cust_Part_PartSupp=${Buckets_Cust_Part_PartSupp},IsSupplierColumnTable=${IsSupplierColumnTable},Buckets_Supplier=${Buckets_Supplier},Redundancy=${Redundancy},Persistence=${Persistence},Persistence_Type=${Persistence_Type},NumberOfLoadStage=${NumberOfLoadStage},isParquet=${isParquet},createParquet=${createParquet},traceEvents=${traceEvents}"
+            "dataLocation=${dataLocation},Buckets_Order_Lineitem=${buckets_Order_Lineitem},Buckets_Cust_Part_PartSupp=${Buckets_Cust_Part_PartSupp},IsSupplierColumnTable=${IsSupplierColumnTable},Buckets_Supplier=${Buckets_Supplier},Redundancy=${Redundancy},Persistence=${Persistence},Persistence_Type=${Persistence_Type},NumberOfLoadStages=${NumberOfLoadStages},isParquet=${isParquet},createParquet=${createParquet},traceEvents=${traceEvents}"
             io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-cluster*tests.jar
             threadGroups = snappyThreads
             ;
