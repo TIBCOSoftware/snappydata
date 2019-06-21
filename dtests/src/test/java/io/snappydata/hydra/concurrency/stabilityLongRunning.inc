@@ -28,6 +28,17 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = i
             runMode = always
             threadGroups = snappyThreads, snappySingleThread, snappyClientAThreads;
 
+/*INITTASK  taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = parseOptions
+            threadGroups = snappySingleThread;*/
+
+INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSnappyJob
+            io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.benchmark.snappy.tpch.TableCreationJob
+            io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer =
+            "dataLocation=${dataLocation},Buckets_Order_Lineitem=${buckets_Order_Lineitem},Buckets_Cust_Part_PartSupp=${Buckets_Cust_Part_PartSupp},IsSupplierColumnTable=${IsSupplierColumnTable},Buckets_Supplier=${Buckets_Supplier},Redundancy=${Redundancy},Persistence=${Persistence},Persistence_Type=${Persistence_Type},NumberOfLoadStage=${NumberOfLoadStage},isParquet=${isParquet},createParquet=${createParquet},traceEvents=${traceEvents}"
+            io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-cluster*tests.jar
+            threadGroups = snappyThreads
+            ;
+
 INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = createAndLoadTablesForStabilityTest
             threadGroups = snappySingleThread;
 
@@ -65,6 +76,6 @@ io.snappydata.hydra.cluster.SnappyPrms-parquetExternalTableList = STAGING_NYCTAX
 io.snappydata.hydra.cluster.SnappyPrms-csvExternalTableList = staging_patients staging_encounters staging_allergies staging_careplans staging_conditions staging_imaging_studies staging_immunizations staging_medications staging_observations staging_procedures staging_patients1 staging_encounters1 staging_allergies1 staging_careplans1 staging_conditions1 staging_imaging_studies1 staging_immunizations1 staging_medications1 staging_observations1 staging_procedures1;
 io.snappydata.hydra.cluster.SnappyPrms-tableList = NYCTAXI AIRLINE REVIEWS patients encounters allergies careplans conditions imaging_studies immunizations medications observations procedures;
 io.snappydata.hydra.cluster.SnappyPrms-tableType = column;
-//io.snappydata.hydra.cluster.SnappyPrms-tableOptions = "partition_by 'id'" ;
+//io.snappydata.hydra.cluster.SnappyPrms-tableOptions = "partition_by 'id'" "buckets '17'" "redundancy '1'";
 io.snappydata.hydra.cluster.SnappyPrms-externalTableListForInsert = STAGING_NYCTAXI STAGING_AIRLINE STAGING_REVIEWS staging_patients1 staging_encounters1 staging_allergies1 staging_careplans1 staging_conditions1 staging_imaging_studies1 staging_immunizations1 staging_medications1 staging_observations1 staging_procedures1;
 io.snappydata.hydra.cluster.SnappyPrms-insertTableList =  NYCTAXI airline REVIEWS patients encounters allergies careplans conditions imaging_studies immunizations medications observations procedures;
