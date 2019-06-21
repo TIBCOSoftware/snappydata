@@ -129,139 +129,139 @@ class HiveThriftServer extends SnappySQLJob {
 
     /*     ------------------------------------------------------------------------   */
 
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Use App Schema")
-//    pw.println("Case 5 : Create row table from beeline, insert,update,delete from beeline...")
-//    executeUseSchema(hiveThriftServer, "app", snc, spark)
-//    createRowOrColumnTableFromBeeline(hiveThriftServer,
-//      "create TablE if not exists Emp5(id long, name String) using row", pw)
-//    insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp5 select " +
-//      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc, spark,
-//      pw, sqlContext, "Emp5", "row")
-//    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
-//    updateTableFromBeeline(hiveThriftServer,
-//      "update Emp5 set id = " +
-//        "id+5 where id < 150", snc, spark, pw, sqlContext, "Emp5", "row")
-//    deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp5",
-//      snc, spark, pw, sqlContext, "Emp5", "row")
-//    executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp5")
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 6 : Create column table from beeline, insert,update,delete from Snappy...")
-//    createRowOrColumnTableFromBeeline(hiveThriftServer,
-//      "create TablE if not exists Emp6(id long, name String) using column", pw)
-//    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp6 select " +
-//      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
-//      spark, pw, sqlContext, "Emp6", "column")
-//    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
-//    updateTableFromSnappy(hiveThriftServer,
-//      "update Emp6 set name = " +
-//        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp6", "column")
-//    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp6",
-//      snc, spark, pw, sqlContext, "Emp6", "column")
-//    executeDropTableFromSnappy(snc, "drop table if exists Emp6")
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 7 : Create row table from Snappy, insert,update,delete from BeeLine...")
-//    createRowOrColumnTableFromSnappy(snc,
-//      "create TablE if not exists Emp7(id long, name String) using row", pw)
-//    insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp7 select " +
-//      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc,
-//      spark, pw, sqlContext, "Emp7", "row")
-//    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
-//    updateTableFromBeeline(hiveThriftServer,
-//      "update Emp7 set id = " +
-//        "id+15 where id < 200", snc, spark, pw, sqlContext, "Emp7", "row")
-//    deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp7",
-//      snc, spark, pw, sqlContext, "Emp7", "row")
-//    executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp7")
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 8 : Create column table from Snappy, insert,update,delete from Snappy...")
-//    createRowOrColumnTableFromSnappy(snc,
-//      "create TablE if not exists Emp8(id long, name String) using column", pw)
-//    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp8 select " +
-//      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
-//      spark, pw, sqlContext, "Emp8", "column")
-//    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
-//    updateTableFromSnappy(hiveThriftServer,
-//      "update Emp8 set name = " +
-//        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp8", "column")
-//    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp8",
-//      snc, spark, pw, sqlContext, "Emp8", "column")
-//    executeDropTableFromSnappy(snc, "drop table if exists Emp8")
-//
-//    executeShowTables(hiveThriftServer, "ShoW tAbLES iN app", pw)
-//    /*     ------------------------------------------------------------------------   */
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 9 : Use Default Schema. " +
-//      "Create the table with same name should throw an exception.")
-//    executeUseSchema(hiveThriftServer, "default", snc, spark)
-//    try {
-//      createRowOrColumnTableFromBeeline(hiveThriftServer,
-//        "CREATE TABLE Student(class Int, subject String) using column", pw)
-//      createRowOrColumnTableFromSnappy(snc,
-//        "CREATE TABLE Student(class Int, subject String) using row", pw)
-//    }
-//    catch {
-//      case e : Exception => pw.println("----- " + e.getMessage + " -----")
-//    }
-//    executeDropTableFromSnappy(snc, "DROP TABLE Student")
-//    executeShowTables(hiveThriftServer, "show tables in default", pw)
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 10 : Use App Schema. " +
-//      "Create the table with same name should throw an exception.")
-//    executeUseSchema(hiveThriftServer, "app", snc, spark)
-//    try {
-//      createRowOrColumnTableFromSnappy(snc,
-//        "CREATE TABLE Phone(name String, number long) using column", pw)
-//      createRowOrColumnTableFromBeeline(hiveThriftServer,
-//        "CREATE TABLE Phone(name String, number long) using row", pw)
-//     }
-//    catch {
-//      case e : Exception => pw.println("----- " +e.getMessage + " -----")
-//    }
-//    executeDropTableFromSnappy(snc, "DROP TABLE Phone")
-//    executeShowTables(hiveThriftServer, "show tables in app", pw)
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 11 : Use Default Schema. " +
-//      "Create table,drop table and run select query should throw TABLE NOT FOUND EXCEPTION.")
-//    executeUseSchema(hiveThriftServer, "default", snc, spark)
-//    createRowOrColumnTableFromBeeline(hiveThriftServer, "create table t1(id int) using column", pw)
-//    try {
-//      snc.sql("insert into t1 select id from range(1000)")
-//      snc.sql("drop table t1")
-//      snc.sql("select * from t1")
-//    }
-//    catch {
-//      case e : Exception => pw.println(e.getMessage)
-//    }
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 12 : Use App Schema. " +
-//      "Create table,drop table and run select query should throw TABLE NOT FOUND EXCEPTION.")
-//    executeUseSchema(hiveThriftServer, "app", snc, spark)
-//    createRowOrColumnTableFromSnappy(snc, "create table t1(id int) using column", pw)
-//    try {
-//      hiveThriftServer.stmt = hiveThriftServer.connection.createStatement()
-//      hiveThriftServer.rs = hiveThriftServer.stmt.executeQuery(
-//        "insert into t1 select id from range(1000)")
-//      hiveThriftServer.rs = hiveThriftServer.stmt.executeQuery("drop table t1")
-//      //  Below line, logs the exception in leader logs - not desirable.
-//      hiveThriftServer.rs = hiveThriftServer.stmt.executeQuery("select * from t1")
-//    }
-//    catch {
-//      case e : SQLException => pw.println(e.getMessage)
-//    }
-//
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 13 : Use sys Schema. " +
-//      "Run the command from BeeLine and Snappy. Verify the table Name.")
-//    showTablesInSys(hiveThriftServer, snc, "show tables in sys", pw)
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Use App Schema")
+    pw.println("Case 5 : Create row table from beeline, insert,update,delete from beeline...")
+    executeUseSchema(hiveThriftServer, "app", snc, spark)
+    createRowOrColumnTableFromBeeline(hiveThriftServer,
+      "create TablE if not exists Emp5(id long, name String) using row", pw)
+    insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp5 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc, spark,
+      pw, sqlContext, "Emp5", "row")
+    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
+    updateTableFromBeeline(hiveThriftServer,
+      "update Emp5 set id = " +
+        "id+5 where id < 150", snc, spark, pw, sqlContext, "Emp5", "row")
+    deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp5",
+      snc, spark, pw, sqlContext, "Emp5", "row")
+    executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp5")
 
-//    pw.flush()  -- Comment out not required.
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 6 : Create column table from beeline, insert,update,delete from Snappy...")
+    createRowOrColumnTableFromBeeline(hiveThriftServer,
+      "create TablE if not exists Emp6(id long, name String) using column", pw)
+    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp6 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
+      spark, pw, sqlContext, "Emp6", "column")
+    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
+    updateTableFromSnappy(hiveThriftServer,
+      "update Emp6 set name = " +
+        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp6", "column")
+    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp6",
+      snc, spark, pw, sqlContext, "Emp6", "column")
+    executeDropTableFromSnappy(snc, "drop table if exists Emp6")
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 7 : Create row table from Snappy, insert,update,delete from BeeLine...")
+    createRowOrColumnTableFromSnappy(snc,
+      "create TablE if not exists Emp7(id long, name String) using row", pw)
+    insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp7 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc,
+      spark, pw, sqlContext, "Emp7", "row")
+    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
+    updateTableFromBeeline(hiveThriftServer,
+      "update Emp7 set id = " +
+        "id+15 where id < 200", snc, spark, pw, sqlContext, "Emp7", "row")
+    deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp7",
+      snc, spark, pw, sqlContext, "Emp7", "row")
+    executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp7")
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 8 : Create column table from Snappy, insert,update,delete from Snappy...")
+    createRowOrColumnTableFromSnappy(snc,
+      "create TablE if not exists Emp8(id long, name String) using column", pw)
+    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp8 select " +
+      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
+      spark, pw, sqlContext, "Emp8", "column")
+    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
+    updateTableFromSnappy(hiveThriftServer,
+      "update Emp8 set name = " +
+        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp8", "column")
+    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp8",
+      snc, spark, pw, sqlContext, "Emp8", "column")
+    executeDropTableFromSnappy(snc, "drop table if exists Emp8")
+
+    executeShowTables(hiveThriftServer, "ShoW tAbLES iN app", pw)
+    /*     ------------------------------------------------------------------------   */
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 9 : Use Default Schema. " +
+      "Create the table with same name should throw an exception.")
+    executeUseSchema(hiveThriftServer, "default", snc, spark)
+    try {
+      createRowOrColumnTableFromBeeline(hiveThriftServer,
+        "CREATE TABLE Student(class Int, subject String) using column", pw)
+      createRowOrColumnTableFromSnappy(snc,
+        "CREATE TABLE Student(class Int, subject String) using row", pw)
+    }
+    catch {
+      case e : Exception => pw.println("----- " + e.getMessage + " -----")
+    }
+    executeDropTableFromSnappy(snc, "DROP TABLE Student")
+    executeShowTables(hiveThriftServer, "show tables in default", pw)
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 10 : Use App Schema. " +
+      "Create the table with same name should throw an exception.")
+    executeUseSchema(hiveThriftServer, "app", snc, spark)
+    try {
+      createRowOrColumnTableFromSnappy(snc,
+        "CREATE TABLE Phone(name String, number long) using column", pw)
+      createRowOrColumnTableFromBeeline(hiveThriftServer,
+        "CREATE TABLE Phone(name String, number long) using row", pw)
+     }
+    catch {
+      case e : Exception => pw.println("----- " +e.getMessage + " -----")
+    }
+    executeDropTableFromSnappy(snc, "DROP TABLE Phone")
+    executeShowTables(hiveThriftServer, "show tables in app", pw)
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 11 : Use Default Schema. " +
+      "Create table,drop table and run select query should throw TABLE NOT FOUND EXCEPTION.")
+    executeUseSchema(hiveThriftServer, "default", snc, spark)
+    createRowOrColumnTableFromBeeline(hiveThriftServer, "create table t1(id int) using column", pw)
+    try {
+      snc.sql("insert into t1 select id from range(1000)")
+      snc.sql("drop table t1")
+      snc.sql("select * from t1")
+    }
+    catch {
+      case e : Exception => pw.println(e.getMessage)
+    }
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 12 : Use App Schema. " +
+      "Create table,drop table and run select query should throw TABLE NOT FOUND EXCEPTION.")
+    executeUseSchema(hiveThriftServer, "app", snc, spark)
+    createRowOrColumnTableFromSnappy(snc, "create table t1(id int) using column", pw)
+    try {
+      hiveThriftServer.stmt = hiveThriftServer.connection.createStatement()
+      hiveThriftServer.rs = hiveThriftServer.stmt.executeQuery(
+        "insert into t1 select id from range(1000)")
+      hiveThriftServer.rs = hiveThriftServer.stmt.executeQuery("drop table t1")
+      //  Below line, logs the exception in leader logs - not desirable.
+      hiveThriftServer.rs = hiveThriftServer.stmt.executeQuery("select * from t1")
+    }
+    catch {
+      case e : SQLException => pw.println(e.getMessage)
+    }
+
+    pw.println("-------------------------------------------------------------------------------")
+    pw.println("Case 13 : Use sys Schema. " +
+      "Run the command from BeeLine and Snappy. Verify the table Name.")
+    showTablesInSys(hiveThriftServer, snc, "show tables in sys", pw, sqlContext)
+
+    pw.flush()
     pw.close()
     disconnectToBeeline(hiveThriftServer)
     println("Finished the Hive Thrift Server testing.....")
