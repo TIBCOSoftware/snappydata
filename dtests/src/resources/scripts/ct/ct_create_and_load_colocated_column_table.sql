@@ -1,3 +1,4 @@
+elapsedtime on;
 -- DROP TABLE IF ALREADY EXISTS --
 DROP TABLE IF EXISTS staging_exec_details;
 DROP TABLE IF EXISTS staging_orders_details;
