@@ -223,7 +223,6 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
     snappySession.sparkContext.setLocalProperty("spark.scheduler.pool", pool)
   }
 
-
   private def prepareForCollect(): Boolean = {
     if (prepared) return false
     if (isCached) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -25,9 +25,6 @@ sourceSets.test.scala.srcDirs = [ 'src/test/java', 'src/test/scala', 'src/dunit/
 sourceSets.main.java.srcDirs = []
 sourceSets.test.java.srcDirs = [ ]
 
-String coreProjectName = sparkVersion == sparkConnectorVersion
-    ? ':snappy-core_' + scalaBinaryVersion : ':snappy-core-product_' + scalaBinaryVersion
-
 dependencies {
   compile 'org.scala-lang:scala-library:' + scalaVersion
   compile 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -49,7 +46,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
   }
-  compile (project(":compatibility:spark${sparkVersion}_${scalaBinaryVersion}")) {
+  compile (project(":snappy-core_${scalaBinaryVersion}:spark${sparkVersion}")) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -57,7 +54,7 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
   }
-  testCompile (project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')) {
+  testCompile (project(coreProjectName), configuration: 'testOutput') {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -147,7 +144,7 @@ dependencies {
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
   if (new File(rootDir, 'aqp/build.gradle').exists() && rootProject.hasProperty('snappydata.enterprise')) {
-    testRuntime project(':snappy-aqp_' + scalaBinaryVersion)
+    testRuntime project(aqpProjectName)
   }
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"

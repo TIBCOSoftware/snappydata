@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -19,10 +19,6 @@ apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 
-ext {
-  spark210Version = '2.1.0'
-}
-
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -40,7 +36,7 @@ dependencies {
 
   compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
 
-  compile (project(':snappy-core_' + scalaBinaryVersion)) {
+  compile (project(":snappy-core_${scalaBinaryVersion}")) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
@@ -63,71 +59,7 @@ if (rootProject.hasProperty('enablePublish')) {
   }
 }
 
-
-archivesBaseName = "snappydata-spark${spark210Version}_${scalaBinaryVersion}"
-shadowJar {
-  zip64 = true
-  // avoid conflict with the 0.9.2 version in stock Spark
-  relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-  // relocate koloboke for possible conflicts with user dependencies
-  relocate 'com.koloboke', 'io.snappydata.com.koloboke'
-  // relocate the guava's com.google packages
-  relocate 'com.google.common', 'io.snappydata.com.google.common'
-
-  mergeServiceFiles()
-  exclude 'log4j.properties'
-
-  if (rootProject.hasProperty('enablePublish')) {
-    createdBy = 'SnappyData Build Team'
-  } else {
-    createdBy = System.getProperty('user.name')
-  }
-  manifest {
-    attributes(
-      'Manifest-Version'  : '1.0',
-      'Created-By'        : createdBy,
-      'Title'             : archivesBaseName,
-      'Version'           : version,
-      'Vendor'            : vendorName
-    )
-  }
-}
-
-// write the POM for spark-package
+archivesBaseName = "snappydata-core-compat-spark${spark210Version}_${scalaBinaryVersion}"
 String sparkPackageName = "snappydata-${version}_${spark210Version}-s_${scalaBinaryVersion}"
 
-task sparkPackagePom(dependsOn: shadowJar) { doLast {
-  file("${rootProject.buildDir}/distributions").mkdirs()
-  pom {
-    project {
-      groupId 'SnappyDataInc'
-      artifactId 'snappydata'
-      version "${version}-s_${scalaBinaryVersion}"
-      licenses {
-        license {
-          name 'The Apache Software License, Version 2.0'
-          url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-          distribution 'repo'
-        }
-      }
-    }
-    whenConfigured { p -> p.dependencies.clear() }
-  }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
-  copy {
-    from "${buildDir}/libs"
-    into "${rootProject.buildDir}/distributions"
-    include "${shadowJar.archiveName}"
-    rename { filename -> "${sparkPackageName}.jar" }
-  }
-} }
-
-task sparkPackage(type: Zip, dependsOn: sparkPackagePom) {
-  archiveName "${sparkPackageName}.zip"
-  destinationDir = file("${rootProject.buildDir}/distributions")
-  outputs.upToDateWhen { false }
-
-  from ("${rootProject.buildDir}/distributions") {
-    include "${sparkPackageName}.jar"
-    include "${sparkPackageName}.pom"
-  }
-}
+createCoreJarTasks(spark210Version, archivesBaseName, sparkPackageName)

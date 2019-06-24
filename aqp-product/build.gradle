@@ -1,3 +1,6 @@
+/*
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ */
 
 apply plugin: 'scala'
 
@@ -10,5 +13,18 @@ dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
-  compile project(':snappy-core-product_' + scalaBinaryVersion)
+  compile project(coreProjectName)
+  compile coreLibraries.sparkProduct
 }
+
+
+String gitCmd = "git --git-dir=${project.projectDir}/../aqp/.git --work-tree=${project.projectDir}/../aqp"
+String gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
+String commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
+String sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
+
+createAQPMiscTasks(sourceDate, commitId, gitBranch)
+
+compileJava.dependsOn createVersionPropertiesFile
+
+archivesBaseName = "snappydata-aqp-spark${sparkVersion}_${scalaBinaryVersion}"
