@@ -20,9 +20,4 @@ import org.apache.spark.sql.internal.SQLConfSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappySQLConfSuite extends SQLConfSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "MAX_CASES_BRANCHES"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

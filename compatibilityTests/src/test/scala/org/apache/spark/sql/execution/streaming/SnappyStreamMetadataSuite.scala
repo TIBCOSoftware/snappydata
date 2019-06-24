@@ -19,7 +19,4 @@ package org.apache.spark.sql.execution.streaming
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyStreamMetadataSuite extends StreamMetadataSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil{
-
-  override def ignored: Seq[String] = Seq("read Spark 2.1.0 format")
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

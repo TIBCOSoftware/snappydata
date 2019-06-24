@@ -391,7 +391,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     // meta-data lookup should not fail now
     cstmt.execute()
     assert(cstmt.getString(3).contains(
-      "CASE WHEN (YEARI > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+      "CASE WHEN (yeari > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
 
     // query on view
     session.sql(s"select count(*) from $viewname").collect()
@@ -400,7 +400,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     var foundValidColumnName = false
     while(rs.next() && !foundValidColumnName) {
       val colName = rs.getString("COLUMN_NAME")
-      if  (colName == "YEARI") {
+      if  (colName == "yeari") {
         foundValidColumnName = true
       }
     }
@@ -782,14 +782,14 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     session.sql("create table default.t1(id bigint primary key, name varchar(10))")
     var keys = session.sessionCatalog.getKeyColumns("default.t1")
     assert(keys.length === 1)
-    assert(keys.head.toString === new Column("ID", null, "bigint", false, false, false).toString)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
 
     // also test from JDBC
     val stmt = conn.createStatement()
     stmt.execute("create table default.t2(id bigint not null primary key, name varchar(10))")
     keys = session.sessionCatalog.getKeyColumns("default.t2")
     assert(keys.length === 1)
-    assert(keys.head.toString === new Column("ID", null, "bigint", false, false, false).toString)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
 
     session.sql("insert into default.t1 values (1, 'name1'), (2, 'name2')")
     var res = session.sql("select * from default.t1 order by id").collect()
