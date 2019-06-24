@@ -21,6 +21,8 @@ import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.shared.BufferAllocator
 
+import org.apache.spark.TaskContext
+import org.apache.spark.memory.{MemoryConsumer, TaskMemoryManager}
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
@@ -63,25 +65,41 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected var valueData: ByteBufferData = null,
     protected var valueDataPosition: Long = 0L) {
 
+  val taskContext: TaskContext = TaskContext.get()
+
+  private[this] val consumer = if (taskContext ne null) {
+    new ByteBufferHashMapMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
+  } else null
+
+  if ((taskContext ne null)) {
+    freeMemoryOnTaskCompletion()
+  }
   // round to word size adding 8 bytes for header (offset + hashcode)
   private val fixedKeySize = ((keySize + 15) >>> 3) << 3
   private var _capacity = SharedUtils.nextPowerOf2(initialCapacity)
+
   private var _size = 0
   private var growThreshold = (loadFactor * _capacity).toInt
 
   private var mask = _capacity - 1
-
+  private[this] var _maxMemory: Long = _
   if (keyData eq null) {
     val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(buffer, 0)
     keyData = new ByteBufferData(buffer, allocator)
+    acquireMemory(keyData.capacity)
+    _maxMemory += keyData.capacity
   }
   if (valueData eq null) {
     valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize,
       "HASHMAP"), allocator)
     valueDataPosition = valueData.baseOffset
+    acquireMemory(valueData.capacity)
+    _maxMemory += valueData.capacity
   }
+
+
 
   final def getKeyData: ByteBufferData = this.keyData
 
@@ -92,6 +110,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   final def valueDataSize: Long = valueDataPosition - valueData.baseOffset
 
   final def capacity: Int = _capacity
+  def maxMemory: Long = _maxMemory
 
   /**
    * Insert raw bytes with given hash code into the map if not present.
@@ -181,8 +200,11 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     var position = valueDataPosition
     val dataSize = position - valueData.baseOffset
     if (position + numBytes + 4 > valueData.endPosition) {
+      val oldCapacity = valueData.capacity
       valueData = valueData.resize(numBytes + 4, allocator)
       position = valueData.baseOffset + dataSize
+      acquireMemory(valueData.capacity - oldCapacity)
+      _maxMemory += valueData.capacity - oldCapacity
     }
     val valueBaseObject = valueData.baseObject
     // write the key size followed by the full key+value bytes
@@ -205,6 +227,8 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     val fixedKeySize = this.fixedKeySize
     val newCapacity = SharedUtils.checkCapacity(_capacity << 1)
     val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
+    acquireMemory(_capacity * fixedKeySize)
+    _maxMemory += _capacity * fixedKeySize
     // clear the key data
     allocator.clearPostAllocate(newKeyBuffer, 0)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
@@ -247,6 +271,18 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     this.mask = newMask
     keyData.release(allocator)
     this.keyData = newKeyData
+  }
+
+  private def acquireMemory(required: Long): Unit = {
+    if (consumer ne null) {
+      consumer.acquireMemory(required)
+    }
+  }
+
+  private def freeMemoryOnTaskCompletion(): Unit = {
+    taskContext.addTaskCompletionListener { _ =>
+      consumer.freeMemory(_maxMemory)
+    }
   }
 }
 
@@ -305,4 +341,12 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   def release(allocator: BufferAllocator): Unit = {
     allocator.release(buffer)
   }
+
+}
+
+
+
+final class ByteBufferHashMapMemoryConsumer(taskMemoryManager: TaskMemoryManager)
+  extends MemoryConsumer(taskMemoryManager) {
+  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
 }

@@ -867,6 +867,8 @@ case class SnappyHashAggregateExec(
       + SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes
        -  (if (skipLenForAttrib != -1) 4 else 0)
 
+    val maxMemory = ctx.freshName("maxMemory")
+    val peakMemory = metricTerm(ctx, "peakMemory")
 
     val childProduce =
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
@@ -897,6 +899,11 @@ case class SnappyHashAggregateExec(
             }
            |int $numKeyBytesTerm = 0;
            |$childProduce
+           |long $maxMemory = $hashMapTerm.maxMemory();
+           |$peakMemory.add($maxMemory);
+           |if ($hashMapTerm.taskContext() != null) {
+           |  $hashMapTerm.taskContext().taskMetrics().incPeakExecutionMemory($maxMemory);
+           |}
          |}""".stripMargin)
 
     // generate code for output
@@ -929,9 +936,6 @@ case class SnappyHashAggregateExec(
           """
       }
     } else ""
-
-
-
     s"""
       if (!$initAgg) {
         $initAgg = true;
