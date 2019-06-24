@@ -173,18 +173,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
               """.stripMargin
             case t if t =:= typeOf[Decimal] =>
                 if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
-                s"""$varName = new $decimalClass().set(
+                s"""$varName = $bigDecimalObjectClass.apply(
                    |$plaformClass.getLong($vdBaseObjectTerm, $currentValueOffsetTerm),
                    ${dt.asInstanceOf[DecimalType].precision},
                    ${dt.asInstanceOf[DecimalType].scale});""".stripMargin
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
                 val len = ctx.freshName("len")
-                s"""int $len = $plaformClass.getByte($vdBaseObjectTerm, $currentValueOffsetTerm);
-                   |$currentValueOffsetTerm += 1;
-                   |byte[] $tempByteArrayTerm = new byte[$len];
+                s"""
+                   |byte[] $tempByteArrayTerm = new byte[${dt.asInstanceOf[DecimalType].defaultSize}];
                    |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
-                   |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $len);
+                   |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $tempByteArrayTerm.length);
                    |$varName = $bigDecimalObjectClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
                    |${dt.asInstanceOf[DecimalType].scale}),
@@ -598,29 +597,32 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
                   s"""
-                     |if (!$variable.changePrecision(
-                     |${dt.asInstanceOf[DecimalType].precision},
-                     | ${dt.asInstanceOf[DecimalType].scale})) {
-                     |   throw new AssertionError("Unable to set precision & scale on Decimal");
-                     | }
+                     |if (${dt.asInstanceOf[DecimalType].precision} < $variable.precision()) {
+                     |  if (!$variable.changePrecision(${dt.asInstanceOf[DecimalType].precision},
+                     |  ${dt.asInstanceOf[DecimalType].scale})) {
+                     |    throw new java.lang.IllegalStateException("unable to change precision");
+                     |  }
+                     |}
                    """.stripMargin +
                     (if (dt.asInstanceOf[DecimalType].precision <= Decimal.MAX_LONG_DIGITS) {
                     s"""$plaformClass.putLong($baseObjectTerm, $offsetTerm,
                        | $variable.toUnscaledLong());
-                       |$offsetTerm += ${dt.defaultSize};
                      """.stripMargin
                   } else {
                     s"""byte[] $tempBigDecArrayTerm = $variable.toJavaBigDecimal().
                        |unscaledValue().toByteArray();
                        |assert ($tempBigDecArrayTerm.length <= 16);
-                       |$plaformClass.putByte($baseObjectTerm, $offsetTerm,
-                       |(byte)$tempBigDecArrayTerm.length);
+                       |$plaformClass.putLong($baseObjectTerm, $offsetTerm,0);
+                       |$plaformClass.putLong($baseObjectTerm, $offsetTerm + 8,0);
                        |$plaformClass.copyMemory($tempBigDecArrayTerm,
-                       |$plaformClass.BYTE_ARRAY_OFFSET,
-                       |$baseObjectTerm, $offsetTerm + 1, $tempBigDecArrayTerm.length);
-                       |$offsetTerm += ${dt.defaultSize} + 1;
+                       |$plaformClass.BYTE_ARRAY_OFFSET, $baseObjectTerm, $offsetTerm +
+                       |${dt.asInstanceOf[DecimalType].defaultSize} - $tempBigDecArrayTerm.length ,
+                       | $tempBigDecArrayTerm.length);
                     """.stripMargin
-                  })
+                  }) +
+                    s"""
+                       |$offsetTerm += ${dt.defaultSize};
+                     """.stripMargin
                 case t if t =:= typeOf[UTF8String] =>
                   val tempLenTerm = ctx.freshName("tempLen")
 
@@ -858,10 +860,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
     keysDataType.zip(keyVars).zipWithIndex.map { case ((dt, expr), i) =>
       val nullVar = expr.isNull
       val notNullSizeExpr = if (TypeUtilities.isFixedWidth(dt)) {
-        (dt.defaultSize + (dt match {
-          case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-          case _ => 0
-        })).toString
+        dt.defaultSize.toString
       } else {
         dt match {
           case StringType =>
@@ -905,11 +904,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
              *
              */
             val (isFixedWidth, unitSize) = if (TypeUtilities.isFixedWidth(elementType)) {
-              (true, dt.defaultSize + (dt match {
-                case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-                case _ => 0
-              }))
-
+              (true, dt.defaultSize)
             } else {
               (false, 0)
             }
@@ -1216,11 +1211,8 @@ object SHAMapAccessor {
    }
 
   def getSizeOfValueBytes(aggDataTypes: Seq[DataType], numBytesForNullAggBits: Int): Int = {
-    aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize + (dt match {
-      case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-      case _ => 0
-    })
-    ) + SHAMapAccessor.sizeForNullBits(numBytesForNullAggBits)
+    aggDataTypes.foldLeft(0)((size, dt) => size + dt.defaultSize) +
+      SHAMapAccessor.sizeForNullBits(numBytesForNullAggBits)
   }
 
   def getNullBitsCastTerm(numBytesForNullBits: Int): String = if (numBytesForNullBits == 1) {
@@ -1234,12 +1226,7 @@ object SHAMapAccessor {
   }
 
   def getOffsetIncrementCodeForNullAgg(offsetTerm: String, dt: DataType): String = {
-    s"""$offsetTerm += ${
-      dt.defaultSize + (dt match {
-        case dec: DecimalType  if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-        case _ => 0
-      })
-    };"""
+    s"""$offsetTerm += ${dt.defaultSize};"""
   }
 
   def evaluateNullBitsAndEmbedWrite(numBytesForNullBits: Int, expr: ExprCode,
