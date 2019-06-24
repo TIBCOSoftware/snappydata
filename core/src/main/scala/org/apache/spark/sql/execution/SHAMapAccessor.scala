@@ -597,7 +597,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                   """.stripMargin
                 case t if t =:= typeOf[Decimal] =>
                   s"""
-                     |if (${dt.asInstanceOf[DecimalType].precision} < $variable.precision()) {
+                     |if (${dt.asInstanceOf[DecimalType].precision} != $variable.precision() ||
+                     | ${dt.asInstanceOf[DecimalType].scale} != $variable.scale()) {
                      |  if (!$variable.changePrecision(${dt.asInstanceOf[DecimalType].precision},
                      |  ${dt.asInstanceOf[DecimalType].scale})) {
                      |    throw new java.lang.IllegalStateException("unable to change precision");
