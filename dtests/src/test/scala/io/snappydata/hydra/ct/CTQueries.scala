@@ -285,7 +285,7 @@ object CTQueries {
         StructField("SENT_TO_ORDER_ID", StringType, nullable = true) ,
         StructField("ASK_PRICE", DecimalType(28, 8), nullable = true) ,
         StructField("ASK_QTY", DecimalType(28, 4), nullable = true) ,
-        StructField("BID_PRICE", DecimalType(38, 10), nullable = true) ,
+        StructField("BID_PRICE", DecimalType(28, 10), nullable = true) ,
         StructField("BID_QTY", DecimalType(28, 4), nullable = true) ,
         StructField("REG_NMS_EXCEP_CD", StringType, nullable = true) ,
         StructField("REG_NMS_EXCEP_TXT", StringType, nullable = true) ,
@@ -618,7 +618,7 @@ object CTQueries {
         "RCV_DEPT_ID VARCHAR(20) ,ROUTE_METHOD_CD VARCHAR(20) ,LOCATE_ID VARCHAR(256) ,LOCATE_TS TIMESTAMP ,LOCATE_OVERRIDE_REASON VARCHAR(2000) ," +
         "LOCATE_BROKER VARCHAR(256) ,ORDER_BRCH_SEQ_TXT VARCHAR(20) ,IGNORE_CD VARCHAR(20) ,CLIENT_ORDER_REFID VARCHAR(64) ," +
         "CLIENT_ORDER_ORIG_REFID VARCHAR(64) ,ORDER_TYPE_CD VARCHAR(20) ,SENT_TO_ORDER_ID VARCHAR(64) ,ASK_PRICE DECIMAL(28, 8) ," +
-        "ASK_QTY DECIMAL(28, 4) ,BID_PRICE DECIMAL(38, 10) ,BID_QTY DECIMAL(28, 4) ,REG_NMS_EXCEP_CD VARCHAR(20) ," +
+        "ASK_QTY DECIMAL(28, 4) ,BID_PRICE DECIMAL(28, 10) ,BID_QTY DECIMAL(28, 4) ,REG_NMS_EXCEP_CD VARCHAR(20) ," +
         "REG_NMS_EXCEP_TXT VARCHAR(2000) ,REG_NMS_LINK_ID VARCHAR(64) ,REG_NMS_PRINTS  VARCHAR(1) ,REG_NMS_STOP_TIME TIMESTAMP ," +
         "SENT_TS TIMESTAMP ,RULE92  VARCHAR(1) ,RULE92_OVERRIDE_TXT VARCHAR(2000) ,RULE92_RATIO DECIMAL(25, 10) ," +
         "EXMPT_STGY_BEGIN_TIME TIMESTAMP ,EXMPT_STGY_END_TIME TIMESTAMP ,EXMPT_STGY_PRICE_INST VARCHAR(2000) ," +
