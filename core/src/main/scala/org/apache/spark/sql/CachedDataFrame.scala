@@ -590,8 +590,7 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  private[sql] def queryStringShortForm(queryString: String): String = {
-    val trimSize = 100
+  private[sql] def queryStringShortForm(queryString: String, trimSize: Int = 100): String = {
     if (queryString.length > trimSize) {
       queryString.substring(0, trimSize).concat("...")
     } else queryString
