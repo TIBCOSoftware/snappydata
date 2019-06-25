@@ -23,7 +23,7 @@ import io.snappydata.cluster.PreparedQueryRoutingSingleNodeSuite
 
 import org.apache.spark.SparkConf
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
-import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.SparkSupport
 
 /**
  * Tests for updates/deletes on column table.
@@ -45,7 +45,7 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    if (SnappySession.isEnterpriseEdition) {
+    if (SparkSupport.isEnterpriseEdition) {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)

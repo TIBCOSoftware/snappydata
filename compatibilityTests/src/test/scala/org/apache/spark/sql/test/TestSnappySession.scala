@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.test
 
-import org.apache.spark.sql.internal.{SnappyConf, SnappySessionState}
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.{SparkConf, SparkContext}
 
@@ -25,8 +24,8 @@ import org.apache.spark.{SparkConf, SparkContext}
  */
 private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc) {
 
-
   self =>
+
   def this(snappyConf: SparkConf) {
     this(
       new SparkContext("local[2]", "test-sql-context",
@@ -44,20 +43,8 @@ private[sql] class TestSnappySession(sc: SparkContext) extends SnappySession(sc)
     this(new SparkConf)
   }
 
-  @transient
-  override lazy val sessionState: SnappySessionState = new SnappySessionState(self) {
-    override lazy val conf: SnappyConf = {
-      new SnappyConf(self) {
-        clear()
-
-        override def clear(): Unit = {
-          super.clear()
-          // Make sure we start with the default test configs even after clear
-          TestSQLContext.overrideConfs.foreach { case (key, value) => setConfString(key, value) }
-        }
-      }
-    }
-  }
+  // Make sure we start with the default test configs even after clear
+  override private[sql] def overrideConfs: Map[String, String] = TestSQLContext.overrideConfs
 
   // Needed for Java tests
   def loadTestData(): Unit = {

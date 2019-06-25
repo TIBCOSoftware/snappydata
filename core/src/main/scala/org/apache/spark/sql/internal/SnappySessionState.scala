@@ -34,7 +34,7 @@ import io.snappydata.{Constant, HintName, Property, QueryHint}
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, Star, UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, Star, UnresolvedAttribute}
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
@@ -247,29 +247,6 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
   @volatile private[sql] var enableExecutionCache: Boolean = _
   protected final lazy val executionCache =
     new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
-
-  /**
-   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
-   */
-  /* TODO: SW: remove
-  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
-    def getTable(u: UnresolvedRelation): LogicalPlan = {
-      try {
-        catalog.lookupRelation(u.tableIdentifier, u.alias)
-      } catch {
-        case _: NoSuchTableException =>
-          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
-      }
-    }
-
-    def apply(plan: LogicalPlan): LogicalPlan = plan.transformUp {
-      case i@PutIntoTable(u: UnresolvedRelation, _) =>
-        i.copy(table = EliminateSubqueryAliases(getTable(u)))
-      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
-        d.copy(query = EliminateSubqueryAliases(getTable(u)))
-    }
-  }
-  */
 
   /**
    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
@@ -721,6 +698,15 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
+  resetOverrides()
+
+  private def resetOverrides(): Unit = {
+    val overrideConfs = session.overrideConfs
+    if (overrideConfs.nonEmpty) {
+      overrideConfs.foreach(p => setConfString(p._1, p._2))
+    }
+  }
+
   private def coreCountForShuffle: Int = {
     val count = SnappyContext.totalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
@@ -874,6 +860,11 @@ class SnappyConf(@transient val session: SnappySession)
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
     keyUpdateActions(entry.key, None, doSet = false, search = false)
     super.unsetConf(entry)
+  }
+
+  override def clear(): Unit = {
+    super.clear()
+    resetOverrides()
   }
 }
 

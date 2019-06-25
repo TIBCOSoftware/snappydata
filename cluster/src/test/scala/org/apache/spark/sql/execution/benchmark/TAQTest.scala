@@ -278,7 +278,7 @@ object TAQTest extends Logging with Assertions {
         .setIfMissing("spark.master", s"local[$cores]")
         .setAppName("microbenchmark")
     conf.set("snappydata.store.critical-heap-percentage", "95")
-    if (SnappySession.isEnterpriseEdition) {
+    if (SparkSupport.isEnterpriseEdition) {
       conf.set("snappydata.store.memory-size", "1200m")
     }
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)

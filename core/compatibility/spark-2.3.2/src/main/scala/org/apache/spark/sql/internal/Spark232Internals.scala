@@ -455,7 +455,7 @@ class Spark232Internals extends SparkInternals {
       case _ => new SessionResourceLoader(session)
     }
     new SnappySessionCatalog23(session, externalCatalog, globalTempViewManager,
-      functionResourceLoader, functionRegistry, sessionState.sqlParser, conf, hadoopConf)
+      functionResourceLoader, functionRegistry, sessionState.snappySqlParser, conf, hadoopConf)
   }
 
   override def lookupDataSource(provider: String, conf: => SQLConf): Class[_] =
@@ -492,6 +492,10 @@ class Spark232Internals extends SparkInternals {
       new JSONOptions(parameters,
         sparkSession.sessionState.conf.sessionLocalTimeZone,
         sparkSession.sessionState.conf.columnNameOfCorruptRecord)
+  }
+
+  override def newSnappySessionState(snappySession: SnappySession): SnappySessionState = {
+    // TODO: SW:
   }
 
   override def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer = {
@@ -566,7 +570,7 @@ final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
 
   override protected def baseLoadDynamicPartitions(schema: String, table: String, loadPath: String,
       partition: TablePartitionSpec, replace: Boolean, numDP: Int, holdDDLTime: Boolean): Unit = {
-    SparkSupport.internals().loadDynamicPartitions(this, schema, table, loadPath, partition,
+    SparkSupport.internals.loadDynamicPartitions(this, schema, table, loadPath, partition,
       replace, numDP, holdDDLTime)
   }
 
@@ -694,7 +698,7 @@ final class SmartConnectorExternalCatalog23(override val session: SparkSession)
     renameFunctionImpl(schema, oldName, newName)
 }
 
-final class SnappySessionCatalog23(override val snappySession: SnappySession,
+class SnappySessionCatalog23(override val snappySession: SnappySession,
     override val snappyExternalCatalog: SnappyExternalCatalog,
     override val globalTempViewManager: GlobalTempViewManager,
     override val functionResourceLoader: FunctionResourceLoader,

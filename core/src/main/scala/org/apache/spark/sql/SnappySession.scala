@@ -161,6 +161,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
+  private[sql] def overrideConfs: Map[String, String] = Map.empty
+
   override def sql(sqlText: String): DataFrame = {
     try {
       sqInternal(sqlText)
