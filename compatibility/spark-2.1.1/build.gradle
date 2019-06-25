@@ -58,6 +58,4 @@ dependencies {
 }
 
 archivesBaseName = "snappydata-core-compat-spark${spark211Version}_${scalaBinaryVersion}"
-String sparkPackageName = "snappydata-${version}_${spark211Version}-s_${scalaBinaryVersion}"
-
-createCoreJarTasks(spark211Version, archivesBaseName, sparkPackageName)
+sparkPackageName = "snappydata-${version}_${spark211Version}-s_${scalaBinaryVersion}"

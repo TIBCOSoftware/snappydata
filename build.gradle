@@ -121,6 +121,7 @@ allprojects {
         ? ":snappy-core_${scalaBinaryVersion}" : ":snappy-core-product_${scalaBinaryVersion}"
     aqpProjectName = sparkVersion == sparkConnectorVersion
         ? ":snappy-aqp_${scalaBinaryVersion}" : ":snappy-aqp-product_${scalaBinaryVersion}"
+    sparkPackageName = "snappydata-${version}_${sparkConnectorVersion}-s_${scalaBinaryVersion}"
 
     sparkConnectorDistName = "spark-${sparkConnectorVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.4.3'
@@ -1491,101 +1492,33 @@ task packageVSD { doLast {
   }
 } }
 
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+// Creates a task to write the version properties file to the resources dir
+void createVersionPropertiesTask(Project proj, String propertiesFile, String projProductName,
+    String projSourceDate, String projCommitId, String projGitBranch) {
+  proj.tasks.create('createVersionPropertiesFile') {
+    dependsOn 'processResources'
 
-void createCoreJarTasks(String sparkCompatVersion,
-    String archiveName, String sparkPackageName) {
-  task shadowJarTask(type: ShadowJar) {
-    zip64 = true
-    // avoid conflict with the 0.9.2 version in stock Spark
-    relocate 'org.apache.thrift', 'io.snappydata.org.apache.thrift'
-    // relocate koloboke for possible conflicts with user dependencies
-    relocate 'com.koloboke', 'io.snappydata.com.koloboke'
-    // relocate the guava's com.google packages
-    relocate 'com.google.common', 'io.snappydata.com.google.common'
-
-    mergeServiceFiles()
-    exclude 'log4j.properties'
-
-    if (rootProject.hasProperty('enablePublish')) {
-      createdBy = 'SnappyData Build Team'
-    } else {
-      createdBy = System.getProperty('user.name')
-    }
-    manifest {
-      attributes(
-        'Manifest-Version'  : '1.0',
-        'Created-By'        : createdBy,
-        'Title'             : archiveName,
-        'Version'           : version,
-        'Vendor'            : vendorName
-      )
-    }
-  }
-
-  // write the POM for spark-package
-  task sparkPackagePom { doLast {
-    file("${rootProject.buildDir}/distributions").mkdirs()
-    pom {
-      project {
-        groupId 'SnappyDataInc'
-        artifactId 'snappydata'
-        version "${version}-s_${scalaBinaryVersion}"
-        licenses {
-          license {
-            name 'The Apache Software License, Version 2.0'
-            url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-            distribution 'repo'
-          }
-        }
-      }
-      whenConfigured { p -> p.dependencies.clear() }
-    }.writeTo("${rootProject.buildDir}/distributions/${sparkPackageName}.pom")
-    copy {
-      from "${buildDir}/libs"
-      into "${rootProject.buildDir}/distributions"
-      include "${shadowJar.archiveName}"
-      rename { filename -> "${sparkPackageName}.jar" }
-    }
-  } }
-
-  task sparkPackage(type: Zip) {
-    dependsOn shadowJarTask, sparkPackagePom
-    archiveName = "${sparkPackageName}.zip"
-    destinationDir = file("${rootProject.buildDir}/distributions")
-    outputs.upToDateWhen { false }
-
-    from ("${rootProject.buildDir}/distributions") {
-      include "${sparkPackageName}.jar"
-      include "${sparkPackageName}.pom"
-    }
-  }
-}
-
-void createAQPMiscTasks(String aqpSourceDate, String aqpCommitId, String aqpGitBranch) {
-  // Creates the version properties file and writes it to the resources dir
-  task createVersionPropertiesFile(dependsOn: 'processResources') {
-    def propertiesDir = file("${sourceSets.main.scala.outputDir}/io/snappydata")
-    outputs.file "${propertiesDir}/SnappyAQPVersion.properties"
+    def propertiesDir = file("${proj.sourceSets.main.scala.outputDir}/io/snappydata")
+    outputs.file "${propertiesDir}/${propertiesFile}"
     inputs.file "${rootProject.projectDir}/build.gradle"
 
     doLast {
       def props = [
-        'Product-Name'      : aqpProductName,
+        'Product-Name'      : projProductName,
         'Product-Version'   : version,
         'Build-Id'          : buildIdPrefix + buildNumber,
         'Build-Date'        : buildDate,
         'Build-Platform'    : osName.getName() + osVersion + osArch,
         'Build-Java-Version': jdkVersion,
-        'Source-Date'       : aqpSourceDate,
-        'Source-Revision'   : aqpCommitId,
-        'Source-Repository' : aqpGitBranch,
+        'Source-Date'       : projSourceDate,
+        'Source-Revision'   : projCommitId,
+        'Source-Repository' : projGitBranch,
         'Cluster-Type'      : clusterType
       ]
 
-      writeProperties(propertiesDir, 'SnappyAQPVersion.properties',
-          "Properties that control what version ${aqpProductName} will think it is. " +
-          "Changing these values may cause ${aqpProductName} to no longer function.", props)
+      writeProperties(propertiesDir, propertiesFile,
+          "Properties that control what version ${projProductName} will think it is. " +
+          "Changing these values may cause ${projProductName} to no longer function.", props)
     }
   }
 }

@@ -25,16 +25,13 @@ import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
-import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder, FinalizeObject}
 import com.google.common.cache.{Cache, CacheBuilder}
-import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
-import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
+import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
@@ -108,13 +105,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
    */
   @transient
-  lazy override val sessionState: SnappySessionState = {
-    SnappySession.aqpSessionStateClass match {
-      case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
-          newInstance(self).asInstanceOf[SnappySessionState]
-      case None => internals.newSnappySessionState(self)
-    }
-  }
+  lazy override val sessionState: SnappySessionState = internals.newSnappySessionState(self)
 
   def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 
@@ -1881,26 +1872,6 @@ object SnappySession extends Logging {
     """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
   private val unresolvedColRegex =
     """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
-
-  lazy val isEnterpriseEdition: Boolean = {
-    GemFireCacheImpl.setGFXDSystem(true)
-    GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
-    GemFireVersion.isEnterpriseEdition
-  }
-
-  private lazy val aqpSessionStateClass: Option[Class[_]] = {
-    if (isEnterpriseEdition) {
-      try {
-        Some(org.apache.spark.util.Utils.classForName(
-          "org.apache.spark.sql.internal.SnappyAQPSessionState"))
-      } catch {
-        case NonFatal(e) =>
-          // Let the user know if it failed to load AQP classes.
-          logWarning(s"Failed to load AQP classes in Enterprise edition: $e")
-          None
-      }
-    } else None
-  }
 
   private[sql] def findShuffleDependencies(rdd: RDD[_]): List[Int] = {
     rdd.dependencies.toList.flatMap {

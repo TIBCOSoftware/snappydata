@@ -60,6 +60,4 @@ if (rootProject.hasProperty('enablePublish')) {
 }
 
 archivesBaseName = "snappydata-core-compat-spark${spark232Version}_${scalaBinaryVersion}"
-String sparkPackageName = "snappydata-${version}_${spark232Version}-s_${scalaBinaryVersion}"
-
-createCoreJarTasks(spark232Version, archivesBaseName, sparkPackageName)
+sparkPackageName = "snappydata-${version}_${spark232Version}-s_${scalaBinaryVersion}"
