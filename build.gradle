@@ -887,6 +887,7 @@ task publishMaven {
 
 task product(type: Zip) {
   dependsOn ":snappy-cluster_${scalaBinaryVersion}:jar"
+  dependsOn ":snappy-core_${scalaBinaryVersion}:spark${sparkVersion}:jar"
   dependsOn ":snappy-examples_${scalaBinaryVersion}:jar"
   dependsOn ":snappy-spark:snappy-spark-assembly_${scalaBinaryVersion}:sparkProduct"
   dependsOn ':snappy-launcher:jar'
@@ -894,12 +895,18 @@ task product(type: Zip) {
 
   def clusterProject = project(":snappy-cluster_${scalaBinaryVersion}")
   def launcherProject = project(':snappy-launcher')
+  def aqpCompatProjectName = ":snappy-aqp_${scalaBinaryVersion}:aqp-spark${sparkVersion}"
   def targetProject = clusterProject
 
   if (isEnterpriseProduct) {
     if (hasAqpProject) {
       dependsOn "${aqpProjectName}:jar"
-      targetProject = aqpProject
+      dependsOn "${aqpCompatProjectName}:jar"
+      if (sparkVersion == sparkConnectorVersion) {
+        targetProject = project(aqpCompatProjectName)
+      } else {
+        targetProject = aqpProject
+      }
     }
 
     if (hasJdbcConnectorProject){

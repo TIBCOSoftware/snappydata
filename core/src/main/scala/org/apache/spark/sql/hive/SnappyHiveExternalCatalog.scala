@@ -82,12 +82,14 @@ trait SnappyHiveExternalCatalog extends SnappyHiveCatalogBase with SnappyExterna
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
         logDebug(s"Looking up data source for ${name._1}.${name._2}")
-        withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableIfExists(
-          name._1, name._2)) match {
-          case None =>
-            nonExistentTables.put(name, java.lang.Boolean.TRUE)
-            throw new TableNotFoundException(name._1, name._2)
-          case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+        withHiveExceptionHandling {
+          try {
+            finalizeCatalogTable(SnappyHiveExternalCatalog.super.getTable(name._1, name._2))
+          } catch {
+            case _: TableNotFoundException | _: NoSuchTableException =>
+              nonExistentTables.put(name, java.lang.Boolean.TRUE)
+              throw new TableNotFoundException(name._1, name._2)
+          }
         }
       }
     }

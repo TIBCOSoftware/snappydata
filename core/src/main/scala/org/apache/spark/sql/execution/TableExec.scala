@@ -33,7 +33,8 @@ import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, SparkSup
 /**
  * Base class for bulk insert/mutation operations for column and row tables.
  */
-trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor with SparkSupport {
+trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor
+    with NonRecursivePlans with SparkSupport {
 
   def partitionColumns: Seq[String]
 
@@ -96,11 +97,6 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor with SparkSu
       s"number of ${opType.toLowerCase} rows"))
   }
 
-  override protected def doExecute(): RDD[InternalRow] = {
-    // don't expect code generation to fail
-    internals.newWholeStagePlan(this).execute()
-  }
-
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     val inputRDDs = child.asInstanceOf[CodegenSupport].inputRDDs()
     if (partitioned) {
@@ -142,6 +138,7 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor with SparkSu
       })
       locations
     }
+
     inputRDDs.map { rdd =>
       // if the two are different then its partition pruning case
       if (numBuckets == rdd.getNumPartitions) {

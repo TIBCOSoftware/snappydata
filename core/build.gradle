@@ -83,8 +83,8 @@ dependencies {
   testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
   testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
   testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkConnectorVersion}:tests")
+  testCompile project(":snappy-core_${scalaBinaryVersion}:spark${sparkConnectorVersion}")
 
-  testRuntime project(":snappy-core_${scalaBinaryVersion}:spark${sparkConnectorVersion}")
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }

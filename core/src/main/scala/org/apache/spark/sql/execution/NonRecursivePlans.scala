@@ -26,7 +26,7 @@ import org.apache.spark.sql.internal.CodeGenerationException
  * version and use the same for non-codegenerated case. For that case this
  * prevents recursive calls into code generation in case it fails for some reason.
  */
-abstract class NonRecursivePlans extends SparkPlan with SparkSupport {
+trait NonRecursivePlans extends SparkPlan with SparkSupport {
 
   /**
    * Variable to disallow recursive generation so will mark the case of

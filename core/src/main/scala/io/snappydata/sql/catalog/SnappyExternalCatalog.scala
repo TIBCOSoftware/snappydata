@@ -77,7 +77,7 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
     throw new UnsupportedOperationException("Schema definitions cannot be altered")
   }
 
-  override def getTable(schema: String, table: String): CatalogTable = {
+  protected def getTableImpl(schema: String, table: String): CatalogTable = {
     if (schema == SYS_SCHEMA) {
       // check for a system table/VTI in store
       val session = Utils.getActiveSession
@@ -108,14 +108,6 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
       } catch {
         case e@(_: UncheckedExecutionException | _: ExecutionException) => throw e.getCause
       }
-    }
-  }
-
-  protected def getTableOptionImpl(schema: String, table: String): Option[CatalogTable] = {
-    try {
-      Some(getTable(schema, table))
-    } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => None
     }
   }
 
