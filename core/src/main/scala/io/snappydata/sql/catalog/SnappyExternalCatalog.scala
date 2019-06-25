@@ -111,6 +111,14 @@ trait SnappyExternalCatalog extends ExternalCatalog with SparkSupport {
     }
   }
 
+  protected def getTableOptionImpl(schema: String, table: String): Option[CatalogTable] = {
+    try {
+      Some(getTable(schema, table))
+    } catch {
+      case _: TableNotFoundException | _: NoSuchTableException => None
+    }
+  }
+
   def getTableIfExists(schema: String, table: String): Option[CatalogTable] = {
     try {
       Some(getTable(schema, table))

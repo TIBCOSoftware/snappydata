@@ -63,7 +63,7 @@ object ExecutorInitiator extends Logging {
     private[cluster] val testLock = new Object()
     @volatile private[cluster] var testStartDone = false
 
-    val membershipListener = new MembershipListener {
+    private val membershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
           remaining: util.List[InternalDistributedMember]): Unit = {}
 
@@ -100,7 +100,7 @@ object ExecutorInitiator extends Logging {
         dm: InternalDistributedMember): Unit = lock.synchronized {
       driverURL = url
       driverDM = dm
-      SnappyContext.clearStaticArtifacts(SnappyContext.globalSparkContext)
+      SnappyContext.clearStaticArtifacts()
       lock.notifyAll()
     }
 
@@ -158,7 +158,7 @@ object ExecutorInitiator extends Logging {
                     val port = executorConf.getInt("spark.executor.port", 0)
                     val (ioEncryptionKey, props) =
                       SparkCallbacks.fetchDriverProperty(memberId, executorHost,
-                      executorConf, port, url)
+                        executorConf, port, url)
 
                     val driverConf = Utils.newClusterSparkConf()
                     Utils.setDefaultSerializerAndCodec(driverConf)

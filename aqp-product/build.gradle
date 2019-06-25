@@ -14,7 +14,8 @@ dependencies {
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
 
   compile project(coreProjectName)
-  compile coreLibraries.sparkProduct
+  compileOnly coreLibraries.sparkProduct
+  runtime project(':snappy-cluster_' + scalaBinaryVersion)
 }
 
 

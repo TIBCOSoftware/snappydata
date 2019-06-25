@@ -40,7 +40,7 @@ class SnappyCoarseGrainedExecutorBackend(
       executorId, hostName, cores, userClassPath, env) {
 
   override def onStop() {
-    SnappyContext.clearStaticArtifacts(SnappyContext.globalSparkContext)
+    SnappyContext.clearStaticArtifacts()
     exitWithoutRestart()
   }
 
