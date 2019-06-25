@@ -19,6 +19,9 @@ apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 
+// directly include the base classes to ensure everything is compiled with Spark 2.1.1
+sourceSets.main.scala.srcDir "../spark-${spark210Version}/src/main/scala"
+
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion
@@ -46,14 +49,6 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-streaming-kafka-0-8_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
-  compile (project(":snappy-core_${scalaBinaryVersion}:spark${spark210Version}")) {
-    exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-catalyst_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-sql_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-hive_' + scalaBinaryVersion)
-    exclude(group: 'org.apache.spark', module: 'spark-streaming_' + scalaBinaryVersion)
   }
 }
 

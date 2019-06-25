@@ -15,7 +15,8 @@ dependencies {
 
   compile project(coreProjectName)
   compileOnly coreLibraries.sparkProduct
-  runtime project(':snappy-cluster_' + scalaBinaryVersion)
+  runtime project(":snappy-cluster_${scalaBinaryVersion}")
+  runtime project(":snappy-aqp_${scalaBinaryVersion}:aqp-spark${sparkVersion}")
 }
 
 

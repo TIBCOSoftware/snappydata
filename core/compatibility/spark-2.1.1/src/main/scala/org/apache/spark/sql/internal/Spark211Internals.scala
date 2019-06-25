@@ -116,14 +116,14 @@ final class SnappyCacheManager211 extends CacheManager {
 
 final class SnappyEmbeddedHiveCatalog211(conf: SparkConf,
     hadoopConf: Configuration, createTime: Long)
-    extends SnappyEmbeddedHiveCatalog21(conf, hadoopConf, createTime) {
+    extends SnappyEmbeddedHiveCatalog210(conf, hadoopConf, createTime) {
 
   override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
     alterTableSchemaImpl(schemaName, table, newSchema)
 }
 
 final class SmartConnectorExternalCatalog211(session: SparkSession)
-    extends SmartConnectorExternalCatalog21(session) {
+    extends SmartConnectorExternalCatalog210(session) {
 
   override def alterTableSchema(schemaName: String, table: String, newSchema: StructType): Unit =
     alterTableSchemaImpl(schemaName, table, newSchema)

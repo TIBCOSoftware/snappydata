@@ -22,7 +22,6 @@ import com.gemstone.gemfire.internal.cache.LocalRegion
 
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
-import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
 import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
@@ -54,7 +53,8 @@ private[sql] abstract class PartitionedPhysicalScan(
     partitionColumns: Seq[Expression],
     partitionColumnAliases: Seq[Seq[Attribute]],
     @transient override val relation: BaseRelation)
-    extends DataSourceScanExec with CodegenSupportOnExecutor with SparkSupport {
+    extends DataSourceScanExec with CodegenSupportOnExecutor
+        with NonRecursivePlans with SparkSupport {
 
   val metastoreTableIdentifier: Option[TableIdentifier] = None
 
@@ -91,10 +91,6 @@ private[sql] abstract class PartitionedPhysicalScan(
 
   override def inputRDDs(): Seq[RDD[InternalRow]] = {
     rdd :: Nil
-  }
-
-  protected override def doExecute(): RDD[InternalRow] = {
-    internals.newWholeStagePlan(this).execute()
   }
 
   /** Specifies how data is partitioned across different nodes in the cluster. */
@@ -345,7 +341,8 @@ trait PartitionedDataSourceScan extends PrunedUnsafeFilteredScan {
 private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     basePartKeys: Seq[Expression],
     otherPlan: SparkPlan,
-    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport with SparkSupport {
+    otherPartKeys: Seq[Expression]) extends SparkPlan with CodegenSupport
+    with NonRecursivePlans with SparkSupport {
 
   private var consumedCode: String = _
   private val consumedVars: ArrayBuffer[ExprCode] = ArrayBuffer.empty
@@ -403,10 +400,6 @@ private[sql] final case class ZipPartitionScan(basePlan: CodegenSupport,
     consumedVars.clear()
     input.map(_.copy()).foreach(consumedVars += _)
     consumeInput + "\n" + consumedCode
-  }
-
-  override protected def doExecute(): RDD[InternalRow] = attachTree(this, "execute") {
-    internals.newWholeStagePlan(this).execute()
   }
 
   override def output: Seq[Attribute] = basePlan.output

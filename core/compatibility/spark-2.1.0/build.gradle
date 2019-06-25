@@ -19,6 +19,8 @@ apply plugin: 'scala'
 
 compileScala.options.encoding = 'UTF-8'
 
+sourceSets.main.scala.srcDir 'specific/scala'
+
 dependencies {
   compileOnly 'org.scala-lang:scala-library:' + scalaVersion
   compileOnly 'org.scala-lang:scala-reflect:' + scalaVersion

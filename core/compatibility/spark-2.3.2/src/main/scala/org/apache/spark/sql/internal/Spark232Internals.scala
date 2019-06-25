@@ -543,6 +543,9 @@ final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
     override val hadoopConf: Configuration, override val createTime: Long)
     extends SnappyHiveCatalogBase(conf, hadoopConf) with SnappyHiveExternalCatalog {
 
+  override def getTable(schema: String, table: String): CatalogTable =
+    getTableImpl(schema, table)
+
   override protected def baseCreateDatabase(schemaDefinition: CatalogDatabase,
       ignoreIfExists: Boolean): Unit = super.doCreateDatabase(schemaDefinition, ignoreIfExists)
 
@@ -632,7 +635,10 @@ final class SnappyEmbeddedHiveCatalog23(override val conf: SparkConf,
 }
 
 final class SmartConnectorExternalCatalog23(override val session: SparkSession)
-    extends SmartConnectorExternalCatalog {
+    extends ExternalCatalog with SmartConnectorExternalCatalog {
+
+  override def getTable(schema: String, table: String): CatalogTable =
+    getTableImpl(schema, table)
 
   override protected def doCreateDatabase(schemaDefinition: CatalogDatabase,
       ignoreIfExists: Boolean): Unit = createDatabaseImpl(schemaDefinition, ignoreIfExists)

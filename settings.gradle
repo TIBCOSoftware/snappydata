@@ -15,12 +15,14 @@
  * LICENSE file.
  */
 
-def scalaBinaryVersion = '2.11'
+String scalaBinaryVersion = '2.11'
+String sparkVersion = '2.1.1'
+String sparkConnectorVersion = rootProject.hasProperty('spark.connector.version')
+    ? rootProject.property('spark.connector.version') : sparkVersion
 rootProject.name = 'snappydata_' + scalaBinaryVersion
 
 include ':snappy-jdbc_' + scalaBinaryVersion
 include ':snappy-core_' + scalaBinaryVersion
-include ':snappy-core-product_' + scalaBinaryVersion
 include ':snappy-cluster_' + scalaBinaryVersion
 include ':snappy-launcher'
 include ':snappy-examples_' + scalaBinaryVersion
@@ -36,7 +38,6 @@ include ":snappy-core_${scalaBinaryVersion}:spark2.3.2"
 
 project(':snappy-jdbc_' + scalaBinaryVersion).projectDir = "$rootDir/jdbc" as File
 project(':snappy-core_' + scalaBinaryVersion).projectDir = "$rootDir/core" as File
-project(':snappy-core-product_' + scalaBinaryVersion).projectDir = "$rootDir/core-product" as File
 project(':snappy-cluster_' + scalaBinaryVersion).projectDir = "$rootDir/cluster" as File
 project(':snappy-launcher').projectDir = "$rootDir/launcher" as File
 project(':snappy-examples_' + scalaBinaryVersion).projectDir = "$rootDir/examples" as File
@@ -47,6 +48,11 @@ project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoder
 project(":snappy-core_${scalaBinaryVersion}:spark2.1.0").projectDir = "$rootDir/core/compatibility/spark-2.1.0" as File
 project(":snappy-core_${scalaBinaryVersion}:spark2.1.1").projectDir = "$rootDir/core/compatibility/spark-2.1.1" as File
 project(":snappy-core_${scalaBinaryVersion}:spark2.3.2").projectDir = "$rootDir/core/compatibility/spark-2.3.2" as File
+
+if (sparkConnectorVersion != sparkVersion) {
+  include ':snappy-core-product_' + scalaBinaryVersion
+  project(':snappy-core-product_' + scalaBinaryVersion).projectDir = "$rootDir/core-product" as File
+}
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
@@ -172,17 +178,20 @@ if (new File(rootDir, 'spark-jobserver/build.gradle').exists()) {
 
 if (new File(rootDir, 'aqp/build.gradle').exists()) {
   include ':snappy-aqp_' + scalaBinaryVersion
-  include ':snappy-aqp-product_' + scalaBinaryVersion
   project(':snappy-aqp_' + scalaBinaryVersion).projectDir = "$rootDir/aqp" as File
-  project(':snappy-aqp-product_' + scalaBinaryVersion).projectDir = "$rootDir/aqp-product" as File
+
+  if (sparkConnectorVersion != sparkVersion) {
+    include ':snappy-aqp-product_' + scalaBinaryVersion
+    project(':snappy-aqp-product_' + scalaBinaryVersion).projectDir = "$rootDir/aqp-product" as File
+  }
 
   // compatibility modules for all supported Spark releases
-  include ":snappy-aqp_${scalaBinaryVersion}:spark2.1.0"
-  include ":snappy-aqp_${scalaBinaryVersion}:spark2.1.1"
-  include ":snappy-aqp_${scalaBinaryVersion}:spark2.3.2"
-  project(":snappy-aqp_${scalaBinaryVersion}:spark2.1.0").projectDir = "$rootDir/aqp/compatibility/spark-2.1.0" as File
-  project(":snappy-aqp_${scalaBinaryVersion}:spark2.1.1").projectDir = "$rootDir/aqp/compatibility/spark-2.1.1" as File
-  project(":snappy-aqp_${scalaBinaryVersion}:spark2.3.2").projectDir = "$rootDir/aqp/compatibility/spark-2.3.2" as File
+  include ":snappy-aqp_${scalaBinaryVersion}:aqp-spark2.1.0"
+  include ":snappy-aqp_${scalaBinaryVersion}:aqp-spark2.1.1"
+  include ":snappy-aqp_${scalaBinaryVersion}:aqp-spark2.3.2"
+  project(":snappy-aqp_${scalaBinaryVersion}:aqp-spark2.1.0").projectDir = "$rootDir/aqp/compatibility/spark-2.1.0" as File
+  project(":snappy-aqp_${scalaBinaryVersion}:aqp-spark2.1.1").projectDir = "$rootDir/aqp/compatibility/spark-2.1.1" as File
+  project(":snappy-aqp_${scalaBinaryVersion}:aqp-spark2.3.2").projectDir = "$rootDir/aqp/compatibility/spark-2.3.2" as File
 }
 
 if (new File(rootDir, 'snappy-connectors/jdbc-stream-connector/build.gradle').exists()) {
