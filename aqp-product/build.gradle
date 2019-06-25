@@ -23,7 +23,9 @@ String gitBranch = "${gitCmd} rev-parse --abbrev-ref HEAD".execute().text.trim()
 String commitId = "${gitCmd} rev-parse HEAD".execute().text.trim()
 String sourceDate = "${gitCmd} log -n 1 --format=%ai".execute().text.trim()
 
-createAQPMiscTasks(sourceDate, commitId, gitBranch)
+// Creates the version properties file and writes it to the resources dir
+createVersionPropertiesTask(project, 'SnappyAQPVersion.properties', aqpProductName,
+    sourceDate, commitId, gitBranch)
 
 compileJava.dependsOn createVersionPropertiesFile
 

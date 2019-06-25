@@ -16,10 +16,15 @@
  */
 package org.apache.spark.sql
 
+import scala.util.control.NonFatal
+
+import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.pivotal.gemfirexd.internal.GemFireXDVersion
+import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 
 import org.apache.spark.util.Utils
-import org.apache.spark.{SparkContext, SparkException}
+import org.apache.spark.{Logging, SparkContext, SparkException}
 
 /**
  * Helper trait for easy access to [[SparkInternals]] using the "internals" method.
@@ -31,7 +36,7 @@ trait SparkSupport {
 /**
  * Load appropriate Spark version support as per the current Spark version.
  */
-object SparkSupport {
+object SparkSupport extends Logging {
 
   /**
    * The default Spark version for which core will be built and must exactly match
@@ -43,6 +48,12 @@ object SparkSupport {
 
   private val INTERNAL_PACKAGE = "org.apache.spark.sql.internal"
 
+  lazy val isEnterpriseEdition: Boolean = {
+    GemFireCacheImpl.setGFXDSystem(true)
+    GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
+    GemFireVersion.isEnterpriseEdition
+  }
+
   /**
    * Get the appropriate [[SparkInternals]] for current SparkContext version.
    */
@@ -51,7 +62,7 @@ object SparkSupport {
     if (impl ne null) internalImpl
     else synchronized {
       val impl = internalImpl
-      if (impl ne null) internalImpl
+      if (impl ne null) impl
       else {
         val sparkVersion =
           if (context eq null) {
@@ -62,14 +73,26 @@ object SparkSupport {
               case ctx => ctx.version
             }
           } else context.version
-        val implClass = sparkVersion match {
+        val implClassName = sparkVersion match {
           // list all the supported versions below; all implementations are required to
           // have a public constructor having current SparkContext as the one argument
-          case "2.1.0" => Utils.classForName(s"$INTERNAL_PACKAGE.Spark210Internals")
-          case "2.1.1" => Utils.classForName(s"$INTERNAL_PACKAGE.Spark211Internals")
-          case "2.3.2" => Utils.classForName(s"$INTERNAL_PACKAGE.Spark232Internals")
+          case "2.1.0" => s"$INTERNAL_PACKAGE.Spark210Internals"
+          case "2.1.1" => s"$INTERNAL_PACKAGE.Spark211Internals"
+          case "2.3.2" => s"$INTERNAL_PACKAGE.Spark232Internals"
           case v => throw new SparkException(s"Unsupported Spark version $v")
         }
+        // try to load AQP version first
+        val implClass = if (isEnterpriseEdition) {
+          try {
+            Utils.classForName(implClassName.replace("Internals", "AQPInternals"))
+          } catch {
+            case NonFatal(e) =>
+              // Let the user know if it failed to load AQP classes.
+              logWarning(s"Failed to load AQP classes in Enterprise edition: $e")
+              Utils.classForName(implClassName)
+          }
+        } else Utils.classForName(implClassName)
+
         internalImpl = implClass.newInstance().asInstanceOf[SparkInternals]
         internalImpl
       }

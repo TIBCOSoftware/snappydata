@@ -44,9 +44,9 @@ project(':snappy-dtests_' + scalaBinaryVersion).projectDir = "$rootDir/dtests" a
 project(':snappy-compatibility-tests_' + scalaBinaryVersion).projectDir = "$rootDir/compatibilityTests" as File
 project(':snappy-encoders_' + scalaBinaryVersion).projectDir = "$rootDir/encoders" as File
 
-project(":snappy-core_${scalaBinaryVersion}:spark2.1.0") = "$rootDir/compatibility/spark-2.1.0" as File
-project(":snappy-core_${scalaBinaryVersion}:spark2.1.1") = "$rootDir/compatibility/spark-2.1.1" as File
-project(":snappy-core_${scalaBinaryVersion}:spark2.3.2") = "$rootDir/compatibility/spark-2.3.2" as File
+project(":snappy-core_${scalaBinaryVersion}:spark2.1.0").projectDir = "$rootDir/compatibility/spark-2.1.0" as File
+project(":snappy-core_${scalaBinaryVersion}:spark2.1.1").projectDir = "$rootDir/compatibility/spark-2.1.1" as File
+project(":snappy-core_${scalaBinaryVersion}:spark2.3.2").projectDir = "$rootDir/compatibility/spark-2.3.2" as File
 
 if (new File(rootDir, 'spark/build.gradle').exists()) {
   include ':snappy-spark'
