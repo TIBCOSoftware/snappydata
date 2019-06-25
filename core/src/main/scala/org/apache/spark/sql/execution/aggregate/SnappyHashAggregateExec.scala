@@ -1289,15 +1289,18 @@ case class SnappyHashAggregateExec(
         val outputString = Utils.truncatedString(output, "[", ", ", "]")
         val modesStr = modes.mkString(",")
         if (verbose) {
-          s"$name(keys=$keyString, modes=$modesStr, " +
-              s"functions=$functionString, output=$outputString)"
+          s"$name(ByteBufferHashMap used = $useByteBufferMapBasedAggregation;" +
+            s" keys=$keyString, modes=$modesStr, " +
+            s"functions=$functionString, output=$outputString)"
         } else {
-          s"$name(keys=$keyString, modes=$modesStr, functions=$functionString)"
+          s"$name(ByteBufferHashMap used = $useByteBufferMapBasedAggregation; " +
+            s"keys=$keyString, modes=$modesStr, functions=$functionString)"
         }
       case Some(fallbackStartsAt) =>
-        s"${name}WithControlledFallback $groupingExpressions " +
-            s"$allAggregateExpressions $resultExpressions " +
-            s"fallbackStartsAt=$fallbackStartsAt"
+        s"${name}WithControlledFallback;" +
+          s"ByteBufferHashMap used = $useByteBufferMapBasedAggregation; $groupingExpressions " +
+          s"$allAggregateExpressions $resultExpressions " +
+          s"fallbackStartsAt=$fallbackStartsAt"
     }
   }
 }
