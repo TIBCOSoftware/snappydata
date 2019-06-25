@@ -53,7 +53,7 @@ import spray.routing.authentication.UserPass
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
-import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.sql.{SnappyContext, SparkSupport}
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
 class LeadImpl extends ServerImpl with Lead
@@ -160,7 +160,7 @@ class LeadImpl extends ServerImpl with Lead
         .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
     val productName = {
-      if (SnappySession.isEnterpriseEdition) {
+      if (SparkSupport.isEnterpriseEdition) {
         "TIBCO ComputeDB"
       } else {
         "SnappyData"
@@ -453,7 +453,7 @@ class LeadImpl extends ServerImpl with Lead
         throw new UnsupportedOperationException(
           "LDAP is the only supported auth-provider currently.")
       }
-      if (authP != null && !SnappySession.isEnterpriseEdition) {
+      if (authP != null && !SparkSupport.isEnterpriseEdition) {
         throw new UnsupportedOperationException("Security feature is available in SnappyData " +
             "Enterprise Edition.")
       }

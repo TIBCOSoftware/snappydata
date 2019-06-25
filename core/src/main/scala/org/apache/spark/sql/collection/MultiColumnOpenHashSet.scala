@@ -1178,7 +1178,7 @@ object QCSSQLColumnHandler {
 
   def newSqlHandler(qcsPlan: (CodeAndComment, ArrayBuffer[Any], Array[DataType], Array[DataType]),
       hashColHandler: ColumnHandler): ColumnHandler = {
-    new QCSSQLColumnHandler((SparkSupport.internals().compile(qcsPlan._1),
+    new QCSSQLColumnHandler((SparkSupport.internals.compile(qcsPlan._1),
         qcsPlan._2, qcsPlan._3, qcsPlan._4), hashColHandler)
   }
 

@@ -30,7 +30,7 @@ import org.apache.spark.{Logging, SparkContext, SparkException}
  * Helper trait for easy access to [[SparkInternals]] using the "internals" method.
  */
 trait SparkSupport {
-  protected final def internals: SparkInternals = SparkSupport.internals()
+  protected final def internals: SparkInternals = SparkSupport.internals
 }
 
 /**
@@ -43,6 +43,8 @@ object SparkSupport extends Logging {
    * the version of the embedded SnappyData Spark since this will be used on executors.
    */
   final val DEFAULT_VERSION = "2.1.1"
+
+  private[this] val EXTENDED_VERSION_PATTERN = "([0-9]\\.[0-9]\\.[0-9])\\.[0-9]".r
 
   @volatile private[this] var internalImpl: SparkInternals = _
 
@@ -57,22 +59,17 @@ object SparkSupport extends Logging {
   /**
    * Get the appropriate [[SparkInternals]] for current SparkContext version.
    */
-  def internals(context: SparkContext = null): SparkInternals = {
+  def internals: SparkInternals = {
     val impl = internalImpl
-    if (impl ne null) internalImpl
+    if (impl ne null) impl
     else synchronized {
       val impl = internalImpl
       if (impl ne null) impl
       else {
-        val sparkVersion =
-          if (context eq null) {
-            // check for embedded product
-            if (GemFireCacheImpl.getInstance() ne null) DEFAULT_VERSION
-            else SnappyContext.globalSparkContext match {
-              case null => throw new SparkException("No SparkContext")
-              case ctx => ctx.version
-            }
-          } else context.version
+        val sparkVersion = org.apache.spark.SPARK_VERSION match {
+          case EXTENDED_VERSION_PATTERN(v) => v
+          case v => v
+        }
         val implClassName = sparkVersion match {
           // list all the supported versions below; all implementations are required to
           // have a public constructor having current SparkContext as the one argument
@@ -82,7 +79,7 @@ object SparkSupport extends Logging {
           case v => throw new SparkException(s"Unsupported Spark version $v")
         }
         // try to load AQP version first
-        val implClass = if (isEnterpriseEdition) {
+        val implClass: Class[_] = if (isEnterpriseEdition) {
           try {
             Utils.classForName(implClassName.replace("Internals", "AQPInternals"))
           } catch {
@@ -99,8 +96,25 @@ object SparkSupport extends Logging {
     }
   }
 
-  private[sql] def clear(context: SparkContext): Unit = {
-    if (context ne null) internals(context).clearSQLListener()
-    internalImpl = null
+  def internals(context: SparkContext): SparkInternals = {
+    val impl = internals
+    val version = context.version match {
+      case EXTENDED_VERSION_PATTERN(v) => v
+      case v => v
+    }
+    if (impl.version != version) {
+      throw new IllegalStateException(s"SparkVersion mismatch: " +
+          s"runtime version = ${context.version}. " +
+          s"Compile version = ${impl.version}")
+    }
+    impl
+  }
+
+  private[sql] def clear(): Unit = synchronized {
+    val impl = internalImpl
+    if (impl ne null) {
+      impl.clearSQLListener()
+      internalImpl = null
+    }
   }
 }

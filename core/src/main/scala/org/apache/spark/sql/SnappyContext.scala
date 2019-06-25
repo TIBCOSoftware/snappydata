@@ -1186,7 +1186,7 @@ object SnappyContext extends Logging {
           }
       }
       // clear static objects on the driver
-      clearStaticArtifacts(sc)
+      clearStaticArtifacts()
 
       contextLock.synchronized {
         val sharedState = _sharedState
@@ -1201,7 +1201,7 @@ object SnappyContext extends Logging {
       }
       MemoryManagerCallback.resetMemoryManager()
     } else {
-      SparkSupport.clear(sc)
+      SparkSupport.clear()
     }
     contextLock.synchronized {
       _clusterMode = null
@@ -1211,12 +1211,12 @@ object SnappyContext extends Logging {
   }
 
   /** Cleanup static artifacts on this lead/executor. */
-  def clearStaticArtifacts(context: SparkContext): Unit = {
+  def clearStaticArtifacts(): Unit = {
     CachedDataFrame.clear()
     ConnectionPool.clear()
     CodeGeneration.clearAllCache(skipTypeCache = false)
     HashedObjectCache.close()
-    SparkSupport.clear(context)
+    SparkSupport.clear()
     ServiceUtils.clearStaticArtifacts()
   }
 
