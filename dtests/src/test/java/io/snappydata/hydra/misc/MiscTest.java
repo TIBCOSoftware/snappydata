@@ -33,7 +33,6 @@ import util.TestException;
 public class MiscTest extends SnappyTest {
   protected static MiscTest miscTestInst;
 
-
   public static void HydraTask_verify_snap2269_snap2762() {
     if (miscTestInst == null)
       miscTestInst = new MiscTest();
@@ -66,9 +65,7 @@ public class MiscTest extends SnappyTest {
         throw new TestException("Got exception while executing statement : " + sql, se);
       }
     }
-
     insertData(conn);
-
     String tabName = "";
     for (int j = 0; j < ddlStmts.length; j++) {
       sql = ddlStmts[j];
@@ -120,17 +117,17 @@ public class MiscTest extends SnappyTest {
       insertData(conn);
       // check delete with createStatement.execute
       deleteWithoutPS(conn);
-      countRows(conn,"createStatement.execute");
+      verifyRowCount(conn,"createStatement.execute");
       //reinsert data
       insertData(conn);
       // check delete with preparedStatement.execute
       deleteWithPS(conn, false);
-      countRows(conn, "preparedStatement.execute");
+      verifyRowCount(conn, "preparedStatement.execute");
       //reinsert data
       insertData(conn);
       // check delete with preparedStatement.addBatch
       deleteWithPS(conn, true);
-      countRows(conn, "preparedStatement.addBatch");
+      verifyRowCount(conn, "preparedStatement.addBatch");
     } catch (SQLException se) {
       throw new TestException("Got SQLException ", se);
     }
@@ -148,7 +145,6 @@ public class MiscTest extends SnappyTest {
         throw new TestException("Got exception while creating tables", se);
       }
     }
-
   }
 
   public void insertData(Connection conn) {
@@ -165,10 +161,9 @@ public class MiscTest extends SnappyTest {
     }
   }
 
-  public void countRows(Connection conn, String afterMode) throws SQLException {
+  public void verifyRowCount(Connection conn, String afterMode) throws SQLException {
     Statement stmt = conn.createStatement();
     String sql = "SELECT COUNT(*) FROM ";
-
     String[] tabNames = SnappySchemaPrms.getTableNames();
     for (int i = 0; i < tabNames.length; i++) {
       sql = sql + tabNames[i];
@@ -176,6 +171,7 @@ public class MiscTest extends SnappyTest {
       ResultSet rs = stmt.executeQuery(sql);
       rs.next();
       int count = rs.getInt(1);
+      Log.getLogWriter().info("Number of rows in the table is : " + count);
       if(count>0) {
         throw new TestException("Delete statement failed to delete rows for " + tabNames[i] +
             " using " + afterMode);
@@ -186,28 +182,29 @@ public class MiscTest extends SnappyTest {
 
   public void deleteWithPS(Connection conn, boolean batchMode) throws SQLException {
     PreparedStatement ps = null;
-    Log.getLogWriter().info("Executing delete statement...");
     String sql = "DELETE FROM ";
     String[] tabNames = SnappySchemaPrms.getTableNames();
     for (int i = 0; i < tabNames.length; i++) {
       sql = sql + tabNames[i];
+      Log.getLogWriter().info("Executing delete statement : " + sql);
       ps = conn.prepareStatement(sql);
-      if(batchMode) ps.addBatch();
-      ps.execute();
+      if(batchMode) {
+        ps.addBatch();
+        ps.executeBatch();
+      } else ps.execute();
     }
-    Log.getLogWriter().info("Executed delete statement...");
+    Log.getLogWriter().info("Executed delete.");
     ps.close();
   }
 
   public void deleteWithoutPS(Connection conn) throws SQLException {
-    Log.getLogWriter().info("Executing delete statement...");
     String sql = "DELETE FROM ";
     String[] tabNames = SnappySchemaPrms.getTableNames();
     for (int i = 0; i < tabNames.length; i++) {
       sql = sql + tabNames[i];
+      Log.getLogWriter().info("Executing delete statement : " + sql);
       int numRows = conn.createStatement().executeUpdate(sql);
       Log.getLogWriter().info("Rows deleted : " + numRows );
     }
   }
-
 }
