@@ -1432,7 +1432,7 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
   // This list of rule is exact copy of org.apache.spark.sql.catalyst.analysis.Analyzer.batches
   // It is replicated to inject StringPromotionCheckForUpdate rule. Since Analyzer.batches is
   // declared as a lazy val, it can not be accessed using super keywork.
-  lazy val ruleBatches = Seq(
+  private[internal] lazy val ruleBatches = Seq(
     Batch("Substitution", fixedPoint,
       CTESubstitution,
       WindowsSubstitution,

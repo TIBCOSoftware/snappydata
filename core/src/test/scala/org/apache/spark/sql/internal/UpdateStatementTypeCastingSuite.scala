@@ -23,6 +23,8 @@ import org.apache.spark.sql.types.{DataType, DecimalType, FloatType, IntegerType
 import org.apache.spark.sql.{AnalysisException, Row}
 import org.junit.Assert._
 
+import org.apache.spark.sql.catalyst.analysis.Analyzer
+
 class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfterAll
     with BeforeAndAfter {
 
@@ -165,6 +167,19 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
   test("Plain assignment, assigning wider numeric type to a decimal type") {
     assertForAnalysisException("update testTable set dec_col = cast(1 as int)",
       "dec_col", DecimalType(15, 7), IntegerType)
+  }
+
+  test("SnappyAnalyzer rules matches the rules from upstream Analyzer") {
+    val analyzer = new Analyzer(snc.sessionState.catalog, snc.sessionState.conf)
+    val snappyAnalyzer = new SnappyAnalyzer(snc.sessionState)
+    assertEquals(analyzer.batches.size, snappyAnalyzer.batches.size)
+    for ((expBatch, actBatch) <- analyzer.batches zip snappyAnalyzer.ruleBatches ){
+      assertEquals(expBatch.name, actBatch.name)
+      assertEquals(expBatch.strategy.toString, actBatch.strategy.toString)
+      for((exp, act) <- expBatch.rules zip actBatch.rules){
+        assertEquals(exp.ruleName, act.ruleName)
+      }
+    }
   }
 
   def assertForAnalysisException(sql: String, attrName: String, attrDt: DataType,
