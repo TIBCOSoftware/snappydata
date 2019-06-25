@@ -204,6 +204,12 @@ public class SnappyConcurrencyTest extends SnappyTest {
     String query;
     Vector tableNames = SnappyPrms.getTableList();
     Vector tableTypeList = SnappyPrms.getTableTypeList();
+    if (tableTypeList.size() != tableNames.size()) {
+      Log.getLogWriter().info("Adding last element in the tableTypeList for the  " +
+          "tables for which no table type is specified.");
+      while (tableTypeList.size() != tableNames.size())
+        tableTypeList.add(tableTypeList.lastElement());
+    }
     Vector insertTableNames = SnappyPrms.getInsertTableList();
     Vector parquetExternalTableNames = SnappyPrms.getParquetExternalTableList();
     Vector csvExternalTableNames = SnappyPrms.getCSVExternalTableList();
