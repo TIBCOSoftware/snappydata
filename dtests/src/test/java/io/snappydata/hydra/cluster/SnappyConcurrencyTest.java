@@ -108,7 +108,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
           Log.getLogWriter().info("QueryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
         }
       } catch (SQLException se) {
-        throw new TestException("Got exception while executing Analytical query:" + query, se);
+        if (isStabilityTest && se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after"))
+          Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
+        else
+          throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
     }
     startTime = System.currentTimeMillis();
@@ -129,7 +132,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
       } catch (SQLException se) {
-        if (isStabilityTest && se.getMessage().contains("java.lang.OutOfMemoryError: Unable to acquire"))
+        if (isStabilityTest && se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after"))
           Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
         else
           throw new TestException("Got exception while executing Analytical query:" + query, se);
@@ -188,6 +191,12 @@ public class SnappyConcurrencyTest extends SnappyTest {
       Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
+  }
+
+  public static void parseOptios() {
+    Vector options = SnappyPrms.getTableOptions();
+    String optionsString = StringUtils.join(options, ",");
+    Log.getLogWriter().info("SS - Options Strimg is: " + optionsString);
   }
 
   public static void createAndLoadTablesForStabilityTest() throws SQLException {
