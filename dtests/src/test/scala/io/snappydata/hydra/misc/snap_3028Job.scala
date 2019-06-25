@@ -28,9 +28,11 @@ object snap_3028Job extends SnappySQLJob {
   override def runSnappyJob(snc: SnappySession, config: Config): Any = {
     Try {
       import scala.collection.JavaConverters._
-      val df = snc.table("users")
+      val tableName = config.getString("tableName")
+      val df = snc.table(tableName)
       import snc.implicits._
       // scalastyle:off println
+
       df.as[User].collect().foreach(println(_))
     } match {
       case Success(v) => s"Job was successful"
@@ -45,6 +47,5 @@ object snap_3028Job extends SnappySQLJob {
 
 case class User(id: Long, name: String, age: Int) {
 }
-
 
 

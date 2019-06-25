@@ -21,40 +21,18 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import util.TestException;
 
 public class MiscTest extends SnappyTest {
   protected static MiscTest miscTestInst;
-  int colCnt = 6;
 
-
-  //sql stmt for SNAP-2269 and SNAP-2762
-  String[] sqlStmts = {
-      "CREATE TABLE trade.portfolio (cid INT NOT NULL, sid INT NOT NULL, qty INT NOT NULL, " +
-          "availQty INT NOT NULL, subTotal DECIMAL(30,20), tid INT, constraint portf_pk PRIMARY " +
-          "KEY (cid, sid), constraint qty_ck check (qty>=0), constraint avail_ch check (availQty>=0" +
-          " AND availQty<=qty)) USING ROW OPTIONS(partition_by 'qty',PERSISTENT 'synchronous')",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(7,7,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(1,1,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(2,2,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(3,3,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(4,4,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(5,5,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(6,7,25,12,123.7,2)",
-      "INSERT INTO trade.portfolio(cid,sid,qty,availqty,subtotal,tid) VALUES(6,6,25,12,123.7,2)",
-      "SELECT * FROM trade.portfolio",
-      "DESCRIBE trade.portfolio",
-      "ALTER TABLE trade.portfolio ADD COLUMN name VARCHAR(10) NOT NULL default 'name'",
-      "DESCRIBE trade.protfolio",
-      "SELECT * FROM trade.portfolio",
-      "ALTER TABLE trade.portfolio ADD COLUMN name1 VARCHAR(10)",
-      "SELECT * FROM trade.portfolio",
-      "DESCRIBE trade.portfolio",
-      "ALTER TABLE trade.portfolio DROP COLUMN name1",
-      "DESCRIBE trade.portfolio"
-  };
 
   public static void HydraTask_verify_snap2269_snap2762() {
     if (miscTestInst == null)
@@ -64,53 +42,66 @@ public class MiscTest extends SnappyTest {
 
   public void executeSqls() {
     Connection conn;
+    int[] colCnt;
     ResultSet rs = null;
     try {
       conn = getLocatorConnection();
     } catch (SQLException se) {
       throw new TestException("Got exception while obtaining conneciton..", se);
     }
+    List<String> tableNames = Arrays.asList(SnappySchemaPrms.getTableNames());
 
-    for (int i = 0; i < sqlStmts.length; i++) {
-      String sql = sqlStmts[i];
-      if (sql.toLowerCase().startsWith("select") || sql.toLowerCase().startsWith("describe")) {
+    String[] selectStmts = SnappySchemaPrms.getSelectStmts();
+    String[] ddlStmts = SnappySchemaPrms.getDDLStmts();
+    String sql = "";
+
+    createTables(conn);
+    colCnt = new int[tableNames.size()];
+    for (int i = 0; i < tableNames.size(); i++) {
+      sql = "SELECT * FROM " + tableNames.get(i);
+      try {
+        rs = conn.createStatement().executeQuery(sql);
+        colCnt[i] = rs.getMetaData().getColumnCount();
+      } catch (SQLException se) {
+        throw new TestException("Got exception while executing statement : " + sql, se);
+      }
+    }
+
+    insertData(conn);
+
+    String tabName = "";
+    for (int j = 0; j < ddlStmts.length; j++) {
+      sql = ddlStmts[j];
+      try {
+        conn.createStatement().execute(sql);
+      } catch (SQLException se) {
+        throw new TestException("Got exception while executing ddl.. ", se);
+      }
+      if (sql.toLowerCase().startsWith("alter")) {
+        tabName = sql.split(" ")[2];
+        if (sql.toLowerCase().contains("add column"))
+          colCnt[tableNames.indexOf(tabName)]++;
+        if (sql.toLowerCase().contains("drop column"))
+          colCnt[tableNames.indexOf(tabName)]--;
+      }
+      //select statement execution after alter stmt
+      for (int i = 0; i < selectStmts.length; i++) {
+        sql = selectStmts[i];
         try {
           rs = conn.createStatement().executeQuery(sql);
+          int queryColCnt = 0;
+          if (sql.toLowerCase().startsWith("select")) {
+            queryColCnt = rs.getMetaData().getColumnCount();
+            tabName = sql.split(" ")[3];//find table name from query ;
+          } else { //describe
+            while (rs.next())
+              queryColCnt++;
+            tabName = sql.split(" ")[1];//find table name from query ;
+          }
+          if (colCnt[tableNames.indexOf(tabName)] != queryColCnt)
+            throw new TestException("Column count doesnot match after alter table.");
         } catch (SQLException se) {
           throw new TestException("Got exception while executing statement : " + sql, se);
-        }
-        if (sql.toLowerCase().startsWith("select")) {
-          int queryColCnt = 0;
-          try {
-            queryColCnt = rs.getMetaData().getColumnCount();
-          } catch (SQLException se) {
-            throw new TestException("Got exception while executing statement : " + sql, se);
-          }
-          if (colCnt != queryColCnt)
-            throw new TestException("Column count does not match after alter table.");
-        } else {
-          try {
-            int queryColCnt = 0;
-            while (rs.next()) {
-              queryColCnt++;
-            }
-            if (colCnt != queryColCnt)
-              throw new TestException("Column count doesnot match after alter table.");
-          } catch (SQLException se) {
-            throw new TestException("Got exception while executing statement : " + sql, se);
-          }
-        }
-      } else if (sql.toLowerCase().startsWith("alter")) {
-        if (sql.toLowerCase().contains("add column"))
-          colCnt++;
-        if (sql.toLowerCase().contains("drop column"))
-          colCnt--;
-
-      } else {
-        try {
-          conn.createStatement().execute(sql);
-        } catch (SQLException se) {
-          throw new TestException("Got exception while executing statement", se);
         }
       }
     }
@@ -122,71 +113,100 @@ public class MiscTest extends SnappyTest {
     miscTestInst.verify_3007();
   }
 
-  public void deleteWithoutPS(Connection conn) throws SQLException {
-    System.out.println("Executing delete statement...");
-    String sql = "DELETE FROM app.users";
-    int numRows = conn.createStatement().executeUpdate(sql);
-    System.out.println("Rows deleted : " + numRows + "\n");
-  }
-
-  public void reInsertData(Connection conn) throws SQLException{
-    System.out.println("Executing insert statement...");
-    String sql = "insert into users values(1,'abc',23),(2,'aaa',54),(3,'bbb',43),(4,'ccc',35)";
-    conn.createStatement().execute(sql);
-  }
-
-  public int countRows(Connection conn) throws SQLException {
-    Statement stmt = null;
-    String sql = "SELECT count(*) FROM app.users";
-    System.out.println("Executing select statement..." + sql);
-    ResultSet rs = conn.createStatement().executeQuery(sql);
-    rs.next();
-    int count = rs.getInt(1);
-    stmt.close();
-    return count;
-  }
-
-  public void deleteWithPS(Connection conn) throws SQLException {
-    PreparedStatement ps = null;
-    System.out.println("Executing delete statement...");
-    String sql = "DELETE FROM app.users";
-    ps = conn.prepareStatement(sql);
-    ps.execute();
-    System.out.println("Executed delete statement...");
-    ps.close();
-  }
-
-  public void deleteWithBatch(Connection conn) throws SQLException {
-    PreparedStatement ps = null;
-    System.out.println("Executing delete statement...");
-    String sql = "DELETE FROM app.users";
-    ps = conn.prepareStatement(sql);
-    ps.addBatch();
-    ps.execute();
-    System.out.println("Executed delete statement...");
-    ps.close();
-  }
-
-  public void verify_3007 ()
-  {
-    try{
+  public void verify_3007 () {
+    try {
       Connection conn = getLocatorConnection();
+      createTables(conn);
+      insertData(conn);
+      // check delete with createStatement.execute
       deleteWithoutPS(conn);
-      int cnt = countRows(conn);
-      if(cnt > 0 )
-        throw new TestException("Unable to delete data from the table using delete stmt");
-      reInsertData(conn);
-      deleteWithPS(conn);
-      cnt = countRows(conn);
-      if(cnt > 0 )
-        throw new TestException("Unable to delete data from the table using delete with prepared stmt");
-      reInsertData(conn);
-      deleteWithBatch(conn);
-      cnt = countRows(conn);
-      if(cnt > 0 )
-        throw new TestException("Unable to delete data from the table using delete with addBatch");
+      countRows(conn,"createStatement.execute");
+      //reinsert data
+      insertData(conn);
+      // check delete with preparedStatement.execute
+      deleteWithPS(conn, false);
+      countRows(conn, "preparedStatement.execute");
+      //reinsert data
+      insertData(conn);
+      // check delete with preparedStatement.addBatch
+      deleteWithPS(conn, true);
+      countRows(conn, "preparedStatement.addBatch");
     } catch (SQLException se) {
       throw new TestException("Got SQLException ", se);
+    }
+  }
+
+  public void createTables(Connection conn) {
+    //create tables
+    String sql = "";
+    String[] createTables = SnappySchemaPrms.getCreateTablesStatements();
+    for (int i = 0; i < createTables.length; i++) {
+      sql = createTables[i];
+      try {
+        conn.createStatement().execute(sql);
+      } catch (SQLException se) {
+        throw new TestException("Got exception while creating tables", se);
+      }
+    }
+
+  }
+
+  public void insertData(Connection conn) {
+    //insert records
+    String sql = "";
+    ArrayList<String> insertStmts = SnappySchemaPrms.getInsertStmts();
+    for (int i = 0; i < insertStmts.size(); i++) {
+      sql = insertStmts.get(i);
+      try {
+        conn.createStatement().execute(sql);
+      } catch (SQLException se) {
+        throw new TestException("Got exception while inserting data", se);
+      }
+    }
+  }
+
+  public void countRows(Connection conn, String afterMode) throws SQLException {
+    Statement stmt = conn.createStatement();
+    String sql = "SELECT COUNT(*) FROM ";
+
+    String[] tabNames = SnappySchemaPrms.getTableNames();
+    for (int i = 0; i < tabNames.length; i++) {
+      sql = sql + tabNames[i];
+      Log.getLogWriter().info("Executing select statement..." + sql);
+      ResultSet rs = stmt.executeQuery(sql);
+      rs.next();
+      int count = rs.getInt(1);
+      if(count>0) {
+        throw new TestException("Delete statement failed to delete rows for " + tabNames[i] +
+            " using " + afterMode);
+      }
+    }
+    stmt.close();
+  }
+
+  public void deleteWithPS(Connection conn, boolean batchMode) throws SQLException {
+    PreparedStatement ps = null;
+    Log.getLogWriter().info("Executing delete statement...");
+    String sql = "DELETE FROM ";
+    String[] tabNames = SnappySchemaPrms.getTableNames();
+    for (int i = 0; i < tabNames.length; i++) {
+      sql = sql + tabNames[i];
+      ps = conn.prepareStatement(sql);
+      if(batchMode) ps.addBatch();
+      ps.execute();
+    }
+    Log.getLogWriter().info("Executed delete statement...");
+    ps.close();
+  }
+
+  public void deleteWithoutPS(Connection conn) throws SQLException {
+    Log.getLogWriter().info("Executing delete statement...");
+    String sql = "DELETE FROM ";
+    String[] tabNames = SnappySchemaPrms.getTableNames();
+    for (int i = 0; i < tabNames.length; i++) {
+      sql = sql + tabNames[i];
+      int numRows = conn.createStatement().executeUpdate(sql);
+      Log.getLogWriter().info("Rows deleted : " + numRows );
     }
   }
 
