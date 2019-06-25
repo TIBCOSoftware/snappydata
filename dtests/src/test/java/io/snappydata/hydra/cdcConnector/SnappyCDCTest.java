@@ -4,11 +4,14 @@ import java.io.*;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 import com.gemstone.gemfire.GemFireConfigException;
+import com.gemstone.gemfire.cache.DiskAccessException;
 import com.gemstone.gemfire.cache.query.Struct;
 import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.HydraRuntimeException;
@@ -18,6 +21,7 @@ import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
+import io.snappydata.test.util.TestException;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
 
@@ -486,6 +490,58 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
+  public static void HydraTask_executeInserts() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.executeInserts();
+  }
+
+  public void executeInserts() {
+    Log.getLogWriter().info("Inside executeInserts");
+    String tableType = SnappyCDCPrms.getTableType();
+    int numRecords = 2000000;
+    int totalRecords = 0;
+    String query = "insert into agreement_" + tableType + " select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),\n" +
+        "'src_sys_ref_id','src_sys_rec_id' FROM range(" + numRecords + ")";
+    File logFile = null;
+    Connection conn = null;
+    try {
+      List<String> endpoints = validateLocatorEndpointData();
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "deleteFallocate.log";
+      logFile = new File(dest);
+      String url = "jdbc:snappydata://" + endpoints.get(0);
+      String driver = "io.snappydata.jdbc.ClientDriver";
+      Class.forName(driver);
+      conn = DriverManager.getConnection(url);
+      while (true) {
+        Log.getLogWriter().info("Starting insert operation");
+        conn.createStatement().execute(query);
+        totalRecords += numRecords;
+        //Keep adding the numRecords in the blackBoard for validation
+        //Then in the closetask validate the count the clusterCnt after restart should be >= BBCnt ,should not be less.
+
+        Log.getLogWriter().info("Successfully inserted records.");
+      }
+    } catch (SQLException ex) {
+      try {
+        conn.createStatement().execute(query);
+      } catch (SQLException ex1) {
+        if (ex.getMessage().contains("No space left on device") || ex.getMessage().contains("TransactionDataRebalancedException")) {
+          String cmd = "rm -rf " + snappyTest.getCurrentDirPath() + "/randomFileForDiskFull_*";
+          ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+          snappyTest.executeProcess(pb, logFile);
+          Log.getLogWriter().info("Caught exception after " + totalRecords + " successful inserts \n" + ex1.getMessage());
+        }
+      }
+    } catch (Exception ex) {
+      throw new TestException("Caught exception " + ex.getMessage());
+    } finally {
+      SnappyBB.getBB().getSharedMap().put("TOTAL_NUM_INSERTS", totalRecords);
+    }
+  }
+
   public static void HydraTask_runIngestionApp() {
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
@@ -687,6 +743,76 @@ public class SnappyCDCTest extends SnappyTest {
     String dirPath = SnappyCDCPrms.getDataLocation();
     Log.getLogWriter().info("the dirPath is " + dirPath);
     removeDiskStoreFiles(dirPath);
+  }
+
+  public static void HydraTask_executeCleanUpFiles() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.executeCleanUpFiles();
+  }
+
+  public void executeCleanUpFiles() {
+    try {
+      String tableType = SnappyCDCPrms.getTableType();
+      String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
+      File logFile = new File(dest);
+
+      String cmd = "rm -rf " + snappyTest.getCurrentDirPath() + "/randomFileForDiskFull_*";
+      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+      snappyTest.executeProcess(pb, logFile);
+      Log.getLogWriter().info("Restarting the cluster after cleanup");
+      stopCluster(snappyPath, logFile);
+      Thread.sleep(300000);
+      startCluster(snappyPath, logFile, false);
+      Log.getLogWriter().info("Verify the total inserts");
+      int expectedCnt = (Integer) SnappyBB.getBB().getSharedMap().get("TOTAL_NUM_INSERTS");
+      Connection conn = SnappyTest.getLocatorConnection();
+      ResultSet rs = conn.createStatement().executeQuery("SELECT count(*) FROM AGREEMENT_" + tableType);
+      while (rs.next()) {
+        int actualCnt = rs.getInt(1);
+        if (actualCnt >= expectedCnt) {
+          Log.getLogWriter().info("The data inserted is correct");
+          Log.getLogWriter().info("Expected count = " + expectedCnt + " actual count = " + actualCnt);
+        } else
+          Log.getLogWriter().info("The data in restarted cluster is less \n" + " Expected count  " + expectedCnt + " Actually Found " + actualCnt);
+      }
+    } catch (Exception ex) {
+      throw new TestException("Caught exception during cleanup " + ex.getMessage());
+    }
+  }
+
+  public static void HydraTask_executeFallocate() {
+    if (snappyCDCTest == null) {
+      snappyCDCTest = new SnappyCDCTest();
+    }
+    snappyCDCTest.executeFallocate();
+  }
+
+  public void executeFallocate() {
+    File logFile = null;
+    try {
+      String fileSize = SnappyCDCPrms.getFileSize();
+      File log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + "executeFallocate.log";
+      String diskFullFileName = log.getCanonicalPath() + File.separator + "randomFileForDiskFull_" + System.currentTimeMillis();
+      File randomFileForDiskFull = new File(diskFullFileName);
+      logFile = new File(dest);
+      Log.getLogWriter().info("Creating a randomFile.txt with " + fileSize + " size");
+      String cmd = "fallocate -l " + fileSize + " " + randomFileForDiskFull;
+      Log.getLogWriter().info("The command to be executed is " + cmd);
+      ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
+      snappyTest.executeProcess(pb, logFile);
+    } catch (IOException io) {
+      if (io.getMessage().contains("No space left on device")) {
+        Log.getLogWriter().info("Caught No disk Space error in executeFallocate");
+      } else
+        throw new TestException("IOException in executeFallocate() " + io.getMessage());
+    } catch (Exception ex) {
+      throw new TestException("CAught exception " + ex.getMessage());
+    }
   }
 
   public void stopCluster(String snappyPath, File logFile) {
