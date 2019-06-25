@@ -69,6 +69,7 @@ public class MiscTest extends SnappyTest {
     String tabName = "";
     for (int j = 0; j < ddlStmts.length; j++) {
       sql = ddlStmts[j];
+      Log.getLogWriter().info("Executing : " + sql);
       try {
         conn.createStatement().execute(sql);
       } catch (SQLException se) {
@@ -85,6 +86,7 @@ public class MiscTest extends SnappyTest {
       for (int i = 0; i < selectStmts.length; i++) {
         sql = selectStmts[i];
         try {
+          Log.getLogWriter().info("Executing : " + sql);
           rs = conn.createStatement().executeQuery(sql);
           int queryColCnt = 0;
           if (sql.toLowerCase().startsWith("select")) {
@@ -95,8 +97,13 @@ public class MiscTest extends SnappyTest {
               queryColCnt++;
             tabName = sql.split(" ")[1];//find table name from query ;
           }
-          if (colCnt[tableNames.indexOf(tabName)] != queryColCnt)
-            throw new TestException("Column count doesnot match after alter table.");
+          int expectedColCnt = colCnt[tableNames.indexOf(tabName)];
+          if (expectedColCnt != queryColCnt)
+            throw new TestException("Column count doesnot match after alter table. Expected " +
+                "column count is : " + expectedColCnt + " and got : " + queryColCnt);
+          else
+            Log.getLogWriter().info("Changes from alter are reflected in the table. Column count " +
+                "is " + expectedColCnt);
         } catch (SQLException se) {
           throw new TestException("Got exception while executing statement : " + sql, se);
         }
@@ -137,6 +144,7 @@ public class MiscTest extends SnappyTest {
     //create tables
     String sql = "";
     String[] createTables = SnappySchemaPrms.getCreateTablesStatements();
+    Log.getLogWriter().info("Creating tables...");
     for (int i = 0; i < createTables.length; i++) {
       sql = createTables[i];
       try {
@@ -150,6 +158,7 @@ public class MiscTest extends SnappyTest {
   public void insertData(Connection conn) {
     //insert records
     String sql = "";
+    Log.getLogWriter().info("Inserting data into the tables ... ");
     ArrayList<String> insertStmts = SnappySchemaPrms.getInsertStmts();
     for (int i = 0; i < insertStmts.size(); i++) {
       sql = insertStmts.get(i);
