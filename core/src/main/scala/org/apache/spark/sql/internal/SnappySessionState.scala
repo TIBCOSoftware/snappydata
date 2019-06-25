@@ -1501,8 +1501,8 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
           updateExpressions.foreach {
             case e if !e.childrenResolved => // do nothing
             case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
-              throw new AnalysisException("Implicit type casting is not performed for update" +
-                  " statements")
+              throw new AnalysisException("Implicit type casting of string type to numeric" +
+                  " type is not performed for update statements.")
             case _ => // do nothing
           }
           Update(table, child, keyColumns, updateColumns, updateExpressions)

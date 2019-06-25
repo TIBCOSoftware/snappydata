@@ -195,14 +195,14 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     }
   }
 
-
   def assertForAnalysisException(sql: String): Unit = {
     try {
       snc.sql(sql)
       fail("AnalysisException was expected here.")
     } catch {
       case e: AnalysisException =>
-        val expectedMessage = s"Implicit type casting is not performed for update statements"
+        val expectedMessage = s"Implicit type casting of string type to numeric type is not" +
+            s" performed for update statements."
         assertEquals(expectedMessage, e.message)
     }
   }
