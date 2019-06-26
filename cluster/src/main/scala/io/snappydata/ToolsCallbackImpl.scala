@@ -143,7 +143,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
             if (cachedFile.exists()) {
               cachedFile.delete()
             }
-            Misc.getMemStore.getGlobalCmdRgn.destroy("__FUNC__" + appName)
+            Misc.getMemStore.getGlobalCmdRgn.remove("__FUNC__" + appName)
           } finally {
             lock.release()
             lockFileChannel.close()
