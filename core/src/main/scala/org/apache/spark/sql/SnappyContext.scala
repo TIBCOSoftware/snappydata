@@ -1110,7 +1110,8 @@ object SnappyContext extends Logging {
                     val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
                     DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
                   }
-                  else {
+                  else if (!cmdFields(0).startsWith("spark://")) {
+                    // Skipped function jars above as these are locally copied.
                     // Jars we have
                     DeployJarCommand(null, cmdFields(0), restart = true).run(session)
                   }

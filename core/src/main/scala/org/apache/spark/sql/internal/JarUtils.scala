@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.util.MutableURLClassLoader
 
 /**
@@ -87,6 +88,8 @@ object ContextJarUtils extends Logging {
 
       if (jarFile.exists()) {
         jarFile.delete()
+        RefreshMetadata.executeOnAll(sparkContext, RefreshMetadata.REMOVE_FUNCTION_JAR,
+          Array(changedFileName))
       }
     }
   }

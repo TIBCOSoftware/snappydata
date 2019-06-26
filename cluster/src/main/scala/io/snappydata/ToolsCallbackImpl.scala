@@ -16,7 +16,7 @@
  */
 package io.snappydata
 
-import java.io.File
+import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 
@@ -32,7 +32,7 @@ import org.apache.spark.sql.execution.ui.SQLTab
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
-import org.apache.spark.{Logging, SparkCallbacks, SparkContext}
+import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
 
 object ToolsCallbackImpl extends ToolsCallback with Logging {
 
@@ -115,6 +115,41 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     if (ExecutorInitiator.snappyExecBackend != null) {
       val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
       snappyexecutor.updateMainLoader(jars)
+    }
+  }
+
+  override def removeFunctionJars(args: Array[String]): Unit = {
+    if (ExecutorInitiator.snappyExecBackend != null) {
+      // Remove the file from work directory
+      val jarFile = new File(SparkFiles.getRootDirectory(), args(0))
+      if (jarFile.exists()) {
+        jarFile.delete()
+      }
+
+      // Remove the file from spark directory
+      if (!args(0).isEmpty) {
+        val appName = args(0).split('-')(0)
+        val url = Misc.getMemStore.getGlobalCmdRgn.get("__FUNC__" + appName)
+        if (!url.isEmpty) {
+          val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+          val cachedFileName = s"${url.hashCode}-1_cache"
+          val lockFileName = s"${url.hashCode}-1_lock"
+          val localDir = new File(executor.getLocalDir())
+          val lockFile = new File(localDir, lockFileName)
+          val lockFileChannel = new RandomAccessFile(lockFile, "rw").getChannel()
+          val lock = lockFileChannel.lock()
+          val cachedFile = new File(localDir, cachedFileName)
+          try {
+            if (cachedFile.exists()) {
+              cachedFile.delete()
+            }
+            Misc.getMemStore.getGlobalCmdRgn.destroy("__FUNC__" + appName)
+          } finally {
+            lock.release()
+            lockFileChannel.close()
+          }
+        }
+      }
     }
   }
 

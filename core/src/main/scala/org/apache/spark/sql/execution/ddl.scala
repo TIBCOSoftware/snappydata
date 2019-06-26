@@ -593,7 +593,9 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
-        val alias = t.getKey
+        var alias = t.getKey
+        // List functions neatly
+        alias = alias.replace("__FUNC__", "[Function]")
         val value = t.getValue
         val indexOf = value.indexOf('|')
         if (indexOf > 0) {
