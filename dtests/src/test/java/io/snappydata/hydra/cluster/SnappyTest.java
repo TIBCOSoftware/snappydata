@@ -78,6 +78,7 @@ public class SnappyTest implements Serializable {
   private static String quickstartScriptLocation = productDir + "quickstart" + sep + "scripts" + sep;
   private static String quickstartDataLocation = productDir + "quickstart" + sep + "data" + sep;
   private static String logFile = null;
+  private static boolean isHiveMetaStore = false;
 
   private static Set<Integer> pids = new LinkedHashSet<Integer>();
   private static Set<File> dirList = new LinkedHashSet<File>();
@@ -416,7 +417,8 @@ public class SnappyTest implements Serializable {
             SnappyPrms.getGCOptions(dirPath) + " " +
             SnappyPrms.getLeaderLauncherProps() +
             " -spark.driver.extraClassPath=" + getStoreTestsJar() +
-            " -spark.executor.extraClassPath=" + getStoreTestsJar();
+            " -spark.executor.extraClassPath=" + getStoreTestsJar() +
+            " -snappydata.hiveServer.enabled=true";
         try {
           leadHost = HostHelper.getIPAddress().getLocalHost().getHostName();
         } catch (UnknownHostException e) {
@@ -1746,6 +1748,7 @@ public class SnappyTest implements Serializable {
     Vector scriptNames;
     File log = null, logFile;
     scriptNames = SnappyPrms.getScriptNames();
+    Log.getLogWriter().info("Script : " + scriptNames);
     if (scriptNames == null) {
       String s = "No Script names provided for executing in the Hydra TASK";
       throw new TestException(s);
@@ -1762,7 +1765,15 @@ public class SnappyTest implements Serializable {
         String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
         String command = filePath + " " + comma_separated_args_list;
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
-        snappyTest.executeProcess(pb, logFile);
+        Log.getLogWriter().info("Command : " + command);
+        if(command.contains("hiveserver2")) {
+          SnappyTest.isHiveMetaStore = true;
+          Log.getLogWriter().info("isHiveMetaStore : " + SnappyTest.isHiveMetaStore);
+        }
+        if(SnappyTest.isHiveMetaStore == true)
+          snappyTest.executeProcessMetaStore(pb, logFile);
+        else
+          snappyTest.executeProcess(pb, logFile);
       }
     } catch (IOException e) {
       String s = "problem occurred while retriving destination logFile path " + log;
@@ -1811,12 +1822,14 @@ public class SnappyTest implements Serializable {
         pb.redirectError(ProcessBuilder.Redirect.PIPE);
         pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
       }
+      Log.getLogWriter().info("Into the executeProcess...");
       p = pb.start();
       if (logFile != null) {
         assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
         assert pb.redirectOutput().file() == logFile;
         assert p.getInputStream().read() == -1;
       }
+
       int rc = p.waitFor();
       if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
         Log.getLogWriter().info("Executed successfully");
@@ -1831,6 +1844,43 @@ public class SnappyTest implements Serializable {
           + p + "\nError Message:" + e.getMessage());
     }
   }
+
+  public void executeProcessMetaStore(ProcessBuilder pb, File logFile) {
+    Process p = null;
+    SnappyTest.isHiveMetaStore = false;
+    Log.getLogWriter().info("executeProcessMetaStore called...");
+    try {
+      if (logFile != null) {
+        pb.redirectErrorStream(true);
+        pb.redirectError(ProcessBuilder.Redirect.PIPE);
+        pb.redirectOutput(ProcessBuilder.Redirect.appendTo(logFile));
+      }
+      p = pb.start();
+      if (logFile != null) {
+        assert pb.redirectInput() == ProcessBuilder.Redirect.PIPE;
+        assert pb.redirectOutput().file() == logFile;
+        assert p.getInputStream().read() == -1;
+      }
+      Log.getLogWriter().info("Return code :" + p.exitValue());
+
+//      int rc = p.waitFor();
+//      if ((rc == 0) || (pb.command().contains("grep") && rc == 1)) {
+//        Log.getLogWriter().info("Executed successfully");
+//      } else {
+//        Log.getLogWriter().info("Failed with exit code: " + rc);
+//      }
+    } catch (IOException e) {
+      throw new TestException("Exception occurred while starting the process:" + pb +
+              "\nError Message:" + e.getMessage());
+    } //catch (InterruptedException e) {
+      //throw new TestException("Exception occurred while waiting for the process execution:"
+         //     + p + "\nError Message:" + e.getMessage());
+    //}
+  }
+
+
+
+
 
   public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
     Process pr = null;
