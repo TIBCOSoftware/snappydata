@@ -150,10 +150,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
       String externalTableName = (String) externalTableNames.elementAt(k);
       String dataPath = (String) dataPathList.elementAt(k);
       query = "drop table if exists " + externalTableName;
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
       query = "CREATE EXTERNAL TABLE " + externalTableName + " USING parquet OPTIONS(path '" + dataPath + "')";
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
   }
@@ -164,10 +162,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
       String externalTableName = (String) externalTableNames.elementAt(k);
       String dataPath = (String) dataPathList.elementAt(k);
       query = "drop table if exists " + externalTableName;
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
       query = "CREATE EXTERNAL TABLE " + externalTableName + " USING csv OPTIONS(path '" + dataPath + "' , header 'true', inferSchema 'true' )";
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
   }
@@ -179,7 +175,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
       String externalTableName = (String) externalTableNames.elementAt(k);
       String tableType = (String) tableTypeList.elementAt(k);
       query = "drop table if exists " + tableName;
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
       Vector options = SnappyPrms.getTableOptions();
       if (options.isEmpty())
@@ -188,7 +183,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
         String optionsString = StringUtils.join(options, ",");
         query = "CREATE TABLE " + tableName + " USING " + tableType + " OPTIONS(optionsString) AS (SELECT * FROM " + externalTableName + ")";
       }
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
   }
@@ -196,7 +190,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
   public static void parseOptios() {
     Vector options = SnappyPrms.getTableOptions();
     String optionsString = StringUtils.join(options, ",");
-    Log.getLogWriter().info("SS - Options Strimg is: " + optionsString);
+    Log.getLogWriter().info("SS - Options String is: " + optionsString);
   }
 
   public static void createAndLoadTablesForStabilityTest() throws SQLException {
@@ -226,7 +220,6 @@ public class SnappyConcurrencyTest extends SnappyTest {
       String insertTableName = (String) insertTableNames.elementAt(i);
       String externalTableName = (String) externalTableNamesForInsert.elementAt(i);
       query = "insert into " + insertTableName + " select * from " + externalTableName;
-      Log.getLogWriter().info("SS - query: " + query);
       conn.createStatement().executeUpdate(query);
     }
     closeConnection(conn);
