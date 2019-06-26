@@ -24,6 +24,8 @@ import io.snappydata.impl.LeadImpl
 import spark.jobserver.context.SparkContextFactory
 import spark.jobserver.util.ContextURLClassLoader
 import spark.jobserver.{ContextLike, SparkJobBase, SparkJobInvalid, SparkJobValid, SparkJobValidation}
+
+import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.{SparkConf, SparkContext}
 import org.apache.spark.util.SnappyUtils
 
@@ -101,6 +103,7 @@ object SnappySessionFactory {
             cl.addURL(u)
           })
         }
+        CodeGenerator.jobClassLoader.set(cl)
         cl
       }
     }
