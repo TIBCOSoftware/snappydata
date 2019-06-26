@@ -21,6 +21,7 @@ import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
+import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import io.snappydata.test.util.TestException;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
@@ -490,50 +491,71 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public static void HydraTask_executeInserts() {
+  public static void HydraTask_executeOps() {
     if (snappyCDCTest == null) {
       snappyCDCTest = new SnappyCDCTest();
     }
-    snappyCDCTest.executeInserts();
+    snappyCDCTest.executeOps();
   }
 
-  public void executeInserts() {
-    Log.getLogWriter().info("Inside executeInserts");
-    String tableType = SnappyCDCPrms.getTableType();
-    int numRecords = 2000000;
+
+  public void executeOps() {
+    Log.getLogWriter().info("Inside executeOps");
+    String queryFileName = SnappyCDCPrms.getDataLocation();
+/*    String tableType = SnappyCDCPrms.getTableType();
+    String dmlOp = SnappySchemaPrms.getDMLOperations();*/
+    int numRecords = SnappyCDCPrms.getNumInserts();
     int totalRecords = 0;
-    String query = "insert into agreement_" + tableType + " select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),\n" +
-        "'src_sys_ref_id','src_sys_rec_id' FROM range(" + numRecords + ")";
-    File logFile = null;
+    String query = null;
+ /*   switch (dmlOp) {
+      case "insert":
+        query = "insert into agreement_" + tableType + " select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),\n" +
+            "'src_sys_ref_id','src_sys_rec_id' FROM range(" + numRecords + ")";
+        break;
+      case "delete":
+        query = "delete from agreement_" + tableType;
+        break;
+    }*/
+    ArrayList<String> queryList = getQueryList(queryFileName);
+    //File logFile = null;
     Connection conn = null;
     try {
       List<String> endpoints = validateLocatorEndpointData();
-      File log = new File(".");
+ /*     File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "deleteFallocate.log";
-      logFile = new File(dest);
+      logFile = new File(dest);*/
       String url = "jdbc:snappydata://" + endpoints.get(0);
       String driver = "io.snappydata.jdbc.ClientDriver";
       Class.forName(driver);
       conn = DriverManager.getConnection(url);
-      while (true) {
-        Log.getLogWriter().info("Starting insert operation");
+      while(true){
+      for (int i = 0; i <= queryList.size() - 1; i++) {
+        query = queryList.get(i);
+        Log.getLogWriter().info("Starting execution of " + query + " query");
         conn.createStatement().execute(query);
-        totalRecords += numRecords;
-        //Keep adding the numRecords in the blackBoard for validation
-        //Then in the closetask validate the count the clusterCnt after restart should be >= BBCnt ,should not be less.
-
-        Log.getLogWriter().info("Successfully inserted records.");
+        if (query.contains("INSERT")) {
+          totalRecords += numRecords;
+          Log.getLogWriter().info("Successfully inserted records.");
+        } else {
+          Log.getLogWriter().info("Successfully deleted records.");
+        }
+      }
       }
     } catch (SQLException ex) {
       try {
-        conn.createStatement().execute(query);
+        //Reexecute the query list after exception.
+        for(int i = 0 ;i <= queryList.size() - 1;i++) {
+          String queryStr = queryList.get(i);
+          conn.createStatement().execute(queryStr);
+        }
       } catch (SQLException ex1) {
-        if (ex.getMessage().contains("No space left on device") || ex.getMessage().contains("TransactionDataRebalancedException")) {
+       /* if (ex.getMessage().contains("No space left on device") || ex.getMessage().contains("TransactionDataRebalancedException")) {
           String cmd = "rm -rf " + snappyTest.getCurrentDirPath() + "/randomFileForDiskFull_*";
           ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
           snappyTest.executeProcess(pb, logFile);
           Log.getLogWriter().info("Caught exception after " + totalRecords + " successful inserts \n" + ex1.getMessage());
-        }
+        }*/
+        Log.getLogWriter().info("Caught exception after " + totalRecords + " successful inserts \n" + ex1.getMessage());
       }
     } catch (Exception ex) {
       throw new TestException("Caught exception " + ex.getMessage());
@@ -754,7 +776,6 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void executeCleanUpFiles() {
     try {
-      String tableType = SnappyCDCPrms.getTableType();
       String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
@@ -765,12 +786,12 @@ public class SnappyCDCTest extends SnappyTest {
       snappyTest.executeProcess(pb, logFile);
       Log.getLogWriter().info("Restarting the cluster after cleanup");
       stopCluster(snappyPath, logFile);
-      Thread.sleep(300000);
+      Thread.sleep(30000);
       startCluster(snappyPath, logFile, false);
       Log.getLogWriter().info("Verify the total inserts");
       int expectedCnt = (Integer) SnappyBB.getBB().getSharedMap().get("TOTAL_NUM_INSERTS");
       Connection conn = SnappyTest.getLocatorConnection();
-      ResultSet rs = conn.createStatement().executeQuery("SELECT count(*) FROM AGREEMENT_" + tableType);
+      ResultSet rs = conn.createStatement().executeQuery("SELECT count(*) FROM AGREEMENT");
       while (rs.next()) {
         int actualCnt = rs.getInt(1);
         if (actualCnt >= expectedCnt) {

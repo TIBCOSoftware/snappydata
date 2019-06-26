@@ -2,7 +2,9 @@
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  insertQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/insertQuery.sql"
   snappyFileLoc="$GEMFIRE/../snappy"
+  scriptName=createAndLoadColumnTable.sql
   fileSize=40G
   tableType=column
 
@@ -11,15 +13,26 @@ io/snappydata/hydra/diskFullTests/diskFullTestWithColumnTable.conf
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
   snappyFileLoc="$GEMFIRE/../snappy"
+  scriptName=createAndLoadPartitionedRowTable.sql
   fileSize=40G
   tableType=partitionedRow
 
-*/
+
 io/snappydata/hydra/diskFullTests/diskFullTestWithColumnTable.conf
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  scriptName=createAndLoadReplicatedRowTable.sql
   snappyFileLoc="$GEMFIRE/../snappy"
   fileSize=40G
   tableType=replicatedRow
- 
+*/
+
+ io/snappydata/hydra/diskFullTests/diskFullTestWithDeletes.conf
+   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+   scriptName=createAndLoadColumnTable.sql
+   snappyFileLoc="$GEMFIRE/../snappy"
+   deleteQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/deleteQuery.sql"
+   fileSize=100G

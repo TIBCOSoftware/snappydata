@@ -160,6 +160,13 @@ public class SnappyCDCPrms extends SnappyPrms {
 
   public static Long tableType;
 
+  public static Long numInserts;
+
+  public static int getNumInserts() {
+    Long numInsts = numInserts;
+    return tasktab().intAt(numInsts, tab().intAt(numInsts, 2000000));
+  }
+
   public static String getTableType() {
     String tableTyp = tasktab().stringAt(tableType,tab().stringAt(tableType,"column"));
     return tableTyp;
