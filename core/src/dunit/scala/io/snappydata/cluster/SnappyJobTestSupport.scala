@@ -26,12 +26,29 @@ import scala.sys.process._
 
 import org.apache.commons.lang.StringUtils
 
+/**
+ * A helper trait containing functions for managing snappy jobs.
+ */
 trait SnappyJobTestSupport extends Logging {
 
   val snappyProductDir: String
 
+  /**
+   * For secure cluster scenarios this value should be extended with config file containing
+   * credentials.
+   */
   val jobConfigFile : String = null
 
+  private lazy val snappyJobScript = s"$snappyProductDir/bin/snappy-job.sh"
+
+  /**
+   * Submits a snappy job and wait for time specified by `waitTimeMillis` parameter before failing.
+   *
+   * @param classFullName   fully qualified name of the job class
+   * @param jobCmdAffix     additional configs needs to be passed while submitting the job
+   * @param waitTimeMillis  expected job execution time in miliseconds. If the execution time
+   *                        exceeds specified time, the method will throw exception.
+   */
   def submitAndWaitForCompletion(classFullName: String, jobCmdAffix: String = "",
       waitTimeMillis: Int = 60000): Unit = {
     val consoleLog: String = submitJob(classFullName, jobCmdAffix)
@@ -39,10 +56,32 @@ trait SnappyJobTestSupport extends Logging {
     val jobId = getJobId(consoleLog)
     assert(consoleLog.contains("STARTED"), "Job not started")
 
+    waitForJobCompletion(waitTimeMillis, jobId)
+  }
+
+  /**
+   * Waits for job completion for the amount of time specified by `waitTimeMillis`.
+   * Returns successfully if the job reaches "FINISHED" state within time specified by
+   * `waitTimeMillis`.
+   * If job goes to any state other than "RUNNING" and "FINISHED", it throws and exception
+   * containing job status call response.
+   *
+   * @param waitTimeMillis time to wait in millis.
+   * @param jobId          id of the job to wait for
+   */
+
+  def waitForJobCompletion(waitTimeMillis: Int = 60000, jobId: String): Unit = {
     val wc = getWaitCriterion(jobId)
     DistributedTestBase.waitForCriterion(wc, waitTimeMillis, 1000, true)
   }
 
+  /**
+   * Submits a snappy job
+   *
+   * @param classFullName fully qualified name of the job class
+   * @param jobCmdAffix additional configs needs to be passed while submitting the job
+   * @return job submission result
+   */
   def submitJob(classFullName: String, jobCmdAffix: String): String = {
     val className = StringUtils.substringAfterLast(classFullName, ".")
     val packageStr = StringUtils.substringBeforeLast(classFullName, ".")
@@ -52,7 +91,7 @@ trait SnappyJobTestSupport extends Logging {
   }
 
   private def buildJobSubmissionCommand(packageStr: String, className: String): String = {
-    val jobSubmissionCommand = s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className" +
+    val jobSubmissionCommand = s"$snappyJobScript submit --app-name $className" +
         s" --class $packageStr.$className" +
         s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}"
     if(jobConfigFile != null){
@@ -65,16 +104,18 @@ trait SnappyJobTestSupport extends Logging {
         + s"scala/test/$packageStr")
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
         s"not found: $dir")
-    val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
-      override def accept(pathname: File): Boolean = {
-        true
-      }
-    }).toList, Some(packageStr))
+    val jar = TestPackageUtils.createJarFile(dir.listFiles, Some(packageStr))
     assert(!jar.isEmpty, s"No class files found for Job")
     jar
   }
 
-  private def getJobId(str: String): String = {
+  /**
+   * Extracts job id from the job submission response
+   * @param str job submission response
+   * @return id of the job
+   */
+  def getJobId(str: String): String = {
+    // todo: use some JSON parser to fetch job id instead of doing string processing
     val idx = str.indexOf("jobId")
     str.substring(idx + 9, idx + 45)
   }
@@ -84,7 +125,7 @@ trait SnappyJobTestSupport extends Logging {
     new WaitCriterion {
       var consoleLog = ""
       override def done() = {
-        val jobStatusCommand = s"$snappyProductDir/bin/snappy-job.sh status --job-id $jobId"
+        val jobStatusCommand = s"$snappyJobScript status --job-id $jobId"
         consoleLog = if (jobConfigFile != null){
           (jobStatusCommand + s" --passfile $jobConfigFile").!!
         } else {
