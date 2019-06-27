@@ -105,7 +105,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
     val conn = getANetConnection(netPort1)
     val stmt = conn.createStatement()
-    stmt.execute("drop table if exists t7")
+    stmt.execute("drop table if exists t3")
     stmt.execute("create table t3(id integer, fs integer) using column options" +
         "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
     var ps: PreparedStatement = null
@@ -184,6 +184,175 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(0, rscnt.getInt(1))
+  }
+
+  def testConcurrentBatchDmlQueriesInPreparedStatement(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    stmt.execute("drop table if exists t3")
+    stmt.execute("create table t3(id integer, fs integer) using column options" +
+        "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
+
+
+    var ps: PreparedStatement = null
+
+    var thrCount1: Integer = 0
+    val colThread1 = new Thread(new Runnable {def run() {
+      val query = "insert into t3 values(?,?)"
+      ps = conn.prepareStatement(query)
+      for (i <- 1 to 10) {
+        ps.setInt(1, i)
+        ps.setInt(2, i + 10)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+    }
+    })
+    colThread1.start()
+
+    var thrCount2: Integer = 0
+    val colThread2 = new Thread(new Runnable {def run() {
+      val query = "insert into t3 values(?,?)"
+      ps = conn.prepareStatement(query)
+      for (i <- 11 to 20) {
+        ps.setInt(1, i)
+        ps.setInt(2, i + 10)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+    }
+    })
+    colThread2.start()
+
+    colThread1.join()
+    colThread2.join()
+
+    var rscnt = stmt.executeQuery("select count(*) from t3")
+    rscnt.next()
+    assertEquals(20, rscnt.getInt(1))
+
+    val rs = stmt.executeQuery("select * from t3 order by id")
+    var i = 1
+    while (rs.next()) {
+      assertEquals(i, rs.getInt(1))
+      assertEquals(i + 10, rs.getInt(2))
+      i = i + 1
+    }
+
+    var thrCount3: Integer = 0
+    val colThread3 = new Thread(new Runnable {def run() {
+      val query1 = "update t3 set fs = ? where fs = ?"
+      ps = conn.prepareStatement(query1)
+      var fs1 = 0
+      for (i <- 1 to 10) {
+        if (i % 2 == 0) {
+          fs1 = i + 100
+        } else {
+          fs1 = i + 1000
+        }
+        ps.setInt(1, fs1)
+        ps.setInt(2, i + 10)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+    }
+    })
+    colThread3.start()
+
+    var thrCount4: Integer = 0
+    val colThread4 = new Thread(new Runnable {def run() {
+      val query1 = "update t3 set fs = ? where fs = ?"
+      ps = conn.prepareStatement(query1)
+      var fs1 = 0
+      for (i <- 11 to 20) {
+        if (i % 2 == 0) {
+          fs1 = i + 100
+        } else {
+          fs1 = i + 1000
+        }
+        ps.setInt(1, fs1)
+        ps.setInt(2, i + 10)
+        ps.addBatch()
+        if (i % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+    }
+    })
+    colThread4.start()
+
+    colThread3.join()
+    colThread4.join()
+
+    rscnt = stmt.executeQuery("select count(*) from t3")
+    rscnt.next()
+    assertEquals(20, rscnt.getInt(1))
+
+    var rs1 = stmt.executeQuery("select * from t3 order by id")
+    var i2 = 1
+    var no = 0
+    while (rs1.next()) {
+      if (i2 % 2 == 0) {
+        no = i2 + 100
+      } else {
+        no = i2 + 1000
+      }
+      assertEquals(i2, rs1.getInt(1))
+      assertEquals(no, rs1.getInt(2))
+      i2 = i2 + 1
+    }
+
+    var thrCount5: Integer = 0
+    val colThread5 = new Thread(new Runnable {def run() {
+      val query2 = "delete from t3 where id = ?"
+      ps = conn.prepareStatement(query2)
+      for (i2 <- 1 to 10) {
+        ps.setInt(1, i2)
+        ps.addBatch()
+        if (i2 % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+    }
+    })
+    colThread5.start()
+
+    var thrCount6: Integer = 0
+    val colThread6 = new Thread(new Runnable {def run() {
+      val query2 = "delete from t3 where id = ?"
+      ps = conn.prepareStatement(query2)
+      for (i2 <- 11 to 20) {
+        ps.setInt(1, i2)
+        ps.addBatch()
+        if (i2 % 10 == 0) {
+          ps.executeBatch()
+        }
+      }
+      ps.executeBatch()
+    }
+    })
+    colThread6.start()
+
+    colThread5.join()
+    colThread6.join()
+
+    rscnt = stmt.executeQuery("select count(*) from t3")
+    rscnt.next()
+    assertEquals(0, rscnt.getInt(1))
+
   }
 
 }
