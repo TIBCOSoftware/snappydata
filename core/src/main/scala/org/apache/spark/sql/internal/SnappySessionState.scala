@@ -34,7 +34,9 @@ import io.snappydata.{Constant, HintName, Property, QueryHint}
 import org.apache.spark.internal.config.{ConfigBuilder, ConfigEntry, TypedConfigBuilder}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, Star, UnresolvedAttribute}
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.catalog.SessionCatalog
 import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.parser.ParserInterface
@@ -61,9 +63,9 @@ import org.apache.spark.{Partition, SparkConf}
 trait SnappySessionState extends SessionState with SnappyStrategies with SparkSupport {
 
   val snappySession: SnappySession
-  val analyzerBuilder: () => Analyzer
-  val analyzerPrepareBuilder: () => Analyzer
-  val analyzerWithoutPromoteBuilder: () => Analyzer
+  def catalogBuilder(): SessionCatalog
+  def analyzerBuilder(): Analyzer
+  def optimizerBuilder(): Optimizer
   val conf: SQLConf
   val sqlParser: ParserInterface
   val streamingQueryManager: StreamingQueryManager
@@ -85,15 +87,63 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
-  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
-  lazy val analyzerPrepare: Analyzer = analyzerPrepareBuilder()
-
-  lazy val analyzerWithoutPromote: Analyzer = analyzerWithoutPromoteBuilder()
+  /**
+   * Internal catalog for managing table and database states.
+   */
+  override lazy val catalog: SnappySessionCatalog =
+    catalogBuilder().asInstanceOf[SnappySessionCatalog]
 
   override lazy val analyzer: Analyzer = analyzerBuilder()
 
-  override lazy val optimizer: Optimizer = internals.newSparkOptimizer(this)
+  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
+  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
+  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map(batch =>
+      Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*))
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  lazy val analyzerWithoutPromote: Analyzer = new Analyzer(catalog, conf) {
+
+    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
+      case analyzer.FixedPoint(_) => fixedPoint
+      case _ => Once
+    }
+
+    override lazy val batches: Seq[Batch] = analyzer.batches.map {
+      case batch if batch.name.equalsIgnoreCase("Resolution") =>
+        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
+          case PromoteStrings => false
+          case _ => true
+        }): _*)
+      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
+    }
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      getExtendedResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
+  }
+
+  override lazy val optimizer: Optimizer = optimizerBuilder()
+
+  protected[sql] def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]]
+
+  protected[sql] def getPostHocResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]]
+
+  protected[sql] def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
+    Seq(ConditionalPreWriteCheck(internals.newPreWriteCheck(this)), PrePutCheck)
+  }
 
   // copy of ConstantFolding that will turn a constant up/down cast into
   // a static value.
@@ -247,6 +297,35 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
   @volatile private[sql] var enableExecutionCache: Boolean = _
   protected final lazy val executionCache =
     new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
+
+  /**
+   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
+   */
+  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
+    def getTable(u: UnresolvedRelation, alias: Option[String] = None): LogicalPlan = {
+      try {
+        catalog.lookupRelation(u.tableIdentifier,
+          if (alias.isEmpty) internals.unresolvedRelationAlias(u) else alias)
+      } catch {
+        case _: TableNotFoundException | _: NoSuchTableException =>
+          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
+      }
+    }
+
+    def apply(plan: LogicalPlan): LogicalPlan = plan.transformUp {
+      case i@PutIntoTable(u: UnresolvedRelation, _) =>
+        i.copy(table = EliminateSubqueryAliases(getTable(u)))
+      case i@PutIntoTable(s: SubqueryAlias, _) if s.child.isInstanceOf[UnresolvedRelation] =>
+        i.copy(table = EliminateSubqueryAliases(getTable(
+          s.child.asInstanceOf[UnresolvedRelation], Option(s.alias))))
+      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
+        d.copy(query = EliminateSubqueryAliases(getTable(u)))
+      case d@DMLExternalTable(_, s: SubqueryAlias, _)
+        if s.child.isInstanceOf[UnresolvedRelation] =>
+        d.copy(query = EliminateSubqueryAliases(getTable(
+          s.child.asInstanceOf[UnresolvedRelation], Option(s.alias))))
+    }
+  }
 
   /**
    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
@@ -580,16 +659,6 @@ trait SnappySessionState extends SessionState with SnappyStrategies with SparkSu
       qe.assertAnalyzed()
       qe.analyzed
     }
-  }
-
-  /**
-   * Internal catalog for managing table and database states.
-   */
-  override lazy val catalog: SnappySessionCatalog = {
-    internals.newSnappySessionCatalog(this,
-      snappySharedState.getExternalCatalogInstance(snappySession),
-      snappySession.sharedState.globalTempViewManager,
-      functionRegistry, conf, newHadoopConf())
   }
 
   protected[sql] def queryPreparations(

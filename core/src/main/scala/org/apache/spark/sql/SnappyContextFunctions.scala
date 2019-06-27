@@ -109,9 +109,6 @@ class SnappyContextFunctions extends SparkSupport {
       confidence: Double, behavior: String): DataFrame =
     throw new UnsupportedOperationException("missing aqp jar")
 
-  def newSQLParser(snappySession: SnappySession): SnappySqlParser =
-    new SnappySqlParser(snappySession)
-
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start
     session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](

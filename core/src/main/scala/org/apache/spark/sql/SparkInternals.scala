@@ -16,14 +16,13 @@
  */
 package org.apache.spark.sql
 
-import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
 import org.apache.hadoop.conf.Configuration
 
 import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
@@ -36,9 +35,9 @@ import org.apache.spark.sql.catalyst.{FunctionIdentifier, InternalRow, TableIden
 import org.apache.spark.sql.execution.command.RunnableCommand
 import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.Exchange
-import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
+import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
-import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionCatalog, SnappySessionState}
+import org.apache.spark.sql.internal.{LogicalPlanWithHints, SQLConf, SharedState, SnappySessionState}
 import org.apache.spark.sql.sources.{BaseRelation, Filter}
 import org.apache.spark.sql.streaming.LogicalDStreamPlan
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
@@ -257,6 +256,11 @@ trait SparkInternals extends Logging {
   def newUnresolvedRelation(tableIdentifier: TableIdentifier, alias: Option[String]): LogicalPlan
 
   /**
+   * Get alias if specified in UnresolvedRelation else None.
+   */
+  def unresolvedRelationAlias(u: UnresolvedRelation): Option[String]
+
+  /**
    * Create an alias for a sub-query.
    */
   def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias
@@ -464,14 +468,6 @@ trait SparkInternals extends Logging {
    */
   def newSmartConnectorExternalCatalog(session: SparkSession): SmartConnectorExternalCatalog
 
-  /**
-   * Create a new implementation of SnappySession with given parameters.
-   */
-  def newSnappySessionCatalog(sessionState: SnappySessionState,
-      externalCatalog: SnappyExternalCatalog, globalTempViewManager: GlobalTempViewManager,
-      functionRegistry: FunctionRegistry, conf: SQLConf,
-      hadoopConf: Configuration): SnappySessionCatalog
-
   /** Lookup the data source for a given provider. */
   def lookupDataSource(provider: String, conf: => SQLConf): Class[_]
 
@@ -523,11 +519,6 @@ trait SparkInternals extends Logging {
    * Create a new instance of [[SnappySessionState]] appropriate for the current Spark version.
    */
   def newSnappySessionState(snappySession: SnappySession): SnappySessionState
-
-  /**
-   * Create a new optimizer with extended rules for SnappyData.
-   */
-  def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer
 
   /**
    * Return the Spark plan for check pre-conditions before a write operation.
