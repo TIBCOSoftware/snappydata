@@ -23,6 +23,7 @@ import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import io.snappydata.test.util.TestException;
+import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
 
@@ -502,65 +503,54 @@ public class SnappyCDCTest extends SnappyTest {
   public void executeOps() {
     Log.getLogWriter().info("Inside executeOps");
     String queryFileName = SnappyCDCPrms.getDataLocation();
-/*    String tableType = SnappyCDCPrms.getTableType();
-    String dmlOp = SnappySchemaPrms.getDMLOperations();*/
     int numRecords = SnappyCDCPrms.getNumInserts();
-    int totalRecords = 0;
+    int totalRecords1 = 0;
+    int totalRecords2 = 0;
     String query = null;
- /*   switch (dmlOp) {
-      case "insert":
-        query = "insert into agreement_" + tableType + " select id,abs(rand()*1000),abs(rand()*1000),'agree_cd','description','2018-01-01','2019-01-01',from_unixtime(unix_timestamp('2018-01-01 01:00:00')+floor(rand()*31536000)),from_unixtime(unix_timestamp('2019-01-01 01:00:00')+floor(rand()*31536000)),\n" +
-            "'src_sys_ref_id','src_sys_rec_id' FROM range(" + numRecords + ")";
-        break;
-      case "delete":
-        query = "delete from agreement_" + tableType;
-        break;
-    }*/
     ArrayList<String> queryList = getQueryList(queryFileName);
-    //File logFile = null;
+    Map<String, Integer> tableValueMap = new HashedMap();
     Connection conn = null;
     try {
       List<String> endpoints = validateLocatorEndpointData();
- /*     File log = new File(".");
-      String dest = log.getCanonicalPath() + File.separator + "deleteFallocate.log";
-      logFile = new File(dest);*/
       String url = "jdbc:snappydata://" + endpoints.get(0);
       String driver = "io.snappydata.jdbc.ClientDriver";
       Class.forName(driver);
       conn = DriverManager.getConnection(url);
-      while(true){
-      for (int i = 0; i <= queryList.size() - 1; i++) {
-        query = queryList.get(i);
-        Log.getLogWriter().info("Starting execution of " + query + " query");
-        conn.createStatement().execute(query);
-        if (query.contains("INSERT")) {
-          totalRecords += numRecords;
-          Log.getLogWriter().info("Successfully inserted records.");
-        } else {
-          Log.getLogWriter().info("Successfully deleted records.");
+      while (true) {
+        for (int i = 0; i <= queryList.size() - 1; i++) {
+          query = queryList.get(i);
+          Log.getLogWriter().info("Starting execution of " + query + " query");
+          conn.createStatement().execute(query);
+          if (query.contains("INSERT")) {
+            String tableName = query.split(" ")[2];
+            if (tableName.equalsIgnoreCase("AGREEMENT")) {
+              totalRecords1 += numRecords;
+              tableValueMap.put(tableName, totalRecords1);
+            } else {
+              totalRecords2 += numRecords;
+              tableValueMap.put(tableName, totalRecords2);
+            }
+            Log.getLogWriter().info("Successfully inserted records for table = " + tableName);
+          } else {
+            Log.getLogWriter().info("Successfully deleted records.");
+          }
         }
-      }
       }
     } catch (SQLException ex) {
       try {
         //Reexecute the query list after exception.
-        for(int i = 0 ;i <= queryList.size() - 1;i++) {
+        for (int i = 0; i <= queryList.size() - 1; i++) {
           String queryStr = queryList.get(i);
           conn.createStatement().execute(queryStr);
         }
       } catch (SQLException ex1) {
-       /* if (ex.getMessage().contains("No space left on device") || ex.getMessage().contains("TransactionDataRebalancedException")) {
-          String cmd = "rm -rf " + snappyTest.getCurrentDirPath() + "/randomFileForDiskFull_*";
-          ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
-          snappyTest.executeProcess(pb, logFile);
-          Log.getLogWriter().info("Caught exception after " + totalRecords + " successful inserts \n" + ex1.getMessage());
-        }*/
-        Log.getLogWriter().info("Caught exception after " + totalRecords + " successful inserts \n" + ex1.getMessage());
+        Log.getLogWriter().info("Caught exception after successful inserts \n" + ex1.getMessage());
       }
     } catch (Exception ex) {
       throw new TestException("Caught exception " + ex.getMessage());
     } finally {
-      SnappyBB.getBB().getSharedMap().put("TOTAL_NUM_INSERTS", totalRecords);
+      SnappyBB.getBB().getSharedMap().put("TABLE_VALUE_MAP", tableValueMap);
+
     }
   }
 
@@ -780,25 +770,34 @@ public class SnappyCDCTest extends SnappyTest {
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
       File logFile = new File(dest);
-
+      Map<String,Integer> tableValueMap = new HashedMap();
+      String tableName= "";
+      int expectedCnt =0;
       String cmd = "rm -rf " + snappyTest.getCurrentDirPath() + "/randomFileForDiskFull_*";
       ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", cmd);
       snappyTest.executeProcess(pb, logFile);
       Log.getLogWriter().info("Restarting the cluster after cleanup");
       stopCluster(snappyPath, logFile);
-      Thread.sleep(30000);
+      //wait for 5 mins
+      //Thread.sleep(300000);
+      Thread.sleep(5000);
       startCluster(snappyPath, logFile, false);
       Log.getLogWriter().info("Verify the total inserts");
-      int expectedCnt = (Integer) SnappyBB.getBB().getSharedMap().get("TOTAL_NUM_INSERTS");
-      Connection conn = SnappyTest.getLocatorConnection();
-      ResultSet rs = conn.createStatement().executeQuery("SELECT count(*) FROM AGREEMENT");
-      while (rs.next()) {
-        int actualCnt = rs.getInt(1);
-        if (actualCnt >= expectedCnt) {
-          Log.getLogWriter().info("The data inserted is correct");
-          Log.getLogWriter().info("Expected count = " + expectedCnt + " actual count = " + actualCnt);
-        } else
-          Log.getLogWriter().info("The data in restarted cluster is less \n" + " Expected count  " + expectedCnt + " Actually Found " + actualCnt);
+      tableValueMap = (HashedMap)SnappyBB.getBB().getSharedMap().get("TABLE_VALUE_MAP");
+      for (Map.Entry<String,Integer> entry : tableValueMap.entrySet()) {
+        tableName = entry.getKey();
+        expectedCnt = entry.getValue();
+        //int expectedCnt = (Integer) SnappyBB.getBB().getSharedMap().get("TOTAL_NUM_INSERTS");
+        Connection conn = SnappyTest.getLocatorConnection();
+        ResultSet rs = conn.createStatement().executeQuery("SELECT count(*) FROM " + tableName);
+        while (rs.next()) {
+          int actualCnt = rs.getInt(1);
+          if (actualCnt >= expectedCnt) {
+            Log.getLogWriter().info("The data inserted is correct");
+            Log.getLogWriter().info("Expected count = " + expectedCnt + " actual count = " + actualCnt);
+          } else
+            Log.getLogWriter().info("The data in restarted cluster is less \n" + " Expected count  " + expectedCnt + " Actually Found " + actualCnt);
+        }
       }
     } catch (Exception ex) {
       throw new TestException("Caught exception during cleanup " + ex.getMessage());
