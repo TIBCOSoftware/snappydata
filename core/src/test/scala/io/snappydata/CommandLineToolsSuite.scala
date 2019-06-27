@@ -25,7 +25,6 @@ import org.apache.spark.sql.collection.Utils
 
 import scala.sys.process._
 
-
 class CommandLineToolsSuite extends SnappyTestRunner {
 
   override def servers: String = s"$localHostName\n"
