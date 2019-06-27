@@ -1,4 +1,16 @@
 # Memory Management
+
+!!! Attention
+
+	The following description and best practices are ONLY applicable to the data store cluster nodes that are the nodes that manage in-memory tables in SnappyData. When running in the **connector** mode, your Spark job runs in isolated JVMs and you will need to estimate its memory requirements.
+
+You need to estimate and plan memory/disk for the following objects:
+
+- In-memory row, column tables 
+- Execution memory for queries, jobs 
+- Shuffle disk space required by queries, jobs 
+- In-memory caching of Spark dataframes, temporary tables 
+
 Spark executors and SnappyData in-memory store share the same memory space. SnappyData extends the Spark's memory manager providing a unified space for spark storage, execution and SnappyData column and row tables. This Unified MemoryManager smartly keeps track of memory allocations across Spark execution and the Store, elastically expanding into the other if the room is available. Rather than a pre-allocation strategy where Spark memory is independent of the store, SnappyData uses a unified strategy where all allocations come from a common pool. Essentially, it optimizes the memory utilization to the extent possible.
 
 SnappyData also monitors the JVM memory pools and avoids running into out-of-memory conditions in most cases. You can configure the threshold for when data evicts to disk and the critical threshold for heap utilization. When the usage exceeds this critical threshold, memory allocations within SnappyData fail, and a LowMemoryException error is reported. This, however, safeguards the server from crashing due to OutOfMemoryException.
@@ -7,10 +19,10 @@ SnappyData also monitors the JVM memory pools and avoids running into out-of-mem
 ## Estimating Memory Size for Column and Row Tables
 Column tables use compression by default and the amount of compression is dependent on the data itself. While we commonly see compression of 50%, it is also possible to achieve much higher compression ratios when the data has many repeated strings or text.</br>
 Row tables, on the other hand, consume more space than the original data size. There is a per row overhead in SnappyData. While this overhead varies and is dependent on the options configured on the Row table, as a simple guideline we suggest you assume 100 bytes per row as overhead. Thus, it is clear that it is not straightforward to compute the memory requirements.</br> 
-It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Pulse dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
+It is recommended that you take a sample of the data set (as close as possible to your production data) and populate each of the tables. Ensure that you create the required indexes and note down the size estimates (in bytes) in the SnappyData Monitoring Console dashboard. You can then extrapolate this number given the total number of records you anticipate to load or grow into, for the memory requirements for your table.
 
 ## Disk and Memory Sizing
-For efficient use of the disk, the best alternative is to load some sample data and extrapolate for both memory and disk requirements. The disk usage is the sum of all the **Total size** of the tables. You can check the value of **Total Size** on the SnappyData Pulse UI. 
+For efficient use of the disk, the best alternative is to load some sample data and extrapolate for both memory and disk requirements. The disk usage is the sum of all the **Total size** of the tables. You can check the value of **Total Size** on the SnappyData Monitoring Console. 
 For total disk requirement, the rule of thumb is ~4X data size which accounts for temporary space required for the compactor and the space required for [spark.local.dir](../best_practices/important_settings.md#spark-local-dir). In case of concurrent thread execution,the requirement will differ as mentioned in [spark.local.dir](../best_practices/important_settings.md#spark-local-dir).
 If the data and the temporary storage set with `spark.local.dir` are in separate locations, then the disk for data storage can be 2X of the total estimated data size while temporary storage can be 2X. The temporary storage is used to shuffle the output of large joins, and a query can potentially shuffle the entire data. Likewise, a massive import can also shuffle data before inserting into partitioned tables.
 

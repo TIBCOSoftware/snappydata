@@ -31,11 +31,11 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.PutIntoValuesColumnTable
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -43,7 +43,7 @@ import org.apache.spark.util.SnappyUtils
 class SparkSQLPrepareImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version) extends SparkSQLExecute {
 
   if (Thread.currentThread().getContextClassLoader != null) {
     val loader = SnappyUtils.getSnappyStoreContextLoader(
@@ -64,7 +64,14 @@ class SparkSQLPrepareImpl(val sql: String,
   session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val analyzedPlan: LogicalPlan = {
-    session.prepareSQL(sql)
+    var aplan = session.prepareSQL(sql)
+    val questionMarkCounter = session.snappyParser.questionMarkCounter
+    val paramLiterals = new mutable.HashSet[ParamLiteral]()
+    SparkSQLPrepareImpl.allParamLiterals(aplan, paramLiterals)
+    if (paramLiterals.size != questionMarkCounter) {
+      aplan = session.prepareSQL(sql, true)
+    }
+    aplan
   }
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
@@ -93,9 +100,18 @@ class SparkSQLPrepareImpl(val sql: String,
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
-      allParamLiterals(analyzedPlan, paramLiterals)
-      if (paramLiterals.size < questionMarkCounter) {
-        remainingParamLiterals(analyzedPlan, paramLiterals)
+      analyzedPlan match {
+        case PutIntoValuesColumnTable(_, _, _, _) => analyzedPlan.expressions.foreach {
+          exp => exp.map {
+            case QuestionMark(pos) =>
+              SparkSQLPrepareImpl.addParamLiteral(pos, exp.dataType, exp.nullable, paramLiterals)
+          }
+        }
+        case _ =>
+      }
+      SparkSQLPrepareImpl.allParamLiterals(analyzedPlan, paramLiterals)
+      if (paramLiterals.size != questionMarkCounter) {
+        SparkSQLPrepareImpl.remainingParamLiterals(analyzedPlan, paramLiterals)
       }
       val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length
@@ -150,9 +166,20 @@ class SparkSQLPrepareImpl(val sql: String,
     // send across rest as objects that will be displayed as json strings
     case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
   }
+}
+
+object SparkSQLPrepareImpl{
+  def getTableNamesAndDatatype(
+      output: Seq[expressions.Attribute]): (Array[String], Array[DataType]) =
+    output.toArray.map(o => o.name -> o.dataType).unzip
+
+  def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
+    result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
+    result += ParamLiteral(nullable, datatype, position, execId = -1, tokenized = true)
+  }
 
   def handleCase(branches: Seq[(Expression, Expression)], elseValue: Option[Expression],
-      datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
+    datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
     branches.foreach {
       case (_, QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
@@ -162,11 +189,6 @@ class SparkSQLPrepareImpl(val sql: String,
         addParamLiteral(pos, datatype, nullable, result)
       case _ =>
     }
-  }
-
-  def addParamLiteral(position: Int, datatype: DataType, nullable: Boolean,
-      result: mutable.HashSet[ParamLiteral]): Unit = if (!result.exists(_.pos == position)) {
-    result += ParamLiteral(nullable, datatype, position, execId = -1, tokenized = true)
   }
 
   def allParamLiterals(plan: LogicalPlan, result: mutable.HashSet[ParamLiteral]): Unit = {
@@ -230,7 +252,7 @@ class SparkSQLPrepareImpl(val sql: String,
   }
 
   def handleSubQuery(plan: LogicalPlan,
-      f: PartialFunction[Expression, Expression]): LogicalPlan = plan transformAllExpressions {
+    f: PartialFunction[Expression, Expression]): LogicalPlan = plan transformAllExpressions {
     case e if f.isDefinedAt(e) => f(e)
     case sub: SubqueryExpression => sub match {
       case l@ListQuery(query, x) => l.copy(handleSubQuery(query, f), x)
@@ -239,12 +261,6 @@ class SparkSQLPrepareImpl(val sql: String,
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }
-}
-
-object SparkSQLPrepareImpl{
-  def getTableNamesAndDatatype(
-      output: Seq[expressions.Attribute]): (Array[String], Array[DataType]) =
-    output.toArray.map(o => o.name -> o.dataType).unzip
 }
 
 object QuestionMark {

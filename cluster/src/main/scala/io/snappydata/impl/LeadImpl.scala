@@ -159,13 +159,21 @@ class LeadImpl extends ServerImpl with Lead
     val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
         .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
+    val productName = {
+      if (SnappySession.isEnterpriseEdition) {
+        "TIBCO ComputeDB"
+      } else {
+        "SnappyData"
+      }
+    }
+
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
     val initServices = Future {
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
-          setAppName("TIBCO ComputeDB").
+          setAppName(productName).
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
