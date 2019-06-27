@@ -105,7 +105,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) with SparkSuppo
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
    */
   @transient
-  lazy override val sessionState: SnappySessionState = internals.newSnappySessionState(self)
+  override lazy val sessionState: SnappySessionState = internals.newSnappySessionState(self)
 
   def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 

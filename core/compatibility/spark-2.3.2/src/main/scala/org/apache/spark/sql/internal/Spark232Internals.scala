@@ -22,6 +22,7 @@ import java.nio.file.Paths
 
 import scala.collection.mutable
 
+import io.snappydata.Property.HashAggregateSize
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog
 import io.snappydata.{HintName, QueryHint}
@@ -32,25 +33,27 @@ import org.apache.spark.internal.config.ConfigBuilder
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, FunctionRegistry, UnresolvedRelation, UnresolvedSubqueryColumnAliases, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression, AggregateFunction}
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeGenerator, CodegenContext, GeneratedClass}
 import org.apache.spark.sql.catalyst.expressions.{Alias, Attribute, AttributeReference, CurrentRow, ExprId, Expression, ExpressionInfo, FrameType, Generator, NamedExpression, NullOrdering, SortDirection, SortOrder, SpecifiedWindowFrame, UnaryMinus, UnboundedFollowing, UnboundedPreceding}
 import org.apache.spark.sql.catalyst.json.JSONOptions
+import org.apache.spark.sql.catalyst.optimizer.Optimizer
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
+import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{AccessUtils, FunctionIdentifier, InternalRow, TableIdentifier}
 import org.apache.spark.sql.execution.command.{ClearCacheCommand, CreateFunctionCommand, DescribeTableCommand, RunnableCommand}
-import org.apache.spark.sql.execution.datasources.{DataSource, LogicalRelation, PreWriteCheck}
+import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{Exchange, ShuffleExchangeExec}
 import org.apache.spark.sql.execution.ui.{SQLAppStatusListener, SQLAppStatusStore, SnappySQLAppListener}
 import org.apache.spark.sql.execution.{CacheManager, CodegenSparkFallback, RowDataSourceScanExec, SparkOptimizer, SparkPlan, WholeStageCodegenExec}
 import org.apache.spark.sql.hive.{HiveSessionResourceLoader, SnappyHiveCatalogBase, SnappyHiveExternalCatalog}
-import org.apache.spark.sql.sources.{BaseRelation, Filter}
-import org.apache.spark.sql.streaming.LogicalDStreamPlan
+import org.apache.spark.sql.sources.{BaseRelation, Filter, ResolveQueryHints}
+import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager}
 import org.apache.spark.sql.types.{DataType, Metadata, StructType}
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.SnappyStreamingContext
@@ -219,6 +222,8 @@ class Spark232Internals extends SparkInternals {
     case None => UnresolvedRelation(tableIdentifier)
     case Some(a) => SubqueryAlias(a, UnresolvedRelation(tableIdentifier))
   }
+
+  override def unresolvedRelationAlias(u: UnresolvedRelation): Option[String] = None
 
   override def newSubqueryAlias(alias: String, child: LogicalPlan): SubqueryAlias = {
     SubqueryAlias(alias, child)
@@ -445,19 +450,6 @@ class Spark232Internals extends SparkInternals {
     new SmartConnectorExternalCatalog23(session)
   }
 
-  override def newSnappySessionCatalog(sessionState: SnappySessionState,
-      externalCatalog: SnappyExternalCatalog, globalTempViewManager: GlobalTempViewManager,
-      functionRegistry: FunctionRegistry, conf: SQLConf,
-      hadoopConf: Configuration): SnappySessionCatalog = {
-    val session = sessionState.snappySession
-    val functionResourceLoader = externalCatalog match {
-      case c: SnappyHiveExternalCatalog => new HiveSessionResourceLoader(session, c.client())
-      case _ => new SessionResourceLoader(session)
-    }
-    new SnappySessionCatalog23(session, externalCatalog, globalTempViewManager,
-      functionResourceLoader, functionRegistry, sessionState.snappySqlParser, conf, hadoopConf)
-  }
-
   override def lookupDataSource(provider: String, conf: => SQLConf): Class[_] =
     DataSource.lookupDataSource(provider, conf)
 
@@ -498,7 +490,8 @@ class Spark232Internals extends SparkInternals {
     // TODO: SW:
   }
 
-  override def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer = {
+  // TODO: SW: move to session state impl
+  private def newSparkOptimizer(sessionState: SnappySessionState): SparkOptimizer = {
     new SparkOptimizer(sessionState.catalog, sessionState.experimentalMethods)
         with DefaultOptimizer {
       override def state: SnappySessionState = sessionState
@@ -732,6 +725,109 @@ class SnappySessionCatalog23(override val snappySession: SnappySession,
     }
     functionRegistry.registerFunction(func, info, builder)
   }
+}
+
+class SnappySessionStateBuilder23(session: SnappySession, parentState: Option[SessionState] = None)
+    extends BaseSessionStateBuilder(session, parentState) {
+
+  override protected val conf: SQLConf = {
+    val conf = parentState.map(_.conf.clone()).getOrElse(new SnappyConf(session))
+    mergeSparkConf(conf, session.sparkContext.conf)
+    conf
+  }
+
+  override protected lazy val sqlParser: SnappySqlParser = new SnappySqlParser(session)
+
+  protected val externalCatalog: SnappyExternalCatalog =
+    session.sharedState.getExternalCatalogInstance(session)
+
+  override protected lazy val resourceLoader: SessionResourceLoader = externalCatalog match {
+    case c: SnappyHiveExternalCatalog => new HiveSessionResourceLoader(session, c.client())
+    case _ => new SessionResourceLoader(session)
+  }
+
+  override protected lazy val catalog: SnappySessionCatalog = {
+    val catalog = new SnappySessionCatalog23(
+      session,
+      externalCatalog,
+      session.sharedState.globalTempViewManager,
+      resourceLoader,
+      functionRegistry,
+      sqlParser,
+      conf,
+      SessionState.newHadoopConf(session.sparkContext.hadoopConfiguration, conf))
+    parentState.foreach(_.catalog.copyStateTo(catalog))
+    catalog
+  }
+
+  override protected def analyzer: Analyzer = new Analyzer(catalog, conf) {
+
+    private def state: SnappySessionState = session.sessionState
+
+    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
+      state.getExtendedResolutionRules(this)
+
+    override val postHocResolutionRules: Seq[Rule[LogicalPlan]] =
+      state.getPostHocResolutionRules(this)
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] =
+      state.getExtendedCheckRules ++ (PreReadCheck +: HiveOnlyCheck +: customCheckRules)
+  }
+
+  override protected def optimizer: Optimizer = {
+    new SparkOptimizer(catalog, experimentalMethods) with DefaultOptimizer {
+
+      override def state: SnappySessionState = session.sessionState
+
+      override def extendedOperatorOptimizationRules: Seq[Rule[LogicalPlan]] =
+        super.extendedOperatorOptimizationRules ++ customOperatorOptimizationRules
+    }
+  }
+
+  override protected def streamingQueryManager: StreamingQueryManager = {
+    // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
+    // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
+    // implies that Snappydata aggregation optimisation will be turned off for any usage of
+    // this session including non-streaming queries.
+
+    HashAggregateSize.set(session.sessionState.conf, "-1")
+    new StreamingQueryManager(session)
+  }
+
+  override def build(): SnappySessionState = {
+    new SessionState(session.sharedState, conf, experimentalMethods,
+      functionRegistry, udfRegistration, () => catalog, sqlParser,
+      () => analyzer, () => optimizer, planner, streamingQueryManager,
+      listenerManager, () => resourceLoader, createQueryExecution,
+      createClone) with SnappySessionState {
+
+      override val snappySession: SnappySession = session
+
+      override protected[sql] def getExtendedResolutionRules(
+          analyzer: Analyzer): Seq[Rule[LogicalPlan]] = {
+        (new PreprocessTable(this) ::
+            ResolveRelationsExtended ::
+            ResolveAliasInGroupBy ::
+            new FindDataSourceTable(session) ::
+            new ResolveSQLOnFile(session) ::
+            Nil) ++ customResolutionRules
+      }
+
+      override protected[sql] def getPostHocResolutionRules(
+          analyzer: Analyzer): Seq[Rule[LogicalPlan]] = {
+        (PreprocessTableCreation(session) ::
+            PreprocessTableInsertion(conf) ::
+            DataSourceAnalysis(conf) ::
+            AnalyzeMutableOperations(session, analyzer) ::
+            ResolveQueryHints(session) ::
+            RowLevelSecurity ::
+            ExternalRelationLimitFetch ::
+            Nil) ++ customPostHocResolutionRules
+      }
+    }
+  }
+
+  override protected def newBuilder: NewBuilder = new SnappySessionStateBuilder23(_, _)
 }
 
 final class CodegenSparkFallback23(child: SparkPlan,
