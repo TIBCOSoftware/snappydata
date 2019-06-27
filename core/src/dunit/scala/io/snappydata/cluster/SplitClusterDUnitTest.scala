@@ -45,7 +45,7 @@ import org.apache.spark.util.collection.OpenHashSet
 class SplitClusterDUnitTest(s: String)
     extends DistributedTestBase(s)
     with SplitClusterDUnitTestBase
-    with Serializable {
+    with Serializable with SnappyJobTestSupport {
 
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
@@ -71,7 +71,7 @@ class SplitClusterDUnitTest(s: String)
   override def startArgs: Array[AnyRef] = Array(
     SplitClusterDUnitTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
-  private val snappyProductDir =
+  override val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override protected val sparkProductDir: String =
@@ -135,6 +135,11 @@ class SplitClusterDUnitTest(s: String)
   def testSparkShellCurrent(): Unit = {
     testObject.invokeSparkShellCurrent(snappyProductDir, sparkProductDir, currentProductDir,
       locatorClientPort, new Properties(), vm3)
+  }
+
+  def testSNAP3028(): Unit = {
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
   }
 }
 
