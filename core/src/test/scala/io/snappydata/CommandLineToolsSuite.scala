@@ -24,7 +24,7 @@ import org.apache.commons.io.output.TeeOutputStream
 import org.apache.spark.sql.collection.Utils
 
 import scala.sys.process._
-import io.snappydata.SnappyTestRunner
+
 
 class CommandLineToolsSuite extends SnappyTestRunner {
 
