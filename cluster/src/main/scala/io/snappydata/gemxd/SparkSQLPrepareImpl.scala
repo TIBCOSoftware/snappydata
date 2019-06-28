@@ -31,11 +31,11 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.PutIntoValuesColumnTable
+import org.apache.spark.sql.internal.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -64,13 +64,8 @@ class SparkSQLPrepareImpl(val sql: String,
   session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val analyzedPlan: LogicalPlan = {
-    var aplan = session.prepareSQL(sql)
-    val questionMarkCounter = session.snappyParser.questionMarkCounter
-    val paramLiterals = new mutable.HashSet[ParamLiteral]()
-    SparkSQLPrepareImpl.allParamLiterals(aplan, paramLiterals)
-    if (paramLiterals.size != questionMarkCounter) {
-      aplan = session.prepareSQL(sql, true)
-    }
+    val aplan = session.prepareSQL(sql)
+//    println(aplan)
     aplan
   }
 
@@ -180,9 +175,11 @@ object SparkSQLPrepareImpl{
 
   def handleCase(branches: Seq[(Expression, Expression)], elseValue: Option[Expression],
     datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
+
     branches.foreach {
       case (_, QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
+      case _ =>
     }
     elseValue match {
       case Some(QuestionMark(pos)) =>
@@ -261,15 +258,5 @@ object SparkSQLPrepareImpl{
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }
-}
 
-object QuestionMark {
-  def unapply(p: ParamLiteral): Option[Int] = {
-    if (p.pos == 0 && p.dataType == NullType) {
-      p.value match {
-        case r: Row => Some(r.getInt(0))
-        case _ => None
-      }
-    } else None
-  }
 }

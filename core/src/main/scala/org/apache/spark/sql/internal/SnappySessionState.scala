@@ -91,22 +91,6 @@ class SnappySessionState(val snappySession: SnappySession)
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  lazy val analyzerWithoutPromote: Analyzer = new SnappyAnalyzer(this) {
-    override lazy val batches: Seq[Batch] = ruleBatches.map {
-      case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        Batch(batch.name, batch.strategy, batch.rules.filter(_ match {
-          case PromoteStrings => false
-          case _ => true
-        }): _*)
-      case batch => Batch(batch.name, batch.strategy, batch.rules: _*)
-    }
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
   def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
     AnalyzeCreateTable(snappySession) ::
         new PreprocessTable(this) ::
@@ -1490,7 +1474,7 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
     case batch if batch.name.equalsIgnoreCase("Resolution") =>
       val rules = batch.rules.flatMap {
         case PromoteStrings =>
-          StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] ::
+          StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] :: SnappyPromoteStrings ::
               PromoteStrings :: Nil
         case r => r :: Nil
       }
@@ -1520,5 +1504,33 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
         case _ => plan
       }
     }
+  }
+
+  object SnappyPromoteStrings extends Rule[LogicalPlan] {
+    override def apply(plan: LogicalPlan): LogicalPlan = {
+      plan resolveExpressions {
+        case e if !e.childrenResolved => e
+        case p @ BinaryComparison(left @ StringType(), right @ QuestionMark(pos))
+          if right.dataType == NullType =>
+          p.makeCopy(Array(left,
+            ParamLiteral(right.value, StringType, right.pos, execId = -1, tokenized = true)))
+        case p @ BinaryComparison(left @ QuestionMark(pos), right @ StringType())
+          if left.dataType == NullType =>
+          p.makeCopy(Array(
+            ParamLiteral(left.value, StringType, left.pos, execId = -1, tokenized = true),
+            right))
+      }
+    }
+  }
+}
+
+object QuestionMark {
+  def unapply(p: ParamLiteral): Option[Int] = {
+    if (p.pos == 0 && (p.dataType == NullType || p.dataType == StringType)) {
+      p.value match {
+        case r: Row => Some(r.getInt(0))
+        case _ => None
+      }
+    } else None
   }
 }
