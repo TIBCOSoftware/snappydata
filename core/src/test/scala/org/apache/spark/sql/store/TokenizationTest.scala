@@ -1047,12 +1047,6 @@ class TokenizationTest
             " for update statements.;"
         assertResult(expectedMessage)(ex.getMessage)
     }
-    res2 = snc.sql(s"update $colTableName set DEST = cast(trim(DEST) as int) + 1000 where " +
-        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
-    val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
-    assert(numUpdated0 > 0)
-    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
-        "and airtime > 350 and dest is not null").collect().length === 0)
 
     // check null updates
     res2 = snc.sql(s"update $colTableName set DEST = null where " +
