@@ -621,21 +621,32 @@ class SnappySessionState(val snappySession: SnappySession)
             val newExpr = if (attr.dataType.sameType(expr.dataType)) {
               expr
             } else {
-              expr.dataType match {
+              def typesCompatible: Boolean = expr.dataType match {
                 // allowing assignment of narrower numeric expression to wider decimal attribute
                 case dt: NumericType if attr.dataType.isInstanceOf[DecimalType]
-                    && attr.dataType.asInstanceOf[DecimalType].isWiderThan(dt) =>
-                  Alias(Cast(expr, attr.dataType), attr.name)()
+                    && attr.dataType.asInstanceOf[DecimalType].isWiderThan(dt) => true
                 // allowing assignment of narrower numeric types to wider numeric types as far as
                 // precision is not compromised
                 case dt: NumericType if !attr.dataType.isInstanceOf[DecimalType]
                     && numericPrecedence.indexOf(dt) < numericPrecedence.indexOf(attr.dataType) =>
-                  Alias(Cast(expr, attr.dataType), attr.name)()
+                  true
                 // allowing assignment of null value
-                case _: NullType => Alias(Cast(expr, attr.dataType), attr.name)()
-                case dt =>
-                  throw new AnalysisException(s"Data type of expression ($dt) is not compatible" +
-                      s" with the data type of attribute '${attr.name}' (${attr.dataType})")
+                case _: NullType => true
+                // allowing assignment to a string type column for all datatypes
+                case dt if attr.dataType.isInstanceOf[StringType] => true
+                case dt => false
+              }
+
+              // avoid unnecessary copy+cast when inserting DECIMAL types into column table
+              if (expr.dataType.isInstanceOf[DecimalType] && attr.dataType.isInstanceOf[DecimalType]
+                  && attr.dataType.asInstanceOf[DecimalType].isWiderThan(expr.dataType)) {
+                expr
+              } else if (typesCompatible) {
+                Alias(Cast(expr, attr.dataType), attr.name)()
+              } else {
+                val message = s"Data type of expression (${expr.dataType}) is not" +
+                    s" compatible with the data type of attribute '${attr.name}' (${attr.dataType})"
+                throw new AnalysisException(message)
               }
             }
             (attr, newExpr)
