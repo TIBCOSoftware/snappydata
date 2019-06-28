@@ -17,8 +17,7 @@
 package io.snappydata.cluster
 
 import com.typesafe.config.Config
-
-import org.apache.spark.sql.{SaveMode, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
+import org.apache.spark.sql._
 
 object CassandraSnappyConnectionJob extends SnappySQLJob {
 
