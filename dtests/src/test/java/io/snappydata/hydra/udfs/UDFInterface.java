@@ -4,8 +4,8 @@ import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.test.util.TestException;
-
 import java.sql.*;
+import java.util.Vector;
 
 public class UDFInterface extends SnappyTest {
 
@@ -23,6 +23,28 @@ public class UDFInterface extends SnappyTest {
         Connection jdbcConnection = udfInterface.getJDBCConnection();
         udfInterface.create_execute_drop_ScalaUDF(jdbcConnection, snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(),""));
     }
+
+    public static void HydraTask_Validate_SNAP2658() throws SQLException {
+        UDFInterface udfInterface = new UDFInterface();
+        Connection jdbcConnection = udfInterface.getJDBCConnection();
+        Vector jarLocation =  SnappyPrms.getDataLocationList();
+        String  jarPath1 = jarLocation.get(0).toString() + "/UDF1/TestUDF.jar";
+        String jarPath2 = jarLocation.get(0).toString() + "/UDF2/TestUDF.jar";
+        Log.getLogWriter().info("Jar 1: " + jarPath1);
+        Log.getLogWriter().info("Jar 2: " + jarPath2);
+        String jar = "";
+        for(int count =0; count < 2; count++) {
+            if(count == 0)
+                jar = "CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1 RETURNS INTEGER USING JAR '" + jarPath1 + "'";
+            else if(count ==1)
+                jar = "CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1 RETURNS INTEGER USING JAR '" + jarPath2 + "'";
+            udfInterface.validate_SNAP2658(jdbcConnection, count, jar);
+        }
+    }
+
+
+
+
     /**
      * This method establish the connection with Snappy SQL via JDBC.
      *
@@ -36,6 +58,40 @@ public class UDFInterface extends SnappyTest {
             throw new TestException("Got exception while establish the connection.....", se);
         }
         return connection;
+    }
+
+    private void validate_SNAP2658(Connection jdbcConnection, int count, String query) throws SQLException {
+        ResultSet rs = null;
+        Statement st = null;
+        String result1 = "";
+        String result2 = "";
+        Log.getLogWriter().info(query);
+        st = jdbcConnection.createStatement();
+        jdbcConnection.createStatement().execute(query);
+        if(count == 0)
+            if(st.execute("select MyUDF(100)")) {
+                rs = st.getResultSet();
+                ResultSetMetaData rsm = rs.getMetaData();
+                String columnName = rsm.getColumnName(1);
+                while (rs.next()) {
+                    result1 = rs.getString(columnName);
+                }
+                Log.getLogWriter().info("result1: " + result1);
+            }
+        if(count == 1)
+            if(st.execute("select MyUDF(1000)")) {
+                rs = st.getResultSet();
+                ResultSetMetaData rsm = rs.getMetaData();
+                String columnName = rsm.getColumnName(1);
+                while (rs.next()) {
+                    result2 = rs.getString(columnName);
+                }
+                Log.getLogWriter().info("result2: " + result2);
+            }
+         st.clearBatch();
+        jdbcConnection.createStatement().execute("Drop Function MyUDF");
+         if(count ==1)
+             closeConnection(jdbcConnection);
     }
 
     private void create_execute_drop_JavaUDF(Connection jdbcConnection, String jarPath) {
@@ -132,7 +188,6 @@ public class UDFInterface extends SnappyTest {
         }
         return result;
     }
-
 
     private void executeJavaUDF1(Connection jdbcConnection, String jarPath) {
         try {
