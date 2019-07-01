@@ -365,6 +365,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(refreshRelations)
   }
 
+  def dropTableUnsafe(schema: String, table: String): Unit = {
+    withHiveExceptionHandling(super.dropTable(schema, table, true, true))
+  }
+
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
       purge: Boolean): Unit = {
     val tableDefinition = getTableOption(schema, table) match {
