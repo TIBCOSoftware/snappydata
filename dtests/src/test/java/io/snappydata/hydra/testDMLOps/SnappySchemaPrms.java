@@ -60,6 +60,7 @@ public class SnappySchemaPrms extends SnappyPrms {
 //  public static Long selectOrderbyClause;
 
   public static Long deleteStmts;
+  public static Long ddlStmts;
 
   public static Long afterDeleteSelects;
 
@@ -154,6 +155,16 @@ public class SnappySchemaPrms extends SnappyPrms {
     String[] strArr = new String[tables.size()];
     for (int i = 0; i < tables.size(); i++) {
       strArr[i] = (String)tables.elementAt(i); //get what tables are in the tests
+    }
+    return strArr;
+  }
+
+  public static String[] getDDLStmts(){
+    Long key = ddlStmts;
+    Vector ddlStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[ddlStmt.size()];
+    for (int i = 0; i < ddlStmt.size(); i++) {
+      strArr[i] = (String)ddlStmt.elementAt(i);
     }
     return strArr;
   }
