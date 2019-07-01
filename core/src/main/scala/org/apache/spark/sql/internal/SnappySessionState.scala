@@ -1506,6 +1506,13 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
     }
   }
 
+  /*
+    SnappyPromoteStrings is applied before Spark's org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings rule.
+    Spark PromoteStrings rule causes issues in prepared statements by replacing ParamLiteral
+    with NULL in case of BinaryComparison with left node being StringType and right being
+    ParamLiteral (or vice-versa) as by default ParamLiteral datatype is NullType. In such a case, this rule
+    converts ParmaLiteral type to StringType to prevent it being replaced by NULL
+   */
   object SnappyPromoteStrings extends Rule[LogicalPlan] {
     override def apply(plan: LogicalPlan): LogicalPlan = {
       plan resolveExpressions {

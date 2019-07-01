@@ -189,7 +189,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
         }
         case 12 => {
           println("Executing query#12")
-          // different error
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery12ForPrepStatement)
           val parameters = TPCH_Queries.getQ12Parameter(isDynamic)
           prepStatement.setString(1, parameters(0))
@@ -225,7 +224,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery16ForPrepStatement)
           val parameters = TPCH_Queries.getQ16Parameter(isDynamic)
           prepStatement.setString(1, "Brand#" + parameters(0) + parameters(1))
-//          prepStatement.setString(2, parameters(1))
           prepStatement.setString(2, parameters(2) + "%")
           prepStatement.setString(3, parameters(3))
           prepStatement.setString(4, parameters(4))
