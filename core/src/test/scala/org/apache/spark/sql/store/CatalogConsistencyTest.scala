@@ -325,4 +325,20 @@ class CatalogConsistencyTest
     assert(r.length == 5)
 
   }
+
+  test("DROP_CATALOG_TABLE_UNSAFE procedure should drop table from catalog") {
+    snc.sql("create table app.rowtable1 (c1 integer, c2 string, c3 float)")
+    snc.sql("insert into app.rowtable1 values (11, '11', 1.1)")
+
+    snc.sql("call sys.DROP_CATALOG_TABLE_UNSAFE('app.rowtable1');")
+    // snc.sql("select * from rowtable1").show
+
+    intercept[TableNotFoundException] {
+      snc.snappySession.sessionCatalog.lookupRelation(
+        snc.snappySession.tableIdentifier("rowtable1"))
+    }
+    val result = snc.sql("show tables")
+    assert(result.collect.length == 0)
+    snc.sql("drop table if exists rowtable1")
+  }
 }
