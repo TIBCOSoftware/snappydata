@@ -257,5 +257,4 @@ object SparkSQLPrepareImpl{
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
   }
-
 }
