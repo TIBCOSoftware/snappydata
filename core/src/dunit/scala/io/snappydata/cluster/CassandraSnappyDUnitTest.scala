@@ -19,21 +19,17 @@ package io.snappydata.cluster
 import java.io._
 import java.util
 
-import antlr.debug.SemanticPredicateListener
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
-import io.snappydata.cluster.SplitClusterDUnitSecurityTest
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{IOFileFilter, TrueFileFilter, WildcardFileFilter}
-import org.apache.spark.sql.{SnappyContext, SnappySession}
-import org.apache.spark.{Logging, SparkContext, TestPackageUtils}
+import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.SnappyContext
 
 import scala.language.postfixOps
 import scala.sys.process._
 
 class CassandraSnappyDUnitTest(val s: String)
-    extends SplitClusterDUnitSecurityTest(s)
-    with SplitClusterDUnitTestBase
+    extends DistributedTestBase(s)
         with Logging {
   // scalastyle:off println
 
@@ -49,7 +45,6 @@ class CassandraSnappyDUnitTest(val s: String)
 
   private val commandOutput = "command-output.txt"
 
-
   val port = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort = AvailablePortHelper.getRandomAvailableTCPPort
   val netPort2 = AvailablePortHelper.getRandomAvailableTCPPort
@@ -61,12 +56,12 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
     val confDir = s"$snappyProductDir/conf"
-    writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
+    val sobj = new SplitClusterDUnitTest(s)
+    sobj.writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port]",
+    sobj.writeToFile(s"localhost  -locators=localhost[$port]",
       s"$confDir/leads")
-    writeToFile(
-      s"""localhost  -locators=localhost[$port] -client-port=$netPort2
+    sobj.writeToFile(s"""localhost  -locators=localhost[$port] -client-port=$netPort2
          |""".stripMargin, s"$confDir/servers")
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
 
@@ -74,18 +69,16 @@ class CassandraSnappyDUnitTest(val s: String)
 
     super.beforeClass()
 
-    val cmd = Seq("find", "/", "-name", "apache-cassandra-2.1.21", "-type", "d")
-    val res = cmd.lineStream_!.toList
-    logInfo("Cassandra folder location : " + res)
-    if(res.nonEmpty) {
-      cassandraClusterLoc = res.head
+    val jarLoc = getJarLoc("/")
+    if(jarLoc.nonEmpty) {
+      cassandraClusterLoc = jarLoc.head
     } else {
-      "curl -OL http://www-us.apache.org/dist/cassandra/2.1.21/apache-cassandra-2.1.21-bin.tar.gz".!!
+      ("curl -OL http://www-us.apache.org/dist/cassandra/2.1.21/" +
+          "apache-cassandra-2.1.21-bin.tar.gz").!!
       val jarLoc = getUserAppJarLocation("apache-cassandra-2.1.21-bin*", currDir)
       ("tar xvf " + jarLoc).!!
-      cassandraClusterLoc = currDir + "/apache-cassandra-2.1.21"
+      cassandraClusterLoc = getJarLoc(currDir).head
     }
-
     (cassandraClusterLoc + "/bin/cassandra").!!
     logInfo("Cassandra cluster started")
   }
@@ -96,15 +89,20 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo(s"Stopping snappy cluster in $snappyProductDir/work")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
 
-    /* FileUtils.moveDirectory(new File(s"$snappyProductDir/work"), new File
-    (s"$snappyProductDir/workTestCassandraSnappy")) */
-    // s"rm -rf $snappyProductDir/work".!!
+    s"rm -rf $snappyProductDir/work".!!
 
     logInfo("Stopping cassandra cluster")
     val p = Runtime.getRuntime.exec("pkill -f cassandra")
     p.waitFor()
     p.exitValue() == 0
     logInfo("Cassandra cluster stopped successfully")
+  }
+
+  def getJarLoc(path: String): List[String] = {
+    val cmd = Seq("find", path, "-name", "apache-cassandra-2.1.21", "-type", "d")
+    val res = cmd.lineStream_!.toList
+    logInfo("Cassandra folder location : " + res)
+    res
   }
 
   protected def getUserAppJarLocation(jarName: String, jarPath: String) = {
@@ -160,15 +158,16 @@ class CassandraSnappyDUnitTest(val s: String)
 
   def snappyJobTest(): Unit = {
     (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "CassandraSnappyConnectionJob"),
+    val obj = new SplitClusterDUnitSecurityTest(s)
+    obj.submitAndVerifyJob(obj.buildJobBaseStr("io.snappydata.cluster",
+      "CassandraSnappyConnectionJob"),
       "--packages com.datastax.spark:spark-cassandra-connector_2.11:2.4.1" +
           " --conf spark.cassandra.connection.host=localhost")
     logInfo("Job completed")
   }
 
-
   def externalTableCreateTest(): Unit = {
-    (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script2").!!
+    (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
     logInfo("deploy package and create external table from cassandra table")
     SnappyShell("CreateExternalTable",
       Seq(s"connect client 'localhost:$netPort';",
@@ -176,22 +175,10 @@ class CassandraSnappyDUnitTest(val s: String)
             s" path '$userHome/.ivy2';",
         "drop table if exists customer2;",
         "create external table customer2 using org.apache.spark.sql.cassandra" +
-            " options (table 'customer1', keyspace 'test1'," +
+            " options (table 'customer', keyspace 'test'," +
             " spark.cassandra.input.fetch.size_in_rows '200000'," +
             " spark.cassandra.read.timeout_ms '10000');",
         "select * from customer2;",
         "exit;"))
   }
-
-  /* def externalTableCreateTest(): Unit = {
-    (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script2").!!
-    logInfo("deploy package and create external table from cassandra table")
-    snc.sql("deploy package cassandraJar " +
-        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7' path '$userHome/.ivy2'")
-    snc.sql("drop table if exists customer2")
-    snc.sql("create external table customer2 using org.apache.spark.sql.cassandra" +
-        " options (table 'customer1', keyspace 'test1'," +
-        " spark.cassandra.input.fetch.size_in_rows '200000'," +
-        " spark.cassandra.read.timeout_ms '10000')")
-  } */
 }

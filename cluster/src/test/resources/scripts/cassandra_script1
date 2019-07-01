@@ -1,3 +1,4 @@
+DROP KEYSPACE if exists test;
 CREATE KEYSPACE test WITH replication = {'class':'SimpleStrategy', 'replication_factor' : 3};
 use test;
 CREATE TABLE customer(customer_id int PRIMARY KEY, customer_name text, customer_city text, customer_phone varint);
