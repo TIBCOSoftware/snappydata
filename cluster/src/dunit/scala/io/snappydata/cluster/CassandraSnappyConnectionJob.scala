@@ -18,6 +18,7 @@ package io.snappydata.cluster
 
 import com.typesafe.config.Config
 import org.apache.spark.sql._
+import org.junit.Assert
 
 object CassandraSnappyConnectionJob extends SnappySQLJob {
 
@@ -29,9 +30,8 @@ object CassandraSnappyConnectionJob extends SnappySQLJob {
     val df = sc.read.format("org.apache.spark.sql.cassandra").
         options(Map("table" -> "customer", "keyspace" -> "test")).load
     df.write.format("column").mode(SaveMode.Overwrite).saveAsTable("CUSTOMER")
-    val showDF = sc.sql("select * from CUSTOMER").collect()
-    println("Printing the contents of the CUSTOMER table")
-    showDF.foreach(println)
-
+    val showDF = sc.sql("select * from CUSTOMER")
+    assert(showDF.count == 3, "Number of rows = " + showDF.count())
+    assert(showDF.schema.fields.length == 4, "Number of columns = " + showDF.schema.fields.length)
   }
 }
