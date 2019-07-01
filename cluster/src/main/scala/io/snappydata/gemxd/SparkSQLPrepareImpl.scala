@@ -175,7 +175,6 @@ object SparkSQLPrepareImpl{
 
   def handleCase(branches: Seq[(Expression, Expression)], elseValue: Option[Expression],
     datatype: DataType, nullable: Boolean, result: mutable.HashSet[ParamLiteral]): Unit = {
-
     branches.foreach {
       case (_, QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
