@@ -37,9 +37,11 @@ class CassandraSnappyDUnitTest(val s: String)
 
   val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
 
-  val currDir = System.getProperty("user.dir")
+  val downloadLoc = s"$snappyProductDir/../distributions"
 
   val userHome = System.getProperty("user.home")
+
+  val currDir = System.getProperty("user.dir")
 
   var cassandraClusterLoc = ""
 
@@ -69,15 +71,17 @@ class CassandraSnappyDUnitTest(val s: String)
 
     super.beforeClass()
 
-    val jarLoc = getJarLoc("/")
+    val jarLoc = getLoc(downloadLoc)
     if(jarLoc.nonEmpty) {
       cassandraClusterLoc = jarLoc.head
     } else {
-      ("curl -OL http://www-us.apache.org/dist/cassandra/2.1.21/" +
-          "apache-cassandra-2.1.21-bin.tar.gz").!!
-      val jarLoc = getUserAppJarLocation("apache-cassandra-2.1.21-bin*", currDir)
+      ("curl -OL http://www-us.apache.org/dist/cassandra/" +
+          s"2.1.21/apache-cassandra-2.1.21-bin.tar.gz").!!
+      val jarLoc = getUserAppJarLocation("apache-cassandra-2.1.21-bin.tar.gz", currDir)
       ("tar xvf " + jarLoc).!!
-      cassandraClusterLoc = getJarLoc(currDir).head
+      var loc = getLoc(currDir).head
+      s"mv $loc $downloadLoc".!!
+      cassandraClusterLoc = s"$downloadLoc/apache-cassandra-2.1.21"
     }
     (cassandraClusterLoc + "/bin/cassandra").!!
     logInfo("Cassandra cluster started")
@@ -98,7 +102,7 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo("Cassandra cluster stopped successfully")
   }
 
-  def getJarLoc(path: String): List[String] = {
+  def getLoc(path: String): List[String] = {
     val cmd = Seq("find", path, "-name", "apache-cassandra-2.1.21", "-type", "d")
     val res = cmd.lineStream_!.toList
     logInfo("Cassandra folder location : " + res)
