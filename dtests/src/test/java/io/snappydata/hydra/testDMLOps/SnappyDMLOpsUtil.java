@@ -220,12 +220,49 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   protected void createSchemas(Connection conn, boolean isDerby) {
-    String[] schemas = SnappySchemaPrms.getSchemas();
+    String[] schemas = SnappySchemaPrms.getCreateSchemas();
     StringBuffer aStr = new StringBuffer("Created schemas \n");
     try {
       Statement s = conn.createStatement();
       for (int i = 0; i < schemas.length; i++) {
         s.execute(schemas[i]);
+        aStr.append(schemas[i] + "\n");
+      }
+      s.close();
+      commit(conn);
+    } catch (SQLException se) {
+      if (se.getSQLState().equals("X0Y68") || se.getSQLState().equals("42000")) {
+        Log.getLogWriter().info("got schema existing exception if multiple threads" +
+            " try to create schema, continuing tests");
+      } else
+        SQLHelper.handleSQLException(se);
+    }
+    Log.getLogWriter().info(aStr.toString());
+  }
+
+  public static void HydraTask_dropSnappySchemas() {
+    testInstance.dropSnappySchemas();
+  }
+
+  protected void dropSnappySchemas() {
+    try {
+      Connection conn = getLocatorConnection();
+      Log.getLogWriter().info("dropping schemas in snappy.");
+      dropSchemas(conn, false);
+      Log.getLogWriter().info("done dropping schemas in snappy.");
+      closeConnection(conn);
+    } catch (SQLException se) {
+      throw new TestException("Got exception while dropping schemas.", se);
+    }
+  }
+  protected void dropSchemas(Connection conn, boolean isDerby) {
+    String[] schemas = SnappySchemaPrms.getDropSchemas();
+    StringBuffer aStr = new StringBuffer("Dropped schemas \n");
+    try {
+      Statement s = conn.createStatement();
+      for (int i = 0; i < schemas.length; i++) {
+        s.execute(schemas[i]);
+        //s.cancel();
         aStr.append(schemas[i] + "\n");
       }
       s.close();
@@ -552,6 +589,71 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
+  /*
+   Hydra task to drop table and recreate again with different schema
+   */
+  public static void HydraTask_changeTableSchema() {
+    testInstance.changeTableSchema();
+  }
+
+  public void changeTableSchema() {
+    Connection dConn = derbyTestUtils.getDerbyConnection();
+    try {
+      Connection conn = getLocatorConnection();
+    } catch (SQLException se) {
+
+    }
+    String logFile = "changeTableSchema";
+    if(hasDerbyServer) {
+      dropTables(dConn);
+      recreateTables(dConn, true);
+    }
+    int tid = getMyTid();
+    String[] createTablesDDL = SnappySchemaPrms.getrecreateTablesStatements();
+    String[] ddlExtn = SnappySchemaPrms.getSnappyDDLExtn();
+    for(int i = 0; i< createTablesDDL.length; i++) {
+      String stmt = createTablesDDL[i] + ddlExtn[i];
+      dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tid=" + tid);
+      executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
+          jarPath, SnappyPrms.getUserAppName());
+    }
+  }
+
+  protected void recreateTables(Connection conn, boolean isDerby) {
+    //to get create table statements from config file
+    String[] createTablesDDL = SnappySchemaPrms.getrecreateTablesStatements();
+    String[] ddlExtn = SnappySchemaPrms.getSnappyDDLExtn();
+    StringBuffer aStr = new StringBuffer("Created tables \n");
+    try {
+      Statement s = conn.createStatement();
+      for (int i = 0; i < createTablesDDL.length; i++) {
+        String createDDL = createTablesDDL[i];
+        if (!isDerby)
+          createDDL += ddlExtn[i];
+        Log.getLogWriter().info("About to create table : " + createDDL);
+        s.execute(createDDL);
+        Log.getLogWriter().info("Table created.");
+        aStr.append(createDDL + "\n");
+      }
+      s.close();
+      commit(conn);
+    } catch (SQLException se) {
+      SQLHelper.printSQLException(se);
+      throw new TestException("Not able to create tables\n"
+          + TestHelper.getStackTrace(se));
+    }
+    Log.getLogWriter().info(aStr.toString());
+  }
+
+  public static void HydraTask_performDMLOpsInAppAfterSchemaChange() {
+
+  }
+
+
+  public static void HydraTask_restartSnappyCluster() {
+    HydraTask_stopSnappyCluster();
+    HydraTask_startSnappyCluster();
+  }
   /*
    Hydra task to perform DMLOps which can be insert, update, delete
    */
