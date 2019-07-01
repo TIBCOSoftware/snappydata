@@ -187,10 +187,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
     }
   }
 
-  public static void parseOptios() {
+  public static String parseOptios() {
     Vector options = SnappyPrms.getTableOptions();
     String optionsString = StringUtils.join(options, ",");
-    Log.getLogWriter().info("SS - Options String is: " + optionsString);
+    return optionsString;
   }
 
   public static void createAndLoadTablesForStabilityTest() throws SQLException {
