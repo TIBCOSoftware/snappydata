@@ -79,6 +79,12 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long numPartsForDataFiles;
 
+  public static Long recreateTablesStatements;
+
+  public static Long insertAfterReCreateTableStmts;
+
+  public static Long dropSchemas;
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
@@ -99,7 +105,7 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
-  public static String[] getSchemas() {
+  public static String[] getCreateSchemas() {
     Long key = createSchemas;
     Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
     String[] strArr = new String[statements.size()];
@@ -109,8 +115,27 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
+  public static String[] getDropSchemas() {
+    Long key = dropSchemas;
+    Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
   public static String[] getCreateTablesStatements() {
     Long key = createTablesStatements;
+    Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
+
+  public static String[] getrecreateTablesStatements() {
+    Long key = recreateTablesStatements;
     Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
     String[] strArr = new String[statements.size()];
     for (int i = 0; i < statements.size(); i++) {
@@ -236,6 +261,15 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
+  public static ArrayList<String> getInsertAfterReCreateTableStmts(){
+    Long key = insertAfterReCreateTableStmts;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    ArrayList<String> strArr = new ArrayList<String>();
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr.add(((String)selectStmt.elementAt(i)));
+    }
+    return strArr;
+  }
 
   public static boolean getLoadDataInParts(){
     Long key = loadDataInParts;
