@@ -37,7 +37,6 @@ hydra.Prms-serialExecution            = false;
 hydra.CachePrms-names = defaultCache;
 sql.SQLPrms-useGfxdConfig = true;
 
-/* end task must stop snappy members because they are not stopped by Hydra */
 hydra.Prms-alwaysDoEndTasks = true;
 
 hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
