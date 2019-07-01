@@ -267,7 +267,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestStructuredStreaming(locatorClientPort: Int): Unit = {
     try {
-      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
       setup(locatorClientPort)
 
       kafkaTestUtils.createTopic(testId, partitions = 3)
@@ -292,7 +292,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestIdempotency(locatorClientPort: Int): Unit = {
     try {
-      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
       setup(locatorClientPort)
       kafkaTestUtils.createTopic(testId, partitions = 3)
 
@@ -327,7 +327,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestCustomCallback(locatorClientPort: Int): Unit = {
     try {
-      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
       setup(locatorClientPort)
       kafkaTestUtils.createTopic(testId, partitions = 3)
 

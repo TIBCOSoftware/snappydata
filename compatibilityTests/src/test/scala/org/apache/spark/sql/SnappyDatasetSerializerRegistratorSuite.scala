@@ -16,10 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDatasetSerializerRegistratorSuite
-    extends DatasetSerializerRegistratorSuite
-        with SharedSnappySessionContext {
-
-}
+class SnappyDatasetSerializerRegistratorSuite extends DatasetSerializerRegistratorSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

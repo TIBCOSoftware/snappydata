@@ -31,11 +31,11 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.Logging
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.execution.PutIntoValuesColumnTable
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -43,7 +43,7 @@ import org.apache.spark.util.SnappyUtils
 class SparkSQLPrepareImpl(val sql: String,
     val schema: String,
     val ctx: LeadNodeExecutionContext,
-    senderVersion: Version) extends SparkSQLExecute with Logging {
+    senderVersion: Version) extends SparkSQLExecute {
 
   if (Thread.currentThread().getContextClassLoader != null) {
     val loader = SnappyUtils.getSnappyStoreContextLoader(
@@ -100,6 +100,15 @@ class SparkSQLPrepareImpl(val sql: String,
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
+      analyzedPlan match {
+        case PutIntoValuesColumnTable(_, _, _, _) => analyzedPlan.expressions.foreach {
+          exp => exp.map {
+            case QuestionMark(pos) =>
+              SparkSQLPrepareImpl.addParamLiteral(pos, exp.dataType, exp.nullable, paramLiterals)
+          }
+        }
+        case _ =>
+      }
       SparkSQLPrepareImpl.allParamLiterals(analyzedPlan, paramLiterals)
       if (paramLiterals.size != questionMarkCounter) {
         SparkSQLPrepareImpl.remainingParamLiterals(analyzedPlan, paramLiterals)
