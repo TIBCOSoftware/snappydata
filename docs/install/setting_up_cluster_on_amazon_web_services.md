@@ -229,9 +229,9 @@ The cluster is launched in the **N. California (us-west-1)** region on AWS and h
 
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
-#### Support for AWS Assume Role
+#### Assuming IAM role in the AWS EC2 Scripts
 
-AWS Assume Role is supported in EC2 Scripts and the following properties are used for the setup: 
+An IAM user in AWS can gain additional (or different) permissions, or get permissions to perform actions in a different AWS account through EC2 scripts. You can configure the AWS EC2 scripts to use an IAM role by passing the following properties:
 
 *	**assume-role-arn**:
 	The Amazon Resource Name (ARN) of the IAM role to be assumed. This IAM role's credentials are used to launch the cluster. If you are using the switch role functionality, this property is mandatory.
