@@ -17,13 +17,13 @@
 package io.snappydata.cluster
 
 import java.io._
+import java.nio.file.{Files, Paths}
 import java.util
 
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{IOFileFilter, TrueFileFilter, WildcardFileFilter}
-import org.apache.spark.{Logging, SparkContext}
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.Logging
 
 import scala.language.postfixOps
 import scala.sys.process._
@@ -55,6 +55,7 @@ class CassandraSnappyDUnitTest(val s: String)
 
   override def beforeClass(): Unit = {
 
+    super.beforeClass()
     logInfo(s"Starting snappy cluster in $snappyProductDir/work with locator client port $netPort")
 
     val confDir = s"$snappyProductDir/conf"
@@ -68,8 +69,7 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
 
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
-
-    super.beforeClass()
+    Thread.sleep(5000)
 
     val jarLoc = getLoc(downloadLoc)
     if(jarLoc.nonEmpty) {
@@ -94,6 +94,9 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
 
     s"rm -rf $snappyProductDir/work".!!
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
+    Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
 
     logInfo("Stopping cassandra cluster")
     val p = Runtime.getRuntime.exec("pkill -f cassandra")
