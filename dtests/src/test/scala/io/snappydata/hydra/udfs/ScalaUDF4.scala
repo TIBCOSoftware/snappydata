@@ -19,6 +19,10 @@ package io.snappydata.hydra.udfs
 import org.apache.spark.sql.api.java.UDF4
 
 class ScalaUDF4 extends  UDF4[Int, Int, Int, Int, Double] {
+
+  //  Below function perform the sqrt operation of 1024, 2048, 4096, 8192.
+  //  After performing sqrt operations, add all the numbers and return it.
+
   override def call(t1: Int, t2: Int, t3: Int, t4: Int): Double = {
     return (Math.sqrt(1024) + Math.sqrt(2048) + Math.sqrt(4096) + Math.sqrt(8192))
   }

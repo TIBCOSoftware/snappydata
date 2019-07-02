@@ -24,6 +24,14 @@ class BadCase_ScalaUDF13 extends UDF13 [BigDecimal, BigDecimal, BigDecimal, BigD
   BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal,
   BigDecimal, BigDecimal, BigDecimal, BigDecimal] {
   // scalastyle:off
+
+  //  For input/output types:
+  //  The framework always returns the Java types to the UDFs.
+  //  So, if you are writing scala.math.BigDecimal as an input type or output type, an exception is reported.
+  //  You can use java.math.BigDecimal in the SCALA code.
+  //  So verify the above statements using scala.math.BigDecimal.
+
+
   override def call (t1: BigDecimal, t2: BigDecimal, t3: BigDecimal, t4: BigDecimal, t5: BigDecimal,
                     t6: BigDecimal, t7: BigDecimal, t8: BigDecimal, t9: BigDecimal, t10: BigDecimal,
                      t11: BigDecimal, t12: BigDecimal, t13: BigDecimal): BigDecimal = {

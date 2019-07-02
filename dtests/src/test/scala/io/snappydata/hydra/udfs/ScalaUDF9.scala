@@ -20,6 +20,12 @@ import org.apache.spark.sql.api.java.UDF9
 
 class ScalaUDF9 extends  UDF9[Boolean, Boolean, Boolean, Boolean,
   Boolean, Boolean, Boolean, Boolean, Boolean, String] {
+
+  //  Purpose is to test the Boolean type as input type.
+  //  Below function perform the logical AND, logical OR and logical NOT operation
+  //  return the result as String.
+
+
   override def call(t1: Boolean, t2: Boolean, t3: Boolean, t4: Boolean,
                     t5: Boolean, t6: Boolean, t7: Boolean, t8: Boolean, t9: Boolean): String = {
     return (

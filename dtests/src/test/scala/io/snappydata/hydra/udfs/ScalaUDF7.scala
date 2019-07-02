@@ -23,6 +23,12 @@ import scala.collection.mutable.WrappedArray
 
 class ScalaUDF7 extends UDF7[WrappedArray[Double], WrappedArray[Double], WrappedArray[Double],
   WrappedArray[Double], WrappedArray[Double], WrappedArray[Double], WrappedArray[Double], String] {
+
+  // Purpose is to test the Array Type as an input.
+  // User provides 7 Array of doubles, do the sum of all the elements
+  // and average it for Individual element.
+  // Return the average of individual array.
+
   override def call(t1: mutable.WrappedArray[Double], t2: mutable.WrappedArray[Double],
                     t3: mutable.WrappedArray[Double], t4: mutable.WrappedArray[Double],
                     t5: mutable.WrappedArray[Double], t6: mutable.WrappedArray[Double],
@@ -81,19 +87,3 @@ class ScalaUDF7 extends UDF7[WrappedArray[Double], WrappedArray[Double], Wrapped
   }
 }
 
-
-//  class ScalaUDF7 extends UDF7[ArrayBuffer[Double], ArrayBuffer[Double], ArrayBuffer[Double],
-// ArrayBuffer[Double],  ArrayBuffer[Double], ArrayBuffer[Double], ArrayBuffer[Double], String] {
-//  override def call(t1: ArrayBuffer[Double], t2: ArrayBuffer[Double], t3: ArrayBuffer[Double],
-//  t4: ArrayBuffer[Double],  t5: ArrayBuffer[Double], t6: ArrayBuffer[Double],
-//  t7: ArrayBuffer[Double]): String = {
-//    var v1 : Double = 0.0
-//    for(i <- 0 to t1.length) {
-//      v1 = v1 + t1(i)
-//    }
-//    v1 = v1 / t1.length
-//
-//    return  "V1 : " + v1
-//    return "Success"
-//  }
-// }

@@ -3,6 +3,10 @@ package io.snappydata.hydra.udfs;
 import org.apache.spark.sql.api.java.UDF18;
 
 public  class JavaUDF18 implements UDF18<String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String> {
+
+    //  Purpose to test the String as Input and Output.
+    //  Add all the Strings to Array and returns the String whose length is > 5.
+
     public String call(String s1,String s2,String s3,String s4,String s5,String s6,String s7,String s8, String s9,String s10,String s11,String s12,String s13,String s14,String s15,String s16,String s17,String s18) {
         String str = "";
         String[] strArr = new String[18];

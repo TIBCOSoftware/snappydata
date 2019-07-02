@@ -21,6 +21,10 @@ import org.apache.spark.sql.api.java.UDF6
 
 class ScalaUDF6 extends UDF6[Map[String, Double], Map[String, Double], Map[String, Double],
   Map[String, Double], Map[String, Double], Map[String, Double], Double] {
+
+  //  Purpose is to test the Map Type as input.
+  //  Get the marks of subject from Map and returns the sum of all marks.
+
   override def call(t1: Map[String, Double], t2: Map[String, Double], t3: Map[String, Double],
                     t4: Map[String, Double], t5: Map[String, Double],
                     t6: Map[String, Double]): Double = {

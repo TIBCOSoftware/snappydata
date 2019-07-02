@@ -4,6 +4,11 @@ import org.apache.spark.sql.api.java.UDF11;
 import java.util.ArrayList;
 
 public class JavaUDF11 implements UDF11<Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Boolean> {
+
+    // Below function add 10 float numbers to ArrayList and last element not added to the ArrayList.
+    // Check that 11th Element is in ArrayList and returns the Boolean value.
+    //  Purpose is to test the Boolean type as an output type.
+
     public Boolean call(Float f1,Float f2,Float f3,Float f4,Float f5,Float f6,Float f7,Float f8,Float f9,Float f10,Float f11) {
         Boolean isContained = false;
         ArrayList<Float> al = new ArrayList<Float>();

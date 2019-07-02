@@ -19,6 +19,10 @@ package io.snappydata.hydra.udfs
 import org.apache.spark.sql.api.java.UDF10
 
 class ScalaUDF10 extends UDF10[Int, Int, Int, Int, Int, Int, Int, Int, Int, Int, String] {
+
+  //  Below function find the factorial of given number,
+  //  return the factorial of all given number as String.
+
   override def call(t1: Int, t2: Int, t3: Int, t4: Int, t5: Int,
                     t6: Int, t7: Int, t8: Int, t9: Int, t10: Int): String = {
       val f1 : Long = findFactorial(t1)

@@ -19,6 +19,9 @@ package io.snappydata.hydra.udfs
 import org.apache.spark.sql.api.java.UDF20
 // scalastyle:off
 class ScalaUDF20 extends UDF20[String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String, String] {
+
+  //  User provides 20 Strings and remove the leading and trailing spaces from given String and returns the String without space.
+
   override def call(t1: String, t2: String, t3: String, t4: String, t5: String, t6: String, t7: String, t8: String, t9: String, t10: String, t11: String, t12: String, t13: String, t14: String, t15: String, t16: String, t17: String, t18: String, t19: String, t20: String): String = {
     var result : String = ""
     result = t1.replaceAll("\\s","") + ","

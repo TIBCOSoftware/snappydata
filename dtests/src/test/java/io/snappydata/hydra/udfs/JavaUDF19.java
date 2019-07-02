@@ -3,6 +3,11 @@ package io.snappydata.hydra.udfs;
 import org.apache.spark.sql.api.java.UDF19;
 
 public  class JavaUDF19 implements UDF19<String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String,String> {
+
+    //  Purpose is to test the String as input and output.
+    //  Add all the Strings to Array and concat all the strings and convert it to upper case and return the String.
+
+
     public String call(String s1,String s2,String s3,String s4,String s5,String s6,String s7,String s8, String s9,String s10,String s11,String s12,String s13,String s14,String s15,String s16,String s17,String s18,String s19) {
         String str = "";
         String[] strArr = new String[19];

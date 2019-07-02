@@ -22,6 +22,10 @@ import org.apache.spark.sql.api.java.UDF8
 
 class ScalaUDF8 extends UDF8[String, String, String, String,
   String, String, String, String, String] {
+
+  //  Below function make the key-value pair from given input String.
+  //  Calculate the size of Map, returns the size of the Map and all the key - value pair.
+
   override def call(t1: String, t2: String, t3: String, t4: String,
                     t5: String, t6: String, t7: String, t8: String): String = {
     val hashMap : HashMap[String, String] = new util.HashMap[String, String]()

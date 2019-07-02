@@ -4,6 +4,10 @@ import org.apache.spark.sql.Row;
 import org.apache.spark.sql.api.java.UDF7;
 
 public class JavaUDF7 implements UDF7<Integer,Integer,Integer,Integer,Integer,Integer,Row,String> {
+
+    //  User provides the 6 Integer numbers and one Struct type Data type. Purpose is to test the Struct type data type.
+    //  Below function returns sum of 6 integer numbers and individual element of Struct data type.
+
     public String call(Integer la1, Integer la2, Integer la3, Integer la4, Integer la5, Integer la6, Row row) throws Exception {
 
        Integer lResult = la1 + la2 + la3 + la4 + la5 +la6;

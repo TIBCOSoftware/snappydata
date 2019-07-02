@@ -20,6 +20,12 @@ import org.apache.spark.sql.api.java.UDF12
 // scalastyle:off
 class ScalaUDF12 extends UDF12[String, Int, Int, String, Long, Long, String,
                                                           Float, Float, String, Short, Short, String] {
+
+  //  Below function act as simple calculator, which perform basic opertions.
+  //  User gives sign "+" as an first argument along with two numbers, then "-" sign as second argument
+  //  along with two numbers and so on.
+  //  Returns the result as String.
+
   override def call(t1: String, t2: Int, t3: Int, t4: String, t5: Long, t6: Long,
                     t7: String, t8: Float, t9: Float, t10: String, t11: Short, t12: Short): String = {
 

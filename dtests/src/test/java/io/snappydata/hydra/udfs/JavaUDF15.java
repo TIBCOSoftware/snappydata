@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class JavaUDF15 implements UDF15<Double,Double,Double,Double,Double,Double,Double,Double,Double,Double,Double,Double,Double,Double,Double,Double> {
+
+    //  Purpose of is to test the Double Type as an Input and Output.
+    //  Below function add the 15 double numbers to ArrayList and returns the Max Double value from ArrayList.
+
     public Double call(Double d1, Double d2, Double d3, Double d4, Double d5, Double d6, Double d7, Double d8, Double d9, Double d10, Double d11, Double d12, Double d13, Double d14, Double d15) throws Exception {
         ArrayList<Double> al = new ArrayList<Double>();
         al.add(d1);

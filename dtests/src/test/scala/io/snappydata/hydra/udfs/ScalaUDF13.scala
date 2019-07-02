@@ -20,6 +20,10 @@ import java.math.{BigDecimal, BigInteger}
 import org.apache.spark.sql.api.java.UDF13
 // scalastyle:off
 class ScalaUDF13 extends UDF13[BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal, BigDecimal] {
+
+        //  Purpose is to test the Big Decimal number using java.math.BigDecimal class.
+        //  User provides 13 Big Decimal numbers, use few methods for Big Decimal class and add all the numbers.
+
   override def call(t1: BigDecimal, t2: BigDecimal, t3: BigDecimal, t4: BigDecimal, t5: BigDecimal, t6: BigDecimal, t7: BigDecimal, t8: BigDecimal, t9: BigDecimal, t10: BigDecimal, t11: BigDecimal, t12: BigDecimal, t13: BigDecimal): BigDecimal = {
           val bigInteger1 : BigInteger = t1.unscaledValue()
           val bigDecimal1 : BigDecimal = new BigDecimal(bigInteger1)

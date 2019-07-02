@@ -19,6 +19,10 @@ package io.snappydata.hydra.udfs
 import org.apache.spark.sql.api.java.UDF3
 
 class ScalaUDF3 extends  UDF3[Double, Double, Double, String] {
+
+  //  Below  function find the value of Sine, Cosine and Tangent of given values.
+  //  Concat all values and return it.
+
   override def call(t1: Double, t2: Double, t3: Double): String = {
     val sin : Double = Math.sin(t1)
     val cos : Double = Math.cos(t2)

@@ -20,6 +20,10 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.api.java.UDF5
 
 class ScalaUDF5 extends UDF5[Int, Int, Int, Int, Row, String] {
+
+  //  Purpose is to test the Struct data type as input type.
+  //  Return the sum all four integer numbers, individual element of Struct data type as String.
+
   override def call(t1: Int, t2: Int, t3: Int, t4: Int, t5: Row): String = {
     val sum : Int = t1 + t2 + t3 + t4
     val i : Int = t5.getInt(0)

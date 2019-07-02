@@ -9,41 +9,18 @@ import java.util.Vector;
 
 public class UDFInterface extends SnappyTest {
 
-    //String udfjarPath = snappyTest.getUserAppJarLocation(userAppJar,"");
-
-    public static  void HydraTask_JavaUDFS() {
+    public static  void HydraTask_JavaUDFs() {
         UDFInterface udfInterface = new UDFInterface();
         Connection jdbcConnection = udfInterface.getJDBCConnection();
         Log.getLogWriter().info("UDF JAR PATH : " + snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(),""));
          udfInterface.create_execute_drop_JavaUDF(jdbcConnection, snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(),""));
     }
 
-    public static void HydraTask_ScalaUDFS() {
+    public static void HydraTask_ScalaUDFs() {
         UDFInterface udfInterface = new UDFInterface();
         Connection jdbcConnection = udfInterface.getJDBCConnection();
         udfInterface.create_execute_drop_ScalaUDF(jdbcConnection, snappyTest.getUserAppJarLocation(SnappyPrms.getUserAppJar(),""));
     }
-
-    public static void HydraTask_Validate_SNAP2658() throws SQLException {
-        UDFInterface udfInterface = new UDFInterface();
-        Connection jdbcConnection = udfInterface.getJDBCConnection();
-        Vector jarLocation =  SnappyPrms.getDataLocationList();
-        String  jarPath1 = jarLocation.get(0).toString() + "/UDF1/TestUDF.jar";
-        String jarPath2 = jarLocation.get(0).toString() + "/UDF2/TestUDF.jar";
-        Log.getLogWriter().info("Jar 1: " + jarPath1);
-        Log.getLogWriter().info("Jar 2: " + jarPath2);
-        String jar = "";
-        for(int count =0; count < 2; count++) {
-            if(count == 0)
-                jar = "CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1 RETURNS INTEGER USING JAR '" + jarPath1 + "'";
-            else if(count ==1)
-                jar = "CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1 RETURNS INTEGER USING JAR '" + jarPath2 + "'";
-            udfInterface.validate_SNAP2658(jdbcConnection, count, jar);
-        }
-    }
-
-
-
 
     /**
      * This method establish the connection with Snappy SQL via JDBC.
@@ -58,40 +35,6 @@ public class UDFInterface extends SnappyTest {
             throw new TestException("Got exception while establish the connection.....", se);
         }
         return connection;
-    }
-
-    private void validate_SNAP2658(Connection jdbcConnection, int count, String query) throws SQLException {
-        ResultSet rs = null;
-        Statement st = null;
-        String result1 = "";
-        String result2 = "";
-        Log.getLogWriter().info(query);
-        st = jdbcConnection.createStatement();
-        jdbcConnection.createStatement().execute(query);
-        if(count == 0)
-            if(st.execute("select MyUDF(100)")) {
-                rs = st.getResultSet();
-                ResultSetMetaData rsm = rs.getMetaData();
-                String columnName = rsm.getColumnName(1);
-                while (rs.next()) {
-                    result1 = rs.getString(columnName);
-                }
-                Log.getLogWriter().info("result1: " + result1);
-            }
-        if(count == 1)
-            if(st.execute("select MyUDF(1000)")) {
-                rs = st.getResultSet();
-                ResultSetMetaData rsm = rs.getMetaData();
-                String columnName = rsm.getColumnName(1);
-                while (rs.next()) {
-                    result2 = rs.getString(columnName);
-                }
-                Log.getLogWriter().info("result2: " + result2);
-            }
-         st.clearBatch();
-        jdbcConnection.createStatement().execute("Drop Function MyUDF");
-         if(count ==1)
-             closeConnection(jdbcConnection);
     }
 
     private void create_execute_drop_JavaUDF(Connection jdbcConnection, String jarPath) {
@@ -195,7 +138,6 @@ public class UDFInterface extends SnappyTest {
             jdbcConnection.createStatement().execute("DROP TABLE IF EXISTS T1;");
             jdbcConnection.createStatement().execute("CREATE TABLE IF NOT EXISTS T1(id Integer) USING COLUMN;");
             jdbcConnection.createStatement().execute("INSERT INTO T1 VALUES(25);");
-//            jdbcConnection.createStatement().execute("CREATE FUNCTION UDF1 AS com.snappy.poc.udf.JavaUDF1 RETURNS INTEGER USING JAR '/home/cbhatt/UDF_Jars_Commadns/udf.jar';");
             jdbcConnection.createStatement().execute("CREATE FUNCTION UDF1 AS com.snappy.poc.udf.JavaUDF1 RETURNS INTEGER USING JAR '"+ jarPath + "';");
             result = getUDFResult(jdbcConnection,"SELECT UDF1(id) FROM T1;","UDF1");
             assert result.equals("125")  : "Result mismatch in Java UDF1 ->  Expected : 125, Actual : " + result;

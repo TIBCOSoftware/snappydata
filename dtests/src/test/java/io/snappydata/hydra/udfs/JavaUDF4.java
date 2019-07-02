@@ -6,6 +6,9 @@ import scala.collection.Map;
 
 public class JavaUDF4 implements UDF4<Map<String,Double>,Map<String,Double>,Map<String,Double>,Map<String,Double>, Double> {
 
+    //  User provides for Map type  variable, Subject as Key and it's mark as value.
+    //  Below function returns the Total marks of given four subjects.
+
    public Double call(Map<String, Double> m1, Map<String, Double> m2, Map<String, Double> m3, Map<String, Double> m4) throws Exception {
        java.util.Map<String, Double> javam1 = JavaConverters.mapAsJavaMapConverter(m1).asJava();
        java.util.Map<String, Double> javam2 = JavaConverters.mapAsJavaMapConverter(m2).asJava();

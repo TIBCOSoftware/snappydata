@@ -19,6 +19,12 @@ package io.snappydata.hydra.udfs
 import org.apache.spark.sql.api.java.UDF15
 // scalastyle:off
 class ScalaUDF15 extends UDF15[Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Boolean, Int]{
+
+   // Purspose is to test the Boolean as input type.
+  //  Below function peform the Math.pow function based on true or false value.
+  //  We will add these numbers and returns the result.
+
+
   override def call(t1: Boolean, t2: Boolean, t3: Boolean, t4: Boolean, t5: Boolean, t6: Boolean, t7: Boolean, t8: Boolean, t9: Boolean, t10: Boolean, t11: Boolean, t12: Boolean, t13: Boolean, t14: Boolean, t15: Boolean): Int = {
     var  num : Int = 0
     if(t1 == true)

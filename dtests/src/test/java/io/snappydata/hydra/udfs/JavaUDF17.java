@@ -5,6 +5,9 @@ import java.util.Arrays;
 
 public  class JavaUDF17 implements UDF17<Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Float,Boolean> {
 
+    //  Purpose is to the test the Boolean type as an output type.
+    //  Below function do nothing, just return true value.
+
     public  Boolean call(Float f1,Float f2,Float f3,Float f4,Float f5,Float f6,Float f7,Float f8, Float f9,Float f10,Float f11,Float f12,Float f13,Float f14,Float f15,Float f16,Float f17) {
 
         Float[] fltArr = new Float[17];

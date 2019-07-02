@@ -3,6 +3,10 @@ package io.snappydata.hydra.udfs;
 import org.apache.spark.sql.api.java.UDF20;
 
 public  class JavaUDF20 implements UDF20<Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer,Integer> {
+
+    //  Purpose is to test the Integer type as input and output.
+    // Add all the integes type to array, calculate the even numbers from Array and return it.
+
     public Integer call(Integer i1,Integer i2,Integer i3,Integer i4,Integer i5,Integer i6,Integer i7,Integer i8,Integer i9,Integer i10,Integer i11,Integer i12,Integer i13,Integer i14,Integer i15,Integer i16,Integer i17,Integer i18,Integer i19,Integer i20) {
         int count = 0;
         Integer[] numbers = new Integer[20];

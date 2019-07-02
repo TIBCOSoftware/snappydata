@@ -5,6 +5,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 public class JavaUDF14 implements UDF14<String,String,String,String,String,String,String,String,String,String,String,String,String,String,Long> {
+
+    //  Purpose of this function is to test Long type.
+    //  Convert the String to Long, add it to the ArrayList and returns the min value from ArrayList.
+
     public Long call(String s1, String s2, String s3, String s4, String s5, String s6, String s7, String s8, String s9, String s10, String s11, String s12, String s13, String s14) throws Exception {
         ArrayList<Long> al = new ArrayList<Long>();
         al.add(Long.decode(s1));
