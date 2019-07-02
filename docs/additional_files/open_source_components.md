@@ -1,6 +1,6 @@
 # SnappyData Community Edition (Open Source) and TIBCO ComputeDB Enterprise Edition
 
-SnappyData offers a fully functional core OSS distribution, which is the **Community Edition**, that is Apache 2.0 licensed. The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the OSS version along with additional capabilities that are closed source and only available as part of a licensed subscription. You can download the Enterprise Edition for evaluation after registering on the [SnappyData website](http://www.snappydata.io/download).
+SnappyData offers a fully functional core OSS distribution, which is the **Community Edition**, that is Apache 2.0 licensed. The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the OSS version along with additional capabilities that are closed source and only available as part of a licensed subscription. You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
 
 The capabilities of the **Community Edition** and the additional capabilities of the **Enterprise Edition** are listed in the following table:
 

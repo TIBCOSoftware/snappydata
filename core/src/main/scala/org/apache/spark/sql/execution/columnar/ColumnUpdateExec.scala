@@ -104,7 +104,6 @@ case class ColumnUpdateExec(child: SparkPlan, columnTable: String,
   override protected def delayRollover: Boolean = true
 
   override protected def doProduce(ctx: CodegenContext): String = {
-
     val sql = new StringBuilder
     sql.append("UPDATE ").append(quotedName(resolvedName, escapeQuotes = true)).append(" SET ")
     JdbcExtendedUtils.fillColumnsClause(sql, updateColumns.map(_.name),
