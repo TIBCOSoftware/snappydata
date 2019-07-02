@@ -198,6 +198,7 @@ with Logging with Retries {
     }
     logInfo("jobID " + jobID)
 
+    var result = ""
     var status = "RUNNING"
     while (status == "RUNNING") {
       Thread.sleep(3000)
@@ -212,13 +213,14 @@ with Logging with Retries {
           val v = map.asInstanceOf[Map[String, Any]]("status")
           logInfo("Current status of job: " + v)
           status = v.toString
+          result = jobSubmitStatus
         case other => "bad Result"
       }
     }
 
     println(s" Job $jobClass finished with status $status")
     if (status == "ERROR") {
-      throw new Exception(s"Failed to Execute job $jobClass")
+      throw new Exception(s"Failed to Execute job $jobClass. Failure response: $result")
     }
   }
 
