@@ -1184,10 +1184,14 @@ class SnappyParser(session: SnappySession)
         => {
           val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
           val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
+          val catalog = session.sessionState.catalog
+          val table = catalog.getTableMetadata(r)
+          val tableName = table.identifier.identifier
+          val db = table.database
           val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
-            session.getCurrentSchema, r.identifier)).toString
+            db, tableName)).toString
           if (tableType == CatalogObjectType.Column.toString) {
-            PutIntoValuesColumnTable(r, colNames, valueExpr1.head)
+            PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
           }
           else {
             DMLExternalTable(r,

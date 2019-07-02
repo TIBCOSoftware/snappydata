@@ -1165,4 +1165,123 @@ class QueryRoutingDUnitTest(val s: String)
       i4 = i4 + 1
     }
   }
+
+  def testSNAP3038withPreparedStatement(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+    val snc = SnappyContext(sc)
+    stmt.execute("drop schema if exists std1")
+    stmt.execute("create schema std1")
+    stmt.execute("drop table if exists std1.t1")
+    stmt.execute("create table std1.t1(id integer, str string) using column options" +
+        "(key_columns 'id', COLUMN_MAX_DELTA_ROWS '7', BUCKETS '2')")
+    var ps: PreparedStatement = null
+    for (i <- 1 to 10) {
+      snc.sql("insert into std1.t1 values(" + i + ",'str" + i + "')")
+    }
+
+    var rscnt = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt.next()
+    assertEquals(10, rscnt.getInt(1))
+
+    val rs = stmt.executeQuery("select * from std1.t1 order by id")
+    var i = 1
+    while (rs.next()) {
+      assertEquals(i, rs.getInt(1))
+      assertEquals("str" + i, rs.getString(2))
+      i = i + 1
+    }
+
+    val query2 = "put into std1.t1 values(?,?)"
+    ps = conn.prepareStatement(query2)
+    for (i <- 1 to 20) {
+      ps.setInt(1, i)
+      ps.setString(2, "str_" + i)
+      ps.executeUpdate()
+    }
+    var rscnt2 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt2.next()
+    assertEquals(20, rscnt2.getInt(1))
+
+    val rs2 = stmt.executeQuery("select * from std1.t1 order by id")
+    var i2 = 0
+    while (rs.next()) {
+      assertEquals(i2, rs2.getInt(1))
+      assertEquals("str_" + i2, rs2.getString(2))
+      i2 = i2 + 1
+    }
+
+    val query1 = "put into std1.t1 values(?,?)"
+    ps = conn.prepareStatement(query1)
+    for (i <- 1 to 30) {
+      ps.setInt(1, i)
+      ps.setString(2, "strings_" + i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt1 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt1.next()
+    assertEquals(30, rscnt1.getInt(1))
+
+    val rs1 = stmt.executeQuery("select * from std1.t1 order by id")
+    var i1 = 1
+    while (rs1.next()) {
+      assertEquals(i1, rs1.getInt(1))
+      assertEquals("strings_" + i1, rs1.getString(2))
+      i1 = i1 + 1
+    }
+
+    val query3 = "put into std1.t1(id,str) values(?,?)"
+    ps = conn.prepareStatement(query3)
+    for (i <- 11 to 20) {
+      ps.setInt(1, i)
+      ps.setString(2, "str123_" + i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt3 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt3.next()
+    assertEquals(30, rscnt3.getInt(1))
+
+    val rs3 = stmt.executeQuery("select * from std1.t1 where id >= 11 and id <= 20 order by id")
+    var i3 = 11
+    while (rs3.next()) {
+      assertEquals(i3, rs3.getInt(1))
+      assertEquals("str123_" + i3, rs3.getString(2))
+      i3 = i3 + 1
+    }
+
+    val query4 = "put into std1.t1(id) values(?)"
+    ps = conn.prepareStatement(query4)
+    for (i <- 31 to 40) {
+      ps.setInt(1, i)
+      ps.addBatch()
+      if (i % 10 == 0) {
+        ps.executeBatch()
+      }
+    }
+    ps.executeBatch()
+
+    var rscnt4 = stmt.executeQuery("select count(*) from std1.t1")
+    rscnt4.next()
+    assertEquals(40, rscnt4.getInt(1))
+
+    val rs4 = stmt.executeQuery("select * from std1.t1 where id >= 31 and id <= 40 order by id")
+    var i4 = 31
+    while (rs4.next()) {
+      assertEquals(i4, rs4.getInt(1))
+      assertEquals(null, rs4.getString(2))
+      i4 = i4 + 1
+    }
+  }
 }
