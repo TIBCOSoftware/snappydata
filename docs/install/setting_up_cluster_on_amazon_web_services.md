@@ -15,11 +15,8 @@ You can set up TIBCO ComputeDB cluster on Amazon Web Services using one of the f
 
 This method is recommended as the fastest way to deploy TIBCO ComputeDB. All you need is an existing AWS account and login credentials to get started.
 
-
 * [Prerequisites](#prerequisitescloudbuiler)
 * [Deploying TIBCO ComputeDB Cloud Cluster Using TIBCO ComputeDB CloudBuilder](#DeployingClusterCloudFormation)
-
-
 
 <a id="prerequisitescloudbuiler"></a>
 ### Prerequisites
@@ -229,6 +226,25 @@ The cluster is launched in the **N. California (us-west-1)** region on AWS and h
 
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
+#### Assuming IAM role in the AWS EC2 Scripts
+
+An IAM user in AWS can gain additional (or different) permissions, or get permissions to perform actions in a different AWS account through EC2 scripts. You can configure the AWS EC2 scripts to use an IAM role by passing the following properties:
+
+*	**assume-role-arn**:
+	The Amazon Resource Name (ARN) of the IAM role to be assumed. This IAM role's credentials are used to launch the cluster. If you are using the switch role functionality, this property is mandatory.
+    
+*	**assume-role-timeout**: 
+	Timeout in seconds for the temporary credentials of the assumed IAM role, min is 900 seconds and max is 3600 seconds.
+    
+*	**assume-role-session-name**:
+	Name of this session in which this IAM role is assumed by the user.
+
+**Example**
+
+```
+-./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> stop snap_ec2_cluster --with-zeppelin --authorized-address=<Authorized IP Address> --assume-role-arn=<role-arn> --assume-role-timeout=<timeout> --assume-role-session-name=<name-for-session>
+```
+
 !!! Note
 	By default, the cluster is launched in the **N. Virginia (us-east-1)** region on AWS. To launch the cluster in a specific region use option `--region`.
 
@@ -237,7 +253,7 @@ The example assumes that you have the key file (my-ec2-key.pem) in your home dir
 
 This section covers the following:
 
-* [Using custom build](#ec2custombuild)
+* 	[Using custom build](#ec2custombuild)
 *	[Specifying Properties](#ecsspecifyprop)
 *	[Stopping the Cluster](#ec2stopcluster)
 *	[Resuming the Cluster](#ec2resumecluster)
@@ -483,7 +499,15 @@ Options:
                         Whether instances should terminate when shut down or
                         just stop
   --instance-profile-name=INSTANCE_PROFILE_NAME
-                        IAM profile name to launch instances under
+                        IAM profile name to launch instances under.
+  --assume-role-arn=The Amazon Resource Name (ARN) of the IAM role to be assumed. 
+  						This IAM role's credentials are used to launch the cluster. 
+                        If you are using the switch role functionality, this property is mandatory.
+  --assume-role-timeout=Timeout in seconds for the temporary credentials of the 
+ 						assumed IAM role, min is 900 seconds and max is 
+                        3600 seconds.
+  --assume-role-session-name=Name of this session in which this IAM role is 
+							 assumed by the user.  	                        
 ```
 <a id="ec2knownlimit"></a>
 ### Known Limitations
