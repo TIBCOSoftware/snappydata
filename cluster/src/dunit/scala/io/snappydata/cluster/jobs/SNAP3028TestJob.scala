@@ -28,9 +28,14 @@ object SNAP3028TestJob extends SnappySQLJob {
     snappy.sql("create table users (id long, name string) using column")
     try {
       snappy.sql("insert into users values (1, 'name1')")
-      val df = snappy.table("users")
+      println("Job strted:")
+      for(i <- 0 to 3) {
+        val start = System.nanoTime()
+        val df = snappy.table("users")
         import snappy.implicits._
-      df.as[User].collectAsList()
+        df.as[User].collectAsList()
+        println("Time taken:" + (System.nanoTime() - start))
+      }
     } finally {
       snappy.sql("drop table users")
     }
