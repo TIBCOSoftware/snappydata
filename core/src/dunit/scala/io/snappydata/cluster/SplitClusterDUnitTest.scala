@@ -141,11 +141,6 @@ class SplitClusterDUnitTest(s: String)
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
   }
-
-  def testSNAP3028(): Unit = {
-    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
-    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
-  }
 }
 
 object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
