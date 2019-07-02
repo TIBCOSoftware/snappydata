@@ -807,7 +807,8 @@ class SplitClusterDUnitSecurityTest(s: String)
         s"not found: $dir")
     val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
-        pathname.getName.contains(className)
+        pathname.getName.contains("SecureJob") ||
+            pathname.getName.contains("CassandraSnappyConnectionJob")
       }
     }).toList, Some(packageStr))
     assert(!jar.isEmpty, s"No class files found for SecureJob")
