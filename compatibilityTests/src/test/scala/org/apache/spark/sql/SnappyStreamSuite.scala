@@ -20,5 +20,4 @@ import org.apache.spark.sql.streaming.StreamSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyStreamSuite extends StreamSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

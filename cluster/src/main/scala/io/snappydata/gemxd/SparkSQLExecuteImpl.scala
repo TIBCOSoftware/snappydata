@@ -139,7 +139,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this, msg.isUpdateOrDelete)
+            srh = new SnappyResultHolder(this, msg.isUpdateOrDeleteOrPut)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender
@@ -197,7 +197,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private def getColumnTypes: Array[(Int, Int, Int)] =
     querySchema.map(f => {
       SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, Utils.toUpperCase(f.name), allAsClob, columnsAsClob)
+        f.metadata, Utils.toLowerCase(f.name), allAsClob, columnsAsClob)
     }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
@@ -377,7 +377,7 @@ object SparkSQLExecuteImpl {
         val writer = new CharArrayWriter()
         writers += writer
         generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
-          s"COL_$size", writer)
+          s"col_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)

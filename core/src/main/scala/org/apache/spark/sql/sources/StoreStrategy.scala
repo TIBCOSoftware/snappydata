@@ -17,6 +17,7 @@
 package org.apache.spark.sql.sources
 
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
 import org.apache.spark.sql.catalyst.plans.logical.{InsertIntoTable, LogicalPlan, OverwriteOptions}
 import org.apache.spark.sql.execution._
@@ -24,7 +25,6 @@ import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableComm
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.PutIntoColumnTable
 import org.apache.spark.sql.types.{DataType, LongType}
-import org.apache.spark.sql.{Strategy, _}
 
 /**
  * Support for DML and other operations on external tables.
@@ -78,7 +78,8 @@ case class ExternalTableDMLCmd(
   override def run(session: SparkSession): Seq[Row] = {
     storeRelation.relation match {
       case relation: SingleRowInsertableRelation =>
-        Seq(Row(relation.executeUpdate(command, session.catalog.currentDatabase)))
+        Seq(Row(relation.executeUpdate(command,
+          JdbcExtendedUtils.toUpperCase(session.catalog.currentDatabase))))
       case other => throw new AnalysisException("DML support requires " +
           "SingleRowInsertableRelation but found " + other)
     }

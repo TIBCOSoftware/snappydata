@@ -28,6 +28,7 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.CodeGenerationException
 import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMode}
 
@@ -192,8 +193,6 @@ case class CodegenSparkFallback(var child: SparkPlan,
 
   // override def children: Seq[SparkPlan] = child.children
 
-  // override private[sql] def metrics = child.metrics
-
   // override private[sql] def metadata = child.metadata
 
   // override def subqueries: Seq[SparkPlan] = child.subqueries
@@ -201,4 +200,9 @@ case class CodegenSparkFallback(var child: SparkPlan,
   override def nodeName: String = "CollectResults"
 
   override def simpleString: String = "CollectResults"
+
+  override def longMetric(name: String): SQLMetric = child match {
+    case w: WholeStageCodegenExec => w.child.longMetric(name)
+    case o => o.longMetric(name)
+  }
 }

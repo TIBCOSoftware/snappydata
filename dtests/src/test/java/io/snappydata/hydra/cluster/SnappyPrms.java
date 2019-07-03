@@ -16,7 +16,7 @@
  */
 package io.snappydata.hydra.cluster;
 
-import java.util.List;
+import org.apache.commons.lang.StringUtils;
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -802,26 +802,29 @@ public class SnappyPrms extends BasePrms {
 
   public static String getLeaderLauncherProps() {
     Long key = leaderLauncherProps;
-    String leaderLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> leaderLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (leaderLauncherPropList == null) return "";
-    else return leaderLauncherPropList;
+    if (leaderLauncherPropList != null && !leaderLauncherPropList.isEmpty())
+      return StringUtils.join(leaderLauncherPropList, " ");
+    else return "";
   }
 
   public static String getServerLauncherProps() {
     Long key = serverLauncherProps;
-    String serverLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> serverLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (serverLauncherPropList == null) return "";
-    else return serverLauncherPropList;
+    if (serverLauncherPropList != null && !serverLauncherPropList.isEmpty())
+      return StringUtils.join(serverLauncherPropList, " ");
+    else return "";
   }
 
   public static String getLocatorLauncherProps() {
     Long key = locatorLauncherProps;
-    String locatorLauncherPropList = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key,
+    Vector<String> locatorLauncherPropList = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key,
         null));
-    if (locatorLauncherPropList == null) return "";
-    else return locatorLauncherPropList;
+    if (locatorLauncherPropList != null && !locatorLauncherPropList.isEmpty())
+      return StringUtils.join(locatorLauncherPropList, " ");
+    else return "";
   }
 
   public static String getSparkSubmitExtraPrms() {

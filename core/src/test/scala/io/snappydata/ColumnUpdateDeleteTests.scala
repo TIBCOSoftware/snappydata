@@ -72,10 +72,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
     assert(session.table("checkTable1").count() === numElements)
 
 
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast((id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
-
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast((id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === numElements)
@@ -313,10 +316,13 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
       "concat('addr', cast(id as string))",
       "case when (id % 2) = 0 then true else false end").write.insertInto("checkTable2")
 
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast( (id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
-
-    session.sql(s"update updateTable set id = id + ($numElements / 2) where id <> 73")
+    session.sql(
+      s"""update updateTable set id = cast( (id + ($numElements / 2)) as int)
+         | where id <> 73""".stripMargin)
     logInfo(session.table("updateTable").limit(20).collect().mkString("\n"))
 
     assert(session.table("updateTable").count() === (numElements * 9) / 10)
@@ -526,7 +532,7 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
         barrier.await()
         waited = true
-        res = snappy.sql(s"update updateTable set id = $idUpdate, " +
+        res = snappy.sql(s"update updateTable set id = cast( $idUpdate as int), " +
             s"addr = concat('addrUpd', cast(($idUpdate) as string)) " +
             s"where (id % $step) = $i").collect()
         assert(res.map(_.getLong(0)).sum > 0)
@@ -590,15 +596,28 @@ object ColumnUpdateDeleteTests extends Assertions with Logging {
 
     var ds = session.sql("select ds, dr from domaindata where id = 40L")
     SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcinewsemail.com']", "[]")))
+    ds = session.sql("select ds, dr from domaindata where id = 418")
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("['taskbuckes.com']", "[]")))
 
-    ds = session.sql("UPDATE domaindata SET ds = '[''cbcin.com'']', dr = '[]' WHERE id = 40")
+    // check for escape character (\) and two single-quote escape in string literal
+
+    ds = session.sql("UPDATE domaindata SET ds = '''cbcin''.com\\']', dr = '[]' WHERE id = 40")
     // below checks both the result and partition pruning (only one row)
     SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
 
     ds = session.sql("select ds, dr from domaindata where id = 40")
     // below checks both the result and partition pruning (only one row)
     assert(ds.rdd.getNumPartitions === 1)
-    SnappyFunSuite.checkAnswer(ds, Seq(Row("['cbcin.com']", "[]")))
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("'cbcin'.com']", "[]")))
+
+    ds = session.sql("UPDATE domaindata SET ds = '\\'taskbuck''.com''', dr = '[]' WHERE id = 418")
+    // below checks both the result and partition pruning (only one row)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row(1)))
+
+    ds = session.sql("select ds, dr from domaindata where id = 418")
+    // below checks both the result and partition pruning (only one row)
+    assert(ds.rdd.getNumPartitions === 1)
+    SnappyFunSuite.checkAnswer(ds, Seq(Row("'taskbuck'.com'", "[]")))
 
     ds = session.sql("delete from domaindata where id = 40")
     // below checks both the result and partition pruning (only one row)
