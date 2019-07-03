@@ -25,13 +25,14 @@ class Validate_SNAP2658 extends SnappySQLJob{
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     // scalastyle:off println
     val snc : SnappyContext = snappySession.sqlContext
+
     snc.sql("CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1" +
-      " RETURNS INTEGER USING JAR '/home/cbhatt/SNAP-2658/UDF1/TestUDF.jar'")
+            " RETURNS INTEGER USING JAR '/export/shared/QA_DATA/SNAP-2658/UDF1/TestUDF.jar'")
     println(snc.sql("SELECT MyUDF(100)").show())
     snc.sql("DROP FUNCTION MyUDF")
 
-    snc.sql("CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1" +
-      " RETURNS INTEGER USING JAR '/home/cbhatt/SNAP-2658/UDF2/TestUDF.jar'")
+        snc.sql("CREATE FUNCTION MyUDF AS io.snappydata.hydra.TestUDF1" +
+          " RETURNS INTEGER USING JAR '/export/shared/QA_DATA/SNAP-2658/UDF2/TestUDF.jar'")
     println(snc.sql("SELECT MyUDF(1000)").show())
     snc.sql("DROP FUNCTION MyUDF")
   }
