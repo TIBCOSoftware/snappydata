@@ -16,8 +16,8 @@
  */
 package org.apache.spark.sql
 
-import java.io.{File, FileOutputStream, PrintStream}
-import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet}
+import java.io.{File, FileOutputStream, PrintStream, PrintWriter}
+import java.sql.{Connection, Date, DriverManager, PreparedStatement, ResultSet}
 
 import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 
@@ -94,25 +94,25 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
   }
 
   def runQueriesUsingPrepStatement(conn: Connection, snc: SnappyContext): Unit = {
-    val queries: Array[Int] = (1 to 22).toArray
+    val tpchQueries: Array[Int] = (1 to 22).toArray
     val isDynamic: Boolean = false
 
     // scalastyle:off println
-    for (query <- queries) {
+    for (query <- tpchQueries) {
       var prepStatement: PreparedStatement = null
       query match {
         case 1 => {
           println("Executing query#1")
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery1)
           val parameters = TPCH_Queries.getQ1Parameter(isDynamic)
-          prepStatement.setString(1, parameters(0))
+          prepStatement.setInt(1, parameters(0).toInt)
         }
         case 2 => {
           println("Executing query#2")
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery2ForPrepStatement)
           val parameters = TPCH_Queries.getQ2Parameter(isDynamic)
           prepStatement.setString(1, parameters(0))
-          prepStatement.setString(2, parameters(1))
+          prepStatement.setInt(2, parameters(1).toInt)
           prepStatement.setString(3, "%" + parameters(2))
           prepStatement.setString(4, parameters(3))
         }
@@ -121,15 +121,15 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery3ForPrepStatement)
           val parameters = TPCH_Queries.getQ3Parameter(isDynamic)
           prepStatement.setString(1, parameters(0))
-          prepStatement.setString(2, parameters(1))
-          prepStatement.setString(3, parameters(2))
+          prepStatement.setDate(2, Date.valueOf(parameters(1)))
+          prepStatement.setDate(3, Date.valueOf(parameters(2)))
         }
         case 4 => {
           println("Executing query#4")
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery4ForPrepStatement)
           val parameters = TPCH_Queries.getQ4Parameter(isDynamic)
-          prepStatement.setString(1, parameters(0))
-          prepStatement.setString(2, parameters(1))
+          prepStatement.setDate(1, Date.valueOf(parameters(0)))
+          prepStatement.setDate(2, Date.valueOf(parameters(1)))
         }
         case 5 => {
           println("Executing query#5")
@@ -177,8 +177,8 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
           println("Executing query#10")
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery10ForPrepStatement)
           val parameters = TPCH_Queries.getQ10Parameter(isDynamic)
-          prepStatement.setString(1, parameters(0))
-          prepStatement.setString(2, parameters(1))
+          prepStatement.setDate(1, Date.valueOf(parameters(0)))
+          prepStatement.setDate(2, Date.valueOf(parameters(1)))
         }
         case 11 => {
           println("Executing query#11")
@@ -225,14 +225,14 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
           val parameters = TPCH_Queries.getQ16Parameter(isDynamic)
           prepStatement.setString(1, "Brand#" + parameters(0) + parameters(1))
           prepStatement.setString(2, parameters(2) + "%")
-          prepStatement.setString(3, parameters(3))
-          prepStatement.setString(4, parameters(4))
-          prepStatement.setString(5, parameters(5))
-          prepStatement.setString(6, parameters(6))
-          prepStatement.setString(7, parameters(7))
-          prepStatement.setString(8, parameters(8))
-          prepStatement.setString(9, parameters(9))
-          prepStatement.setString(10, parameters(10))
+          prepStatement.setInt(3, parameters(3).toInt)
+          prepStatement.setInt(4, parameters(4).toInt)
+          prepStatement.setInt(5, parameters(5).toInt)
+          prepStatement.setInt(6, parameters(6).toInt)
+          prepStatement.setInt(7, parameters(7).toInt)
+          prepStatement.setInt(8, parameters(8).toInt)
+          prepStatement.setInt(9, parameters(9).toInt)
+          prepStatement.setInt(10, parameters(10).toInt)
         }
         case 17 => {
           println("Executing query#17")
@@ -252,14 +252,14 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery19ForPrepStatement)
           val parameters = TPCH_Queries.getQ19Parameter(isDynamic)
           prepStatement.setString(1, "Brand#" + parameters(0))
-          prepStatement.setString(2, parameters(1))
-          prepStatement.setString(3, parameters(2))
+          prepStatement.setInt(2, parameters(1).toInt)
+          prepStatement.setInt(3, parameters(2).toInt)
           prepStatement.setString(4, "Brand#" + parameters(3))
-          prepStatement.setString(5, parameters(4))
-          prepStatement.setString(6, parameters(5))
+          prepStatement.setInt(5, parameters(4).toInt)
+          prepStatement.setInt(6, parameters(5).toInt)
           prepStatement.setString(7, "Brand#" + parameters(6))
-          prepStatement.setString(8, parameters(7))
-          prepStatement.setString(9, parameters(8))
+          prepStatement.setInt(8, parameters(7).toInt)
+          prepStatement.setInt(9, parameters(8).toInt)
         }
         case 20 => {
           println("Executing query#20")
@@ -280,25 +280,25 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
           println("Executing query#22")
           prepStatement = conn.prepareStatement(TPCH_Queries.getQuery22ForPrepStatement)
           var parameters = TPCH_Queries.getQ22Parameter(isDynamic)
-          prepStatement.setString(1, parameters(0))
-          prepStatement.setString(2, parameters(1))
-          prepStatement.setString(3, parameters(2))
-          prepStatement.setString(4, parameters(3))
-          prepStatement.setString(5, parameters(4))
-          prepStatement.setString(6, parameters(5))
-          prepStatement.setString(7, parameters(6))
-          prepStatement.setString(8, parameters(7))
-          prepStatement.setString(9, parameters(8))
-          prepStatement.setString(10, parameters(9))
-          prepStatement.setString(11, parameters(10))
-          prepStatement.setString(12, parameters(11))
-          prepStatement.setString(13, parameters(12))
-          prepStatement.setString(14, parameters(13))
+          prepStatement.setInt(1, parameters(0).toInt)
+          prepStatement.setInt(2, parameters(1).toInt)
+          prepStatement.setInt(3, parameters(2).toInt)
+          prepStatement.setInt(4, parameters(3).toInt)
+          prepStatement.setInt(5, parameters(4).toInt)
+          prepStatement.setInt(6, parameters(5).toInt)
+          prepStatement.setInt(7, parameters(6).toInt)
+          prepStatement.setInt(8, parameters(7).toInt)
+          prepStatement.setInt(9, parameters(8).toInt)
+          prepStatement.setInt(10, parameters(9).toInt)
+          prepStatement.setInt(11, parameters(10).toInt)
+          prepStatement.setInt(12, parameters(11).toInt)
+          prepStatement.setInt(13, parameters(12).toInt)
+          prepStatement.setInt(14, parameters(13).toInt)
         }
       }
       if (prepStatement != null) {
         val rs = prepStatement.executeQuery()
-        verifyTPCHQueryResult(rs, s"Snappy_$query.out")
+        verifyTPCHQueryResult(rs, query)
         rs.close()
         prepStatement.close()
       }
@@ -307,29 +307,63 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
     // scalastyle:on println
     }
 
-  private def verifyTPCHQueryResult(rs: ResultSet, expectedResultFile: String): Unit = {
+  private def verifyTPCHQueryResult(rs: ResultSet, queryNumber: Int): Unit = {
     val rsmd = rs.getMetaData
     val columnsNumber = rsmd.getColumnCount
     var count = 0
     val result = scala.collection.mutable.ArrayBuffer.empty[String]
+    val queryResultsFileName = s"JDBCPrepStmtResult_query$queryNumber.txt"
+    val writer = new PrintWriter(new File(queryResultsFileName))
     while (rs.next()) {
       count += 1
       var row: String = ""
       for (i <- 1 to columnsNumber) {
         if (i > 1) row += ","
-        row = row + rs.getString(i)
+        if (rsmd.getColumnType(i) == java.sql.Types.DOUBLE) {
+          // eliminating mismtach due to minor difference in fractional parts
+          row = row + rs.getDouble(i).ceil.formatted("%.0f")
+        } else {
+          row = row + rs.getString(i)
+        }
       }
       result += row
+      // scalastyle:off println
+      writer.println(row)
+      // scalastyle:on println
     }
+    writer.close()
     // scalastyle:off println
     println(s"Number of rows : $count")
     // scalastyle:on println
 
+    val actualFile = sc.textFile(queryResultsFileName)
     val expectedFile = sc.textFile(getClass.getResource(
-      s"/TPCH/RESULT/$expectedResultFile").getPath)
-    val expectedNoOfLines = expectedFile.collect().size
-    assert(count == expectedNoOfLines)
+      s"/TPCH/RESULT/JDBC/ExpectedJDBCPrepStmtResult_query$queryNumber.txt").getPath)
+
+    val expectedLineSet = expectedFile.collect().toList.sorted
+    val actualLineSet = actualFile.collect().toList.sorted
+
+    val expectedNoOfLines = expectedFile.collect().length
+    assert(count == expectedNoOfLines, s"For query $queryNumber " +
+        s"result count mismatch observed with " +
+        s"expected number of rows: ${expectedLineSet.size}" +
+        s" and actual number of rows: ${actualLineSet.size}")
+
+    var resultMismatchFound = false
+    for ((expectedLine, actualLine) <- expectedLineSet zip actualLineSet) {
+      if (!expectedLine.equals(actualLine)) {
+        resultMismatchFound = true
+        // scalastyle:off println
+        println(s"For query $queryNumber result mismatch observed")
+        println(s"Expected  : $expectedLine")
+        println(s"Found     : $actualLine")
+        println(s"-------------------------------------")
+        // scalastyle:on println
+      }
+    }
+    assert(!resultMismatchFound, s"For query $queryNumber result mismatch observed")
   }
+
 
   /*
     TODO : Kishor
