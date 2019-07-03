@@ -46,29 +46,6 @@ object SmartConnectorExternalTableAPINW {
 
     snc.sql("CREATE SCHEMA NW;")
 
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "employees.csv", "NW.Employees")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "categories.csv", "NW.Categories")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "customers.csv", "NW.Customers")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "employee-territories.csv", "NW.EmployeeTerritories")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "order-details.csv", "NW.OrderDetails")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "orders.csv", "NW.Orders")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "products.csv", "NW.Products")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "regions.csv", "NW.Regions")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "shippers.csv", "NW.Shippers")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "suppliers.csv", "NW.Suppliers")
-    loadDataFromSourceAndRunSelectQueryThenDropTable(snc, "csv",
-      dataFileLocation, "territories.csv", "NW.Territories")
-
     // Create DataFrame From External Tabels
     val sncOrderDetailsDF : DataFrame = snc.createExternalTable("NW.OrderDetails",
       "csv", Map ("path"-> (dataFileLocation + "order-details.csv") ,
@@ -408,17 +385,5 @@ object SmartConnectorExternalTableAPINW {
     snc.sql("DROP SCHEMA NW;")
     println("Smart connector External Table API Job End...")
     pw.close()
-  }
-
-  def loadDataFromSourceAndRunSelectQueryThenDropTable(snc : SnappyContext, format : String,
-                                                       dataFileLocation : String, file : String,
-                                                       tableName : String) : Unit = {
-    println("Read the data from source and run queries..., " +
-      "File path is : " + dataFileLocation + file)
-    println()
-    val df : DataFrame = snc.createExternalTable(tableName, (dataFileLocation + file), "csv")
-    val data = df.select("*")
-    println("SELECT * FROM : " + tableName + data.show())
-    snc.dropTable(tableName, true)
   }
 }
