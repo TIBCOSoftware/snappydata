@@ -69,7 +69,7 @@ class CassandraSnappyDUnitTest(val s: String)
     logInfo(s"Starting snappy cluster in $snappyProductDir/work")
 
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
-    Thread.sleep(5000)
+    Thread.sleep(10000)
 
     val jarLoc = getLoc(downloadLoc)
     if(jarLoc.nonEmpty) {
