@@ -36,7 +36,7 @@ object SmartConnectorStructTypeAPI {
     val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
     val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
 
-    def getCurrentDirectory = new java.io.File(".").getCa1nonicalPath()
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val dataLocation : String = args(0)
     println("DataLocation : " + dataLocation)
     val pw : PrintWriter = new PrintWriter(new FileOutputStream(
