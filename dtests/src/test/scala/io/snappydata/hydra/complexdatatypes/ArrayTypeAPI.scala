@@ -47,15 +47,6 @@ class ArrayTypeAPI extends SnappySQLJob{
         println("sncSelectDF data : " + sncSelectDF.show())
       }
 
-//      ------------------------------------------------------------------------------------
-//      val sncArrQuery2DF : DataFrame = sncReadDF
-//        .select(sncReadDF("id"), sncReadDF("name"), sncReadDF("marks")(0),
-//        sncReadDF("marks").getItem(1), sncReadDF("marks").getItem(2),
-//        sncReadDF("marks")(3), sncReadDF("marks")(4), sncReadDF("marks").getItem(5))
-//        .where(sncReadDF("id").between(100, 1000))
-//      val sparkArrQuery2DF : DataFrame = sparkReadDF
-//      ------------------------------------------------------------------------------------
-
       println("Starting the ArrayType Query 2....")
       val sncArrQuery2DF : DataFrame = sncReadDF
         .select(col("id"), col("name"), col("marks")(0),

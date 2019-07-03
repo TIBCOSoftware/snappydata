@@ -129,9 +129,6 @@ class MapTypeAPI extends SnappySQLJob {
         * 100.0/600.0).as("Percentage"))
         .orderBy(desc("Percentage"))
 
-//      println("Start the Map Type Query6")
-//      println("Finish the Map Type Query6")
-
      SnappyTestUtils.assertQueryFullResultSet(snc, sncSelectDF, sparkSelectDF,
       "MapTypeQuery1", "column", pw, sqlContext )
      println("Finish the Map Type Query1")

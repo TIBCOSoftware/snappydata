@@ -153,7 +153,4 @@ object ComplexTypeUtils {
     "value[12],value[13],value[14],value[15] "  +
     "FROM FamousPeopleView WHERE key = 'Prime Ministers'"
   val Array_Map_Q3 : String = "SELECT country, value FROM FamousPeopleView WHERE key = 'Authors'"
-
-
-
 }
