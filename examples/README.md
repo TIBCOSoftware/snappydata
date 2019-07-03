@@ -8,11 +8,11 @@ It also has a test suite which validates these jobs.
 ## Set up the project in IDE
 
 Users can import the examples directory as an independent gradle project in an IDE for you to easily modify and run the examples.
-You may follow below steps to setup a project in Intellij IDEA.
-These have been tried on Intellij IDEA 2018.2.7, with java version 1.8.0_201, Scala plugin 2018.2.11 (Scala version 2.11.11) and Gradle plugin.
+You may follow below steps to setup a project in IntelliJ IDEA.
+These have been tried on IntelliJ IDEA 2018.2.7, with java version 1.8.0_201, Scala plugin 2018.2.11 (Scala version 2.11.11) and Gradle plugin.
 
 1. Copy examples directory to your local filesystem where you want to create the new project.
-2. Open IDEA Intellij. Do `File ->  New -> Project from Existing Sources`. Select examples/ as the base project directory.
+2. Open IntelliJ IDEA. Do `File ->  New -> Project from Existing Sources`. Select examples/ as the base project directory.
 
 ## Building the project
 
@@ -72,3 +72,15 @@ You can run the example programs as jobs in the SnappyData cluster using either 
   --packages SnappyDataInc:snappydata:1.1.0-HF-1-s_2.11 \
   build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar`
   ```
+
+## Sample Job
+
+The user can find a sample job named SnappyDataTestJob, which can be used to quickly add your code and submit your SnappyData job.
+Users may follow steps mentioned below.
+
+1. Edit the code in `runSnappyJob(...)`.
+2. Run `gradle build` on terminal from the base project directory(or use `build` task from Gradle Tool window). It will generate a jar named snappydata-examples_2.11-<version>.jar in `build/libs/`.
+3. Run
+```
+$SNAPPY_HOME/bin/snappy-job.sh submit --lead localhost:8090 --app-name SnappyDataTesJob --class io.snappydata.examples.SnappyDataTestJob  --app-jar build/libs/snappydata-examples_2.11-1.1.0-HF-1.jar
+```
