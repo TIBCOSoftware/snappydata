@@ -590,8 +590,7 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  private[sql] def queryStringShortForm(queryString: String): String = {
-    val trimSize = 100
+  private[sql] def queryStringShortForm(queryString: String, trimSize: Int = 100): String = {
     if (queryString.length > trimSize) {
       queryString.substring(0, trimSize).concat("...")
     } else queryString
@@ -616,9 +615,7 @@ object CachedDataFrame
       val executionId = if (currentExecutionId >= 0) currentExecutionId
       else Utils.nextExecutionIdMethod.invoke(SQLExecution).asInstanceOf[Long]
       val executionIdStr = java.lang.Long.toString(executionId)
-      localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-      localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
-      localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+      SnappySession.setExecutionProperties(localProperties, executionIdStr, queryLongForm)
 
       val startTime = System.currentTimeMillis()
       var endTime = -1L
@@ -629,24 +626,24 @@ object CachedDataFrame
         endTime = System.currentTimeMillis()
         (result, endTime - startTime)
       } finally {
-        if (endTime == -1L) endTime = System.currentTimeMillis()
-        // the total duration displayed will be completion time provided below
-        // minus the start time of either above, or else the start time of
-        // original planning submission, so adjust the endTime accordingly
-        if (planEndTime != -1L) {
-          endTime -= (startTime - planEndTime)
+        try {
+          if (endTime == -1L) endTime = System.currentTimeMillis()
+          // the total duration displayed will be completion time provided below
+          // minus the start time of either above, or else the start time of
+          // original planning submission, so adjust the endTime accordingly
+          if (planEndTime != -1L) {
+            endTime -= (startTime - planEndTime)
+          }
+          // add the time of plan execution to the end time.
+          if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
+        } finally {
+          SnappySession.clearExecutionProperties(localProperties)
         }
-        // add the time of plan execution to the end time.
-        if (postGUIPlans) sc.listenerBus.post(SparkListenerSQLExecutionEnd(executionId, endTime))
-
-        localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
-        localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
-        localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
       }
     } else {
       // Don't support nested `withNewExecutionId`.
       throw new IllegalArgumentException(
-        s"${SQLExecution.EXECUTION_ID_KEY} is already set")
+        s"${SQLExecution.EXECUTION_ID_KEY} is already set to $oldExecutionId")
     }
   }
 

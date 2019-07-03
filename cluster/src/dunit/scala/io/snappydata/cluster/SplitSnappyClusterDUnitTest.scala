@@ -19,6 +19,7 @@ package io.snappydata.cluster
 import java.net.InetAddress
 import java.util.Properties
 
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
@@ -29,9 +30,12 @@ import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.store.{SnappyJoinSuite, StoreUtils}
+import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -269,6 +273,37 @@ class SplitSnappyClusterDUnitTest(s: String)
       ColumnUpdateDeleteTests.testSNAP2124(session)
     } finally {
       StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
+    }
+  }
+
+  def testStaleCatalog(): Unit = {
+
+    val snc = SnappyContext(sc)
+    snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestStaleCatalog", startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T5").count() == 0 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing putInto as expected.")
+
+      // perform DDL
+      snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
+          s"USING column OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+    } finally {
+      snc.sql("drop table if exists T6")
+      snc.sql("drop table if exists T5")
     }
   }
 }
@@ -716,9 +751,9 @@ object SplitSnappyClusterDUnitTest
     val rs = connectorSnc.sql("select * from t1 order by c1").collect()
 
     assert(rs.length == 5)
-    assert(rs(0).getAs[Int]("C1") == 1)
-    assert(rs(0).getAs[Int]("C2") == 1)
-    assert(rs(0).getAs[Int]("C3") == 1)
+    assert(rs(0).getAs[Int]("c1") == 1)
+    assert(rs(0).getAs[Int]("c2") == 1)
+    assert(rs(0).getAs[Int]("c3") == 1)
   }
 
   override def verifyTableFormInSplitMOde(locatorPort: Int,
@@ -734,8 +769,8 @@ object SplitSnappyClusterDUnitTest
 
     val rs = resultDF.collect()
     assert(rs.length == 5, s"Expected 5 but got ${rs.length}")
-    assert(rs(0).getAs[String]("COL1").equals("AA"))
-    assert(rs(0).getAs[String]("COL2").equals("AA"))
+    assert(rs(0).getAs[String]("col1").equals("AA"))
+    assert(rs(0).getAs[String]("col2").equals("AA"))
 
     connectorSnc.dropTable("APP.T1")
   }
@@ -826,5 +861,34 @@ object SplitSnappyClusterDUnitTest
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
+  }
+
+  def doTestStaleCatalog(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+
+    val rdd: RDD[Row] = sc.parallelize(
+      Seq(
+        Row("val1", "val3"),
+        Row("val2", "val4")
+      )
+    )
+    val schema = new StructType()
+        .add(StructField("col1", StringType))
+        .add(StructField("col2", StringType))
+    val dataFrame = snc.createDataFrame(rdd, schema)
+    import org.apache.spark.sql.snappy._
+    try {
+      Thread.sleep(2000)
+      for (i <- 1 to 10) {
+        dataFrame.write.putInto("T5")
+      }
+      Assert.fail("Should have thrown CatalogStaleException.")
+    } catch {
+      case _: CatalogStaleException =>
+        // retrying putInto operation and it should pass
+        dataFrame.write.putInto("T5")
+    }
   }
 }
