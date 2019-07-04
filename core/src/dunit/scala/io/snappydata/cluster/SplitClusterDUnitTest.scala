@@ -124,6 +124,8 @@ class SplitClusterDUnitTest(s: String)
     // no change to network servers at runtime in this mode
   }
 
+  override def writeToFile(str: String, fileName: String): Unit = super.writeToFile(str, fileName)
+
   override protected def testObject = SplitClusterDUnitTest
 
   // test to make sure that stock spark-shell works with SnappyData core jar
