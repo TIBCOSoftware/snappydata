@@ -613,7 +613,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
             val table = externalCatalog.getTable(schemaName, tableName)
             if (table.tableType == CatalogTableType.VIEW) {
               if (table.viewText.isEmpty) sys.error("Invalid view without text.")
-              snappySession.sessionState.sqlParser.parsePlan(table.viewText.get)
+              new SnappySqlParser(snappySession).parsePlan(table.viewText.get)
             } else if (CatalogObjectType.isPolicy(table)) {
               getPolicyPlan(table)
             } else {
