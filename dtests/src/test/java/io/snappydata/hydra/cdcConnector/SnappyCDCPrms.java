@@ -153,30 +153,6 @@ public class SnappyCDCPrms extends SnappyPrms {
    */
   public static Long isKeepOrgConf;
 
-  /**
-   * String value to determine the the file size .
-   */
-  public static Long fileSize;
-
-  public static Long tableType;
-
-  public static Long numInserts;
-
-  public static int getNumInserts() {
-    Long numInsts = numInserts;
-    return tasktab().intAt(numInsts, tab().intAt(numInsts, 2000000));
-  }
-
-  public static String getTableType() {
-    String tableTyp = tasktab().stringAt(tableType,tab().stringAt(tableType,"column"));
-    return tableTyp;
-  }
-
-  public static String getFileSize() {
-    String fileS = tasktab().stringAt(fileSize,tab().stringAt(fileSize,"10G"));
-    return fileS;
-  }
-
   public static String getNodeInfoForHA() {
     String nodeInfo = tasktab().stringAt(nodeInfoForHA, tab().stringAt
         (nodeInfoForHA, null));
