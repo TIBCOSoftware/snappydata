@@ -124,6 +124,9 @@ public class SnappyDataDiskFullTest extends SnappyTest {
 
   public void executeCleanUpFiles() {
     try {
+      if (snappyCDCTest == null) {
+        snappyCDCTest = new SnappyCDCTest();
+      }
       String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
       File log = new File(".");
       String dest = log.getCanonicalPath() + File.separator + "clusterRestart.log";
@@ -188,7 +191,7 @@ public class SnappyDataDiskFullTest extends SnappyTest {
       } else
         throw new TestException("IOException in executeFallocate() " + io.getMessage());
     } catch (Exception ex) {
-      throw new TestException("CAught exception " + ex.getMessage());
+      throw new TestException("Caught exception " + ex.getMessage());
     }
   }
 

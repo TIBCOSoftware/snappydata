@@ -35,7 +35,6 @@ public class SnappyDataDiskFullPrms extends SnappyPrms {
     return fileS;
   }
 
-
   static {
     SnappyPrms.setValues(SnappyDataDiskFullPrms.class);
   }

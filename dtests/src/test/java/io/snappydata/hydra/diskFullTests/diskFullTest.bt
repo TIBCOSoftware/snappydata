@@ -11,7 +11,7 @@
   numRecords=2000000
 
 //Test with partitioned row table
-/*io/snappydata/hydra/diskFullTests/diskFullTestWithColumnTable.conf
+ io/snappydata/hydra/diskFullTests/diskFullTest.conf
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -22,7 +22,7 @@
   tableType=partitionedRow
 
 //Test with replicated row table
- io/snappydata/hydra/diskFullTests/diskFullTestWithColumnTable.conf
+ io/snappydata/hydra/diskFullTests/diskFullTest.conf
    A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
    B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
    C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
@@ -39,4 +39,4 @@
    scriptName=createAndLoadColumnTable.sql
    snappyFileLoc="$GEMFIRE/../snappy"
    deleteQueryFilePath = "$GEMFIRE/../../../dtests/src/resources/scripts/diskFullTests/deleteQuery.sql"
-   fileSize=40G*/
+   fileSize=40G
