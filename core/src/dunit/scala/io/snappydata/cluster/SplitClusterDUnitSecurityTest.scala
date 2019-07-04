@@ -807,7 +807,8 @@ class SplitClusterDUnitSecurityTest(s: String)
         s"not found: $dir")
     val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
       override def accept(pathname: File): Boolean = {
-        pathname.getName.contains("SecureJob")
+        pathname.getName.contains("SecureJob") ||
+            pathname.getName.contains("CassandraSnappyConnectionJob")
       }
     }).toList, Some(packageStr))
     assert(!jar.isEmpty, s"No class files found for SecureJob")
@@ -906,7 +907,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
   }
 
-  private def buildJobBaseStr(packageStr: String, className: String): String = {
+  def buildJobBaseStr(packageStr: String, className: String): String = {
     s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className" +
         s" --class $packageStr.$className" +
         s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}" +

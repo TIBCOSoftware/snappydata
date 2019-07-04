@@ -205,12 +205,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   final def prepareSQL(sqlText: String, skipPromote: Boolean = false): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
-    var ap: Analyzer = null
-    if (!skipPromote) {
-      ap = sessionState.analyzerPrepare
-    } else {
-      ap = sessionState.analyzerWithoutPromote
-    }
+    val ap: Analyzer = sessionState.analyzer
     // logInfo(s"KN: Batches ${ap.batches.filter(
     //  _.name.equalsIgnoreCase("Resolution")).mkString("_")}")
     ap.execute(logical)

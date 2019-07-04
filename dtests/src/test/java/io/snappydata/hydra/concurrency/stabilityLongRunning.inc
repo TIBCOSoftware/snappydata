@@ -28,20 +28,15 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = i
             runMode = always
             threadGroups = snappyThreads, snappySingleThread, snappyClientAThreads;
 
-INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyConcurrencyTest taskMethod  = createViewsAndDependantTablesForStabilityTest
-            threadGroups = snappySingleThread;
+hydra.Prms-totalTaskTimeSec           = 345600;
+hydra.Prms-maxResultWaitSec           = 388800;
 
-
-hydra.Prms-totalTaskTimeSec           = 259200;
-hydra.Prms-maxResultWaitSec           = 266400;
-
-hydra.Prms-maxCloseTaskResultWaitSec  = 266400;
+hydra.Prms-maxCloseTaskResultWaitSec  = 388800;
 hydra.Prms-serialExecution            = false;
 
 hydra.CachePrms-names = defaultCache;
 sql.SQLPrms-useGfxdConfig = true;
 
-/* end task must stop snappy members because they are not stopped by Hydra */
 hydra.Prms-alwaysDoEndTasks = true;
 
 hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
