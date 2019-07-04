@@ -412,21 +412,15 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
                 if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
                 snappySession.externalCatalog.invalidateAll()
                 SnappySession.clearAllCache()
-                try {
-                  val execution =
-                    snappySession.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
-                  execution match {
-                    case Some(exec) =>
+                val execution =
+                  snappySession.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
+                execution match {
+                  case Some(exec) =>
+                    CachedDataFrame.retryOnStaleCatalogException(snappySession = snappySession) {
                       val execRDD = exec().executedPlan.execute()
                       runAsJob(execRDD, processPartition, resultHandler, sc)
-                    case _ => throw t
-                  }
-                } catch {
-                  case t: Throwable
-                    if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
-                    snappySession.externalCatalog.invalidateAll()
-                    SnappySession.clearAllCache()
-                    throw CachedDataFrame.catalogStaleFailure(t, snappySession)
+                    }
+                  case _ => throw t
                 }
             }
 
@@ -864,6 +858,31 @@ object CachedDataFrame
     new CatalogStaleException("Smart connector catalog is out of date due to " +
         "table schema change (DROP/CREATE/ALTER operation). " +
         "Please reconstruct the Dataset and retry the operation", cause)
+  }
+
+  def retryOnStaleCatalogException[T](retryCount: Int = 10,
+      snappySession: SnappySession)(codeToExecute: => T) : T = {
+    var attempts = 1
+    var res: Option[T] = None
+    logInfo(s"Query will be retried $retryCount times")
+    while (res.isEmpty) {
+      try {
+        logInfo("Retry attempt#" + attempts)
+        res = Option(codeToExecute)
+      } catch {
+        case t: Throwable
+          if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
+          snappySession.externalCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          if (attempts < retryCount) {
+            Thread.sleep(attempts*100)
+            attempts = attempts + 1
+          } else {
+            throw CachedDataFrame.catalogStaleFailure(t, snappySession)
+          }
+      }
+    }
+    res.get
   }
 
   private[sql] def clear(): Unit = synchronized {

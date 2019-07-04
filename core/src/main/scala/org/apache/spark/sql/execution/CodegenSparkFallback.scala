@@ -86,16 +86,8 @@ case class CodegenSparkFallback(var child: SparkPlan,
 
         val isCatalogStale = CachedDataFrame.isConnectorCatalogStaleException(t, session)
         if (isCatalogStale) {
-          session.externalCatalog.invalidateAll()
-          SnappySession.clearAllCache()
-          // fail immediate for insert/update/delete, else retry entire query
-          val action = plan.find {
-            case _: ExecutePlan | _: ExecutedCommandExec => true
-            case _ => false
-          }
-          if (action.isDefined) throw CachedDataFrame.catalogStaleFailure(t, session)
-        }
-        if (isCatalogStale || isCodeGenerationException(t)) {
+          handleStaleCatalogException(f, plan, t)
+        } else if (isCodeGenerationException(t)) {
           // fallback to Spark plan for code-generation exception
           execution match {
             case Some(exec) =>
@@ -124,7 +116,7 @@ case class CodegenSparkFallback(var child: SparkPlan,
                   session.externalCatalog.invalidateAll()
                   SnappySession.clearAllCache()
                   throw CachedDataFrame.catalogStaleFailure(t, session)
-              } finally if (!isCatalogStale) {
+              } finally {
                 session.sessionState.disableStoreOptimizations = false
               }
             case _ => throw t
@@ -132,6 +124,28 @@ case class CodegenSparkFallback(var child: SparkPlan,
         } else {
           throw t
         }
+    }
+  }
+
+  private def handleStaleCatalogException[T](f: SparkPlan => T, plan: SparkPlan, t: Throwable) = {
+    session.externalCatalog.invalidateAll()
+    SnappySession.clearAllCache()
+    // fail immediate for insert/update/delete, else retry entire query
+    val action = plan.find {
+      case _: ExecutePlan | _: ExecutedCommandExec => true
+      case _ => false
+    }
+    if (action.isDefined) throw CachedDataFrame.catalogStaleFailure(t, session)
+
+    execution match {
+      case Some(exec) =>
+        CachedDataFrame.retryOnStaleCatalogException(snappySession = session) {
+          val plan = exec().executedPlan
+          // update child for future executions
+          child = plan
+          f(plan)
+        }
+      case _ => throw t
     }
   }
 
