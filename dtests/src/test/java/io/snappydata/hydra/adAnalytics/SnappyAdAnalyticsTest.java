@@ -52,7 +52,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected static SnappyAdAnalyticsTest snappyAdAnalyticsTest;
   public static String zookeeperHost = null;
   public static String zookeeperPort = null;
-  public static String kafkaLogDir = null;
+  public static String kafkaLogDir = TestConfig.tab().stringAt(SnappyPrms.kafkaLogDir, null);
   public static int initialBrokerPort = 9092;
   public static int initialBrokerId = 0;
   public static int retryCount = SnappyPrms.getRetryCountForJob();
@@ -91,7 +91,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static String[] getHostNames() {
 
-    String[] vmNames = getNames(HostPrms.names);
+   // String[] vmNames = getNames(HostPrms.names);
     String[] vmHostNames = null;
     int numServers=0;
     if(SnappyTest.isUserConfTest) {
@@ -120,7 +120,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       //  }
       }
     }
-   // Log.getLogWriter().info("SP: Hostnames are " + hostnames);
     return hostnames;
   }
 
@@ -128,11 +127,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     if (snappyAdAnalyticsTest == null)
       snappyAdAnalyticsTest = new SnappyAdAnalyticsTest();
     if (kafkaDir == null) {
-      String s = "Didnot specify kafka directory.";
+      String s = "Did not specify kafka directory.";
       throw new TestException(s);
     }
-  //  kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
-    kafkaLogDir = "/home/spillai/kafka_logs";
+    if(kafkaLogDir.isEmpty())
+      kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
     new File(kafkaLogDir).mkdir();
     snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();
   }

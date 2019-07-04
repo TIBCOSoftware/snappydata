@@ -2,6 +2,7 @@ hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
 hydra.GemFirePrms-distributedSystem = ds;
 io.snappydata.hydra.cluster.SnappyPrms-kafkaDir="${kafkaDir}";
+io.snappydata.hydra.cluster.SnappyPrms-kafkaLogDir="${kafkaLogDir}";
 
 
 //INCLUDE $JTESTS/io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.conf;
@@ -51,6 +52,7 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 
 INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_initializeSnappyAdAnalyticsTest
     runMode = always
+
     threadGroups = snappyInitThread,snappyThread;
 
 INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_StartKafkaZookeeper
