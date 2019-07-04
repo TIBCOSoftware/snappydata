@@ -689,6 +689,7 @@ public class SnappyCDCTest extends SnappyTest {
     removeDiskStoreFiles(dirPath);
   }
 
+
   public void stopCluster(String snappyPath, File logFile) {
     ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");
     Long startTime = System.currentTimeMillis();
