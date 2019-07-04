@@ -626,6 +626,25 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long numRowsList;
 
+  /**
+   * (int)Number of stack dumps to be taken for each thread of locators, servers, leads
+   */
+  public static Long numOfStackDumpItr;
+
+  public static int getNumOfStackDumpItrs(){
+    Long key = numOfStackDumpItr;
+    return tasktab().intAt(key, tab().intAt(key, 3));
+  }
+
+  /**
+   * (int)Sleep time in secs between 2 thread dumps.
+   */
+  public static Long sleepBtwnStackDump;
+
+  public static int getSleepBtwnStackDumps(){
+    Long key = sleepBtwnStackDump;
+    return tasktab().intAt(key, tab().intAt(key, 5));
+  }
 
   public static String getCredentialFile() {
     Long key = credentialFile;
@@ -758,6 +777,12 @@ public class SnappyPrms extends BasePrms {
   public static String getCommaSepAPPProps() {
     Long key = appPropsForJobServer;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+  public static void setCommaSepAPP_Props(String value) {
+    Long key = appPropsForJobServer;
+    value = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "")) + value;
+    BasePrms.tasktab().put(key,value);
   }
 
   public static Vector getPointLookUpQueryList() {
