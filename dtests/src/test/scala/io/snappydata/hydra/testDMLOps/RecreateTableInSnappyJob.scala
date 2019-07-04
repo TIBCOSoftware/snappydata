@@ -21,9 +21,11 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import scala.util.{Failure, Success, Try}
 
-import org.apache.spark.sql.SnappySession
+import com.typesafe.config.Config
 
-object RecreateTableInSnappyJob {
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
+
+object RecreateTableInSnappyJob extends SnappySQLJob{
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
@@ -48,5 +50,7 @@ object RecreateTableInSnappyJob {
         throw e;
     }
   }
+
+  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 
 }

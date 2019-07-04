@@ -1900,12 +1900,12 @@ public class SnappyTest implements Serializable {
             RemoteTestModule.Master.recordPID(hd, pid);
             SnappyBB.getBB().getSharedMap().put("pid" + "_" + pName + "_" + str, str);
             SnappyBB.getBB().getSharedMap().put("host" + "_" + pid + "_" + hostName, hostName);
+            Log.getLogWriter().info("pid successfully recorded with Master: " + hostName + ":" + pid);
           }
         } catch (RemoteException e) {
           String s = "Unable to access master to record PID: " + pid;
           throw new HydraRuntimeException(s, e);
         }
-        Log.getLogWriter().info("pid value successfully recorded with Master");
       }
       br.close();
     } catch (IOException e) {
@@ -3214,61 +3214,170 @@ public class SnappyTest implements Serializable {
     Log.getLogWriter().info(clientName + " stopped successfully...");
   }
 
-  protected static void threadDumpForAllServers() {
-    Set<String> pidList;
-    Process pr = null;
-    ProcessBuilder pb;
-    File logFile, log = null, serverHeapDumpOutput;
-    try {
-      HostDescription hd = TestConfig.getInstance().getMasterDescription()
-          .getVmDescription().getHostDescription();
-      pidList = SnappyStartUpTest.getServerPidList();
-      pidList.addAll(SnappyStartUpTest.getLeaderPidList());
-      log = new File(".");
-      String server = log.getCanonicalPath() + File.separator + "threadDumpAllServers.sh";
-      logFile = new File(server);
-      String serverKillLog = log.getCanonicalPath() + File.separator +
-          "serversThreadDumpStopFailure.log";
-      serverHeapDumpOutput = new File(serverKillLog);
-      FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
-      BufferedWriter bw = new BufferedWriter(fw);
-      List asList = new ArrayList(pidList);
-      Collections.shuffle(asList);
-      for (String pidString : pidList) {
-        int pid = Integer.parseInt(pidString);
-        String pidHost = snappyTest.getPidHost(Integer.toString(pid));
-        if (pidHost.equalsIgnoreCase("localhost")) {
-          bw.write("kill -23 " + pid);
-          bw.newLine();
-          bw.write("sleep 4;");
-          bw.newLine();
-          bw.write("kill -3 " + pid);
+  /*
+   * Dump stacks for threads in members of snappy cluster
+   */
+
+  public static synchronized void HydraTask_dumpStacks() {
+    snappyTest = new SnappyTest();
+    snappyTest.getClientHostDescription();
+    snappyTest.dumpStacks();
+  }
+
+  public void dumpStacks() {
+    File currDir = new File(".");
+    boolean checkErrors = new File(currDir, "errors.txt").exists();
+    boolean checkHang = new File(currDir, "hang.txt").exists();
+    if (checkErrors || checkHang) {
+      int dumpItr = SnappyPrms.getNumOfStackDumpItrs();
+      Set pids = getPidList();
+      Log.getLogWriter().info("Dump stacks for " + dumpItr + " iterations.");
+      for (int i = 0; i < dumpItr; i++) {
+        Log.getLogWriter().info("Dumping stacks for iteration " + i);
+        getThreadDump(pids);
+        if (i < (dumpItr - 1)) {
+          Log.getLogWriter().info("Sleeping before next thread dump...");
+          sleepForMs(SnappyPrms.getSleepBtwnStackDumps());
         } else {
-          bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
-              pidHost + " kill -23 " + pid);
-          bw.newLine();
-          bw.write("sleep 4;");
-          bw.newLine();
-          bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
-              pidHost + " kill -3 " + pid);
+          evaluateThrdTypeCounts(pids);
         }
-        bw.newLine();
       }
-      bw.close();
-      fw.close();
-      logFile.setExecutable(true);
-      pb = new ProcessBuilder(server);
-      pb.redirectErrorStream(true);
-      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(serverHeapDumpOutput));
-      pr = pb.start();
-      pr.waitFor();
-    } catch (IOException e) {
-      throw new TestException("IOException occurred while retriving logFile path " + log + "\nError Message:" + e.getMessage());
-    } catch (InterruptedException e) {
-      String s = "Exception occurred while waiting for the process execution : " + pr;
-      throw new TestException(s, e);
+    } else {
+      Log.getLogWriter().info("Test has no failures. Hence no need to take process stack dumps.");
     }
   }
+
+  protected void getThreadDump(Set<String> pidList) {
+    String thrDumpScript = getCurrentDirPath() + File.separator + "threadDump.sh";
+    Process pr = null;
+    ProcessBuilder pb;
+    File logFile = new File(thrDumpScript);
+    try {
+      if (!logFile.exists()) {
+        FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        for (String pidString : pidList) {
+          int pid = Integer.parseInt(pidString);
+          String host = snappyTest.getPidHost(Integer.toString(pid));
+          if (host.equalsIgnoreCase("localhost")) {
+            bw.write("kill -23 " + pid);
+            bw.newLine();
+            bw.write("sleep 4;");
+            bw.newLine();
+            bw.write("kill -3 " + pid);
+          } else {
+            bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+                host + " kill -23 " + pid);
+            bw.newLine();
+            bw.write("sleep 4;");
+            bw.newLine();
+            bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+                host + " kill -3 " + pid);
+          }
+          bw.newLine();
+        }
+        bw.close();
+        fw.close();
+        logFile.setExecutable(true);
+      }
+      String thrDumpLog = getCurrentDirPath() + File.separator + "threadDump.log";
+      File thrDumpOutput = new File(thrDumpLog);
+
+      pb = new ProcessBuilder(thrDumpScript);
+      pb.redirectErrorStream(true);
+      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(thrDumpOutput));
+      pr = pb.start();
+      pr.waitFor();
+    } catch (IOException ie) {
+      throw new TestException("IOException occurred while retriving logFile path.\nError " +
+          "Message:" + ie.getMessage());
+    } catch (InterruptedException ie) {
+      String s = "Exception occurred while waiting for the process execution : " + pr;
+      throw new TestException(s, ie);
+    }
+  }
+
+  protected void evaluateThrdTypeCounts(Set<String> pidList) {
+    String thrDumpScript = getCurrentDirPath() + File.separator + "jstackDump.sh";
+    Process pr = null;
+    ProcessBuilder pb;
+    File logFile = new File(thrDumpScript);
+    try {
+      if (!logFile.exists()) {
+        FileWriter fw = new FileWriter(logFile.getAbsoluteFile(), true);
+        BufferedWriter bw = new BufferedWriter(fw);
+        for (String pidString : pidList) {
+          int pid = Integer.parseInt(pidString);
+          String host = snappyTest.getPidHost(Integer.toString(pid));
+          if (host.equalsIgnoreCase("localhost")) {
+            bw.write("jstack " + pid + " > " + pid + "_dump.txt");
+          } else {
+            bw.write("ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " +
+                host + " jstack " + pid + " > " + pid + "_dump.txt");
+          }
+          bw.newLine();
+        }
+        bw.close();
+        fw.close();
+        logFile.setExecutable(true);
+      }
+      String thrDumpLog = getCurrentDirPath() + File.separator + "jStackDump.log";
+      File thrDumpOutput = new File(thrDumpLog);
+      pb = new ProcessBuilder(thrDumpScript);
+      pb.redirectErrorStream(true);
+      pb.redirectOutput(ProcessBuilder.Redirect.appendTo(thrDumpOutput));
+      pr = pb.start();
+      pr.waitFor();
+
+      for (String pidString : pidList) {
+        Map<String,Integer> thrMap = new HashMap<String, Integer>();
+        try {
+          String fileName = getCurrentDirPath() + File.separator + pidString + "_dump.txt";
+          String line = "";
+          String map_id = "";
+          BufferedReader br = new BufferedReader(new FileReader(fileName));
+          while ((line = br.readLine()) != null) {
+            if (line.startsWith("\"")) {
+              String thrdName = line.substring(line.indexOf("\"") + 1, line.lastIndexOf("\""));
+              if(thrdName.length() < 15) map_id = thrdName.substring(5);
+              else map_id = thrdName.substring(15);
+
+              if(thrMap.containsKey(map_id)) {
+                int cnt = thrMap.get(map_id);
+                thrMap.put(map_id, cnt++);
+              }
+              else thrMap.put(map_id,1);
+            }
+          }
+          StringBuilder aStr = new StringBuilder("Threads in process " + pidString + " are :");
+          for(Map.Entry<String,Integer> entry : thrMap.entrySet()) {
+            aStr.append(entry.getKey() + " : " + entry.getValue() + "\n");
+          }
+          Log.getLogWriter().info(aStr.toString());
+        } catch (FileNotFoundException fe) {
+          throw new TestException("Could not find file in the specified path. Error Message :"
+              + fe.getMessage());
+        } catch (IOException ie) {
+          throw new TestException("IOException occurred while retriving file contents.Error " +
+              "Message:" + ie.getMessage());
+        }
+      }
+    } catch (IOException ie) {
+      throw new TestException("IOException occurred while retriving logFile path.\nError " +
+          "Message:" + ie.getMessage());
+    } catch (InterruptedException ie) {
+      String s = "Exception occurred while waiting for the process execution : " + pr;
+      throw new TestException(s, ie);
+    }
+  }
+
+  protected static void threadDumpForAllServers() {
+    Set<String> pidList;
+    pidList = SnappyStartUpTest.getServerPidList();
+    pidList.addAll(SnappyStartUpTest.getLeaderPidList());
+    snappyTest.getThreadDump(pidList);
+  }
+
 
   protected boolean waitForMemberStop(String vmDir, String clientName, String vmName) {
     File commandOutput;
@@ -3585,6 +3694,7 @@ public class SnappyTest implements Serializable {
   protected void startSnappyLocator() {
     File log = null;
     ProcessBuilder pb = null;
+    List<String> hostNames = getHostNameFromConf("locators");
     try {
       if (useRowStore) {
         Log.getLogWriter().info("Starting locator/s using rowstore option...");
@@ -3596,6 +3706,9 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyLocatorSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
+      sleepForMs(30);
+      for(int i = 0; i< hostNames.size(); i++)
+        recordSnappyProcessIDinNukeRun(hostNames.get(i), "LocatorLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
@@ -3605,6 +3718,7 @@ public class SnappyTest implements Serializable {
   protected void startSnappyServer() {
     File log = null;
     ProcessBuilder pb = null;
+    List<String> hostNames = getHostNameFromConf("servers");
     try {
       if (useRowStore) {
         Log.getLogWriter().info("Starting server/s using rowstore option...");
@@ -3622,14 +3736,26 @@ public class SnappyTest implements Serializable {
         /*Thread.sleep(60000);
         startSnappyServer();*/
       }
+      sleepForMs(30);
+      for(int i = 0; i< hostNames.size(); i++)
+        recordSnappyProcessIDinNukeRun(hostNames.get(i), "ServerLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);
     }
   }
 
+  public static void sleepForMs(int sleepTimeInSec){
+    try {
+      Thread.sleep(sleepTimeInSec * 1000);
+    } catch (InterruptedException ie) {
+      throw new TestException("Got exception while thread was sleeping..", ie);
+    }
+  }
+
   protected void startSnappyLead() {
     File log = null;
+    List<String> hostNames = getHostNameFromConf("leads");
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
           "start");
@@ -3637,6 +3763,9 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "snappyLeaderSystem.log";
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
+      sleepForMs(30);
+      for(int i = 0; i< hostNames.size(); i++)
+        recordSnappyProcessIDinNukeRun(hostNames.get(i), "LeaderLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
       throw new TestException(s, e);

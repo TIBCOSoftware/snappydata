@@ -1,26 +1,20 @@
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/jdbcClient/jdbcClient.bt
-
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/embeddedMode/testDMLOpsInSnappy.bt
-
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/smartConnectorMode/testDMLOpsUsingSmartConnector.bt
-
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/dmlOpsHA.bt
-
-//INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/dmlOpsUsingAPI.bt
-
-// Test for SNAP-2228
-io/snappydata/hydra/testDMLOps/smartConnectorMode/testDMLOpsInAppWithSchemaChange.conf
+io/snappydata/hydra/testDMLOps/testDMLOpsWithOverFlowColumnTables.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
 
-// Test for SNAP-3055
-io/snappydata/hydra/testDMLOps/testDMLOpsWithDropSchema.conf
+io/snappydata/hydra/testDMLOps/testDMLOpsWithOverFlowPartitionedTables.conf
   A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=4
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
 
+io/snappydata/hydra/testDMLOps/testDMLOpsWithOverFlowReplicatedTables.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=4
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
+  persistenceMode="sync" redundantCopies=1
