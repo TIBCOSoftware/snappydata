@@ -91,5 +91,7 @@ class MapType extends SnappySQLJob{
     /* --- Clean Up --- */
     snc.sql("DROP TABLE IF EXISTS TempStRecord")
     snc.sql("DROP TABLE IF EXISTS StudentMarksRecord")
+
+    println("MapType SQL, Job Completed....")
   }
 }
