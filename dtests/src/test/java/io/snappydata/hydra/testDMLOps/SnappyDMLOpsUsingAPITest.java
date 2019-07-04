@@ -176,7 +176,7 @@ public class SnappyDMLOpsUsingAPITest extends SnappyDMLOpsUtil {
       String row = getRowFromCSV(tableName, rand);
       if (testUniqueKeys)
         row = row + "," + getMyTid();
-      String stmt = SnappySchemaPrms.getInsertStmts().get(rand);
+      String stmt = SnappySchemaPrms.getInsertStmts()[rand];
       String insertStmt = getStmt(stmt, row, tableName);
       int tid = getMyTid();
 

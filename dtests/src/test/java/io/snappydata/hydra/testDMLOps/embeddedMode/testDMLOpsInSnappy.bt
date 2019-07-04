@@ -4,7 +4,6 @@ io/snappydata/hydra/testDMLOps/embeddedMode/testUpdateInJob.conf
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 io/snappydata/hydra/testDMLOps/embeddedMode/testDeleteInJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
@@ -12,7 +11,6 @@ io/snappydata/hydra/testDMLOps/embeddedMode/testDeleteInJob.conf
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 io/snappydata/hydra/testDMLOps/embeddedMode/testDMLOpsInJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
@@ -20,4 +18,3 @@ io/snappydata/hydra/testDMLOps/embeddedMode/testDMLOpsInJob.conf
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"

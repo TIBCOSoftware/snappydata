@@ -76,7 +76,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public enum DMLOp {
     INSERT("insert"),
     UPDATE("update"),
-    DELETE("delete");
+    DELETE("delete"),
+    PUTINTO("put into");
 
     String opType;
 
@@ -88,14 +89,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       return opType;
     }
 
-    public static SnappyDMLOpsUtil.DMLOp getOperation(String dmlOp) {
+    public static DMLOp getOperation(String dmlOp) {
       if (dmlOp.equals(INSERT.getOpType())) {
         return INSERT;
       } else if (dmlOp.equals(UPDATE.getOpType())) {
         return UPDATE;
       } else if (dmlOp.equals(DELETE.getOpType())) {
         return DELETE;
-      } else return null;
+      } else if(dmlOp.equals(PUTINTO.getOpType())) {
+        return PUTINTO;
+      }else return null;
     }
   }
 
@@ -142,7 +145,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
-  public static void HydraTask_initializeDMLThreads() {
+
+  public static void HydraTask_registerDMLThreads() {
     testInstance.getDmlLock();
     ArrayList<Integer> dmlthreads;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
@@ -156,7 +160,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     testInstance.releaseDmlLock();
   }
 
-  public static void HydraTask_initializeSelectThreads() {
+  public static void HydraTask_registerSelectThreads() {
     testInstance.getDmlLock();
     ArrayList<Integer> selectThreads;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
@@ -422,8 +426,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String[] tableNames = SnappySchemaPrms.getTableNames();
     String[] csvFileNames = SnappySchemaPrms.getCSVFileNames();
     String dataLocation = SnappySchemaPrms.getDataLocations();
-    ArrayList<String> insertList = SnappySchemaPrms.getInsertStmtsForNonDMLTables();
-    insertList.addAll(SnappySchemaPrms.getInsertStmts());
+    List<String> insertList = Arrays.asList(SnappySchemaPrms.getInsertStmtsForNonDMLTables());
+    insertList.addAll(Arrays.asList(SnappySchemaPrms.getInsertStmts()));
     int numDivs = 1;
     boolean loadDataInParts = SnappySchemaPrms.getLoadDataInParts();
     if (loadDataInParts)
@@ -581,6 +585,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         else
           performDeleteInSnappy(connType);
         break;
+      /*case PUTINTO:
+        Log.getLogWriter().info("Performing putinto operation...");
+        if (connType.equals(ConnType.JDBC))
+          performPutInto();
+        else
+          performPutIntoInSnappy(connType);
+          */
       default:
         Log.getLogWriter().info("Invalid operation. ");
         throw new TestException("Invalid operation type.");
@@ -602,7 +613,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
       //Log.getLogWriter().info("Selected row is : " + row);
       PreparedStatement snappyPS, derbyPS = null;
-      String insertStmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
+      String insertStmt = (SnappySchemaPrms.getInsertStmts())[rand];
       snappyPS = getPreparedStatement(conn, null, tableName, insertStmt, row);
       Log.getLogWriter().info("Inserting in snappy : " + insertStmt + " with " +
           "values(" + row + ")");
@@ -1388,7 +1399,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String row = getRowFromCSV(tableName, rand);
       if (testUniqueKeys)
         row = row + "," + getMyTid();
-      String stmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
+      String stmt = (SnappySchemaPrms.getInsertStmts())[rand];
       String insertStmt = getStmt(stmt, row, tableName);
       int tid = getMyTid();
 

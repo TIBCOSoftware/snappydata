@@ -2,15 +2,15 @@ INCLUDE $JTESTS/io/snappydata/hydra/connectionPool/connPool.inc;
 
 INCLUDE $JTESTS/io/snappydata/hydra/consistency/schema.inc;
 
-INCLUDE $JTESTS/io/snappydata/hydra/consistency/startSnappyCluster.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/northwind/startDualModeCluster.conf;
 
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_initialize
-	threadGroups = snappyThreads,dmlThreads,selectThreads;
+	threadGroups = snappyThreads,snappyStoreThreads,leadThreads,locatorThreads,workerThreads;
 
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initialize
-	threadGroups = snappyThreads,dmlThreads,selectThreads;
+	threadGroups = snappyThreads,snappyStoreThreads,leadThreads,locatorThreads,workerThreads;
 
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_createSnappySchemas
 	threadGroups = snappyThreads;
@@ -19,7 +19,7 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 	threadGroups = snappyThreads;
 
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_registerDMLThreads
-  threadGroups = dmlThreads;
+  threadGroups = snappyStoreThreads;
 
 //Load some data in the data, before starting any operations.
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_populateTables
@@ -30,14 +30,17 @@ INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMet
   threadGroups = snappyThreads;
 
 //task for running dmlOps
-TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  =HydraTask_performDMLOPsAndVerifyConsistency
-  threadGroups = dmlThreads;
+TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_performDMLOPsAndVerifyConsistencyInApp
+  io.snappydata.hydra.cluster.SnappyPrms-sparkJobClassNames = io.snappydata.hydra.consistency.ValidateConsistencyWithDMLOpsApp
+  io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
+  io.snappydata.hydra.cluster.SnappyPrms-hasDynamicAppProps = true
+  threadGroups = snappyStoreThreads;
 
 //task for running select queries at the end of test
 CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
   threadGroups = snappyThreads;
 
-INCLUDE $JTESTS/io/snappydata/hydra/consistency/stopSnappyCluster.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 

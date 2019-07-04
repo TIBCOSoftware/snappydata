@@ -30,8 +30,12 @@ INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMet
   threadGroups = snappyThreads;
 
 //task for running dmlOps
-TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  =HydraTask_performDMLOPsAndVerifyConsistency
+TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_performDMLOPsAndVerifyConsistencyInJob
+  io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.consistency.ValidateConsistencyWithDMLOpsJob
+  io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
+  io.snappydata.hydra.cluster.SnappyPrms-hasDynamicAppProps = true
   threadGroups = dmlThreads;
+
 
 //task for running select queries at the end of test
 CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
