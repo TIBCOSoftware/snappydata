@@ -4,14 +4,11 @@ import java.io.*;
 import java.net.InetAddress;
 import java.rmi.RemoteException;
 import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.*;
 
 import com.gemstone.gemfire.GemFireConfigException;
-import com.gemstone.gemfire.cache.DiskAccessException;
 import com.gemstone.gemfire.cache.query.Struct;
 import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.HydraRuntimeException;
@@ -21,9 +18,6 @@ import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyStartUpTest;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
-import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
-import io.snappydata.test.util.TestException;
-import org.apache.commons.collections.map.HashedMap;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
 
