@@ -28,7 +28,7 @@ function absPath() {
 sbin="$(dirname "$(absPath "$0")")"
 
 mode=$1
-dir=
+
 shift
 
 . "$sbin/snappy-config.sh"
@@ -38,43 +38,15 @@ shift
 . "$SNAPPY_HOME/bin/load-spark-env.sh"
 . "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
-noOfInputsArgs=$#
-
 # Start up  the locator instance
 function start_instance {
  "$SNAPPY_HOME"/bin/snappy locator "$mode" "$@"
 }
 
-if [ $noOfInputsArgs -le 1 ]
-then
-  if [ $noOfInputsArgs -eq 0 ] #if no arguments passed
-  then 
-   hostIp=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
-   dirfolder="$SNAPPY_HOME"/work/"$hostIp"-locator-1
-   if [ ! -d "$dirfolder" ]
-   then  
-	if [ ! -d "$SNAPPY_HOME/work" ]; then 
-	 mkdir work 
-	fi
-	mkdir $dirfolder
-   fi
-   dir="-dir=${dirfolder}"
-   start_instance "$dir"
-  elif [[ "$1" = -dir=* && -n $(echo $1 | cut -d'=' -f 2) ]] #check -dir is not empty or valid 
-  then  
-     if [ ! -d $(echo $1 | cut -d'=' -f 2) ]
-     then
-     	echo "ERROR : $1 is not a directory"
-	echo $usage
-    	exit 1
-     fi
-   start_instance "$1"
-  else #agrument is given,but not -dir.
-   echo "Invalid argument"
-   echo $usage
-   exit 1
-  fi
-else # when start by snappy-start-all.sh
-start_instance "$@"
+#Since want to test whether the result is zero, don't need to treat it as an return value using $? . Just treat the command itself as a conditional.
+if "$sbin/check-dir-option.sh" "$@" ; then	
+   start_instance "$@"
+else
+  echo $usage
 fi
 
