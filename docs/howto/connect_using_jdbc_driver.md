@@ -21,7 +21,7 @@ You can use the Maven or the SBT dependencies to get the latest released version
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.0.2.2</version>
+    <version>1.1.0</version>
 </dependency>
 ```
 
@@ -105,9 +105,9 @@ The client pool driver class name is **io.snappydata.jdbc.ClientPoolDriver**.
 The following pool related properties can be used to tune the JDBC client pool driver:
 
 | Property | Description |
-|--------|--------|
-|    pool.user    |   The username to be passed to the JDBC client pool driver to establish a connection.   |
-|pool.password|The password to be passed to the JDBC  client pool driver to establish a connection.|
+|----------|-------------|
+|user|The username to be passed to the JDBC client pool driver to establish a connection.   |
+|password|The password to be passed to the JDBC  client pool driver to establish a connection.|
 |pool.initialSize|The initial number of connections that are created when the pool is started. Default value is `max(256, availableProcessors * 8)`.|
 |pool.maxActive| The maximum number of active connections that can be allocated from this pool at a time. The default value is `max(256, availableProcessors * 8)`. |
 |pool.minIdle| The minimum number of established connections that should be maintained in the client pool. Default value is **1**.|
@@ -125,8 +125,8 @@ The following pool related properties can be used to tune the JDBC client pool d
 
 ```pre
 val properties = new Properties()
-properties.setProperty("pool.user", "user")
-properties.setProperty("pool.password", "pass")
+properties.setProperty("user", "user")
+properties.setProperty("password", "pass")
 properties.setProperty("driver", ““io.snappydata.jdbc.ClientPoolDriver””)
 
 val builder = SparkSession

@@ -2,7 +2,7 @@
 source PerfRun.conf
 
 #top master and slaves from master machines
-ssh $master sh $SPARK_HOME/sbin/stop-all.sh
+ssh $master bash $SPARK_HOME/sbin/stop-all.sh
 
 rm -rf $SPARK_HOME/conf/slaves
 

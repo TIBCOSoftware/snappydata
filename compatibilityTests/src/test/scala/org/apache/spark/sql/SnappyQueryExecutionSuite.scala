@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.QueryExecutionSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyQueryExecutionSuite extends QueryExecutionSuite with SharedSnappySessionContext{
-
-}
+class SnappyQueryExecutionSuite extends QueryExecutionSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

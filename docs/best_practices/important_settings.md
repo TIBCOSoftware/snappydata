@@ -96,7 +96,7 @@ These settings lower the OS cache buffer sizes which reduce the long GC pauses d
 
 **Swap File** </br> 
 Since modern operating systems perform lazy allocation, it has been observed that despite setting `-Xmx` and `-Xms` settings, at runtime, the operating system may fail to allocate new pages to the JVM. This can result in the process going down.</br>
-It is recommended to set swap space on your system using the following commands:
+It is recommended to set the swap space on your system to at least 16 GB or preferably 32 GB. To set swap space use the following commands:
 
 ```
 # sets a swap space of 32 GB
@@ -115,9 +115,9 @@ sudo swapon /var/swapfile
 ## SnappyData Smart Connector Mode and Local Mode Settings
 
 ### Managing Executor Memory
-For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. Further, to have better ingestion speed, small internal columnar storage structures are created in the Spark application's cluster itself, which is then directly inserted into the required buckets of the column table in the SnappyData cluster.
+For efficient loading of data from a Smart Connector application or a Local Mode application, all the partitions of the input data are processed in parallel by making use of all the available cores. To improve ingestion speeds, small internal columnar storage structures are created in the Spark application's cluster, which are then directly inserted into the required buckets of the column table in the SnappyData cluster.
 These internal structures are in encoded form, and for efficient encoding, some memory space is acquired upfront which is independent of the amount of data to be loaded into the tables. </br>
-For example, if there are 32 cores for the Smart Connector application and the number of buckets of the column table is equal or more than that, then, each of the 32 executor threads can take around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient, and therefore a default of at least 2 GB is recommended in this case.
+For example, if there are 32 cores for the Smart Connector application and there are 32 or more buckets on the column table, then each of the 32 executor threads will consume around 32MB of memory. This indicates that 32MB * 32MB (1 GB) of memory is required. Thus, the default of 1GB for executor memory is not sufficient, and therefore a default of at least 2 GB is recommended in this case.
 
 You can modify this setting in the `spark.executor.memory` property. For more information, refer to the [Spark documentation](https://spark.apache.org/docs/latest/configuration.html#available-properties).
 
