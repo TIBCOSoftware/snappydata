@@ -88,5 +88,7 @@ class AllMixedTypes extends SnappySQLJob{
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS TwentyTwenty")
     snc.sql("DROP TABLE IF EXISTS TempTwenty")
+
+    println("AllMixedTypes SQL, job completed...")
   }
 }

@@ -86,5 +86,7 @@ class ArraysOfStructType extends SnappySQLJob{
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS TwoWheeler")
     snc.sql("DROP TABLE IF EXISTS TempBike")
+
+    println("ArraysOfStructType SQL, job completed...")
   }
 }

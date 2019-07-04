@@ -81,5 +81,7 @@ class StructType extends SnappySQLJob{
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS CricketRecord")
     snc.sql("DROP TABLE IF EXISTS TempCRRecord")
+
+    println("StructType SQL, Job completed....")
   }
 }

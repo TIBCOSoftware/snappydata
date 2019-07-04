@@ -86,5 +86,7 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     snc.sql("DROP TABLE IF EXISTS TempFamousPeople")
     snc.sql("DROP TABLE IF EXISTS FamousPeople")
     snc.sql("DROP VIEW IF EXISTS FamousPeopleView")
+
+    println("ArraysOfStringInMapAsValue SQL, job completed...")
   }
 }
