@@ -136,7 +136,7 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
-  public static String[] getrecreateTablesStatements() {
+  public static String[] getRecreateTablesStatements() {
     Long key = recreateTablesStatements;
     Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
     String[] strArr = new String[statements.size()];
