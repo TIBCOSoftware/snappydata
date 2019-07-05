@@ -14,33 +14,34 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 package io.snappydata.hydra.complexdatatypes
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
+import org.apache.spark.sql.{SQLContext, SnappyContext, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
 
-class StructType extends SnappySQLJob{
-  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-
-  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
-
+object SmartConnectorStructType {
+  def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("Struct Type Job started...")
+    println("Smart Connector Struct Type Job started...")
+    val connectionURL = args(args.length - 1)
+    println("Connection URL is : " + connectionURL)
+    val conf = new SparkConf()
+      .setAppName("Spark_ComplexType_StructType_Validation")
+      .set("snappydata.connection", connectionURL)
+    val sc : SparkContext = SparkContext.getOrCreate(conf)
+    val snc : SnappyContext = SnappyContext(sc)
+    val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
+    val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
 
-    val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().getOrCreate()
-    val sc : SparkContext = SparkContext.getOrCreate()
-    def getCurrentDirectory : String = new File(".").getCanonicalPath()
-    val outputFile = "ValidateStructType" + "_" + "column" +
-      System.currentTimeMillis() + jobConfig.getString("logFileName")
-    val dataLocation = jobConfig.getString("dataFilesLocation")
-    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
-    val sqlContext = SQLContext.getOrCreate(sc)
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val dataLocation : String = args(0)
+    println("DataLocation : " + dataLocation)
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(
+      new File("ValidateSmartConnectorStructType" + "_" + "column" + System.currentTimeMillis())
+      , false))
     val printContent : Boolean = false
 
     /* --- Snappy Job --- */
@@ -82,6 +83,6 @@ class StructType extends SnappySQLJob{
     snc.sql("DROP TABLE IF EXISTS CricketRecord")
     snc.sql("DROP TABLE IF EXISTS TempCRRecord")
 
-    println("StructType SQL, Job completed....")
+    println("Smart Connector Struct Type Job Completed......")
   }
 }

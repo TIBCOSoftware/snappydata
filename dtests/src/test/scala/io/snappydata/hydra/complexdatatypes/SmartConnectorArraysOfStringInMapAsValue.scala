@@ -14,36 +14,36 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 package io.snappydata.hydra.complexdatatypes
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
+import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
 
-class ArraysOfStringInMapAsValue extends SnappySQLJob{
-  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-
-  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
-
+object SmartConnectorArraysOfStringInMapAsValue {
+  def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("ArraysofStringInMapAsValue Type Job started...")
-
-    val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().getOrCreate()
-    val sc : SparkContext = SparkContext.getOrCreate()
+    println("Smart Connector ArraysOfStringInMapAsValue Type Job started...")
+    val connectionURL = args(args.length - 1)
+    println("Connection URL is : " + connectionURL)
+    val conf = new SparkConf()
+      .setAppName("Spark_ComplexType_ArraysOfStringInMapAsValueType_Validation")
+      .set("snappydata.connection", connectionURL)
+    val sc : SparkContext = SparkContext.getOrCreate(conf)
+    val snc : SnappyContext = SnappyContext(sc)
+    val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
     val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
 
-    def getCurrentDirectory : String = new File(".").getCanonicalPath()
-    val outputFile = "ValidateArraysOfStringInMaptype" + "_" + "column" +
-      System.currentTimeMillis() + jobConfig.getString("logFileName")
-    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
-    val dataLocation = jobConfig.getString("dataFilesLocation")
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val dataLocation : String = args(0)
+    println("DataLocation : " + dataLocation)
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(
+      new File("ValidateSmartConnectorArraysOfStringInMapAsValueType" +
+        "_" + "column" + System.currentTimeMillis())
+      , false))
     val printContent : Boolean = false
-
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS TempFamousPeople")
@@ -86,7 +86,6 @@ class ArraysOfStringInMapAsValue extends SnappySQLJob{
     snc.sql("DROP TABLE IF EXISTS TempFamousPeople")
     snc.sql("DROP TABLE IF EXISTS FamousPeople")
     snc.sql("DROP VIEW IF EXISTS FamousPeopleView")
-
-    println("ArraysOfStringInMapAsValue SQL, job completed...")
+    println("Smart Connector ArraysOfStringInMapAsValue Type Job completed...")
   }
 }
