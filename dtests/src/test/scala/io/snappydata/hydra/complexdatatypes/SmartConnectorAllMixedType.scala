@@ -14,35 +14,35 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 package io.snappydata.hydra.complexdatatypes
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
+import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
 
-class AllMixedTypes extends SnappySQLJob{
-  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-
-  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
-
+object SmartConnectorAllMixedType {
+  def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("AllMixedType Job started...")
-
-    val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().getOrCreate()
-    val sc : SparkContext = SparkContext.getOrCreate()
+    println("Smart Connector AllMixedType Job started...")
+    val connectionURL = args(args.length - 1)
+    println("Connection URL is : " + connectionURL)
+    val conf = new SparkConf()
+      .setAppName("Spark_ComplexType_AllMixedType_Validation")
+      .set("snappydata.connection", connectionURL)
+    val sc : SparkContext = SparkContext.getOrCreate(conf)
+    val snc : SnappyContext = SnappyContext(sc)
+    val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
     val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
-    val printContent : Boolean = false
 
-    def getCurrentDirectory : String = new File(".").getCanonicalPath
-    val outputFile : String = "ValidateAllMixedTypes" + "_" + "column" +
-      System.currentTimeMillis() + jobConfig.getString("logFileName")
-    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
-    val dataLocation = jobConfig.getString("dataFilesLocation")
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val dataLocation : String = args(0)
+    println("DataLocation : " + dataLocation)
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(
+      new File("ValidateSmartConnectorAllMixedType" + "_" + "column" + System.currentTimeMillis())
+      , false))
+    val printContent : Boolean = false
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS TwentyTwenty")
@@ -89,6 +89,6 @@ class AllMixedTypes extends SnappySQLJob{
     snc.sql("DROP TABLE IF EXISTS TwentyTwenty")
     snc.sql("DROP TABLE IF EXISTS TempTwenty")
 
-    println("AllMixedTypes SQL, job completed...")
+    println("Smart Connector AllMixedType Job completed...")
   }
 }

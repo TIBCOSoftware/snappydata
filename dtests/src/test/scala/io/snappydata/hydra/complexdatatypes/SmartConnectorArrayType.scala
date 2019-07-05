@@ -19,30 +19,30 @@ package io.snappydata.hydra.complexdatatypes
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
+import org.apache.spark.{SparkConf, SparkContext}
+import org.apache.spark.sql.{SQLContext, SnappyContext, SparkSession}
 
-class ArrayType extends SnappySQLJob {
-  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-
-  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
-
+object SmartConnectorArrayType {
+  def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("ArraysType Job started...")
-
-    val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().getOrCreate()
+    println("Smart Connector ArraysType Job started...")
+    val connectionURL = args(args.length - 1)
+    println("Connection URL is : " + connectionURL)
+    val conf = new SparkConf()
+      .setAppName("Spark_ComplexType_ArrayType_Validation")
+      .set("snappydata.connection", connectionURL)
+    val sc : SparkContext = SparkContext.getOrCreate(conf)
+    val snc : SnappyContext = SnappyContext(sc)
+    val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
+    val sqlContext = SQLContext.getOrCreate(sc)
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
-    val outputFile = "ValidateArrayType" + "_" + "column" +
-      System.currentTimeMillis() + jobConfig.getString("logFileName")
-    val dataLocation = jobConfig.getString("dataFilesLocation")
+    val dataLocation = args(0)
     println("DataLocation : " + dataLocation)
-    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
-    val sc = SparkContext.getOrCreate()
-    val sqlContext = SQLContext.getOrCreate(sc)
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(
+      new File("ValidateSmartConnectorArrayType" + "_" + "column" + System.currentTimeMillis())
+      , false))
     val printContent : Boolean = false
 
     /* --- Snappy Job --- */
@@ -51,7 +51,7 @@ class ArrayType extends SnappySQLJob {
     snc.sql("DROP TABLE IF EXISTS TempArray")
 
     snc.sql("CREATE EXTERNAL TABLE IF NOT EXISTS TempArray USING JSON " +
-        "OPTIONS(path  '" + dataLocation + "')")
+      "OPTIONS(path  '" + dataLocation + "')")
     snc.sql("CREATE TABLE Student USING COLUMN AS (SELECT * FROM TempArray)")
 
     snc.sql(ComplexTypeUtils.Array_Q1)
@@ -70,9 +70,9 @@ class ArrayType extends SnappySQLJob {
     }
 
     /* --- Create the Spark Tables / Views for Verification  --- */
-    val arrType = spark.read.json(dataLocation)
-    arrType.createTempView("Student")
-    spark.sql("CREATE OR REPLACE TEMPORARY VIEW StudentMark " +
+      val arrType = spark.read.json( dataLocation)
+      arrType.createTempView("Student")
+      spark.sql("CREATE OR REPLACE TEMPORARY VIEW StudentMark " +
       "AS  SELECT id,name,explode(marks) AS Marks FROM Student")
 
     /* --- Verification --- */
@@ -93,8 +93,8 @@ class ArrayType extends SnappySQLJob {
     spark.sql("DROP VIEW IF EXISTS StudentMark")
     snc.sql("DROP VIEW IF EXISTS StudentMark")
     snc.sql("DROP TABLE IF EXISTS Student")
-    snc.sql(("DROP TABLE IF EXISTS TempArray"))
+    snc.sql("DROP TABLE IF EXISTS TempArray")
 
-    println("ArrayType SnappyJob completed...")
+    println("Smart Connector ArrayType SnappyJob completed...")
   }
 }
