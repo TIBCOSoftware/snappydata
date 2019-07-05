@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.nio.ByteBuffer
+import java.sql.SQLException
 
 import scala.annotation.tailrec
 import scala.collection.JavaConverters._
@@ -28,10 +29,12 @@ import scala.reflect.ClassTag
 
 import com.esotericsoftware.kryo.io.{Input, Output}
 import com.esotericsoftware.kryo.{Kryo, KryoSerializable}
+import com.gemstone.gemfire.SystemFailure
 import com.gemstone.gemfire.cache.LowMemoryException
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, ByteBufferDataOutput}
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
 
 import org.apache.spark._
@@ -401,13 +404,26 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
             // no processing required
             executeCollect().iterator.asInstanceOf[Iterator[R]]
           } else {
-            val rdd = getExecRDD
-            val numPartitions = rdd.getNumPartitions
-            val results = new Array[R](numPartitions)
-            sc.runJob(rdd, processPartition, 0 until numPartitions,
-              (index: Int, r: (U, Int)) =>
-                results(index) = resultHandler(index, r._1))
-            results.iterator
+            try {
+              val execRDD = getExecRDD
+              runAsJob(execRDD, processPartition, resultHandler, sc)
+            } catch {
+              case t: Throwable
+                if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
+                snappySession.externalCatalog.invalidateAll()
+                SnappySession.clearAllCache()
+                val execution =
+                  snappySession.getContextObject[() => QueryExecution](SnappySession.ExecutionKey)
+                execution match {
+                  case Some(exec) =>
+                    CachedDataFrame.retryOnStaleCatalogException(snappySession = snappySession) {
+                      val execRDD = exec().executedPlan.execute()
+                      runAsJob(execRDD, processPartition, resultHandler, sc)
+                    }
+                  case _ => throw t
+                }
+            }
+
           }
       }
     }
@@ -419,6 +435,18 @@ class CachedDataFrame(snappySession: SnappySession, queryExecution: QueryExecuti
         sc.clearCallSite()
       }
     }
+  }
+
+  private def runAsJob[R: ClassTag, U: ClassTag](
+      execRdd: RDD[InternalRow],
+      processPartition: (TaskContext, Iterator[InternalRow]) => (U, Int),
+      resultHandler: (Int, U) => R, sc: SparkContext) = {
+    val numPartitions = execRdd.getNumPartitions
+    val results = new Array[R](numPartitions)
+    sc.runJob(execRdd, processPartition, 0 until numPartitions,
+      (index: Int, r: (U, Int)) =>
+        results(index) = resultHandler(index, r._1))
+    results.iterator
   }
 }
 
@@ -590,8 +618,7 @@ object CachedDataFrame
         data.arrayOffset() + data.position(), data.remaining())
   }
 
-  private[sql] def queryStringShortForm(queryString: String): String = {
-    val trimSize = 100
+  private[sql] def queryStringShortForm(queryString: String, trimSize: Int = 100): String = {
     if (queryString.length > trimSize) {
       queryString.substring(0, trimSize).concat("...")
     } else queryString
@@ -794,6 +821,68 @@ object CachedDataFrame
         session.listenerManager.onFailure(name, queryExecution, e)
         throw e
     }
+  }
+
+  def isConnectorCatalogStaleException(t: Throwable, session: SnappySession): Boolean = {
+
+    // error check needed in SmartConnector mode only
+    val isSmartConnectorMode = SnappyContext.getClusterMode(session.sparkContext) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+    if (!isSmartConnectorMode) return false
+
+    var cause = t
+    do {
+      cause match {
+        case sqle: SQLException
+          if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
+          return true
+        case e: Error =>
+          if (SystemFailure.isJVMFailureError(e)) {
+            SystemFailure.initiateFailure(e)
+            // If this ever returns, rethrow the error. We're poisoned
+            // now, so don't let this thread continue.
+            throw e
+          }
+        case _ =>
+      }
+      cause = cause.getCause
+    } while (cause ne null)
+    false
+  }
+
+  def catalogStaleFailure(cause: Throwable, session: SnappySession): Exception = {
+    logWarning(s"SmartConnector catalog is not up to date. " +
+        s"Please reconstruct the Dataset and retry the operation")
+    new CatalogStaleException("Smart connector catalog is out of date due to " +
+        "table schema change (DROP/CREATE/ALTER operation). " +
+        "Please reconstruct the Dataset and retry the operation", cause)
+  }
+
+  def retryOnStaleCatalogException[T](retryCount: Int = 10,
+      snappySession: SnappySession)(codeToExecute: => T) : T = {
+    var attempts = 1
+    var res: Option[T] = None
+    logInfo(s"Query will be retried $retryCount times")
+    while (res.isEmpty) {
+      try {
+        logInfo("Retry attempt#" + attempts)
+        res = Option(codeToExecute)
+      } catch {
+        case t: Throwable
+          if CachedDataFrame.isConnectorCatalogStaleException(t, snappySession) =>
+          snappySession.externalCatalog.invalidateAll()
+          SnappySession.clearAllCache()
+          if (attempts < retryCount) {
+            Thread.sleep(attempts*100)
+            attempts = attempts + 1
+          } else {
+            throw CachedDataFrame.catalogStaleFailure(t, snappySession)
+          }
+      }
+    }
+    res.get
   }
 
   private[sql] def clear(): Unit = synchronized {
