@@ -10,6 +10,7 @@ if [ $# -lt 2 ]; then
    echo "Usage:./clusterUpgrade.sh <snappyBuildPath1> <snappyBuildPath2> ... <snappyBuildPathN>"
    exit 1
 fi
+
 totalNoBuilds=$(echo $#)
 echo "The total no. of builds to be tested are $totalNoBuilds"
 
@@ -29,9 +30,18 @@ for i in "$@";
     fi
 
     echo -e "\n\n============ Starting Snappy cluster =========="
-    echo "For build $i"
-    sh $i/sbin/snappy-start-all.sh
+    echo "For build $i cluster status is in $mydir/resultDir/clusterStartStatus.log"
+    echo -e "\n====== Build = $i ============" >> $mydir/resultDir/clusterStartStatus.log
+    sh $i/sbin/snappy-start-all.sh >> $mydir/resultDir/clusterStartStatus.log
     sh $i/sbin/snappy-status-all.sh
+    sleep 30
+    echo "===================================================================="
+    grep 'Exception\|Error' ${mydir}/resultDir/clusterStartStatus.log
+    if [ $? -eq 0 ]; then
+       echo "Cluster start up encountered an exception/error"
+       echo "Please see the logs"
+       exit 1
+    fi
 
     echo -e "\n\n============ Starting Spark cluster =========="
     sh $i/sbin/start-all.sh
@@ -43,12 +53,16 @@ for i in "$@";
       echo -e "\n=========== Finished loading tables ==========="
     fi
 
-    #echo "\n ========== Executing snappy job ============"
-    #$i/bin/snappy-job.sh submit --lead localhost:8090 --app-name myApp --class $snappyJobClassName --app-jar $jarFile --conf queryFile=$queryFile
-    #till the job finishes sleep for a while
-    #sleep 1m
-    #jobId=grep -r 'jobId' jobStatus.txt|cut -d'"' -f4
-    #$i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId
+    echo "\n ========== Executing snappy job ============"
+    $i/bin/snappy-job.sh submit --lead localhost:8090 --app-name myApp --class $snappyJobClassName --app-jar $jarFile --conf queryFile=$dmlScript > jobRun.txt
+    jobId=$(grep -r 'jobId' jobRun.txt|cut -d'"' -f4)
+    $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > jobStatus.txt
+    while ! grep "FINISHED" jobStatus.txt > /dev/null
+    do
+      sleep 5
+      echo "Waiting for the job to finish"
+      $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > jobStatus.txt
+    done
 
     echo -e "\n\n========= Execute Spark job ==========="
     if [ $cnt -eq 1 ]; then
@@ -60,8 +74,9 @@ for i in "$@";
     sh $i/bin/snappy run -file=$validationScript -client-bind-address=localhost -client-port=1527 >> $mydir/resultDir/output_$cnt.log
 
     echo -e "\n\n=========== Stopping Snappy cluster =========="
-    sh $i/sbin/snappy-stop-all.sh
+    sh $i/sbin/snappy-stop-all.sh >> $mydir/resultDir/clusterStopStatus.log
     sh $i/sbin/snappy-status-all.sh
+    sleep 30
     echo -e "\n\n=========== Stopping Spark cluster =========="
     sh $i/sbin/stop-all.sh
 
