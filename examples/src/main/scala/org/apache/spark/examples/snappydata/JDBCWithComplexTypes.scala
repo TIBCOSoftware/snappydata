@@ -129,7 +129,7 @@ object JDBCWithComplexTypes {
 
   def printUsage(): Unit = {
     val usage: String =
-      "Usage: bin/run-example JDBCWithComplexTypes <clientPort>\n" +
+      "Usage: bin/run-example snappydata.JDBCWithComplexTypes <clientPort>\n" +
           "\n" +
           "clientPort - client port number for SnappyData on which JDBC connections are accepted \n"
     println(usage)
