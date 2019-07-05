@@ -3238,14 +3238,12 @@ public class SnappyTest implements Serializable {
         if (i < (dumpItr - 1)) {
           Log.getLogWriter().info("Sleeping before next thread dump...");
           sleepForMs(SnappyPrms.getSleepBtwnStackDumps());
-        } else {
-          evaluateThrdTypeCounts(pids);
         }
       }
     } else {
       Log.getLogWriter().info("Test has no failures. Hence no need to take process stack dumps.");
-      evaluateThrdTypeCounts(pids);
     }
+    evaluateThrdTypeCounts(pids);
   }
 
   protected void getThreadDump(Set<String> pidList) {
@@ -3340,17 +3338,17 @@ public class SnappyTest implements Serializable {
           while ((line = br.readLine()) != null) {
             if (line.startsWith("\"")) {
               String thrdName = line.substring(line.indexOf("\"") + 1, line.lastIndexOf("\""));
-              if(thrdName.length() < 15) map_id = thrdName.substring(5);
-              else map_id = thrdName.substring(15);
-
-              if(thrMap.containsKey(map_id)) {
-                int cnt = thrMap.get(map_id);
-                thrMap.put(map_id, cnt++);
-              }
-              else thrMap.put(map_id,1);
+              if (thrdName.length() < 15) {
+                if (thrdName.length() < 6) map_id = thrdName;
+                else map_id = thrdName.substring(0, 6);
+              } else map_id = thrdName.substring(0, 15);
+              int cnt = 0;
+              if (thrMap.containsKey(map_id))
+                cnt = thrMap.get(map_id);
+              thrMap.put(map_id, ++cnt);
             }
           }
-          StringBuilder aStr = new StringBuilder("Threads in process " + pidString + " are :");
+          StringBuilder aStr = new StringBuilder("Threads in process " + pidString + " are :\n");
           for(Map.Entry<String,Integer> entry : thrMap.entrySet()) {
             aStr.append(entry.getKey() + " : " + entry.getValue() + "\n");
           }
