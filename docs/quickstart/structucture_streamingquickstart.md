@@ -157,7 +157,7 @@ Assuming that your Kafka cluster is already setup and running, you can use the f
 
 ## Structured Streaming using Snappy Job
 
-Refer to [TIBCO ComputeDB Jobs](programming_guide/snappydata_jobs.md) for more information about Snappy Jobs.
+Refer to [TIBCO ComputeDB Jobs](../programming_guide/snappydata_jobs.md) for more information about Snappy Jobs.
 
 Following is a Snappy job code that contains similarly structured streaming query:
 
