@@ -124,7 +124,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String s = "Did not specify kafka directory.";
       throw new TestException(s);
     }
-    if(kafkaLogDir!=null)
+    if(kafkaLogDir==null)
       kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
     new File(kafkaLogDir).mkdir();
     snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();

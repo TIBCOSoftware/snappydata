@@ -5,7 +5,7 @@ io.snappydata.hydra.cluster.SnappyPrms-kafkaDir="${kafkaDir}";
 io.snappydata.hydra.cluster.SnappyPrms-kafkaLogDir="${kafkaLogDir}";
 
 
-//INCLUDE $JTESTS/io/snappydata/hydra/cluster/startEmbeddedModeClusterWithUserConfs.conf;
+//specified user defined configuration in local.putIntoStability.conf
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
 INCLUDE $JTESTS/hydraconfig/topology_1.inc;
 
@@ -75,13 +75,5 @@ hydra.Prms-maxCloseTaskResultWaitSec  = 3600;
 io.snappydata.hydra.cluster.SnappyPrms-isStopMode = true;
 io.snappydata.hydra.cluster.SnappyPrms-isLongRunningTest = true;
 io.snappydata.hydra.cluster.SnappyPrms-isUserConfTest = true;
-
-// Below parameters to be added in local.conf while running the test
-io.snappydata.hydra.cluster.SnappyPrms-locatorList = "localhost:1527,localhost:1528";
-io.snappydata.hydra.cluster.SnappyPrms-primaryLocatorHost = "localhost";
-io.snappydata.hydra.cluster.SnappyPrms-primaryLocatorPort = "1527";
-io.snappydata.hydra.cluster.SnappyPrms-leadHost = "localhost";
-io.snappydata.hydra.cluster.SnappyPrms-leadPort = "8090";
-io.snappydata.hydra.cluster.SnappyPrms-hostNames = "localhost localhost";
 
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar;
