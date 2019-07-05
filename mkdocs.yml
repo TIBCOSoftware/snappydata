@@ -29,6 +29,7 @@ pages:
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
     - 'Create TIBCO ComputeDB Cluster': 'quickstart/snappydataquick_start.md'
+    - 'Structured Streaming': 'quickstart/structucture_streamingquickstart.md'
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
