@@ -44,6 +44,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
 
   public static void runPointLookUpQueries() throws SQLException {
     Vector<String> queryVect = SnappyPrms.getPointLookUpQueryList();
+    executeQueries(queryVect, true);
+  }
+
+  protected static void executeQueries(Vector<String> queryVect, Boolean isPointLookUp) throws SQLException {
     String query = null;
     Connection conn = getLocatorConnection();
     ResultSet rs;
@@ -65,15 +69,18 @@ public class SnappyConcurrencyTest extends SnappyTest {
         query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
-        SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numPointLookUpQueriesExecuted);
+        if (isPointLookUp)
+          SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numPointLookUpQueriesExecuted);
       } catch (SQLException se) {
         throw new TestException("Got exception while executing pointLookUp query:" + query, se);
       }
     }
-    /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
-    List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
-    Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
     closeConnection(conn);
+  }
+
+  public static void runConcQueries() throws SQLException {
+    Vector<String> queryVect = SnappyPrms.getQueryList();
+    executeQueries(queryVect, false);
   }
 
   public static void runAnalyticalQueries() throws SQLException {

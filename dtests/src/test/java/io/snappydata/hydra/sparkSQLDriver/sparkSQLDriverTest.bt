@@ -1,5 +1,9 @@
-io/snappydata/hydra/sparkSQLDriver/createAndLoadSparkSQLDriverSchemaTablesUsingJDBCConnTest.conf
+io/snappydata/hydra/sparkSQLDriver/sparkSQLDriverTest.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+
+io/snappydata/hydra/sparkSQLDriver/sparkSQLDriverConcTest.conf
+  A=snappyStore snappyStoreHosts=5 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=10
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=3 locatorVMsPerHost=1 locatorThreadsPerVM=1
