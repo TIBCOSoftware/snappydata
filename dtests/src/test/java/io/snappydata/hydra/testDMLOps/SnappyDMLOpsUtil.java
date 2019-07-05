@@ -724,88 +724,83 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         initCounter + batchSize);
     testInstance.releaseBBLock();
     String stmt;
+    String uniqueKey = SnappySchemaPrms.getUniqueColumnName();
     if (schemaChanged)
       stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(index);
     else
       stmt = SnappySchemaPrms.getInsertStmts().get(index);
     Connection conn, dConn;
-    PreparedStatement snappyPS = null, derbyPS=null;
+    PreparedStatement snappyPS = null, derbyPS = null;
     try {
       conn = getLocatorConnection();
       snappyPS = conn.prepareStatement(stmt);
-      if(hasDerbyServer){
+      if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
         derbyPS = dConn.prepareStatement(stmt);
       }
     } catch (SQLException se) {
-      throw new TestException("Got exception while getting derby connection", se);
+      throw new TestException("Got exception while getting connection", se);
     }
-    String columnString = stmt.substring(stmt.indexOf("(") + 1, stmt.indexOf(")"));
-    ArrayList<String> columnList = new ArrayList<String>
-        (Arrays.asList(columnString.split(",")));
 
     StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName.toUpperCase());
     ObjectType[] oTypes = sType.getFieldTypes();
     String[] fieldNames = sType.getFieldNames();
     int batchCnt = 0;
-
     try {
+      String value;
       for (int j = initCounter + 1; j <= (batchSize + initCounter); j++) {
         int replaceQuestion = 1;
         for (int i = 0; i < oTypes.length; i++) {
+          if (fieldNames[i].equals(uniqueKey)) value = i + "";
+          else value = "-1";
           String clazz = oTypes[i].getSimpleClassName();
-          if (!columnList.get(i).equalsIgnoreCase(fieldNames[i])) {
-            Log.getLogWriter().info("Inside if column name mismatch.");
-            columnList.add(i, fieldNames[i]);
-          } else {
-            switch (clazz) {
-              case "Date":
-              case "String":
-                snappyPS.setString(replaceQuestion, fieldNames[i] + j);
-                if(hasDerbyServer) derbyPS.setString(replaceQuestion, fieldNames[i] + j);
-                break;
-              case "Timestamp":
-                Timestamp ts = new Timestamp(System.currentTimeMillis());
-                snappyPS.setTimestamp(replaceQuestion, ts);
-                if(hasDerbyServer) derbyPS.setTimestamp(replaceQuestion, ts);
-                break;
-              case "Integer":
-                if (fieldNames[i].equalsIgnoreCase("tid"))
-                  snappyPS.setInt(replaceQuestion, Integer.parseInt("-1"));
-                if(hasDerbyServer) derbyPS.setInt(replaceQuestion, Integer.parseInt("-1"));
-                break;
-              case "Double":
-                snappyPS.setDouble(replaceQuestion, Double.parseDouble("-1"));
-                if(hasDerbyServer) derbyPS.setDouble(replaceQuestion, Double.parseDouble("-1"));
-                break;
-              case "Long":
-                snappyPS.setLong(replaceQuestion, Long.parseLong("-1"));
-                if(hasDerbyServer) derbyPS.setLong(replaceQuestion, Long.parseLong("-1"));
-                break;
-              case "BigDecimal":
-                snappyPS.setBigDecimal(replaceQuestion, BigDecimal.valueOf(Double.parseDouble("-1")));
-                if(hasDerbyServer) derbyPS.setBigDecimal(replaceQuestion,
-                    BigDecimal.valueOf(Double.parseDouble("-1")));
-                break;
-              default:
-                Log.getLogWriter().info("Object class type not found.");
-                throw new TestException("Object class type not found.");
-            }
-            replaceQuestion += 1;
+          switch (clazz) {
+            case "Date":
+            case "String":
+              snappyPS.setString(replaceQuestion, fieldNames[i] + j);
+              if (hasDerbyServer) derbyPS.setString(replaceQuestion, fieldNames[i] + j);
+              break;
+            case "Timestamp":
+              Timestamp ts = new Timestamp(System.currentTimeMillis());
+              snappyPS.setTimestamp(replaceQuestion, ts);
+              if (hasDerbyServer) derbyPS.setTimestamp(replaceQuestion, ts);
+              break;
+            case "Integer":
+              if (fieldNames[i].equalsIgnoreCase("tid"))
+                snappyPS.setInt(replaceQuestion, Integer.parseInt(value));
+              if (hasDerbyServer) derbyPS.setInt(replaceQuestion, Integer.parseInt(value));
+              break;
+            case "Double":
+              snappyPS.setDouble(replaceQuestion, Double.parseDouble(value));
+              if (hasDerbyServer) derbyPS.setDouble(replaceQuestion, Double.parseDouble(value));
+              break;
+            case "Long":
+              snappyPS.setLong(replaceQuestion, Long.parseLong(value));
+              if (hasDerbyServer) derbyPS.setLong(replaceQuestion, Long.parseLong(value));
+              break;
+            case "BigDecimal":
+              snappyPS.setBigDecimal(replaceQuestion, BigDecimal.valueOf(Double.parseDouble(value)));
+              if (hasDerbyServer) derbyPS.setBigDecimal(replaceQuestion,
+                  BigDecimal.valueOf(Double.parseDouble(value)));
+              break;
+            default:
+              Log.getLogWriter().info("Object class type not found.");
+              throw new TestException("Object class type not found.");
           }
-        }
-        snappyPS.addBatch();
-        if(hasDerbyServer) derbyPS.addBatch();
-        batchCnt++;
-        if (batchCnt == 65000) {
-          snappyPS.executeBatch();
-          if(hasDerbyServer) derbyPS.executeBatch();
-          batchCnt = 0;
+          replaceQuestion += 1;
         }
       }
+      snappyPS.addBatch();
+      if (hasDerbyServer) derbyPS.addBatch();
+      batchCnt++;
+      if (batchCnt == 65000) {
+        snappyPS.executeBatch();
+        if (hasDerbyServer) derbyPS.executeBatch();
+        batchCnt = 0;
+      }
       snappyPS.executeBatch();
-      if(hasDerbyServer) derbyPS.executeBatch();
+      if (hasDerbyServer) derbyPS.executeBatch();
     } catch (SQLException se) {
       throw new TestException("Exception while creating PreparedStatement.", se);
     }
