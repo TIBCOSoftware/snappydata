@@ -41,7 +41,6 @@ import com.gemstone.gemfire.cache.query.types.ObjectType;
 import hydra.Log;
 import hydra.Prms;
 import hydra.TestConfig;
-import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.commons.lang.ArrayUtils;
@@ -459,17 +458,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   }
 
   public static void HydraTask_populateTables() {
-    if(!SnappySchemaPrms.hasCsvData()) {
-      int numInserts = 1000000;
-      testInstance.getBBLock();
-      int currRowCount =
-          (int)SnappyDMLOpsBB.getBB().getSharedCounters().read(SnappyDMLOpsBB.insertCounter);
-      SnappyDMLOpsBB.getBB().getSharedCounters().setIfLarger(SnappyDMLOpsBB.insertCounter,
-          currRowCount + numInserts);
-      testInstance.releaseBBLock();
-      testInstance.performInsertUsingBatch(currRowCount, numInserts);
+    String[] tableNames = SnappySchemaPrms.getTableNames();
+    for (int i = 0; i < tableNames.length; i++) {
+      if (!SnappySchemaPrms.hasCsvData()) {
+        int numInserts = 1000000;
+        testInstance.performInsertUsingBatch(tableNames[i], i, numInserts);
+      }
+      testInstance.populateTables();
     }
-    testInstance.populateTables();
   }
 
   protected void populateTables() {
@@ -617,18 +613,20 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public void changeTableSchema() {
     Connection dConn = derbyTestUtils.getDerbyConnection();
+    Connection conn = null;
     try {
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
     } catch (SQLException se) {
-
+      throw new TestException("Got Exception while obtaining connection.");
     }
+    dropTables(conn);
     String logFile = "changeTableSchema";
     if(hasDerbyServer) {
       dropTables(dConn);
       recreateTables(dConn, true);
     }
     int tid = getMyTid();
-    String[] createTablesDDL = SnappySchemaPrms.getrecreateTablesStatements();
+    String[] createTablesDDL = SnappySchemaPrms.getRecreateTablesStatements();
     String[] ddlExtn = SnappySchemaPrms.getSnappyDDLExtn();
     for(int i = 0; i< createTablesDDL.length; i++) {
       String stmt = createTablesDDL[i] + ddlExtn[i];
@@ -640,7 +638,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   protected void recreateTables(Connection conn, boolean isDerby) {
     //to get create table statements from config file
-    String[] createTablesDDL = SnappySchemaPrms.getrecreateTablesStatements();
+    String[] createTablesDDL = SnappySchemaPrms.getRecreateTablesStatements();
     String[] ddlExtn = SnappySchemaPrms.getSnappyDDLExtn();
     StringBuffer aStr = new StringBuffer("Created tables \n");
     try {
@@ -689,14 +687,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       case INSERT:
         Log.getLogWriter().info("Performing insert operation.");
         if(!SnappySchemaPrms.hasCsvData()) {
+          String[] dmlTable = SnappySchemaPrms.getDMLTables();
+          int rand = new Random().nextInt(dmlTable.length);
+          String tableName = dmlTable[rand].toUpperCase();
           int numInserts = 100;
-          getBBLock();
-          int currRowCount =
-              (int)SnappyDMLOpsBB.getBB().getSharedCounters().read(SnappyDMLOpsBB.insertCounter);
-          SnappyDMLOpsBB.getBB().getSharedCounters().setIfLarger(SnappyDMLOpsBB.insertCounter,
-              currRowCount + numInserts);
-          releaseBBLock();
-          performInsertUsingBatch(currRowCount, numInserts);
+          performInsertUsingBatch(tableName, rand, numInserts);
         }
         else
           performInsert();
@@ -721,17 +716,20 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
-  public void performInsertUsingBatch(int initCounter, int batchSize) {
-    String[] dmlTable = SnappySchemaPrms.getDMLTables();
-    int rand = new Random().nextInt(dmlTable.length);
-    String tableName = dmlTable[rand].toUpperCase();
-    Connection conn, dConn;
-    PreparedStatement snappyPS = null, derbyPS=null;
+  public void performInsertUsingBatch(String tableName, int index, int batchSize) {
+    testInstance.getBBLock();
+    int initCounter =
+        (int)SnappyDMLOpsBB.getBB().getSharedCounters().read(SnappyDMLOpsBB.insertCounter);
+    SnappyDMLOpsBB.getBB().getSharedCounters().setIfLarger(SnappyDMLOpsBB.insertCounter,
+        initCounter + batchSize);
+    testInstance.releaseBBLock();
     String stmt;
     if (schemaChanged)
-      stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(rand);
+      stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(index);
     else
-      stmt = SnappySchemaPrms.getInsertStmts().get(rand);
+      stmt = SnappySchemaPrms.getInsertStmts().get(index);
+    Connection conn, dConn;
+    PreparedStatement snappyPS = null, derbyPS=null;
     try {
       conn = getLocatorConnection();
       snappyPS = conn.prepareStatement(stmt);
@@ -740,14 +738,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         derbyPS = dConn.prepareStatement(stmt);
       }
     } catch (SQLException se) {
-
+      throw new TestException("Got exception while getting derby connection", se);
     }
     String columnString = stmt.substring(stmt.indexOf("(") + 1, stmt.indexOf(")"));
     ArrayList<String> columnList = new ArrayList<String>
         (Arrays.asList(columnString.split(",")));
 
     StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
-        ("tableMetaData_" + tableName);
+        ("tableMetaData_" + tableName.toUpperCase());
     ObjectType[] oTypes = sType.getFieldTypes();
     String[] fieldNames = sType.getFieldNames();
     int batchCnt = 0;
