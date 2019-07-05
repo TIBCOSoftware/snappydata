@@ -18,29 +18,30 @@ package io.snappydata.hydra.complexdatatypes
 
 import java.io.{File, FileOutputStream, PrintWriter}
 
-import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
+import org.apache.spark.sql.{SQLContext, SnappyContext, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
 
-class MapType extends SnappySQLJob{
-  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-
-  override def runSnappyJob(snappySession : SnappySession, jobConfig: Config): Any = {
-
+object SmartConnectorMapType {
+  def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("Map Type Job started...")
+    println("Smart Connector MapType Job started...")
+    val connectionURL = args(args.length - 1)
+    println("Connection URL is : " + connectionURL)
+    val conf = new SparkConf()
+      .setAppName("Spark_ComplexType_MapType_Validation")
+      .set("snappydata.connection", connectionURL)
+    val sc : SparkContext = SparkContext.getOrCreate(conf)
+    val snc : SnappyContext = SnappyContext(sc)
+    val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
+    val sqlContext = SQLContext.getOrCreate(sc)
 
-    val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().getOrCreate()
-    val sc : SparkContext = SparkContext.getOrCreate()
-    val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
-
-    def getCurrentDirectory : String = new File(".").getCanonicalPath
-    val outputFile = "ValidateMapType" + "_" + "column" +
-      System.currentTimeMillis() + jobConfig.getString("logFileName")
-    val dataLocation = jobConfig.getString("dataFilesLocation")
-    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val dataLocation = args(0)
+    println("DataLocation : " + dataLocation)
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(
+      new File("ValidateSmartConnectorMapType" + "_" + "column" + System.currentTimeMillis())
+      , false))
     val printContent : Boolean = false
 
     snc.sql("DROP TABLE IF EXISTS TempStRecord")
@@ -91,7 +92,6 @@ class MapType extends SnappySQLJob{
     /* --- Clean Up --- */
     snc.sql("DROP TABLE IF EXISTS TempStRecord")
     snc.sql("DROP TABLE IF EXISTS StudentMarksRecord")
-
-    println("MapType SQL, Job Completed....")
+    println("Smart Connector Map Type job finished....")
   }
 }

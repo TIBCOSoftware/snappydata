@@ -14,33 +14,36 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
 package io.snappydata.hydra.complexdatatypes
 
 import java.io.{File, FileOutputStream, PrintWriter}
+
 import io.snappydata.hydra.SnappyTestUtils
-import com.typesafe.config.Config
-import org.apache.spark.SparkContext
-import org.apache.spark.sql._
+import org.apache.spark.sql.{DataFrame, SQLContext, SnappyContext, SparkSession}
+import org.apache.spark.{SparkConf, SparkContext}
 
-class ArraysOfStructType extends SnappySQLJob{
-  override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
-
-  override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
-
+object SmartConnectorArraysOfStructType {
+  def main(args: Array[String]): Unit = {
     // scalastyle:off println
-    println("ArraysofStruct Type Job started...")
-    val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().getOrCreate()
-    val sc : SparkContext = SparkContext.getOrCreate()
+    println("Smart Connector ArraysOfStruct Type Job started...")
+    val connectionURL = args(args.length - 1)
+    println("Connection URL is : " + connectionURL)
+    val conf = new SparkConf()
+      .setAppName("Spark_ComplexType_ArraysOfStructType_Validation")
+      .set("snappydata.connection", connectionURL)
+    val sc : SparkContext = SparkContext.getOrCreate(conf)
+    val snc : SnappyContext = SnappyContext(sc)
+    val spark : SparkSession = SparkSession.builder().config(conf).getOrCreate()
     val sqlContext : SQLContext = SQLContext.getOrCreate(sc)
 
-    def getCurrentDirectory : String = new File(".").getCanonicalPath
-    val outputFile : String = "ValidateArraysOfStructType" + "_" + "column" +
-      System.currentTimeMillis() + jobConfig.getString("logFileName")
-    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
-    val dataLocation = jobConfig.getString("dataFilesLocation")
-    val printContent : Boolean = false
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val dataLocation : String = args(0)
+    println("DataLocation : " + dataLocation)
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(
+      new File("ValidateSmartConnectorArraysOfStructType" +
+        "_" + "column" + System.currentTimeMillis())
+      , false))
+    val printContent : Boolean = true
 
     /* --- Snappy Job --- */
     snc.sql("DROP TABLE IF EXISTS TwoWheeler")
@@ -74,19 +77,19 @@ class ArraysOfStructType extends SnappySQLJob{
     SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q1,
       "ArraysOfStruct_Q1", "column", pw, sqlContext)
     // TODO Due to SNAP-2782 Below line is commented, Hydra Framework required changes.
-//    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q2,
-//      "ArraysOfStruct_Q2", "column", pw, sqlContext)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q3,
-//      "ArraysOfStruct_Q3","column", pw, sqlContext)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q4,
-//      "ArraysOfStruct_Q4","column", pw, sqlContext)
-//    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q5,
-//      "ArraysOfStruct_Q5","column", pw, sqlContext)
+    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q2,
+    //      "ArraysOfStruct_Q2", "column", pw, sqlContext)
+    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q3,
+    //      "ArraysOfStruct_Q3","column", pw, sqlContext)
+    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q4,
+    //      "ArraysOfStruct_Q4","column", pw, sqlContext)
+    //    SnappyTestUtils.assertQueryFullResultSet(snc, ComplexTypeUtils.ArraysOfStruct_Q5,
+    //      "ArraysOfStruct_Q5","column", pw, sqlContext)
 
     /* --- Clean up --- */
     snc.sql("DROP TABLE IF EXISTS TwoWheeler")
     snc.sql("DROP TABLE IF EXISTS TempBike")
 
-    println("ArraysOfStructType SQL, job completed...")
+    println("Smart Connector ArraysOfStruct Type Job completed...")
   }
 }
