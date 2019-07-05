@@ -87,6 +87,9 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long useCsv;
 
+  /* Comma seperated names of column with unique values */
+  public static Long uniqueColumnName;
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
@@ -240,6 +243,11 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static String getDMLOperations(){
     Long key = dmlOperations;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+  public static String getUniqueColumnName(){
+    Long key = uniqueColumnName;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 

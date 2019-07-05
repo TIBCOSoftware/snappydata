@@ -3228,9 +3228,9 @@ public class SnappyTest implements Serializable {
     File currDir = new File(".");
     boolean checkErrors = new File(currDir, "errors.txt").exists();
     boolean checkHang = new File(currDir, "hang.txt").exists();
+    Set pids = getPidList();
     if (checkErrors || checkHang) {
       int dumpItr = SnappyPrms.getNumOfStackDumpItrs();
-      Set pids = getPidList();
       Log.getLogWriter().info("Dump stacks for " + dumpItr + " iterations.");
       for (int i = 0; i < dumpItr; i++) {
         Log.getLogWriter().info("Dumping stacks for iteration " + i);
@@ -3244,6 +3244,7 @@ public class SnappyTest implements Serializable {
       }
     } else {
       Log.getLogWriter().info("Test has no failures. Hence no need to take process stack dumps.");
+      evaluateThrdTypeCounts(pids);
     }
   }
 
