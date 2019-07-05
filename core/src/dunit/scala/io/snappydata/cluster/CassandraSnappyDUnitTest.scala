@@ -29,11 +29,10 @@ import scala.language.postfixOps
 import scala.sys.process._
 
 class CassandraSnappyDUnitTest(val s: String)
-    extends DistributedTestBase(s)
-        with Logging {
+    extends DistributedTestBase(s) with SnappyJobTestSupport with Logging {
   // scalastyle:off println
 
-  private val snappyProductDir = System.getenv("SNAPPY_HOME")
+  val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
 
@@ -165,9 +164,7 @@ class CassandraSnappyDUnitTest(val s: String)
 
   def snappyJobTest(): Unit = {
     (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
-    val obj = new SplitClusterDUnitSecurityTest(s)
-    obj.submitAndVerifyJob(obj.buildJobBaseStr("io.snappydata.cluster",
-      "CassandraSnappyConnectionJob"),
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
       "--packages com.datastax.spark:spark-cassandra-connector_2.11:2.4.1" +
           " --conf spark.cassandra.connection.host=localhost")
     logInfo("Job completed")
