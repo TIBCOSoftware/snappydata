@@ -4,6 +4,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createTablesStatements =
 "create table app.table1 (id int, name varchar(20),code int, tid int)"
 ;
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-uniqueColumnName =
+"id";
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-tablesList =
 "app.table1"
 ;
@@ -29,7 +32,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
-"delete from table1 "
+"delete from table1 where id < 100"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterDeleteSelects =
@@ -44,3 +47,4 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertAfterRecreateTablesStmts =
 "insert into table1 values (?,?,?,?,?)"
 ;
 
+;

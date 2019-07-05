@@ -81,9 +81,11 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long recreateTablesStatements;
 
-  public static Long insertAfterReCreateTableStmts;
+  public static Long insertStmtAfterReCreateTable;
 
   public static Long dropSchemas;
+
+  public static Long useCsv;
 
   public static String[] getTableNames() {
     Long key = tablesList;
@@ -255,14 +257,16 @@ public class SnappySchemaPrms extends SnappyPrms {
     Long key = insertStmtsNonDMLTables;
     Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     ArrayList<String> strArr = new ArrayList<String>();
-    for (int i = 0; i < selectStmt.size(); i++) {
-      strArr.add((String)selectStmt.elementAt(i));
+    if(selectStmt!= null){
+      for (int i = 0; i < selectStmt.size(); i++) {
+        strArr.add((String)selectStmt.elementAt(i));
+      }
     }
     return strArr;
   }
 
-  public static ArrayList<String> getInsertAfterReCreateTableStmts(){
-    Long key = insertAfterReCreateTableStmts;
+  public static ArrayList<String> getInsertStmtAfterReCreateTable(){
+    Long key = insertStmtAfterReCreateTable;
     Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     ArrayList<String> strArr = new ArrayList<String>();
     for (int i = 0; i < selectStmt.size(); i++) {
@@ -274,6 +278,11 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static boolean getLoadDataInParts(){
     Long key = loadDataInParts;
     return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+  }
+
+  public static boolean hasCsvData(){
+    Long key = useCsv;
+    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, true));
   }
 
   public static int getNumPartsForDataFiles(){
