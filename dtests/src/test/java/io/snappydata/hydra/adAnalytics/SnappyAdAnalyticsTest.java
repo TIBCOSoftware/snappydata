@@ -33,7 +33,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import hydra.BasePrms;
 import hydra.HostPrms;
+import hydra.HydraVector;
 import hydra.Log;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
@@ -72,7 +74,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static String[] getNames(Long key) {
-    Vector vec = TestConfig.tab().vecAt(key, null);
+    Vector vec = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));;
     String[] strArr = new String[vec.size()];
     for (int i = 0; i < vec.size(); i++) {
       strArr[i] = (String)vec.elementAt(i); //get what tables are in the tests
@@ -80,44 +82,36 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     return strArr;
   }
 
-  public static String[] getNames(Vector key) {
-    Log.getLogWriter().info("Inside getNames vector size is " +  key.size());
-    String[] strArr = new String[key.size()];
-    for (int i = 0; i < key.size(); i++) {
-      strArr[i] = (String)key.elementAt(i); //get what tables are in the tests
-    }
-    return strArr;
-  }
 
   public static String[] getHostNames() {
 
-   // String[] vmNames = getNames(HostPrms.names);
+    String[] vmNames = getNames(HostPrms.names);
     String[] vmHostNames = null;
     int numServers=0;
     if(SnappyTest.isUserConfTest) {
       Log.getLogWriter().info("Inside isUserConfTest = true");
-      vmHostNames = getNames(SnappyPrms.getHostNameList());
+      vmHostNames = getNames(SnappyPrms.hostNames);
+      SnappyBB.getBB().getSharedCounters().zero(SnappyBB.numServers);
+      SnappyBB.getBB().getSharedCounters().setIfLarger(SnappyBB.numServers,vmHostNames.length);
       Log.getLogWriter().info("The vmHostNames size = " + vmHostNames.length);
-      hostnames = new String[vmHostNames.length];
-      numServers = vmHostNames.length;
     }
     else {
       vmHostNames = getNames(HostPrms.hostNames);
-       numServers = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
-      Log.getLogWriter().info("Number of servers = " + numServers);
-      hostnames = new String[numServers];
     }
+    numServers = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    Log.getLogWriter().info("Number of servers = " + numServers);
+    hostnames = new String[numServers];
     if(vmHostNames==null) {
       for (int j = 0; j<numServers ;  j++)
         hostnames[j] = "localhost";
     } else {
       int j = 0;
       for (int i = 0; i < vmHostNames.length; i++) {
-        //if (vmNames[i].startsWith("snappyStore")) {
+        if (vmNames[i].startsWith("snappyStore") || SnappyTest.isUserConfTest) {
           hostnames[j] = vmHostNames[i];
           Log.getLogWriter().info("Host name is " + hostnames[j]);
           j++;
-      //  }
+        }
       }
     }
     return hostnames;
@@ -130,7 +124,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String s = "Did not specify kafka directory.";
       throw new TestException(s);
     }
-    if(kafkaLogDir.isEmpty())
+    if(kafkaLogDir!=null)
       kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
     new File(kafkaLogDir).mkdir();
     snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();
@@ -225,9 +219,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected void startKafkaBroker() {
     String command = "";
     int numServers = 0 ;
-    if(SnappyTest.isUserConfTest)
+   /* if(SnappyTest.isUserConfTest)
       numServers = hostnames.length;
-    else
+    else*/
       numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
