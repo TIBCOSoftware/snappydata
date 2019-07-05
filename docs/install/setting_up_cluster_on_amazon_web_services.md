@@ -226,7 +226,7 @@ The cluster is launched in the **N. California (us-west-1)** region on AWS and h
 
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
-#### Assuming IAM role in the AWS EC2 Scripts
+#### Assuming IAM Role in the AWS EC2 Scripts
 
 An IAM user in AWS can gain additional (or different) permissions, or get permissions to perform actions in a different AWS account through EC2 scripts. You can configure the AWS EC2 scripts to use an IAM role by passing the following properties:
 
