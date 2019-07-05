@@ -70,11 +70,9 @@ The following principles should be considered when you set the total number of b
 *	Ensure that data is evenly distributed among the buckets.
 *	If a query on the table is frequent with low latency requirement and those queries scan all the buckets,  then ensure that the total number of the buckets is either greater than or equal to the total number of physical cores in a cluster.
 *	If the query is frequent and the query gets pruned to some particular buckets, that is if the query has partitioning columns in predicate, then the total number of buckets can be low if the concurrency is high. 
-
 When a new server joins or an existing server leaves the cluster, buckets are moved around to ensure that data is balanced across the nodes where the table is defined.
 
-The  [-rebalance](../configuring_cluster/property_description.md#rebalance) option on the startup command-line triggers bucket rebalancing and the new server becomes the primary for some of the buckets (and secondary for some if REDUNDANCY>0 has been specified). </br>
-You can also set the system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) to trigger rebalance.
+You can set the system procedure [call sys.rebalance_all_buckets()](../reference/inbuilt_system_procedures/rebalance-all-buckets.md#sysrebalance_all_buckets) to trigger rebalance.
 
 <a id="dimension"></a>
 ### Criteria for Column Partitioning
