@@ -107,7 +107,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     } else {
       int j = 0;
       for (int i = 0; i < vmHostNames.length; i++) {
-        if (vmNames[i].startsWith("snappyStore") || SnappyTest.isUserConfTest) {
+        if (SnappyTest.isUserConfTest || vmNames[i].startsWith("snappyStore")) {
           hostnames[j] = vmHostNames[i];
           Log.getLogWriter().info("Host name is " + hostnames[j]);
           j++;
@@ -219,10 +219,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected void startKafkaBroker() {
     String command = "";
     int numServers = 0 ;
-   /* if(SnappyTest.isUserConfTest)
-      numServers = hostnames.length;
-    else*/
-      numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
     String orgPropFilePath = snappyTest.getScriptLocation(kafkaDir + sep + "config/server.properties");
