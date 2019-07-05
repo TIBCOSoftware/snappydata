@@ -40,8 +40,8 @@ object RecreateTableInSnappyJob extends SnappySQLJob{
       // scalastyle:off println
       pw.println(s"Executing ${stmt} on snappy")
       val df = snc.sql(stmt)
-      println(s"Operation completed successfully. See ${getCurrentDirectory}/${outputFile}")
-      pw.println(s"Operation completed successfully.")
+      println(s"Table created successfully. See ${getCurrentDirectory}/${outputFile}")
+      pw.println(s"Table created successfully.")
       pw.close()
     } match {
       case Success(v) => pw.close()
