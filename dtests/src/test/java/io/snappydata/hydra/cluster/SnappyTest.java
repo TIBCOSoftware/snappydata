@@ -3332,23 +3332,33 @@ public class SnappyTest implements Serializable {
         Map<String,Integer> thrMap = new HashMap<String, Integer>();
         try {
           String fileName = getCurrentDirPath() + File.separator + pidString + "_dump.txt";
-          String line = "";
-          String map_id = "";
+          String line = null;
+          String map_id = null;
           BufferedReader br = new BufferedReader(new FileReader(fileName));
+          int totalThrdCnt = 0;
           while ((line = br.readLine()) != null) {
             if (line.startsWith("\"")) {
               String thrdName = line.substring(line.indexOf("\"") + 1, line.lastIndexOf("\""));
-              if (thrdName.length() < 15) {
-                if (thrdName.length() < 6) map_id = thrdName;
+              if (thrdName.length() < 13) {
+                if (thrdName.contains("#")) map_id = thrdName.substring(0, thrdName.indexOf("#"));
+                else if (thrdName.length() < 6 || ((!thrdName.contains("-"))))
+                  map_id = thrdName;
+
                 else map_id = thrdName.substring(0, 6);
-              } else map_id = thrdName.substring(0, 15);
+              } else {
+                map_id = thrdName.substring(0, 13);
+                if (map_id.contains("#"))
+                  map_id = map_id.substring(0, map_id.indexOf("#"));
+              }
               int cnt = 0;
               if (thrMap.containsKey(map_id))
                 cnt = thrMap.get(map_id);
               thrMap.put(map_id, ++cnt);
+              totalThrdCnt++;
             }
           }
-          StringBuilder aStr = new StringBuilder("Threads in process " + pidString + " are :\n");
+          StringBuilder aStr = new StringBuilder("The " + totalThrdCnt + " threads in process " +
+              pidString + " are :\n");
           for(Map.Entry<String,Integer> entry : thrMap.entrySet()) {
             aStr.append(entry.getKey() + " : " + entry.getValue() + "\n");
           }
