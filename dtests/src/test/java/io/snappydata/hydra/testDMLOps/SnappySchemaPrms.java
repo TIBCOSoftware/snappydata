@@ -90,10 +90,16 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long batchSize;
 
-  public static boolean getIsSingleBucket(){
-    Long key = isSingleBucket;
-    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
-  }
+  public static Long recreateTablesStatements;
+
+  public static Long insertStmtAfterReCreateTable;
+
+  public static Long dropSchemas;
+
+  public static Long useCsv;
+
+  /* Comma seperated names of column with unique values */
+  public static Long uniqueColumnName;
 
   public static String[] getTableNames() {
     Long key = tablesList;
@@ -115,7 +121,7 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
-  public static String[] getSchemas() {
+  public static String[] getCreateSchemas() {
     Long key = createSchemas;
     Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
     String[] strArr = new String[statements.size()];
@@ -125,8 +131,27 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
+  public static String[] getDropSchemas() {
+    Long key = dropSchemas;
+    Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
   public static String[] getCreateTablesStatements() {
     Long key = createTablesStatements;
+    Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
+    String[] strArr = new String[statements.size()];
+    for (int i = 0; i < statements.size(); i++) {
+      strArr[i] = (String)statements.elementAt(i);
+    }
+    return strArr;
+  }
+
+  public static String[] getRecreateTablesStatements() {
+    Long key = recreateTablesStatements;
     Vector statements = TestConfig.tab().vecAt(key, new HydraVector());
     String[] strArr = new String[statements.size()];
     for (int i = 0; i < statements.size(); i++) {
@@ -188,6 +213,11 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static int getBatchSize(){
     Long key = batchSize;
     return BasePrms.tasktab().intAt(key, BasePrms.tab().intAt(key, 1000));
+  }
+
+  public static boolean getIsSingleBucket(){
+    Long key = isSingleBucket;
+    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
   }
 
   public static String[] getSelectStmts(){
@@ -257,6 +287,11 @@ public class SnappySchemaPrms extends SnappyPrms {
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
+  public static String getUniqueColumnName(){
+    Long key = uniqueColumnName;
+    return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
   public static String[] getInsertStmts(){
     Long key = insertStmts;
     Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
@@ -277,9 +312,24 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
+  public static ArrayList<String> getInsertStmtAfterReCreateTable(){
+    Long key = insertStmtAfterReCreateTable;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    ArrayList<String> strArr = new ArrayList<String>();
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr.add(((String)selectStmt.elementAt(i)));
+    }
+    return strArr;
+  }
+
   public static boolean getLoadDataInParts(){
     Long key = loadDataInParts;
     return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+  }
+
+  public static boolean hasCsvData(){
+    Long key = useCsv;
+    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, true));
   }
 
   public static int getNumPartsForDataFiles(){

@@ -100,12 +100,8 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         throw new TestException("Invalid operation type.");
     }
     Log.getLogWriter().info("Executing select for " + dmlOp + " operation.");
-    if (SnappySchemaPrms.isTestUniqueKeys()) {
-      if (!query.contains("where"))
-        query = query + " WHERE ";
-      else query = query + " AND ";
-      query = query + " tid = " + tid;
-    }
+    if (SnappySchemaPrms.isTestUniqueKeys())
+      addTidToQuery(query, tid);
     try {
       conn = getLocatorConnection();
       Log.getLogWriter().info("Executing query :" + query);
@@ -147,14 +143,6 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         break;
     }
     return false;
-  }
-
-  public String addTidToQuery(String sql, int tid){
-    if (!sql.contains("where"))
-      sql = sql + " WHERE ";
-    else sql = sql + " AND ";
-    sql = sql + " tid = " + tid;
-    return sql;
   }
 
   public static void HydraTask_performDMLOPsAndVerifyConsistency() {

@@ -1,0 +1,20 @@
+io/snappydata/hydra/testDMLOps/testDMLOpsWithOverFlowColumnTables.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=4
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
+  persistenceMode="sync" redundantCopies=1
+
+io/snappydata/hydra/testDMLOps/testDMLOpsWithOverFlowPartitionedTables.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=4
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
+  persistenceMode="sync" redundantCopies=1
+
+io/snappydata/hydra/testDMLOps/testDMLOpsWithOverFlowReplicatedTables.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=4
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
+  persistenceMode="sync" redundantCopies=1
