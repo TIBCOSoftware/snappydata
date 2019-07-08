@@ -1,8 +1,6 @@
 package io.snappydata.hydra.cdcConnector;
 
 import hydra.BasePrms;
-import hydra.HydraVector;
-import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyPrms;
 
 import java.util.Vector;

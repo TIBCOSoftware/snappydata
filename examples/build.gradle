@@ -21,10 +21,35 @@ compileScala.options.encoding = 'UTF-8'
 // fix scala+java mix to all use compileScala which uses correct dependency order
 sourceSets.main.scala.srcDir 'src/main/java'
 sourceSets.main.java.srcDirs = []
-sourceSets.test.java.srcDirs = [ ]
+sourceSets.test.java.srcDirs = []
 sourceSets.test.scala.srcDir 'src/test/scala'
 
-dependencies {
+if (!(new File(rootDir, 'cluster/build.gradle').exists())) {
+  ext {
+    scalaBinaryVersion = '2.11'
+    scalatestVersion = '2.2.6'
+    scalaVersion = scalaBinaryVersion + '.8'
+    snappyVersion = '1.1.0'
+  }
+
+  repositories {
+    mavenCentral()
+    maven { url 'https://dl.bintray.com/big-data/maven' }
+    maven { url "https://repo.spring.io/libs-release" }
+    maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    maven { url 'https://app.camunda.com/nexus/content/repositories/public' }
+  }
+
+  dependencies {
+    compile 'org.scala-lang:scala-library:' + scalaVersion
+    testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
+    compile "io.snappydata:snappydata-cluster_2.11:${snappyVersion}"
+  }
+
+  archivesBaseName = 'snappydata-examples_' + '2.11'
+
+} else {
+  dependencies {
 
   compile project(":snappy-cluster_${scalaBinaryVersion}")
 
@@ -33,7 +58,8 @@ dependencies {
   }
 
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
-  testCompile project(path: ':snappy-core_' + scalaBinaryVersion, configuration: 'testOutput')
+  testCompile "commons-io:commons-io:2.6"
+  testCompile "io.snappydata:gemfire-core:1.6.3"
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
 }
 
@@ -78,3 +104,4 @@ scalaTest {
 }
 
 check.dependsOn scalaTest
+}

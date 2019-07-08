@@ -20,11 +20,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyDatasetAggregatorSuite extends DatasetAggregatorSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "typed aggregation: in project list",
-    "typed aggregation: class input with reordering",
-    "typed aggregation: complex input"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil
