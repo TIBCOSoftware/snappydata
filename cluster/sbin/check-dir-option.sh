@@ -33,14 +33,13 @@ else
 	# - script get triggerd from snappy-start-all.sh--then argument provided by this snappy-nodes.sh
 	# - user executing individual component script,in this case this script: snappy-locator.sh
    # Need to check in both case -dir option is provided or not
-	isPresent=1      
+	isPresent=0      
 	for argument in "$@"
-	 do		
-        	if [ "$argument" = *-dir= ]
+	 do	
+		#echo "argument value: $argument"	
+        	if [[ "$argument" == -dir=*  ]]
 		 then
-		 	 isPresent=0 # not present
-		else #present
-			
+			isPresent=1 #  present
 			if [ -z $(echo $argument | cut -d'=' -f 2) ] #present but empty i.e "-dir="
 			 then
 			  isPresent=0
@@ -51,8 +50,7 @@ else
 	
 	if [ $isPresent -eq 0 ]
 	 then
-		
-	  echo "Error: Please provide -dir option"
+	  echo "ERROR: Please provide -dir option"
 	 # echo $usage
  	  exit 1
 	fi

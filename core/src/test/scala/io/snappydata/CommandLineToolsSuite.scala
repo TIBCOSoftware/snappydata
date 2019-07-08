@@ -16,13 +16,8 @@
  */
 
 package io.snappydata
-
 import java.io._
-import java.sql.{Connection, DriverManager}
-
-import org.apache.commons.io.output.TeeOutputStream
-import org.apache.spark.sql.collection.Utils
-
+import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 
 class CommandLineToolsSuite extends SnappyTestRunner {
@@ -30,6 +25,8 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   override def servers: String = s"$localHostName\n"
 
   override def clusterSuccessString: String = "Distributed system now has 3 members"
+
+  val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   // scalastyle:off println
   test("backup restore") {
@@ -179,6 +176,98 @@ class CommandLineToolsSuite extends SnappyTestRunner {
     } finally {
       debugWriter.close()
       executeCommand(s"rm -rf $snappyHome/backup*")
+    }
+  }
+
+  test("-dir option with old locator launch script") {
+    try {
+      var consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir not specified: $consoleOutput")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443 -client-port=2000 -dir=").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified with a value")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443 -client-port=2000" +
+          "-dir=/does/not/exist").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir does not exist $consoleOutput")
+
+      ("mkdir ./SNAP-2631-work-locator").!!
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443 -client-port=2000 " +
+          "-dir=./SNAP-2631-work-locator").!!
+      assert(consoleOutput.contains("running"), s"Locator launch failed: $consoleOutput")
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh stop -dir=./SNAP-2631-work-locator").!!
+    } finally {
+      (snappyProductDir + "/sbin/snappy-locator.sh stop ").!!
+    }
+  }
+  test("-dir option with old server launch script") {
+    try {
+      var consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir not specified: $consoleOutput")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001 -dir=").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified with a value")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001" +
+          "-dir=/does/not/exist").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir does not exist $consoleOutput")
+
+      ("mkdir ./SNAP-2631-work-server").!!
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001  " +
+          "-dir=./SNAP-2631-work-server").!!
+      assert(consoleOutput.contains("running"), s"Server launch failed: $consoleOutput")
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh stop -dir=./SNAP-2631-work-server").!!
+    } finally {
+      (snappyProductDir + "/sbin/snappy-server.sh stop").!!
+    }
+  }
+  test("-dir option with old lead launch script") {
+    try {
+      var consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002" +
+          " -dir=").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified with a value")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002" +
+          "-dir=/does/not/exist").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir does not exist $consoleOutput")
+
+      ("mkdir ./SNAP-2631-work-lead").!!
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002 " +
+          "-dir=./SNAP-2631-work-lead").!!
+
+      assert(consoleOutput.contains("standby"),
+        s"lead launch failed: $consoleOutput")
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh stop -dir=./SNAP-2631-work-lead").!!
+    } finally {
+      (snappyProductDir + "/sbin/snappy-lead.sh stop").!!
     }
   }
 }
