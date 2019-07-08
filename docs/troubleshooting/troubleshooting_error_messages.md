@@ -1,4 +1,4 @@
-an# Troubleshooting Error Messages
+# Troubleshooting Error Messages
 Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
