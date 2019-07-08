@@ -1,4 +1,4 @@
-# Troubleshooting Error Messages
+an# Troubleshooting Error Messages
 Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.
 
 <!-- --------------------------------------------------------------------------- -->
@@ -117,6 +117,8 @@ In cases where a node fails while a JDBC/ODBC client or job is consuming result 
 This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
 </action>
 
+<!-- --------------------------------------------------------------------------- -->
+
 <a id="smartconnectorcatalog"></a>
 <error> **Message:** </error> 
 <error-text>
@@ -124,13 +126,12 @@ SmartConnector catalog is not up to date. Please reconstruct the Dataset and ret
 </error-text>
 
 <diagnosis> **Diagnosis:**</br>
-In the Smart Connector mode, this error message is seen in the logs if SnappyData catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
-For performance reasons, SnappyData Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in SnappyData embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
+In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
 </diagnosis>
 
 <action> **Solution:** </br>
-If the user application is performing DataFrame/DataSet operations, you will have to recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException **and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. 
-Check the following code snippet to get better understanding of how this scenario should be handled:
+If the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type **org.apache.spark.sql.execution.CatalogStaleException** and **java.sql.SQLException** (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how this scenario should be handled:
 
 ```pre
 int retryCount = 0;
@@ -164,12 +165,9 @@ private boolean isRetriableException(Exception ex) {
     } while (cause != null);
     return false;
 }
-
 ```
-
 </action>
 <!-- --------------------------------------------------------------------------- -->
-
 <a id="jobsubmitsnap"></a>
 <error> **Error Message:** </error> 
 <error-text>
@@ -207,3 +205,5 @@ To avoid this issue enclose the value containing colon `:` with double quotes so
 </action>
 
 <!-- --------------------------------------------------------------------------- -->
+
+

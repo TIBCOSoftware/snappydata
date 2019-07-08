@@ -276,8 +276,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
-        assert(ae.getMessage.contains("APP.ORDER_DETAILS_ROW cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_ROW"))
+        assert(ae.getMessage.contains("app.order_details_row cannot be dropped because of " +
+            "dependent objects: app.exec_details_row"))
     }
 
     // stop spark
@@ -294,8 +294,8 @@ class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
     } catch {
       case ae: AnalysisException =>
         // Expected Exception and assert message
-        assert(ae.getMessage.contains("APP.ORDER_DETAILS_ROW cannot be dropped because of " +
-            "dependent objects: APP.EXEC_DETAILS_ROW"))
+        assert(ae.getMessage.contains("app.order_details_row cannot be dropped because of " +
+            "dependent objects: app.exec_details_row"))
     }
 
     snc.sql(s"drop table $colloactedColumnTable")
