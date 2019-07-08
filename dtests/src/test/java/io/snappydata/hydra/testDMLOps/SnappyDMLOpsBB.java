@@ -52,5 +52,4 @@ public class SnappyDMLOpsBB extends Blackboard {
     super(name, type, SnappyDMLOpsBB.class);
   }
 
-  public static int insertCounter;
 }
