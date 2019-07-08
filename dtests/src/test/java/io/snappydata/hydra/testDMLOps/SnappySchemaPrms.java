@@ -90,6 +90,8 @@ public class SnappySchemaPrms extends SnappyPrms {
   /* Comma seperated names of column with unique values */
   public static Long uniqueColumnName;
 
+  public static Long afterInsertSelects;
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
