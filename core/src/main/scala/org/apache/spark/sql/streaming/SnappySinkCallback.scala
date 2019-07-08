@@ -20,8 +20,6 @@ package org.apache.spark.sql.streaming
 import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
-import scala.collection.mutable
-
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
@@ -86,7 +84,7 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 
   private def isSecurityEnabled(sparkSession: SparkSession) = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(Some(sparkSession),
-      mutable.Map.empty)
+      ExternalStoreUtils.emptyCIMutableMap)
     val (user, _) = ExternalStoreUtils.getCredentials(sparkSession)
     if (!user.isEmpty) {
       true
@@ -117,13 +115,13 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 private[streaming] object SnappyStoreSinkProvider {
 
   val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = "SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val SINK_STATE_TABLE = "snappysys_internal____sink_state_table"
   val TABLE_NAME = "tableName"
   val QUERY_NAME = "queryName"
   val SINK_CALLBACK = "sinkCallback"
   val STATE_TABLE_SCHEMA = "stateTableSchema"
   val CONFLATION = "conflation"
-  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
+  val EVENT_COUNT_COLUMN = "snappysys_internal____event_count"
   val QUERY_ID_COLUMN = "stream_query_id"
   val BATCH_ID_COLUMN = "batch_id"
 

@@ -445,7 +445,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
       // check using session
       val ds = ownerSession.sql("select * from sys.syspolicies")
       val rows = ds.collect()
-      assert(expectedColumns === ds.schema.map(_.name))
+      assert(expectedColumns === ds.schema.map(_.name.toUpperCase))
       assert(expectedResults.toSeq.sortBy(_._1).map(p => Row(p._1, p._2._1, p._2._2,
         p._2._3, p._2._4, p._2._5, p._2._6)) === rows.toSeq.sortBy(_.getString(0)))
 
@@ -625,7 +625,7 @@ class PolicyJdbcClientTest extends PolicyTestBase {
     while (it.hasNext) {
       val p = it.next()
       //      println("Actual tablename:" + tableName + ", tableName in policy:" + p.tableName)
-      if ((p.schemaName + "." + p.tableName).equals(tableName.toUpperCase)) {
+      if ((p.schemaName + "." + p.tableName).equalsIgnoreCase(tableName)) {
         return true
       }
     }

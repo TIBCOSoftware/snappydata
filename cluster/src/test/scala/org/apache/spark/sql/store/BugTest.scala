@@ -391,7 +391,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     // meta-data lookup should not fail now
     cstmt.execute()
     assert(cstmt.getString(3).contains(
-      "CASE WHEN (YEARI > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+      "CASE WHEN (yeari > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
 
     // query on view
     session.sql(s"select count(*) from $viewname").collect()
@@ -400,7 +400,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     var foundValidColumnName = false
     while(rs.next() && !foundValidColumnName) {
       val colName = rs.getString("COLUMN_NAME")
-      if  (colName == "YEARI") {
+      if  (colName == "yeari") {
         foundValidColumnName = true
       }
     }
@@ -782,14 +782,14 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     session.sql("create table default.t1(id bigint primary key, name varchar(10))")
     var keys = session.sessionCatalog.getKeyColumns("default.t1")
     assert(keys.length === 1)
-    assert(keys.head.toString === new Column("ID", null, "bigint", false, false, false).toString)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
 
     // also test from JDBC
     val stmt = conn.createStatement()
     stmt.execute("create table default.t2(id bigint not null primary key, name varchar(10))")
     keys = session.sessionCatalog.getKeyColumns("default.t2")
     assert(keys.length === 1)
-    assert(keys.head.toString === new Column("ID", null, "bigint", false, false, false).toString)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
 
     session.sql("insert into default.t1 values (1, 'name1'), (2, 'name2')")
     var res = session.sql("select * from default.t1 order by id").collect()
@@ -831,5 +831,54 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     conn.close()
 
     TestUtil.stopNetServer()
+  }
+
+  test("SNAP3007") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"testSNAP3007: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    stmt.execute("CREATE TABLE app.application(application VARCHAR(64), " +
+        "content CLOB, active BOOLEAN, configuration CLOB)")
+    var ps = null
+
+    val sql = "INSERT INTO app.application VALUES (?, ?, ?, ?)"
+    val pstmt1 = conn.prepareStatement(sql)
+    pstmt1.setString(1, "a")
+    pstmt1.setString(2, "b")
+    pstmt1.setBoolean(3, true)
+    pstmt1.setString(4, "c")
+    pstmt1.addBatch()
+    pstmt1.executeBatch
+    pstmt1.close()
+
+    val sql2 = "DELETE FROM app.application"
+    val pstmt2 = conn.prepareStatement(sql2)
+    pstmt2.addBatch()
+    val rows = pstmt2.executeBatch
+    pstmt2.close()
+
+    val sql3 = "select count(*) from app.application"
+    val rs = conn.createStatement().executeQuery(sql3)
+    assert(rs.next())
+    assert(rs.getInt(1) == 0, "Table should not contain any data after delete statement")
+    rs.close()
+
+  }
+
+  test("SNAP-2730 - support NAN values") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    val result = stmt.executeQuery("select acos(30)")
+    assert(result.next(), "result set should have 1 record")
+    assert(result.getDouble(1).isNaN, "result is not NaN value")
+    stmt.close()
   }
 }

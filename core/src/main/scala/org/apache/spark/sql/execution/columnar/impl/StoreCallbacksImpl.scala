@@ -129,7 +129,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
           if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+              !schema(schema.length - 1).name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
@@ -546,7 +546,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
   }
 
-  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+  override def checkSchemaPermission(schemaName: String, currentUser: String): String = {
     val ms = Misc.getMemStoreBootingNoThrow
     val userId = IdUtil.getUserAuthorizationId(currentUser)
     if (ms ne null) {
@@ -558,6 +558,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           conn = GemFireXDUtils.getTSSConnection(false, true, false)
           conn.getTR.setupContextStack()
           contextSet = true
+          val schema = Utils.toUpperCase(schemaName)
           val sd = dd.getSchemaDescriptor(
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd eq null) {

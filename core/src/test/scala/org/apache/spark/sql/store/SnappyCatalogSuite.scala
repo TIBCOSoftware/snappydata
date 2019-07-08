@@ -137,12 +137,12 @@ class SnappyCatalogSuite extends SnappyFunSuite
 
 
   test("current database") {
-    assert(snappySession.catalog.currentDatabase == "APP")
-    assert(sessionCatalog.getCurrentDatabase == "APP")
+    assert(snappySession.catalog.currentDatabase == "app")
+    assert(sessionCatalog.getCurrentDatabase == "app")
     createDatabase("my_db")
     snappySession.catalog.setCurrentDatabase("my_db")
-    assert(snappySession.catalog.currentDatabase == "MY_DB")
-    assert(sessionCatalog.getCurrentDatabase == "MY_DB")
+    assert(snappySession.catalog.currentDatabase == "my_db")
+    assert(sessionCatalog.getCurrentDatabase == "my_db")
     val e = intercept[AnalysisException] {
       snappySession.catalog.setCurrentDatabase("unknown_db")
     }
@@ -151,14 +151,14 @@ class SnappyCatalogSuite extends SnappyFunSuite
 
   test("list databases") {
     assert(snappySession.catalog.listDatabases().collect()
-        .map(_.name.toUpperCase).toSet == Set("APP", "DEFAULT", "SYS"))
+        .map(_.name).toSet == Set("app", "default", "sys"))
     createDatabase("my_db1")
     createDatabase("my_db2")
-    assert(snappySession.catalog.listDatabases().collect().map(_.name.toUpperCase).toSet ==
-        Set("APP", "MY_DB1", "MY_DB2", "DEFAULT", "SYS"))
-    dropDatabase("MY_DB1")
-    assert(snappySession.catalog.listDatabases().collect().map(_.name.toUpperCase).toSet ==
-        Set("APP", "MY_DB2", "DEFAULT", "SYS"))
+    assert(snappySession.catalog.listDatabases().collect().map(_.name).toSet ==
+        Set("app", "my_db1", "my_db2", "default", "sys"))
+    dropDatabase("my_db1")
+    assert(snappySession.catalog.listDatabases().collect().map(_.name).toSet ==
+        Set("app", "my_db2", "default", "sys"))
   }
 
   test("list tables") {
@@ -202,7 +202,7 @@ class SnappyCatalogSuite extends SnappyFunSuite
     val e = intercept[AnalysisException] {
       snappySession.catalog.listTables("unknown_db")
     }
-    assert(e.getMessage.contains("UNKNOWN_DB"))
+    assert(e.getMessage.contains("unknown_db"))
   }
 
   test("list functions") {
@@ -243,10 +243,10 @@ class SnappyCatalogSuite extends SnappyFunSuite
     // Make sure database is set properly.
     assert(
       snappySession.catalog.listFunctions("my_db1").collect()
-          .map(_.database).toSet == Set("MY_DB1", null))
+          .map(_.database).toSet == Set("my_db1", null))
     assert(
       snappySession.catalog.listFunctions("my_db2").collect()
-          .map(_.database).toSet == Set("MY_DB2", null))
+          .map(_.database).toSet == Set("my_db2", null))
 
     // Remove the function and make sure they no longer appear.
     dropFunction("my_func1", Some("my_db1"))
