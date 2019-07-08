@@ -30,15 +30,15 @@ for i in "$@";
     fi
 
     echo -e "\n\n============ Starting Snappy cluster =========="
-    echo "For build $i cluster status is in $mydir/resultDir/clusterStartStatus.log"
+    echo "For build $i cluster start status is in $mydir/resultDir/clusterStartStatus.log"
     echo -e "\n====== Build = $i ============" >> $mydir/resultDir/clusterStartStatus.log
     sh $i/sbin/snappy-start-all.sh >> $mydir/resultDir/clusterStartStatus.log
-    sh $i/sbin/snappy-status-all.sh
+    sh $i/sbin/snappy-status-all.sh >> $mydir/resultDir/clusterStartStatus.log
     sleep 30
     echo "===================================================================="
-    grep 'Exception\|Error' ${mydir}/resultDir/clusterStartStatus.log
+    grep 'Exception\|Error\|WARN' ${mydir}/resultDir/clusterStartStatus.log
     if [ $? -eq 0 ]; then
-       echo "Cluster start up encountered an exception/error"
+       echo "Cluster start up encountered an Exception/Error/WARN"
        echo "Please see the logs"
        exit 1
     fi
@@ -54,15 +54,21 @@ for i in "$@";
     fi
 
     echo "\n ========== Executing snappy job ============"
-    $i/bin/snappy-job.sh submit --lead localhost:8090 --app-name myApp --class $snappyJobClassName --app-jar $jarFile --conf queryFile=$dmlScript > jobRun.txt
-    jobId=$(grep -r 'jobId' jobRun.txt|cut -d'"' -f4)
-    $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > jobStatus.txt
-    while ! grep "FINISHED" jobStatus.txt > /dev/null
+    if [ $cnt -eq 1 ]; then
+      $i/bin/snappy-job.sh submit --lead localhost:8090 --app-name myApp --class $snappyJobClassName --app-jar $jarFile --conf queryFile=$dmlScript > $mydir/resultDir/jobRun.txt
+    else
+      $i/bin/snappy-job.sh submit --lead localhost:8090 --app-name myApp --class $snappyJobClassName --app-jar $jarFile --conf queryFile=$validationScript > $mydir/resultDir/jobRun.txt
+    fi
+    jobId=$(grep -r 'jobId' $mydir/resultDir/jobRun.txt|cut -d'"' -f4)
+    $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > $mydir/resultDir/jobStatus.txt
+    while ! grep 'FINISHED\|ERROR' $mydir/resultDir/jobStatus.txt > /dev/null
     do
       sleep 5
       echo "Waiting for the job to finish"
-      $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > jobStatus.txt
+      $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > $mydir/resultDir/jobStatus.txt
     done
+    cat $mydir/resultDir/jobStatus.txt
+
 
     echo -e "\n\n========= Execute Spark job ==========="
     if [ $cnt -eq 1 ]; then
@@ -70,8 +76,9 @@ for i in "$@";
     else
       sh $i/bin/spark-submit --class $sparkJobClassName --master spark://$HOSTNAME:7077  --executor-memory 1280m --conf snappydata.connection=localhost:1527 $jarFile $validationScript > "resultDir/sparkJobOutPut_$cnt.log"
     fi
-    echo "Validation for $i build " >> $mydir/resultDir/output_$cnt.log
+    #echo "Validation for $i build " >> $mydir/resultDir/output_$cnt.log
     sh $i/bin/snappy run -file=$validationScript -client-bind-address=localhost -client-port=1527 >> $mydir/resultDir/output_$cnt.log
+
 
     echo -e "\n\n=========== Stopping Snappy cluster =========="
     sh $i/sbin/snappy-stop-all.sh >> $mydir/resultDir/clusterStopStatus.log
@@ -97,9 +104,16 @@ for i in "$@";
   }
 
   echo -e "\n============Starting Validation ============================"
-  for i in "${tableArr[@]}"; do
-    echo -e "\n=============Validation results for $i is in $mydir/resultDir/${i}_OutPut.log ================"
-    validate $i
+ # for i in "${tableArr[@]}"; do
+  #  echo -e "\n=============Validation results for $i is in $mydir/resultDir/${i}_OutPut.log ================"
+   # validate $i
+  #done
+  
+  cd resultDir
+  for ((i=1;i<=$totalNoBuilds;i++)); do
+    echo "Comparing output_$i.log with output_1.log"
+    sort output_$i.log > output_sorted_$i.log
+    diff output_sorted_1.log output_sorted_$i.log
   done
 
 
