@@ -119,6 +119,11 @@ dependencies {
 
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
+  testCompile(project(path: ':snappy-examples_' + scalaBinaryVersion, configuration: 'testOutput')) {
+    exclude(group: 'io.snappydata', module: 'snappy-cluster_' + scalaBinaryVersion)
+    exclude(group: 'io.snappydata', module: 'snappy-aqp_' + scalaBinaryVersion)
+    exclude(group: 'io.snappydata', module: 'gemfire-core')
+  }
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {
