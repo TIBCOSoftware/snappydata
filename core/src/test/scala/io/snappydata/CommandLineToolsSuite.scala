@@ -206,6 +206,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
           "/sbin/snappy-locator.sh stop -dir=./SNAP-2631-work-locator").!!
     } finally {
       (snappyProductDir + "/sbin/snappy-locator.sh stop ").!!
+      ("rm -r ./SNAP-2631-work-locator").!!
     }
   }
   test("-dir option with old server launch script") {
@@ -235,6 +236,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
           "/sbin/snappy-server.sh stop -dir=./SNAP-2631-work-server").!!
     } finally {
       (snappyProductDir + "/sbin/snappy-server.sh stop").!!
+      ("rm -r ./SNAP-2631-work-server").!!
     }
   }
   test("-dir option with old lead launch script") {
@@ -268,6 +270,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
           "/sbin/snappy-lead.sh stop -dir=./SNAP-2631-work-lead").!!
     } finally {
       (snappyProductDir + "/sbin/snappy-lead.sh stop").!!
+      ("rm -r ./SNAP-2631-work-lead").!!
     }
   }
 }
