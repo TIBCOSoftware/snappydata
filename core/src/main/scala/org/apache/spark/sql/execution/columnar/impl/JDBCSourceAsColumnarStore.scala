@@ -123,6 +123,11 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
+            val rgn = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
+            val ds = rgn.getDiskStore
+            if (ds != null) {
+              ds.acquireDiskStoreReadLock()
+            }
             val context = TXManagerImpl.currentTXContext()
             if (context == null ||
                 (context.getSnapshotTXState == null && context.getTXState == null)) {
@@ -172,7 +177,15 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
-            Misc.getGemFireCache.getCacheTransactionManager.commit()
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.commit()
+            } finally {
+              val rgn = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
+              val ds = rgn.getDiskStore
+              if (ds != null) {
+                ds.releaseDiskStoreReadLock()
+              }
+            }
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
             val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
@@ -207,7 +220,16 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
-            Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            } finally {
+              val rgn = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
+              val ds = rgn.getDiskStore
+              if (ds != null) {
+                ds.releaseDiskStoreReadLock()
+              }
+            }
+
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
