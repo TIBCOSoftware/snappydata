@@ -202,6 +202,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/structucture_streamingquickstart/">Structured Streaming</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2407,7 +2414,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <td>The maximum number of rows that can be in the delta buffer of a column table. The size of the delta buffer is already limited by <code>ColumnBatchSize</code> property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of <code>ColumnBatchSize</code> and this property is hit first. It can also be set for each table in the <code>create table</code> DDL, else this setting is used for the <code>create table</code></td>
 </tr>
 <tr>
-<td>snappydata.hiveServer.enabled</td>
+<td>-snappydata.hiveServer.enabled</td>
 <td>Enables the Hive Thrift server for SnappyData.This is enabled by default when you start the cluster. Thus it adds an additional 10 seconds to the cluster startup time. To avoid this additional time, you can set the property to false.</td>
 </tr>
 <tr>
@@ -2505,7 +2512,6 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
             </div>
           </div>
           <footer>
-  
 
   <hr/>
 

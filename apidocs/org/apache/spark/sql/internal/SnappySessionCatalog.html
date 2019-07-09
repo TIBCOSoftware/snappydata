@@ -289,23 +289,6 @@ temp view is matched and altered, false otherwise.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#caseSensitiveAnalysis" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="caseSensitiveAnalysis:Boolean"></a>
-      <a id="caseSensitiveAnalysis:Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier">final </span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">caseSensitiveAnalysis</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@caseSensitiveAnalysis:Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#clearTempTables" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="clearTempTables():Unit"></a>
       <a id="clearTempTables():Unit"></a>
@@ -620,7 +603,7 @@ This assumes no database is specified in <code>funcDefinition</code>.
       <p class="shortcomment cmt">Test only method
 </p>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#dropAllSchemaObjects" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="dropAllSchemaObjects(schemaName:String,ignoreIfNotExists:Boolean,cascade:Boolean):Unit"></a>
+      <a id="dropAllSchemaObjects(schema:String,ignoreIfNotExists:Boolean,cascade:Boolean):Unit"></a>
       <a id="dropAllSchemaObjects(String,Boolean,Boolean):Unit"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -628,10 +611,10 @@ This assumes no database is specified in <code>funcDefinition</code>.
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">dropAllSchemaObjects</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
+        <span class="name">dropAllSchemaObjects</span><span class="params">(<span name="schema">schema: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="ignoreIfNotExists">ignoreIfNotExists: <span class="extype" name="scala.Boolean">Boolean</span></span>, <span name="cascade">cascade: <span class="extype" name="scala.Boolean">Boolean</span></span>)</span><span class="result">: <span class="extype" name="scala.Unit">Unit</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@dropAllSchemaObjects(schemaName:String,ignoreIfNotExists:Boolean,cascade:Boolean):Unit" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@dropAllSchemaObjects(schema:String,ignoreIfNotExists:Boolean,cascade:Boolean):Unit" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -908,14 +891,14 @@ the same name, then, if that does not exist, drop the table from the current dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Format schema name.</p><div class="fullcomment"><div class="comment cmt"><p>Format schema name. Hive meta-store is case-insensitive so always convert to upper case.
+      <p class="shortcomment cmt">Format schema name.</p><div class="fullcomment"><div class="comment cmt"><p>Format schema name. Hive meta-store is case-insensitive so always convert to lower case.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#formatName" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="formatName(name:String):String"></a>
       <a id="formatName(String):String"></a>
       <h4 class="signature">
       <span class="modifier_kind">
-        <span class="modifier"></span>
+        <span class="modifier">final </span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
@@ -943,7 +926,7 @@ the same name, then, if that does not exist, drop the table from the current dat
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
-      <p class="shortcomment cmt">Format table name.</p><div class="fullcomment"><div class="comment cmt"><p>Format table name. Hive meta-store is case-insensitive so always convert to upper case.
+      <p class="shortcomment cmt">Format table name.</p><div class="fullcomment"><div class="comment cmt"><p>Format table name. Hive meta-store is case-insensitive so always convert to lower case.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.catalyst.catalog.SessionCatalog#functionExists" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="functionExists(name:org.apache.spark.sql.catalyst.FunctionIdentifier):Boolean"></a>
@@ -1289,6 +1272,23 @@ If no database is specified, this will first attempt to get the metadata of a te
 with the same name, then, if that does not exist, return the metadata of table/view in the
 current database.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#hadoopConf" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="hadoopConf:org.apache.hadoop.conf.Configuration"></a>
+      <a id="hadoopConf:Configuration"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">hadoopConf</span><span class="result">: <span class="extype" name="org.apache.hadoop.conf.Configuration">Configuration</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@hadoopConf:org.apache.hadoop.conf.Configuration" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1945,40 +1945,6 @@ track the name of the view.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#normalizeField" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="normalizeField(f:org.apache.spark.sql.types.StructField):org.apache.spark.sql.types.StructField"></a>
-      <a id="normalizeField(StructField):StructField"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">normalizeField</span><span class="params">(<span name="f">f: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>)</span><span class="result">: <a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@normalizeField(f:org.apache.spark.sql.types.StructField):org.apache.spark.sql.types.StructField" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      <div class="fullcomment"><dl class="attributes block"> <dt>Attributes</dt><dd>protected[<a href="../package.html" class="extype" name="org.apache.spark.sql">org.apache.spark.sql</a>] </dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#normalizeSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="normalizeSchema(schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructType"></a>
-      <a id="normalizeSchema(StructType):StructType"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">normalizeSchema</span><span class="params">(<span name="schema">schema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@normalizeSchema(schema:org.apache.spark.sql.types.StructType):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>
@@ -2090,6 +2056,23 @@ the same name, then, if that does not exist, rename the table in the current dat
 and set the current database to &quot;default&quot;.</p><div class="fullcomment"><div class="comment cmt"><p>Drop all existing databases (except &quot;default&quot;), tables, partitions and functions,
 and set the current database to &quot;default&quot;.</p><p>This is mainly used for tests.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> → <a href="../catalyst/catalog/SessionCatalog.html" class="extype" name="org.apache.spark.sql.catalyst.catalog.SessionCatalog">SessionCatalog</a></dd></dl></div>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#resolveExistingTable" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="resolveExistingTable(name:String):org.apache.spark.sql.catalyst.TableIdentifier"></a>
+      <a id="resolveExistingTable(String):TableIdentifier"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier">final </span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">resolveExistingTable</span><span class="params">(<span name="name">name: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <a href="../catalyst/TableIdentifier.html" class="extype" name="org.apache.spark.sql.catalyst.TableIdentifier">TableIdentifier</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionCatalog@resolveExistingTable(name:String):org.apache.spark.sql.catalyst.TableIdentifier" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">Convert a table name to TableIdentifier for an existing table.</p>
     </li><li name="org.apache.spark.sql.internal.SnappySessionCatalog#resolveRelation" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="resolveRelation(tableIdent:org.apache.spark.sql.catalyst.TableIdentifier):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
       <a id="resolveRelation(TableIdentifier):LogicalPlan"></a>

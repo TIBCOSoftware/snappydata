@@ -202,6 +202,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/structucture_streamingquickstart/">Structured Streaming</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2230,11 +2237,11 @@ Where <code>&lt;host&gt;</code> is the hostname of the node on which the locator
 </thead>
 <tbody>
 <tr>
-<td>pool.user</td>
+<td>user</td>
 <td>The username to be passed to the JDBC client pool driver to establish a connection.</td>
 </tr>
 <tr>
-<td>pool.password</td>
+<td>password</td>
 <td>The password to be passed to the JDBC  client pool driver to establish a connection.</td>
 </tr>
 <tr>
@@ -2289,8 +2296,8 @@ Where <code>&lt;host&gt;</code> is the hostname of the node on which the locator
 </table>
 <p><strong>Example Code Snippet:</strong></p>
 <pre><code class="pre">val properties = new Properties()
-properties.setProperty(&quot;pool.user&quot;, &quot;user&quot;)
-properties.setProperty(&quot;pool.password&quot;, &quot;pass&quot;)
+properties.setProperty(&quot;user&quot;, &quot;user&quot;)
+properties.setProperty(&quot;password&quot;, &quot;pass&quot;)
 properties.setProperty(&quot;driver&quot;, ““io.snappydata.jdbc.ClientPoolDriver””)
 
 val builder = SparkSession
@@ -2316,7 +2323,6 @@ val df = spark.read.jdbc(“jdbc:snappydata:pool://localhost:1527”, &quot;Tabl
             </div>
           </div>
           <footer>
-  
 
   <hr/>
 

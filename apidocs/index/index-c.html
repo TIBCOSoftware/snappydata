@@ -71,6 +71,9 @@
       <div class="name">CLUSTER</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> <a href="../org/apache/spark/sql/SnappyParserConsts$.html" class="extype" name="org.apache.spark.sql.SnappyParserConsts">SnappyParserConsts</a> </div>
     </div><div class="entry">
+      <div class="name">CLUSTERED</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> <a href="../org/apache/spark/sql/SnappyParserConsts$.html" class="extype" name="org.apache.spark.sql.SnappyParserConsts">SnappyParserConsts</a> </div>
+    </div><div class="entry">
       <div class="name">CMSCompressException</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/cms/CountMinSketch$.html" class="extype" name="org.apache.spark.sql.execution.cms.CountMinSketch">CountMinSketch</a> </div>
     </div><div class="entry">
@@ -136,6 +139,9 @@
     </div><div class="entry">
       <div class="name">COMPRESS_CACHED</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/internal/SQLConf$.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> </div>
+    </div><div class="entry">
+      <div class="name">COMPUTE</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> <a href="../org/apache/spark/sql/SnappyParserConsts$.html" class="extype" name="org.apache.spark.sql.SnappyParserConsts">SnappyParserConsts</a> </div>
     </div><div class="entry">
       <div class="name">CONF</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/streaming/FileStreamRelation.html" class="extype" name="org.apache.spark.sql.streaming.FileStreamRelation">FileStreamRelation</a> </div>
@@ -1088,6 +1094,9 @@
       <div class="name">callUDF</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/functions$.html" class="extype" name="org.apache.spark.sql.functions">functions</a> </div>
     </div><div class="entry">
+      <div class="name">canAlter</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> </div>
+    </div><div class="entry">
       <div class="name">canBeNull</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/dsl/package$$ExpressionConversions$DslAttribute.html" class="extype" name="org.apache.spark.sql.catalyst.dsl.ExpressionConversions.DslAttribute">DslAttribute</a> </div>
     </div><div class="entry">
@@ -1173,7 +1182,7 @@
       <div class="occurrences"><a href="../org/apache/spark/ml/feature/StopWordsRemover.html" class="extype" name="org.apache.spark.ml.feature.StopWordsRemover">StopWordsRemover</a> <a href="../org/apache/spark/sql/SnappyBaseParser.html" class="extype" name="org.apache.spark.sql.SnappyBaseParser">SnappyBaseParser</a> </div>
     </div><div class="entry">
       <div class="name">caseSensitiveAnalysis</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SimpleCatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.SimpleCatalystConf">SimpleCatalystConf</a> <a href="../org/apache/spark/sql/internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> <a href="../org/apache/spark/sql/internal/SnappySessionCatalog.html" class="extype" name="org.apache.spark.sql.internal.SnappySessionCatalog">SnappySessionCatalog</a> </div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/SimpleCatalystConf.html" class="extype" name="org.apache.spark.sql.catalyst.SimpleCatalystConf">SimpleCatalystConf</a> <a href="../org/apache/spark/sql/internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> </div>
     </div><div class="entry">
       <div class="name">caseSensitiveInferenceMode</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/internal/SQLConf.html" class="extype" name="org.apache.spark.sql.internal.SQLConf">SQLConf</a> </div>
@@ -1198,6 +1207,9 @@
     </div><div class="entry">
       <div class="name">catalogSchemaVersion</div>
       <div class="occurrences"><a href="../io/snappydata/sql/catalog/RelationInfo.html" class="extype" name="io.snappydata.sql.catalog.RelationInfo">RelationInfo</a> </div>
+    </div><div class="entry">
+      <div class="name">catalogStaleFailure</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/CachedDataFrame$.html" class="extype" name="org.apache.spark.sql.CachedDataFrame">CachedDataFrame</a> </div>
     </div><div class="entry">
       <div class="name">catalogString</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/types/ArrayType.html" class="extype" name="org.apache.spark.sql.types.ArrayType">ArrayType</a> <a href="../org/apache/spark/sql/types/DataType.html" class="extype" name="org.apache.spark.sql.types.DataType">DataType</a> <a href="../org/apache/spark/sql/types/MapType.html" class="extype" name="org.apache.spark.sql.types.MapType">MapType</a> <a href="../org/apache/spark/sql/types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a> </div>
@@ -1466,9 +1478,6 @@
       <div class="name">clearJobGroup</div>
       <div class="occurrences"><a href="../org/apache/spark/SparkContext.html" class="extype" name="org.apache.spark.SparkContext">SparkContext</a> <a href="../org/apache/spark/api/java/JavaSparkContext.html" class="extype" name="org.apache.spark.api.java.JavaSparkContext">JavaSparkContext</a> </div>
     </div><div class="entry">
-      <div class="name">clearLogicalPlanForQueryRouting</div>
-      <div class="occurrences"><a href="../org/apache/spark/sql/execution/SnappyContextAQPFunctions.html" class="extype" name="org.apache.spark.sql.execution.SnappyContextAQPFunctions">SnappyContextAQPFunctions</a> </div>
-    </div><div class="entry">
       <div class="name">clearMemoryEventListener</div>
       <div class="occurrences"><a href="../org/apache/spark/memory/SnappyUnifiedMemoryManager$.html" class="extype" name="org.apache.spark.memory.SnappyUnifiedMemoryManager">SnappyUnifiedMemoryManager</a> </div>
     </div><div class="entry">
@@ -1660,6 +1669,9 @@
     </div><div class="entry">
       <div class="name">colIter</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/linalg/DenseMatrix.html" class="extype" name="org.apache.spark.ml.linalg.DenseMatrix">DenseMatrix</a> <a href="../org/apache/spark/ml/linalg/Matrix.html" class="extype" name="org.apache.spark.ml.linalg.Matrix">Matrix</a> <a href="../org/apache/spark/ml/linalg/SparseMatrix.html" class="extype" name="org.apache.spark.ml.linalg.SparseMatrix">SparseMatrix</a> <a href="../org/apache/spark/mllib/linalg/DenseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.DenseMatrix">DenseMatrix</a> <a href="../org/apache/spark/mllib/linalg/Matrix.html" class="extype" name="org.apache.spark.mllib.linalg.Matrix">Matrix</a> <a href="../org/apache/spark/mllib/linalg/SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a> </div>
+    </div><div class="entry">
+      <div class="name">colNames</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/PutIntoValuesColumnTable.html" class="extype" name="org.apache.spark.sql.execution.PutIntoValuesColumnTable">PutIntoValuesColumnTable</a> </div>
     </div><div class="entry">
       <div class="name">colPtrs</div>
       <div class="occurrences"><a href="../org/apache/spark/ml/linalg/SparseMatrix.html" class="extype" name="org.apache.spark.ml.linalg.SparseMatrix">SparseMatrix</a> <a href="../org/apache/spark/mllib/linalg/SparseMatrix.html" class="extype" name="org.apache.spark.mllib.linalg.SparseMatrix">SparseMatrix</a> </div>
@@ -2234,6 +2246,9 @@
       <div class="name">convertTweetToRow</div>
       <div class="occurrences"><a href="../io/snappydata/examples/StreamingUtils$.html" class="extype" name="io.snappydata.examples.StreamingUtils">StreamingUtils</a> </div>
     </div><div class="entry">
+      <div class="name">convertTypes</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/execution/PutIntoValuesColumnTable.html" class="extype" name="org.apache.spark.sql.execution.PutIntoValuesColumnTable">PutIntoValuesColumnTable</a> </div>
+    </div><div class="entry">
       <div class="name">convertTz</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/util/DateTimeUtils$.html" class="extype" name="org.apache.spark.sql.catalyst.util.DateTimeUtils">DateTimeUtils</a> </div>
     </div><div class="entry">
@@ -2635,6 +2650,9 @@
     </div><div class="entry">
       <div class="name">createTableHeader</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/catalyst/parser/SqlBaseParser.html" class="extype" name="org.apache.spark.sql.catalyst.parser.SqlBaseParser">SqlBaseParser</a> </div>
+    </div><div class="entry">
+      <div class="name">createTableLike</div>
+      <div class="occurrences"><a href="../org/apache/spark/sql/SnappyDDLParser.html" class="extype" name="org.apache.spark.sql.SnappyDDLParser">SnappyDDLParser</a> </div>
     </div><div class="entry">
       <div class="name">createTableOptions</div>
       <div class="occurrences"><a href="../org/apache/spark/sql/execution/datasources/jdbc/JDBCOptions.html" class="extype" name="org.apache.spark.sql.execution.datasources.jdbc.JDBCOptions">JDBCOptions</a> </div>

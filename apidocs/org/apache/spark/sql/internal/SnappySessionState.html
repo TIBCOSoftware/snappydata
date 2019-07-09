@@ -122,7 +122,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <a href="SnappySessionState$AnalyzeMutableOperations.html"><span class="name">AnalyzeMutableOperations</span></a><span class="params">(<span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <a href="SnappySessionState$AnalyzeMutableOperations.html"><span class="name">AnalyzeMutableOperations</span></a><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@AnalyzeMutableOperationsextendsRule[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]withPredicateHelperwithProductwithSerializable" title="Permalink" target="_top">
@@ -451,40 +451,6 @@ used in query optimizations.
     </span>
       <p class="shortcomment cmt">Logical query plan analyzer for resolving unresolved attributes and relations.</p><div class="fullcomment"><div class="comment cmt"><p>Logical query plan analyzer for resolving unresolved attributes and relations.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.internal.SnappySessionState">SnappySessionState</a> → SessionState</dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#analyzerPrepare" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="analyzerPrepare:org.apache.spark.sql.catalyst.analysis.Analyzer"></a>
-      <a id="analyzerPrepare:Analyzer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">analyzerPrepare</span><span class="result">: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@analyzerPrepare:org.apache.spark.sql.catalyst.analysis.Analyzer" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState#analyzerWithoutPromote" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="analyzerWithoutPromote:org.apache.spark.sql.catalyst.analysis.Analyzer"></a>
-      <a id="analyzerWithoutPromote:Analyzer"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">lazy val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">analyzerWithoutPromote</span><span class="result">: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState@analyzerWithoutPromote:org.apache.spark.sql.catalyst.analysis.Analyzer" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.Any#asInstanceOf" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="asInstanceOf[T0]:T0"></a>
       <a id="asInstanceOf[T0]:T0"></a>

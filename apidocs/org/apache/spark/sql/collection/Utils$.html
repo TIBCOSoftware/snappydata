@@ -180,35 +180,35 @@
     </span>
       
     </li><li name="org.apache.spark.sql.collection.Utils#SKIP_ANALYSIS_PREFIX" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="SKIP_ANALYSIS_PREFIX:String(&quot;SAMPLE_&quot;)"></a>
-      <a id="SKIP_ANALYSIS_PREFIX:String(&quot;SAMPLE_&quot;)"></a>
+      <a id="SKIP_ANALYSIS_PREFIX:String(&quot;sample_&quot;)"></a>
+      <a id="SKIP_ANALYSIS_PREFIX:String(&quot;sample_&quot;)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">SKIP_ANALYSIS_PREFIX</span><span class="result">: String(&quot;SAMPLE_&quot;)</span>
+        <span class="name">SKIP_ANALYSIS_PREFIX</span><span class="result">: String(&quot;sample_&quot;)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@SKIP_ANALYSIS_PREFIX:String(&quot;SAMPLE_&quot;)" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@SKIP_ANALYSIS_PREFIX:String(&quot;sample_&quot;)" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.collection.Utils#WEIGHTAGE_COLUMN_NAME" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="WEIGHTAGE_COLUMN_NAME:String(&quot;SNAPPY_SAMPLER_WEIGHTAGE&quot;)"></a>
-      <a id="WEIGHTAGE_COLUMN_NAME:String(&quot;SNAPPY_SAMPLER_WEIGHTAGE&quot;)"></a>
+      <a id="WEIGHTAGE_COLUMN_NAME:String(&quot;snappy_sampler_weightage&quot;)"></a>
+      <a id="WEIGHTAGE_COLUMN_NAME:String(&quot;snappy_sampler_weightage&quot;)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier">final </span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">WEIGHTAGE_COLUMN_NAME</span><span class="result">: String(&quot;SNAPPY_SAMPLER_WEIGHTAGE&quot;)</span>
+        <span class="name">WEIGHTAGE_COLUMN_NAME</span><span class="result">: String(&quot;snappy_sampler_weightage&quot;)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@WEIGHTAGE_COLUMN_NAME:String(&quot;SNAPPY_SAMPLER_WEIGHTAGE&quot;)" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@WEIGHTAGE_COLUMN_NAME:String(&quot;snappy_sampler_weightage&quot;)" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -916,23 +916,6 @@ field is stored (and rendered) as CHAR by SnappyStore.
       <p class="shortcomment cmt">Get the result schema given an optional explicit schema and base table.</p><div class="fullcomment"><div class="comment cmt"><p>Get the result schema given an optional explicit schema and base table.
 In case both are specified, then check compatibility between the two.
 </p></div></div>
-    </li><li name="org.apache.spark.sql.collection.Utils#hasLowerCase" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="hasLowerCase(k:String):Boolean"></a>
-      <a id="hasLowerCase(String):Boolean"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">hasLowerCase</span><span class="params">(<span name="k">k: <span class="extype" name="scala.Predef.String">String</span></span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@hasLowerCase(k:String):Boolean" title="Permalink" target="_top">
-        <img src="../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -1188,6 +1171,23 @@ In case both are specified, then check compatibility between the two.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.collection.Utils#parseCSVList" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="parseCSVList(s:String,parser:org.apache.spark.sql.SnappyParser):Seq[String]"></a>
+      <a id="parseCSVList(String,SnappyParser):Seq[String]"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">parseCSVList</span><span class="params">(<span name="s">s: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="parser">parser: <a href="../SnappyParser.html" class="extype" name="org.apache.spark.sql.SnappyParser">SnappyParser</a></span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.collection.Utils$@parseCSVList(s:String,parser:org.apache.spark.sql.SnappyParser):Seq[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.collection.Utils#parseColumn" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="parseColumn(cv:Any,cols:Array[String],module:String,option:String):Int"></a>
       <a id="parseColumn(Any,Array[String],String,String):Int"></a>

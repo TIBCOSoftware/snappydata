@@ -213,6 +213,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/structucture_streamingquickstart/">Structured Streaming</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2356,6 +2363,26 @@ cluster and the region where the EC2 instances should be launched.</p>
 The locator is associated with security group named <strong>my-cluster-locator</strong> and the servers are associated with <strong>my-cluster-store</strong> security group.</p>
 <p>The cluster is launched in the <strong>N. California (us-west-1)</strong> region on AWS and has an Apache Zeppelin server running on the instance where the lead is running.</br></p>
 <p>The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.</p>
+<h4 id="assuming-iam-role-in-the-aws-ec2-scripts">Assuming IAM role in the AWS EC2 Scripts</h4>
+<p>An IAM user in AWS can gain additional (or different) permissions, or get permissions to perform actions in a different AWS account through EC2 scripts. You can configure the AWS EC2 scripts to use an IAM role by passing the following properties:</p>
+<ul>
+<li>
+<p><strong>assume-role-arn</strong>:
+    The Amazon Resource Name (ARN) of the IAM role to be assumed. This IAM role's credentials are used to launch the cluster. If you are using the switch role functionality, this property is mandatory.</p>
+</li>
+<li>
+<p><strong>assume-role-timeout</strong>: 
+    Timeout in seconds for the temporary credentials of the assumed IAM role, min is 900 seconds and max is 3600 seconds.</p>
+</li>
+<li>
+<p><strong>assume-role-session-name</strong>:
+    Name of this session in which this IAM role is assumed by the user.</p>
+</li>
+</ul>
+<p><strong>Example</strong></p>
+<pre><code>-./snappy-ec2 -k &lt;your-key-name&gt; -i &lt;your-keyfile-path&gt; stop snap_ec2_cluster --with-zeppelin --authorized-address=&lt;Authorized IP Address&gt; --assume-role-arn=&lt;role-arn&gt; --assume-role-timeout=&lt;timeout&gt; --assume-role-session-name=&lt;name-for-session&gt;
+</code></pre>
+
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>By default, the cluster is launched in the <strong>N. Virginia (us-east-1)</strong> region on AWS. To launch the cluster in a specific region use option <code>--region</code>.</p>
@@ -2586,6 +2613,14 @@ Options:
                         just stop
   --instance-profile-name=INSTANCE_PROFILE_NAME
                         IAM profile name to launch instances under
+  --assume-role-arn=The Amazon Resource Name (ARN) of the IAM role to be assumed. 
+                        This IAM role's credentials are used to launch the cluster. 
+                        If you are using the switch role functionality, this property is mandatory.
+ --assume-role-timeout=Timeout in seconds for the temporary credentials of the 
+                        assumed IAM role, min is 900 seconds and max is 
+                        3600 seconds.
+--assume-role-session-name=Name of this session in which this IAM role is 
+                            assumed by the user.                        
 </code></pre>
 
 <p><a id="ec2knownlimit"></a></p>
@@ -2701,7 +2736,6 @@ Refer to the following documentation, for more information on <a href="http://do
             </div>
           </div>
           <footer>
-  
 
   <hr/>
 

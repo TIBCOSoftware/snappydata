@@ -259,23 +259,6 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef → Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.common.CatchErrorPlan#getLogicalPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getLogicalPlan(session:org.apache.spark.sql.SnappySession):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
-      <a id="getLogicalPlan(SnappySession):Option[LogicalPlan]"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">def</span>
-      </span>
-      <span class="symbol">
-        <span class="name">getLogicalPlan</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.CatchErrorPlan$@getLogicalPlan(session:org.apache.spark.sql.SnappySession):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="scala.AnyRef#hashCode" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="hashCode():Int"></a>
       <a id="hashCode():Int"></a>
@@ -328,35 +311,35 @@
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.common.CatchErrorPlan#newPartialRoutingPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="newPartialRoutingPlan(session:org.apache.spark.sql.SnappySession,params:Array[Set[Any]]):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
-      <a id="newPartialRoutingPlan(SnappySession,Array[Set[Any]]):Option[LogicalPlan]"></a>
+      <a id="newPartialRoutingPlan(session:org.apache.spark.sql.SnappySession,params:Array[Set[Any]],logicalPlanForQueryRouting:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]"></a>
+      <a id="newPartialRoutingPlan(SnappySession,Array[Set[Any]],LogicalPlan):Option[LogicalPlan]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newPartialRoutingPlan</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="params">params: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="scala.Any">Any</span>]]</span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
+        <span class="name">newPartialRoutingPlan</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="params">params: <span class="extype" name="scala.Array">Array</span>[<span class="extype" name="scala.Predef.Set">Set</span>[<span class="extype" name="scala.Any">Any</span>]]</span>, <span name="logicalPlanForQueryRouting">logicalPlanForQueryRouting: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <span class="extype" name="scala.Option">Option</span>[<a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.CatchErrorPlan$@newPartialRoutingPlan(session:org.apache.spark.sql.SnappySession,params:Array[Set[Any]]):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.CatchErrorPlan$@newPartialRoutingPlan(session:org.apache.spark.sql.SnappySession,params:Array[Set[Any]],logicalPlanForQueryRouting:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):Option[org.apache.spark.sql.catalyst.plans.logical.LogicalPlan]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.execution.common.CatchErrorPlan#newPlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="newPlan(session:org.apache.spark.sql.SnappySession):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
-      <a id="newPlan(SnappySession):LogicalPlan"></a>
+      <a id="newPlan(session:org.apache.spark.sql.SnappySession,logicalPlanForQueryRouting:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan"></a>
+      <a id="newPlan(SnappySession,LogicalPlan):LogicalPlan"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">newPlan</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result">: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
+        <span class="name">newPlan</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="logicalPlanForQueryRouting">logicalPlanForQueryRouting: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>)</span><span class="result">: <a href="../../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.CatchErrorPlan$@newPlan(session:org.apache.spark.sql.SnappySession):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.common.CatchErrorPlan$@newPlan(session:org.apache.spark.sql.SnappySession,logicalPlanForQueryRouting:org.apache.spark.sql.catalyst.plans.logical.LogicalPlan):org.apache.spark.sql.catalyst.plans.logical.LogicalPlan" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">CollectAggregateExec</span><span class="params">(<span name="basePlan">basePlan: <a href="SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">CollectAggregateExec</span><span class="params">(<span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="params">(<span name="basePlan">basePlan: <a href="SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></span>)</span><span class="result"> extends <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a> with <a href="../UnaryExecNode.html" class="extype" name="org.apache.spark.sql.execution.UnaryExecNode">UnaryExecNode</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -91,7 +91,7 @@ an exchange for simple aggregates.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(basePlan:org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec,child:org.apache.spark.sql.execution.SparkPlan,output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.aggregate.CollectAggregateExec"></a>
+      <a id="&lt;init&gt;(child:org.apache.spark.sql.execution.SparkPlan)(basePlan:org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec):org.apache.spark.sql.execution.aggregate.CollectAggregateExec"></a>
       <a id="&lt;init&gt;:CollectAggregateExec"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@ an exchange for simple aggregates.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">CollectAggregateExec</span><span class="params">(<span name="basePlan">basePlan: <a href="SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></span>, <span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>, <span name="output">output: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../../catalyst/expressions/Attribute.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.Attribute">Attribute</a>]</span>)</span>
+        <span class="name">CollectAggregateExec</span><span class="params">(<span name="child">child: <a href="../SparkPlan.html" class="extype" name="org.apache.spark.sql.execution.SparkPlan">SparkPlan</a></span>)</span><span class="params">(<span name="basePlan">basePlan: <a href="SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.CollectAggregateExec@&lt;init&gt;(basePlan:org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec,child:org.apache.spark.sql.execution.SparkPlan,output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]):org.apache.spark.sql.execution.aggregate.CollectAggregateExec" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.CollectAggregateExec@&lt;init&gt;(child:org.apache.spark.sql.execution.SparkPlan)(basePlan:org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec):org.apache.spark.sql.execution.aggregate.CollectAggregateExec" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -261,23 +261,6 @@ pasted in the REPL to build an equivalent Tree.
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>Any</dd></dl></div>
-    </li><li name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec#basePlan" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="basePlan:org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec"></a>
-      <a id="basePlan:SnappyHashAggregateExec"></a>
-      <h4 class="signature">
-      <span class="modifier_kind">
-        <span class="modifier"></span>
-        <span class="kind">val</span>
-      </span>
-      <span class="symbol">
-        <span class="name">basePlan</span><span class="result">: <a href="SnappyHashAggregateExec.html" class="extype" name="org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec">SnappyHashAggregateExec</a></span>
-      </span>
-      </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.aggregate.CollectAggregateExec@basePlan:org.apache.spark.sql.execution.aggregate.SnappyHashAggregateExec" title="Permalink" target="_top">
-        <img src="../../../../../../lib/permalink.png" alt="Permalink" />
-      </a>
-    </span>
-      
     </li><li name="org.apache.spark.sql.catalyst.plans.QueryPlan#canonicalized" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="canonicalized:PlanType"></a>
       <a id="canonicalized:SparkPlan"></a>
@@ -1550,7 +1533,7 @@ before children).
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.catalyst.trees.TreeNode#otherCopyArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
+    </li><li name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec#otherCopyArgs" visbl="prt" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="otherCopyArgs:Seq[AnyRef]"></a>
       <a id="otherCopyArgs:Seq[AnyRef]"></a>
       <h4 class="signature">
@@ -1567,7 +1550,7 @@ before children).
       </a>
     </span>
       <p class="shortcomment cmt">Args to the constructor that should be copied, but not transformed.</p><div class="fullcomment"><div class="comment cmt"><p>Args to the constructor that should be copied, but not transformed.
-These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
+These are appended to the transformed args automatically by makeCopy</p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec">CollectAggregateExec</a> → <a href="../../catalyst/trees/TreeNode.html" class="extype" name="org.apache.spark.sql.catalyst.trees.TreeNode">TreeNode</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.execution.aggregate.CollectAggregateExec#output" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="output:Seq[org.apache.spark.sql.catalyst.expressions.Attribute]"></a>
       <a id="output:Seq[Attribute]"></a>

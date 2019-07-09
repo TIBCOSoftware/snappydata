@@ -179,6 +179,23 @@
       </a>
     </span>
       
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#EMPTY_SCHEMA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="EMPTY_SCHEMA:org.apache.spark.sql.types.StructType"></a>
+      <a id="EMPTY_SCHEMA:StructType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">EMPTY_SCHEMA</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@EMPTY_SCHEMA:org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#PREFIXES" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="PREFIXES:Array[String]"></a>
       <a id="PREFIXES:Array[String]"></a>
@@ -192,6 +209,23 @@
       </span>
       </h4><span class="permalink">
       <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@PREFIXES:Array[String]" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#SYSIBM_SCHEMA" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="SYSIBM_SCHEMA:String"></a>
+      <a id="SYSIBM_SCHEMA:String"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">val</span>
+      </span>
+      <span class="symbol">
+        <span class="name">SYSIBM_SCHEMA</span><span class="result">: <span class="extype" name="scala.Predef.String">String</span></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@SYSIBM_SCHEMA:String" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -484,35 +518,35 @@
               
         </dd></dl></div>
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getTableSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getTableSchema(schemaName:String,tableName:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession]):Seq[org.apache.spark.sql.types.StructField]"></a>
-      <a id="getTableSchema(String,String,Connection,Option[SparkSession]):Seq[StructField]"></a>
+      <a id="getTableSchema(schemaName:String,tableName:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession]):org.apache.spark.sql.types.StructType"></a>
+      <a id="getTableSchema(String,String,Connection,Option[SparkSession]):StructType"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getTableSchema</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="session">session: <span class="extype" name="scala.Option">Option</span>[<a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>]</span>)</span><span class="result">: <a href="../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="../types/StructField.html" class="extype" name="org.apache.spark.sql.types.StructField">StructField</a>]</span>
+        <span class="name">getTableSchema</span><span class="params">(<span name="schemaName">schemaName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="tableName">tableName: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="session">session: <span class="extype" name="scala.Option">Option</span>[<a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>]</span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getTableSchema(schemaName:String,tableName:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession]):Seq[org.apache.spark.sql.types.StructField]" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getTableSchema(schemaName:String,tableName:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession]):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
       
     </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#getTableWithSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="getTableWithSchema(table:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession]):(String,String)"></a>
-      <a id="getTableWithSchema(String,Connection,Option[SparkSession]):(String,String)"></a>
+      <a id="getTableWithSchema(table:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession],forSpark:Boolean):(String,String)"></a>
+      <a id="getTableWithSchema(String,Connection,Option[SparkSession],Boolean):(String,String)"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getTableWithSchema</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="session">session: <span class="extype" name="scala.Option">Option</span>[<a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>]</span>)</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>
+        <span class="name">getTableWithSchema</span><span class="params">(<span name="table">table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="conn">conn: <span class="extype" name="java.sql.Connection">Connection</span></span>, <span name="session">session: <span class="extype" name="scala.Option">Option</span>[<a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a>]</span>, <span name="forSpark">forSpark: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: (<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getTableWithSchema(table:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession]):(String,String)" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@getTableWithSchema(table:String,conn:java.sql.Connection,session:Option[org.apache.spark.sql.SparkSession],forSpark:Boolean):(String,String)" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -908,6 +942,23 @@
       </a>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd>AnyRef</dd></dl></div>
+    </li><li name="org.apache.spark.sql.sources.JdbcExtendedUtils#normalizeSchema" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="normalizeSchema(schema:org.apache.spark.sql.types.StructType,forSpark:Boolean):org.apache.spark.sql.types.StructType"></a>
+      <a id="normalizeSchema(StructType,Boolean):StructType"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">def</span>
+      </span>
+      <span class="symbol">
+        <span class="name">normalizeSchema</span><span class="params">(<span name="schema">schema: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>, <span name="forSpark">forSpark: <span class="extype" name="scala.Boolean">Boolean</span> = <span class="symbol">true</span></span>)</span><span class="result">: <a href="../types/StructType.html" class="extype" name="org.apache.spark.sql.types.StructType">StructType</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../../../index.html#org.apache.spark.sql.sources.JdbcExtendedUtils$@normalizeSchema(schema:org.apache.spark.sql.types.StructType,forSpark:Boolean):org.apache.spark.sql.types.StructType" title="Permalink" target="_top">
+        <img src="../../../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      
     </li><li name="scala.AnyRef#notify" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
       <a id="notify():Unit"></a>
       <a id="notify():Unit"></a>

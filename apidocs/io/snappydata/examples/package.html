@@ -247,6 +247,31 @@ tables. Also samples the data and stores it in a column table.</p><p>Run this on
       </a>
     </span>
       <p class="shortcomment cmt">An example to use ConnectionUtil to mutate data stored in SnappyData.</p>
+    </li><li name="io.snappydata.examples.SnappyDataTestJob" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
+      <a id="SnappyDataTestJob"></a>
+      <a id="SnappyDataTestJob:SnappyDataTestJob"></a>
+      <h4 class="signature">
+      <span class="modifier_kind">
+        <span class="modifier"></span>
+        <span class="kind">object</span>
+      </span>
+      <span class="symbol">
+        <a href="SnappyDataTestJob$.html"><span class="name">SnappyDataTestJob</span></a><span class="result"> extends <a href="../../../org/apache/spark/sql/SnappySQLJob.html" class="extype" name="org.apache.spark.sql.SnappySQLJob">SnappySQLJob</a></span>
+      </span>
+      </h4><span class="permalink">
+      <a href="../../../index.html#io.snappydata.examples.package@SnappyDataTestJob" title="Permalink" target="_top">
+        <img src="../../../lib/permalink.png" alt="Permalink" />
+      </a>
+    </span>
+      <p class="shortcomment cmt">This is a basic job template which can be easily edited to get started with snappydata.</p><div class="fullcomment"><div class="comment cmt"><p>This is a basic job template which can be easily edited to get started with snappydata.</p><p>If you run the job as is, you can can see testtable, create by the job.
+To run:
+<code>$ ./bin/snappy-job.sh submit --lead localhost:8090 \
+--app-name SnappyDataTestJob --class io.snappydata.examples.SnappyDataTestJob \
+--app-jar $SNAPPY_HOME/examples/jars/quickstart.jar</code></p><p>NOTE: You might have to change the jar name and path according to your setup.</p><p>To check job's result:
+<code>$ ./bin/snappy-sql</code>
+<code>snappy-sql&gt; connect client 'localhost:1527';</code>
+<code>snappy-sql&gt; show tables;</code>
+</p></div></div>
     </li><li name="io.snappydata.examples.StreamingUtils" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
       <a id="StreamingUtils"></a>
       <a id="StreamingUtils:StreamingUtils"></a>

@@ -45,7 +45,7 @@
         <span class="kind">case class</span>
       </span>
       <span class="symbol">
-        <span class="name">AnalyzeMutableOperations</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
+        <span class="name">AnalyzeMutableOperations</span><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span><span class="result"> extends <a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a>[<a href="../catalyst/plans/logical/LogicalPlan.html" class="extype" name="org.apache.spark.sql.catalyst.plans.logical.LogicalPlan">LogicalPlan</a>] with <a href="../catalyst/expressions/PredicateHelper.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.PredicateHelper">PredicateHelper</a> with <span class="extype" name="scala.Product">Product</span> with <span class="extype" name="scala.Serializable">Serializable</span></span>
       </span>
       </h4>
       
@@ -89,7 +89,7 @@
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.internal.SnappySessionState.AnalyzeMutableOperations#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):SnappySessionState.this.AnalyzeMutableOperations"></a>
+      <a id="&lt;init&gt;(session:org.apache.spark.sql.SnappySession,analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):SnappySessionState.this.AnalyzeMutableOperations"></a>
       <a id="&lt;init&gt;:AnalyzeMutableOperations"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -97,10 +97,10 @@
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">AnalyzeMutableOperations</span><span class="params">(<span name="sparkSession">sparkSession: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span>
+        <span class="name">AnalyzeMutableOperations</span><span class="params">(<span name="session">session: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>, <span name="analyzer">analyzer: <a href="../catalyst/analysis/Analyzer.html" class="extype" name="org.apache.spark.sql.catalyst.analysis.Analyzer">Analyzer</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState$AnalyzeMutableOperations@&lt;init&gt;(sparkSession:org.apache.spark.sql.SparkSession,analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):SnappySessionState.this.AnalyzeMutableOperations" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState$AnalyzeMutableOperations@&lt;init&gt;(session:org.apache.spark.sql.SnappySession,analyzer:org.apache.spark.sql.catalyst.analysis.Analyzer):SnappySessionState.this.AnalyzeMutableOperations" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -676,19 +676,19 @@ plan.</p><p>For example consider a join between two relations R(a, b) and S(c, d
       </a>
     </span>
       <p class="shortcomment cmt">Name for this rule, automatically inferred based on class name.</p><div class="fullcomment"><div class="comment cmt"><p>Name for this rule, automatically inferred based on class name.</p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../catalyst/rules/Rule.html" class="extype" name="org.apache.spark.sql.catalyst.rules.Rule">Rule</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.internal.SnappySessionState.AnalyzeMutableOperations#sparkSession" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="sparkSession:org.apache.spark.sql.SparkSession"></a>
-      <a id="sparkSession:SparkSession"></a>
+    </li><li name="org.apache.spark.sql.internal.SnappySessionState.AnalyzeMutableOperations#session" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="session:org.apache.spark.sql.SnappySession"></a>
+      <a id="session:SnappySession"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">sparkSession</span><span class="result">: <a href="../SparkSession.html" class="extype" name="org.apache.spark.sql.SparkSession">SparkSession</a></span>
+        <span class="name">session</span><span class="result">: <a href="../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState$AnalyzeMutableOperations@sparkSession:org.apache.spark.sql.SparkSession" title="Permalink" target="_top">
+      <a href="../../../../../index.html#org.apache.spark.sql.internal.SnappySessionState$AnalyzeMutableOperations@session:org.apache.spark.sql.SnappySession" title="Permalink" target="_top">
         <img src="../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

@@ -202,6 +202,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/structucture_streamingquickstart/">Structured Streaming</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2151,7 +2158,7 @@ However, when you use a JDBC data source, you can pass entire queries or portion
 spark.read.jdbc(jdbcUrl, pushDownQuery, connectionProperties);
 </code></pre>
 
-<h3 id="deficiencies-in-the-spark-jdbc-connector">Deficiencies in the Spark JDBC Connector <!---Advantages of SnappyData JDBC Extension Connector---></h3>
+<h3 id="deficiencies-in-the-spark-jdbc-connector">Deficiencies in the Spark JDBC Connector</h3>
 <p>Unfortunately, there are following limitations with Spark JDBC Connector which we address in the SnappyData JDBC Extension Connector. <!---Following are some advantages of SnappyData JDBC Extension Connector over Spark JDBC Connector---></p>
 <ul>
 <li>
@@ -2174,13 +2181,13 @@ The SnappyData connector internally figures out the structure of the result set 
 <p>Following is a sample of Spark JDBC Extension setup and usage:</p>
 <ol>
 <li>
-<p>Include the <strong>TIB_compute-jdbc</strong> package in the Spark job with spark-submit or spark-shell:</p>
-<pre><code>    $SPARK_HOME/bin/spark-shell --jars TIB_compute-jdbc-2.11_1.1.0.jar
+<p>Include the <strong>snappydata-jdbc</strong> package in the Spark job with spark-submit or spark-shell. You can download the same from <a href="https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.0/snappydata-jdbc_2.11-1.1.0.jar">here</a>:</p>
+<pre><code>    $SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.1.0.jar
 </code></pre>
 </li>
 <li>
 <p>Set the session properties.</br> The SnappyData connection properties (to enable auto-configuration of JDBC URL) and credentials can be provided in Spark configuration itself, or set later in SparkSession to avoid passing them in all the method calls. These properties can also be provided in <strong>spark-defaults.conf</strong> along with all the other Spark properties.  You can also set any of these properties in your app code. </br>Overloads of the above methods accepting <strong>user+password</strong> and <strong>host+port </strong>is also provided in case those properties are not set in the session or needs to be overridden. You can optionally pass additional connection properties similarly as in the <strong>DataFrameReader.jdbc </strong>method.</br> Following is a sample code of configuring the properties in <strong>SparkConf</strong>:</p>
-<pre><code>    $SPARK_HOME/bin/spark-shell --jars TIB_compute-jdbc-2.11_1.1.0.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=&lt;user&gt; --conf spark.snappydata.password=&lt;password&gt;
+<pre><code>    $SPARK_HOME/bin/spark-shell --jars snappydata-jdbc-2.11_1.1.0.jar --conf spark.snappydata.connection=localhost:1527 --conf spark.snappydata.user=&lt;user&gt; --conf spark.snappydata.password=&lt;password&gt;
 </code></pre>
 </li>
 <li>
@@ -2268,7 +2275,6 @@ val df = spark.read.jdbc(jdbcUrl, “(select count(*) from testTable1) q”, con
             </div>
           </div>
           <footer>
-  
 
   <hr/>
 

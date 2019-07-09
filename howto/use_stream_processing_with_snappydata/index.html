@@ -202,6 +202,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/structucture_streamingquickstart/">Structured Streaming</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2344,7 +2351,7 @@ If <code>conflation</code> property is set to <code>true</code>, <strong>Snappy 
 In such cases, you should enable the Conflation by setting the <strong>conflation</strong> property to true. Now, if a batch contains <strong>Insert(key1)</strong> event followed by a Dele<strong>te(key1)</strong> event, then SnappyData Sink conflates these two events into a single event by selecting the last event which is <strong>Delete(key1)</strong> and only that event is processed for <strong>key1</strong>.
 Processing <strong>Delete(key1)</strong> event without processing <strong>Insert(key1)</strong> event does not result in a failure, as Delete events are ignored if corresponding records do not exist in the target table.</p>
 <h2 id="sink-state-table">Sink State Table</h2>
-<p>A replicated row table with name <strong>SNAPPYSYS_INTERNAL____SINK_STATE_TABLE</strong> is created by <strong>Snappy Sink</strong> under schema specified by the <strong>stateTableSchema</strong> option if the table does not exist. If the <strong>stateTableSchema</strong> is not specified then the sink state table is created under the <strong>APP</strong> schema. During the processing of each batch, this state is updated.</p>
+<p>A replicated row table with name <strong>snappysys_internal____sink_state_table</strong> is created by <strong>Snappy Sink</strong> under schema specified by the <strong>stateTableSchema</strong> option if the table does not exist. If the <strong>stateTableSchema</strong> is not specified then the sink state table is created under the <strong>APP</strong> schema. During the processing of each batch, this state is updated.</p>
 <p>This table is used by <strong>Snappy Sink</strong> to maintain the state of the streaming queries. This state is important to maintain the idempotency of the sink In case of stream failures. The <strong>Sink State</strong> table contains the following fields:</p>
 <table>
 <thead>
@@ -2405,7 +2412,6 @@ Processing <strong>Delete(key1)</strong> event without processing <strong>Insert
             </div>
           </div>
           <footer>
-  
 
   <hr/>
 

@@ -91,7 +91,7 @@ are retrieved using a JDBC URL or DataSource.
         <div id="constructors" class="members">
               <h3>Instance Constructors</h3>
               <ol><li name="org.apache.spark.sql.execution.row.RowFormatRelation#&lt;init&gt;" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="&lt;init&gt;(_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_table:String,_mode:org.apache.spark.sql.SaveMode,_userSpecifiedString:String,_parts:Array[org.apache.spark.Partition],_origOptions:Map[String,String],_context:org.apache.spark.sql.SQLContext):org.apache.spark.sql.execution.row.RowFormatRelation"></a>
+      <a id="&lt;init&gt;(_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_table:String,_mode:org.apache.spark.sql.SaveMode,_userSpecifiedString:String,_parts:Array[org.apache.spark.Partition],_origOptions:org.apache.spark.sql.catalyst.util.CaseInsensitiveMap,_context:org.apache.spark.sql.SQLContext):org.apache.spark.sql.execution.row.RowFormatRelation"></a>
       <a id="&lt;init&gt;:RowFormatRelation"></a>
       <h4 class="signature">
       <span class="modifier_kind">
@@ -99,10 +99,10 @@ are retrieved using a JDBC URL or DataSource.
         <span class="kind">new</span>
       </span>
       <span class="symbol">
-        <span class="name">RowFormatRelation</span><span class="params">(<span name="_connProperties">_connProperties: <span class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</span></span>, <span name="_table">_table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="_mode">_mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="_userSpecifiedString">_userSpecifiedString: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="_parts">_parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="_origOptions">_origOptions: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>, <span name="_context">_context: <a href="../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span>
+        <span class="name">RowFormatRelation</span><span class="params">(<span name="_connProperties">_connProperties: <span class="extype" name="org.apache.spark.sql.sources.ConnectionProperties">ConnectionProperties</span></span>, <span name="_table">_table: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="_mode">_mode: <a href="../../SaveMode.html" class="extype" name="org.apache.spark.sql.SaveMode">SaveMode</a></span>, <span name="_userSpecifiedString">_userSpecifiedString: <span class="extype" name="scala.Predef.String">String</span></span>, <span name="_parts">_parts: <span class="extype" name="scala.Array">Array</span>[<a href="../../../Partition.html" class="extype" name="org.apache.spark.Partition">Partition</a>]</span>, <span name="_origOptions">_origOptions: <a href="../../catalyst/util/CaseInsensitiveMap.html" class="extype" name="org.apache.spark.sql.catalyst.util.CaseInsensitiveMap">CaseInsensitiveMap</a></span>, <span name="_context">_context: <a href="../../SQLContext.html" class="extype" name="org.apache.spark.sql.SQLContext">SQLContext</a></span>)</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatRelation@&lt;init&gt;(_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_table:String,_mode:org.apache.spark.sql.SaveMode,_userSpecifiedString:String,_parts:Array[org.apache.spark.Partition],_origOptions:Map[String,String],_context:org.apache.spark.sql.SQLContext):org.apache.spark.sql.execution.row.RowFormatRelation" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatRelation@&lt;init&gt;(_connProperties:org.apache.spark.sql.sources.ConnectionProperties,_table:String,_mode:org.apache.spark.sql.SaveMode,_userSpecifiedString:String,_parts:Array[org.apache.spark.Partition],_origOptions:org.apache.spark.sql.catalyst.util.CaseInsensitiveMap,_context:org.apache.spark.sql.SQLContext):org.apache.spark.sql.execution.row.RowFormatRelation" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -639,18 +639,18 @@ UPDATE and DELETE operations for affecting the selected rows.</p><div class="ful
 UPDATE and DELETE operations for affecting the selected rows.
 </p></div><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="../../row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a> → <a href="../../sources/MutableRelation.html" class="extype" name="org.apache.spark.sql.sources.MutableRelation">MutableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#getPrimaryKeyColumns" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="getPrimaryKeyColumns:Seq[String]"></a>
-      <a id="getPrimaryKeyColumns:Seq[String]"></a>
+      <a id="getPrimaryKeyColumns(session:org.apache.spark.sql.SnappySession):Seq[String]"></a>
+      <a id="getPrimaryKeyColumns(SnappySession):Seq[String]"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">getPrimaryKeyColumns</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
+        <span class="name">getPrimaryKeyColumns</span><span class="params">(<span name="session">session: <a href="../../SnappySession.html" class="extype" name="org.apache.spark.sql.SnappySession">SnappySession</a></span>)</span><span class="result">: <a href="../../../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<span class="extype" name="scala.Predef.String">String</span>]</span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatRelation@getPrimaryKeyColumns:Seq[String]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatRelation@getPrimaryKeyColumns(session:org.apache.spark.sql.SnappySession):Seq[String]" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
@@ -1212,18 +1212,18 @@ of Spark SQL should leave this as true.</p></span></dd></dl></div>
     </span>
       <div class="fullcomment"><dl class="attributes block"> <dt>Definition Classes</dt><dd><a href="" class="extype" name="org.apache.spark.sql.execution.row.RowFormatRelation">RowFormatRelation</a> → <a href="../PartitionedDataSourceScan.html" class="extype" name="org.apache.spark.sql.execution.PartitionedDataSourceScan">PartitionedDataSourceScan</a> → <a href="../../row/JDBCMutableRelation.html" class="extype" name="org.apache.spark.sql.row.JDBCMutableRelation">JDBCMutableRelation</a></dd></dl></div>
     </li><li name="org.apache.spark.sql.row.JDBCMutableRelation#origOptions" visbl="pub" data-isabs="false" fullComment="yes" group="Ungrouped">
-      <a id="origOptions:Map[String,String]"></a>
-      <a id="origOptions:Map[String,String]"></a>
+      <a id="origOptions:org.apache.spark.sql.catalyst.util.CaseInsensitiveMap"></a>
+      <a id="origOptions:CaseInsensitiveMap"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">val</span>
       </span>
       <span class="symbol">
-        <span class="name">origOptions</span><span class="result">: <span class="extype" name="scala.Predef.Map">Map</span>[<span class="extype" name="scala.Predef.String">String</span>, <span class="extype" name="scala.Predef.String">String</span>]</span>
+        <span class="name">origOptions</span><span class="result">: <a href="../../catalyst/util/CaseInsensitiveMap.html" class="extype" name="org.apache.spark.sql.catalyst.util.CaseInsensitiveMap">CaseInsensitiveMap</a></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatRelation@origOptions:Map[String,String]" title="Permalink" target="_top">
+      <a href="../../../../../../index.html#org.apache.spark.sql.execution.row.RowFormatRelation@origOptions:org.apache.spark.sql.catalyst.util.CaseInsensitiveMap" title="Permalink" target="_top">
         <img src="../../../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>

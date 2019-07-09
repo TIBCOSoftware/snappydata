@@ -202,6 +202,13 @@
     </li>
 
         
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../quickstart/structucture_streamingquickstart/">Structured Streaming</a>
+        
+    </li>
+
+        
     </ul>
 <li>
           
@@ -2039,6 +2046,9 @@
         
             <ul>
             
+                <li class="toctree-l3"><a href="#troubleshooting-error-messages">Troubleshooting Error Messages</a></li>
+                
+            
             </ul>
         
     </li>
@@ -2125,8 +2135,8 @@
           <div role="main">
             <div class="section">
               
-                <p>an# Troubleshooting Error Messages
-Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.</p>
+                <h1 id="troubleshooting-error-messages">Troubleshooting Error Messages</h1>
+<p>Error messages provide information about problems that might occur when setting up the SnappyData cluster or when running queries. </br>You can use the following information to resolve such problems.</p>
 <!-- --------------------------------------------------------------------------- -->
 
 <p>The following topics are covered in this section:</p>
@@ -2148,6 +2158,7 @@ Error messages provide information about problems that might occur when setting 
 </li>
 <li><a href="#queryfailiterate">Node went down or data no longer available while iterating the results</a></li>
 <li><a href="#smartconnectorcatalog">SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.</a></li>
+<li><a href="#jobsubmitsnap">Cannot parse config: String: 1: Expecting end of input or a comma, got ':'</a></li>
 </ul>
 <p><a id="region0"></a>
 <error> <strong>Error Message:</strong> </error> 
@@ -2230,18 +2241,19 @@ In cases where a node fails while a JDBC/ODBC client or job is consuming result 
 <p><action> <strong>Solution:</strong> </br>
 This is expected behaviour where the product does not retry, since partial results are already consumed by the application. Application must retry the entire query after discarding any changes due to partial results that are consumed.
 </action></p>
+<!-- --------------------------------------------------------------------------- -->
+
 <p><a id="smartconnectorcatalog"></a>
 <error> <strong>Message:</strong> </error> 
 <error-text>
 SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.
 </error-text></p>
 <p><diagnosis> <strong>Diagnosis:</strong></br>
-In the Smart Connector mode, this error message is seen in the logs if SnappyData catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
-For performance reasons, SnappyData Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in SnappyData embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
+In the Smart Connector mode, this error message is seen in the logs if TIBCO ComputeDB catalog is changed due to a DDL operation such as CREATE/DROP/ALTER. 
+For performance reasons, TIBCO ComputeDB Smart Connector caches the catalog in the Smart Connector cluster. If there is a catalog change in TIBCO ComputeDB embedded cluster, this error is logged to prevent unexpected errors due to schema changes.
 </diagnosis></p>
 <p><action> <strong>Solution:</strong> </br>
-If the user application is performing DataFrame/DataSet operations, you will have to recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type <strong>org.apache.spark.sql.execution.CatalogStaleException </strong>and <strong>java.sql.SQLException</strong> (with SQLState=X0Z39) and retry the operation. 
-Check the following code snippet to get better understanding of how this scenario should be handled:</p>
+If the user application is performing DataFrame/DataSet operations, you must recreate the DataFrame/DataSet and retry the operation. In such cases, application needs to catch exceptions of type <strong>org.apache.spark.sql.execution.CatalogStaleException</strong> and <strong>java.sql.SQLException</strong> (with SQLState=X0Z39) and retry the operation. Check the following code snippet to get a better understanding of how this scenario should be handled:</p>
 <pre><code class="pre">int retryCount = 0;
 int maxRetryAttempts = 5;
 while (true) {
@@ -2273,15 +2285,47 @@ private boolean isRetriableException(Exception ex) {
     } while (cause != null);
     return false;
 }
-
 </code></pre>
 
+<p></action>
+<!-- --------------------------------------------------------------------------- -->
+<a id="jobsubmitsnap"></a>
+<error> <strong>Error Message:</strong> </error> 
+<error-text>
+Snappy job submission result:</p>
+<pre><code>{
+  &quot;status&quot;: &quot;ERROR&quot;,
+  &quot;result&quot;: &quot;Cannot parse config: String: 1: Expecting end of input or a comma, got ':' (if you intended ':' to be part of a key or string value, try enclosing the key or value in double quotes, or you may be able to rename the file .properties rather than .conf)&quot;
+}
+</code></pre>
+
+<p></error-text></p>
+<p><diagnosis> <strong>Diagnosis:</strong></br>
+This error message is reported when snappy-job submission configuration parameter contains a colon <code>:</code>. The typesafe configuration parser (used by job-server) cannot handle <code>:</code> as part of key or value unless it is enclosed in double quotes.
+Sample job-submit command:</p>
+<pre><code>./snappy-job.sh submit  --app-name app1 --conf kafka-brokers=localhost:9091 --class Test --app-jar &quot;/path/to/app-jar&quot;
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Note that the <code>kafka-brokers</code> config value (localhost:9091) is having a <code>:</code></p>
+</div>
+<p></diagnosis></p>
+<p><action> <strong>Solution:</strong> </br>
+To avoid this issue enclose the value containing colon <code>:</code> with double quotes so that the typesafe config parser can parse it. Also since the parameter is passed to the bash script (snappy-job) the quotes needs to be escaped properly otherwise it will get ignored by bash. Check the following example for the correct method of passing this configuration:</p>
+<pre><code>./snappy-job.sh submit  --app-name app1 --conf kafka-brokers=\&quot;localhost:9091\&quot; --class Test --app-jar &quot;/path/to/app-jar&quot;
+</code></pre>
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Check the value of <code>kafka-brokers</code> property enclosed in escaped double quotes: <code>\"localhost:9091\"</code></p>
+</div>
 <p></action></p>
+<!-- --------------------------------------------------------------------------- -->
               
             </div>
           </div>
           <footer>
-  
 
   <hr/>
 

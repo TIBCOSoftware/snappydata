@@ -692,19 +692,19 @@ SnappyData aggregation operators.</p><p>Adapted from Spark's Aggregation strateg
 filled in automatically by the QueryPlanner using the other execution strategies that are
 available.
 </p></div><dl class="attributes block"> <dt>Attributes</dt><dd>protected </dd><dt>Definition Classes</dt><dd><a href="execution/SparkStrategy.html" class="extype" name="org.apache.spark.sql.execution.SparkStrategy">SparkStrategy</a> → <a href="catalyst/planning/GenericStrategy.html" class="extype" name="org.apache.spark.sql.catalyst.planning.GenericStrategy">GenericStrategy</a></dd></dl></div>
-    </li><li name="org.apache.spark.sql.SnappyAggregationStrategy#supportCodegen" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
-      <a id="supportCodegen(aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression]):Boolean"></a>
-      <a id="supportCodegen(Seq[AggregateExpression]):Boolean"></a>
+    </li><li name="org.apache.spark.sql.SnappyAggregationStrategy#supportsCodegen" visbl="pub" data-isabs="false" fullComment="no" group="Ungrouped">
+      <a id="supportsCodegen(aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],resultExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression]):Boolean"></a>
+      <a id="supportsCodegen(Seq[AggregateExpression],Seq[NamedExpression]):Boolean"></a>
       <h4 class="signature">
       <span class="modifier_kind">
         <span class="modifier"></span>
         <span class="kind">def</span>
       </span>
       <span class="symbol">
-        <span class="name">supportCodegen</span><span class="params">(<span name="aggregateExpressions">aggregateExpressions: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/aggregate/AggregateExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression">AggregateExpression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
+        <span class="name">supportsCodegen</span><span class="params">(<span name="aggregateExpressions">aggregateExpressions: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/aggregate/AggregateExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression">AggregateExpression</a>]</span>, <span name="resultExpressions">resultExpressions: <a href="../../../../scala/package.html#Seq[+A]=Seq[A]" class="extmbr" name="scala.Seq">Seq</a>[<a href="catalyst/expressions/NamedExpression.html" class="extype" name="org.apache.spark.sql.catalyst.expressions.NamedExpression">NamedExpression</a>]</span>)</span><span class="result">: <span class="extype" name="scala.Boolean">Boolean</span></span>
       </span>
       </h4><span class="permalink">
-      <a href="../../../../index.html#org.apache.spark.sql.SnappyAggregationStrategy@supportCodegen(aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression]):Boolean" title="Permalink" target="_top">
+      <a href="../../../../index.html#org.apache.spark.sql.SnappyAggregationStrategy@supportsCodegen(aggregateExpressions:Seq[org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression],resultExpressions:Seq[org.apache.spark.sql.catalyst.expressions.NamedExpression]):Boolean" title="Permalink" target="_top">
         <img src="../../../../lib/permalink.png" alt="Permalink" />
       </a>
     </span>
