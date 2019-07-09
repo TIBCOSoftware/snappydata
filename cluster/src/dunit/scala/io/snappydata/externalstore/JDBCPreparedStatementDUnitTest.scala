@@ -285,7 +285,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     var rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(100, rscnt.getInt(1))
-    logInfo("Inserted records = " + insertedRecords)
+    assertEquals(100, insertedRecords)
 
     val rs = stmt.executeQuery("select * from t3 order by id")
 
@@ -345,7 +345,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(100, rscnt.getInt(1))
-    logInfo("Updated records = " + updatedRecords)
+    assertEquals(200, updatedRecords)
 
     var rs1 = stmt.executeQuery("select * from t3 order by id")
     var i2 = 1
@@ -401,7 +401,7 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(0, rscnt.getInt(1))
-    logInfo("Deleted records = " + deletedRecords)
+    assertEquals(150, deletedRecords)
 
   }
 
