@@ -101,7 +101,7 @@ class SparkSQLPrepareImpl(val sql: String,
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
       analyzedPlan match {
-        case PutIntoValuesColumnTable(_, _, _) => analyzedPlan.expressions.foreach {
+        case PutIntoValuesColumnTable(_, _, _, _) => analyzedPlan.expressions.foreach {
           exp => exp.map {
             case QuestionMark(pos) =>
               SparkSQLPrepareImpl.addParamLiteral(pos, exp.dataType, exp.nullable, paramLiterals)
