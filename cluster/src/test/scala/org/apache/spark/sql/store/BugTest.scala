@@ -871,5 +871,15 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-
+  test("SNAP-2730 - support NAN values") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    val result = stmt.executeQuery("select acos(30)")
+    assert(result.next(), "result set should have 1 record")
+    assert(result.getDouble(1).isNaN, "result is not NaN value")
+    stmt.close()
+  }
 }
