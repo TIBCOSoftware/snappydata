@@ -20,7 +20,7 @@ package io.snappydata.recovery
 
 import java.net.URI
 import java.util.function.BiConsumer
-
+import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyIndexStats, SnappyRegionStats}
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.PartitionedRegionHelper
 import com.gemstone.gemfire.internal.shared.SystemProperties
@@ -55,6 +55,35 @@ object RecoveryService extends Logging {
     // return (sqlText != null && GRANTREVOKE_PATTERN.matcher(sqlText).matches());
     sqlText != null && (sqlText.toUpperCase.startsWith("GRANT")
         || sqlText.toUpperCase.startsWith("REVOKE"))
+  }
+
+  def getStats: (Seq[SnappyRegionStats], Seq[SnappyIndexStats], Seq[SnappyExternalTableStats]) = {
+    val snappyContext = SnappyContext()
+    val snappySession = snappyContext.snappySession
+    val snappyHiveExternalCatalog = HiveClientUtil
+        .getOrCreateExternalCatalog(snappyContext.sparkContext, snappyContext.sparkContext.getConf)
+
+    val allTables = snappyHiveExternalCatalog.getAllTables()
+    var tblCounts: Seq[SnappyRegionStats] = Seq()
+    allTables.foreach(table => {
+      logInfo(s"PP:Recoveryservice: \n $table\n")
+      table.storage.locationUri match {
+        case Some(_) =>
+        case None =>
+          val recCount = snappySession.sql(s"select count(1) from ${table.qualifiedName}")
+              .collect()(0).getLong(0)
+          val (numBuckets, isReplicated) = RecoveryService
+              .getNumBuckets(table.qualifiedName.split('.')(0), table.qualifiedName.split('.')(1))
+          val regionStats = new SnappyRegionStats()
+          regionStats.setRowCount(recCount)
+          regionStats.setTableName(table.qualifiedName)
+          regionStats.setReplicatedTable(isReplicated)
+          regionStats.setBucketCount(numBuckets)
+          regionStats.setColumnTable(getProvider(table.qualifiedName).equalsIgnoreCase("column"))
+          tblCounts :+= regionStats
+      }
+    })
+    (tblCounts, Seq(), Seq())
   }
 
   def getAllDDLs(): mutable.Buffer[String] = {
@@ -326,11 +355,14 @@ object RecoveryService extends Logging {
                 throw new Exception(s"Schema name not found for the table ${table.identifier.table}")
             }
             var schema: StructType = DataType.fromJson(schemaJsonStr).asInstanceOf[StructType]
+            logInfo(s"PP: RecService 1st schema from json - $schema")
 
             schemaStructMap.put(s"${versionCnt}#${fqtn}", schema)
             tableColumnIds.put(s"$versionCnt#$fqtn", Range(0, schema.fields.length).toArray)
             versionMap.put(fqtn, versionCnt)
             versionCnt += 1
+            logInfo(s"1. Resservice tablecolid, versionmap,schemamap : $tableColumnIds\n\n$versionMap\n\n$schemaStructMap")
+
             // Alter statements
 
             val altStmtKeys = table.properties.keys
@@ -338,6 +370,8 @@ object RecoveryService extends Logging {
                 .sortBy(_.split("_")(1).toLong)
             altStmtKeys.foreach(k => {
               val stmt = table.properties(k).toUpperCase()
+              logInfo(s"PP:2. RecService :alter statement: key,stmt - $k - $stmt")
+
               var alteredSchema: StructType = null
               if (stmt.contains(" ADD COLUMN ")) {
                 // TODO replace ; at the end also add regex match instead of contains
@@ -367,11 +401,11 @@ object RecoveryService extends Logging {
                 val dropColName = stmt.substring(stmt.indexOf("DROP COLUMN ") + 12).trim
                 // loop through schema and delete sruct field matching name and type
                 logInfo(s"PP:REcoveryservice : createSchema: dropcolName: $dropColName\n schema $schema")
-                val indx = schema.fieldIndex(dropColName)
+                val indx = schema.fieldIndex(dropColName.toLowerCase())
                 alteredSchema = new StructType(schema.toArray.filter(
                   field => !field.name.toUpperCase.equals(dropColName.toUpperCase)))
 
-                logInfo(s"PP:REcoveryservice : createSchema: alteredSchema: $alteredSchema")
+                logInfo(s"PP:REcoveryservice : createSchemaMap: alteredSchema: $alteredSchema")
               }
               schema = alteredSchema
 
@@ -406,19 +440,25 @@ object RecoveryService extends Logging {
 
 
   def getNumBuckets(schemaName: String, tableName: String): (Integer, Boolean) = {
+    logInfo(s"PP: ${memberObject.getPrToNumBuckets}\n schema: $schemaName \n tablname: $tableName")
+    val prName = s"/${schemaName}/${tableName}".toUpperCase()
+
     val memberContainsRegion = memberObject
-        .getPrToNumBuckets.containsKey(s"/${schemaName}/${tableName}")
+        .getPrToNumBuckets.containsKey(prName)
     import collection.JavaConversions._
 
     for ((k, v) <- memberObject.getPrToNumBuckets) {
       logInfo(s"1891: PrToNumBuckets map values = ${k} -> ${v}")
     }
     logInfo(s"1891: PrToNumBuckets contains = ${memberContainsRegion} for member" + memberObject.getMember)
+    logInfo(s"1.PP:getNumBuckets ${memberObject.getreplicatedRegions().toSeq}")
     if (memberContainsRegion) {
-      (memberObject.getPrToNumBuckets.get(s"/${schemaName}/${tableName}"), false)
+      (memberObject.getPrToNumBuckets.get(prName), false)
     } else {
-      logWarning(s"1891: num of buckets not found for /${schemaName}/${tableName}")
-      if (memberObject.getreplicatedRegions().contains(s"/${schemaName}/${tableName}")) {
+      logWarning(s"1891: num of buckets not found for $prName")
+      logInfo(s"2.PP:getNumBuckets ${memberObject.getreplicatedRegions().toSeq}")
+      if (memberObject.getreplicatedRegions().contains(s"$prName")) {
+        logInfo(s"3.PP:getNumBuckets ${memberObject.getreplicatedRegions().toSeq}")
         logInfo("1891: table is replicated ")
         (1, true)
       } else (-1, false)
@@ -465,6 +505,9 @@ object RecoveryService extends Logging {
     val memberToConsiderForHiveCatalog = mostUptodateRegionView.getMember
     val nonHiveRegionViews = regionViewSortedSet.filterKeys(
       !_.startsWith(SystemProperties.SNAPPY_HIVE_METASTORE_PATH))
+
+    // todo: Throw a relevant message ... as it fails here when the cluster is empty.
+
     val regionToConsider =
       nonHiveRegionViews.keySet.toSeq.sortBy(nonHiveRegionViews.get(_).size).reverse.head
     logInfo(s"Non Hive region to consider = $regionToConsider")
@@ -506,9 +549,10 @@ object RecoveryService extends Logging {
     logInfo("PP:RecoveryService: Catalog contents in recovery mode:\nTables\n"
         + snappyHiveExternalCatalog.getAllTables().toString() + "\nDatabases\n"
         + allDatabases.toString() + "\nFunctions\n" + allFunctions.toString())
-     //    -------- * /
+    //    -------- * /
 
     createSchemasMap(snappyHiveExternalCatalog)
+    logInfo(s"::L : $tableColumnIds\n\n$versionMap\n\n$schemaStructMap")
   }
 
   def getProvider(tableName: String): String = {
