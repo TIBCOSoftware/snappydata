@@ -25,7 +25,7 @@ import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference,
 import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.collection.{SmartExecutorBucketPartition, Utils}
 import org.apache.spark.sql.execution.metric.{SQLMetric, SQLMetrics}
-import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils}
+import org.apache.spark.sql.sources.{DestroyRelation, JdbcExtendedUtils, NativeTableRowLevelSecurityRelation}
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.types.{LongType, StructType}
 import org.apache.spark.sql.{DelegateRDD, SnappyContext, SnappySession, ThinClientConnectorMode}
@@ -54,6 +54,23 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
   protected def opType: String
 
   protected def isInsert: Boolean = false
+
+  def catalogSchemaVersion: Long = {
+    if (!onExecutor) {
+      val catalogVersion: Option[Long] = Utils.executeIfSmartConnector(sqlContext.sparkContext) {
+        relation match {
+          case Some(r: NativeTableRowLevelSecurityRelation) => r.relationInfo.catalogSchemaVersion
+          case _ =>
+            logWarning("TableExec.catalogSchemaVersion:" +
+                " relation object not available returning -1 as schema version")
+            -1
+        }
+      }
+      catalogVersion.getOrElse(-1)
+    } else {
+      -1
+    }
+  }
 
   override lazy val output: Seq[Attribute] =
     AttributeReference("count", LongType, nullable = false)() :: Nil

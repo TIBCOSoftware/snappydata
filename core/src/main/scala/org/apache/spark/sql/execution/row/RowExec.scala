@@ -21,6 +21,7 @@ import java.sql.Connection
 
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Expression, NamedExpression}
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.TableExec
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.sources.ConnectionProperties
@@ -38,6 +39,7 @@ trait RowExec extends TableExec {
   @transient protected var rowCount: String = _
   @transient protected var result: String = _
 
+
   def resolvedName: String
 
   def connProps: ConnectionProperties
@@ -48,6 +50,7 @@ trait RowExec extends TableExec {
   protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
     connTerm = ctx.freshName("connection")
+    logInfo("sdeshmukh RowExec.connectionCodes onExecutor = " + onExecutor)
     // onExecutor will never be true in case of ColumnDelete/Update
     if (onExecutor) {
       // actual connection will be filled into references before execution
@@ -59,21 +62,76 @@ trait RowExec extends TableExec {
       val utilsClass = ExternalStoreUtils.getClass.getName
       ctx.addMutableState(connectionClass, connTerm, "")
       val props = ctx.addReferenceObj("connectionProperties", connProps)
-      val initCode =
-        s"""
-           |$connTerm = $utilsClass.MODULE$$.getConnection(
-           |    "$resolvedName", $props, true);""".stripMargin
-      val endCode =
-        s""" finally {
-           |  try {
-           |    $connTerm.commit();
-           |    $connTerm.close();
-           |  } catch (java.sql.SQLException sqle) {
-           |    // ignore exception in close
-           |  }
-           |}""".stripMargin
+      val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
+      val initCode: String = getInitCode(utilsClass, props, catalogVersion)
+      val endCode = getEndCode(catalogVersion)
       (initCode, s"", endCode)
     }
+  }
+
+  private def getInitCode(utilsClass: String, props: String, catalogVersion: String): String = {
+   val initCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+     // for smart connector, set connection attributes so that catalog schema version can be checked
+     s"""
+        |$connTerm = $utilsClass.MODULE$$.getConnection(
+        |    "$resolvedName", $props, true);
+        |java.sql.Statement clientStmt1 = null;
+        |if ($catalogVersion != -1) {
+        |  try {
+        |    clientStmt1 = $connTerm.createStatement();
+        |    System.out.println("sdeshmukh clientStmt1 = " + clientStmt1);
+        |    if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
+        |      io.snappydata.thrift.internal.ClientConnection clientConn1 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
+        |      System.out.println("sdeshmukh catalogVersion = " + $catalogVersion);
+        |      clientConn1.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
+        |    }
+        |  } catch (java.sql.SQLException sqle) {
+        |    System.out.println("sdeshmukh received exception = " + sqle);
+        |    throw new java.io.IOException(sqle.toString(), sqle);
+        |  }
+        |}
+        |    """.stripMargin
+    } else {
+     s"""
+        |$connTerm = $utilsClass.MODULE$$.getConnection(
+        |    "$resolvedName", $props, true);
+        |    """.stripMargin
+   }
+    initCode
+  }
+
+  private def getEndCode(catalogVersion: String): String = {
+    val endCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+      // for smart connector, reset connection attributes
+      s""" finally {
+         |  if ($catalogVersion != -1) {
+         |    try {
+         |      if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
+         |        io.snappydata.thrift.internal.ClientConnection clientConn2 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
+         |        clientConn2.setCommonStatementAttributes(null);
+         |      }
+         |      if(clientStmt1 != null) clientStmt1.close();
+         |    } catch (java.sql.SQLException sqle) {
+         |    }
+         |  }
+         |  try {
+         |    $connTerm.commit();
+         |    $connTerm.close();
+         |  } catch (java.sql.SQLException sqle) {
+         |    // ignore exception in close
+         |  }
+         |}""".stripMargin
+    } else {
+      s""" finally {
+         |  try {
+         |    $connTerm.commit();
+         |    $connTerm.close();
+         |  } catch (java.sql.SQLException sqle) {
+         |    // ignore exception in close
+         |  }
+         |}""".stripMargin
+    }
+    endCode
   }
 
   protected def executeBatchCode(numOperations: String,

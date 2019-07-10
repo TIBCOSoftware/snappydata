@@ -75,6 +75,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   @transient private var cursorsArrayCreate: String = _
   @transient private var encoderArrayTerm: String = _
   @transient private var cursorArrayTerm: String = _
+  @transient private var catalogVersion: String = _
 
   @transient private[sql] var batchIdRef = -1
 
@@ -235,6 +236,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       s"if ($encoderArrayTerm[i] != null) $encoderArrayTerm[i].close();",
       schema.length)
     val closeForNoContext = addBatchSizeAndCloseEncoders(ctx, closeEncoders)
+    val resetConnectionAttributes = resetConnectionAttributesCode()
     s"""
        |$checkEnd; // already done
        |
@@ -269,6 +271,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
+       |  $resetConnectionAttributes
        |  if (success) {
        |    $commitSnapshotTx((String)$txIdConnArray[1],
        |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -282,6 +285,31 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |}
     """.stripMargin
+  }
+
+  def resetConnectionAttributesCode(): String = {
+    if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+      // for smart connector, reset the connection attributes as well
+      s"""
+        |  java.sql.Connection conn = (java.sql.Connection)$txIdConnArray[0];
+        |  java.sql.Statement clientStmt1 = null;
+        |  if ($catalogVersion != -1) {
+        |    try {
+        |      clientStmt1 = conn.createStatement();
+        |      if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
+        |        io.snappydata.thrift.internal.ClientConnection clientConn2 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
+        |        clientConn2.setCommonStatementAttributes(null);
+        |      }
+        |    } catch (java.sql.SQLException sqle) {
+        |      if(clientStmt1 != null) clientStmt1.close();
+        |    }
+        |  }
+      """.stripMargin
+    } else {
+      """
+        |
+      """.stripMargin
+    }
   }
 
   override protected def doProduce(ctx: CodegenContext): String = {
@@ -364,6 +392,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     val useBatchSize = if (columnBatchSize > 0) columnBatchSize
     else ExternalStoreUtils.sizeAsBytes(Property.ColumnBatchSize.defaultValue.get,
       Property.ColumnBatchSize.name)
+    val resetConnectionAttributes = resetConnectionAttributesCode()
     s"""
        |$checkEnd; // already done
        |final Object[] $txIdConnArray  = $beginSnapshotTx();
@@ -397,6 +426,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |}
        |finally {
        |if ($txIdConnArray[1] != null) {
+       |  $resetConnectionAttributes
        |  if (success) {
        |    $commitSnapshotTx((String)$txIdConnArray[1],
        |        new scala.Some((java.sql.Connection)$txIdConnArray[0]));
@@ -576,13 +606,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
-    ctx.addNewFunction(beginSnapshotTx,
-      s"""
-         |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx(false);
-         |}
-      """.stripMargin)
+
+    generateBeginSnapshotTx(ctx, externalStoreTerm)
+
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
@@ -631,6 +657,46 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$writeColumns
        |$batchSizeTerm++;
     """.stripMargin
+  }
+
+  private def generateBeginSnapshotTx(ctx: CodegenContext, externalStoreTerm: String) = {
+    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
+    catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
+    if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
+      // on smart connector also set connection attributes to check catalog schema version
+      ctx.addNewFunction(beginSnapshotTx,
+        s"""
+           |private final Object[] $beginSnapshotTx() throws java.io.IOException {
+           |  final Object[] txIdConnArray = $externalStoreTerm.beginTx(false);
+           |  java.sql.Connection conn = (java.sql.Connection)txIdConnArray[0];
+           |  java.sql.Statement clientStmt1 = null;
+           |  if ($catalogVersion != -1) {
+           |  try {
+           |    clientStmt1 = conn.createStatement();
+           |    System.out.println("sdeshmukh clientStmt1 = " + clientStmt1);
+           |    if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
+           |      io.snappydata.thrift.internal.ClientConnection clientConn1 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
+           |      System.out.println("sdeshmukh catalogVersion = " + $catalogVersion);
+           |      clientConn1.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
+           |    }
+           |  } catch (java.sql.SQLException sqle) {
+           |    System.out.println("sdeshmukh received exception = " + sqle);
+           |    throw new java.io.IOException(sqle.toString(), sqle);
+           |  } finally {
+           |    if (clientStmt1 != null) clientStmt1.close();
+           |  }
+           |}
+           |return txIdConnArray;
+           |}
+      """.stripMargin)
+    } else {
+      ctx.addNewFunction(beginSnapshotTx,
+        s"""
+           |private final Object[] $beginSnapshotTx() {
+           |  return $externalStoreTerm.beginTx(false);
+           |}
+      """.stripMargin)
+    }
   }
 
   override def doConsume(ctx: CodegenContext, input: Seq[ExprCode],
@@ -713,13 +779,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
          |  $numInsertions += $batchSizeTerm;
          |}
       """.stripMargin)
-    beginSnapshotTx = ctx.freshName("beginSnapshotTx")
-    ctx.addNewFunction(beginSnapshotTx,
-      s"""
-         |private final Object[] $beginSnapshotTx() {
-         |  return $externalStoreTerm.beginTx(false);
-         |}
-      """.stripMargin)
+    generateBeginSnapshotTx(ctx, externalStoreTerm)
     commitSnapshotTx = ctx.freshName("commitSnapshotTx")
     ctx.addNewFunction(commitSnapshotTx,
       s"""
