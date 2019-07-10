@@ -18,11 +18,15 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_createSnappyTables
 	threadGroups = snappyThreads;
 
+INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_saveTableMetaDataToBB
+  threadGroups = snappyThreads;
+
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_registerDMLThreads
   threadGroups = dmlThreads;
 
 //Load some data in the data, before starting any operations.
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_populateTables
+  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =1000000
   threadGroups = snappyThreads;
 
 //task for verifying the populated data.
@@ -34,6 +38,7 @@ TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest 
   io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.consistency.ValidateConsistencyWithDMLOpsJob
   io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
   io.snappydata.hydra.cluster.SnappyPrms-hasDynamicAppProps = true
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =100
   threadGroups = dmlThreads;
 
 
@@ -46,6 +51,8 @@ INCLUDE $JTESTS/io/snappydata/hydra/consistency/stopSnappyCluster.inc;
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 
 hydra.Prms-totalTaskTimeSec           = 300;
-hydra.Prms-maxResultWaitSec           = 300;
+hydra.Prms-maxResultWaitSec           = 900;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
+
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-useCsv = false;

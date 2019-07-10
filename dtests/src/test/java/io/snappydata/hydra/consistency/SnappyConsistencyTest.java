@@ -21,11 +21,12 @@ package io.snappydata.hydra.consistency;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.*;
 
 import hydra.Log;
 import hydra.blackboard.AnyCyclicBarrier;
@@ -37,11 +38,6 @@ import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import util.TestException;
 
 public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
-
-  public static boolean testUniqueKeys = false;
-  public static int batchSize = SnappySchemaPrms.getBatchSize();
-  protected static hydra.blackboard.SharedLock BBLock;
-  public static DerbyTestUtils derbyTestUtils;
 
   public static String[] updateStmts = SnappySchemaPrms.getUpdateStmts();
   public static String[] deleteStmts = SnappySchemaPrms.getDeleteStmts();
@@ -55,109 +51,23 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
   public static void HydraTask_initialize() {
     if (testInstance == null)
       testInstance = new SnappyConsistencyTest();
-    derbyTestUtils = new DerbyTestUtils();
-  }
-
-  public static void HydraTask_populateTables() {
-    testInstance.populateTables();
-  }
-
-  public void populateTables(){
-    batchSize = 1000000;
-    ArrayList<Integer> dmlThreads = null;
-    if (SnappyBB.getBB().getSharedMap().containsKey("dmlThreads"))
-      dmlThreads = (ArrayList<Integer>) SnappyBB.getBB().getSharedMap().get("dmlThreads");
-    try {
-      Connection conn = getLocatorConnection();
-      for(int i =0; i<dmlThreads.size() ; i++)
-        performInsert(dmlThreads.get(i), conn);
-    } catch (SQLException se) {
-
-    }
-
-  }
-
-  public void executeSelect(int tid) {
-    Connection conn = null;
-    String dmlOp = "";
-    String query = "";
-    dmlOp = getDMLOpForThrFromBB(tid);
-    switch (DMLOp.getOperation(dmlOp)) {
-      case INSERT:
-        query = SnappySchemaPrms.getAfterInsertSelectStmts()[getOpNumForThrFromBB(tid)];
-        break;
-      case UPDATE:
-        query = SnappySchemaPrms.getAfterUpdateSelectStmts()[getOpNumForThrFromBB(tid)];
-        break;
-      case DELETE:
-        query = SnappySchemaPrms.getAfterDeleteSelectStmts()[getOpNumForThrFromBB(tid)];
-        break;
-      case PUTINTO:
-        query = SnappySchemaPrms.getAfterPutIntoSelectStmts()[getOpNumForThrFromBB(tid)];
-        break;
-      default:
-        Log.getLogWriter().info("Invalid operation. ");
-        throw new TestException("Invalid operation type.");
-    }
-    Log.getLogWriter().info("Executing select for " + dmlOp + " operation.");
-    if (SnappySchemaPrms.isTestUniqueKeys())
-      addTidToQuery(query, tid);
-    try {
-      conn = getLocatorConnection();
-      Log.getLogWriter().info("Executing query :" + query);
-      ResultSet beforeDMLRS = conn.createStatement().executeQuery(query);
-      waitForBarrier(tid + "", 2);
-      ResultSet afterDMLRS = conn.createStatement().executeQuery(query);
-      conn.close();
-      Log.getLogWriter().info("Verifying the results for atomicity..");
-      int before_result = 0, after_result = 0;
-      while (beforeDMLRS.next()) {
-        before_result = beforeDMLRS.getInt(1);
-      }
-      while (afterDMLRS.next()) {
-        after_result = afterDMLRS.getInt(1);
-      }
-      if (!verifyAtomicity(before_result, after_result, dmlOp)) {
-        throw new TestException("Test failed to get atomic data during DML operations");
-      }
-    } catch (SQLException se) {
-      Log.getLogWriter().info("Got exception while executing select query", se);
-    }
-  }
-
-  public static boolean verifyAtomicity(int rs_before, int rs_after, String op) {
-    switch(DMLOp.getOperation(op)) {
-      case INSERT:
-      case DELETE:
-      case PUTINTO:
-        Log.getLogWriter().info("Number of rows before DML start: " + rs_before + " and number of " +
-            "after DML start : " + rs_after);
-        if (rs_after % batchSize == 0)
-          return true;
-        break;
-      case UPDATE:
-        Log.getLogWriter().info("Avg before update: " + rs_before + " and Avg after update " +
-            "started  : " + rs_after);
-        if (rs_after % 5 == 0)
-          return true;
-        break;
-    }
-    return false;
+    if(derbyTestUtils == null)
+      derbyTestUtils = new DerbyTestUtils();
   }
 
   public static void HydraTask_performDMLOPsAndVerifyConsistency() {
-    testInstance.performOpsAndVerifyConsistency();
+    testInstance.performOps(ConnType.JDBC);
   }
 
   public static void HydraTask_performDMLOPsAndVerifyConsistencyInJob() {
-    testInstance.performOpsUsingSnappyJob(ConnType.SNAPPY);
+    testInstance.performOps(ConnType.SNAPPY);
   }
 
   public static void HydraTask_performDMLOPsAndVerifyConsistencyInApp() {
-    testInstance.performOpsUsingSnappyJob(ConnType.SMARTCONNECTOR);
+    testInstance.performOps(ConnType.SMARTCONNECTOR);
   }
 
-  public void performOpsUsingSnappyJob(ConnType conn) {
+  public void performOps(ConnType conn) {
     int tid = getMyTid();
     String dmlSql, selectSql;
     String operation = SnappySchemaPrms.getDMLOperations();
@@ -169,31 +79,49 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         selectSql = SnappySchemaPrms.getAfterInsertSelectStmts()[index];
         break;
       case UPDATE:
-        index = rand.nextInt(insertStmts.length);
-        dmlSql = insertStmts[index];
-        selectSql = SnappySchemaPrms.getAfterInsertSelectStmts()[index];
+        index = rand.nextInt(updateStmts.length);
+        dmlSql = updateStmts[index];
+        selectSql = SnappySchemaPrms.getAfterUpdateSelectStmts()[index];
         break;
       case DELETE:
-        index = rand.nextInt(insertStmts.length);
-        dmlSql = insertStmts[index];
-        selectSql = SnappySchemaPrms.getAfterInsertSelectStmts()[index];
+        index = rand.nextInt(deleteStmts.length);
+        dmlSql = deleteStmts[index];
+        selectSql = SnappySchemaPrms.getAfterDeleteSelectStmts()[index];
         break;
       case PUTINTO:
-        index = rand.nextInt(insertStmts.length);
-        dmlSql = insertStmts[index];
-        selectSql = SnappySchemaPrms.getAfterInsertSelectStmts()[index];
+        index = rand.nextInt(putIntoStmts.length);
+        dmlSql = putIntoStmts[index];
+        selectSql = SnappySchemaPrms.getAfterPutIntoSelectStmts()[index];
         break;
       default:
         Log.getLogWriter().info("Invalid operation. ");
         throw new TestException("Invalid operation type.");
     }
-    if (SnappySchemaPrms.isTestUniqueKeys()) {
-      dmlSql = addTidToQuery(dmlSql,tid);
-      selectSql = addTidToQuery(selectSql,tid);
+    int batchSize = SnappySchemaPrms.getBatchSize();
+    if (SnappySchemaPrms.isTestUniqueKeys() ) {
+      if (!operation.equalsIgnoreCase("insert"))
+        dmlSql = addTidToQuery(dmlSql, tid);
+      selectSql = addTidToQuery(selectSql, tid);
     }
-    String app_props;
-    if (conn.equals(ConnType.SNAPPY)) {
-      app_props = "tid=" + tid;
+    if (conn.equals(ConnType.JDBC)) {
+      String tableName = SnappySchemaPrms.getInsertTables()[index];
+      index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
+      ExecutorService pool = new MyThreadPoolExecutor(2);
+      try {
+        pool.execute(new DMLOpsThread(tid, operation, batchSize, dmlSql, index, tableName));
+        pool.execute(new SelectOpsThread(tid, selectSql, operation, tableName, batchSize));
+      } catch (Exception e) {
+        throw new TestException("Got Exception", e);
+      }
+      pool.shutdown();
+      try {
+        pool.awaitTermination(2400, TimeUnit.SECONDS);
+      } catch (InterruptedException ie) {
+        Log.getLogWriter().info("Got exception while waiting for all threads to complete the " +
+            "tasks");
+      }
+    } else if (conn.equals(ConnType.SNAPPY)) {
+      String app_props = "tid=" + tid;
       app_props += ",operation=" + operation;
       app_props += ",batchsize=" + batchSize;
       app_props += ",selectStmt=\\\"" + selectSql + "\\\"";
@@ -203,230 +131,284 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile,
           SnappyPrms.getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
     } else if (conn.equals(ConnType.SMARTCONNECTOR)) {
-      app_props =
+      String app_props =
           tid + " " + operation + " " + batchSize + " \"" + selectSql + "\" \"" + dmlSql + "\"";
       dynamicAppProps.put(tid, app_props);
       String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
       executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
     }
-    try {
-      Connection dConn = derbyTestUtils.getDerbyConnection();
-      dConn.createStatement().execute(dmlSql);
-      derbyTestUtils.closeDiscConnection(dConn, true);
-    } catch(SQLException se) {
-      throw new TestException("Got exception while executing operations on derby", se);
+    if (hasDerbyServer) {
+      if ((!operation.equalsIgnoreCase("insert")) && conn.equals(ConnType.JDBC)) {
+        Log.getLogWriter().info("Performing operation in derby..");
+        try {
+          Connection dConn = derbyTestUtils.getDerbyConnection();
+          dConn.createStatement().execute(dmlSql);
+          derbyTestUtils.closeDiscConnection(dConn, true);
+        } catch (SQLException se) {
+          throw new TestException("Got exception while executing operations on derby", se);
+        }
+      }
     }
-  }
-
-  public void performOpsAndVerifyConsistency() {
-    ExecutorService pool = Executors.newFixedThreadPool(2);
-    int tid = getMyTid();
-    pool.execute(new DMLOpsThread(tid));
-    pool.execute(new SelectOpsThread(tid));
   }
 
   class DMLOpsThread implements Runnable{
     int tid;
+    String operation;
+    int batchSize;
+    String dmlStmt;
+    int index;
+    String tableName;
 
-    public DMLOpsThread(int tid) {
+    public DMLOpsThread(int tid, String operation, int batchSize, String dmlStmt,
+        int index, String tableName ) {
       this.tid = tid;
+      this.operation = operation;
+      this.batchSize = batchSize;
+      this.dmlStmt = dmlStmt;
+      this.index = index;
+      this.tableName = tableName;
     }
 
     public void run() {
-      String operation = SnappySchemaPrms.getDMLOperations();
-      registerOperationInBB(tid, operation);
-      performDMLOp(tid, operation);
+      try {
+        performDMLOp(tid, operation, batchSize, dmlStmt, tableName, index);
+      } catch (TestException te){
+        Log.getLogWriter().info("Got exception in dmlOps..", te);
+        throw new TestException("Got TestException ", te);
+      }
+    }
+  }
+
+  public void performDMLOp(int tid, String operation, int batchSize, String stmt,
+      String tableName, int index) {
+    Connection conn = null;
+    try {
+      conn = getLocatorConnection();
+      if(operation.equalsIgnoreCase("insert") || operation.equalsIgnoreCase("putinto"))
+        performInsertUsingBatch(conn, tableName, stmt, index, batchSize, tid, false);
+      else {
+        waitForBarrier(tid + "", 2);
+        int numRows = conn.createStatement().executeUpdate(stmt);
+        operation = operation.toUpperCase();
+        Log.getLogWriter().info(
+            operation.equals("INSERT")? operation + "ED":
+            operation.equals("PUTINTO")?"UPDATED":operation +"D"
+                + " " + numRows + " rows.");
+      }
+      conn.close();
+    } catch (SQLException se) {
+      throw new TestException("Got Exception while closing jdbc connection.", se);
+    } finally{
+      try {
+        conn.close();
+      } catch (SQLException se){
+        throw new TestException("Got exception while closing connection");
+      }
     }
   }
 
   class SelectOpsThread implements Runnable {
     int tid;
+    String sql;
+    String operation;
+    String tableName;
+    int batchSize;
+;
 
-    public SelectOpsThread(int tid) {
+    public SelectOpsThread(int tid, String sql, String operation, String tableName, int batchSize) {
       this.tid = tid;
+      this.sql = sql;
+      this.operation = operation;
+      this.batchSize = batchSize;
+      this.tableName = tableName;
     }
 
-    public void run(){
-      executeSelect(tid);
+    public void run() {
+      try {
+        executeSelect(tid, sql, operation, tableName, batchSize);
+      } catch (TestException tex){
+        Log.getLogWriter().info("got TestException.." + tex);
+        throw new TestException("Got TestException", tex);
+      }
     }
   }
 
-  public void performDMLOp(int tid, String operation){
-    Connection conn;
-    try{
+  public void executeSelect(int tid, String query, String dmlOp, String tableName,
+      int batchSize) {
+    Connection conn = null;
+
+    Log.getLogWriter().info("Executing select " + query +  " for " + dmlOp + " operation.");
+    try {
       conn = getLocatorConnection();
-    } catch (SQLException se) {
-      throw new TestException("Got exception while obtaining jdbc connection.", se);
-    }
-    switch (DMLOp.getOperation(operation)) {
-      case INSERT:
-        Log.getLogWriter().info("Performing insert operation.");
-        performInsert(tid, conn); break;
-      case UPDATE:
-        Log.getLogWriter().info("Performing update operation.");
-        performUpdate(tid, conn); break;
-      case DELETE:
-        Log.getLogWriter().info("Performing delete operation.");
-        performDelete(tid, conn); break;
-      case PUTINTO:
-        Log.getLogWriter().info("Performing putinto operation...");
-        performPutInto(tid, conn); break;
-      default:
-        Log.getLogWriter().info("Invalid operation. ");
-        throw new TestException("Invalid operation type.");
-    }
-    try {
+      Log.getLogWriter().info("Executing query :" + query);
+      ResultSet beforeDMLRS = conn.createStatement().executeQuery(query);
+      waitForBarrier(tid + "", 2);
+      ResultSet afterDMLRS = conn.createStatement().executeQuery(query);
       conn.close();
-    } catch(SQLException se) {
-      throw new TestException("Got Exception whiling closing jdbc connection.", se);
-    }
-  }
-
-
-  public void performInsert(int tid, Connection conn) {
-    String query = "SELECT max(id) FROM table1";
-    int maxID = 0;
-    ArrayList<Integer> dmlThreads = null;
-    try {
-      ResultSet rs = conn.createStatement().executeQuery(query);
-      while (rs.next()) {
-        maxID = rs.getInt(1);
+      Log.getLogWriter().info("Verifying the results for atomicity..");
+      if (verifyAtomicity(beforeDMLRS, afterDMLRS, dmlOp, tableName, batchSize)) {
+        Log.getLogWriter().info("Test failed to get atomic data during DML operations");
+        throw new TestException("Test failed to get atomic data during DML operations");
       }
-
-      int index = rand.nextInt(insertStmts.length);
-      String sql = insertStmts[index];
-      registerOpNumInBB(tid, index);
-      PreparedStatement ps = conn.prepareStatement(sql);
-
-      Connection dConn = derbyTestUtils.getDerbyConnection();
-      PreparedStatement psDerby = dConn.prepareStatement(sql);
-
-      for (int i = 0; i < batchSize; i++) {
-        ps.setInt(1, maxID++);
-        ps.setString(2, "name" + maxID);
-        ps.setInt(3, -1);
-        ps.setInt(4, tid);
-        ps.addBatch();
-
-        psDerby.setInt(1, maxID++);
-        psDerby.setString(2, "name" + maxID);
-        psDerby.setInt(3, -1);
-        psDerby.setInt(4, tid);
-        psDerby.addBatch();
+    } catch (SQLException se) {
+      Log.getLogWriter().info("Got exception while executing select query", se);
+    } finally{
+      try {
+        conn.close();
+      } catch (SQLException se){
+        throw new TestException("Got exception while closing connection");
       }
-      waitForBarrier("" + tid, 2);
-      ps.executeBatch();
-      Log.getLogWriter().info("Inserted " + batchSize + " rows in the snappy table.");
-      psDerby.executeBatch();
-      derbyTestUtils.closeDiscConnection(dConn, true);
+    }
+  }
 
+  public boolean verifyAtomicity(ResultSet beforeDMLRS, ResultSet afterDMLRS, String op,
+      String tableName,
+   int batchSize) {
+    boolean atomicityCheckFailed = false;
+    int before_result = 0, after_result = 0;
+    int defaultValue;
+    try {
+      ResultSetMetaData rsmd = beforeDMLRS.getMetaData();
+      int queryColCnt = rsmd.getColumnCount();
+
+      while (beforeDMLRS.next()) {
+        afterDMLRS.next();
+        int rowCount = 0;
+        for(int i = 1 ; i<= queryColCnt ; i++) {
+          String colName = rsmd.getColumnLabel(i);
+          before_result = beforeDMLRS.getInt(i);
+          after_result = afterDMLRS.getInt(i);
+          switch (DMLOp.getOperation(op)) {
+            case INSERT:
+              defaultValue = -1;
+              if (colName.equalsIgnoreCase("COUNT")) {
+                rowCount = before_result;
+                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
+                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
+                int expectedRs = after_result - before_result;
+                if (!(expectedRs == 0 || expectedRs == batchSize)) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("AVG")) {
+                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
+                int expectedRs =
+                    ((before_result * rowCount) + (defaultValue * batchSize))/(rowCount+batchSize);
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("SUM")) {
+                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
+                int expectedRs = before_result + (defaultValue * batchSize);
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true;
+                }
+              }
+              break;
+            case UPDATE:
+              defaultValue = 1;
+              if (colName.equalsIgnoreCase("COUNT")) {
+                rowCount = before_result;
+                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
+                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
+                int expectedRs = after_result - before_result;
+                if (expectedRs == 0) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("AVG")) {
+                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
+                int expectedRs = before_result + defaultValue;
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("SUM")) {
+                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
+                int expectedRs = before_result + (defaultValue * rowCount);
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true;
+                }
+              } break;
+            case DELETE:
+              defaultValue = 0;
+              if (colName.equalsIgnoreCase("COUNT")) {
+                rowCount = before_result;
+                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
+                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
+                int expectedRs = after_result - before_result;
+                if (!(expectedRs % batchSize == 0)) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("AVG")) {
+                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
+                //TODO
+              } else if (colName.equalsIgnoreCase("SUM")) {
+                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
+                //TODO
+              }break;
+            case PUTINTO:
+              defaultValue = -1;
+              if (colName.equalsIgnoreCase("COUNT")) {
+                rowCount = before_result;
+                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
+                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
+                int expectedRs = after_result - before_result;
+                if (!(expectedRs % batchSize == 0)) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("AVG")) {
+                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
+                int expectedRs =
+                    ((before_result * rowCount) + (defaultValue * batchSize))/(rowCount+batchSize);
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true;
+                }
+              } else if (colName.equalsIgnoreCase("SUM")) {
+                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
+                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
+                int expectedRs = before_result + (defaultValue * batchSize);
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true;
+                }
+              } break;
+            default:
+          }
+        }
+      }
     } catch (SQLException se) {
-      throw new TestException("Caught Exception while performing bulk inserts", se);
+      throw new TestException("Got exception while accessing resultset.", se);
+    }
+    if(atomicityCheckFailed) return true;
+    return false;
+  }
+
+  public static void waitForBarrier(String barrierName, int numThreads) {
+    AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, barrierName);
+    Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier " + barrierName);
+    barrier.await();
+    Log.getLogWriter().info("Wait completed for " + barrierName);
+  }
+
+}
+
+
+class MyThreadPoolExecutor extends ThreadPoolExecutor {
+
+  public MyThreadPoolExecutor(int nThreads){
+    super(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
+  }
+
+  @Override
+  public void afterExecute(Runnable r, Throwable t) {
+    super.afterExecute(r, t);
+    if (t != null) {
+      Log.getLogWriter().info("In afterExecute");
+      throw new TestException("Got TestException" , t);
     }
   }
-
-  public void performUpdate(int tid, Connection conn) {
-    int index = rand.nextInt(updateStmts.length);
-    String sql = updateStmts[index];
-    registerOpNumInBB(tid, index);
-    if(SnappySchemaPrms.isTestUniqueKeys())
-      sql= addTidToQuery(sql, tid);
-    Log.getLogWriter().info("Performing batch update in snappy..");
-    waitForBarrier("" + tid,2);
-    try {
-      conn.createStatement().execute(sql);
-      Log.getLogWriter().info("Performing batch update in derby..");
-      Connection dConn = derbyTestUtils.getDerbyConnection();
-      dConn.createStatement().execute(sql);
-      derbyTestUtils.closeDiscConnection(dConn, true);
-    } catch (SQLException se) {
-      throw new TestException("Got exception while executing batch update", se);
-    }
-  }
-
-  public void performDelete(int tid, Connection conn) {
-    int index = rand.nextInt(deleteStmts.length);
-    String sql = deleteStmts[index];
-    registerOpNumInBB(tid, index);;
-    if(SnappySchemaPrms.isTestUniqueKeys())
-      sql= addTidToQuery(sql, tid);
-    Log.getLogWriter().info("Performing delete in snappy..");
-    waitForBarrier("" + tid,2);
-    try {
-      conn.createStatement().execute(sql);
-      Log.getLogWriter().info("Performing delete in derby..");
-      Connection dConn = derbyTestUtils.getDerbyConnection();
-      dConn.createStatement().execute(sql);
-      derbyTestUtils.closeDiscConnection(dConn, true);
-    } catch (SQLException se) {
-      throw new TestException("Got exception while executing bulk delete", se);
-    }
-  }
-
-  public void performPutInto(int tid, Connection conn) {
-    int index = rand.nextInt(putIntoStmts.length);
-    String sql = putIntoStmts[index];
-    registerOpNumInBB(tid, index);
-    waitForBarrier("" + tid ,2);
-    try {
-      conn.createStatement().execute(sql);
-      Log.getLogWriter().info("Performing delete in derby..");
-      Connection dConn = derbyTestUtils.getDerbyConnection();
-      dConn.createStatement().execute(sql);
-      derbyTestUtils.closeDiscConnection(dConn, true);
-    } catch (SQLException se) {
-      throw new TestException("Got exception while executing bulk delete", se);
-    }
-  }
-
-  /*
-  Register the dml operation performed by the thread in BB, so that select thread will know which
-   select is to be performed.
-  */
-  public void registerOperationInBB(int tid, String operation){
-    SnappyBB.getBB().getSharedMap().put("op_" + tid,operation);
-  }
-
-  public String getDMLOpForThrFromBB(int tid) {
-    String operation = "";
-    try {
-      while (!SnappyBB.getBB().getSharedMap().containsKey("op_" + tid)) Thread.sleep(10);
-    } catch (InterruptedException ie) {
-      Log.getLogWriter().info("Got interrupted exception");
-    }
-    operation = (String) SnappyBB.getBB().getSharedMap().get("op_" + tid);
-    SnappyBB.getBB().getSharedMap().remove("op_" + tid);
-    return operation;
-  }
-
-  /*
-  Register the number of dml operation performed by the thread in BB, so that select thread will
-  know which select is to be performed.
-  */
-  public void registerOpNumInBB(int tid, int opNum){
-    SnappyBB.getBB().getSharedMap().put("opNum_" + tid,opNum);
-  }
-
-  public int getOpNumForThrFromBB(int tid) {
-    int opNum;
-    try {
-      while (!SnappyBB.getBB().getSharedMap().containsKey("opNum_" + tid)) Thread.sleep(10);
-    } catch (InterruptedException ie) {
-      Log.getLogWriter().info("Got interrupted exception");
-    }
-    opNum = (int) SnappyBB.getBB().getSharedMap().get("opNum_" + tid);
-    SnappyBB.getBB().getSharedMap().remove("opNum_" + tid);
-    return opNum;
-  }
-
-  protected void waitForBarrier(String barrierName, int numThreads) {
-    if(!SnappySchemaPrms.getIsSingleBucket()) {
-      AnyCyclicBarrier barrier = AnyCyclicBarrier.lookup(numThreads, barrierName);
-      Log.getLogWriter().info("Waiting for " + numThreads + " to meet at barrier");
-      barrier.await();
-      Log.getLogWriter().info("Wait Completed...");
-    }
-  }
-
-
 }

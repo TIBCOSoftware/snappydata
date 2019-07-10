@@ -67,6 +67,8 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static Long testUniqueKeys;
 
+  public static Long insertTables;
+
   public static Long updateTables;
 
   public static Long deleteTables;
@@ -304,6 +306,16 @@ public class SnappySchemaPrms extends SnappyPrms {
 
   public static String[] getInsertStmtsForNonDMLTables(){
     Long key = insertStmtsNonDMLTables;
+    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = new String[selectStmt.size()];
+    for (int i = 0; i < selectStmt.size(); i++) {
+      strArr[i] = (String)selectStmt.elementAt(i);
+    }
+    return strArr;
+  }
+
+  public static String[] getInsertTables(){
+    Long key = insertTables;
     Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
     String[] strArr = new String[selectStmt.size()];
     for (int i = 0; i < selectStmt.size(); i++) {
