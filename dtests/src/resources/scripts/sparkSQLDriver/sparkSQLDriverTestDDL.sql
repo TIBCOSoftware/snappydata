@@ -1,3 +1,5 @@
+elapsedtime on;
+
 SHOW DATABASES;
 
 DROP DATABASE IF EXISTS sf_tmp_db_38611be8de554936beae283efdbe3ee8 CASCADE;
