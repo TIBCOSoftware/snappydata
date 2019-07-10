@@ -53,13 +53,6 @@ Requirements for each host:
 
 	* If you deploy SnappyData on a virtualized host, consult the documentation provided with the platform, for system requirements and recommended best practices, for running Java and latency-sensitive workloads.
 
-## VSD Requirements
-- Install 32-bit libraries on 64-bit Linux:</br>
-	`yum install glibc.i686 libX11.i686` on RHEL/CentOS</br>
-	`apt-get install libc6:i386 libx11-6:i386` on Ubuntu/Debian like systems</br>
-
-- Locally running X server. For example, an X server implementation like, XQuartz for Mac OS, Xming for Windows OS, and Xorg which is installed by default for Linux systems.
-
 ## Python Integration using pyspark 
 -	The Python pyspark module has the same requirements as in Apache Spark. The numpy package is required by many modules of pyspark including the examples shipped with SnappyData. On recent Red Hat based systems, it can be installed using `sudo yum install numpy` or `sudo yum install python2-numpy` commands. Whereas, on Debian/Ubuntu based systems, you can install using the `sudo apt-get install python-numpy` command.
 

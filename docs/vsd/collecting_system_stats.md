@@ -33,4 +33,4 @@ These properties can only be used with a peer client connect.
 !!! Note
 	- Because of the overhead required for taking many timestamps, it is recommended that you enable time-based statistics only during testing and debugging. 
 
-	- Use statement-level statistics only when the number of individual statements is small, such as when using prepared statements. SnappyData creates a separate statistics instance for each individual statement. With a large number of these statements, it can be difficult to load archives into VSD and navigate to those statistics of interest. 
+	- Use statement-level statistics only when the number of individual statements is small, such as when using prepared statements. SnappyData creates a separate statistics instance for each individual statement. 
