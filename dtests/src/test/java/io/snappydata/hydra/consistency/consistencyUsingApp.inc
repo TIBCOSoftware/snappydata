@@ -1,10 +1,10 @@
 INCLUDE $JTESTS/io/snappydata/hydra/connectionPool/connPool.inc;
 
-INCLUDE $JTESTS/io/snappydata/hydra/consistency/schema.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/consistency/schema_nonJDBC.inc;
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/startDualModeCluster.conf;
 
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
+//INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_initialize
 	threadGroups = snappyThreads,snappyStoreThreads,leadThreads,locatorThreads,workerThreads;
@@ -30,8 +30,8 @@ INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest
   threadGroups = snappyThreads;
 
 //task for verifying the populated data.
-INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResultsInitTask
-  threadGroups = snappyThreads;
+//INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResultsInitTask
+//  threadGroups = snappyThreads;
 
 //task for running dmlOps
 TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_performDMLOPsAndVerifyConsistencyInApp
@@ -42,12 +42,12 @@ TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest 
   threadGroups = snappyStoreThreads;
 
 //task for running select queries at the end of test
-CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
-  threadGroups = snappyThreads;
+//CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
+//  threadGroups = snappyThreads;
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
+//INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 
 hydra.Prms-totalTaskTimeSec           = 300;
 hydra.Prms-maxResultWaitSec           = 900;

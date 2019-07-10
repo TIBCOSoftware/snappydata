@@ -19,9 +19,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-dmlTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
-"insert into table1 values(?,?,?,?,?,?,?)"
-"insert into table2 values(?,?,?,?,?,?,?)"
-"insert into table3 values(?,?,?,?,?,?,?)"
+"insert into table1 select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
+"insert into table2 select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
+"insert into table3 select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertTables =
@@ -31,27 +31,21 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterInsertSelects =
-"select count(*), avg(code), sum(code), sum(code1), avg(code1) from table1"
-"select count(*), avg(code), sum(code), avg(code2), sum(code2) from table2"
-"select count(*), avg(code), sum(code), sum(code3), avg(code3) from table3"
+"select count(*),avg(code) from table1"
+"select count(*),avg(code1) from table2"
+"select count(*), avg(code) from table3"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 "update table1 set code = case when code=-1 then 0 else (code+1) end , code1=code1 + 1"
 "update table2 set code = case when code=-1 then 0 else (code+1) end , code2=code2 + 1"
-"update table3 set code = case when code=-1 then 0 else (code+1) end , code3=code3 + 1 "
+"update table3 set code = case when code=-1 then 0 else (code+1) end , code3=code3 + 1"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
 "select count(*), avg(code), sum(code), sum(code1), avg(code1) from table1"
 "select count(*), avg(code), sum(code), avg(code2), sum(code2) from table2"
 "select count(*), avg(code), sum(code), sum(code3), avg(code3) from table3"
-;
-
-io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
-"app.table1"
-"app.table2"
-"app.table3"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
@@ -66,21 +60,14 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterDeleteSelects =
 "select count(*) from table3"
 ;
 
-io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteTables =
-"app.table1"
-"app.table2"
-"app.table3"
-;
-
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-putIntoStmts =
-"put into table1 values (?,?,?,?,?,?,?)"
-"put into table2 values (?,?,?,?,?,?,?)"
-"put into table3 values (?,?,?,?,?,?,?)"
+"put into table1 values select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
+"put into table2 values select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
+"put into table3 values select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterPutIntoSelects =
-"select count(*), avg(code), sum(code), sum(code1), avg(code1) from table1"
-"select count(*), avg(code), sum(code), avg(code2), sum(code2) from table2"
-"select count(*), avg(code), sum(code), sum(code3), avg(code3) from table3"
+"select count(*) from table1"
+"select count(*) from table2"
+"select count(*) from table3"
 ;
-

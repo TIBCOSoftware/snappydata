@@ -33,10 +33,11 @@ object ValidateConsistencyWithDMLOpsJob extends SnappySQLJob {
     val tid = jobConfig.getInt("tid")
     val outputFile = "VerifyConsistency_thr_" + tid + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
-    val operation = jobConfig.getString("opration")
+    val operation = jobConfig.getString("operation")
     val batchSize = jobConfig.getInt("batchsize")
     val selectStmt = jobConfig.getString("selectStmt")
     val dmlStmt = jobConfig.getString("dmlStmt")
+    val tableName = jobConfig.getString("tableName")
     // scalastyle:off println
     Try {
       val snc = snSession.sqlContext
@@ -44,8 +45,9 @@ object ValidateConsistencyWithDMLOpsJob extends SnappySQLJob {
       val sc = SparkContext.getOrCreate()
       val sqlContext = SQLContext.getOrCreate(sc)
       val startTime = System.currentTimeMillis
-      ConsistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, selectStmt,
-        dmlStmt)
+      val consistencyTest = new ConsistencyTest()
+      consistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, selectStmt,
+        dmlStmt, tableName)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")

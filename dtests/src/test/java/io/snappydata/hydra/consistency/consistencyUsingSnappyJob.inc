@@ -1,10 +1,10 @@
 INCLUDE $JTESTS/io/snappydata/hydra/connectionPool/connPool.inc;
 
-INCLUDE $JTESTS/io/snappydata/hydra/consistency/schema.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/consistency/schema_nonJDBC.inc;
 
 INCLUDE $JTESTS/io/snappydata/hydra/consistency/startSnappyCluster.inc;
 
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
+//INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_initialize
 	threadGroups = snappyThreads,dmlThreads,selectThreads;
@@ -30,8 +30,8 @@ INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest
   threadGroups = snappyThreads;
 
 //task for verifying the populated data.
-INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResultsInitTask
-  threadGroups = snappyThreads;
+//INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResultsInitTask
+//  threadGroups = snappyThreads;
 
 //task for running dmlOps
 TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_performDMLOPsAndVerifyConsistencyInJob
@@ -43,8 +43,8 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =100
 
 
 //task for running select queries at the end of test
-CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
-  threadGroups = snappyThreads;
+// CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
+//  threadGroups = snappyThreads;
 
 INCLUDE $JTESTS/io/snappydata/hydra/consistency/stopSnappyCluster.inc;
 

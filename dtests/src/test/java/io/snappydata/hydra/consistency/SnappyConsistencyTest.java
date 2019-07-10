@@ -19,18 +19,18 @@ package io.snappydata.hydra.consistency;
 
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import hydra.Log;
 import hydra.blackboard.AnyCyclicBarrier;
-import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
@@ -71,27 +71,32 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     int tid = getMyTid();
     String dmlSql, selectSql;
     String operation = SnappySchemaPrms.getDMLOperations();
+    String tableName;
     int index;
     switch (DMLOp.getOperation(operation)) {
       case INSERT:
         index = rand.nextInt(insertStmts.length);
         dmlSql = insertStmts[index];
         selectSql = SnappySchemaPrms.getAfterInsertSelectStmts()[index];
+        tableName = SnappySchemaPrms.getInsertTables()[index];
         break;
       case UPDATE:
         index = rand.nextInt(updateStmts.length);
         dmlSql = updateStmts[index];
         selectSql = SnappySchemaPrms.getAfterUpdateSelectStmts()[index];
+        tableName = SnappySchemaPrms.getUpdateTables()[index];
         break;
       case DELETE:
         index = rand.nextInt(deleteStmts.length);
         dmlSql = deleteStmts[index];
         selectSql = SnappySchemaPrms.getAfterDeleteSelectStmts()[index];
+        tableName = SnappySchemaPrms.getDeleteTables()[index];
         break;
       case PUTINTO:
         index = rand.nextInt(putIntoStmts.length);
         dmlSql = putIntoStmts[index];
         selectSql = SnappySchemaPrms.getAfterPutIntoSelectStmts()[index];
+        tableName = SnappySchemaPrms.getInsertTables()[index];
         break;
       default:
         Log.getLogWriter().info("Invalid operation. ");
@@ -99,17 +104,20 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     }
     int batchSize = SnappySchemaPrms.getBatchSize();
     if (SnappySchemaPrms.isTestUniqueKeys() ) {
-      if (!operation.equalsIgnoreCase("insert"))
+      if (!(operation.equalsIgnoreCase("insert") || operation.equalsIgnoreCase("putinto")))
         dmlSql = addTidToQuery(dmlSql, tid);
       selectSql = addTidToQuery(selectSql, tid);
     }
     if (conn.equals(ConnType.JDBC)) {
-      String tableName = SnappySchemaPrms.getInsertTables()[index];
       index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
-      ExecutorService pool = new MyThreadPoolExecutor(2);
-      try {
-        pool.execute(new DMLOpsThread(tid, operation, batchSize, dmlSql, index, tableName));
-        pool.execute(new SelectOpsThread(tid, selectSql, operation, tableName, batchSize));
+      ExecutorService pool = Executors.newFixedThreadPool(2);
+        Future<?> future1 =  pool.submit(new DMLOpsThread(tid, operation, batchSize, dmlSql,
+            index, tableName));
+        Future<?> future2 =  pool.submit(new SelectOpsThread(tid, selectSql, operation, tableName
+            , batchSize));
+        try{
+          future2.get();
+          future1.get();
       } catch (Exception e) {
         throw new TestException("Got Exception", e);
       }
@@ -124,6 +132,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       String app_props = "tid=" + tid;
       app_props += ",operation=" + operation;
       app_props += ",batchsize=" + batchSize;
+      app_props += ",tableName=" + tableName;
       app_props += ",selectStmt=\\\"" + selectSql + "\\\"";
       app_props += ",dmlStmt=\\\"" + dmlSql + "\\\"";
       dynamicAppProps.put(tid, app_props);
@@ -131,8 +140,8 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile,
           SnappyPrms.getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
     } else if (conn.equals(ConnType.SMARTCONNECTOR)) {
-      String app_props =
-          tid + " " + operation + " " + batchSize + " \"" + selectSql + "\" \"" + dmlSql + "\"";
+      String app_props = tid + " " + operation + " " + batchSize + " " + tableName +
+          " \"" + selectSql + "\" \"" + dmlSql + "\"";
       dynamicAppProps.put(tid, app_props);
       String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
       executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
@@ -281,7 +290,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
           switch (DMLOp.getOperation(op)) {
             case INSERT:
               defaultValue = -1;
-              if (colName.equalsIgnoreCase("COUNT")) {
+              if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
                 Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
                     " start: " + before_result + " and number of after " + op + " start : " + after_result);
@@ -289,7 +298,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 if (!(expectedRs == 0 || expectedRs == batchSize)) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("AVG")) {
+              } else if (colName.toUpperCase().startsWith("AVG")) {
                 Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs =
@@ -297,7 +306,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("SUM")) {
+              } else if (colName.toUpperCase().startsWith("SUM")) {
                 Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and sum after " + op + " start : " + after_result);
                 int expectedRs = before_result + (defaultValue * batchSize);
@@ -308,7 +317,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
               break;
             case UPDATE:
               defaultValue = 1;
-              if (colName.equalsIgnoreCase("COUNT")) {
+              if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
                 Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
                     " start: " + before_result + " and number of after " + op + " start : " + after_result);
@@ -316,14 +325,14 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 if (expectedRs == 0) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("AVG")) {
+              } else if (colName.toUpperCase().startsWith("AVG")) {
                 Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs = before_result + defaultValue;
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("SUM")) {
+              } else if (colName.toUpperCase().startsWith("SUM")) {
                 Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and sum after " + op + " start : " + after_result);
                 int expectedRs = before_result + (defaultValue * rowCount);
@@ -333,7 +342,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
               } break;
             case DELETE:
               defaultValue = 0;
-              if (colName.equalsIgnoreCase("COUNT")) {
+              if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
                 Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
                     " start: " + before_result + " and number of after " + op + " start : " + after_result);
@@ -341,18 +350,18 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 if (!(expectedRs % batchSize == 0)) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("AVG")) {
+              } else if (colName.toUpperCase().startsWith("AVG")) {
                 Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 //TODO
-              } else if (colName.equalsIgnoreCase("SUM")) {
+              } else if (colName.toUpperCase().startsWith("SUM")) {
                 Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and sum after " + op + " start : " + after_result);
                 //TODO
               }break;
             case PUTINTO:
               defaultValue = -1;
-              if (colName.equalsIgnoreCase("COUNT")) {
+              if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
                 Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
                     " start: " + before_result + " and number of after " + op + " start : " + after_result);
@@ -360,7 +369,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 if (!(expectedRs % batchSize == 0)) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("AVG")) {
+              } else if (colName.toUpperCase().startsWith("AVG")) {
                 Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs =
@@ -368,7 +377,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
-              } else if (colName.equalsIgnoreCase("SUM")) {
+              } else if (colName.toUpperCase().startsWith("SUM")) {
                 Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and sum after " + op + " start : " + after_result);
                 int expectedRs = before_result + (defaultValue * batchSize);
@@ -394,21 +403,4 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     Log.getLogWriter().info("Wait completed for " + barrierName);
   }
 
-}
-
-
-class MyThreadPoolExecutor extends ThreadPoolExecutor {
-
-  public MyThreadPoolExecutor(int nThreads){
-    super(nThreads, nThreads, 0L, TimeUnit.MILLISECONDS, new LinkedBlockingQueue<Runnable>());
-  }
-
-  @Override
-  public void afterExecute(Runnable r, Throwable t) {
-    super.afterExecute(r, t);
-    if (t != null) {
-      Log.getLogWriter().info("In afterExecute");
-      throw new TestException("Got TestException" , t);
-    }
-  }
 }
