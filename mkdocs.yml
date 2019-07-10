@@ -155,14 +155,14 @@ pages:
 - 'Evaluating Statistics for the System and Applications':
     - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
     - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
-    - 'Using VSD to Analyze Statistics':
-        - 'Installing and Running VSD': 'vsd/running_vsd.md'
-        - 'Transaction Performance': 'vsd/vsd_transactions.md'
-        - 'Table Performance': 'vsd/vsd_tables.md'
-        - 'SQL Statement Performance': 'vsd/vsd_statements.md'
-        - 'Memory Usage': 'vsd/vsd_memory.md'
-        - 'Client Connections': 'vsd/vsd-connection-stats.md'
-        - 'CPU Usage': 'vsd/vsd_cpu.md'
+#    - 'Using VSD to Analyze Statistics':
+#        - 'Installing and Running VSD': 'vsd/running_vsd.md'
+#        - 'Transaction Performance': 'vsd/vsd_transactions.md'
+#        - 'Table Performance': 'vsd/vsd_tables.md'
+#        - 'SQL Statement Performance': 'vsd/vsd_statements.md'
+#        - 'Memory Usage': 'vsd/vsd_memory.md'
+#        - 'Client Connections': 'vsd/vsd-connection-stats.md'
+#        - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'SQL Reference Guide': 'sql_reference.md'
