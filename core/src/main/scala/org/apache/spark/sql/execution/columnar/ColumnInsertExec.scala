@@ -673,14 +673,11 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
            |  if ($catalogVersion != -1) {
            |  try {
            |    clientStmt1 = conn.createStatement();
-           |    System.out.println("sdeshmukh clientStmt1 = " + clientStmt1);
            |    if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
            |      io.snappydata.thrift.internal.ClientConnection clientConn1 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
-           |      System.out.println("sdeshmukh catalogVersion = " + $catalogVersion);
            |      clientConn1.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
            |    }
            |  } catch (java.sql.SQLException sqle) {
-           |    System.out.println("sdeshmukh received exception = " + sqle);
            |    throw new java.io.IOException(sqle.toString(), sqle);
            |  } finally {
            |    if (clientStmt1 != null) clientStmt1.close();

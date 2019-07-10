@@ -50,7 +50,6 @@ trait RowExec extends TableExec {
   protected def connectionCodes(ctx: CodegenContext): (String, String, String) = {
     val connectionClass = classOf[Connection].getName
     connTerm = ctx.freshName("connection")
-    logInfo("sdeshmukh RowExec.connectionCodes onExecutor = " + onExecutor)
     // onExecutor will never be true in case of ColumnDelete/Update
     if (onExecutor) {
       // actual connection will be filled into references before execution
@@ -79,14 +78,11 @@ trait RowExec extends TableExec {
         |if ($catalogVersion != -1) {
         |  try {
         |    clientStmt1 = $connTerm.createStatement();
-        |    System.out.println("sdeshmukh clientStmt1 = " + clientStmt1);
         |    if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
         |      io.snappydata.thrift.internal.ClientConnection clientConn1 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
-        |      System.out.println("sdeshmukh catalogVersion = " + $catalogVersion);
         |      clientConn1.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
         |    }
         |  } catch (java.sql.SQLException sqle) {
-        |    System.out.println("sdeshmukh received exception = " + sqle);
         |    throw new java.io.IOException(sqle.toString(), sqle);
         |  }
         |}

@@ -430,7 +430,40 @@ class SplitSnappyClusterDUnitTest(s: String)
     } finally {
       snc.sql("drop table if exists T6")
     }
+  }
 
+  def testUpdateAfterStaleCatalog(): Unit = {
+    val snc = SnappyContext(sc)
+
+    snc.sql(s"CREATE TABLE T7(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    snc.sql("insert into t7 values('1', '1')")
+    snc.sql("insert into t7 values('2', '2')")
+    snc.sql("insert into t7 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestUpdateAfterStaleCatalog",
+        startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T7").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing delete as expected.")
+
+      snc.sql(s"CREATE TABLE T8(COL1 DATE, COL2 DATE) USING column OPTIONS" +
+          s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+    } finally {
+      snc.sql("drop table if exists T7")
+      snc.sql("drop table if exists T8")
+    }
   }
 }
 
@@ -1126,6 +1159,30 @@ object SplitSnappyClusterDUnitTest
         // retrying delete from operation and it should pass
         retryOperation(5) {
           snc.sql("delete from t6 where col1 like '2%'")
+        }
+    }
+  }
+
+  def doTestUpdateAfterStaleCatalog(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+    snc.sql("insert into t7 values('4', '4')")
+
+    logInfo("doTestUpdateAfterStaleCatalog: Waiting 6 seconds to allow schema change")
+    Thread.sleep(6000)
+    try {
+      for (i <- 1 to 20) {
+        Thread.sleep(500)
+        snc.sql("update t7 set col2 = '22' where col1 = '2'")
+      }
+      Assert.fail("Should have thrown CatalogStaleException.")
+    } catch {
+      case _: CatalogStaleException =>
+        logInfo("doTestUpdateAfterStaleCatalog: Caught expected CatalogStaleException")
+        // retrying delete from operation and it should pass
+        retryOperation(5) {
+          snc.sql("update t7 set col2 = '22' where col1 = '2'")
         }
     }
   }
