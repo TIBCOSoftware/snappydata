@@ -83,7 +83,7 @@ deploy jar <unique-alias-name> ‘jars’
 **Deploying jars:**
 
 ```
-deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
+deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar
 ```
 
 All the deployed commands are stored in the SnappyData cluster. In cases where the artifacts of the dependencies are not available in the provided cache path, then during restart, it automatically resolves all the packages and jars again and installs them in the system.
