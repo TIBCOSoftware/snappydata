@@ -832,4 +832,53 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     TestUtil.stopNetServer()
   }
+
+  test("SNAP3007") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"testSNAP3007: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    stmt.execute("CREATE TABLE app.application(application VARCHAR(64), " +
+        "content CLOB, active BOOLEAN, configuration CLOB)")
+    var ps = null
+
+    val sql = "INSERT INTO app.application VALUES (?, ?, ?, ?)"
+    val pstmt1 = conn.prepareStatement(sql)
+    pstmt1.setString(1, "a")
+    pstmt1.setString(2, "b")
+    pstmt1.setBoolean(3, true)
+    pstmt1.setString(4, "c")
+    pstmt1.addBatch()
+    pstmt1.executeBatch
+    pstmt1.close()
+
+    val sql2 = "DELETE FROM app.application"
+    val pstmt2 = conn.prepareStatement(sql2)
+    pstmt2.addBatch()
+    val rows = pstmt2.executeBatch
+    pstmt2.close()
+
+    val sql3 = "select count(*) from app.application"
+    val rs = conn.createStatement().executeQuery(sql3)
+    assert(rs.next())
+    assert(rs.getInt(1) == 0, "Table should not contain any data after delete statement")
+    rs.close()
+
+  }
+
+  test("SNAP-2730 - support NAN values") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    val result = stmt.executeQuery("select acos(30)")
+    assert(result.next(), "result set should have 1 record")
+    assert(result.getDouble(1).isNaN, "result is not NaN value")
+    stmt.close()
+  }
 }
