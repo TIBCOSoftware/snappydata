@@ -9,3 +9,4 @@
     B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
     C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
     D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
+    queryFile=/home/cbhatt/snappydata/dtests/src/test/java/io/snappydata/hydra/hiveThriftServer/DMLQueries.sql

@@ -17,14 +17,13 @@
 package io.snappydata.hydra.hiveThriftServer
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import java.sql.{Connection, DriverManager, SQLException}
-import java.util
+import java.sql.{Connection, DriverManager}
+import java.util.Random
 
 import com.typesafe.config.Config
 import org.apache.spark.sql._
-import scala.util.Random
 
-class HiveThriftServerConcurrentOps extends SnappySQLJob {
+class ThriftServerInsertFromSnappy extends SnappySQLJob {
 
   override def isValidJob(snappySession: SnappySession, config: Config):
   SnappyJobValidation = SnappyJobValid()
@@ -32,22 +31,24 @@ class HiveThriftServerConcurrentOps extends SnappySQLJob {
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
     // scalastyle:off println
 
+
+    var index = 0
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
 //    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
-//    val threadID = jobConfig.getInt("tid")
-    val outputFile = "ValidateHiveThriftServerConcurrency" + "_" + System.currentTimeMillis() + jobConfig.getString("logFileName")
-//   val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+//    val tids = jobConfig.getString("tids")
+//    val threadID = Thread.currentThread().getId
+//    println("threadID : " + threadID)
+//    val outputFile = "ValidateHiveThriftServerConcurrency" + "_" + threadID + "_" +
+//      System.currentTimeMillis() + jobConfig.getString("logFileName")
+//    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
     val sqlContext : SQLContext = spark.sqlContext
-
-    val queryFile: String = jobConfig.getString("queryFile");
-    val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")
-
-    for (j <- 0 to queryArray.length - 1) {
-      val index = new Random().nextInt(queryArray.length )
-      println("Executing Query : " + queryArray(index))
-      snc.sql(queryArray(index))
-    }
-    }
- }
-
+//    val random = new Random()
+//    val tidList = tids.split(",")
+//    tidList.foreach{println}
+    snc.sql("insert into default.Student select id, concat('TIBCO_',id), " +
+      "default.subject(id%10), rand() * 1000, id%10 from range(10000);")
+    println(snc.sql("select * from default.Student order by id DESC").show(1000))
+    println(snc.sql("select count(*) from default.Student").show())
+  }
+}
