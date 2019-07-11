@@ -46,6 +46,8 @@ object ValidateConsistencyWithDMLOpsJob extends SnappySQLJob {
       val sqlContext = SQLContext.getOrCreate(sc)
       val startTime = System.currentTimeMillis
       val consistencyTest = new ConsistencyTest()
+      pw.println("Starting execution for dml operation " +  operation)
+      pw.flush()
       consistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, selectStmt,
         dmlStmt, tableName)
       val endTime = System.currentTimeMillis

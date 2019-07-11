@@ -37,10 +37,11 @@ class ConsistencyTest {
     pool.execute(new SelectOpsThread(snc, pw, tid, selectStmt, dmlOp, tableName, batchSize))
     pool.shutdown()
     try
-      pool.awaitTermination(2400, TimeUnit.SECONDS)
+      pool.awaitTermination(120, TimeUnit.SECONDS)
     catch {
       case ie: InterruptedException =>
         pw.println("Got Exception while waiting for all threads to complete the tasks")
+        pw.flush()
     }
   }
 
@@ -48,6 +49,7 @@ class ConsistencyTest {
   class DMLOpsThread(snc: SnappyContext, pw: PrintWriter, tid: Int, stmt: String) extends Runnable {
     override def run(): Unit = {
       pw.println(s"Executing dml statement $stmt")
+      pw.flush()
       waitForBarrier(tid + "", 2, pw)
       snc.sql(stmt)
     }
@@ -60,14 +62,17 @@ class ConsistencyTest {
     override def run(): Unit = {
       try {
         pw.println("Executing query :" + stmt)
+        pw.flush()
         val beforeDF = snc.sql(stmt)
         waitForBarrier(tid + "", 2, pw)
         val afterDF = snc.sql(stmt)
         pw.println("Verifying the results for atomicity..")
+        pw.flush()
         verifyAtomicity(beforeDF, afterDF, op, tableName, batchSize, pw)
       } catch {
         case se: SQLException =>
           pw.println("Got exception while executing select query", se)
+          pw.flush()
       }
     }
   }
@@ -76,7 +81,7 @@ class ConsistencyTest {
   def verifyAtomicity(df_before: DataFrame, df_after: DataFrame, op: String, tableName: String,
       batchSize: Int, pw: PrintWriter) : Boolean = {
     var atomicityCheckFailed: Boolean = false
-    var rowCount = 0
+    var rowCount: Long = 0
     var defaultValue: Int = 0
     val schema = df_before.schema.fieldNames
     val dfBef_list = df_before.collectAsList()
@@ -85,9 +90,9 @@ class ConsistencyTest {
       val rowBf: Row = dfBef_list.get(i)
       val rowAf: Row = dfAft_list.get(i)
       for (j <- 0 until schema.length) {
-        val colName: String = schema(i)
-        val before_result: Int = rowBf.getInt(i)
-        val after_result: Int = rowAf.getInt(i)
+        val colName: String = schema(j)
+        val before_result: Long = rowBf.getLong(j)
+        val after_result: Long = rowAf.getLong(j)
         DMLOp.getOperation(op) match {
           case DMLOp.INSERT =>
             defaultValue = -1
@@ -186,6 +191,7 @@ class ConsistencyTest {
             }
           case _ =>
         }
+        pw.flush()
       }
     }
     atomicityCheckFailed
@@ -194,7 +200,9 @@ class ConsistencyTest {
   // scalastyle:off println
   protected def waitForBarrier(barrierName: String, numThreads: Int, pw: PrintWriter): Unit = {
     pw.println("Waiting for " + numThreads + " to meet at barrier " + barrierName)
+    pw.flush()
     barrier.await()
     pw.println("Wait Completed for barrier " + barrierName)
+    pw.flush()
   }
 }

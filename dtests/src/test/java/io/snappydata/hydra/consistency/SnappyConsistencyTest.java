@@ -128,23 +128,30 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         Log.getLogWriter().info("Got exception while waiting for all threads to complete the " +
             "tasks");
       }
-    } else if (conn.equals(ConnType.SNAPPY)) {
-      String app_props = "tid=" + tid;
-      app_props += ",operation=" + operation;
-      app_props += ",batchsize=" + batchSize;
-      app_props += ",tableName=" + tableName;
-      app_props += ",selectStmt=\\\"" + selectSql + "\\\"";
-      app_props += ",dmlStmt=\\\"" + dmlSql + "\\\"";
-      dynamicAppProps.put(tid, app_props);
-      String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-      executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile,
-          SnappyPrms.getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
-    } else if (conn.equals(ConnType.SMARTCONNECTOR)) {
-      String app_props = tid + " " + operation + " " + batchSize + " " + tableName +
-          " \"" + selectSql + "\" \"" + dmlSql + "\"";
-      dynamicAppProps.put(tid, app_props);
-      String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-      executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
+    } else {
+      index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
+      if(dmlSql.contains("$tid")) dmlSql = dmlSql.replace("$tid", tid + "");
+      if(dmlSql.contains("$range")){
+        dmlSql = dmlSql.replace("$range", getInitialCounter(index,batchSize) + "," + batchSize);
+      }
+      if (conn.equals(ConnType.SNAPPY)) {
+        String app_props = "tid=" + tid;
+        app_props += ",operation=" + operation;
+        app_props += ",batchsize=" + batchSize;
+        app_props += ",tableName=" + tableName;
+        app_props += ",selectStmt=\\\"" + selectSql + "\\\"";
+        app_props += ",dmlStmt=\\\"" + dmlSql + "\\\"";
+        dynamicAppProps.put(tid, app_props);
+        String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
+        executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile,
+            SnappyPrms.getUserAppJar(), jarPath, SnappyPrms.getUserAppName());
+      } else if (conn.equals(ConnType.SMARTCONNECTOR)) {
+        String app_props = tid + " " + operation + " " + batchSize + " " + tableName +
+            " \"" + selectSql + "\" \"" + dmlSql + "\"";
+        dynamicAppProps.put(tid, app_props);
+        String logFile = "sparkAppResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
+        executeSparkJob(SnappyPrms.getSparkJobClassNames(), logFile);
+      }
     }
     if (hasDerbyServer) {
       if ((!operation.equalsIgnoreCase("insert")) && conn.equals(ConnType.JDBC)) {

@@ -738,8 +738,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String stmt;
     if (schemaChanged)
       stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(index);
-    else
-      stmt = SnappySchemaPrms.getInsertStmts()[index];
+    else {
+      if(isPopulate) {
+        String[] insertStmts = SnappySchemaPrms.getInsertStmtsForNonDMLTables();
+        if (insertStmts != null) stmt = insertStmts[index];
+        else stmt = SnappySchemaPrms.getInsertStmts()[index];
+      }
+      else stmt = SnappySchemaPrms.getInsertStmts()[index];
+    }
     try {
       conn = getLocatorConnection();
       performInsertUsingBatch(conn, tableName, stmt, index, batchSize, getMyTid(), isPopulate);
@@ -749,14 +755,19 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
-  public void performInsertUsingBatch(Connection conn, String tableName,
-      String stmt, int index, int batchSize, int tid, boolean isPopulate){
+  public int getInitialCounter(int index, int batchSize){
     getBBLock();
     List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("insertCounters");
     int initCounter = counters.get(index);
     counters.set(index, initCounter + batchSize);
     SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseBBLock();
+    return initCounter;
+  }
+
+  public void performInsertUsingBatch(Connection conn, String tableName,
+      String stmt, int index, int batchSize, int tid, boolean isPopulate){
+    int initCounter = getInitialCounter(index, batchSize);
     String uniqueKey = SnappySchemaPrms.getUniqueColumnName();
     Connection dConn = null;
     Log.getLogWriter().info("Inserting using " + stmt + " with batchSize " + batchSize + " in " +

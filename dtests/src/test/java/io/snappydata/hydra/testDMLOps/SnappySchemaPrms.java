@@ -304,12 +304,15 @@ public class SnappySchemaPrms extends SnappyPrms {
     return strArr;
   }
 
-  public static String[] getInsertStmtsForNonDMLTables(){
+  public static String[] getInsertStmtsForNonDMLTables() {
     Long key = insertStmtsNonDMLTables;
-    Vector selectStmt =  BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
-    String[] strArr = new String[selectStmt.size()];
-    for (int i = 0; i < selectStmt.size(); i++) {
-      strArr[i] = (String)selectStmt.elementAt(i);
+    Vector selectStmt = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, null));
+    String[] strArr = null;
+    if (selectStmt != null) {
+      strArr = new String[selectStmt.size()];
+      for (int i = 0; i < selectStmt.size(); i++)
+        strArr[i] = (String) selectStmt.elementAt(i);
+
     }
     return strArr;
   }

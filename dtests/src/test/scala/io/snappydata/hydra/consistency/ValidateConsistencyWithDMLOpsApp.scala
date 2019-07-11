@@ -26,12 +26,13 @@ import org.apache.spark.{SparkConf, SparkContext}
 
 object ValidateConsistencyWithDMLOpsApp {
   def main(args: Array[String]) {
-    val conf = new SparkConf().setAppName("VerifyConsistency_App_" + System.currentTimeMillis())
+    val tid = args(0).toInt
+    val conf = new SparkConf().setAppName("VerifyConsistency_App_" + tid + "_" + System
+        .currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
     val sqlContext = SQLContext.getOrCreate(sc)
     val snc = SnappyContext(sc)
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
-    val tid = args(0).toInt
     val outputFile = "VerifyConsistency_thr_" + tid + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))
     Try {
@@ -42,6 +43,8 @@ object ValidateConsistencyWithDMLOpsApp {
       val dmlStmt = args(5)
       // scalastyle:off println
       val startTime = System.currentTimeMillis
+      pw.println("Starting execution for dml operation " +  operation)
+      pw.flush()
       val consistencyTest = new ConsistencyTest()
       consistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, selectStmt,
         dmlStmt, tableName)

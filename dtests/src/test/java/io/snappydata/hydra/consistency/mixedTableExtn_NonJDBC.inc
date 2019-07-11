@@ -26,6 +26,13 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-dmlTables =
 "app.table4"
 ;
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmtsNonDMLTables=
+"insert into table1 values(?,?,?,?,?,?,?)"
+"insert into table2 values(?,?,?,?,?,?,?)"
+"insert into table3 values(?,?,?,?,?,?,?)"
+"insert into table4 values(?,?,?,?,?,?,?)"
+;
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
 "insert into table1 select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
 "insert into table2 select id,'name'||id,-1,-1,-1,'code3'||id,$tid from range($range)"
