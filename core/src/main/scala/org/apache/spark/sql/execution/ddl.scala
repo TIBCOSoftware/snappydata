@@ -630,7 +630,7 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
   }
 }
 
-case class PutIntoValuesColumnTable(identifier: TableIdentifier,
+case class PutIntoValuesColumnTable(db: String, tableName: String,
     colNames: Option[Seq[String]],
     values: Seq[Expression])
     extends RunnableCommand {
@@ -660,12 +660,12 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
 
     val snc = sparkSession.asInstanceOf[SnappySession]
     val sc = sparkSession.sparkContext
-    val tableName = identifier.identifier
+    val tableWithDB = db + "." + tableName
     var v1 = values.zipWithIndex.map { case (e, ci) =>
       if (e != null) Cast(e, StringType).eval() else null
     }
     var schema = sparkSession.sharedState
-        .externalCatalog.getTable(snc.getCurrentSchema, tableName).schema
+        .externalCatalog.getTable(db, tableName).schema
     import snappy._
     var rowRdd = List.empty[Any]
     val valuesList = v1.toList
@@ -676,13 +676,13 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
           }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
       var someDF1 = snc.createDataFrame(rdd1, schema)
-      Seq(Row(someDF1.write.putInto(tableName)))
+      Seq(Row(someDF1.write.putInto(tableWithDB)))
     }
     else {
       var colSchema = StructType(colNames.head.toList
           .map(column => schema.fields.find(_.name
               .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
-            s"Field $column does not exist in $tableName with schema=$schema."))))
+            s"Field $column does not exist in $tableWithDB with schema=$schema."))))
       rowRdd = valuesList.zip(colSchema)
           .map { case (value, struct) =>
             if (value != null) convertTypes(value.toString, struct) else null
@@ -692,7 +692,7 @@ case class PutIntoValuesColumnTable(identifier: TableIdentifier,
       val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
       var df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
         df.withColumn(c.name, lit(null).cast(c.dataType)))
-      Seq(Row(df2.write.putInto(tableName)))
+      Seq(Row(df2.write.putInto(tableWithDB)))
     }
   }
 }

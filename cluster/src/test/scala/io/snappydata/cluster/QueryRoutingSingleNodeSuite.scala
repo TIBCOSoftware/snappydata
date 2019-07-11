@@ -836,23 +836,167 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       assertEquals("test" + i + 1, row.getAs[String]("id2"))
       i = i + 1
     }
+
+    snc.sql("drop table if exists columntable")
+    snc.sql("CREATE TABLE columnTable (bigIntCol BIGINT," +
+        " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
+        " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
+        " doubleCol DOUBLE , floatCol FLOAT , intCol INT , integerCol INTEGER," +
+        " longVarcharCol LONG , numericCol NUMERIC, numeric1Col NUMERIC(10,2)," +
+        " doublePrecisionCol DOUBLE PRECISION, realCol REAL, stringCol STRING," +
+        " timestampCol TIMESTAMP , varcharCol VARCHAR( 20 ))" +
+        " using COLUMN options(BUCKETS '8', key_columns 'bigIntcol');")
+    snc.sql("put into columntable values(-10, NULL, true, 56, 'ABC456'," +
+        " current_date, -66, 0.0111, -2.225E-307, -10, 10, 123456, -1, 1," +
+        " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
+    snc.sql("put into columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
+        " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
+        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
+    assertEquals(2, snc.sql("select * from columntable").count())
   }
 
-  snc.sql("drop table if exists columntable")
-  snc.sql("CREATE TABLE columnTable (bigIntCol BIGINT," +
-      " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
-      " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
-      " doubleCol DOUBLE , floatCol FLOAT , intCol INT , integerCol INTEGER," +
-      " longVarcharCol LONG , numericCol NUMERIC, numeric1Col NUMERIC(10,2)," +
-      " doublePrecisionCol DOUBLE PRECISION, realCol REAL, stringCol STRING," +
-      " timestampCol TIMESTAMP , varcharCol VARCHAR( 20 ))" +
-      " using COLUMN options(BUCKETS '8', key_columns 'bigIntcol');")
-  snc.sql("put into columntable values(-10, NULL, true, 56, 'ABC456'," +
-      " current_date, -66, 0.0111, -2.225E-307, -10, 10, 123456, -1, 1," +
-      " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
-  snc.sql("put into columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
-      " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
-      " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
-      " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
-  assertEquals(2, snc.sql("select * from columntable").count())
+  test("Test Bug SNAP-3038 with jdbc connection") {
+
+    val conn = DriverManager.getConnection("jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    snc.sql("drop schema if exists std1")
+    snc.sql("create schema std1")
+    snc.sql("drop table if exists std1.t")
+    snc.sql("create table std1.t(id integer primary key, str string) using row")
+    stmt.execute("put into std1.t values(100, 'aa')")
+    stmt.execute("put into std1.t   (id, str) values    (101, 'bb')      ")
+    stmt.execute("put into std1.t values(102, 'cc')")
+    stmt.execute("put into std1.t values(102, 'dd')")
+    assertEquals(3, snc.sql("select * from std1.t").count())
+    val rs = snc.sql("select str from std1.t where id = 102")
+    val rows = rs.collect()
+    for (row <- rows) {
+      assertEquals("dd", row.getAs[String]("str"))
+    }
+    
+    snc.sql("drop table if exists std1.t1")
+    snc.sql("create table std1.t1(id integer, id2 string) using column options(key_columns 'id')")
+    stmt.execute("put into std1.t1 values(100, 'aa')      ")
+    stmt.execute("put into std1.t1   (id, id2) values(101, 'sb')      ")
+    stmt.execute("put into std1.t1 values(102, 'cc')")
+    stmt.execute("put into std1.t1 values(102, 'dd')")
+    assertEquals(3, snc.sql("select * from std1.t1").count())
+    val rs1 = snc.sql("select id2 from std1.t1 where id = 102")
+    val rows1 = rs1.collect()
+    for (row <- rows1) {
+      assertEquals("dd", row.getAs[String]("id2"))
+    }
+
+    snc.sql("drop table if exists std1.t2")
+    snc.sql("create table std1.t2(id integer, id2 string) using column " +
+        "options(key_columns 'id', COLUMN_MAX_DELTA_ROWS '1', buckets '1')")
+    for (i <- 1 to 10) {
+      stmt.execute("insert into std1.t2 values(" + i + ",'test" + i + "')")
+    }
+
+    for (i <- 1 to 10) {
+      stmt.execute("put into std1.t2 values(" + i + ",'test" + i + 1 + "')")
+    }
+
+    val rs2 = snc.sql("select * from std1.t2 order by id")
+    assertEquals(10, rs2.count())
+    val rows2 = rs2.collect()
+    var i = 1
+    for (row <- rows2) {
+      assertEquals("test" + i + 1, row.getAs[String]("id2"))
+      i = i + 1
+    }
+
+    snc.sql("drop table if exists std1.columntable")
+    snc.sql("CREATE TABLE std1.columnTable (bigIntCol BIGINT," +
+        " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
+        " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
+        " doubleCol DOUBLE , floatCol FLOAT , intCol INT , integerCol INTEGER," +
+        " longVarcharCol LONG , numericCol NUMERIC, numeric1Col NUMERIC(10,2)," +
+        " doublePrecisionCol DOUBLE PRECISION, realCol REAL, stringCol STRING," +
+        " timestampCol TIMESTAMP , varcharCol VARCHAR( 20 ))" +
+        " using COLUMN options(BUCKETS '8', key_columns 'bigIntcol');")
+    snc.sql("put into std1.columntable values(-10, NULL, true, 56, 'ABC456'," +
+        " current_date, -66, 0.0111, -2.225E-307, -10, 10, 123456, -1, 1," +
+        " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
+    snc.sql("put into std1.columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
+        " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
+        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
+    assertEquals(2, snc.sql("select * from std1.columntable").count())
+  }
+
+  test("Test Bug SNAP-3038 with snappy session") {
+
+    snc.sql("drop schema if exists std2")
+    snc.sql("create schema std2")
+    snc.sql("drop table if exists std2.t")
+    snc.sql("create table std2.t(id integer primary key, STR string) using row           ")
+    snc.sql("put into std2.t values(100, 'aa')")
+    snc.sql("put into std2.t   (id, str) values    (101, 'bb')      ")
+    snc.sql("put into std2.t   (id) values    (104)      ")
+    snc.sql("put into std2.t values(102, 'cc')")
+    snc.sql("put into std2.t values(102, 'dd')")
+    assertEquals(4, snc.sql("select * from std2.t").count())
+    val rs = snc.sql("select STR from std2.t where id = 102")
+    val rows = rs.collect()
+    for (row <- rows) {
+      assertEquals("dd", row.getAs[String]("str"))
+    }
+
+    snc.sql("drop table if exists std2.t1")
+    snc.sql("create table std2.t1(id integer, ID2 string) using column options(key_columns 'id')")
+    snc.sql("put into std2.t1   (id, id2) values    (101, 'bb')      ")
+    snc.sql("put into std2.t1 values       (100, 'aa')      ")
+    snc.sql("put into std2.t1   (id) values    (104)      ")
+    snc.sql("put into std2.t1 values(102, 'cc')")
+    snc.sql("put into std2.t1 values(102, 'dd')")
+    snc.sql("put into std2.t1 values(103, NULL)")
+    assertEquals(5, snc.sql("select * from std2.t1").count())
+    val rs1 = snc.sql("select id2 from std2.t1 where id = 102")
+    val rows1 = rs1.collect()
+    for (row <- rows1) {
+      assertEquals("dd", row.getAs[String]("id2"))
+    }
+
+
+    snc.sql("drop table if exists std2.t2")
+    snc.sql("create table std2.t2(id integer, ID2 string) using column " +
+        "options(key_columns 'id', COLUMN_MAX_DELTA_ROWS '1', buckets '1')")
+    for (i <- 1 to 10) {
+      snc.sql("insert into std2.t2 values(" + i + ",'test" + i + "')")
+    }
+
+    for (i <- 1 to 10) {
+      snc.sql("put into std2.t2 values(" + i + ",'test" + i + 1 + "')")
+    }
+
+    val rs2 = snc.sql("select * from std2.t2 order by id")
+    assertEquals(10, rs2.count())
+    val rows2 = rs2.collect()
+    var i = 1
+    for (row <- rows2) {
+      assertEquals("test" + i + 1, row.getAs[String]("id2"))
+      i = i + 1
+    }
+
+    snc.sql("drop table if exists std2.columntable")
+    snc.sql("CREATE TABLE std2.columntable (bigIntCol BIGINT," +
+        " binaryCol1 BINARY, boolCol BOOLEAN , byteCol BYTE," +
+        " charCol CHAR( 30 ) , dateCol DATE , decimalCol DECIMAL( 10, 2 ) ," +
+        " doubleCol DOUBLE , floatCol FLOAT , intCol INT , integerCol INTEGER," +
+        " longVarcharCol LONG , numericCol NUMERIC, numeric1Col NUMERIC(10,2)," +
+        " doublePrecisionCol DOUBLE PRECISION, realCol REAL, stringCol STRING," +
+        " timestampCol TIMESTAMP , varcharCol VARCHAR( 20 ))" +
+        " using COLUMN options(BUCKETS '8', key_columns 'bigIntcol');")
+    snc.sql("put into std2.columntable values(-10, NULL, true, 56, 'ABC456'," +
+        " current_date, -66, 0.0111, -2.225E-307, -10, 10, 123456, -1, 1," +
+        " 123.56, 0.089, 'abcd', current_timestamp, 'SNAPPY')")
+    snc.sql("put into std2.columntable (bigIntCol, binaryCol1, boolCol, byteCol," +
+        " charCol, dateCol , decimalCol , doubleCol , floatCol , intCol)" +
+        " values (1000, 1010, FALSE, 97,'1234567890abcdefghij'," +
+        " date('1970-01-08'), 66, 2.2, 1.0E8, 1000)")
+    assertEquals(2, snc.sql("select * from std2.columntable").count())
+  }
 }
