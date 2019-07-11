@@ -61,8 +61,6 @@ trait TableExec extends UnaryExecNode with CodegenSupportOnExecutor {
         relation match {
           case Some(r: NativeTableRowLevelSecurityRelation) => r.relationInfo.catalogSchemaVersion
           case _ =>
-            logWarning("TableExec.catalogSchemaVersion:" +
-                " relation object not available returning -1 as schema version")
             -1
         }
       }

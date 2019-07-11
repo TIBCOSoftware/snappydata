@@ -74,13 +74,13 @@ trait RowExec extends TableExec {
      s"""
         |$connTerm = $utilsClass.MODULE$$.getConnection(
         |    "$resolvedName", $props, true);
-        |java.sql.Statement clientStmt1 = null;
+        |java.sql.Statement clientStmt = null;
         |if ($catalogVersion != -1) {
         |  try {
-        |    clientStmt1 = $connTerm.createStatement();
-        |    if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
-        |      io.snappydata.thrift.internal.ClientConnection clientConn1 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
-        |      clientConn1.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
+        |    clientStmt = $connTerm.createStatement();
+        |    if (clientStmt instanceof io.snappydata.thrift.internal.ClientStatement) {
+        |      io.snappydata.thrift.internal.ClientConnection clientConn = ((io.snappydata.thrift.internal.ClientStatement)clientStmt).getConnection();
+        |      clientConn.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
         |    }
         |  } catch (java.sql.SQLException sqle) {
         |    throw new java.io.IOException(sqle.toString(), sqle);
@@ -102,11 +102,11 @@ trait RowExec extends TableExec {
       s""" finally {
          |  if ($catalogVersion != -1) {
          |    try {
-         |      if (clientStmt1 instanceof io.snappydata.thrift.internal.ClientStatement) {
-         |        io.snappydata.thrift.internal.ClientConnection clientConn2 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt1).getConnection();
-         |        clientConn2.setCommonStatementAttributes(null);
+         |      if (clientStmt instanceof io.snappydata.thrift.internal.ClientStatement) {
+         |        io.snappydata.thrift.internal.ClientConnection clientConn = ((io.snappydata.thrift.internal.ClientStatement)clientStmt).getConnection();
+         |        clientConn.setCommonStatementAttributes(null);
          |      }
-         |      if(clientStmt1 != null) clientStmt1.close();
+         |      if(clientStmt != null) clientStmt.close();
          |    } catch (java.sql.SQLException sqle) {
          |    }
          |  }
