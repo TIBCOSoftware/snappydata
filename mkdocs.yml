@@ -154,7 +154,7 @@ pages:
 - 'Evaluating Statistics for the System and Applications': 'vsd/system_performance.md'
 - 'Evaluating Statistics for the System and Applications':
     - 'Collecting System Statistics': 'vsd/collecting_system_stats.md'
-    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
+#    - 'Using VSD to Analyze Statistics': 'vsd/vsd_overview.md'
 #    - 'Using VSD to Analyze Statistics':
 #        - 'Installing and Running VSD': 'vsd/running_vsd.md'
 #        - 'Transaction Performance': 'vsd/vsd_transactions.md'
