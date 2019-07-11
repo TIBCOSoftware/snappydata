@@ -290,20 +290,10 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   def resetConnectionAttributesCode(): String = {
     if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
       // for smart connector, reset the connection attributes as well
+      val externalStoreUtilsClass = ExternalStoreUtils.getClass.getName
       s"""
-        |  java.sql.Connection conn = (java.sql.Connection)$txIdConnArray[0];
-        |  java.sql.Statement clientStmt = null;
-        |  if ($catalogVersion != -1) {
-        |    try {
-        |      clientStmt = conn.createStatement();
-        |      if (clientStmt instanceof io.snappydata.thrift.internal.ClientStatement) {
-        |        io.snappydata.thrift.internal.ClientConnection clientConn2 = ((io.snappydata.thrift.internal.ClientStatement)clientStmt).getConnection();
-        |        clientConn2.setCommonStatementAttributes(null);
-        |      }
-        |    } catch (java.sql.SQLException sqle) {
-        |      if(clientStmt != null) clientStmt.close();
-        |    }
-        |  }
+        |  $externalStoreUtilsClass.MODULE$$.resetSchemaVersionOnConnection(
+        |  $catalogVersion, (java.sql.Connection)$txIdConnArray[0]);
       """.stripMargin
     } else {
       """
@@ -667,23 +657,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       ctx.addNewFunction(beginSnapshotTx,
         s"""
            |private final Object[] $beginSnapshotTx() throws java.io.IOException {
-           |  final Object[] txIdConnArray = $externalStoreTerm.beginTx(false);
-           |  java.sql.Connection conn = (java.sql.Connection)txIdConnArray[0];
-           |  java.sql.Statement clientStmt = null;
-           |  if ($catalogVersion != -1) {
-           |  try {
-           |    clientStmt = conn.createStatement();
-           |    if (clientStmt instanceof io.snappydata.thrift.internal.ClientStatement) {
-           |      io.snappydata.thrift.internal.ClientConnection clientConn = ((io.snappydata.thrift.internal.ClientStatement)clientStmt).getConnection();
-           |      clientConn.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
-           |    }
-           |  } catch (java.sql.SQLException sqle) {
-           |    throw new java.io.IOException(sqle.toString(), sqle);
-           |  } finally {
-           |    if (clientStmt != null) clientStmt.close();
-           |  }
-           |}
-           |return txIdConnArray;
+           |  return $externalStoreTerm.beginTxSmartConnector(false, $catalogVersion);
            |}
       """.stripMargin)
     } else {

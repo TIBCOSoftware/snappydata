@@ -63,7 +63,7 @@ trait RowExec extends TableExec {
       val props = ctx.addReferenceObj("connectionProperties", connProps)
       val catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
       val initCode: String = getInitCode(utilsClass, props, catalogVersion)
-      val endCode = getEndCode(catalogVersion)
+      val endCode = getEndCode(utilsClass, catalogVersion)
       (initCode, s"", endCode)
     }
   }
@@ -74,42 +74,22 @@ trait RowExec extends TableExec {
      s"""
         |$connTerm = $utilsClass.MODULE$$.getConnection(
         |    "$resolvedName", $props, true);
-        |java.sql.Statement clientStmt = null;
-        |if ($catalogVersion != -1) {
-        |  try {
-        |    clientStmt = $connTerm.createStatement();
-        |    if (clientStmt instanceof io.snappydata.thrift.internal.ClientStatement) {
-        |      io.snappydata.thrift.internal.ClientConnection clientConn = ((io.snappydata.thrift.internal.ClientStatement)clientStmt).getConnection();
-        |      clientConn.setCommonStatementAttributes(new io.snappydata.thrift.StatementAttrs().setCatalogVersion($catalogVersion));
-        |    }
-        |  } catch (java.sql.SQLException sqle) {
-        |    throw new java.io.IOException(sqle.toString(), sqle);
-        |  }
-        |}
-        |    """.stripMargin
+        |$utilsClass.MODULE$$.setSchemaVersionOnConnection($catalogVersion, $connTerm);
+        |""".stripMargin
     } else {
      s"""
         |$connTerm = $utilsClass.MODULE$$.getConnection(
         |    "$resolvedName", $props, true);
-        |    """.stripMargin
+        |""".stripMargin
    }
     initCode
   }
 
-  private def getEndCode(catalogVersion: String): String = {
+  private def getEndCode(utilsClass: String, catalogVersion: String): String = {
     val endCode = if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
       // for smart connector, reset connection attributes
       s""" finally {
-         |  if ($catalogVersion != -1) {
-         |    try {
-         |      if (clientStmt instanceof io.snappydata.thrift.internal.ClientStatement) {
-         |        io.snappydata.thrift.internal.ClientConnection clientConn = ((io.snappydata.thrift.internal.ClientStatement)clientStmt).getConnection();
-         |        clientConn.setCommonStatementAttributes(null);
-         |      }
-         |      if(clientStmt != null) clientStmt.close();
-         |    } catch (java.sql.SQLException sqle) {
-         |    }
-         |  }
+         |  $utilsClass.MODULE$$.resetSchemaVersionOnConnection($catalogVersion, $connTerm);
          |  try {
          |    $connTerm.commit();
          |    $connTerm.close();
