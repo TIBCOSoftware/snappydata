@@ -23,6 +23,8 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.ToolsCallbackInit
@@ -42,6 +44,7 @@ import org.apache.spark.util.MutableURLClassLoader
 object ContextJarUtils extends Logging {
   val JAR_PATH = "snappy-jars"
   private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
+  val functionKeyPrefix = "__FUNC__"
 
   def addDriverJar(key: String, classLoader: URLClassLoader): Option[URLClassLoader] = {
     driverJars.putIfAbsent(key, classLoader)
@@ -86,10 +89,14 @@ object ContextJarUtils extends Logging {
       val changedFileName = s"${prefix}-${localName}"
       val jarFile = new File(jarDir, changedFileName)
 
-      if (jarFile.exists()) {
-        jarFile.delete()
-        RefreshMetadata.executeOnAll(sparkContext, RefreshMetadata.REMOVE_FUNCTION_JAR,
-          Array(changedFileName))
+      try {
+        if (jarFile.exists()) {
+          jarFile.delete()
+          RefreshMetadata.executeOnAll(sparkContext, RefreshMetadata.REMOVE_FUNCTION_JAR,
+            Array(changedFileName))
+        }
+      } finally {
+        Misc.getMemStore.getGlobalCmdRgn.remove(functionKeyPrefix + prefix)
       }
     }
   }

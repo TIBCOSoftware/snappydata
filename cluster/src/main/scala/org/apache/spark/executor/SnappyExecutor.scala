@@ -31,6 +31,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
+import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
 import org.apache.spark.{Logging, SparkEnv, SparkFiles}
 
@@ -88,10 +89,10 @@ class SnappyExecutor(
         val urls = appDependencies.map(name => {
           val localName = name.split("/").last
           logInfo(s"Fetching file $name for App[$appName]")
-          Misc.getMemStore.getGlobalCmdRgn.put("__FUNC__" + appName, name)
           Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
             env.securityManager, hadoopConf, -1L, useCache = !isLocal)
           val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
+          Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName, name)
           url
         })
         val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)

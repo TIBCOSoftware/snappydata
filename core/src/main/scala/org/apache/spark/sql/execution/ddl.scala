@@ -48,7 +48,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.internal.BypassRowLevelSecurity
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
@@ -594,8 +594,8 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
         var alias = t.getKey
-        // List functions neatly
-        alias = alias.replace("__FUNC__", "[Function]")
+        // Explicitly mark functions as UDF while listing jars/packages.
+        alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
         val value = t.getValue
         val indexOf = value.indexOf('|')
         if (indexOf > 0) {

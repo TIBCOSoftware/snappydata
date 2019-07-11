@@ -30,6 +30,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.ui.SQLTab
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
+import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.{JettyUtils, SnappyDashboardTab}
 import org.apache.spark.util.SnappyUtils
 import org.apache.spark.{Logging, SparkCallbacks, SparkContext, SparkFiles}
@@ -124,12 +125,13 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       val jarFile = new File(SparkFiles.getRootDirectory(), args(0))
       if (jarFile.exists()) {
         jarFile.delete()
+        logDebug(s"Deleted jarFile $jarFile for UDF ${args(0)}")
       }
 
       // Remove the file from spark directory
-      if (!args(0).isEmpty) {
+      if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
-        val url = Misc.getMemStore.getGlobalCmdRgn.get("__FUNC__" + appName)
+        val url = Misc.getMemStore.getGlobalCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
         if (!url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
@@ -142,8 +144,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           try {
             if (cachedFile.exists()) {
               cachedFile.delete()
+              logDebug(s"Deleted $cachedFile for UDF ${args(0)}")
             }
-            Misc.getMemStore.getGlobalCmdRgn.remove("__FUNC__" + appName)
           } finally {
             lock.release()
             lockFileChannel.close()
@@ -165,8 +167,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def removePackage(alias: String): Unit = {
     GemFireXDUtils.waitForNodeInitialization()
-    val packageRegion = Misc.getMemStore.getGlobalCmdRgn
-    packageRegion.destroy(alias)
+    Misc.getMemStore.getGlobalCmdRgn.destroy(alias)
   }
 
   override def setLeadClassLoader(): Unit = {
