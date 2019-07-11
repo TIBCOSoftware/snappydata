@@ -44,8 +44,8 @@ function start_instance {
 }
 
 #Since want to test whether the result is zero, don't need to treat it as an return value using $? . Just treat the command itself as a conditional.
-if "$sbin/check-dir-option.sh" "$@" ; then	
-   start_instance "$@"
+if "$sbin/check-dir-option.sh" "$@"; then	
+  start_instance "$@"
 else
   echo $usage
 fi

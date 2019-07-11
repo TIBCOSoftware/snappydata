@@ -22,39 +22,29 @@
 
 noOfInputsArgs=$#
 
-if [ $noOfInputsArgs -eq 0 ]
-  then  #if no arguments passed
-	echo "ERROR : No arguments has been provided. Please provide required arguments"
-	#echo $usage
-  	exit 1
+if [ $noOfInputsArgs -eq 0 ];then  #if no arguments passed
+  echo "ERROR: No arguments have been provided. Please provide required arguments"
+  exit 1
 else
 
-    # there could be two scenario if arguments are not equal to zero
-	# - script get triggerd from snappy-start-all.sh--then argument provided by this snappy-nodes.sh
-	# - user executing individual component script,in this case this script: snappy-locator.sh
-   # Need to check in both case -dir option is provided or not
-	isPresent=0      
-	for argument in "$@"
-	 do	
-		#echo "argument value: $argument"	
-        	if [[ "$argument" == -dir=*  ]]
-		 then
-			isPresent=1 #  present
-			if [ -z $(echo $argument | cut -d'=' -f 2) ] #present but empty i.e "-dir="
-			 then
-			  isPresent=0
-			#else #present but should be a directory but do not need to check here, as getting check in launcher			
-			fi			
-		fi
-	done
+  # there could be two scenario if arguments are not equal to zero
+    # - script get triggerd from snappy-start-all.sh--then argument provided by this snappy-nodes.sh
+    # - user executing individual component script,in this case this script: snappy-locator.sh
+  # Need to check in both case -dir option is provided or not
+  isPresent=0      
+  for argument in "$@"; do	
+    if [[ "$argument" == -dir=*  ]]; then
+      isPresent=1 #  present
+      if [ -z $(echo $argument | cut -d'=' -f 2) ]; then #present but empty i.e "-dir="
+        isPresent=0
+      #else #present but should be a directory but do not need to check here, as getting check in launcher			
+      fi			
+    fi
+  done
 	
-	if [ $isPresent -eq 0 ]
-	 then
-	  echo "ERROR: Please provide -dir option"
-	 # echo $usage
- 	  exit 1
-	fi
-  	
-   exit 0
-  
+  if [ $isPresent -eq 0 ]; then
+    echo "ERROR: Please provide -dir argument"
+    exit 1
+  fi
+  exit 0  
 fi
