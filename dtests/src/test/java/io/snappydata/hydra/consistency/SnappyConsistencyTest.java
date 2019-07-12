@@ -131,7 +131,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     } else {
       index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
       if(dmlSql.contains("$tid")) dmlSql = dmlSql.replace("$tid", tid + "");
-      int initCounter = getInitialCounter(index,batchSize)
+      int initCounter = getInitialCounter(index,batchSize);
       if(dmlSql.contains("$range")){
         dmlSql = dmlSql.replace("$range",  initCounter + "," + (initCounter + batchSize));
       }
