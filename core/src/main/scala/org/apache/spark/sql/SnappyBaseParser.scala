@@ -312,7 +312,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def packageIdentifierPart: Rule1[String] = rule {
-    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot).+)) ~ delimiter ~> { (s: String) =>
+    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot).+)) ~ ws ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
           push(if (caseSensitive) s else lcase)

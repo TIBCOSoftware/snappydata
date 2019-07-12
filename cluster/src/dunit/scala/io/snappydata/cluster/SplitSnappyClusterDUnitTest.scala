@@ -258,10 +258,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testDeployPackageNameFormat(): Unit = {
-
-
     val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
-
     val sns = new SnappySession(sc)
     sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
     sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
@@ -270,38 +267,29 @@ class SplitSnappyClusterDUnitTest(s: String)
         "connector_2.11:2.2.2'")
     sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
         "-connector_2.11:2.2.2'")
-    sns.sql("deploy package \"testsch\".\"mongo-spark_v1.3\"  'org.mongodb.spark:mongo" +
+    sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
         "-spark-connector_2.11:2.2.2'")
-
-    sns.sql("deploy package testsch.\"mongo-spark_v1.4\"  'org.mongodb.spark:mongo" +
+    sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
         "-spark-connector_2.11:2.2.2'")
-    sns.sql("deploy package \"testsch\".mongo-spark_v1.5  'org.mongodb.spark:mongo" +
+    sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
         "-spark-connector_2.11:2.2.2'")
-
     import org.scalatest.Assertions._
-
     val thrown = intercept [Exception] {
-      sns.sql("deploy package \"testsch\".mongo-$$#park_v1.5  'org.mongodb.spark:mongo" +
-          "-spark-connector_2.11:2.2.2'")
+      sns.sql("deploy package \"testsch\".mongo-$$#park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2")
     }
-    assert(thrown.getMessage === "Invalid input \"mongo-$\", expected capture, delimiter or quotedIdentifier (line 1, column 26):\ndeploy package \"testsch\".mongo-$$#park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'\n                         ^;")
+    assert(thrown.getMessage === "Invalid input \"mongo-$\", expected packageIdentifierPart or stringLiteral (line 1, column 26):\ndeploy package \"testsch\".mongo-$$#park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2\n                         ^;")
 
-    sns.sql("list packages").show
-
-
+    assert(sns.sql("list packages").count() == 7)
 
     sns.sql(s"""deploy jar avro-v_1.0 '$jarPath'""")
     sns.sql(s"""deploy jar app.avro-v_1.1 '$jarPath'""")
     sns.sql(s"""deploy jar testsch.avro-v_1.2 '$jarPath'""")
-
-    val commandStr = s"""deploy jar \"app\".avro-v_1.3 '$jarPath'"""
-
+    val commandStr = s"""deploy jar "app".avro-v_1.3 '$jarPath'"""
     sns.sql(commandStr)
-    sns.sql(s"""deploy jar \"testsch\".\"avro-v_1.4\" '$jarPath'""")
-    sns.sql(s"""deploy jar testsch.\"avro-v_1.5\" '$jarPath'""")
+    sns.sql(s"""deploy jar "testsch"."avro-v_1.4" '$jarPath'""")
+    sns.sql(s"""deploy jar testsch."avro-v_1.5" '$jarPath'""")
 
-
-    sns.sql("list packages").show
+    assert(sns.sql("list packages").count() == 13)
   }
 
   override def testUpdateDeleteOnColumnTables(): Unit = {
