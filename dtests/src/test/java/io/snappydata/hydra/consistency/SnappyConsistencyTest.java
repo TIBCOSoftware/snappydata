@@ -131,8 +131,9 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     } else {
       index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
       if(dmlSql.contains("$tid")) dmlSql = dmlSql.replace("$tid", tid + "");
+      int initCounter = getInitialCounter(index,batchSize)
       if(dmlSql.contains("$range")){
-        dmlSql = dmlSql.replace("$range", getInitialCounter(index,batchSize) + "," + batchSize);
+        dmlSql = dmlSql.replace("$range",  initCounter + "," + (initCounter + batchSize));
       }
       if (conn.equals(ConnType.SNAPPY)) {
         String app_props = "tid=" + tid;
@@ -154,7 +155,8 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       }
     }
     if (hasDerbyServer) {
-      if ((!operation.equalsIgnoreCase("insert")) && conn.equals(ConnType.JDBC)) {
+      if (!((operation.equalsIgnoreCase("insert") || operation.equalsIgnoreCase("putinto"))
+          && conn.equals(ConnType.JDBC))) {
         Log.getLogWriter().info("Performing operation in derby..");
         try {
           Connection dConn = derbyTestUtils.getDerbyConnection();

@@ -46,8 +46,8 @@ object ValidateConsistencyWithDMLOpsApp {
       pw.println("Starting execution for dml operation " +  operation)
       pw.flush()
       val consistencyTest = new ConsistencyTest()
-      consistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, selectStmt,
-        dmlStmt, tableName)
+      consistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, dmlStmt,
+        selectStmt, tableName)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")

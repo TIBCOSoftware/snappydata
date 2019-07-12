@@ -1,6 +1,6 @@
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-snappyDDLExtn =
-"using column options(partition_by 'id', redundancy '1', persistent 'sync', COLUMN_MAX_DELTA_ROWS '12', COLUMN_BATCH_SIZE '1024', KEY_COLUMNS 'id')"
-"using row options(partition_by 'id', redundancy '1', persistent 'sync')"
+"using column options(partition_by 'id', buckets '1', redundancy '1', persistent 'sync', COLUMN_MAX_DELTA_ROWS '12', COLUMN_BATCH_SIZE '1024', KEY_COLUMNS 'id')"
+"using row options(partition_by 'id', buckets '1', redundancy '1', persistent 'sync')"
 "using row options(persistent 'sync')"
 "using column options(partition_by 'id', buckets '1', redundancy '1', persistent 'sync', COLUMN_MAX_DELTA_ROWS '10', COLUMN_BATCH_SIZE '1024', KEY_COLUMNS 'id')"
 ;
@@ -51,7 +51,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 "update table1 set code = case when code=-1 then 0 else (code+1) end , code1=code1 + 1"
 "update table2 set code = case when code=-1 then 0 else (code+1) end , code2=code2 + 1"
 "update table3 set code = case when code=-1 then 0 else (code+1) end , code3=code3 + 1 "
-"update table4 set code = case when code=-1 then 0 else (code+1) end "
+"update table4 set code = case when code=-1 then 0 else (code+1) end , code1=code1 + 1"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
