@@ -244,12 +244,8 @@ function execute() {
     esac
   done
   #copy the conf files into other node before starting the launch processs
-  if [ -n "$isStart" ]; then
-   #check $host is present in memberArr or not. If not then copy else do not copy
-    if [[ ! " ${memberArray[@]} " =~ " ${host} " ]]; then
-      memberArray+=($host)
-      scpConf "$@"    
-    fi    
+  if [[ -n "$isStart" && $NO_COPYCONF -eq 0 ]]; then
+    copyConf "$@"    
   fi
   if [ "$host" != "localhost" ]; then
     if [ "$dirfolder" != "" ]; then
@@ -345,8 +341,8 @@ function getNumLeadsOnHost() {
   fi
   echo $numLeadsOnHost
 }
-
-function scpConf() {
+# function for copying all the configuration files into the other nodes/members of the cluster
+function copyConf() {
   currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
   currentNodeHostName=$(uname -n)
 
@@ -364,7 +360,7 @@ function scpConf() {
 	  else
 	      backupDir="backup"
 	      if [[ ! -z $(ssh $host "cat $entry" | diff - "$entry") ]] ; then
-		backupFileName=${fileName}_`date +%Y_%m_%d_%H_%M_%S`
+		backupFileName=${fileName}_${TIME_STAMP_OF_START}
 		echo "INFO: Copied $filename from this host to $host. Moved the original $filename on $host to $backupFileName."
                 (ssh "$host" "{ if [ ! -d \"${SPARK_CONF_DIR}/$backupDir\" ]; then  mkdir \"${SPARK_CONF_DIR}/$backupDir\"; fi; } ")
 		ssh $host "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"		    
@@ -383,7 +379,6 @@ if [ -n "${HOSTLIST}" ]; then
   declare -a hosts
   declare -a counts
   isStartOrStatus=
-  count=0
   while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     arr[${#arr[@]}]="$slave"
