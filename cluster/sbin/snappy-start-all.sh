@@ -65,6 +65,7 @@ while (( "$#" )); do
   shift
 done
 
+declare -a memberArray
 
 # Start Locators
 "$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode "$@"
