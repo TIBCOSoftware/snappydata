@@ -77,7 +77,7 @@ class ConsistencyTest {
         if (!verifyAtomicity(beforeDF, afterDF, op, tableName, batchSize, pw)) {
           pw.println("Verified that data is atomic")
         }
-        pw.println("Failed to get atomic data.")
+        else pw.println("Failed to get atomic data.")
         pw.flush()
       } catch {
         case se: SQLException =>
@@ -93,131 +93,136 @@ class ConsistencyTest {
     var atomicityCheckFailed: Boolean = false
     var rowCount: Long = 0
     var defaultValue: Int = 0
-    val schema: Array[String] = df_before.schema.fieldNames
-    pw.println(schema.mkString(","))
-    val dfBef_list = df_before.collectAsList()
-    val dfAft_list = df_after.collectAsList()
-    for(i <- 0 until dfBef_list.size()) {
-      val rowBf: Row = dfBef_list.get(i)
-      val rowAf: Row = dfAft_list.get(i)
-      for (j <- 0 until schema.length) {
-        val colName: String = schema(j)
-        DMLOp.getOperation(op) match {
-          case DMLOp.INSERT =>
-            defaultValue = -1
-            if (colName.toUpperCase.startsWith("COUNT")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              rowCount = before_result
-              pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                  before_result + " and number of after " + op + " start : " + after_result)
-              val expectedRs = after_result - before_result
-              if (!(expectedRs == 0 || expectedRs == batchSize)) atomicityCheckFailed = true
-            } else if (colName.toUpperCase.startsWith("AVG")) {
-              val before_result: Double = rowBf.getDouble(j)
-              val after_result: Double = rowAf.getDouble(j)
-              pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and avg after " + op + " start : " + after_result)
-              val expectedRs =
-                ((before_result * rowCount) + (defaultValue * batchSize)) / (rowCount + batchSize)
-              if (!(after_result == before_result || after_result == expectedRs)) {
-                atomicityCheckFailed = true
+    try {
+      val schema: Array[String] = df_before.schema.fieldNames
+      pw.println(schema.mkString(","))
+      val dfBef_list = df_before.collectAsList()
+      val dfAft_list = df_after.collectAsList()
+      for (i <- 0 until dfBef_list.size()) {
+        val rowBf: Row = dfBef_list.get(i)
+        val rowAf: Row = dfAft_list.get(i)
+        for (j <- 0 until schema.length) {
+          val colName: String = schema(j)
+          DMLOp.getOperation(op) match {
+            case DMLOp.INSERT =>
+              defaultValue = -1
+              if (colName.toUpperCase.startsWith("COUNT")) {
+                val before_result: Long = rowBf.getLong(j)
+                val after_result: Long = rowAf.getLong(j)
+                rowCount = before_result
+                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
+                    before_result + " and number of after " + op + " start : " + after_result)
+                val expectedRs = after_result - before_result
+                if (!(expectedRs == 0 || expectedRs == batchSize)) atomicityCheckFailed = true
+              } else if (colName.toUpperCase.startsWith("AVG")) {
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
+                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and avg after " + op + " start : " + after_result)
+                val expectedRs =
+                  ((before_result * rowCount) + (defaultValue * batchSize)) / (rowCount + batchSize)
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true
+                }
+              } else if (colName.toUpperCase.startsWith("SUM")) {
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
+                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and sum after " + op + " start : " + after_result)
+                val expectedRs = before_result + (defaultValue * batchSize)
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true
+                }
               }
-            } else if (colName.toUpperCase.startsWith("SUM")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and sum after " + op + " start : " + after_result)
-              val expectedRs = before_result + (defaultValue * batchSize)
-              if (!(after_result == before_result || after_result == expectedRs)) {
-                atomicityCheckFailed = true
+            case DMLOp.UPDATE =>
+              defaultValue = 1
+              if (colName.toUpperCase.startsWith("COUNT")) {
+                val before_result: Long = rowBf.getLong(j)
+                val after_result: Long = rowAf.getLong(j)
+                rowCount = before_result
+                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
+                    before_result + " and number of after " + op + " start : " + after_result)
+                val expectedRs = after_result - before_result
+                if (expectedRs == 0) atomicityCheckFailed = true
+              } else if (colName.toUpperCase.startsWith("AVG")) {
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
+                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and avg after " + op + " start : " + after_result)
+                val expectedRs = before_result + defaultValue
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true
+                }
+              } else if (colName.toUpperCase.startsWith("SUM")) {
+                val before_result: Long = rowBf.getLong(j)
+                val after_result: Long = rowAf.getLong(j)
+                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and sum after " + op + " start : " + after_result)
+                val expectedRs = before_result + (defaultValue * rowCount)
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true
+                }
               }
-            }
-          case DMLOp.UPDATE =>
-            defaultValue = 1
-            if (colName.toUpperCase.startsWith("COUNT")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              rowCount = before_result
-              pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                  before_result + " and number of after " + op + " start : " + after_result)
-              val expectedRs = after_result - before_result
-              if (expectedRs == 0) atomicityCheckFailed = true
-            } else if (colName.toUpperCase.startsWith("AVG")) {
-              val before_result: Double = rowBf.getDouble(j)
-              val after_result: Double = rowAf.getDouble(j)
-              pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and avg after " + op + " start : " + after_result)
-              val expectedRs = before_result + defaultValue
-              if (!(after_result == before_result || after_result == expectedRs)) {
-                atomicityCheckFailed = true
+            case DMLOp.DELETE =>
+              defaultValue = 0
+              if (colName.toUpperCase.startsWith("COUNT")) {
+                val before_result: Long = rowBf.getLong(j)
+                val after_result: Long = rowAf.getLong(j)
+                rowCount = before_result
+                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
+                    before_result + " and number of after " + op + " start : " + after_result)
+                val expectedRs = after_result - before_result
+                if (!(expectedRs % batchSize == 0)) atomicityCheckFailed = true
+              } else if (colName.toUpperCase.startsWith("AVG")) {
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
+                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and avg after " + op + " start : " + after_result)
+                // TODO
+              } else if (colName.toUpperCase.startsWith("SUM")) {
+                val before_result: Long = rowBf.getLong(j)
+                val after_result: Long = rowAf.getLong(j)
+                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and sum after " + op + " start : " + after_result)
               }
-            } else if (colName.toUpperCase.startsWith("SUM")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and sum after " + op + " start : " + after_result)
-              val expectedRs = before_result + (defaultValue * rowCount)
-              if (!(after_result == before_result || after_result == expectedRs)) {
-                atomicityCheckFailed = true
+            case DMLOp.PUTINTO =>
+              defaultValue = -1
+              if (colName.toUpperCase.startsWith("COUNT")) {
+                val before_result: Long = rowBf.getLong(j)
+                val after_result: Long = rowAf.getLong(j)
+                rowCount = before_result
+                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
+                    before_result + " and number of after " + op + " start : " + after_result)
+                val expectedRs = after_result - before_result
+                if (!(expectedRs % batchSize == 0)) atomicityCheckFailed = true
+              } else if (colName.toUpperCase.startsWith("AVG")) {
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
+                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and avg after " + op + " start : " + after_result)
+                val expectedRs =
+                  ((before_result * rowCount) + (defaultValue * batchSize)) / (rowCount + batchSize)
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true
+                }
+              } else if (colName.toUpperCase.startsWith("SUM")) {
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
+                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
+                    before_result + " and sum after " + op + " start : " + after_result)
+                val expectedRs = before_result + (defaultValue * batchSize)
+                if (!(after_result == before_result || after_result == expectedRs)) {
+                  atomicityCheckFailed = true
+                }
               }
-            }
-          case DMLOp.DELETE =>
-            defaultValue = 0
-            if (colName.toUpperCase.startsWith("COUNT")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              rowCount = before_result
-              pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                  before_result + " and number of after " + op + " start : " + after_result)
-              val expectedRs = after_result - before_result
-              if (!(expectedRs % batchSize == 0)) atomicityCheckFailed = true
-            } else if (colName.toUpperCase.startsWith("AVG")) {
-              val before_result: Double = rowBf.getDouble(j)
-              val after_result: Double = rowAf.getDouble(j)
-              pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and avg after " + op + " start : " + after_result)
-              // TODO
-            } else if (colName.toUpperCase.startsWith("SUM")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and sum after " + op + " start : " + after_result)
-            }
-          case DMLOp.PUTINTO =>
-            defaultValue = -1
-            if (colName.toUpperCase.startsWith("COUNT")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              rowCount = before_result
-              pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                  before_result + " and number of after " + op + " start : " + after_result)
-              val expectedRs = after_result - before_result
-              if (!(expectedRs % batchSize == 0)) atomicityCheckFailed = true
-            } else if (colName.toUpperCase.startsWith("AVG")) {
-              val before_result: Double = rowBf.getDouble(j)
-              val after_result: Double = rowAf.getDouble(j)
-              pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and avg after " + op + " start : " + after_result)
-              val expectedRs =
-                ((before_result * rowCount) + (defaultValue * batchSize)) / (rowCount + batchSize)
-              if (!(after_result == before_result || after_result == expectedRs)) {
-                atomicityCheckFailed = true
-              }
-            } else if (colName.toUpperCase.startsWith("SUM")) {
-              val before_result: Long = rowBf.getLong(j)
-              val after_result: Long = rowAf.getLong(j)
-              pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                  before_result + " and sum after " + op + " start : " + after_result)
-              val expectedRs = before_result + (defaultValue * batchSize)
-              if (!(after_result == before_result || after_result == expectedRs)) {
-                atomicityCheckFailed = true
-              }
-            }
-          case _ =>
+            case _ =>
+          }
+          pw.flush()
         }
-        pw.flush()
       }
+    } catch {
+      case e: Exception => pw.println("Got Exception while verifying data"
+          + e.getMessage + e.printStackTrace())
     }
     atomicityCheckFailed
   }
