@@ -727,15 +727,15 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def deployPackages: Rule1[LogicalPlan] = rule {
-    DEPLOY ~ ((PACKAGE ~ tableIdentifier ~ stringLiteral ~
+    DEPLOY ~ ((PACKAGE ~ packageIdentifier ~ stringLiteral ~
         (REPOS ~ stringLiteral).? ~ (PATH ~ stringLiteral).? ~>
         ((alias: TableIdentifier, packages: String, repos: Any, path: Any) => DeployCommand(
           packages, alias.identifier, repos.asInstanceOf[Option[String]],
           path.asInstanceOf[Option[String]], restart = false))) |
-      JAR ~ tableIdentifier ~ stringLiteral ~>
+      JAR ~ packageIdentifier ~ stringLiteral ~>
           ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
         alias.identifier, commaSepPaths, restart = false))) |
-    UNDEPLOY ~ tableIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
+    UNDEPLOY ~ packageIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
     LIST ~ (
       PACKAGES ~> (() => ListPackageJarsCommand(true)) |
       JARS ~> (() => ListPackageJarsCommand(false))
