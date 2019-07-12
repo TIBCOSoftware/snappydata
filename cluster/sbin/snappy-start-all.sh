@@ -37,7 +37,7 @@ fi
 BACKGROUND=-bg
 clustermode=
 CONF_DIR_ARG=
-NO_COPYCONF=0
+SKIP_CONF_COPY=0
 
 while (( "$#" )); do
   param="$1"
@@ -60,8 +60,8 @@ while (( "$#" )); do
     rowstore)
       clustermode="rowstore"
     ;;
-    -nocopyconf | --nocopyconf)
-      NO_COPYCONF=1
+    --skipconfcopy)
+      SKIP_CONF_COPY=1
     ;;
     *)
     ;;
@@ -69,8 +69,8 @@ while (( "$#" )); do
   shift
 done
 
-export TIME_STAMP_OF_START="$(date +"%Y_%m_%d_%H_%M_%S")"
-export NO_COPYCONF=$NO_COPYCONF
+export START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
+export SKIP_CONF_COPY
 
 # Start Locators
 "$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode "$@"
