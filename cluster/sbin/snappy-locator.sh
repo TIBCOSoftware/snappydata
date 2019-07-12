@@ -28,6 +28,7 @@ function absPath() {
 sbin="$(dirname "$(absPath "$0")")"
 
 mode=$1
+
 shift
 
 . "$sbin/snappy-config.sh"
@@ -37,12 +38,15 @@ shift
 . "$SNAPPY_HOME/bin/load-spark-env.sh"
 . "$SNAPPY_HOME/bin/load-snappy-env.sh"
 
-
-
 # Start up  the locator instance
 function start_instance {
-  "$SNAPPY_HOME"/bin/snappy locator "$mode" "$@"
+ "$SNAPPY_HOME"/bin/snappy locator "$mode" "$@"
 }
 
-start_instance "$@"
+#Since want to test whether the result is zero, don't need to treat it as an return value using $? . Just treat the command itself as a conditional.
+if "$sbin/check-dir-option.sh" "$@"; then	
+  start_instance "$@"
+else
+  echo $usage
+fi
 
