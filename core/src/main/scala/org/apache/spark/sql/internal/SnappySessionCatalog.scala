@@ -381,7 +381,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = formatDatabaseName(schema)
     validateSchemaName(schemaName, checkForDefault = false)
     super.setCurrentDatabase(schemaName)
-    externalCatalog.setCurrentDatabase(schemaName)
+    // since hive metastore doesn't have sys schema.
+    if (schemaName != SnappyExternalCatalog.SYS_SCHEMA) {
+      externalCatalog.setCurrentDatabase(schemaName)
+    }
   }
 
   override def listDatabases(): Seq[String] = synchronized {
