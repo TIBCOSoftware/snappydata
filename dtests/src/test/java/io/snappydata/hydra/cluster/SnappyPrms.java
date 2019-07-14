@@ -588,10 +588,58 @@ public class SnappyPrms extends BasePrms {
   public static Long credentialFile;
 
   /**
-   * Parameter used to get the user specified table List required for validation.
+   * Parameter used to get the user specified table List required for table creation/validation.
    * (VectorsetValues of Strings) A list of values for table List
    */
   public static Long tableList;
+
+  /**
+   * Parameter used to get the user specified table type List required for table(row/column) creation.
+   * (VectorsetValues of Strings) A list of values for table type
+   */
+  public static Long tableType;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using parquet file format.
+   * (VectorsetValues of Strings) A list of values for external table List for parquet data format.
+   */
+  public static Long parquetExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for table creation using CSV file format.
+   * (VectorsetValues of Strings) A list of values for external table List for CSV data format
+   */
+  public static Long csvExternalTableList;
+
+  /**
+   * Parameter used to get the user specified external table List required for inserting data into existing column tables.
+   * (VectorsetValues of Strings) A list of values for external table List for insert into operation.
+   */
+  public static Long externalTableListForInsert;
+
+  /**
+   * Parameter used to get the user specified table List required for loading data from extrenal table into column table.
+   * (VectorsetValues of Strings) A list of values for table List
+   */
+  public static Long insertTableList;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal parquet table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal parquet table.
+   */
+  public static Long dataPathListForParquet;
+
+  /**
+   * Parameter used to get the user specified table List of data path required for loading data into extrenal CSV table.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long dataPathListForCSV;
+
+  /**
+   * options parameters to be used while creating a column table. Defaults to empty if not provided.
+   * (VectorsetValues of Strings) A list of values for data path List for extrenal CSV table.
+   */
+  public static Long tableOptions;
 
   /**
    * Parameter used to get the user specified hostName List required for recording the PIDs with hydra Master
@@ -1046,6 +1094,46 @@ public class SnappyPrms extends BasePrms {
 
   public static Vector getTableList() {
     Long key = tableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getTableTypeList() {
+    Long key = tableType;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getParquetExternalTableList() {
+    Long key = parquetExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getCSVExternalTableList() {
+    Long key = csvExternalTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getExternalTableListForInsert() {
+    Long key = externalTableListForInsert;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getInsertTableList() {
+    Long key = insertTableList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForParquet() {
+    Long key = dataPathListForParquet;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getDataPathListForCSV() {
+    Long key = dataPathListForCSV;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
+  }
+
+  public static Vector getTableOptions() {
+    Long key = tableOptions;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 

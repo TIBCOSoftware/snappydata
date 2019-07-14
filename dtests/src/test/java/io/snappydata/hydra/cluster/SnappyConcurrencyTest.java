@@ -18,8 +18,10 @@ package io.snappydata.hydra.cluster;
 
 import com.gemstone.gemfire.cache.query.Struct;
 import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
+import hydra.HydraVector;
 import hydra.Log;
 import hydra.TestConfig;
+import org.apache.commons.lang.StringUtils;
 import sql.sqlutil.ResultSetHelper;
 import util.TestException;
 
@@ -106,7 +108,10 @@ public class SnappyConcurrencyTest extends SnappyTest {
           Log.getLogWriter().info("QueryExecutionTime for query:  " + queryNum + ":" + query + " is: " + queryExecutionTime / 1000 + " secs");
         }
       } catch (SQLException se) {
-        throw new TestException("Got exception while executing Analytical query:" + query, se);
+        if (isStabilityTest && se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after"))
+          Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
+        else
+          throw new TestException("Got exception while executing Analytical query:" + query, se);
       }
     }
     startTime = System.currentTimeMillis();
@@ -127,7 +132,7 @@ public class SnappyConcurrencyTest extends SnappyTest {
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numAggregationQueriesExecuted);
       } catch (SQLException se) {
-        if (isStabilityTest && se.getMessage().contains("java.lang.OutOfMemoryError: Unable to acquire"))
+        if (isStabilityTest && se.getMessage().contains("java.util.concurrent.TimeoutException: Futures timed out after"))
           Log.getLogWriter().info("Got exception while executing Analytical query:" + query, se);
         else
           throw new TestException("Got exception while executing Analytical query:" + query, se);
@@ -136,6 +141,87 @@ public class SnappyConcurrencyTest extends SnappyTest {
     /*StructTypeImpl sti = ResultSetHelper.getStructType(rs);
     List<Struct> queryResult = ResultSetHelper.asList(rs, sti, false);
     Log.getLogWriter().info("SS - Result for query : " + query + "\n" + queryResult.toString());*/
+    closeConnection(conn);
+  }
+
+  public static void createAndLoadExternalTablesUsingParquet(Vector externalTableNames, Vector dataPathList, Connection conn) throws SQLException {
+    String query;
+    for (int k = 0; k < externalTableNames.size(); k++) {
+      String externalTableName = (String) externalTableNames.elementAt(k);
+      String dataPath = (String) dataPathList.elementAt(k);
+      query = "drop table if exists " + externalTableName;
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE EXTERNAL TABLE " + externalTableName + " USING parquet OPTIONS(path '" + dataPath + "')";
+      conn.createStatement().executeUpdate(query);
+    }
+  }
+
+  public static void createAndLoadExternalTablesUsingCSV(Vector externalTableNames, Vector dataPathList, Connection conn) throws SQLException {
+    String query;
+    for (int k = 0; k < externalTableNames.size(); k++) {
+      String externalTableName = (String) externalTableNames.elementAt(k);
+      String dataPath = (String) dataPathList.elementAt(k);
+      query = "drop table if exists " + externalTableName;
+      conn.createStatement().executeUpdate(query);
+      query = "CREATE EXTERNAL TABLE " + externalTableName + " USING csv OPTIONS(path '" + dataPath + "' , header 'true', inferSchema 'true' )";
+      conn.createStatement().executeUpdate(query);
+    }
+  }
+
+  public static void createAndLoadTables(Vector externalTableNames, Vector tableNames, Vector tableTypeList, Connection conn) throws SQLException {
+    String query;
+    for (int k = 0; k < tableNames.size(); k++) {
+      String tableName = (String) tableNames.elementAt(k);
+      String externalTableName = (String) externalTableNames.elementAt(k);
+      String tableType = (String) tableTypeList.elementAt(k);
+      query = "drop table if exists " + tableName;
+      conn.createStatement().executeUpdate(query);
+      Vector options = SnappyPrms.getTableOptions();
+      if (options.isEmpty())
+        query = "CREATE TABLE " + tableName + " USING " + tableType + " OPTIONS() AS (SELECT * FROM " + externalTableName + ")";
+      else {
+        String optionsString = StringUtils.join(options, ",");
+        query = "CREATE TABLE " + tableName + " USING " + tableType + " OPTIONS(optionsString) AS (SELECT * FROM " + externalTableName + ")";
+      }
+      conn.createStatement().executeUpdate(query);
+    }
+  }
+
+  public static String parseOptios() {
+    Vector options = SnappyPrms.getTableOptions();
+    String optionsString = StringUtils.join(options, ",");
+    return optionsString;
+  }
+
+  public static void createAndLoadTablesForStabilityTest() throws SQLException {
+    Connection conn = getLocatorConnection();
+    String query;
+    Vector tableNames = SnappyPrms.getTableList();
+    Vector tableTypeList = SnappyPrms.getTableTypeList();
+    if (tableTypeList.size() != tableNames.size()) {
+      Log.getLogWriter().info("Adding last element in the tableTypeList for the  " +
+          "tables for which no table type is specified.");
+      while (tableTypeList.size() != tableNames.size())
+        tableTypeList.add(tableTypeList.lastElement());
+    }
+    Vector insertTableNames = SnappyPrms.getInsertTableList();
+    Vector parquetExternalTableNames = SnappyPrms.getParquetExternalTableList();
+    Vector csvExternalTableNames = SnappyPrms.getCSVExternalTableList();
+    Vector externalTableNamesForInsert = SnappyPrms.getExternalTableListForInsert();
+    Vector dataPathListForParquet = SnappyPrms.getDataPathListForParquet();
+    Vector dataPathListForCSV = SnappyPrms.getDataPathListForCSV();
+    Vector externalTableNames = new HydraVector();
+    externalTableNames.addAll(parquetExternalTableNames);
+    externalTableNames.addAll(csvExternalTableNames);
+    createAndLoadExternalTablesUsingParquet(parquetExternalTableNames, dataPathListForParquet, conn);
+    createAndLoadExternalTablesUsingCSV(csvExternalTableNames, dataPathListForCSV, conn);
+    createAndLoadTables(externalTableNames, tableNames, tableTypeList, conn);
+    for (int i = 0; i < insertTableNames.size(); i++) {
+      String insertTableName = (String) insertTableNames.elementAt(i);
+      String externalTableName = (String) externalTableNamesForInsert.elementAt(i);
+      query = "insert into " + insertTableName + " select * from " + externalTableName;
+      conn.createStatement().executeUpdate(query);
+    }
     closeConnection(conn);
   }
 

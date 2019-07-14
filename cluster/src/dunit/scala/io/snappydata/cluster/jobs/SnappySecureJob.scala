@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 
-package io.snappydata.cluster
+package io.snappydata.cluster.jobs
 
 import java.io.{FileOutputStream, PrintWriter}
 
