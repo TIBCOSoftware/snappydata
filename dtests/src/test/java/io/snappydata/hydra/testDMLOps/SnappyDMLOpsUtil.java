@@ -456,14 +456,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public static void HydraTask_populateTables() {
     String[] tableNames = SnappySchemaPrms.getTableNames();
-    for (int i = 0; i < tableNames.length; i++) {
-      Log.getLogWriter().info("Loading data for " + tableNames[i]);
-      if (!SnappySchemaPrms.hasCsvData()) {
-        int numInserts = 1000000;
+    if (!SnappySchemaPrms.hasCsvData()) {
+      int numInserts = 1000000;
+      for (int i = 0; i < tableNames.length; i++) {
+        Log.getLogWriter().info("Loading data for " + tableNames[i]);
         testInstance.performInsertUsingBatch(tableNames[i], i, numInserts, true);
-      } else
-      testInstance.populateTables();
-    }
+      }
+    } else testInstance.populateTables();
   }
 
   protected void populateTables() {
