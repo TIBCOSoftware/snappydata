@@ -495,6 +495,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       Some(getTable(schema, table))
     } catch {
+      // Observed a scenario(SNAP-3055) where drop database cascade is cancelled before
+      // completion which leads to inconsistent catalog state and causes NPE
+      case re: RuntimeException =>
+        logWarning(s"Metastore look up failed for $schema.$table. metastore might be in" +
+            s" a inconsistent state. Skipping $schema.$table")
+        None
       case _: TableNotFoundException | _: NoSuchTableException => None
     }
   }

@@ -339,6 +339,7 @@ class CatalogConsistencyTest
     }
     val result = snc.sql("show tables")
     assert(result.collect.length == 0)
-    snc.sql("drop table if exists rowtable1")
+    val routeQueryDisabledConn = getConnection(routeQuery = false)
+    routeQueryDisabledConn.createStatement().execute("drop table if exists rowtable1")
   }
 }

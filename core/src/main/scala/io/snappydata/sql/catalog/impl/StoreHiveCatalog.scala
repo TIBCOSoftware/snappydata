@@ -324,6 +324,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
         ignoreIfNotExists = true, purge = false).asInstanceOf[R]
 
+      // this will only remove table from catalog but any policies, base tables related to table
+      // and other catalog info related to it will remain and may cause issues
       case REMOVE_TABLE_UNSAFE =>
         externalCatalog.dropTableUnsafe(formattedSchema, formattedTable).asInstanceOf[R]
 
