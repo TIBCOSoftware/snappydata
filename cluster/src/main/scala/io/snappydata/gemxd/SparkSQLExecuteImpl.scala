@@ -41,8 +41,11 @@ import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
+import org.apache.spark.sql.catalyst.expressions.AttributeReference
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.LogicalRDD
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession}
 import org.apache.spark.storage.RDDBlockId
@@ -187,8 +190,27 @@ class SparkSQLExecuteImpl(val sql: String,
   override def serializeRows(out: DataOutput, hasMetadata: Boolean): Unit =
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
-  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
-      getTableNamesAndNullability(session, df.queryExecution.analyzed.output)
+  private lazy val (tableNames, nullability) = {
+    var qualifiedOutput = df.queryExecution.analyzed.flatMap {
+      case l: LogicalRelation =>
+        val (dbName, tableName) = l.catalogTable match {
+          case Some(c) =>
+            (c.identifier.database, c.identifier.table)
+          case _ => (None, None)
+        }
+        // creating new attributes by adding db name to qualifier
+        l.output.map(a =>
+          (AttributeReference(a.name, a.dataType, a.nullable, a.metadata)
+          (a.exprId, Some(s"${dbName.get}.${tableName}"), a.isGenerated)).toAttribute
+        )
+      case _ => null
+    }.filter(_ != null)
+    if (qualifiedOutput.size < 1) {
+      qualifiedOutput = df.queryExecution.analyzed.output
+    }
+    SparkSQLExecuteImpl.
+        getTableNamesAndNullability(session, qualifiedOutput)
+  }
 
   def getColumnNames: Array[String] = {
     querySchema.fieldNames
