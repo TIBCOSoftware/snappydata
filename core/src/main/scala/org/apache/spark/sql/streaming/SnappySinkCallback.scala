@@ -20,11 +20,13 @@ package org.apache.spark.sql.streaming
 import java.sql.{DriverManager, SQLException}
 import java.util.NoSuchElementException
 
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.LOGIN_FAILED
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.{LOGIN_FAILED, SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH}
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
 import org.apache.log4j.Logger
 
+import org.apache.spark.Logging
+import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
@@ -136,7 +138,7 @@ private[streaming] object SnappyStoreSinkProvider {
 }
 
 case class SnappyStoreSink(snappySession: SnappySession,
-    parameters: Map[String, String], sinkCallback: SnappySinkCallback) extends Sink {
+    parameters: Map[String, String], sinkCallback: SnappySinkCallback) extends Sink with Logging {
 
   override def addBatch(batchId: Long, data: Dataset[Row]): Unit = {
     val message = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
@@ -149,7 +151,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
-      sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
+      processBatchWithRetries(batchId, data, possibleDuplicate)
     } finally {
       if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
@@ -157,7 +159,32 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
-  def updateStateTable(queryName: String, batchId: Long): Boolean = {
+  private def processBatchWithRetries(batchId: Long, data: Dataset[Row], possibleDuplicate: Boolean,
+      retries: Int = 5) : Unit = {
+    try {
+      sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
+    } catch {
+      case ex: Exception if retries == 0 || !isRetriableException(ex) => throw ex
+      case ex: Exception =>
+        logWarning(s"Encountered a retriable exception. Will retry processing batch." +
+            s" Retries left: $retries" , ex)
+        processBatchWithRetries(batchId, data, possibleDuplicate = true, retries - 1)
+    }
+  }
+
+  private def isRetriableException(ex: Throwable): Boolean = {
+    if ((ex.isInstanceOf[SQLException] &&
+        SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(ex.asInstanceOf[SQLException].getSQLState))
+        || ex.isInstanceOf[CatalogStaleException]) {
+      true
+    } else if (ex.getCause == null) {
+      false
+    } else {
+      isRetriableException(ex.getCause)
+    }
+  }
+
+  private def updateStateTable(queryName: String, batchId: Long): Boolean = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
         s"set $BATCH_ID_COLUMN=$batchId where $QUERY_ID_COLUMN='$queryName' " +
@@ -187,7 +214,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
    * SPARK-16020-td18118.html
    * for a detailed discussion.
    */
-  def convert(ds: DataFrame): DataFrame = {
+  private def convert(ds: DataFrame): DataFrame = {
     snappySession.internalCreateDataFrame(
       ds.queryExecution.toRdd,
       StructType(ds.schema.fields))
