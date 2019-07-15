@@ -115,13 +115,13 @@ class SnappyStoreSinkProvider extends StreamSinkProvider with DataSourceRegister
 private[streaming] object SnappyStoreSinkProvider {
 
   val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = "SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
+  val SINK_STATE_TABLE = "snappysys_internal____sink_state_table"
   val TABLE_NAME = "tableName"
   val QUERY_NAME = "queryName"
   val SINK_CALLBACK = "sinkCallback"
   val STATE_TABLE_SCHEMA = "stateTableSchema"
   val CONFLATION = "conflation"
-  val EVENT_COUNT_COLUMN = "SNAPPYSYS_INTERNAL____EVENT_COUNT"
+  val EVENT_COUNT_COLUMN = "snappysys_internal____event_count"
   val QUERY_ID_COLUMN = "stream_query_id"
   val BATCH_ID_COLUMN = "batch_id"
 

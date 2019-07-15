@@ -19,19 +19,24 @@ package io.snappydata.cluster
 import java.net.InetAddress
 import java.util.Properties
 
+import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.cluster.SplitSnappyClusterDUnitTest.sc
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
 
+import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
+import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.store.{SnappyJoinSuite, StoreUtils}
+import org.apache.spark.sql.types.{DateType, StringType, StructField, StructType}
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
@@ -253,6 +258,41 @@ class SplitSnappyClusterDUnitTest(s: String)
       startArgs :+ Int.box(locatorClientPort))
   }
 
+  def testDeployPackageNameFormat(): Unit = {
+    val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
+    val sns = new SnappySession(sc)
+    sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
+        "connector_2.11:2.2.2'")
+    sns.sql("deploy package app.mongo-spark_v1.1  'org.mongodb.spark:mongo-spark-" +
+        "connector_2.11:2.2.2'")
+    sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
+        "-connector_2.11:2.2.2'")
+    sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
+        "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
+        "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
+        "-spark-connector_2.11:2.2.2'")
+    import org.scalatest.Assertions._
+    val thrown = intercept [Exception] {
+      sns.sql("deploy package \"testsch\".mongo-$$#park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2")
+    }
+    assert(thrown.getMessage === "Invalid input \"mongo-$\", expected packageIdentifierPart or stringLiteral (line 1, column 26):\ndeploy package \"testsch\".mongo-$$#park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2\n                         ^;")
+
+    assert(sns.sql("list packages").count() == 7)
+
+    sns.sql(s"""deploy jar avro-v_1.0 '$jarPath'""")
+    sns.sql(s"""deploy jar app.avro-v_1.1 '$jarPath'""")
+    sns.sql(s"""deploy jar testsch.avro-v_1.2 '$jarPath'""")
+    val commandStr = s"""deploy jar "app".avro-v_1.3 '$jarPath'"""
+    sns.sql(commandStr)
+    sns.sql(s"""deploy jar "testsch"."avro-v_1.4" '$jarPath'""")
+    sns.sql(s"""deploy jar testsch."avro-v_1.5" '$jarPath'""")
+
+    assert(sns.sql("list packages").count() == 13)
+  }
+
   override def testUpdateDeleteOnColumnTables(): Unit = {
     // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
     val session = new SnappySession(sc)
@@ -269,6 +309,195 @@ class SplitSnappyClusterDUnitTest(s: String)
       ColumnUpdateDeleteTests.testSNAP2124(session)
     } finally {
       StoreUtils.TEST_RANDOM_BUCKETID_ASSIGNMENT = false
+    }
+  }
+
+  def testStaleCatalog(): Unit = {
+
+    val snc = SnappyContext(sc)
+    snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestStaleCatalog", startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T5").count() == 0 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing putInto as expected.")
+
+      // perform DDL
+      snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
+          s"USING column OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+    } finally {
+      snc.sql("drop table if exists T6")
+      snc.sql("drop table if exists T5")
+    }
+  }
+
+
+  def testSNAP3024(): Unit = {
+    val snc = SnappyContext(sc)
+    snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    snc.sql("insert into t5 values('1', '1')")
+    snc.sql("insert into t5 values('2', '2')")
+    snc.sql("insert into t5 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestStaleCatalogForSNAP3024", startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T5").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing putInto as expected.")
+
+      // perform DDL
+      snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
+          s"USING column OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+    } finally {
+      snc.sql("drop table if exists T6")
+      snc.sql("drop table if exists T5")
+    }
+  }
+
+  def testInsertIntoRowTableAfterStaleCatalog(): Unit = {
+    insertDataAfterStaleCatalog("ROW")
+  }
+
+  def testInsertIntoColumnTableAfterStaleCatalog(): Unit = {
+    insertDataAfterStaleCatalog("COLUMN")
+  }
+
+  private def insertDataAfterStaleCatalog(tableType: String) = {
+    val snc = SnappyContext(sc)
+
+    logInfo(s"insertDataAfterStaleCatalog: invoked for $tableType table")
+    if (tableType == "COLUMN") {
+      snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+          s" ( PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    } else {
+      snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING row OPTIONS (partition_by 'col1')")
+    }
+    snc.sql("insert into t5 values('1', '1')")
+    snc.sql("insert into t5 values('2', '2')")
+    snc.sql("insert into t5 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestInsertAfterStaleCatalog",
+        startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T5").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing insert as expected.")
+
+      logInfo("testInsertQueryAfterStaleCatalog dropping table t5")
+      // drop the table and create a table with same name and different schema
+      // create a table with different schema
+      snc.sql("drop table t5")
+      if (tableType == "COLUMN") {
+        snc.sql(s"CREATE TABLE T5(COL1 DATE, COL2 DATE) USING column OPTIONS" +
+            s" ( PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+      } else {
+        snc.sql(s"CREATE TABLE T5(COL1 DATE, COL2 DATE) USING row OPTIONS (partition_by 'col1')")
+      }
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+    } finally {
+      snc.sql("drop table if exists T5")
+    }
+  }
+
+  def testDeleteAfterStaleCatalog(): Unit = {
+    val snc = SnappyContext(sc)
+
+    snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    snc.sql("insert into t6 values('1', '1')")
+    snc.sql("insert into t6 values('2', '2')")
+    snc.sql("insert into t6 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestDeleteAfterStaleCatalog",
+        startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T6").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing delete as expected.")
+
+      logInfo("testDeleteAfterStaleCatalog dropping table t6")
+      snc.sql("drop table t6")
+      // create a table with different schema
+      snc.sql(s"CREATE TABLE T6(COL1 DATE, COL2 DATE) USING column OPTIONS" +
+          s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+    } finally {
+      snc.sql("drop table if exists T6")
+    }
+  }
+
+  def testUpdateAfterStaleCatalog(): Unit = {
+    val snc = SnappyContext(sc)
+
+    snc.sql(s"CREATE TABLE T7(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    snc.sql("insert into t7 values('1', '1')")
+    snc.sql("insert into t7 values('2', '2')")
+    snc.sql("insert into t7 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass, "doTestUpdateAfterStaleCatalog",
+        startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T7").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing delete as expected.")
+
+      snc.sql(s"CREATE TABLE T8(COL1 DATE, COL2 DATE) USING column OPTIONS" +
+          s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(5, "min"))
+    } finally {
+      snc.sql("drop table if exists T7")
+      snc.sql("drop table if exists T8")
     }
   }
 }
@@ -826,5 +1055,170 @@ object SplitSnappyClusterDUnitTest
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
+  }
+
+  def doTestStaleCatalog(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+
+    val rdd: RDD[Row] = sc.parallelize(
+      Seq(
+        Row("val1", "val3"),
+        Row("val2", "val4")
+      )
+    )
+    val schema = new StructType()
+        .add(StructField("col1", StringType))
+        .add(StructField("col2", StringType))
+    val dataFrame = snc.createDataFrame(rdd, schema)
+    import org.apache.spark.sql.snappy._
+    try {
+      Thread.sleep(2000)
+      for (i <- 1 to 10) {
+        dataFrame.write.putInto("T5")
+      }
+      Assert.fail("Should have thrown CatalogStaleException.")
+    } catch {
+      case _: CatalogStaleException =>
+        // retrying putInto operation and it should pass
+        dataFrame.write.putInto("T5")
+    }
+  }
+
+  def doTestStaleCatalogForSNAP3024(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+
+    snc.sql("select * from t5").collect()
+
+    val rdd: RDD[Row] = sc.parallelize(
+      Seq(
+        Row("4", "4"),
+        Row("5", "5")
+      )
+    )
+    val schema = new StructType()
+        .add(StructField("col1", StringType))
+        .add(StructField("col2", StringType))
+    val dataFrame = snc.createDataFrame(rdd, schema)
+    import org.apache.spark.sql.snappy._
+
+    dataFrame.write.insertInto("T5")
+    Thread.sleep(6000)
+    // should not throw an exception
+    for (i <- 1 to 5) {
+      snc.sql("select * from t5").collect()
+    }
+  }
+
+  def doTestInsertAfterStaleCatalog(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+    snc.sql("insert into t5 values('4', '4')")
+    logInfo("1. schema is = " + snc.table("T5").schema)
+
+    val schema2 = new StructType()
+        .add(StructField("col1", DateType))
+        .add(StructField("col2", DateType))
+    val rdd2: RDD[Row] = sc.parallelize(
+      Seq(
+        Row(java.sql.Date.valueOf("2019-01-01"), java.sql.Date.valueOf("2019-01-01")),
+        Row(java.sql.Date.valueOf("2019-02-02"), java.sql.Date.valueOf("2019-02-02"))
+      )
+    )
+    val dataFrame2 = snc.createDataFrame(rdd2, schema2)
+
+    logInfo("doTestInsertAfterStaleCatalog: Waiting 6 seconds to allow schema change")
+    Thread.sleep(6000)
+    try {
+      for (i <- 1 to 20) {
+        Thread.sleep(500)
+        logInfo("calling dataFrame.write.insertInto(\"T5\")")
+        logInfo("2. schema is = " + snc.table("T5").schema)
+        dataFrame2.write.insertInto("T5")
+      }
+      Assert.fail("Should have thrown CatalogStaleException.")
+    } catch {
+      case _: CatalogStaleException =>
+        logInfo("doTestInsertAfterStaleCatalog: Caught expected CatalogStaleException")
+        // retrying insertInto operation and it should pass
+        retryOperation(5) {
+          dataFrame2.write.insertInto("T5")
+        }
+    }
+    logInfo("3. schema is = " + snc.table("T5").schema)
+  }
+
+  def retryOperation[T](maxRetryAttempts: Int)(f: => T): Unit = {
+    var retryCount = 0
+    var success = false
+    while(!success) {
+      try {
+        f
+        success = true
+      } catch {
+        // if table is not created yet on embedded cluster,
+        // TableNotFoundException can be seen; retry in
+        // such a case
+        case t: TableNotFoundException =>
+          retryCount = retryCount + 1
+          if (retryCount == maxRetryAttempts) {
+            throw t
+          } else {
+            Thread.sleep(200)
+          }
+      }
+    }
+  }
+
+  def doTestDeleteAfterStaleCatalog(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+    snc.sql("delete from t6 where col1 like '1%'")
+
+    logInfo("doTestDeleteAfterStaleCatalog: Waiting 6 seconds to allow schema change")
+    Thread.sleep(6000)
+    try {
+      for (i <- 1 to 20) {
+        Thread.sleep(500)
+        snc.sql("delete from t6 where col1 like '2%'")
+      }
+      Assert.fail("Should have thrown CatalogStaleException.")
+    } catch {
+      case _: CatalogStaleException =>
+        logInfo("doTestDeleteAfterStaleCatalog: Caught expected CatalogStaleException")
+        // retrying delete from operation and it should pass
+        retryOperation(5) {
+          snc.sql("delete from t6 where col1 like '2%'")
+        }
+    }
+  }
+
+  def doTestUpdateAfterStaleCatalog(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+    snc.sql("insert into t7 values('4', '4')")
+
+    logInfo("doTestUpdateAfterStaleCatalog: Waiting 6 seconds to allow schema change")
+    Thread.sleep(6000)
+    try {
+      for (i <- 1 to 20) {
+        Thread.sleep(500)
+        snc.sql("update t7 set col2 = '22' where col1 = '2'")
+      }
+      Assert.fail("Should have thrown CatalogStaleException.")
+    } catch {
+      case _: CatalogStaleException =>
+        logInfo("doTestUpdateAfterStaleCatalog: Caught expected CatalogStaleException")
+        // retrying delete from operation and it should pass
+        retryOperation(5) {
+          snc.sql("update t7 set col2 = '22' where col1 = '2'")
+        }
+    }
   }
 }

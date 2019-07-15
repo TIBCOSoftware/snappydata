@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
+import java.sql.{Connection, PreparedStatement, ResultSet, SQLException, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
@@ -112,6 +112,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case Some(bucket) => bucket.updateInProgressSize(-batchSize)
       }
     }
+  }
+
+  def beginTxSmartConnector(delayRollover: Boolean, catalogVersion: Long): Array[_ <: Object] = {
+    val txIdConnArray = beginTx(delayRollover)
+    val conn: Connection = txIdConnArray(0).asInstanceOf[Connection]
+    ExternalStoreUtils.setSchemaVersionOnConnection(catalogVersion, conn)
+    txIdConnArray
   }
 
   // begin should decide the connection which will be used by insert/commit/rollback
@@ -906,7 +913,15 @@ class SmartConnectorRowRDD(_session: SnappySession,
     if (context ne null) {
       val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
+        try {
+          val statement = conn.createStatement()
+          statement match {
+            case stmt: ClientStatement => stmt.getConnection.setCommonStatementAttributes(null)
+          }
+          statement.close()
+        } catch {
+          case NonFatal(e) => logWarning("Exception resetting commonStatementAttributes", e)
+        }
         try {
           conn.close()
           logDebug("closed connection for task " + context.partitionId())
@@ -977,9 +992,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
       getTXIdAndHostUrl.close()
       SmartConnectorHelper.snapshotTxIdForRead.set(txIdAndHostUrl)
       logDebug(s"The snapshot tx id is $txIdAndHostUrl and tablename is $tableName")
-    }
-    if (thriftConn ne null) {
-      thriftConn.setCommonStatementAttributes(null)
     }
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)
