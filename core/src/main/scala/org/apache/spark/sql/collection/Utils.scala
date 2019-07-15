@@ -854,6 +854,20 @@ object Utils {
       -1
     }
   }
+
+  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => Option(f)
+      case _ => None
+    }
+  }
+
+  def isSmartConnectorMode(sc: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
+    }
+  }
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
