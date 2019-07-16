@@ -193,20 +193,22 @@ class SparkSQLExecuteImpl(val sql: String,
   private lazy val (tableNames, nullability) = {
     var qualifiedOutput = df.queryExecution.analyzed.flatMap {
       case l: LogicalRelation =>
-        val (dbName, tableName) = l.catalogTable match {
+        l.catalogTable match {
           case Some(c) =>
-            (c.identifier.database, c.identifier.table)
-          case _ => (None, None)
+            val (dbName, tableName) =
+              (c.identifier.database.getOrElse(session.getCurrentSchema), c.identifier.table)
+            // creating new attributes by adding db name to qualifier
+            l.output.map(a =>
+              (AttributeReference(a.name, a.dataType, a.nullable, a.metadata)
+              (a.exprId, Some(dbName + "." + tableName), a.isGenerated)).toAttribute
+            )
+          case _ => null
         }
-        // creating new attributes by adding db name to qualifier
-        l.output.map(a =>
-          (AttributeReference(a.name, a.dataType, a.nullable, a.metadata)
-          (a.exprId, Some(s"${dbName.get}.${tableName}"), a.isGenerated)).toAttribute
-        )
-      case _ => null
+      case _ => Seq(null)
     }.filter(_ != null)
     if (qualifiedOutput.size < 1) {
-      qualifiedOutput = df.queryExecution.analyzed.output
+//      qualifiedOutput = df.queryExecution.analyzed.output
+      logInfo("1891: qualifiedoutput size = 0. plan = " + df.queryExecution.analyzed)
     }
     SparkSQLExecuteImpl.
         getTableNamesAndNullability(session, qualifiedOutput)
