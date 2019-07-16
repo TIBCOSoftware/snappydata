@@ -1270,69 +1270,74 @@ object SplitSnappyClusterDUnitTest
     val kafkaTestUtils = new KafkaTestUtils
     kafkaTestUtils.setup()
     kafkaTestUtils.createTopic(tableName, partitions = 3)
-    val checkpointDirectory = "/tmp/SplitSnappyClusterDUnitTest"
+    try {
+      val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
+      snc.sql(s"drop table if exists $tableName")
+      snc.sql(
+        s"""create table $tableName (id long , name varchar(40), age int)
+           | using column options(key_columns 'id')""".stripMargin)
 
-    val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
-    snc.sql(s"drop table if exists $tableName")
-    snc.sql(
-      s"""create table $tableName (id long , name varchar(40), age int)
-         | using column options(key_columns 'id')""".stripMargin)
+      val streamingDF = snc
+          .readStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
+          .option("subscribe", tableName)
+          .option("startingOffsets", "earliest")
+          .load()
 
-    val streamingDF = snc
-        .readStream
-        .format("kafka")
-        .option("kafka.bootstrap.servers", kafkaTestUtils.brokerAddress)
-        .option("subscribe", tableName)
-        .option("startingOffsets", "earliest")
-        .load()
+      implicit val encoder = RowEncoder(snc.table(tableName).schema)
+      val session = snc.sparkSession
+      import session.implicits._
+      val streamingQuery = streamingDF.selectExpr("CAST(value AS STRING)")
+          .as[String]
+          .map(_.split(","))
+          .map(r => Row(r(0).toLong, r(1), r(2).toInt))
+          .writeStream
+          .format("snappysink")
+          .queryName(tableName)
+          .trigger(ProcessingTime("1 seconds"))
+          .option("tableName", tableName)
+          .option("checkpointLocation", s"$testTempDir/checkpoint")
+          .start()
 
-    implicit val encoder = RowEncoder(snc.table(tableName).schema)
-    val session = snc.sparkSession
-    import session.implicits._
-    val streamingQuery = streamingDF.selectExpr("CAST(value AS STRING)")
-        .as[String]
-        .map(_.split(","))
-        .map(r => Row(r(0).toLong, r(1), r(2).toInt))
-        .writeStream
-        .format("snappysink")
-        .queryName(tableName)
-        .trigger(ProcessingTime("1 seconds"))
-        .option("tableName", tableName)
-        .option("checkpointLocation", checkpointDirectory)
-        .start()
+      // produce first batch of data
+      val dataBatch1 = Seq(Seq(1, "name1", 20), Seq(2, "name2", 20))
+      kafkaTestUtils.sendMessages(tableName, dataBatch1.map(r => r.mkString(",")).toArray)
 
-    // produce first batch of data
-    val dataBatch1 = Seq(Seq(1, "name1", 20), Seq(2, "name2", 20))
-    kafkaTestUtils.sendMessages(tableName, dataBatch1.map(r => r.mkString(",")).toArray)
+      waitTillTheBatchIsPickedForProcessing(snc, 0, tableName)
 
-    waitTillTheBatchIsPickedForProcessing(snc, 0, tableName)
+      new PrintWriter(s"$testTempDir/file0") {
+        write("dummyData");
+        close()
+      }
 
-    new PrintWriter(s"$testTempDir/file0") { write("dummyData"); close() }
+      // wait till DDL is fired on snappy cluster which will lead to stale smart-connector catalog
+      var attempts = 0
+      while (!Files.exists(Paths.get(testTempDir, "file1")) && attempts < 15) {
+        Thread.sleep(4000)
+        attempts += 1
+      }
 
-    // wait till DDL is fired on snappy cluster which will lead to stale smart-connector catalog
-    var attempts = 0
-    while ( !Files.exists(Paths.get(testTempDir, "file1")) && attempts < 15) {
-      Thread.sleep(4000)
-      attempts += 1
-    }
+      assert(attempts < 14, "Waiting for stale catalog timed out")
 
-    assert(attempts < 14, "Waiting for stale catalog timed out")
+      // produce second batch of data
+      val dataBatch2 = Seq(Seq(3, "name3", 20))
+      kafkaTestUtils.sendMessages(tableName, dataBatch2.map(r => r.mkString(",")).toArray)
 
-    // produce second batch of data
-    val dataBatch2 = Seq(Seq(3, "name3", 20))
-    kafkaTestUtils.sendMessages(tableName, dataBatch2.map(r => r.mkString(",")).toArray)
+      streamingQuery.processAllAvailable()
 
-    streamingQuery.processAllAvailable()
+      assertData(Array(Row(1, "name1", 20), Row(2, "name2", 20), Row(3, "name3", 20)))
 
-    assertData(Array(Row(1, "name1", 20), Row(2, "name2", 20), Row(3, "name3", 20)))
+      def assertData(expectedData: Array[Row]): Unit = {
+        val actualData = snc.sql(s"select * from $tableName" +
+            s" order by id, name, age")
+            .collect()
 
-    def assertData(expectedData: Array[Row]): Unit = {
-      val actualData = snc.sql(s"select * from $tableName" +
-          s" order by id, name, age")
-          .collect()
-
-      assert(expectedData sameElements actualData, "actual data:" +
-          actualData.map(a => a.toString()).mkString(","))
+        assert(expectedData sameElements actualData, "actual data:" +
+            actualData.map(a => a.toString()).mkString(","))
+      }
+    } finally {
+      kafkaTestUtils.teardown()
     }
   }
 

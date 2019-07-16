@@ -378,7 +378,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery = createAndStartStreamingQuery(topic, testId,
       options = Map("withQueryName" -> "false",
         "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
-        "attempts" -> "7"))
+        "internal___attempts" -> "3", "attempts" -> "4"))
 
     try {
       streamingQuery.processAllAvailable()
@@ -397,7 +397,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     val streamingQuery = createAndStartStreamingQuery(topic, testId,
       options = Map("withQueryName" -> "false",
         "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
-        "attempts" -> "5"))
+        "internal___attempts" -> "3", "attempts" -> "3"))
     streamingQuery.processAllAvailable()
   }
 

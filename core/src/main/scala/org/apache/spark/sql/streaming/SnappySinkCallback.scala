@@ -23,14 +23,12 @@ import java.util.NoSuchElementException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.{LOGIN_FAILED, SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH}
 import io.snappydata.Property._
 import io.snappydata.util.ServiceUtils
-import org.apache.log4j.Logger
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.streaming.Sink
 import org.apache.spark.sql.sources.{DataSourceRegister, StreamSinkProvider}
-import org.apache.spark.sql.streaming.DefaultSnappySinkCallback.{TEST_FAILBATCH_OPTION, log}
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider.EventType._
 import org.apache.spark.sql.streaming.SnappyStoreSinkProvider._
 import org.apache.spark.sql.types.StructType
@@ -126,6 +124,8 @@ private[streaming] object SnappyStoreSinkProvider {
   val EVENT_COUNT_COLUMN = "snappysys_internal____event_count"
   val QUERY_ID_COLUMN = "stream_query_id"
   val BATCH_ID_COLUMN = "batch_id"
+  val TEST_FAILBATCH_OPTION = "internal___failBatch"
+  val ATTEMPTS = "internal___attempts"
 
   object EventType {
     val INSERT = 0
@@ -151,7 +151,8 @@ case class SnappyStoreSink(snappySession: SnappySession,
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
-      processBatchWithRetries(batchId, data, possibleDuplicate)
+      processBatchWithRetries(batchId, data, possibleDuplicate,
+        parameters.getOrElse(ATTEMPTS, "10").toInt)
     } finally {
       if (hashAggregateSizeIsDefault) {
         HashAggregateSize.set(snappySession.sessionState.conf, HashAggregateSize.defaultValue.get)
@@ -160,15 +161,17 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 
   private def processBatchWithRetries(batchId: Long, data: Dataset[Row], possibleDuplicate: Boolean,
-      retries: Int = 5) : Unit = {
+      totalAttempts: Int = 10, attempt: Int = 0) : Unit = {
     try {
       sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
     } catch {
-      case ex: Exception if retries == 0 || !isRetriableException(ex) => throw ex
+      case ex: Exception if attempt >= totalAttempts - 1  || !isRetriableException(ex) => throw ex
       case ex: Exception =>
-        logWarning(s"Encountered a retriable exception. Will retry processing batch." +
-            s" Retries left: $retries" , ex)
-        processBatchWithRetries(batchId, data, possibleDuplicate = true, retries - 1)
+        val sleepTime = attempt * 100
+        logWarning(s"Encountered a retriable exception. Will retry processing batch after" +
+            s" $sleepTime millis. Attempts left: ${totalAttempts - (attempt + 1)}" , ex)
+        Thread.sleep(sleepTime)
+        processBatchWithRetries(batchId, data, possibleDuplicate = true, totalAttempts, attempt + 1)
     }
   }
 
@@ -221,17 +224,12 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 }
 
-object DefaultSnappySinkCallback {
-  private val log = Logger.getLogger(classOf[DefaultSnappySinkCallback].getName)
-  private val TEST_FAILBATCH_OPTION = "internal___failBatch"
-}
-
 import org.apache.spark.sql.snappy._
 
-class DefaultSnappySinkCallback extends SnappySinkCallback {
+class DefaultSnappySinkCallback extends SnappySinkCallback with Logging {
   def process(snappySession: SnappySession, parameters: Map[String, String],
       batchId: Long, df: Dataset[Row], posDup: Boolean) {
-    log.debug(s"Processing batchId $batchId with parameters $parameters ...")
+    logDebug(s"Processing batchId $batchId with parameters $parameters ...")
     val tableName = snappySession.sessionCatalog.formatTableName(parameters(TABLE_NAME))
     val keyColumns = snappySession.sessionCatalog.getKeyColumnsAndPositions(tableName)
     val eventTypeColumnAvailable = df.schema.map(_.name).contains(EVENT_TYPE_COLUMN)
@@ -242,7 +240,7 @@ class DefaultSnappySinkCallback extends SnappySinkCallback {
       throw new IllegalStateException(msg)
     }
 
-    log.debug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
+    logDebug(s"keycolumns: '${keyColumns.map(p => s"${p._1.name}(${p._2})").mkString(",")}'" +
         s", eventTypeColumnAvailable:$eventTypeColumnAvailable,possible duplicate: $posDup")
 
     if (keyColumns.nonEmpty) {
