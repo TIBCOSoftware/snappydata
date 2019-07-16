@@ -269,16 +269,12 @@ class SplitSnappyClusterDUnitTest(s: String)
           "connector_2.11:2.2.2'")
       sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
           "-connector_2.11:2.2.2'")
-      sns.sql(
-        s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
+      sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
             "-spark-connector_2.11:2.2.2'")
-      sns.sql(
-        s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
+      sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
             "-spark-connector_2.11:2.2.2'")
-      sns.sql(
-        s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
+      sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
             "-spark-connector_2.11:2.2.2'")
-
       assert(sns.sql("list packages").count() == 7)
 
       sns.sql(s"""deploy jar avro-v_1.0 '$jarPath'""")
@@ -304,7 +300,7 @@ class SplitSnappyClusterDUnitTest(s: String)
       sns.sql(s"""undeploy "app".avro-v_1.3 """)
       sns.sql(s"""undeploy "testsch"."avro-v_1.4" """)
       sns.sql(s"""undeploy testsch."avro-v_1.5" """)
-      sns.sql("list packages").show
+      assert(sns.sql("list packages").count() == 0)
     }
     import org.scalatest.Assertions._
     val thrown = intercept[Exception] {
