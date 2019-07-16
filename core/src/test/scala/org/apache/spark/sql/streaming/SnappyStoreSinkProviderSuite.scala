@@ -308,7 +308,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val thrown = intercept[StreamingQueryException] {
       val streamingQuery = createAndStartStreamingQuery(topic, testId,
-        withEventTypeColumn = false , options = Map("conflation" -> "true"))
+        withEventTypeColumn = false, options = Map("conflation" -> "true"))
       streamingQuery.processAllAvailable()
     }
     val errorMessage = "Key column(s) or primary key must be defined on table in order " +
@@ -513,6 +513,7 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 class TestSinkCallback extends SnappySinkCallback {
 
   private var attempt = -1
+
   override def process(snappySession: SnappySession, sinkProps: Map[String, String], batchId: Long,
       df: Dataset[Row], possibleDuplicate: Boolean): Unit = {
     if (attempt == -1) attempt = sinkProps("attempts").toInt
@@ -523,7 +524,7 @@ class TestSinkCallback extends SnappySinkCallback {
     if (sinkProps.contains("catalogNotStale")) {
       throw new RuntimeException("catalogNotStale")
     }
-    if (attempt == 0){
+    if (attempt == 0) {
     } else if (attempt % 2 == 0) {
       throw new RuntimeException(new CatalogStaleException("dummy", null))
     } else {

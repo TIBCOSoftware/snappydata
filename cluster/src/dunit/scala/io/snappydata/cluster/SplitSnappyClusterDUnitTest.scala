@@ -378,7 +378,9 @@ class SplitSnappyClusterDUnitTest(s: String)
       // perform DDL leading to stale catalog in smart connector application
       snc.sql(s"CREATE TABLE SYNC_TABLE(COL1 STRING) " + s"USING column")
 
-      new PrintWriter(s"$testTempDirectory/file1") { write("dummydata"); close() }
+      new PrintWriter(s"$testTempDirectory/file1") {
+        write("dummydata"); close()
+      }
       Await.result(future, Duration(2, "min"))
     } finally {
       snc.sql("drop table if exists T6")
@@ -1307,7 +1309,7 @@ object SplitSnappyClusterDUnitTest
       waitTillTheBatchIsPickedForProcessing(snc, 0, tableName)
 
       new PrintWriter(s"$testTempDir/file0") {
-        write("dummyData");
+        write("dummyData")
         close()
       }
 

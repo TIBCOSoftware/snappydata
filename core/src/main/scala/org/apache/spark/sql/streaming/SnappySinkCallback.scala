@@ -161,15 +161,15 @@ case class SnappyStoreSink(snappySession: SnappySession,
   }
 
   private def processBatchWithRetries(batchId: Long, data: Dataset[Row], possibleDuplicate: Boolean,
-      totalAttempts: Int = 10, attempt: Int = 0) : Unit = {
+      totalAttempts: Int = 10, attempt: Int = 0): Unit = {
     try {
       sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
     } catch {
-      case ex: Exception if attempt >= totalAttempts - 1  || !isRetriableException(ex) => throw ex
+      case ex: Exception if attempt >= totalAttempts - 1 || !isRetriableException(ex) => throw ex
       case ex: Exception =>
         val sleepTime = attempt * 100
         logWarning(s"Encountered a retriable exception. Will retry processing batch after" +
-            s" $sleepTime millis. Attempts left: ${totalAttempts - (attempt + 1)}" , ex)
+            s" $sleepTime millis. Attempts left: ${totalAttempts - (attempt + 1)}", ex)
         Thread.sleep(sleepTime)
         processBatchWithRetries(batchId, data, possibleDuplicate = true, totalAttempts, attempt + 1)
     }
