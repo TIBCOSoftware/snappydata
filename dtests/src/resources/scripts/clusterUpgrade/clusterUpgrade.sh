@@ -53,7 +53,7 @@ for i in "$@";
       echo -e "\n=========== Finished loading tables ==========="
     fi
 
-    echo "\n ========== Executing snappy job ============"
+    echo -e "\n ========== Executing snappy job ============"
     if [ $cnt -eq 1 ]; then
       $i/bin/snappy-job.sh submit --lead localhost:8090 --app-name myApp --class $snappyJobClassName --app-jar $jarFile --conf queryFile=$dmlScript > $mydir/resultDir/jobRun.txt
     else
@@ -64,7 +64,7 @@ for i in "$@";
     while ! grep 'FINISHED\|ERROR' $mydir/resultDir/jobStatus.txt > /dev/null
     do
       sleep 5
-      echo "Waiting for the job to finish"
+      echo -e "\n Waiting for the job to finish"
       $i/bin/snappy-job.sh status --lead localhost:8090 --job-id $jobId > $mydir/resultDir/jobStatus.txt
     done
     cat $mydir/resultDir/jobStatus.txt
