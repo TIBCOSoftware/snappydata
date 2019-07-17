@@ -19,7 +19,7 @@ package io.snappydata.collection
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.shared.BufferAllocator
+import com.gemstone.gemfire.internal.shared.{BufferAllocator, BufferSizeLimitExceededException}
 
 import org.apache.spark.TaskContext
 import org.apache.spark.memory.{MemoryConsumer, TaskMemoryManager}
@@ -66,7 +66,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected var valueDataPosition: Long = 0L) {
 
   val taskContext: TaskContext = TaskContext.get()
-
+  private var maxSizeReached: Boolean = false
   private[this] val consumer = if (taskContext ne null) {
     new ByteBufferHashMapMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
   } else null
@@ -157,11 +157,21 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
           delta += 1
         }
       } else {
+        if (maxSizeReached) {
+          throw ByteBufferHashMap.bsle
+        }
         // insert into the map and rehash if required
         val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes)
         Platform.putLong(mapKeyObject, mapKeyOffset,
           (relativeOffset << 32L) | (hash & 0xffffffffL))
-        return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
+        try {
+          return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
+        } catch {
+          case bsle: BufferSizeLimitExceededException =>
+            maxSizeReached = true
+            Platform.putLong(mapKeyObject, mapKeyOffset, 0L)
+            throw bsle
+        }
       }
     }
     0 // not expected to reach
@@ -343,7 +353,9 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   }
 
 }
-
+object ByteBufferHashMap {
+  val bsle = new BufferSizeLimitExceededException()
+}
 
 
 final class ByteBufferHashMapMemoryConsumer(taskMemoryManager: TaskMemoryManager)

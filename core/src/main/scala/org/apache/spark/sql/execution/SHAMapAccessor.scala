@@ -20,9 +20,9 @@ import java.nio.ByteBuffer
 
 import scala.reflect.runtime.universe._
 
-import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+import com.gemstone.gemfire.internal.shared.{BufferSizeLimitExceededException, ClientResolverUtils}
 import io.snappydata.Property
-import io.snappydata.collection.ByteBufferData
+import io.snappydata.collection.{ByteBufferData, SHAMap}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
@@ -37,8 +37,9 @@ import org.apache.spark.unsafe.types.UTF8String
 case class SHAMapAccessor(@transient session: SnappySession,
   @transient ctx: CodegenContext, @transient keyExprs: Seq[Expression],
   @transient valueExprs: Seq[Expression], classPrefix: String,
-  hashMapTerm: String, valueOffsetTerm: String, numKeyBytesTerm: String,
-  numValueBytes: Int, currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
+  hashMapTerm: String, overflowHashMapsTerm: String, keyValSize: Int,
+  valueOffsetTerm: String, numKeyBytesTerm: String, numValueBytes: Int,
+  currentOffSetForMapLookupUpdt: String, valueDataTerm: String,
   vdBaseObjectTerm: String, vdBaseOffsetTerm: String,
   nullKeysBitsetTerm: String, numBytesForNullKeyBits: Int,
   allocatorTerm: String, numBytesForNullAggBits: Int,
@@ -382,13 +383,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val tempValueData = ctx.freshName("tempValueData")
-
-
-
+    val linkedListClass = classOf[java.util.LinkedList[SHAMap]].getName
+    val exceptionName = classOf[BufferSizeLimitExceededException].getName
     val bbDataClass = classOf[ByteBufferData].getName
-
+    val shaMapClassName = classOf[SHAMap].getName
     // val valueInit = valueInitCode + '\n'
-
+    val insertDoneTerm = ctx.freshName("insertDone");
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
     val inputEvals = evaluateVariables(input)
@@ -418,24 +418,72 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes,
            keyVars, keysDataType, aggregateDataTypes, valueInitVars)
           }
+        |long $valueOffsetTerm;
         // insert or lookup
-        |long $valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
-        | $baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
-        | ${hashVar(0)});
-        |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
-        |if (!$keyExistedTerm) {
-          |$valueOffsetTerm = -1 * $valueOffsetTerm;
-          |// $bbDataClass $tempValueData = $hashMapTerm.getValueData();
-          |// if ($valueDataTerm !=  $tempValueData) {
-          |if ( ($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
-          |  $valueDataCapacityTerm) {
-            |//$valueDataTerm = $tempValueData;
+
+        |if($overflowHashMapsTerm == null) {
+          |try {
+            |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
+            |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
+            |${hashVar(0)});
+            |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
+            |if (!$keyExistedTerm) {
+              |$valueOffsetTerm = -1 * $valueOffsetTerm;
+              |if ( ($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
+              |$valueDataCapacityTerm) {
+                |//$valueDataTerm = $tempValueData;
+                |$valueDataTerm =  $hashMapTerm.getValueData();
+                |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+                |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+                |$valueDataCapacityTerm = $valueDataTerm.capacity();
+              |}
+            |}
+          |} catch ($exceptionName bsle) {
+              |$overflowHashMapsTerm = new $linkedListClass();
+              |$overflowHashMapsTerm.add($hashMapTerm);
+              |$hashMapTerm = new $shaMapClassName($keyValSize);
+              |$overflowHashMapsTerm.add($hashMapTerm);
+              |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
+              |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
+              |${hashVar(0)});
+              |$valueOffsetTerm = -1 * $valueOffsetTerm;
+              |$valueDataTerm =  $hashMapTerm.getValueData();
+              |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+              |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+          |}
+        |} else {
+          |boolean $insertDoneTerm = false;
+          |for($shaMapClassName shaMap : $overflowHashMapsTerm ) {
+             |try {
+               |$valueOffsetTerm = shaMap.putBufferIfAbsent($baseKeyObject,
+                 |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
+                 |${hashVar(0)});
+               if ($valueOffsetTerm < 0) {
+                 $valueOffsetTerm = -1 * $valueOffsetTerm;
+               }
+               |$hashMapTerm = shaMap;
+               |$valueDataTerm =  $hashMapTerm.getValueData();
+               |$vdBaseObjectTerm = $valueDataTerm.baseObject();
+               |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+               |$insertDoneTerm = true;
+               |break;
+             |} catch ($exceptionName bsle) {
+             |}
+          |}
+          |if (!$insertDoneTerm) {
+            |$hashMapTerm = new $shaMapClassName($keyValSize);
+            |$overflowHashMapsTerm.add($hashMapTerm);
+            |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
+            |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
+            |${hashVar(0)});
+            |$valueOffsetTerm = -1 * $valueOffsetTerm;
             |$valueDataTerm =  $hashMapTerm.getValueData();
             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
-            |$valueDataCapacityTerm = $valueDataTerm.capacity();
           |}
         |}
+        |
+        |
         |// position the offset to start of aggregate value
         |$valueOffsetTerm += $numKeyBytesTerm + $vdBaseOffsetTerm;
         |long $currentOffSetForMapLookupUpdt = $valueOffsetTerm;""".stripMargin

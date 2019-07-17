@@ -471,6 +471,7 @@ case class SnappyHashAggregateExec(
 
   // The name for ObjectHashSet of generated class.
   private var hashMapTerm: String = _
+  private var overflowHashMapsTerm: String = _
 
   // utility to generate class for optimized map, and hash map access methods
   @transient private var keyBufferAccessor: ObjectHashMapAccessor = _
@@ -719,6 +720,8 @@ case class SnappyHashAggregateExec(
     hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[SHAMap].getName
 
+    overflowHashMapsTerm = ctx.freshName("overflowHashMaps")
+    val listClassName = classOf[java.util.List[SHAMap]].getName
 
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
@@ -831,6 +834,7 @@ case class SnappyHashAggregateExec(
 
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
+    ctx.addMutableState(listClassName, overflowHashMapsTerm, "")
 
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
@@ -847,10 +851,17 @@ case class SnappyHashAggregateExec(
     val numKeyBytesTerm = ctx.freshName("numKeyBytes")
     val numValueBytes = SHAMapAccessor.getSizeOfValueBytes(aggBuffDataTypes,
       numBytesForNullAggsBits)
+
+    val keyValSize = groupingAttributes.foldLeft(0)((len, attrib) =>
+      len + attrib.dataType.defaultSize +
+        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4))  +
+      + SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes
+    -  (if (skipLenForAttrib != -1) 4 else 0)
+
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
-      aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm,
-      valueOffsetTerm, numKeyBytesTerm, numValueBytes, currentValueOffSetTerm,
-      valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
+      aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm, overflowHashMapsTerm,
+      keyValSize, valueOffsetTerm, numKeyBytesTerm, numValueBytes,
+      currentValueOffSetTerm, valueDataTerm, vdBaseObjectTerm, vdBaseOffsetTerm,
       nullKeysBitsetTerm, numBytesForNullKeyBits, allocatorTerm,
       numBytesForNullAggsBits, nullAggsBitsetTerm, sizeAndNumNotNullFuncForStringArr,
       keyBytesHolderVar, baseKeyObject, baseKeyHolderOffset, keyExistedTerm,
@@ -861,11 +872,7 @@ case class SnappyHashAggregateExec(
 
 
 
-    val keyValSize = groupingAttributes.foldLeft(0)((len, attrib) =>
-      len + attrib.dataType.defaultSize +
-        (if (TypeUtilities.isFixedWidth(attrib.dataType)) 0 else 4))  +
-      + SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes
-       -  (if (skipLenForAttrib != -1) 4 else 0)
+
 
     val maxMemory = ctx.freshName("maxMemory")
     val peakMemory = metricTerm(ctx, "peakMemory")
