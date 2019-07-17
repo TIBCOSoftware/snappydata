@@ -35,20 +35,23 @@ class ThriftServerInsertFromSnappy extends SnappySQLJob {
     var index = 0
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
-//    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
-//    val tids = jobConfig.getString("tids")
-//    val threadID = Thread.currentThread().getId
-//    println("threadID : " + threadID)
-//    val outputFile = "ValidateHiveThriftServerConcurrency" + "_" + threadID + "_" +
-//      System.currentTimeMillis() + jobConfig.getString("logFileName")
-//    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val tids = jobConfig.getString("tids")
+    val threadID = Thread.currentThread().getId
+    println("threadID : " + threadID)
+    val outputFile = "InsertIntoTable" + "_" + threadID + "_" + System.currentTimeMillis()  + ".out"
+    val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    pw.println("inserting job started....")
     val sqlContext : SQLContext = spark.sqlContext
 //    val random = new Random()
 //    val tidList = tids.split(",")
 //    tidList.foreach{println}
     snc.sql("insert into default.Student select id, concat('TIBCO_',id), " +
       "default.subject(id%10), rand() * 1000, id%10 from range(10000);")
-    println(snc.sql("select * from default.Student order by id DESC").show(1000))
-    println(snc.sql("select count(*) from default.Student").show())
+    pw.println(snc.sql("select * from default.Student order by id DESC").show(100))
+    pw.println(snc.sql("select count(*) from default.Student").show())
+    pw.println("inserting job finished....")
+    pw.flush()
+    pw.close()
   }
 }

@@ -34,20 +34,39 @@ class HiveThriftServerConcurrentOps extends SnappySQLJob {
 
     val snc : SnappyContext = snappySession.sqlContext
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
-//    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
-//    val threadID = jobConfig.getInt("tid")
-    val outputFile = "ValidateHiveThriftServerConcurrency" + "_" + System.currentTimeMillis() + jobConfig.getString("logFileName")
-//   val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+    def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
+    val tid = jobConfig.getInt("tid")
+    val outputFile = "ValidateHiveThriftServerConcurrency" + "_" +
+                   tid + "_" + System.currentTimeMillis() + ".out"
+   val pw : PrintWriter = new PrintWriter(new FileOutputStream(new File(outputFile), false))
+   pw.println("concurret dml job started.....")
     val sqlContext : SQLContext = spark.sqlContext
 
     val queryFile: String = jobConfig.getString("queryFile");
     val queryArray = scala.io.Source.fromFile(queryFile).getLines().mkString.split(";")
 
     for (j <- 0 to queryArray.length - 1) {
-      val index = new Random().nextInt(queryArray.length )
-      println("Executing Query : " + queryArray(index))
-      snc.sql(queryArray(index))
+      // val index = new Random().nextInt(queryArray.length )
+      var query: String = queryArray(j)
+
+      if(query.contains(";")) {
+        query = query.replace(";", "")
+      }
+
+
+      if (query.toUpperCase.contains("WHERE")) {
+        query = query + " AND tid = " + tid
+      }
+      else {
+        query = query + " WHERE tid = " + tid
+      }
+      pw.println("Executing Query : " + query)
+      snc.sql(query)
+      pw.println(snc.sql(query).show(10))
+      pw.println("concurrent dml job finished....")
+      pw.flush()
+      pw.close()
     }
-    }
+   }
  }
 

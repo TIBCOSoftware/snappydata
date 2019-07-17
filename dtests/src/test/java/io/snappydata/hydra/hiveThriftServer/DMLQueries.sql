@@ -1,7 +1,13 @@
  update default.Student set marks = marks + 100;
- update default.Student set subject = 'Multithreading and Concurrency' where tid < 5;
- select id,subject,marks from default.Student order by id ASC;
+ update default.Student set subject = 'Multithreading and Concurrency' where subject='Maths-2';
+  select id,subject,marks from default.Student;
  update default.Student set marks = marks - 200;
- delete from default.Student where tid > 6;
+ update default.Student set subject = 'Maths-2' where subject='Multithreading and Concurrency';
  select * from default.Student;
- delete from default.Student where subject = 'Graphics' and tid = 8;
+ delete from default.Student where subject = 'Graphics';
+
+
+
+
+
+
