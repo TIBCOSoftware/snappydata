@@ -6,4 +6,3 @@ io/snappydata/hydra/externalHiveMetaStore/externalHiveMetaStore.conf
   numRowsValidation = true
   fullResultSetValidation = true
   isSmokeRun = false
-
