@@ -505,15 +505,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         newUpdateSubQuery = Some(updateSubQuery)
         None
       }
-      if (newUpdateSubQuery.isDefined) {
+      // if (newUpdateSubQuery.isDefined) {
         // Adding to context after the count operation, as count will clear the context object.
         addContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
           CACHED_PUTINTO_UPDATE_PLAN, cachedTable -> lock)
-      }
+      // }
       newUpdateSubQuery
     } finally {
       // release lock immediately if no updates are to be done
-      if (newUpdateSubQuery.isEmpty && (lock ne null)) lock.unlock()
+      //if (newUpdateSubQuery.isEmpty && (lock ne null)) lock.unlock()
     }
   }
 
@@ -523,10 +523,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def clearPutInto(): Unit = {
-    clearWriteLockOnTable()
-  }
-
-  private[sql] def clearWriteLockOnTable(): Unit = {
     contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
       case null =>
       case (cachedTable: Option[_], lock) =>
@@ -538,8 +534,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           dropPutIntoCacheTable(cachedTable.get.asInstanceOf[TableIdentifier])
         }
     }
+  }
+
+  private[sql] def clearWriteLockOnTable(): Unit = {
     contextObjects.remove(SnappySession.BULKWRITE_PLAN) match {
-      case null =>
+      case null => logInfo("SKSK Got null against BULKWRITEPlan in context object.")
       case lock: RegionLock => {
         if (lock != null) {
           logInfo(s"SKSK Going to unlock the lock object bulkOp ${lock} ", new Throwable("SKSK"))
@@ -547,21 +546,27 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         }
       }
       case (conn: Connection, id: TableIdentifier) => {
-        try {
-          logInfo(s"SKSK releasing lock on the server. ${id.table}")
-          val ps = conn.prepareStatement(s"call sys.RELEASE_REGION_LOCK(?)")
-          ps.setString(1, "BULKWRITE_" + id.table)
-          ps.executeUpdate()
-          ps.close()
-        }
-        finally {
-          conn.close()
+        var unlocked = false
+        while (!unlocked) {
+          try {
+            logInfo(s"SKSK releasing lock on the server. ${id.table}")
+            val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
+            ps.setString(1, "BULKWRITE_" + id.table)
+            val rs = ps.executeQuery()
+            rs.next()
+            unlocked = rs.getBoolean(1)
+            ps.close()
+          }
+          finally {
+            conn.close()
+          }
         }
       }
     }
   }
 
   private[sql] def clearContext(): Unit = synchronized {
+    clearPutInto()
     clearWriteLockOnTable()
     contextObjects.clear()
     planCaching = Property.PlanCaching.get(sessionState.conf)
@@ -1816,6 +1821,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
     ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
+
+  private[sql] def getPooledConnectionToServer(name: String): java.sql.Connection = {
+    ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
+  }
+
+
 
   /**
    * Fetch the topK entries in the Approx TopK synopsis for the specified

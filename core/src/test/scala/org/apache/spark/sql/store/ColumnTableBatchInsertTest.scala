@@ -45,21 +45,6 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     snc.dropTable("ColumnTable2", true)
   }
 
-
-  test("test the jdbc connection") {
-    val conn = DriverManager.getConnection("jdbc:snappydata://localhost:1527")
-
-    val stmt = conn.createStatement()
-    stmt.execute("create table t1(col1 int, col2 int) using column")
-    println("SKSKS. create table")
-    Thread.sleep(60000)
-    println("SKSKS after sleep")
-
-    stmt.execute("insert into t1 values(1,1)(2,2)")
-
-    Thread.sleep(60000)
-  }
-
   test("test the shadow table creation") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
     val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
@@ -168,12 +153,18 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     var count = 0
 
     override def onJobStart(job: SparkListenerJobStart): Unit = {
-      assert(count == 0)
-      count += 1
+      this.synchronized {
+        assert(count == 0)
+        logInfo(s"SK The concurrent job count in jobstart is $count , job is $job")
+        count += 1
+      }
     }
 
     override def onJobEnd(job: SparkListenerJobEnd): Unit = {
-      count -= 1
+      this.synchronized {
+        count -= 1
+        logInfo(s"SK The concurrent job counton jobend is $count , job is $job")
+      }
     }
   }
 
@@ -234,7 +225,6 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val rdd = snc.sparkContext.parallelize(
       (1 to 200000).map(i => TestData(i, i.toString)))
     val dataDF = snc.createDataFrame(rdd)
-    import org.apache.spark.sql.snappy._
     dataDF.write.insertInto(tableName)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
@@ -242,6 +232,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
     import scala.concurrent.ExecutionContext.Implicits.global
     val doDelete = () => Future {
+      val snc = new SnappySession(sc)
       snc.sql("delete FROM " + tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
@@ -363,6 +354,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       val r2 = result.collect
       assert(r2.length % 200000 == 0)
     }
+
+    sc.addSparkListener(new BasicJobCounter)
 
     val insertTasks = Array.fill(5)(doInsert())
     val putTasks = Array.fill(5)(doPut())

@@ -17,18 +17,19 @@
 package org.apache.spark.sql.execution.columnar
 
 import scala.collection.mutable.ArrayBuffer
-
 import io.snappydata.{Constant, Property}
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
-
 import org.apache.spark.TaskContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
-import org.apache.spark.sql.execution.{SparkPlan, TableExec}
+import org.apache.spark.sql.execution.{SparkPlan, TableExec, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
@@ -765,6 +766,19 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$batchSizeTerm++;
     """.stripMargin
   }
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    // don't expect code generation to fail
+    try {
+      logInfo("SKSK in doExecute of ColumnInsertExec")
+      WholeStageCodegenExec(this).execute()
+    }
+    finally {
+      logInfo("SKSK unlocking in doExecute of ColumnInsertExec")
+      sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
+    }
+  }
+
 
   private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
       nullable: Boolean, encoder: String, cursorTerm: String,
