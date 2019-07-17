@@ -204,6 +204,8 @@ class SparkSQLExecuteImpl(val sql: String,
             )
           case _ => null
         }
+      case d: LogicalRDD =>
+        d.output
       case _ => Seq(null)
     }.filter(_ != null)
     if (qualifiedOutput.size < 1) {
