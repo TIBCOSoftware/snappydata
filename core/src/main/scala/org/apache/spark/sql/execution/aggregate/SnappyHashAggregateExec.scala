@@ -834,9 +834,11 @@ case class SnappyHashAggregateExec(
     } else ""
 
 
-    ctx.addMutableState(hashSetClassName, hashMapTerm, "")
-    ctx.addMutableState(listClassName, overflowHashMapsTerm, "")
-    ctx.addMutableState(iterClassName, overflowMapIter, "")
+    ctx.addMutableState(hashSetClassName, hashMapTerm, s"$hashMapTerm = null;")
+    ctx.addMutableState(listClassName + s"<$hashSetClassName>", overflowHashMapsTerm,
+      s"$overflowHashMapsTerm = null;")
+    ctx.addMutableState(iterClassName + s"<$hashSetClassName>", overflowMapIter,
+      s"$overflowMapIter = null;")
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
@@ -923,7 +925,7 @@ case class SnappyHashAggregateExec(
                  return true;
               } else {
                  if ($overflowMapIter.hasNext()) {
-                   $hashMapTerm = $overflowMapIter.next();
+                   $hashMapTerm = ($hashSetClassName)$overflowMapIter.next();
                    $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
                    Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
                    $iterValueOffsetTerm = $valueDataTerm.baseOffset();
@@ -973,7 +975,7 @@ case class SnappyHashAggregateExec(
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
         if ($overflowHashMapsTerm != null) {
           $overflowMapIter = $overflowHashMapsTerm.iterator();
-          $hashMapTerm = $overflowMapIter.next();
+          $hashMapTerm = ($hashSetClassName)$overflowMapIter.next();
         }
         $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
         Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
@@ -997,7 +999,7 @@ case class SnappyHashAggregateExec(
       }.mkString("\n")}
 
       // output the result
-      while($setBBMap())) {
+      while($setBBMap()) {
         $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
         Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
         long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();

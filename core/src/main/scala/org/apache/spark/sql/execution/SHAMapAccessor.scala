@@ -418,18 +418,18 @@ case class SHAMapAccessor(@transient session: SnappySession,
         |${generateKeyBytesHolderCode(numKeyBytesTerm, numValueBytes,
            keyVars, keysDataType, aggregateDataTypes, valueInitVars)
           }
-        |long $valueOffsetTerm;
+        |long $valueOffsetTerm = 0;
         // insert or lookup
-
+        |boolean $keyExistedTerm = false;
         |if($overflowHashMapsTerm == null) {
           |try {
             |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
             |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
             |${hashVar(0)});
-            |boolean $keyExistedTerm = $valueOffsetTerm >= 0;
+            |$keyExistedTerm = $valueOffsetTerm >= 0;
             |if (!$keyExistedTerm) {
               |$valueOffsetTerm = -1 * $valueOffsetTerm;
-              |if ( ($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
+              |if (($valueOffsetTerm + $numValueBytes + $numKeyBytesTerm) >=
               |$valueDataCapacityTerm) {
                 |//$valueDataTerm = $tempValueData;
                 |$valueDataTerm =  $hashMapTerm.getValueData();
@@ -439,7 +439,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               |}
             |}
           |} catch ($exceptionName bsle) {
-              |$overflowHashMapsTerm = new $linkedListClass();
+              |$overflowHashMapsTerm = new $linkedListClass<$shaMapClassName>();
               |$overflowHashMapsTerm.add($hashMapTerm);
               |$hashMapTerm = new $shaMapClassName($keyValSize);
               |$overflowHashMapsTerm.add($hashMapTerm);
@@ -450,6 +450,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
               |$valueDataTerm =  $hashMapTerm.getValueData();
               |$vdBaseObjectTerm = $valueDataTerm.baseObject();
               |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
+              |$keyExistedTerm = false;
           |}
         |} else {
           |boolean $insertDoneTerm = false;
@@ -458,9 +459,10 @@ case class SHAMapAccessor(@transient session: SnappySession,
                |$valueOffsetTerm = shaMap.putBufferIfAbsent($baseKeyObject,
                  |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
                  |${hashVar(0)});
-               if ($valueOffsetTerm < 0) {
-                 $valueOffsetTerm = -1 * $valueOffsetTerm;
-               }
+               |$keyExistedTerm = $valueOffsetTerm >= 0;
+               |if (!$keyExistedTerm) {
+                  |$valueOffsetTerm = -1 * $valueOffsetTerm;
+               |}
                |$hashMapTerm = shaMap;
                |$valueDataTerm =  $hashMapTerm.getValueData();
                |$vdBaseObjectTerm = $valueDataTerm.baseObject();
@@ -478,6 +480,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
             |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
             |${hashVar(0)});
             |$valueOffsetTerm = -1 * $valueOffsetTerm;
+            |$keyExistedTerm = false;
             |$valueDataTerm =  $hashMapTerm.getValueData();
             |$vdBaseObjectTerm = $valueDataTerm.baseObject();
             |$vdBaseOffsetTerm = $valueDataTerm.baseOffset();
