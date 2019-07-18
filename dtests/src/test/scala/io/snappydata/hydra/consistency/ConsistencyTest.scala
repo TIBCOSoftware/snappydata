@@ -154,8 +154,8 @@ class ConsistencyTest {
                   atomicityCheckFailed = true
                 }
               } else if (colName.toUpperCase.startsWith("SUM")) {
-                val before_result: Long = rowBf.getLong(j)
-                val after_result: Long = rowAf.getLong(j)
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
                 pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
                     before_result + " and sum after " + op + " start : " + after_result)
                 val expectedRs = before_result + (defaultValue * rowCount)
@@ -180,8 +180,8 @@ class ConsistencyTest {
                     before_result + " and avg after " + op + " start : " + after_result)
                 // TODO
               } else if (colName.toUpperCase.startsWith("SUM")) {
-                val before_result: Long = rowBf.getLong(j)
-                val after_result: Long = rowAf.getLong(j)
+                val before_result: Double = rowBf.getDouble(j)
+                val after_result: Double = rowAf.getDouble(j)
                 pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
                     before_result + " and sum after " + op + " start : " + after_result)
               }

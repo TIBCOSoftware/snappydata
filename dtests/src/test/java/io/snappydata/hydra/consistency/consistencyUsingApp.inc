@@ -51,6 +51,7 @@ INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 
 hydra.Prms-totalTaskTimeSec           = 300;
 hydra.Prms-maxResultWaitSec           = 900;
+hydra.Prms-maxCloseTaskResultWaitSec  = 900;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
 

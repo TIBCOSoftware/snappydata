@@ -49,7 +49,8 @@ INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 
 hydra.Prms-totalTaskTimeSec           = 300;
 hydra.Prms-maxResultWaitSec           = 900;
+hydra.Prms-maxCloseTaskResultWaitSec  = 900;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-testUniqueKeys = true;
-
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-largeDataSet = true;
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-useCsv = false;

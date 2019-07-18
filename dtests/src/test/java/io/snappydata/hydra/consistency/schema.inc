@@ -6,6 +6,12 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createTablesStatements =
 "create table app.table3 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), tid int)"
 ;
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-uniqueColumnName =
+"id"
+"id"
+"id"
+;
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-tablesList =
 "app.table1"
 "app.table2"

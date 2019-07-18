@@ -768,7 +768,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public void performInsertUsingBatch(Connection conn, String tableName,
       String stmt, int index, int batchSize, int tid, boolean isPopulate){
     int initCounter = getInitialCounter(index, batchSize);
-    String uniqueKey = SnappySchemaPrms.getUniqueColumnName();
+    String uniqueKey = SnappySchemaPrms.getUniqueColumnName()[index];
     Connection dConn = null;
     Log.getLogWriter().info("Inserting using " + stmt + " with batchSize " + batchSize + " in " +
         "table " + tableName + " from " + initCounter);
@@ -802,7 +802,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       for (int j = initCounter ; j < (batchSize + initCounter); j++) {
         int replaceQuestion = 1;
         for (int i = 0; i < oTypes.length; i++) {
-          if (fieldNames[i].equals(uniqueKey)) value = j + "";
+          if (fieldNames[i].equalsIgnoreCase(uniqueKey)) value = j + "";
           else value = "-1";
           String clazz = oTypes[i].getSimpleClassName();
           switch (clazz) {

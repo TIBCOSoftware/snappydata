@@ -1,3 +1,6 @@
+
+INCLUDE $JTESTS/io/snappydata/hydra/consistency/mixedTableExtn.inc;
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmtsNonDMLTables=
 "insert into table1 values(?,?,?,?,?,?,?)"
 "insert into table2 values(?,?,?,?,?,?,?)"
