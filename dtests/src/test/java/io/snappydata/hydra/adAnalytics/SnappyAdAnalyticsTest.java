@@ -141,13 +141,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
    * Start kafka zookeeper.
    */
   public static synchronized void HydraTask_StartKafkaZookeeper() {
-    getHostNames();
     snappyAdAnalyticsTest.startZookeeper();
   }
 
   protected void startZookeeper() {
     ProcessBuilder pb = null;
     try {
+      getHostNames();
       String zookeeperLogDirPath = kafkaLogDir + sep + "zookeeper";
       new File(zookeeperLogDirPath).mkdir();
       String dest = zookeeperLogDirPath + sep + "zookeeperSystem.log";
