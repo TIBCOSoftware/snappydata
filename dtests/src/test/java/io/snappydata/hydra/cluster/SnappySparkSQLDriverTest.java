@@ -31,7 +31,6 @@ public class SnappySparkSQLDriverTest extends SnappyTest {
   public static void dropDBIssue() throws SQLException {
     Connection conn = getLocatorConnection();
     String query = "DROP DATABASE IF EXISTS sf_tmp_db_38611be8de554936beae283efdbe3ee8 CASCADE";
-    // ResultSet rs = conn.createStatement().executeQuery(query);
     Statement stmt = conn.createStatement();
     long startTime = System.currentTimeMillis();
     stmt.executeUpdate(query);
