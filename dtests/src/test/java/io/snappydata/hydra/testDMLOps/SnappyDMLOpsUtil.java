@@ -269,7 +269,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       for (int i = 0; i < schemas.length; i++) {
         s.execute(schemas[i]);
         sleepForMs(5);
-        s.cancel();
+        // s.cancel();
         aStr.append(schemas[i] + "\n");
       }
       s.close();
@@ -604,6 +604,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
    */
   public static void HydraTask_changeTableSchema() {
     testInstance.changeTableSchema();
+    HydraTask_saveTableMetaDataToBB();
     HydraTask_populateTables();
   }
 
