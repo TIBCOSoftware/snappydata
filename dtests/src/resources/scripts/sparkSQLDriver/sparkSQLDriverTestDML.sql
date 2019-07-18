@@ -82,9 +82,9 @@ INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_special_chars_const_S
 
 INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_special_chars_const_DOUBLE SELECT 12;
 
-INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_for_cq_query_STRING_with_filter_2 SELECT ''' |[]{}()&%#@$"';
+INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_for_cq_query_STRING_with_filter_2 SELECT ''' |[]{}()&%#@$"\\';
 
-INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_query_col_STRING_with_filter_2 SELECT ''' |[]{}()&%#@$"';
+INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_query_col_STRING_with_filter_2 SELECT SELECT ''' |[]{}()&%#@$"\\';
 
 INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_special_chars_const_BIGINT SELECT 12;
 
@@ -196,7 +196,6 @@ SELECT `tbl_all_data_types_50_rows`.`col_TINYINT` `col_TINYINT`, `tbl_all_data_t
 
 SELECT `tbl_all_data_types_50_rows`.`col_TINYINT` `col_TINYINT`, `tbl_all_data_types_50_rows`.`col_SMALLINT` `col_SMALLINT`, `tbl_all_data_types_50_rows`.`col_INT` `col_INT`, `tbl_all_data_types_50_rows`.`col_BIGINT` `col_BIGINT`, `tbl_all_data_types_50_rows`.`col_FLOAT` `col_FLOAT`, `tbl_all_data_types_50_rows`.`col_DOUBLE` `col_DOUBLE`, `tbl_all_data_types_50_rows`.`col_BOOLEAN` `col_BOOLEAN`, `tbl_all_data_types_50_rows`.`col_STRING` `col_STRING`, `tbl_all_data_types_50_rows`.`col_TIMESTAMP` `col_TIMESTAMP` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_all_data_types_50_rows` `tbl_all_data_types_50_rows` CROSS JOIN `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_all_data_types_50_rows` `selfjoin1` ON TRUE CROSS JOIN `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_all_data_types_50_rows` `selfjoin2` ON TRUE;
 
-
 SELECT `tbl_query_col_tinyint`.`col_TINYINT` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_query_col_tinyint` `tbl_query_col_tinyint`;
 
 SELECT `tbl_query_col_tinyint`.`col_TINYINT` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_query_col_tinyint` `tbl_query_col_tinyint`;
@@ -687,6 +686,6 @@ WHERE
 NOT (12.0 IS NULL)LIMIT 1
 ) `cq_query_param_FloatType`;
 
-SELECT ''' |[]{}()&%#@$"' `specialchars_with_external_type`, ''' |[]{}()&%#@$"' `specialchars_without_external_type` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_special_chars_const_string` `tbl_special_chars_const_string` LIMIT 1;
+SELECT ''' |[]{}()&%#@$"\\' `specialchars_with_external_type`, ''' |[]{}()&%#@$"\\' `specialchars_without_external_type` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_special_chars_const_string` `tbl_special_chars_const_string` LIMIT 1;
 
-SELECT ''' |[]{}()&%#@$"' `specialchars_with_external_type`, ''' |[]{}()&%#@$"' `specialchars_without_external_type` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_special_chars_const_string` `tbl_special_chars_const_string` LIMIT 1;
+SELECT ''' |[]{}()&%#@$"\\' `specialchars_with_external_type`, ''' |[]{}()&%#@$"\\' `specialchars_without_external_type` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_special_chars_const_string` `tbl_special_chars_const_string` LIMIT 1;
