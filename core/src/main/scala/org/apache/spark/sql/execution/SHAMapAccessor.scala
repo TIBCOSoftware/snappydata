@@ -468,6 +468,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
                |$insertDoneTerm = true;
                |break;
              |} catch ($exceptionName bsle) {
+                |//ignore
              |}
           |}
           |if (!$insertDoneTerm) {

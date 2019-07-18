@@ -471,7 +471,6 @@ case class SnappyHashAggregateExec(
 
   // The name for ObjectHashSet of generated class.
   private var hashMapTerm: String = _
-  private var overflowHashMapsTerm: String = _
 
   // utility to generate class for optimized map, and hash map access methods
   @transient private var keyBufferAccessor: ObjectHashMapAccessor = _
@@ -715,14 +714,16 @@ case class SnappyHashAggregateExec(
     val vdBaseOffsetTerm = ctx.freshName("vdBaseOffsetTerm")
     val valueDataCapacityTerm = ctx.freshName("valueDataCapacity")
     val doAgg = ctx.freshName("doAggregateWithKeys")
+    val setBBMap = ctx.freshName("setBBMap")
 
     // generate variable name for hash map for use here and in consume
     hashMapTerm = ctx.freshName("hashMap")
     val hashSetClassName = classOf[SHAMap].getName
 
-    overflowHashMapsTerm = ctx.freshName("overflowHashMaps")
+    val  overflowHashMapsTerm = ctx.freshName("overflowHashMaps")
     val listClassName = classOf[java.util.List[SHAMap]].getName
-
+    val overflowMapIter = ctx.freshName("overflowMapIter")
+    val iterClassName = classOf[java.util.Iterator[SHAMap]].getName
     // generate variable names for holding data from the Map buffer
     val aggregateBufferVars = for (i <- this.aggregateBufferAttributesForGroup.indices) yield {
       ctx.freshName(s"buffer_$i")
@@ -835,7 +836,7 @@ case class SnappyHashAggregateExec(
 
     ctx.addMutableState(hashSetClassName, hashMapTerm, "")
     ctx.addMutableState(listClassName, overflowHashMapsTerm, "")
-
+    ctx.addMutableState(iterClassName, overflowMapIter, "")
 
     val storedAggNullBitsTerm = ctx.freshName("storedAggNullBit")
     val cacheStoredAggNullBits = !SHAMapAccessor.isByteArrayNeededForNullBits(
@@ -913,6 +914,27 @@ case class SnappyHashAggregateExec(
            |}
          |}""".stripMargin)
 
+    ctx.addNewFunction(setBBMap,
+      s"""private boolean $setBBMap()  {
+         |  if ($overflowHashMapsTerm == null) {
+         |    return $hashMapTerm != null;
+            } else {
+              if ($hashMapTerm != null) {
+                 return true;
+              } else {
+                 if ($overflowMapIter.hasNext()) {
+                   $hashMapTerm = $overflowMapIter.next();
+                   $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
+                   Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+                   $iterValueOffsetTerm = $valueDataTerm.baseOffset();
+                   return true;
+                 } else {
+                   return false;
+                 }
+              }
+            }
+         |}""".stripMargin)
+
     // generate code for output
     /*  val keyBufferTerm = ctx.freshName("keyBuffer")
       val (initCode, keyBufferVars, _) = keyBufferAccessor.getColumnVars(
@@ -949,6 +971,10 @@ case class SnappyHashAggregateExec(
         long $beforeAgg = System.nanoTime();
         $doAgg();
         $aggTime.${metricAdd(s"(System.nanoTime() - $beforeAgg) / 1000000")};
+        if ($overflowHashMapsTerm != null) {
+          $overflowMapIter = $overflowHashMapsTerm.iterator();
+          $hashMapTerm = $overflowMapIter.next();
+        }
         $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
         Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
         $iterValueOffsetTerm += $valueDataTerm.baseOffset();
@@ -971,28 +997,30 @@ case class SnappyHashAggregateExec(
       }.mkString("\n")}
 
       // output the result
-      $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
-      Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-      long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();
-      long $localIterValueOffsetTerm = $iterValueOffsetTerm;
-      ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
-      while ($localIterValueOffsetTerm != $endIterValueOffset) {
-        $numOutput.${metricAdd("1")};
-        $readKeyLengthCode
-        // skip the key length
-        $localIterValueOffsetTerm += 4;
-        long $localIterValueStartOffsetTerm = $localIterValueOffsetTerm;
-        $outputCode
-        if (shouldStop()) {
-          $iterValueOffsetTerm = $localIterValueOffsetTerm;
-          return;
+      while($setBBMap())) {
+        $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
+        Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+        long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();
+        long $localIterValueOffsetTerm = $iterValueOffsetTerm;
+        ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
+        while ($localIterValueOffsetTerm != $endIterValueOffset) {
+          $numOutput.${metricAdd("1")};
+          $readKeyLengthCode
+          // skip the key length
+          $localIterValueOffsetTerm += 4;
+          long $localIterValueStartOffsetTerm = $localIterValueOffsetTerm;
+          $outputCode
+          if (shouldStop()) {
+            $iterValueOffsetTerm = $localIterValueOffsetTerm;
+            return;
+          }
+        }
+
+        if ($localIterValueOffsetTerm == $endIterValueOffset) {
+          $hashMapTerm.release();
+          $hashMapTerm = null;
         }
       }
-
-       if ($localIterValueOffsetTerm == $endIterValueOffset) {
-         $hashMapTerm.release();
-         $hashMapTerm = null;
-       }
     """
   }
 
