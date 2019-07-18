@@ -18,7 +18,6 @@
 package io.snappydata.hydra.putInto
 
 
-
 import java.io.{File, FileOutputStream, PrintWriter}
 
 import com.typesafe.config.Config
@@ -102,22 +101,22 @@ class PutIntoReceiver extends SnappyStreamingJob {
       val schema = StructType(structFields())
       implicit val encoder = RowEncoder(schema)
 
-        streamingDF.selectExpr("CAST(value AS STRING)")
-            .as[String]
-            .map(_.split(","))
-            .map(r => {
-                Row(r(0), r(1), r(2).toDouble, r(3), r(4), r(5), r(6), r(7), r(8),
-                  r(9), r(10), r(11), r(12), r(13), r(14), r(15), r(16), r(17),
-                  r(18), r(19), r(20), r(21), r(22), r(23), r(24), r(25), r(26),
-                  r(27), r(28), r(29), r(30).toInt)
-            })
-            .writeStream
-            .format("snappysink")
-            .queryName("USERS_"+tableName)
-            .trigger(ProcessingTime("1 seconds"))
-            .option("tableName", tableName)
-            .option("streamQueryId", "Query_" + tableName)
-            .option("checkpointLocation", checkpointDirectory).start
+      streamingDF.selectExpr("CAST(value AS STRING)")
+          .as[String]
+          .map(_.split(","))
+          .map(r => {
+            Row(r(0), r(1), r(2).toDouble, r(3), r(4), r(5), r(6), r(7), r(8),
+              r(9), r(10), r(11), r(12), r(13), r(14), r(15), r(16), r(17),
+              r(18), r(19), r(20), r(21), r(22), r(23), r(24), r(25), r(26),
+              r(27), r(28), r(29), r(30).toInt)
+          })
+          .writeStream
+          .format("snappysink")
+          .queryName("USERS_" + tableName)
+          .trigger(ProcessingTime("1 seconds"))
+          .option("tableName", tableName)
+          .option("streamQueryId", "Query_" + tableName)
+          .option("checkpointLocation", checkpointDirectory).start
 
     }
   }

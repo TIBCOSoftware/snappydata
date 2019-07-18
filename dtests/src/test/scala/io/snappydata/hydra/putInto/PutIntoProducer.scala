@@ -47,10 +47,18 @@ object PutIntoProducer {
   def generateAndPublish(args: Array[String]) {
     // 0 - insert
     // 1 - upsert
-    val eventCount: Long = args {0}.toLong
-    val topic: String = args {1}
-    val startRange: Long = args {2}.toLong
-    var brokers: String = args {args.length - 1}
+    val eventCount: Long = args {
+      0
+    }.toLong
+    val topic: String = args {
+      1
+    }
+    val startRange: Long = args {
+      2
+    }.toLong
+    var brokers: String = args {
+      args.length - 1
+    }
     brokers = brokers.replace("--", ":")
     // scalastyle:off println
     pw.println(getCurrTimeAsString + s"Sending Kafka messages of topic $topic to brokers $brokers")
@@ -58,10 +66,10 @@ object PutIntoProducer {
     val producer = new KafkaProducer[String, String](properties(brokers))
     val numThreads = 2;
     val threads = new Array[Thread](numThreads)
-    val eventsPerThread = eventCount ; // numThreads;
+    val eventsPerThread = eventCount; // numThreads;
     for (i <- 0 until numThreads) {
       val thrStartRange = startRange // + (i * eventsPerThread)
-      val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer,i))
+      val thread = new Thread(new RecordCreator(topic, eventsPerThread, thrStartRange, producer, i))
       thread.start()
       threads(i) = thread
       Thread.sleep(60000)
@@ -82,7 +90,7 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
     producer: KafkaProducer[String, String], eventType: Int)
     extends Runnable {
 
-  val schema = Array ("id", "data1", "data2", "APPLICATION_ID", "ORDERGROUPID", "PAYMENTADDRESS1",
+  val schema = Array("id", "data1", "data2", "APPLICATION_ID", "ORDERGROUPID", "PAYMENTADDRESS1",
     "PAYMENTADDRESS2", " PAYMENTCOUNTRY", "PAYMENTSTATUS", " PAYMENTRESULT",
     "PAYMENTZIP", " PAYMENTSETUP", "PROVIDER_RESPONSE_DETAILS", "PAYMENTAMOUNT", "PAYMENTCHANNEL",
     "PAYMENTCITY", "PAYMENTSTATECODE", "PAYMENTSETDOWN", "PAYMENTREFNUMBER", "PAYMENTST",
@@ -91,13 +99,14 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
   val random = new Random()
   val range: Long = 9999999999L - 1000000000
   var conn: Connection = null
+
   def run() {
     PutIntoProducer.pw.println(PutIntoProducer.getCurrTimeAsString + s"start: " +
         s"$startRange and end: {$startRange + $eventCount}");
 
-    //(startRange until (startRange + eventCount)).foreach(i => {
-      var i = 0L
-      while(i < (startRange + eventCount)){
+    // (startRange until (startRange + eventCount)).foreach(i => {
+    var i = 0L
+    while (i < (startRange + eventCount)) {
       val id: String = i.toString
       val data1: String = "data1"
       val data2: Double = i * 10.2
@@ -114,7 +123,7 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
       val payment_amount: String = "PAYMENTAMOUNT" + randomAlphanumeric(3)
       val payment_channel: String = "PAYMENTCHANNEL" + randomAlphanumeric(3)
       val payment_city: String = "PAYMENTCITY" + randomAlphanumeric(3)
-      val payment_state_code: String = "PAYMENTSTATECODE" + randomAlphanumeric(3) 
+      val payment_state_code: String = "PAYMENTSTATECODE" + randomAlphanumeric(3)
       val payment_setdown: String = "PAYMENTSETDOWN" + randomAlphanumeric(3)
       val payment_refnumber: String = "PAYMENTREFNUMBER" + randomAlphanumeric(3)
       val paymenttst: String = "PAYMENTST" + randomAlphanumeric(3)
@@ -136,11 +145,13 @@ final class RecordCreator(topic: String, eventCount: Long, startRange: Long,
           s"$payment_auth_code,$payment_id,$payment_merchind,$payment_response_code," +
           s"$payment_name,$payment_outled_id,$payment_transfer_type,$payment_date," +
           s"$client_id,$customer_id"
-      if((i%1000) == 0){
-         if(eventType == 0)
-         PutIntoProducer.pw.println(s"PutIntoProducer.getCurrTimeAsString Inserting row id : $id")
-         if(eventType == 1)
-         PutIntoProducer.pw.println(s"PutIntoProducer.getCurrTimeAsString Updating row id : $id")
+      if ((i % 1000) == 0) {
+        if (eventType == 0) {
+          PutIntoProducer.pw.println(s"PutIntoProducer.getCurrTimeAsString Inserting row id : $id")
+        }
+        if (eventType == 1) {
+          PutIntoProducer.pw.println(s"PutIntoProducer.getCurrTimeAsString Updating row id : $id")
+        }
       }
       val data = new ProducerRecord[String, String](topic, id, row + s",${eventType}")
       producer.send(data)
