@@ -21,20 +21,39 @@ import java.sql.{Connection, DriverManager}
 import java.util.Random
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql._
 
 class ThriftServerInsertFromSnappy extends SnappySQLJob {
+
+  // scalastyle:off println
+
+  def createTblSpark(spark : SparkSession) : Unit = {
+    spark.sql("create table if not exists default.Student" +
+      "(id int, name String, subject String, marks int, tid int)")
+    println(spark.sql("show tables").show(  ))
+  }
+
+
 
   override def isValidJob(snappySession: SnappySession, config: Config):
   SnappyJobValidation = SnappyJobValid()
 
   override def runSnappyJob(snappySession: SnappySession, jobConfig: Config): Any = {
-    // scalastyle:off println
+
 
 
     var index = 0
+//    val insertQuery : String = "insert into default.Student select id, concat('TIBCO_',id)," +
+//      " default.subject(id%10), rand() * 1000, id%10 from range(10000)"
+    val insertQuery : String = "insert into default.Student select id, concat('TIBCO_',id)," +
+         " default.subject(id%10), id + 53, id%10 from range(10000)"
+
     val snc : SnappyContext = snappySession.sqlContext
+    snc.sql("set snappydata.hiveServer.enabled=true")
     val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
+//    createTblSpark(spark)
+//    spark.udf.register("default.subject", subject)
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val tids = jobConfig.getString("tids")
     val threadID = Thread.currentThread().getId
@@ -46,11 +65,11 @@ class ThriftServerInsertFromSnappy extends SnappySQLJob {
 //    val random = new Random()
 //    val tidList = tids.split(",")
 //    tidList.foreach{println}
-    snc.sql("insert into default.Student select id, concat('TIBCO_',id), " +
-      "default.subject(id%10), rand() * 1000, id%10 from range(10000);")
+    snc.sql(insertQuery)
+    spark.sql(insertQuery)
+    pw.println("inserting job finished....")
     pw.println(snc.sql("select * from default.Student order by id DESC").show(100))
     pw.println(snc.sql("select count(*) from default.Student").show())
-    pw.println("inserting job finished....")
     pw.flush()
     pw.close()
   }

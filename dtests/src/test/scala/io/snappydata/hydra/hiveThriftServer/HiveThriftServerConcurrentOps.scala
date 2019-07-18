@@ -21,7 +21,9 @@ import java.sql.{Connection, DriverManager, SQLException}
 import java.util
 
 import com.typesafe.config.Config
+import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql._
+
 import scala.util.Random
 
 class HiveThriftServerConcurrentOps extends SnappySQLJob {
@@ -33,7 +35,8 @@ class HiveThriftServerConcurrentOps extends SnappySQLJob {
     // scalastyle:off println
 
     val snc : SnappyContext = snappySession.sqlContext
-    val spark : SparkSession = SparkSession.builder().enableHiveSupport().getOrCreate()
+    snc.sql("set snappydata.hiveServer.enabled=true")
+    val spark : SparkSession = SparkSession.builder().getOrCreate()
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val tid = jobConfig.getInt("tid")
     val outputFile = "ValidateHiveThriftServerConcurrency" + "_" +
@@ -52,7 +55,6 @@ class HiveThriftServerConcurrentOps extends SnappySQLJob {
       if(query.contains(";")) {
         query = query.replace(";", "")
       }
-
 
       if (query.toUpperCase.contains("WHERE")) {
         query = query + " AND tid = " + tid
