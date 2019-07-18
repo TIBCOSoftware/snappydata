@@ -1,0 +1,7 @@
+ io/snappydata/hydra/preparedStmt/preparedStmtTest.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  queryFileWithPS="$GEMFIRE/../../../dtests/src/resources/scripts/preparedStmt"
+  queryFile="$GEMFIRE/../../../spark/sql/core/src/test/resources/tpcds"
+  dataFilesLocation="/export/shared/QA_DATA/TPCDS/data"
