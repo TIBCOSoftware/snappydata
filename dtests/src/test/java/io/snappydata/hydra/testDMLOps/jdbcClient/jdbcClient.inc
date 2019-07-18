@@ -1,9 +1,5 @@
 INCLUDE $JTESTS/io/snappydata/hydra/connectionPool/connPool.inc;
 
-//task for running select queries at the end of test
-CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
-  threadGroups = snappyThreads;
-
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/nw_schema.inc;
 
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/columnTableExtn.inc; //change this as per table type
@@ -13,7 +9,7 @@ INCLUDE $JTESTS/io/snappydata/hydra/northwind/startDualModeCluster.conf;
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initialize
 	threadGroups = snappyThreads,leadThreads,snappyStoreThreads;
 
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/derby.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_createSnappySchemas
 	threadGroups = snappyThreads;
@@ -44,7 +40,12 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 INITTASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_verifyResultsInitTask
   threadGroups = snappyThreads;
 
+//task for running select queries at the end of test
+CLOSETASK   taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod = HydraTask_verifyResultsInitTask
+threadGroups = snappyThreads;
+
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
+INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 hydra.Prms-totalTaskTimeSec           = 900;
 hydra.Prms-maxResultWaitSec           = 600;
 

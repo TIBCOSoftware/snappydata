@@ -2196,7 +2196,7 @@ public class SnappyTest implements Serializable {
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
     String leadPort = getLeadPort();
-    Log.getLogWriter().info("Lead host:port =  " + leadHost + ":" + leadPort);
+    Log.getLogWriter().info("Primary Lead host:port =  " + leadHost + ":" + leadPort);
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
@@ -2980,7 +2980,6 @@ public class SnappyTest implements Serializable {
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
       Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
-      // SnappyBB.getBB().getSharedMap().put("primaryLeadHost", null);
       snappyTest.cycleVM(numToKill, stopStartVms, "leadVmCycled", lastCycledTimeForLeadFromBB,
           lastCycledTimeForLead, "lead", false, false, false);
     }

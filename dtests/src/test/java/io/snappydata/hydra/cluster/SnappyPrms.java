@@ -827,12 +827,6 @@ public class SnappyPrms extends BasePrms {
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
   }
 
-  public static void setCommaSepAPP_Props(String value) {
-    Long key = appPropsForJobServer;
-    value = BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, "")) + value;
-    BasePrms.tasktab().put(key,value);
-  }
-
   public static Vector getPointLookUpQueryList() {
     Long key = pointLookUpQueryList;
     return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
