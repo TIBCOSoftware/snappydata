@@ -89,7 +89,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     String[] vmHostNames = null;
     int numServers=0;
     if(SnappyTest.isUserConfTest) {
-      Log.getLogWriter().info("Inside isUserConfTest = true");
       vmHostNames = getNames(SnappyPrms.hostNames);
       SnappyBB.getBB().getSharedCounters().zero(SnappyBB.numServers);
       SnappyBB.getBB().getSharedCounters().setIfLarger(SnappyBB.numServers,vmHostNames.length);

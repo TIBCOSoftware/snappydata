@@ -1,9 +1,3 @@
-io/snappydata/hydra/putInto/concPutIntoWithStreaming.conf
-  A=snappy snappyHosts=1 snappyVMsPerHost=1 snappyThreadsPerVM=3
-  kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
-  kafkaLogDir="/home/spillai/kafka_logs"
-
- /*
 io/snappydata/hydra/putInto/concPutIntoWithSelect.conf
   A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
@@ -40,4 +34,3 @@ io/snappydata/hydra/putInto/putIntoWithOverlappingKeys.conf
   threadCnt=4
   insertQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/overLappingKeys"
   selectQueryPath="$GEMFIRE/../../../dtests/src/resources/scripts/putInto/selectOps.sql"
-*/
