@@ -945,4 +945,47 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     assert(se4.getSQLState.equals("42X04"))
 
   }
+
+  test("SNAP-3045. Incorrect Hashjoin results") {
+    snc
+    snc.sql("create table dm_base (c1 STRING, tenant_id STRING, shop_id STRING, olet_id STRING)" +
+      " using column options(BUCKETS '40', PARTITION_BY 'TENANT_ID',REDUNDANCY '1'," +
+      "PERSISTENCE 'ASYNCHRONOUS')")
+    snc.sql("create table hierarchy_tag_dimension (c2 clob, tenant_id clob, shop_id clob," +
+      " outlet_id clob)")
+    snc.sql("insert into dm_base values('abc1', '1', '1', null)")
+
+    snc.sql("insert into hierarchy_tag_dimension values('xyz1', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc2', '1', '1', '1')")
+      snc.sql("insert into hierarchy_tag_dimension values('xyz2', '1', '1', null)")
+      snc.sql("insert into dm_base values('abc3', '1', '1', null)")
+      snc.sql("insert into hierarchy_tag_dimension values('xyz3', '1', '1', '1')")
+      snc.sql("insert into dm_base values('abc4', '1', '1', '1')")
+      snc.sql("insert into hierarchy_tag_dimension values('xyz4', '1', '1', '1')")
+      snc.sql("insert into dm_base values('abc5', '1', '1', '2')")
+      snc.sql("insert into hierarchy_tag_dimension values('xyz5', '1', '1', null)")
+      snc.sql("insert into dm_base values('abc6', '1', '1', null)")
+      snc.sql("insert into hierarchy_tag_dimension values('xyz6', '1', '1', '2')")
+      snc.sql("insert into dm_base values('abc7', '1', '1', '2')")
+      snc.sql("insert into hierarchy_tag_dimension values('xyz7', '1', '1', '2')")
+
+      val rs1 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+        "(SELECT * FROM hierarchy_tag_dimension)" +
+        " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+        "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+
+    val count1 = rs1.length
+
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.disableHashJoin", "true")
+    val rs2 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+    val count2 = rs2.length
+    assertEquals(count1, count2)
+
+
+
+  }
 }
