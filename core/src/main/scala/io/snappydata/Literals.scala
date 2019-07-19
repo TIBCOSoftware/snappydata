@@ -274,6 +274,17 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.useBBMapInSHAFor1StringGroupBy",
     "use ByteBufferMap based SnappyHashAggregateExec even for single string group by",
     Some(false))
+
+  val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
+    s"The max capacity of value byte array in ByteBufferHashMap. " +
+      s"Default value is ${Integer.MAX_VALUE}",
+    Some(Integer.MAX_VALUE))
+
+  val initialCapacityOfSHABBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",
+    s"The initial capacity of SHAMap. " +
+      s"Default value is 8192", Some(8192))
 }
 
 // extractors for properties

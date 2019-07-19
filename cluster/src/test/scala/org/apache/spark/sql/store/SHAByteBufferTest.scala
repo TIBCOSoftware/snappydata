@@ -1242,6 +1242,40 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     rs2 = snc2.sql(query2).collect()(0)
     assertEquals(rs1.getLong(0), rs2.getLong(0))
     snc.dropTable("securities")
+  }
+
+  test("SNAP-3077 test list of overflow BBMaps if capacity is reached") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1 int, col2 binary) using column ")
+    val range: Byte = 100
+    val byteArraySize = 512
+    val numRowDuplication = 10
+    val conn = getSqlConnection
+    val insertPs = conn.prepareStatement("insert into test1 values (?,?)")
+    for( i <- 1 to range) {
+      val bytes = Array.ofDim[Byte](byteArraySize)
+      bytes(i) = i.toByte
+      for (j <- 0 until numRowDuplication) {
+        insertPs.setInt(1, i)
+        insertPs.setBytes(2, bytes)
+        insertPs.addBatch()
+      }
+    }
+    insertPs.executeBatch()
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.approxMaxCapacityOfBBMap", "4096")
+    snc1.setConf("snappydata.sql.initialCapacityOfSHABBMap", "4")
+    val rs = snc1.sql("select col2, sum(col1) from test1 group by col2").collect()
+    rs.foreach(row => {
+      val byteArr = row.getAs[Array[Byte]](0)
+      val sum = row.getLong(1)
+      val key = byteArr.find(_ > 0).get
+      assertEquals(10 * key, sum)
+    })
+
+
+    snc.dropTable("test1")
 
   }
 

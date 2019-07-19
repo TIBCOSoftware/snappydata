@@ -441,7 +441,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
           |} catch ($exceptionName bsle) {
               |$overflowHashMapsTerm = new $linkedListClass<$shaMapClassName>();
               |$overflowHashMapsTerm.add($hashMapTerm);
-              |$hashMapTerm = new $shaMapClassName($keyValSize);
+              |$hashMapTerm = new $shaMapClassName(${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)},
+              |$keyValSize,
+              |${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
               |$overflowHashMapsTerm.add($hashMapTerm);
               |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
               |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,
@@ -474,7 +476,9 @@ case class SHAMapAccessor(@transient session: SnappySession,
              |}
           |}
           |if (!$insertDoneTerm) {
-            |$hashMapTerm = new $shaMapClassName($keyValSize);
+            |$hashMapTerm = new $shaMapClassName(${Property.initialCapacityOfSHABBMap.get(session.sessionState.conf)},
+            | $keyValSize,
+            | ${Property.ApproxMaxCapacityOfBBMap.get(session.sessionState.conf)});
             |$overflowHashMapsTerm.add($hashMapTerm);
             |$valueOffsetTerm = $hashMapTerm.putBufferIfAbsent($baseKeyObject,
             |$baseKeyHolderOffset, $numKeyBytesTerm, $numValueBytes + $numKeyBytesTerm,

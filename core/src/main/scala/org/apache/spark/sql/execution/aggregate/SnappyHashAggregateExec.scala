@@ -884,7 +884,10 @@ case class SnappyHashAggregateExec(
       childProducer.asInstanceOf[CodegenSupport].produce(ctx, this)
     ctx.addNewFunction(doAgg,
       s"""private void $doAgg() throws java.io.IOException {
-           |$hashMapTerm = new $hashSetClassName($keyValSize);
+           |$hashMapTerm = new $hashSetClassName(${Property.initialCapacityOfSHABBMap.get(
+        sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf)},
+        $keyValSize, ${Property.ApproxMaxCapacityOfBBMap.get(sqlContext.sparkSession.
+        asInstanceOf[SnappySession].sessionState.conf)});
            |$allocatorClass $allocatorTerm = $gfeCacheImplClass.
            |getCurrentBufferAllocator();
            |$byteBufferClass $keyBytesHolderVar = null;

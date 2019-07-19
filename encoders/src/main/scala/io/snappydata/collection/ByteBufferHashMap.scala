@@ -63,8 +63,8 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected val allocator: BufferAllocator,
     protected var keyData: ByteBufferData = null,
     protected var valueData: ByteBufferData = null,
-    protected var valueDataPosition: Long = 0L) {
-
+    protected var valueDataPosition: Long = 0L,
+    val approxMaxCapacity: Int = Integer.MAX_VALUE) {
   val taskContext: TaskContext = TaskContext.get()
   private var maxSizeReached: Boolean = false
   private[this] val consumer = if (taskContext ne null) {
@@ -92,6 +92,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     _maxMemory += keyData.capacity
   }
   if (valueData eq null) {
+    require(_capacity * valueSize < approxMaxCapacity)
     valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize,
       "HASHMAP"), allocator)
     valueDataPosition = valueData.baseOffset
@@ -183,6 +184,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     valueData.reset(clearMemory = false)
     valueDataPosition = valueData.baseOffset
     _size = 0
+    this.maxSizeReached = false
   }
 
   final def release(): Unit = {
@@ -190,6 +192,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     valueData.release(allocator)
     keyData = null
     valueData = null
+    this.maxSizeReached = false
   }
 
   protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
@@ -211,7 +214,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     val dataSize = position - valueData.baseOffset
     if (position + numBytes + 4 > valueData.endPosition) {
       val oldCapacity = valueData.capacity
-      valueData = valueData.resize(numBytes + 4, allocator)
+      valueData = valueData.resize(numBytes + 4, allocator, approxMaxCapacity)
       position = valueData.baseOffset + dataSize
       acquireMemory(valueData.capacity - oldCapacity)
       _maxMemory += valueData.capacity - oldCapacity
@@ -327,7 +330,13 @@ final class ByteBufferData private(val buffer: ByteBuffer,
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
-  def resize(required: Int, allocator: BufferAllocator): ByteBufferData = {
+  def resize(required: Int, allocator: BufferAllocator, maxCapacity: Int): ByteBufferData = {
+    val currentUsed = this.buffer.limit;
+    val currentCapacity = this.buffer.capacity;
+    if (maxCapacity - currentUsed < required ) {
+      throw new BufferSizeLimitExceededException(currentUsed, required, maxCapacity);
+    }
+    // the expand will not full respect max capacity , but that is ok , ...
     val buffer = allocator.expand(this.buffer, required, "HASHMAP")
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
@@ -354,7 +363,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
 
 }
 object ByteBufferHashMap {
-  val bsle = new BufferSizeLimitExceededException()
+  val bsle = new BufferSizeLimitExceededException("ByteBufferData capacity reached to max")
 }
 
 
