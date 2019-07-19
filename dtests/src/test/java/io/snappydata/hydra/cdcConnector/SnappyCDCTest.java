@@ -383,7 +383,6 @@ public class SnappyCDCTest extends SnappyTest {
     } catch (SQLException ex) {
       Log.getLogWriter().info("Caught sqlException in getResultSet method " + ex.getMessage());
     }
-
   }
 
   public ArrayList getQueryList(String fileName) {
