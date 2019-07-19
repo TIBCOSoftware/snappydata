@@ -28,10 +28,10 @@ import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, 
 
 object RLSSnappyJob extends SnappySQLJob {
   // scalastyle:off println
-  println(" Inside RLSSnappyJob")
-  override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+
+   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val snc = snSession.sqlContext
-   // val dataFilesLocation = jobConfig.getString("dataFilesLocation")
+    // val dataFilesLocation = jobConfig.getString("dataFilesLocation")
     val schema1: String = jobConfig.getString("schema1")
     val schema2: String = jobConfig.getString("schema2")
     val user3: String = jobConfig.getString("user3")
@@ -44,12 +44,12 @@ object RLSSnappyJob extends SnappySQLJob {
     userNames(1) = user4;
 
     val snc3 = snc.newSession()
-    snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, "user3")
-    snc3.snappySession.conf.set(Attribute.PASSWORD_ATTR, "user3123")
+    snc3.snappySession.conf.set(Attribute.USERNAME_ATTR, user3)
+    snc3.snappySession.conf.set(Attribute.PASSWORD_ATTR, user3)
 
     val snc4 = snc.newSession()
-    snc4.snappySession.conf.set(Attribute.USERNAME_ATTR, "user4")
-    snc4.snappySession.conf.set(Attribute.PASSWORD_ATTR, "user4123")
+    snc4.snappySession.conf.set(Attribute.USERNAME_ATTR, user4)
+    snc4.snappySession.conf.set(Attribute.PASSWORD_ATTR, user4)
 
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
 
@@ -70,9 +70,7 @@ object RLSSnappyJob extends SnappySQLJob {
       case Failure(e) => pw.close();
         throw e;
     }
-    def runQuery() : Unit = {
-      println("Inside runQuery")
-    }
   }
+
   override def isValidJob(sc: SnappySession, config: Config): SnappyJobValidation = SnappyJobValid()
 }

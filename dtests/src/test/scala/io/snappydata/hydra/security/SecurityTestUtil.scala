@@ -71,7 +71,6 @@ object SecurityTestUtil {
 
   def createPolicy(snc: SnappyContext, userSchema: Array[String],
       userName: Array[String]): Unit = {
-    println("Inside createPolicy() ")
     var filterCond, orderBy = ""
     var cnt = 1
     try {
@@ -130,7 +129,6 @@ object SecurityTestUtil {
   }
 
   def dropPolicy(snc: SnappyContext): Unit = {
-    println("Inside dropPolicy()")
     try {
       val policyMap = policyUserMap
       for ((k, v) <- policyMap) {
@@ -149,7 +147,6 @@ object SecurityTestUtil {
   }
 
   def enableRLS(snc: SnappyContext, userSchema: Array[String]): Unit = {
-    println("Inside enableRLS()")
     val isAltrTableRLS = true
     var alterTabSql = ""
     try {
@@ -174,7 +171,6 @@ object SecurityTestUtil {
 
   def validateRLS(snc: SnappyContext, isDropPolicy: Boolean, isAltrTableRLS:
   Boolean = true): Unit = {
-    println("Inside validateRLS")
     var queryUserMap: HashMap[Map[String, DataFrame], String] = HashMap()
     if (isDropPolicy || !isAltrTableRLS) {
       queryUserMap = policyFullSelectQueryMap; // this map contains rs fro select * from table query

@@ -144,11 +144,11 @@ public class SnappySecurityTest extends SnappyTest {
     Boolean isAltrTableRLS = SnappySecurityPrms.getIsAltTableRLS();
     Vector userVector = SnappySecurityPrms.getUserName();
     Vector onSchema = SnappySecurityPrms.getSchema();
-    String tableOwner = (String)userVector.elementAt(0);
+    String tableOwner = (String) userVector.elementAt(0);
     try {
       for (int s = 0; s < onSchema.size(); s++) {
-        conn = getSecuredLocatorConnection(tableOwner, tableOwner + "123");
-        String schemaOwnerTab = (String)onSchema.elementAt(s);
+        conn = getSecuredLocatorConnection(tableOwner, tableOwner);
+        String schemaOwnerTab = (String) onSchema.elementAt(s);
         String[] userTable = schemaOwnerTab.split("\\.");
         if (isAltrTableRLS) {
           String alterTabSql = "ALTER TABLE " + userTable[1] + " ENABLE ROW LEVEL SECURITY";
@@ -177,7 +177,7 @@ public class SnappySecurityTest extends SnappyTest {
         String policyNm = itrr.getKey();
         String schemaOwner = itrr.getValue();
         try {
-          conn = getSecuredLocatorConnection(schemaOwner, schemaOwner + "123");
+          conn = getSecuredLocatorConnection(schemaOwner, schemaOwner);
         } catch (Exception e) {
           Log.getLogWriter().info("The exception is " + e.getMessage());
         }
@@ -202,15 +202,13 @@ public class SnappySecurityTest extends SnappyTest {
       //create policy p2 on salary1 for select to user1 using name='a1';
       int cnt = 1;
       for (int i = 0; i < userVector.size(); i++) {
-        String policyUser = userVector.elementAt(i).toString(); //entry.getKey();
+        String policyUser = userVector.elementAt(i).toString();
         for (int p = 0; p < policyCnt; p++) {
           for (int s = 0; s < onSchema.size(); s++) {
-            String schemaOwnerTab = (String)onSchema.elementAt(s);
+            String schemaOwnerTab = (String) onSchema.elementAt(s);
             Log.getLogWriter().info("The schemaOwnerTab is " + schemaOwnerTab + " and size  is " + onSchema.size());
             String[] schemaOwner = schemaOwnerTab.split("\\.");
             Log.getLogWriter().info("The schemaOwner is " + schemaOwner[0]);
-
-            //temp check
             if (schemaOwner[1].equalsIgnoreCase("employees")) {
               filterCond = "EMPLOYEEID = 1 AND COUNTRY = 'USA'";
               orderBy = " ORDER BY EMPLOYEEID asc ";
@@ -226,7 +224,6 @@ public class SnappySecurityTest extends SnappyTest {
               Log.getLogWriter().info("The next policy name is  " + policyName);
               cnt++;
             }
-
             String policyStr = "CREATE POLICY " + policyName + " ON " + schemaOwnerTab + " FOR " + dmlOps.elementAt(0) + " TO " + policyUser + " USING " + filterCond;
             //Equivalent select query will be :
             String selectQryWF = "SELECT * FROM " + schemaOwnerTab + " WHERE " + filterCond;
@@ -235,7 +232,7 @@ public class SnappySecurityTest extends SnappyTest {
             Map<String, ResultSet> queryResultMap1 = new HashMap<>();
             Log.getLogWriter().info("Policy created for " + policyUser + " on table " + onSchema.elementAt(s) + " is " + policyStr);
             try {
-              conn = getSecuredLocatorConnection(schemaOwner[0], schemaOwner[0] + "123");
+              conn = getSecuredLocatorConnection(schemaOwner[0], schemaOwner[0]);
               conn.createStatement().execute(policyStr);
               ResultSet rs = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(selectQryWF);//select query with filter conditions
               ResultSet rs1 = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(selectQry);//select query with no filter conditions
@@ -246,7 +243,7 @@ public class SnappySecurityTest extends SnappyTest {
               policyUserMap.put(policyName, schemaOwner[0]);
               policyFullSelectQueryMap.put(queryResultMap1, policyUser);
             } catch (SQLException e) {
-              throw new TestException("Caught Exception in executing the policy sql" + e.getMessage());
+              throw new TestException("Caught Exception in executing the policy sql" + e.getMessage() + " stackTrace = " + e.getCause());
             }
           }
         }
@@ -285,7 +282,7 @@ public class SnappySecurityTest extends SnappyTest {
           ResultSet prevRS = itrr.getValue();
           Log.getLogWriter().info("The select Query is " + selectQry);
           Log.getLogWriter().info("The Final select Query tobe executed by policy User is  " + finalSelectQ[0]);
-          conn = getSecuredLocatorConnection(policyUser, policyUser + "123");
+          conn = getSecuredLocatorConnection(policyUser, policyUser);
           try {
             currRS = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(finalSelectQ[0]);
             currFiltrRS = conn.createStatement(ResultSet.TYPE_SCROLL_INSENSITIVE, ResultSet.CONCUR_READ_ONLY).executeQuery(selectQry);
@@ -326,6 +323,7 @@ public class SnappySecurityTest extends SnappyTest {
     }
     Log.getLogWriter().info("validateQuery() method finished successfully ");
   }
+
 
   public static int getRSCount(ResultSet resultSet) {
     int size = 0;
@@ -450,7 +448,7 @@ public class SnappySecurityTest extends SnappyTest {
     if (!(dmlOps.contains("SELECT")))
       isSelect = false;
     for (int q = 0; q < queryArray.size(); q++) {
-      String queryStr = (String)queryArray.get(q);
+      String queryStr = (String) queryArray.get(q);
       Boolean opAuth = false;
       Boolean schemaAuth = false;
       try {
@@ -650,16 +648,16 @@ public class SnappySecurityTest extends SnappyTest {
           evictionByOptionList.add("LRUHEAPPERCENT");
       }
       for (int i = 0; i < scriptNames.size(); i++) {
-        String userScript = (String)scriptNames.elementAt(i);
-        String location = (String)dataLocationList.elementAt(i);
-        String persistenceMode = (String)persistenceModeList.elementAt(i);
-        String colocateWith = (String)colocateWithOptionList.elementAt(i);
-        String partitionBy = (String)partitionByOptionList.elementAt(i);
-        String numPartitions = (String)numPartitionsList.elementAt(i);
-        String redundancy = (String)redundancyOptionList.elementAt(i);
-        String recoverDelay = (String)recoverDelayOptionList.elementAt(i);
-        String maxPartitionSize = (String)maxPartitionSizeList.elementAt(i);
-        String evictionByOption = (String)evictionByOptionList.elementAt(i);
+        String userScript = (String) scriptNames.elementAt(i);
+        String location = (String) dataLocationList.elementAt(i);
+        String persistenceMode = (String) persistenceModeList.elementAt(i);
+        String colocateWith = (String) colocateWithOptionList.elementAt(i);
+        String partitionBy = (String) partitionByOptionList.elementAt(i);
+        String numPartitions = (String) numPartitionsList.elementAt(i);
+        String redundancy = (String) redundancyOptionList.elementAt(i);
+        String recoverDelay = (String) recoverDelayOptionList.elementAt(i);
+        String maxPartitionSize = (String) maxPartitionSizeList.elementAt(i);
+        String evictionByOption = (String) evictionByOptionList.elementAt(i);
         Log.getLogWriter().info("Location is " + location);
         String dataLocation = snappyTest.getDataLocation(location);
         String filePath = snappyTest.getScriptLocation(userScript);
