@@ -24,6 +24,8 @@ import com.typesafe.config.Config
 import io.snappydata.hydra.SnappyTestUtils
 import org.apache.spark.sql._
 
+
+//  Not currenlty in use
 class ThriftServerInsertFromSnappy extends SnappySQLJob {
 
   // scalastyle:off println

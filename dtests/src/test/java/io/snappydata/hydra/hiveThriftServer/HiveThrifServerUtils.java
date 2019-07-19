@@ -1,41 +1,63 @@
 package io.snappydata.hydra.hiveThriftServer;
 
+import com.gemstone.gemfire.cache.query.Struct;
+import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsBB;
+import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import org.apache.commons.lang.StringUtils;
+import sql.sqlutil.ResultSetHelper;
+import util.TestException;
 
+import java.io.File;
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class HiveThrifServerUtils extends SnappyTest {
 
-    private Connection jdbcConnection = null;
-    private Connection snappyJDBCConnection = null;
     public static HiveThrifServerUtils htsUtils = null;
 
-    private Connection connectToBeeline() {
-        htsUtils = new HiveThrifServerUtils();
+    public static void HydraTask_initialize(){
+        if(htsUtils==null)
+            htsUtils = new HiveThrifServerUtils();
+    }
+
+    public static String[] beelineQuery = {"update beelineDB.Student set marks = marks + 100",
+            "update beelineDB.Student set subject = 'Multithreading and Concurrency' where subject='Maths-2'",
+            "update beelineDB.Student set marks = marks - 200",
+            "update beelineDB.Student set subject = 'Maths-2' where subject='Multithreading and Concurrency'",
+            "delete from beelineDB.Student where subject = 'Graphics' "};
+
+    public static String[] snappyQuery = {"update snappyDB.Student set marks = marks + 100",
+            "update snappyDB.Student set subject = 'Multithreading and Concurrency' where subject='Maths-2'",
+            "update snappy.Student set marks = marks - 200",
+            "update snappy.Student set subject = 'Maths-2' where subject='Multithreading and Concurrency'",
+            "delete from snappy.Student where subject = 'Graphics'"};
+
+    private static Connection connectToBeeline() {
+        Connection jdbcConnection = null;
         try {
-            htsUtils.jdbcConnection = DriverManager.getConnection("jdbc:hive2://localhost:10000", "app", "app");
+            jdbcConnection = DriverManager.getConnection("jdbc:hive2://localhost:10000", "app", "app");
         } catch(SQLException se) {
             Log.getLogWriter().info("Error in connecting to Beeline , " + se.getMessage());
         }
-        return  htsUtils.jdbcConnection;
+        return  jdbcConnection;
     }
 
     public static void HydraTask_CreateTableFromBeeline() {
-        htsUtils = new HiveThrifServerUtils();
-        htsUtils.jdbcConnection = htsUtils.connectToBeeline();
+        Connection jdbcConnection = connectToBeeline();
         try {
-            htsUtils.jdbcConnection.createStatement().execute("create schema beelineDB");
+            jdbcConnection.createStatement().execute("create schema beelineDB");
             //Below line needs to be added when external hive meta store merged into the master.
             //htsUtils.jdbcConnection.createStatement().execute("create table if not exists beelineDB.Student(id int, name String, subject String, marks int, tid int) row format delimited fields terminated by ','");
             //htsUtils.jdbcConnection.createStatement().execute("load data local inpath '/home/cbhatt/hts1/' overwrite into table beelineDB.Student");
-            htsUtils.jdbcConnection.createStatement().execute("create external table if not exists beelineDB.Student using csv options(path '/home/cbhatt/hts1/data.csv/')");
+            jdbcConnection.createStatement().execute("create external table if not exists beelineDB.stage_Student using csv options(path '/home/cbhatt/hts2/data.csv',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
+            jdbcConnection.createStatement().execute("create table beelineDB.Student(id int,name string,subject string,marks int,tid int) using column as select * from beelineDB.stage_Student");
             Log.getLogWriter().info("Table beelineDB.Student created successfully in beeline");
-            Statement st = htsUtils.jdbcConnection.createStatement();
+            Statement st = jdbcConnection.createStatement();
             ResultSet rs = st.executeQuery("select * from beelineDB.Student limit 10");
             while (rs.next()) {
                 Log.getLogWriter().info(rs.getString(1) + "," + rs.getString(2) + "," + rs.getString(3) + "," + rs.getString(4) + "," + rs.getString(5) );
@@ -43,18 +65,19 @@ public class HiveThrifServerUtils extends SnappyTest {
             } catch(SQLException se) {
             Log.getLogWriter().info("Error in creating table from beeline , " + se.getMessage());
          }
-         closeConnection(htsUtils.jdbcConnection);
+         closeConnection(jdbcConnection);
     }
 
     public static void HydraTask_CreateTableFromSnappy() {
-        htsUtils = new HiveThrifServerUtils();
+        Connection snappyJDBCConnection = null;
         try {
-            htsUtils.snappyJDBCConnection = SnappyTest.getLocatorConnection();
-            htsUtils.snappyJDBCConnection.createStatement().execute("create schema snappyDB");
-//            htsUtils.snappyJDBCConnection.createStatement().execute("create table if not exists snappyDB.Student(id int, name String, subject String, marks int, tid int) using column");
-            htsUtils.snappyJDBCConnection.createStatement().execute("create external table if not exists snappyDB.Student using csv options(path '/home/cbhatt/hts1/data.csv/')");
+            snappyJDBCConnection = SnappyTest.getLocatorConnection();
+            snappyJDBCConnection.createStatement().execute("create schema snappyDB");
+//            snappyJDBCConnection.createStatement().execute("create table if not exists snappyDB.Student(id int, name String, subject String, marks int, tid int) using column");
+            snappyJDBCConnection.createStatement().execute("create external table if not exists snappyDB.stage_Student using csv options(path '/home/cbhatt/hts2/data.csv',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
+            snappyJDBCConnection.createStatement().execute("create table snappyDB.Student(id int,name string,subject string,marks int,tid int) using column as select * from snappyDB.stage_Student");
             Log.getLogWriter().info("Table snappyDB.Student created successfully in snappy");
-            Statement st = htsUtils.snappyJDBCConnection.createStatement();
+            Statement st = snappyJDBCConnection.createStatement();
             ResultSet rs = st.executeQuery("select * from snappyDB.Student limit 10");
             while (rs.next()) {
                 Log.getLogWriter().info(rs.getString(1) + "," + rs.getString(2) + "," + rs.getString(3) + "," + rs.getString(4) + "," + rs.getString(5) );
@@ -64,25 +87,64 @@ public class HiveThrifServerUtils extends SnappyTest {
         } catch(SQLException se) {
             Log.getLogWriter().info("Error in creating table from snappy , " + se.getMessage());
         }
-        closeConnection(htsUtils.snappyJDBCConnection);
+        closeConnection(snappyJDBCConnection);
     }
 
-//    public static void HydraTask_CreateFunction_subject() {
-//        htsUtils = new HiveThrifServerUtils();
-//        try {
-//            htsUtils.snappyJDBCConnection = SnappyTest.getLocatorConnection();
-//            htsUtils.snappyJDBCConnection.createStatement().execute("create function default.subject as io.snappydata.hydra.MySubject returns string using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/subject1.jar';");
-//            Statement st = htsUtils.snappyJDBCConnection.createStatement();
-//            ResultSet rs = st.executeQuery("select default.subject(2L)");
-//            while(rs.next()) {
-//                String s = rs.getString(1);
-//                Log.getLogWriter().info("Output from Function : " + s);
-//            }
-//            closeConnection(htsUtils.snappyJDBCConnection);
-//        } catch (SQLException se) {
-//            Log.getLogWriter().info("Error in creating function , " + se.getMessage());
-//        }
-//    }
+
+    public static void HydraTask_verfiyLoad() {
+
+        SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+
+        String logFile = getCurrentDirPath() + "/resultdir";
+
+        File queryResultDir = new File(logFile);
+        if (!queryResultDir.exists())
+            queryResultDir.mkdirs();
+
+        String beelineFile, snappyFile;
+
+        int tid = htsUtils.getMyTid();
+        Log.getLogWriter().info("tid --> " + tid);
+
+        ResultSet snappyRs = null;
+        ResultSet beelineRs = null;
+
+        Connection snappyJDBCConnection = null, jdbcConnection = null;
+        try {
+            snappyJDBCConnection = SnappyTest.getLocatorConnection();
+            jdbcConnection = connectToBeeline();
+            Log.getLogWriter().info("SnappyConnection : " + snappyJDBCConnection.isClosed());
+            Log.getLogWriter().info("JDBCConnection : " + jdbcConnection.isClosed());
+        } catch (SQLException se) {
+            Log.getLogWriter().info("Error while establishing the connection, " + se.getMessage());
+        }
+
+        try {
+        beelineRs = jdbcConnection.createStatement().executeQuery("select * from beelineDB.Student");
+        snappyRs = snappyJDBCConnection.createStatement().executeQuery("select * from snappyDB.Student");
+
+        StructTypeImpl beelineSti = ResultSetHelper.getStructType(beelineRs);
+        StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRs);
+        List<Struct> beelineList = ResultSetHelper.asList(beelineRs, beelineSti, false);
+        List<Struct> snappyList = ResultSetHelper.asList(snappyRs, snappySti, false);
+        beelineRs.close();
+        snappyRs.close();
+
+        beelineFile = logFile + File.separator + "beelineQuery_" + tid +  ".out";
+        snappyFile = logFile + File.separator + "snappyQuery_" + tid +  ".out";
+
+        testInstance.listToFile(snappyList, snappyFile);
+        testInstance.listToFile(beelineList,beelineFile);
+
+        String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_"  + tid);
+        if(msg.length() > 0 ) {
+            throw new TestException("Validation failed : " + msg);
+        }
+    } catch (SQLException se) {
+        Log.getLogWriter().info("Error while closing the connection, " + se.getMessage());
+    }
+    }
+
 
     public static void HydraTask_populateTableData() {
         htsUtils = new HiveThrifServerUtils();
@@ -99,51 +161,101 @@ public class HiveThrifServerUtils extends SnappyTest {
     }
 
     public static void HydraTask_performDMLOps() {
-        htsUtils = new HiveThrifServerUtils();
-        int tid = htsUtils.getMyTid();
-        dynamicAppProps.put(tid, "tid=" + tid);
-        String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
-        htsUtils.executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
-                jarPath, SnappyPrms.getUserAppName());
+        SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
 
+        String logFile = getCurrentDirPath() + "/resultdir";
+
+        File queryResultDir = new File(logFile);
+        if (!queryResultDir.exists())
+            queryResultDir.mkdirs();
+
+        String beelineFile, snappyFile;
+
+        int tid = htsUtils.getMyTid();
+        Log.getLogWriter().info("tid --> " + tid);
+
+        ResultSet snappyRs = null;
+        ResultSet beelineRs = null;
+
+        Connection snappyJDBCConnection = null, jdbcConnection = null;
+        try {
+            snappyJDBCConnection = SnappyTest.getLocatorConnection();
+            jdbcConnection = connectToBeeline();
+            Log.getLogWriter().info("SnappyConnection : " + snappyJDBCConnection.isClosed());
+            Log.getLogWriter().info("JDBCConnection : " + jdbcConnection.isClosed());
+        } catch (SQLException se) {
+            Log.getLogWriter().info("Error while establishing the connection, " + se.getMessage());
+        }
+        for (int index = 0; index < snappyQuery.length; index++) {
+            String beelineStmt = beelineQuery[index];
+            Log.getLogWriter().info("tid = " + tid);
+            if (beelineStmt.toUpperCase().contains("WHERE"))
+                beelineStmt = beelineStmt + " AND tid = " + tid;
+            else
+                beelineStmt = beelineStmt + " WHERE tid = " + tid;
+            String snappyStmt = snappyQuery[index];
+            if (snappyStmt.toUpperCase().contains("WHERE"))
+                snappyStmt = snappyStmt + " AND tid = " + tid;
+            else
+                snappyStmt = snappyStmt + " WHERE tid = " + tid;
+
+            Log.getLogWriter().info("beelineQuery : " + beelineStmt);
+            Log.getLogWriter().info("snappyQuery :  " + snappyStmt);
+
+            try {
+
+                jdbcConnection.createStatement().executeUpdate(beelineStmt);
+                beelineRs = jdbcConnection.createStatement().executeQuery("select * from beelineDB.Student where tid = " + tid);
+
+                snappyJDBCConnection.createStatement().executeUpdate(snappyStmt);
+                snappyRs = snappyJDBCConnection.createStatement().executeQuery("select * from snappyDB.Student where tid = " + tid);
+
+
+                StructTypeImpl beelineSti = ResultSetHelper.getStructType(beelineRs);
+                StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRs);
+                List<Struct> beelineList = ResultSetHelper.asList(beelineRs, beelineSti, false);
+                List<Struct> snappyList = ResultSetHelper.asList(snappyRs, snappySti, false);
+                beelineRs.close();
+                snappyRs.close();
+
+                beelineFile = logFile + File.separator + "beelineQuery_" + index  + "_" + tid +  ".out";
+                snappyFile = logFile + File.separator + "snappyQuery_" + index + "_" + tid +  ".out";
+
+                testInstance.listToFile(snappyList, snappyFile);
+                testInstance.listToFile(beelineList,beelineFile);
+
+                String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index);
+                if(msg.length() > 0 ) {
+                    throw new TestException("Validation failed : " + msg);
+                }
+            } catch (SQLException se) {
+                Log.getLogWriter().info("Error while closing the connection, " + se.getMessage());
+            }
+        }
     }
 
-
-//    public static void HydraTask_DropFunction_subject() {
-//        htsUtils = new HiveThrifServerUtils();
-//        try {
-//            htsUtils.snappyJDBCConnection = SnappyTest.getLocatorConnection();
-//            htsUtils.snappyJDBCConnection.createStatement().execute("drop function default.subject;");
-//            closeConnection(htsUtils.snappyJDBCConnection);
-//            Log.getLogWriter().info("Function Dropped");
-//        } catch (SQLException se) {
-//            Log.getLogWriter().info("Error in dropping function , " + se.getMessage());
-//        }
-//    }
-
     public static void HydraTask_DropTableFromBeeline() {
-        htsUtils = new HiveThrifServerUtils();
-        htsUtils.jdbcConnection = htsUtils.connectToBeeline();
+        Connection jdbcConnection = connectToBeeline();
         try {
-            htsUtils.jdbcConnection.createStatement().execute("drop table if exists beelineDB.Student");
-            htsUtils.jdbcConnection.createStatement().execute("drop schema beelineDB restrict");
+            jdbcConnection.createStatement().execute("drop table if exists beelineDB.Student");
+            jdbcConnection.createStatement().execute("drop schema beelineDB restrict");
             Log.getLogWriter().info("Table beelineDB.Student dropped from beeline");
         } catch(SQLException se) {
             Log.getLogWriter().info("Error in droping table from beeline , " + se.getMessage());
         }
-        closeConnection(htsUtils.jdbcConnection);
+        closeConnection(jdbcConnection);
     }
 
     public static void HydraTask_DropTableFromSnappy() {
-        htsUtils = new HiveThrifServerUtils();
+        Connection snappyJDBCConnection = null;
         try {
-            htsUtils.snappyJDBCConnection = SnappyTest.getLocatorConnection();
-            htsUtils.snappyJDBCConnection.createStatement().execute("drop table if exists snappyDB.Student");
-            htsUtils.snappyJDBCConnection.createStatement().execute("drop schema snappyDB restrict");
+            snappyJDBCConnection = SnappyTest.getLocatorConnection();
+            snappyJDBCConnection.createStatement().execute("drop table if exists snappyDB.Student");
+            snappyJDBCConnection.createStatement().execute("drop schema snappyDB restrict");
             Log.getLogWriter().info("Table snappyDB.Student dropped from snappy");
         } catch(SQLException se) {
             Log.getLogWriter().info("Error in droping table from snappy , " + se.getMessage());
         }
-        closeConnection(htsUtils.snappyJDBCConnection);
+        closeConnection(snappyJDBCConnection);
     }
 }

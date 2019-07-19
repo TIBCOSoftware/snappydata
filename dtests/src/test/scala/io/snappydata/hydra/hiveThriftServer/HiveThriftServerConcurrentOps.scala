@@ -26,7 +26,12 @@ import org.apache.spark.sql._
 
 import scala.util.Random
 
+
+
+//  Not currently in use
 class HiveThriftServerConcurrentOps extends SnappySQLJob {
+
+  var connection : Connection = null;
 
   override def isValidJob(snappySession: SnappySession, config: Config):
   SnappyJobValidation = SnappyJobValid()
@@ -35,7 +40,7 @@ class HiveThriftServerConcurrentOps extends SnappySQLJob {
     // scalastyle:off println
 
     val snc : SnappyContext = snappySession.sqlContext
-    snc.sql("set snappydata.hiveServer.enabled=true")
+//    snc.sql("set snappydata.hiveServer.enabled=true")
     val spark : SparkSession = SparkSession.builder().getOrCreate()
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath()
     val tid = jobConfig.getInt("tid")
@@ -66,6 +71,7 @@ class HiveThriftServerConcurrentOps extends SnappySQLJob {
       snc.sql(query)
       pw.println(snc.sql(query).show(10))
       pw.println("concurrent dml job finished....")
+      connection.close()
       pw.flush()
       pw.close()
     }
