@@ -309,7 +309,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       sqlContext.sparkContext.parallelize(sideEffectResult, 1)
     }
     finally {
-      logInfo(" SKSK unlocking in doExecute of ExecutePlan ")
+      logDebug(" Unlocking the table in doExecute of ExecutePlan ")
       sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
     }
   }

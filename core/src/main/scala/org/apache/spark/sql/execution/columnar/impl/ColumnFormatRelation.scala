@@ -208,57 +208,9 @@ abstract class BaseColumnFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.CACHED_PUTINTO_UPDATE_PLAN) match {
-      case None => {
-        val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
-          case _: ThinClientConnectorMode => {
-            val conn = ConnectionPool.getPoolConnection(table, dialect,
-              connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
-            var locked = false
-            while (!locked) {
-              try {
-                logInfo(s"SKSK Going to take lock on server. for table ${table}," +
-                  s" current Thread ${Thread.currentThread().getId} for getInsertPlan")
-                val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
-                ps.setString(1, "BULKWRITE_" + table)
-                val rs = ps.executeQuery()
-                rs.next()
-                locked = rs.getBoolean(1)
-                ps.close()
-              }
-              catch {
-                case e: Exception => logInfo("SKKS Got exception while taking lock", e)
-              }
-              finally {
-                // close connection after insert is complete.
-                //conn.close()
-              }
-            }
-            (conn, new TableIdentifier(table, Some(schemaName)))
-          }
-          case _ => {
-            logInfo(s"SKSK Taking lock in getInsertPlan .. ${Thread.currentThread().getId} ",
-              new Throwable("INSERT"))
-            PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
-          }
-        }
-        lock
-      }
-      case Some(a) => null // Do nothing as putInto will release lock
-    }
-    if ((lock ne null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
-    try {
+    withTableWriteLock() { () =>
       new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
         this, externalColumnTableName)
-    }
-    finally {
-      logInfo(s"SKSK Added the ${lock} object to the context. in Insert")
-      if (lock ne null) {
-        snc.addContextObject(
-          SnappySession.BULKWRITE_PLAN, lock)
-      }
     }
   }
 
@@ -284,58 +236,10 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.CACHED_PUTINTO_UPDATE_PLAN) match {
-      case None => {
-        val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
-          case _: ThinClientConnectorMode => {
-            val conn = connFactory()
-            var locked = false
-            while (!locked) {
-              try {
-                logInfo(s"SKSK Going to take lock on server. for table ${table}," +
-                  s" current Thread ${Thread.currentThread().getId} for getUpdatePlan")
-
-                val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
-                ps.setString(1, "BULKWRITE_" + table)
-                val rs = ps.executeQuery()
-                rs.next()
-                locked = rs.getBoolean(1)
-                ps.close()
-                logInfo("SKSK Took lock on server. ")
-              }
-              catch {
-                case e: Exception => logInfo("SKKS Got exception while taking lock", e)
-              }
-              finally {
-                //conn.close()
-              }
-            }
-            (conn, new TableIdentifier(table, Some(schemaName)))
-          }
-          case _ => {
-            logInfo(s"SKSK Taking lock in getUpdatePlan .. ${Thread.currentThread().getId} ",
-              new Throwable("UPDATE"))
-            PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
-          }
-        }
-        lock
-      }
-      case Some(a) => null // Do nothing as putInto will release lock
-    }
-    if ((lock ne null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
-    try {
+    withTableWriteLock() {() =>
       ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
         updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
-    }
-    finally {
-      logInfo(s"SKSK Added the ${lock} object to the context. in Update")
-      if (lock ne null) {
-        snc.addContextObject(
-          SnappySession.BULKWRITE_PLAN, lock)
-      }
     }
   }
 
@@ -345,58 +249,10 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.CACHED_PUTINTO_UPDATE_PLAN) match {
-      case None => {
-        val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
-          case _: ThinClientConnectorMode => {
-            val conn = ConnectionPool.getPoolConnection(table, dialect,
-              connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
-            var locked = false
-            while (!locked) {
-              try {
-                logInfo(s"SKSK Going to take lock on server. for table ${table}," +
-                  s" current Thread ${Thread.currentThread().getId} for getDeletePlan")
-                val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
-                ps.setString(1, "BULKWRITE_" + table)
-                val rs = ps.executeQuery()
-                rs.next()
-                locked = rs.getBoolean(1)
-                ps.close()
-                logInfo("SKSK Took lock on server. ")
-              }
-              catch {
-                case e: Exception => logInfo("SKKS Got exception while taking lock", e)
-              }
-              finally {
-                //conn.close()
-              }
-            }
-            (conn, new TableIdentifier(table, Some(schemaName)))
-          }
-          case _ => {
-            logInfo(s"SKSK Taking lock in getDeletePlan .. ${Thread.currentThread().getId} ", new Throwable("DELETE"))
-            PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
-          }
-        }
-        lock
-      }
-      case Some(a) => null // Do nothing as putInto will release lock
-    }
-    if ((lock ne null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
-
-    try {
+    withTableWriteLock() { () =>
       ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
         this, keyColumns, connProperties, onExecutor = false)
-    }
-    finally {
-      logInfo(s"SKSK Added the ${lock} object to the context. in Delete")
-      if (lock ne null) {
-        snc.addContextObject(
-          SnappySession.BULKWRITE_PLAN, lock)
-      }
     }
   }
 
@@ -418,45 +274,11 @@ abstract class BaseColumnFormatRelation(
 
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.CACHED_PUTINTO_UPDATE_PLAN) match {
-      case None => {
-        val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
-          case _: ThinClientConnectorMode => {
-            val conn = ConnectionPool.getPoolConnection(table, dialect,
-              connProperties.poolProps, connProps, connProperties.hikariCP)
-            var locked = false
-            while (!locked) {
-              try {
-                logInfo(s"SKSK getInsertPlan Going to take lock on server. for table ${table}," +
-                  s" current Thread ${Thread.currentThread().getId}")
-                val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
-                ps.setString(1, "BULKWRITE_" + table)
-                val rs = ps.executeQuery()
-                rs.next()
-                locked = rs.getBoolean(1)
-                ps.close()
-                logInfo("SKSK Took lock on server. ")
-              }
-              catch {
-                case e: Exception => logInfo("SKKS Got exception while taking lock", e)
-              }
-              finally {
-                // conn.close()
-              }
-            }
-            (conn, new TableIdentifier(table, Some(schemaName)))
-          }
-          case _ => {
-            logInfo(s"SKSK Taking lock in insertrowsplan .. ${Thread.currentThread().getId} " , new Throwable("INSERTROWS"))
-            PartitionedRegion.getRegionLock("BULKWRITE_" + table,
-              GemFireCacheImpl.getExisting)
-          }
-        }
-        lock
-      }
+      SnappySession.PUTINTO_LOCK) match {
+      case None => snc.grabLock(table, schemaName, connProperties)
       case Some(a) => null // Do nothing as putInto will release lock
     }
-    if ((lock ne null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
+    if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     try {
       if (numRows > (batchSize * numBuckets)) {
         ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
@@ -479,91 +301,29 @@ abstract class BaseColumnFormatRelation(
       }
     }
     finally {
-      logInfo(s"SKSK Added the ${lock} object to the context. in InsertRows")
-      if (lock ne null) {
-        lock match {
-          case lock: RegionLock => {
-            if (lock != null) {
-              logInfo(s"SKSK Going to unlock the lock object bulkOp ${lock} ",
-                new Throwable("SKSK"))
-              lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
-            }
-          }
-          case (conn: Connection, id: TableIdentifier) => {
-            var unlocked = false
-            while (!unlocked) {
-              try {
-                logInfo(s"SKSK releasing lock on the server. ${id.table}")
-                val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
-                ps.setString(1, "BULKWRITE_" + id.table)
-                val rs = ps.executeQuery()
-                rs.next()
-                unlocked = rs.getBoolean(1)
-                ps.close()
-              }
-              finally {
-                conn.close()
-              }
-            }
-          }
-        }
-       // snc.addContextObject(
-         // SnappySession.BULKWRITE_PLAN, lock)
+      logDebug(s"Added the ${lock} object to the context. in InsertRows")
+      if (lock != null) {
+        snc.releaseLock(lock)
       }
     }
   }
 
-
-  def withTableWriteLock()(f: () => Any): Any = {
+  def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-      SnappySession.CACHED_PUTINTO_UPDATE_PLAN) match {
-      case None => {
-        val lock = SnappyContext.getClusterMode(snc.sparkContext) match {
-          case _: ThinClientConnectorMode => {
-            val conn = ConnectionPool.getPoolConnection(table, dialect,
-            connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
-            var locked = false
-            while (!locked) {
-              try {
-                logInfo(s"SKSK getInsertPlan Going to take lock on server. for table ${table}," +
-                  s" current Thread ${Thread.currentThread().getId}")
-                val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
-                ps.setString(1, "BULKWRITE_" + table)
-                val rs = ps.executeQuery()
-                rs.next()
-                locked = rs.getBoolean(1)
-                ps.close()
-                logInfo("SKSK Took lock on server. ")
-              }
-              catch {
-                case e: Exception => logInfo(s" Got exception $e while doing bulk op.")
-              }
-              finally {
-                conn.close()
-              }
-            }
-            new TableIdentifier(table, Some(schemaName))
-          }
-          case _ => {
-            logInfo(s"SKSK Taking lock in bulk op.. ${Thread.currentThread().getId} ")
-            PartitionedRegion.getRegionLock("BULKWRITE_" + table,
-              GemFireCacheImpl.getExisting)
-          }
-        }
-        lock
-      }
+      SnappySession.PUTINTO_LOCK) match {
+      case None => snc.grabLock(table, schemaName, connProperties)
       case Some(_) => null // Do nothing as putInto will release lock
     }
-    if ((lock ne null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
+    if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     try {
       f()
     }
     finally {
-      logInfo(s"SKSK Added the ${lock} object to the context. in Delete")
-      if (lock ne null) {
+      logDebug(s"Added the ${lock} object to the context. in Delete")
+      if (lock != null) {
         snc.addContextObject(
-          SnappySession.BULKWRITE_PLAN, lock)
+          SnappySession.BULKWRITE_LOCK, lock)
       }
     }
   }

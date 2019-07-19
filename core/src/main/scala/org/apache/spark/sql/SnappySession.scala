@@ -42,7 +42,6 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
@@ -472,12 +471,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] def cachePutInto(doCache: Boolean, updateSubQuery: LogicalPlan,
       table: String): Option[LogicalPlan] = {
     // first acquire the global lock for putInto
-    val lock = SnappyContext.getClusterMode(sparkContext) match {
-      case _: ThinClientConnectorMode => null
-      case _ =>
-        PartitionedRegion.getRegionLock("BULKWRITE_" + table, GemFireCacheImpl.getExisting)
-    }
-    if (lock ne null) lock.lock()
+    val (schemaName: String, _) =
+      JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
+    val lock = grabLock(table, schemaName, defaultConnectionProps)
+
+    if (lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
       val cachedTable = if (doCache) {
@@ -500,15 +498,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         newUpdateSubQuery = Some(updateSubQuery)
         None
       }
-      // if (newUpdateSubQuery.isDefined) {
-        // Adding to context after the count operation, as count will clear the context object.
-        addContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
-          CACHED_PUTINTO_UPDATE_PLAN, cachedTable -> lock)
-      // }
+      addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, cachedTable)
       newUpdateSubQuery
     } finally {
-      // release lock immediately if no updates are to be done
-      //if (newUpdateSubQuery.isEmpty && (lock ne null)) lock.unlock()
+      addContextObject(SnappySession.PUTINTO_LOCK, lock)
     }
   }
 
@@ -518,43 +511,92 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def clearPutInto(): Unit = {
-    contextObjects.remove(CACHED_PUTINTO_UPDATE_PLAN) match {
+    contextObjects.remove(SnappySession.PUTINTO_LOCK) match {
       case null =>
-      case (cachedTable: Option[_], lock) =>
-        if (lock != null) {
-          logInfo(s"SKSK Going to unlock the lock object putInto ${lock}", new Throwable("SKSK"))
-          lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
-        }
+      case lock => releaseLock(lock)
+    }
+    contextObjects.remove(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN) match {
+      case null =>
+      case (cachedTable: Option[_]) => {
         if (cachedTable.isDefined) {
           dropPutIntoCacheTable(cachedTable.get.asInstanceOf[TableIdentifier])
         }
+      }
     }
   }
 
   private[sql] def clearWriteLockOnTable(): Unit = {
-    contextObjects.remove(SnappySession.BULKWRITE_PLAN) match {
-      case null => logInfo("SKSK Got null against BULKWRITEPlan in context object.")
+    contextObjects.remove(SnappySession.BULKWRITE_LOCK) match {
+      case null =>
+      case lock => releaseLock(lock)
+    }
+  }
+
+  private[sql] def grabLock(table: String, schemaName: String,
+                            connProperties: ConnectionProperties): Any = {
+    SnappyContext.getClusterMode(sparkContext) match {
+      case _: ThinClientConnectorMode => {
+        val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
+          connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
+        var locked = false
+        var retrycount = 0
+        do {
+          try {
+            logDebug(s" Going to take lock on server for table ${table}," +
+              s" current Thread ${Thread.currentThread().getId}")
+            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
+            ps.setString(1, "BULKWRITE_" + table)
+            val rs = ps.executeQuery()
+            rs.next()
+            locked = rs.getBoolean(1)
+            ps.close()
+            logDebug("Took lock on server. ")
+          }
+          catch {
+            case e: Throwable => {
+              logWarning("Got exception while taking lock", e)
+              if (retrycount == 2) {
+                throw e
+              }
+            }
+          }
+          finally {
+            retrycount = retrycount + 1
+            // conn.close()
+          }
+        } while (!locked)
+        (conn, new TableIdentifier(table, Some(schemaName)))
+      }
+      case _ => {
+        logDebug(s"Taking lock in insertrowsplan " +
+          s" ${Thread.currentThread().getId} ")
+        PartitionedRegion.getRegionLock("BULKWRITE_" + table,
+          GemFireCacheImpl.getExisting)
+      }
+    }
+  }
+
+  private[sql] def releaseLock(lock: Any): Unit = {
+    lock match {
       case lock: RegionLock => {
         if (lock != null) {
-          logInfo(s"SKSK Going to unlock the lock object bulkOp ${lock} ", new Throwable("SKSK"))
+          logInfo(s"Going to unlock the lock object bulkOp ${lock} ")
           lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
         }
       }
       case (conn: Connection, id: TableIdentifier) => {
         var unlocked = false
-        while (!unlocked) {
-          try {
-            logInfo(s"SKSK releasing lock on the server. ${id.table}")
-            val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
-            ps.setString(1, "BULKWRITE_" + id.table)
-            val rs = ps.executeQuery()
-            rs.next()
-            unlocked = rs.getBoolean(1)
-            ps.close()
-          }
-          finally {
-            conn.close()
-          }
+        try {
+          logDebug(s"releasing lock on the server. ${id.table}")
+          val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
+          ps.setString(1, "BULKWRITE_" + id.table)
+          val rs = ps.executeQuery()
+          rs.next()
+          unlocked = rs.getBoolean(1)
+          ps.close()
+        }
+        finally {
+          conn.close()
         }
       }
     }
@@ -1903,8 +1945,9 @@ object SnappySession extends Logging {
   private[spark] val INVALID_ID = -1
   private[this] val ID = new AtomicInteger(0)
   private[sql] val ExecutionKey = "EXECUTION"
-  private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
-  private[sql] val BULKWRITE_PLAN = "bulkwrite_plan"
+  private[sql] val PUTINTO_LOCK = "putinto_lock"
+  private[sql] val CACHED_PUTINTO_LOGICAL_PLAN = "cached_putinto_logical_plan"
+  private[sql] val BULKWRITE_LOCK = "bulkwrite_lock"
 
 
   private val unresolvedStarRegex =

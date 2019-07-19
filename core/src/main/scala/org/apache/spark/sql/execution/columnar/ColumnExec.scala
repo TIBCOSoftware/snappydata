@@ -90,11 +90,9 @@ trait ColumnExec extends RowExec {
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
     try {
-      logInfo("SKSK IN doExecute of ColumnExec")
       WholeStageCodegenExec(this).execute()
     }
     finally {
-      logInfo("SKSK unlocking in doExecute of ColumnExec")
       sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
     }
   }

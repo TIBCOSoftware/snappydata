@@ -801,11 +801,9 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   override protected def doExecute(): RDD[InternalRow] = {
     // don't expect code generation to fail
     try {
-      logInfo("SKSK in doExecute of ColumnInsertExec")
       WholeStageCodegenExec(this).execute()
     }
     finally {
-      logInfo("SKSK unlocking in doExecute of ColumnInsertExec")
       sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
     }
   }
