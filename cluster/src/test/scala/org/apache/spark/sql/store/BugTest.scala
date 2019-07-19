@@ -356,7 +356,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.createTable("airline", "column", stagingDF.schema,
       Map.empty[String, String])
 
-
     // create a big view on it
     val viewFile = getClass.getResource("/bigviewcase.sql")
     val br = new BufferedReader(new FileReader(viewFile.getFile))
@@ -870,5 +869,80 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
+  test("SNAP-2730 - support NAN values") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    val result = stmt.executeQuery("select acos(30)")
+    assert(result.next(), "result set should have 1 record")
+    assert(result.getDouble(1).isNaN, "result is not NaN value")
+    stmt.close()
+  }
 
+  test("SNAP2765") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"testSNAP2765: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    stmt.execute("create table t1(col1 int, col2 int, col3 int, col4 int) using row")
+    val ps1 = conn.prepareStatement("insert into t1(col1, col2, col3, col4) values(?, ?, ?, ?)")
+    ps1.setInt(1, 1)
+    ps1.setInt(2, 1)
+    ps1.setInt(3, 1)
+    ps1.setInt(4, 1)
+    ps1.execute()
+
+    val ps2 = conn.prepareStatement("select * from t1 where col4=?")
+    ps2.setInt(1, 1)
+    val rs2 = ps2.executeQuery()
+    assert(rs2.next())
+    assert(rs2.getInt(1) == 1)
+    rs2.close()
+
+    stmt.execute("alter table t1 drop col2 restrict")
+    val se0 = intercept[SQLException] {
+      conn.prepareStatement("insert into t1(col1, col2, col3, col4) values(?, ?, ?, ?)")
+    }
+    assert(se0.getSQLState.equals("42X14"))
+
+    val se1 = intercept[SQLException] {
+      conn.prepareStatement("insert into t1 values(?, ?, ?, ?)")
+    }
+    assert(se1.getSQLState.equals("42802"))
+
+    val ps3 = conn.prepareStatement("insert into t1(col1, col3, col4) values(?, ?, ?)")
+    ps3.setInt(1, 1)
+    ps3.setInt(2, 1)
+    ps3.setInt(3, 1)
+    ps3.execute()
+
+    val ps4 = conn.prepareStatement("select count(*) from t1 where col4=?")
+    ps4.setInt(1, 1)
+    val rs4 = ps4.executeQuery()
+    assert(rs4.next())
+    assert(rs4.getInt(1) == 2)
+    rs4.close()
+
+    val se2 = intercept[SQLException] {
+      conn.prepareStatement("update t1 set col2 = ?")
+    }
+    assert(se2.getSQLState.equals("42X14"))
+
+    val se3 = intercept[SQLException] {
+      conn.prepareStatement("insert into t1(col1, col1, col4) values(?, ?, ?)")
+    }
+    assert(se3.getSQLState.equals("42X13"))
+
+    val se4 = intercept[SQLException] {
+      conn.prepareStatement("delete from t1 where col2 = ?")
+    }
+    assert(se4.getSQLState.equals("42X04"))
+
+  }
 }
