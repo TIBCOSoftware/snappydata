@@ -1266,17 +1266,15 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     val snc1 = snc.newSession()
     snc1.setConf("snappydata.sql.approxMaxCapacityOfBBMap", "4096")
     snc1.setConf("snappydata.sql.initialCapacityOfSHABBMap", "4")
-    val rs = snc1.sql("select col2, sum(col1) from test1 group by col2").collect()
+    val rs = snc1.sql("select col2, sum(col1) from test1 group by col2").collect
+    assertEquals(100, rs.length)
     rs.foreach(row => {
       val byteArr = row.getAs[Array[Byte]](0)
       val sum = row.getLong(1)
       val key = byteArr.find(_ > 0).get
       assertEquals(10 * key, sum)
     })
-
-
     snc.dropTable("test1")
-
   }
 
 
