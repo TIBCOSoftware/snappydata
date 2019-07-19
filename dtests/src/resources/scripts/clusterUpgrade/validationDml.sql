@@ -1,0 +1,12 @@
+select count(*) from colTable;
+select count(*) from colTable where COMPANY='company_name_12345';
+select count(*) from colTable where COMPANY='company1094';
+select count(*) from rowPartitionedTable;
+select count(*) from rowPartitionedTable where COMPANY='company_name_12345';
+select count(*) from rowPartitionedTable where COMPANY='company1094';
+select count(*) from rowReplicatedTable;
+select count(*) from rowReplicatedTable where COMPANY='company_name_12345';
+select count(*) from rowReplicatedTable where COMPANY='company1094';
+select * from colTable;
+select * from rowPartitionedTable;
+select * from rowReplicatedTable;
