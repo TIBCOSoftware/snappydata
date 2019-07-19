@@ -380,7 +380,12 @@ class SplitSnappyClusterDUnitTest(s: String)
     val snc = SnappyContext(sc)
     import scala.concurrent.ExecutionContext.Implicits.global
     val testTempDirectory = "/tmp/SplitSnappyClusterDUnitTest"
-
+    def cleanUp = {
+      snc.sql("drop table if exists SYNC_TABLE")
+      snc.sql("drop table if exists USERS")
+      Path(testTempDirectory).deleteRecursively()
+    }
+    cleanUp
     val future = Future {
       vm3.invoke(getClass, "doTestStaleCatalogRetryForStreamingSink",
         startArgs :+ Int.box(locatorClientPort) :+ testTempDirectory)
@@ -401,8 +406,7 @@ class SplitSnappyClusterDUnitTest(s: String)
       }
       Await.result(future, Duration(2, "min"))
     } finally {
-      snc.sql("drop table if exists T6")
-      snc.sql("drop table if exists T5")
+      cleanUp
     }
   }
 
