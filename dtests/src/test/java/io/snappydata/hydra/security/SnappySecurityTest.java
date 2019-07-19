@@ -139,7 +139,6 @@ public class SnappySecurityTest extends SnappyTest {
 
   public static void HydraTask_enableRLS() {
     //alter table salary enable row level security;
-    Log.getLogWriter().info("Inside enableRLS() method ");
     Connection conn = null;
     Boolean isAltrTableRLS = SnappySecurityPrms.getIsAltTableRLS();
     Vector userVector = SnappySecurityPrms.getUserName();
@@ -169,7 +168,6 @@ public class SnappySecurityTest extends SnappyTest {
   }
 
   public static void dropPolicy() {
-    Log.getLogWriter().info("Inside dropPolicy() ");
     Connection conn = null;
     try {
       HashMap<String, String> tempPolicyMap = policyUserMap;
@@ -191,7 +189,6 @@ public class SnappySecurityTest extends SnappyTest {
   }
 
   public static void createPolicy() {
-    Log.getLogWriter().info("Inside createPolicy() ");
     Vector userVector = SnappySecurityPrms.getUserName();
     Vector onSchema = SnappySecurityPrms.getSchema();
     Vector dmlOps = SnappySecurityPrms.getDmlOps();
@@ -255,7 +252,6 @@ public class SnappySecurityTest extends SnappyTest {
   }
 
   public static void validateQuery() {
-    Log.getLogWriter().info("Inside validateQuery() ");
     Connection conn = null;
     Boolean isDropPolicy = SnappySecurityPrms.getIsDropPolicy();
     Boolean isAltTableRLS = SnappySecurityPrms.getIsAltTableRLS();
@@ -347,7 +343,6 @@ public class SnappySecurityTest extends SnappyTest {
   }
 
   public static ArrayList getQueryArr(String fileName, String user) {
-    Log.getLogWriter().info("Inide getQueryArray");
     Log.getLogWriter().info("User = " + user);
     Log.getLogWriter().info("File Name = " + fileName);
     ArrayList<String> queries = new ArrayList<String>();
@@ -430,7 +425,6 @@ public class SnappySecurityTest extends SnappyTest {
   }
 
   public static void runQuery(String usr, String pass, Boolean isAuth) throws SQLException {
-    Log.getLogWriter().info("Inside runQuery with args ");
     Connection conn = null;
     Vector schemaToTest = SnappySecurityPrms.getSchema();
     Log.getLogWriter().info("schemaToTest " + schemaToTest.size());
