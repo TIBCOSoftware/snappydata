@@ -254,6 +254,7 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   // DDLs, SET etc
 
+  final type ColumnDirectionMap = Map[String, Option[SortDirection]]
   final type TableEnd = (Option[String], Option[Map[String, String]],
       Array[String], Option[BucketSpec], Option[LogicalPlan])
 
@@ -393,19 +394,28 @@ abstract class SnappyDDLParser(session: SparkSession)
     noneOf("uUoOaA-;/")
   }
 
+  protected final def identifierList: Rule1[Seq[String]] = rule {
+    '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws
+  }
+
   protected final def bucketSpec: Rule1[BucketSpec] = rule {
-    CLUSTERED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~
-        (SORTED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~
+    CLUSTERED ~ BY ~ identifierList ~ (SORTED ~ BY ~ colsWithDirection).? ~
         INTO ~ integral ~ BUCKETS ~> ((cols: Seq[String], sort: Any, buckets: String) =>
       sort match {
         case None => BucketSpec(buckets.toInt, cols, Nil)
-        case Some(s) => BucketSpec(buckets.toInt, cols, s.asInstanceOf[Seq[String]])
+        case Some(m) =>
+          val sortColumns = m.asInstanceOf[ColumnDirectionMap].map {
+            case (_, Some(Descending)) => throw Utils.analysisException(
+              s"Column ordering for buckets must be ASC but was DESC")
+            case (c, _) => c
+          }
+          BucketSpec(buckets.toInt, cols, sortColumns.toSeq)
       })
   }
 
   protected final def ddlEnd: Rule1[TableEnd] = rule {
     ws ~ (USING ~ qualifiedName).? ~ (OPTIONS ~ options).? ~
-        (PARTITIONED ~ BY ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~
+        (PARTITIONED ~ BY ~ identifierList).? ~
         bucketSpec.? ~ (AS ~ query).? ~ ws ~ &((';' ~ ws).* ~ EOI) ~>
         ((provider: Any, options: Any, parts: Any, buckets: Any, asQuery: Any) => {
           val partitions = parts match {
@@ -437,7 +447,7 @@ abstract class SnappyDDLParser(session: SparkSession)
         tableIdentifier ~ ON ~ tableIdentifier ~
         colsWithDirection ~ (OPTIONS ~ options).? ~> {
       (indexType: Any, indexName: TableIdentifier, tableName: TableIdentifier,
-          cols: Map[String, Option[SortDirection]], opts: Any) =>
+          cols: ColumnDirectionMap, opts: Any) =>
         val parameters = opts.asInstanceOf[Option[Map[String, String]]]
             .getOrElse(Map.empty[String, String])
         val options = indexType.asInstanceOf[Option[Boolean]] match {
@@ -735,7 +745,8 @@ abstract class SnappyDDLParser(session: SparkSession)
       JAR ~ packageIdentifier ~ stringLiteral ~>
           ((alias: TableIdentifier, commaSepPaths: String) => DeployJarCommand(
         alias.identifier, commaSepPaths, restart = false))) |
-    UNDEPLOY ~ packageIdentifier ~> ((alias: TableIdentifier) => UnDeployCommand(alias.identifier)) |
+    UNDEPLOY ~ packageIdentifier ~> ((alias: TableIdentifier) =>
+      UnDeployCommand(alias.identifier)) |
     LIST ~ (
       PACKAGES ~> (() => ListPackageJarsCommand(true)) |
       JARS ~> (() => ListPackageJarsCommand(false))
@@ -833,8 +844,7 @@ abstract class SnappyDDLParser(session: SparkSession)
     ASC ~> (() => Ascending) | DESC ~> (() => Descending)
   }
 
-  protected final def colsWithDirection: Rule1[Map[String,
-      Option[SortDirection]]] = rule {
+  protected final def colsWithDirection: Rule1[ColumnDirectionMap] = rule {
     '(' ~ ws ~ (identifier ~ sortDirection.? ~> ((id: Any, direction: Any) =>
       (id, direction))).*(commaSep) ~ ')' ~ ws ~> ((cols: Any) =>
       cols.asInstanceOf[Seq[(String, Option[SortDirection])]].toMap)
