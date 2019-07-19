@@ -41,7 +41,9 @@ import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
-import org.apache.spark.sql.catalyst.expressions.AttributeReference
+import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, NamedExpression}
+import org.apache.spark.sql.catalyst.plans.QueryPlan
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.LogicalRDD
@@ -191,29 +193,41 @@ class SparkSQLExecuteImpl(val sql: String,
     SparkSQLExecuteImpl.serializeRows(out, hasMetadata, hdos)
 
   private lazy val (tableNames, nullability) = {
-    var qualifiedOutput = df.queryExecution.analyzed.flatMap {
-      case l: LogicalRelation =>
-        l.catalogTable match {
-          case Some(c) =>
-            val (dbName, tableName) =
-              (c.identifier.database.getOrElse(session.getCurrentSchema), c.identifier.table)
-            // creating new attributes by adding db name to qualifier
-            l.output.map(a =>
-              (AttributeReference(a.name, a.dataType, a.nullable, a.metadata)
-              (a.exprId, Some(dbName + "." + tableName), a.isGenerated)).toAttribute
-            )
-          case _ => null
+    val analyzed = df.queryExecution.analyzed
+    val relations = analyzed.collectLeaves
+        .filter(_.isInstanceOf[LogicalRelation])
+        .map(_.asInstanceOf[LogicalRelation])
+
+    def getQualifier(a: AttributeReference): Option[String] = {
+      relations.foreach { relation =>
+        if (relation.output.map(_.exprId.id).contains(a.exprId.id)) {
+          return Some(Seq(relation.catalogTable.get.identifier.database.getOrElse(""),
+              relation.catalogTable.get.identifier.table).mkString(","))
         }
-      case d: LogicalRDD =>
-        d.output
-      case _ => Seq(null)
-    }.filter(_ != null)
-    if (qualifiedOutput.size < 1) {
-//      qualifiedOutput = df.queryExecution.analyzed.output
-      logInfo("1891: qualifiedoutput size = 0. plan = " + df.queryExecution.analyzed)
+      }
+      None
     }
+
+    val attributes = analyzed match {
+      case Project(fields, child) =>
+        fields.map { projExp =>
+          val attributes = projExp.collectLeaves().filter(_.isInstanceOf[AttributeReference])
+              .map(_.asInstanceOf[AttributeReference])
+          // for 'SELECT 1...', 'SELECT col1...', 'SELECT col1 * col2...' queries
+          // attributes size will be 0, 1, 2 respectively
+          val qualifier = getQualifier(attributes.head)
+          if (attributes.size > 0 && qualifier.isDefined) {
+            // here 1st attribute is considered. Need to check if this behaviour is ok
+            projExp.toAttribute.withQualifier(qualifier)
+          } else {
+            projExp.toAttribute
+          }
+        }
+      case _ => analyzed.output
+    }
+
     SparkSQLExecuteImpl.
-        getTableNamesAndNullability(session, qualifiedOutput)
+        getTableNamesAndNullability(session, attributes)
   }
 
   def getColumnNames: Array[String] = {
