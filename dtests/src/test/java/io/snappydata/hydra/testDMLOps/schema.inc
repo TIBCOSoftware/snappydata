@@ -4,6 +4,10 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createTablesStatements =
 "create table app.table1 (id int, name varchar(20),code int, tid int)"
 ;
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-snappyDDLExtn =
+" USING column OPTIONS(PERSISTENT '${persistenceMode}' , redundancy '${redundantCopies}')"
+;
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-uniqueColumnName =
 "id";
 
@@ -32,7 +36,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
-"delete from table1 where id < 100"
+"delete from table1 where code > 5"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteTables =
