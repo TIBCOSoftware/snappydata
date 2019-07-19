@@ -23,7 +23,8 @@ import sql.sqlutil.ResultSetHelper;
 
 public class SnappyPreparedStmtTest extends SnappyTest {
   public static SnappyPreparedStmtTest snappyPreparedStmtTest;
-  String[] queryArr = {"q2", "q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58", "q66", "q75", "q80"};
+  String[] queryArr = {"q2"};//, "q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53","q66", "q75", "q80"};
+  //q58
 
   public SnappyPreparedStmtTest() {
   }
@@ -127,9 +128,10 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             ps.setDouble(4, 100.00);
             break;
           case "q49":
-            ps.setDouble(1, 10000.00);
-            for (int i = 2; i <= 5; i++)
-              ps.setDouble(i, 10);
+            ps.setDouble(1, 10000);
+            ps.setInt(2, 2001);
+            ps.setInt(3,12);
+            break;
           case "q53":
             ps.setString(1, "scholaramalgamalg #14");
             ps.setString(2, "scholaramalgamalg #7");
