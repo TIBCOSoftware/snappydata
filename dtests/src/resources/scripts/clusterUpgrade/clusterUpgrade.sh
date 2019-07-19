@@ -54,18 +54,18 @@ for i in "$@";
     echo -e "\n\n============ Starting Spark cluster =========="
         sh $i/sbin/start-all.sh
 
-    ########### Validating the previous build's output file with the presently loaded cluster ###############
-    if [ $cnt -gt 1 ]; then
-      sh $i/bin/snappy run -file=$validationScript -client-bind-address=localhost -client-port=1527 >> $finalResultDir/outputBfrOps_$cnt.log
-      sort $finalResultDir/outputBfrOps_$cnt.log > $finalResultDir/outputBfrOps_sorted_$cnt.log
-      validate outputBfrOps_sorted_$cnt.log
-    fi
-    
     #execute create table script.
     if [ $cnt -eq 1 ]; then
       echo -e "\n\n=========== Loading table for the first time ========="
       sh $i/bin/snappy run -file=$createTableScript -client-bind-address=localhost -client-port=1527
       echo -e "\n=========== Finished loading tables ==========="
+    fi
+
+    ########### Validating the previous build's output file with the presently loaded cluster ###############
+    if [ $cnt -gt 1 ]; then
+      sh $i/bin/snappy run -file=$validationScript -client-bind-address=localhost -client-port=1527 >> $finalResultDir/outputBfrOps_$cnt.log
+      sort $finalResultDir/outputBfrOps_$cnt.log > $finalResultDir/outputBfrOps_sorted_$cnt.log
+      validate outputBfrOps_sorted_$cnt.log
     fi
 
     sh $i/bin/snappy run -file=$dmlScript -client-bind-address=localhost -client-port=1527 > $finalResultDir/dmlOutput_$cnt.log
