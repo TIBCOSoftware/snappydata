@@ -18,14 +18,5 @@ package org.apache.spark.sql
 
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyStatisticsCollectionSuite
-    extends StatisticsCollectionSuite
-        with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "analyze column command - unsupported types and invalid columns",
-    "test table-level statistics for data source table",
-    "analyze column command - result verification",
-    "column stats collection for null columns"
-  )
-}
+class SnappyStatisticsCollectionSuite extends StatisticsCollectionSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

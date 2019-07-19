@@ -18,7 +18,8 @@ The following topics are covered in this section:
 <a id= step-1> </a>
 ## Step 1: Download SnappyData JDBC Client
 
-*	[Download the SnappyData JDBC Client JAR](https://www.snappydata.io/download).
+*	[Download the SnappyData JDBC Client JAR](https://github.com/SnappyDataInc/snappydata/releases/latest).
+	</br>See also: [How to connect using JDBC driver](/howto/connect_using_jdbc_driver.md)
 
 <a id= step-2> </a>
 ## Step 2: Download and Install QlikView

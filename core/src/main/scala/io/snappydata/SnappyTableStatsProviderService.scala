@@ -39,9 +39,11 @@ import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
-import io.snappydata.collection.ObjectObjectHashMap
+import io.snappydata.sql.catalog.CatalogObjectType
+import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.SparkContext
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
@@ -134,8 +136,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
       val itr = memStats.iterator()
 
-      val members = ObjectObjectHashMap.withExpectedSize[String,
-          MemberStatistics](8)
+      val members = new UnifiedMap[String, MemberStatistics](8)
       while (itr.hasNext) {
         val o = itr.next().asInstanceOf[ListResultCollectorValue]
         val memMap = o.resultOfSingleExecution.asInstanceOf[java.util.HashMap[String, Any]]
@@ -167,7 +168,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
 
         memberStats.setStatus("Running")
       }
-      membersInfo ++= members.asScala
+      membersInfo ++= mapAsScalaMapConverter(members).asScala
       // mark members no longer running as stopped
       existingMembers.filterNot(members.containsKey).foreach(m =>
         membersInfo(m).setStatus("Stopped"))
@@ -196,49 +197,42 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       }
     }
     catch {
-      case NonFatal(e) => {
+      case NonFatal(e) =>
         log.warn("Exception occurred while collecting Table Statistics: " + e.getMessage)
         log.debug(e.getMessage, e)
-      }
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getHiveTables(true).asScala
+    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
 
     val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
       try {
         // External Tables
         hiveTables.collect {
-          case table if table.tableType.equalsIgnoreCase("EXTERNAL") => {
+          case table if table.tableType == CatalogObjectType.External.toString =>
             new SnappyExternalTableStats(table.entityName, table.tableType, table.schema,
               table.shortProvider, table.externalStore, table.dataSourcePath, table.driverClass)
-          }
         }
       }
       catch {
-        case NonFatal(e) => {
+        case NonFatal(e) =>
           log.warn("Exception occurred while collecting External Table Statistics: " + e.getMessage)
           log.debug(e.getMessage, e)
           mutable.Buffer.empty[SnappyExternalTableStats]
-        }
       }
     }
 
     if (resultObtained) {
       // Return updated tableSizeInfo
       // Map to hold hive table type against table names as keys
-      val tableTypesMap: mutable.HashMap[String, String] = mutable.HashMap.empty[String, String]
-      hiveTables.foreach(ht => {
-        val key = ht.schema.toString.concat("." + ht.entityName)
-        tableTypesMap.put(key.toUpperCase, ht.tableType)
-      })
-
+      val tableTypes = hiveTables.map(ht =>
+        Utils.toUpperCase(s"${ht.schema}.${ht.entityName}") -> ht.tableType).toMap
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
-        val tableName = rs.getTableName
-        if (tableTypesMap.contains(tableName.toUpperCase)
-            && tableTypesMap.get(tableName.toUpperCase).get.equalsIgnoreCase("COLUMN")) {
-          rs.setColumnTable(true)
-        } else {
-          rs.setColumnTable(false)
+        try tableTypes.get(Utils.toUpperCase(rs.getTableName)) match {
+          case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
+            Utils.toUpperCase(t))) => rs.setColumnTable(true)
+          case _ => rs.setColumnTable(false)
+        } catch {
+          case _: Exception => rs.setColumnTable(false)
         }
         rs
       })

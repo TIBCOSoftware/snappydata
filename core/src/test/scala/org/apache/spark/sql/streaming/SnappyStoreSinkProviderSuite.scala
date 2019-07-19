@@ -17,18 +17,20 @@
 
 package org.apache.spark.sql.streaming
 
+import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.reflect.io.Path
 
-import io.snappydata.{SnappyFunSuite, StreamingConstants}
-import org.apache.log4j.LogManager
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH
+import io.snappydata.SnappyFunSuite
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
-import org.apache.spark.sql.Row
+import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession}
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.kafka010.KafkaTestUtils
-import org.apache.spark.sql.types.{IntegerType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 
 class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     with BeforeAndAfter with BeforeAndAfterAll {
@@ -215,14 +217,14 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     val dataBatch = Seq(Seq(1, "name1", 20, "lname1", 0), Seq(2, "name2", 10, "lname2", 0))
     kafkaTestUtils.sendMessages(topic, dataBatch.map(r => r.mkString(",")).toArray)
-
+    val streamingQuery = createAndStartStreamingQuery(topic, testId)
     val thrown = intercept[StreamingQueryException] {
-      val streamingQuery = createAndStartStreamingQuery(topic, testId)
       streamingQuery.processAllAvailable()
     }
 
     val errorMessage = "_eventType is present in data but key columns are not defined on table."
     assert(thrown.getCause.getMessage == errorMessage)
+    streamingQuery.stop()
   }
 
   test("test idempotency") {
@@ -238,10 +240,11 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     streamingQuery.stop()
 
     val streamingQuery1: StreamingQuery = createAndStartStreamingQuery(topic, testId
-      , failBatch = true)
+      , options = Map("internal___failBatch" -> "true"))
     kafkaTestUtils.sendMessages(topic, (11 to 20).map(i => s"$i,name$i,$i,lname$i,0").toArray)
     try {
       streamingQuery1.processAllAvailable()
+      fail("StreamingQueryException expected.")
     } catch {
       case ex: StreamingQueryException if ex.cause.getMessage == "dummy failure for test" =>
         streamingQuery1.stop()
@@ -269,13 +272,70 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     // producing records with keh `1` on multiple partitions. This may not lead to expected result
     // kafkaTestUtils.sendMessages(topic, (0 to 999).map(i => s"1,name$i,$i,${i%3}").toArray)
 
-    val streamingQuery = createAndStartStreamingQuery(topic, testId, conflation = true)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId,
+      options = Map("conflation" -> "true"))
 
     streamingQuery.processAllAvailable()
 
     assertData(Array(Row(1, "name999", 999, "lname1")))
   }
 
+  test("conflation enabled, _eventType column: absent") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch2 = Seq(Seq(1, "name2", 30, "lname1"), Seq(1, "name3", 30, "lname1"))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    val streamingQuery = createAndStartStreamingQuery(topic, testId,
+      withEventTypeColumn = false, options = Map("conflation" -> "true"))
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name3", 30, "lname1")))
+  }
+
+  test("conflation enabled, key columns : undefined") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable(withKeyColumn = false)()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch2 = Seq(Seq(1, "name2", 30, "lname1"), Seq(1, "name3", 30, "lname1"))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    val thrown = intercept[StreamingQueryException] {
+      val streamingQuery = createAndStartStreamingQuery(topic, testId,
+        withEventTypeColumn = false, options = Map("conflation" -> "true"))
+      streamingQuery.processAllAvailable()
+    }
+    val errorMessage = "Key column(s) or primary key must be defined on table in order " +
+        "to perform conflation."
+    assert(thrown.getCause.isInstanceOf[IllegalStateException])
+    assert(thrown.getCause.getMessage == errorMessage)
+  }
+
+  test("[SNAP-2745]-conflation: delete,insert") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    kafkaTestUtils.createTopic(topic, partitions = 1)
+
+    val batch1 = Seq(Seq(1, "name1", 30, "lname1", 0))
+    kafkaTestUtils.sendMessages(topic, batch1.map(r => r.mkString(",")).toArray)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId,
+      options = Map("conflation" -> "true"))
+
+    waitTillTheBatchIsPickedForProcessing(0, testId)
+    val batch2 = Seq(Seq(1, "name1", 30, "lname1", 2), Seq(1, "name1", 30, "lname1", 0))
+    kafkaTestUtils.sendMessages(topic, batch2.map(r => r.mkString(",")).toArray)
+
+    streamingQuery.processAllAvailable()
+
+    assertData(Array(Row(1, "name1", 30, "lname1")))
+  }
 
   test("test conflation disabled") {
     val testId = testIdGenerator.getAndIncrement()
@@ -294,14 +354,81 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
     assertData(Array(Row(1, "name1", 1, "lname1")))
   }
 
+  test("queryName not specified") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId, withQueryName = false)
+
+    try {
+      streamingQuery.processAllAvailable()
+      fail("StreamingQueryException expected.")
+    } catch {
+      case x: StreamingQueryException =>
+        val expectedMessage = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
+        assert(x.getCause.isInstanceOf[IllegalStateException])
+        assert(x.getCause.getMessage.equals(expectedMessage))
+    }
+  }
+
+  test("Streaming query fails after attempts exhausted") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId,
+      options = Map("withQueryName" -> "false",
+        "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
+        "internal___attempts" -> "3", "attempts" -> "4"))
+
+    try {
+      streamingQuery.processAllAvailable()
+      fail("StreamingQueryException expected.")
+    } catch {
+      case x: StreamingQueryException =>
+        assert(x.getCause.getCause.isInstanceOf[SQLException] ||
+            x.getCause.getCause.isInstanceOf[CatalogStaleException])
+    }
+  }
+
+  test("Streaming query passes is attempts are not exhausted") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId,
+      options = Map("withQueryName" -> "false",
+        "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
+        "internal___attempts" -> "3", "attempts" -> "3"))
+    streamingQuery.processAllAvailable()
+  }
+
+  test("Streaming query fails on the first attempt itself when failure is not due" +
+      " to stale catalog") {
+    val testId = testIdGenerator.getAndIncrement()
+    createTable()()
+    val topic = getTopic(testId)
+    val streamingQuery = createAndStartStreamingQuery(topic, testId,
+      options = Map("withQueryName" -> "false",
+        "sinkCallback" -> "org.apache.spark.sql.streaming.TestSinkCallback",
+        "attempts" -> "1", "catalogNotStale" -> ""))
+
+    try {
+      streamingQuery.processAllAvailable()
+      fail("StreamingQueryException expected.")
+    } catch {
+      case x: StreamingQueryException =>
+        assert(x.getCause.isInstanceOf[RuntimeException]
+            && x.getCause.getMessage.equals("catalogNotStale"))
+    }
+  }
+
   private def waitTillTheBatchIsPickedForProcessing(batchId: Int, testId: Int,
       retries: Int = 15): Unit = {
     if (retries == 0) {
       throw new RuntimeException(s"Batch id $batchId not found in sink status table")
     }
-    val sqlString = s"select batch_id from ${StreamingConstants.SINK_STATE_TABLE} " +
-        s"where stream_query_id = '${streamQueryId(testId)}'"
-    val batchIdFromTable = snc.sql(sqlString).collect()
+    val sqlString = s"select batch_id from APP.${SnappyStoreSinkProvider.SINK_STATE_TABLE} " +
+        s"where stream_query_id = '${streamName(testId)}'"
+    val batchIdFromTable = session.sql(sqlString).collect()
 
     if (batchIdFromTable.isEmpty || batchIdFromTable(0)(0) != batchId) {
       Thread.sleep(1000)
@@ -310,28 +437,26 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
   }
 
   private def assertData(expectedData: Array[Row]) = {
-    val actualData = session.sql("select * from " + tableName + " order by id, last_name").collect()
+    val actualData = session.sql(s"select * from $tableName order by id, last_name").collect()
     assertResult(expectedData)(actualData)
   }
 
   private def createTable(withKeyColumn: Boolean = true)(isRowTable: Boolean = false) = {
-    snc.sql("drop table if exists users")
-
     def provider = if (isRowTable) "row" else "column"
 
     def options = if (!isRowTable && withKeyColumn) "options(key_columns 'id,last_name')" else ""
 
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id,last_name)" else ""
 
-    val s = s"create table users (id long , first_name varchar(40), age int, " +
+    val s = s"create table IF NOT EXISTS $tableName  (id long , first_name varchar(40), age int, " +
         s"last_name varchar(40) $primaryKey) using $provider $options "
-    LogManager.getRootLogger.error(s)
-    snc.sql(s)
+    session.sql(s)
+    session.sql(s"truncate table $tableName")
   }
 
   private def createAndStartStreamingQuery(topic: String, testId: Int,
-      withEventTypeColumn: Boolean = true, failBatch: Boolean = false,
-      conflation: Boolean = false) = {
+      withEventTypeColumn: Boolean = true, withQueryName: Boolean = true,
+      options: Map[String, String] = Map.empty) = {
     val streamingDF = session
         .readStream
         .format("kafka")
@@ -357,7 +482,8 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
 
     implicit val encoder = RowEncoder(schema)
 
-    val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
+
+    var streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
         .map(_.split(","))
         .map(r => {
@@ -368,22 +494,41 @@ class SnappyStoreSinkProviderSuite extends SnappyFunSuite
           }
         })
         .writeStream
-        .format("snappysink")
-        .queryName(s"USERS_$testId")
-        .trigger(ProcessingTime("1 seconds"))
-        .option("tableName", tableName)
-        .option("streamQueryId", streamQueryId(testId))
-        .option("checkpointLocation", checkpointDirectory)
-    if (failBatch) {
-      streamWriter.option("internal___failBatch", "true").start()
-    } else if (conflation) {
-      streamWriter.option("conflation", conflation).start()
-    } else {
-      streamWriter.start()
+        .format("snappySink")
+    if (withQueryName) {
+      streamWriter = streamWriter.queryName(streamName(testId))
     }
+    streamWriter.trigger(ProcessingTime("1 seconds"))
+        .option("tableName", tableName)
+        .option("checkpointLocation", checkpointDirectory)
+    streamWriter.options(options)
+    streamWriter.start()
   }
 
-  private def streamQueryId(testId: Int) = {
-    s"USERS_$testId"
+  private def streamName(testId: Int) = {
+    s"users_$testId"
+  }
+}
+
+class TestSinkCallback extends SnappySinkCallback {
+
+  private var attempt = -1
+
+  override def process(snappySession: SnappySession, sinkProps: Map[String, String], batchId: Long,
+      df: Dataset[Row], possibleDuplicate: Boolean): Unit = {
+    if (attempt == -1) attempt = sinkProps("attempts").toInt
+    if (attempt < sinkProps("attempts").toInt) {
+      assert(possibleDuplicate, "Value of possibleDuplicate should be true for retry attempts")
+    }
+    attempt -= 1
+    if (sinkProps.contains("catalogNotStale")) {
+      throw new RuntimeException("catalogNotStale")
+    }
+    if (attempt == 0) {
+    } else if (attempt % 2 == 0) {
+      throw new RuntimeException(new CatalogStaleException("dummy", null))
+    } else {
+      throw new RuntimeException(new SQLException("dummy", SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH))
+    }
   }
 }

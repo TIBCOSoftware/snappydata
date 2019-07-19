@@ -44,8 +44,8 @@ class SnappyTempTableTest extends SnappyFunSuite
     df.createOrReplaceTempView(tableName)
 
     val catalog = snc.sessionState.catalog
-    val qName = catalog.newQualifiedTableName(tableName)
-    val plan = catalog.lookupRelation(qName)
+    val qName = snc.snappySession.tableIdentifier(tableName)
+    val plan = catalog.resolveRelation(qName)
     plan match {
       case LogicalRelation(br, _, _) => fail(" A RDD based temp table " +
           "should have been matched with LogicalPlan")
@@ -58,7 +58,7 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     snc.sql(s"drop table $tableName")
 
-    assert(!snc.sessionState.catalog.tableExists(tableName))
+    assert(!snc.sessionState.catalog.tableExists(qName))
   }
 
   test("test drop table from a relational source") {
@@ -71,8 +71,8 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     df.createOrReplaceTempView(tableName)
     val catalog = snc.sessionState.catalog
-    val qName = catalog.newQualifiedTableName(tableName)
-    val plan = catalog.lookupRelation(qName)
+    val qName = snc.snappySession.tableIdentifier(tableName)
+    val plan = catalog.resolveRelation(qName)
     plan match {
       case LogicalRelation(br, _, _) =>
       case _ => fail("A CSV relation temp table should have been " +
@@ -83,6 +83,6 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     snc.sql(s"drop table $tableName")
 
-    assert(!snc.sessionState.catalog.tableExists(tableName))
+    assert(!snc.sessionState.catalog.tableExists(qName))
   }
 }

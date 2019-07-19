@@ -35,7 +35,7 @@ class MiscTest extends SnappyFunSuite with Logging {
     snc.sql("WITH temp_table AS ( SELECT ol_1_int2_id  as col1," +
       " sum(ol_1_int_id) AS col2 FROM table1 GROUP BY ol_1_int2_id)" +
       " SELECT ol_1_int2_id FROM temp_table ," +
-      " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").show
+      " table1 WHERE ol_1_int2_id  = col1 LIMIT 100 ").collect()
   }
 
   test("Pool test") {
@@ -87,5 +87,42 @@ class MiscTest extends SnappyFunSuite with Logging {
     } finally {
       snc.sql(s"set schema app")
     }
+  }
+
+  test("SNAP-2440") {
+    snc.sql("create table test(col1 int not null, col2 int not null) using column")
+    snc.sql("create table emp.test1(col1 int not null, col2 int not null) using column")
+    snc.sql("insert into test values (1, 2), (4, 5), (6, 7)")
+    snc.sql("insert into emp.test1 values (1, 2), (4, 5), (6, 7)")
+    val sz = snc.sql(s"select * from app.test").collect().length
+    val sqlstrs = Seq("select app.test.* from app.test",
+      "select app.test.col1, app.test.col2 from app.test",
+      "select col1, col2 from app.test",
+      "select * from app.test",
+      "select test.* from test",
+      "select emp.test1.* from emp.test1",
+      "select emp.test1.col1, emp.test1.col2 from emp.test1",
+      "select col1, col2 from emp.test1",
+      "select * from emp.test1",
+      "select test1.* from emp.test1")
+    sqlstrs.foreach(sqlstr => {
+      val res = snc.sql(sqlstr).collect()
+      assert(res.length === 3)
+      assert(res(0).get(0) != res(0).get(1))
+    })
+
+    val badsqls = Seq("select apppp.test.* from app.test",
+      "select app.test.col99, app.test.col2 from app.test",
+      "select testt.* from app.test",
+      "select apppp.test.* from emp.test1",
+      "select emp.test1.col99, emp.test1.col2 from emp.test1",
+      "select testt.* from emp.test1")
+    badsqls.foreach(sqlstr =>
+      try {
+        snc.sql(sqlstr)
+        fail(s"expected analysis exception for $sqlstr")
+      } catch {
+        case ae: AnalysisException => // expected ... ignore
+      })
   }
 }

@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, FileFilter}
+import java.io.File
 import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
@@ -34,17 +34,17 @@ import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host,
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
-import org.apache.spark.TestPackageUtils
 import org.apache.spark.sql.types.{IntegerType, StructField}
 import org.apache.spark.sql.{Row, SnappyContext, SnappySession, TableNotFoundException}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
         with SplitClusterDUnitTestBase
-        with Serializable {
+        with Serializable
+        with SnappyJobTestSupport {
 
   private[this] var ldapProperties: Properties = new Properties()
-  private var restartLdap = false;
+  private var restartLdap = false
 
   private val embeddedColTab1 = "EMBEDDEDCOLTAB1"
   private val smartColTab1 = "SMARTCOLTAB1"
@@ -115,10 +115,9 @@ class SplitClusterDUnitSecurityTest(s: String)
   def startArgs: Array[AnyRef] = Array(
     SplitClusterDUnitSecurityTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
-  private val snappyProductDir =
-    testObject.getEnvironmentVariable("SNAPPY_HOME")
+  override val snappyProductDir = testObject.getEnvironmentVariable("SNAPPY_HOME")
 
-  private val jobConfigFile = s"$snappyProductDir/conf/job.config"
+  override val jobConfigFile = s"$snappyProductDir/conf/job.config"
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("APACHE_SPARK_HOME")
@@ -245,7 +244,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var stmt = user1Conn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"), false)
+      Map("COLUMN_BATCH_SIZE" -> "1k"), false)
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
       Map.empty, false)
 
@@ -273,7 +272,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     try {
       // Create row and column tables in embedded mode
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, stmt,
-        Map("COLUMN_BATCH_SIZE" -> "50"), false)
+        Map("COLUMN_BATCH_SIZE" -> "1k"), false)
       SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, stmt,
         Map.empty, false)
 
@@ -449,7 +448,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     var adminStmt = adminConn.createStatement()
 
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedColTab1, "column", user1Conn, user1Stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"))
+      Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(embeddedRowTab1, "row", user1Conn, user1Stmt)
 
     // All DMLs from another user should fail
@@ -604,8 +603,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     val col3 = "COL3"
     val col4 = "COL4"
 
-    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "5"), false)
-    sns.createTable(smartRowTab1, "row", dataDF.schema, Map.empty[String, String], false)
+    sns.createTable(smartColTab1, "column", dataDF.schema, Map("COLUMN_BATCH_SIZE" -> "10k"))
+    sns.createTable(smartRowTab1, "row", dataDF.schema, Map("PARTITION_BY" -> "COL1"))
     sns.catalog.refreshTable(smartColTab1)
     sns.catalog.refreshTable(smartRowTab1)
 
@@ -681,8 +680,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"CREATE TEMPORARY TABLE ${t1}temp AS SELECT id, name FROM $schema.$t1",
       s"CREATE GLOBAL TEMPORARY TABLE ${t1}tempg AS SELECT id, name FROM $schema.$t1",
       s"CREATE EXTERNAL TABLE $schema.${t1}ext USING csv OPTIONS(path " +
-          s"'../../quickstart/src/main/resources/customer.csv')",
-      s"CREATE INDEX $schema.idx ON $schema.$t1 (id, name)")
+          s"'../../quickstart/src/main/resources/customer.csv')")
         .foreach(executeSQL(user1Stmt, _))
 
     // user gemfire2 of same group gemGroup1
@@ -698,7 +696,6 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"select * from $schema.$t2",
       s"delete from $schema.$t1 where name like 'two'",
       s"drop table $schema.$t1r",
-      s"drop index $schema.idx",
       s"select * from $schema.$t2").foreach(executeSQL(user2Stmt, _))
 
     // user gemfire1
@@ -724,7 +721,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"CREATE INDEX $schema.idx4 ON $schema.$t1 (id, name)")
         .foreach(sql => assertFailures(() => {
           executeSQL(user4Stmt, sql)
-        }, sql, Seq("42500", "42502", "42506", "42507")))
+        }, sql, Seq("42500", "42502", "42506", "42507", "38000")))
 
     // Grant DML permissions to gemfire4 and ensure it works.
     executeSQL(user1Stmt, s"grant select on $schema.$t1 to ldapgroup:$group2")
@@ -799,125 +796,77 @@ class SplitClusterDUnitSecurityTest(s: String)
     snc = testObject.getSnappyContextForConnector(locatorClientPort, props)
     val sns = snc.snappySession
 
-    sns.sql("create schema groupSchema authorization gemGroup1");
-  }
-
-  def getJobJar(className: String, packageStr: String = ""): String = {
-    val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
-        + s"test/$packageStr")
-    assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
-        s"not found: $dir")
-    val jar = TestPackageUtils.createJarFile(dir.listFiles(new FileFilter {
-      override def accept(pathname: File): Boolean = {
-        pathname.getName.contains("SecureJob")
-      }
-    }).toList, Some(packageStr))
-    assert(!jar.isEmpty, s"No class files found for SecureJob")
-    jar
+    sns.sql("create schema groupSchema authorization gemGroup1")
   }
 
   def testSnappyJob(): Unit = {
-    val jobBaseStr = buildJobBaseStr("io.snappydata.cluster", "SnappySecureJob")
-    submitAndVerifyJob(jobBaseStr, s" --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out")
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+
+    val className = "io.snappydata.cluster.jobs.SnappySecureJob"
+    submitAndWaitForCompletion(className,
+      s" --conf $opCode=sqlOps --conf $outputFile=SnappyValidJob.out")
 
     val colTab = "JOB_COLTAB"
     val rowTab = "JOB_ROWTAB"
-    def submitJob(op: String): Unit = {
-      val job = s"$jobBaseStr --conf $opCode=$op --conf $otherColTabName=$jdbcUser2.$colTab" +
-          s" --conf $otherRowTabName=$jdbcUser2.$rowTab --conf $outputFile=Snappy${op}Job.out"
-      logInfo(s"Submitting job $job")
-      val consoleLog = job.!!
-      logInfo(consoleLog)
-      val jobId = getJobId(consoleLog)
-      assert(consoleLog.contains("STARTED"), "Job not started")
-      DistributedTestBase.waitForCriterion(getWaitCriterion(jobId), 60000, 500, true)
+    def submitJobWithOperation(op: String): Unit = {
+      submitAndWaitForCompletion(className, s""" --conf $opCode=$op
+       --conf $otherColTabName=$jdbcUser2.$colTab
+        --conf $otherRowTabName=$jdbcUser2.$rowTab
+        --conf $outputFile=Snappy${op}Job.out""")
     }
 
     user2Conn = getConn(jdbcUser2, setSNC = true)
     val stmt = user2Conn.createStatement()
     SplitClusterDUnitTest.createTableUsingJDBC(colTab, "column", user2Conn, stmt,
-      Map("COLUMN_BATCH_SIZE" -> "50"))
+      Map("COLUMN_BATCH_SIZE" -> "1k"))
     SplitClusterDUnitTest.createTableUsingJDBC(rowTab, "row", user2Conn, stmt)
 
-    submitJob("nogrant") // tells job to verify DMLs without any explicit grant
+    submitJobWithOperation("nogrant") // tells job to verify DMLs without any explicit grant
 
     Seq("select", "insert", "update", "delete").foreach(dml => {
       permitConn(stmt, "grant", dml, colTab, rowTab, jdbcUser1)
-      submitJob(dml) // tells job to verify respective dml
+      submitJobWithOperation(dml) // tells job to verify respective dml
       permitConn(stmt, "revoke", dml, colTab, rowTab, jdbcUser1)
     })
 
     Seq("select", "insert", "update", "delete").foreach(dml => {
       permit(snc.snappySession, "grant", dml, colTab, rowTab, jdbcUser1)
-      submitJob(dml) // tells job to verify respective dml
+      submitJobWithOperation(dml) // tells job to verify respective dml
       permit(snc.snappySession, "revoke", dml, colTab, rowTab, jdbcUser1)
     })
 
     // Submit the same job with invalid credentials
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "job.config"))
     writeToFile(s"-u $jdbcUser1:invalid", jobConfigFile)
-    logInfo(s"Re-submitting job $jobBaseStr with invalid credentials.")
-    val consoleLog = s"$jobBaseStr --conf $outputFile=SnappyInvalidJob.out".!!
+    logInfo(s"Re-submitting job $className with invalid credentials.")
+    val consoleLog = submitJob(className, s" --conf $outputFile=SnappyInvalidJob.out")
     logInfo(consoleLog)
     assert(consoleLog.contains("The supplied authentication is invalid"), "Job should have failed")
   }
 
   def testSnappyStreamingJob(): Unit = {
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyStreamingSecureJob"),
-      s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyStreamingValidJob.out")
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SnappyStreamingSecureJob",
+      s" --stream --conf $opCode=sqlOps" +
+          s" --conf $outputFile=SnappyStreamingValidJob.out")
   }
 
   def testSnappyJavaJob(): Unit = {
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaSecureJob"),
-      s" --conf $opCode=sqlOps --conf $outputFile=SnappyJavaValidJob.out")
+    // Create config file with credentials
+    writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SnappyJavaSecureJob",
+      s" --conf $opCode=sqlOps" +
+          s" --conf $outputFile=SnappyJavaValidJob.out")
   }
 
   def testSnappyJavaStreamingJob(): Unit = {
-    submitAndVerifyJob(buildJobBaseStr("io.snappydata.cluster", "SnappyJavaStreamingSecureJob"),
-      s" --stream --conf $opCode=sqlOps --conf $outputFile=SnappyJavaStreamingValidJob.out")
-  }
-
-  def submitAndVerifyJob(jobBaseStr: String, jobCmdAffix: String): Unit = {
     // Create config file with credentials
     writeToFile(s"-u $jdbcUser1:$jdbcUser1", jobConfigFile)
-
-    val job = s"$jobBaseStr $jobCmdAffix"
-    logInfo(s"Submitting job $job")
-    val consoleLog = job.!!
-    logInfo(consoleLog)
-    val jobId = getJobId(consoleLog)
-    assert(consoleLog.contains("STARTED"), "Job not started")
-
-    val wc = getWaitCriterion(jobId)
-    DistributedTestBase.waitForCriterion(wc, 60000, 1000, true)
-  }
-
-  private def getWaitCriterion(jobId: String): WaitCriterion = {
-    new WaitCriterion {
-      var consoleLog = ""
-      override def done() = {
-        consoleLog = (s"$snappyProductDir/bin/snappy-job.sh status --job-id $jobId " +
-            s" --passfile $jobConfigFile").!!
-        if (consoleLog.contains("FINISHED")) logInfo(s"Job $jobId completed. $consoleLog")
-        consoleLog.contains("FINISHED")
-      }
-      override def description() = {
-        logInfo(consoleLog)
-        s"Job $jobId did not complete in time."
-      }
-    }
-  }
-
-  private def buildJobBaseStr(packageStr: String, className: String): String = {
-    s"$snappyProductDir/bin/snappy-job.sh submit --app-name $className" +
-        s" --class $packageStr.$className" +
-        s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}" +
-        s" --passfile $jobConfigFile"
-  }
-
-  private def getJobId(str: String): String = {
-    val idx = str.indexOf("jobId")
-    str.substring(idx + 9, idx + 45)
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SnappyJavaStreamingSecureJob",
+      s" --stream --conf $opCode=sqlOps" +
+          s" --conf $outputFile=SnappyJavaStreamingValidJob.out")
   }
 
   def _testUDFAndProcs(): Unit = {

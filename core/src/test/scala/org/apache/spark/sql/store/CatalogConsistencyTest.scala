@@ -48,7 +48,7 @@ class CatalogConsistencyTest
     // either in Hive metastore or snappy-store
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName(table))
+        snc.snappySession.tableIdentifier(table))
     }
     val se = intercept[SQLException] {
       routeQueryDisabledConn.createStatement().executeQuery(
@@ -87,8 +87,8 @@ class CatalogConsistencyTest
     snc.createTable("column_table1", "column", dataDF.schema, props)
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
+      ignoreIfNotExists = false, purge = false)
 
     // should throw an exception since the table has been removed from Hive store
     intercept[AnalysisException] {
@@ -113,15 +113,15 @@ class CatalogConsistencyTest
     dataDF.write.format("column").mode(SaveMode.Append).options(props).saveAsTable("column_table2")
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
+      ignoreIfNotExists = false, purge = false)
 
     // repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
 
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.tableIdentifier("column_table1"))
     }
     // should throw an exception since the catalog is repaired and table entry
     // should have been removed
@@ -153,13 +153,13 @@ class CatalogConsistencyTest
     routeQueryDisabledConn.createStatement().execute("drop table " +
         ColumnFormatRelation.columnBatchTableName("app.column_table1"))
     // remove the table entry from Hive store
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"), None)
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "column_table1",
+      ignoreIfNotExists = false, purge = false)
 
     // make sure that the table does not exist in Hive metastore
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
-        snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+        snc.snappySession.tableIdentifier("column_table1"))
     }
 
     // should not throw an exception as row buffer exists for column_table1
@@ -198,7 +198,7 @@ class CatalogConsistencyTest
     // make sure that the table exists in Hive metastore
     // should not throw an exception
     snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+      snc.snappySession.tableIdentifier("column_table1"))
 
     val connection = getConnection()
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
@@ -234,7 +234,7 @@ class CatalogConsistencyTest
     // make sure that the table exists in Hive metastore
     // should not throw an exception
     snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("column_table1"))
+      snc.snappySession.tableIdentifier("column_table1"))
 
     val connection = getConnection()
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
@@ -255,8 +255,8 @@ class CatalogConsistencyTest
     snc.createTable("row_table1", "row", dataDF.schema, props)
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"), None)
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "row_table1",
+      ignoreIfNotExists = false, purge = false)
 
     // should throw an exception since the table has been removed from Hive store
     intercept[AnalysisException] {
@@ -276,8 +276,8 @@ class CatalogConsistencyTest
     dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable("row_table2")
 
     // remove the table entry from Hive store but not from store DD
-    snc.snappySession.sessionCatalog.unregisterDataSourceTable(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"), None)
+    snc.snappySession.sessionCatalog.externalCatalog.dropTable("app", "row_table1",
+      ignoreIfNotExists = false, purge = false)
 
     // repair the catalog
     connection.createStatement().execute("CALL SYS.REPAIR_CATALOG('true', 'true')")
@@ -310,7 +310,7 @@ class CatalogConsistencyTest
     // make sure that the table exists in Hive metastore
     // should not throw an exception
     snc.snappySession.sessionCatalog.lookupRelation(
-      snc.snappySession.sessionCatalog.newQualifiedTableName("row_table1"))
+      snc.snappySession.tableIdentifier("row_table1"))
 
     val connection = getConnection()
     // repair the catalog

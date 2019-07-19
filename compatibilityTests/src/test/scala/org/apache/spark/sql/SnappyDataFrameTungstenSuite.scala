@@ -17,8 +17,7 @@
 
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyDataFrameTungstenSuite extends DataFrameTungstenSuite with SharedSnappySessionContext {
-
-}
+class SnappyDataFrameTungstenSuite extends DataFrameTungstenSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

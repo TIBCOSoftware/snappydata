@@ -17,10 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.streaming.StreamingAggregationSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyStreamingAggregationSuite
-    extends StreamingAggregationSuite
-        with SharedSnappySessionContext{
-
-}
+class SnappyStreamingAggregationSuite extends StreamingAggregationSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

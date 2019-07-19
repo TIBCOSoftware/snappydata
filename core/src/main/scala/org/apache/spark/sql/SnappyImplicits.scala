@@ -145,7 +145,7 @@ object snappy extends Serializable {
 
     def mapPartitionsWithIndexPreserveLocations[U: ClassTag](
         f: (Int, Iterator[T]) => Iterator[U],
-        p: (Int) => Seq[String],
+        p: Int => Seq[String],
         preservesPartitioning: Boolean = false): RDD[U] = rdd.withScope {
       val cleanedF = rdd.sparkContext.clean(f)
       new PreserveLocationsRDD(rdd,
@@ -180,7 +180,7 @@ object snappy extends Serializable {
      *
      * This ignores all SaveMode.
      */
-    def putInto(tableName: String): Unit = {
+    def putInto(tableName: String): Long = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
@@ -200,8 +200,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), input))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), input)).executedPlan.
+          executeCollect().foldLeft(0)(_ + _.getInt(0))
     }
 
     def deleteFrom(tableName: String): Unit = {
@@ -212,8 +212,7 @@ object snappy extends Serializable {
       }
 
       df.sparkSession.sessionState.executePlan(DeleteFromTable(UnresolvedRelation(
-        session.sessionState.catalog.newQualifiedTableName(tableName)), df.logicalPlan))
-          .executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), df.logicalPlan)).executedPlan.executeCollect()
     }
   }
 

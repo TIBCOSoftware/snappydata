@@ -21,22 +21,6 @@ import scala.reflect.ClassTag
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
-object StreamingConstants {
-  val EVENT_TYPE_COLUMN = "_eventType"
-  val SINK_STATE_TABLE = s"SNAPPYSYS_INTERNAL____SINK_STATE_TABLE"
-  val SNAPPY_SINK_NAME = "snappysink"
-  val TABLE_NAME = "tablename"
-  val STREAM_QUERY_ID = "streamqueryid"
-  val SINK_CALLBACK = "sinkcallback"
-  val CONFLATION = "conflation"
-
-  object EventType {
-    val INSERT = 0
-    val UPDATE = 1
-    val DELETE = 2
-  }
-}
-
 /**
  * Property names should be as per naming convention
  * http://docs.scala-lang.org/style/naming-conventions.html
@@ -106,7 +90,8 @@ object Property extends Enumeration {
 
   val HiveServerEnabled: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
-        "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
+        "embedded HiveServer2 with thrift access will be started in foreground. Default is true " +
+        "but starts the service in background.", Some(true), prefix = null)
 
   val HiveCompatible: SQLValue[Boolean] = SQLVal(
     s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
@@ -128,6 +113,10 @@ object Property extends Enumeration {
 
   val PlanCacheSize: SparkValue[Int] = Val[Int](s"${Constant.PROPERTY_PREFIX}sql.planCacheSize",
     s"Number of query plans that will be cached.", Some(3000))
+
+  val CatalogCacheSize: SparkValue[Int] = Val[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.catalogCacheSize",
+    s"Number of catalog tables whose meta-data will be cached.", Some(2000))
 
   val ColumnBatchSize: SQLValue[String] = SQLVal[String](
     s"${Constant.PROPERTY_PREFIX}column.batchSize",
@@ -190,11 +179,7 @@ object Property extends Enumeration {
 
   val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
-    "Property to set/unset plan caching", Some(true))
-
-  val PlanCachingAll: SQLValue[Boolean] = SQLVal[Boolean](
-    s"${Constant.PROPERTY_PREFIX}sql.planCachingAll",
-    "Property to set/unset plan caching on all sessions", Some(true))
+    "Property to set/unset plan caching", Some(false))
 
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",

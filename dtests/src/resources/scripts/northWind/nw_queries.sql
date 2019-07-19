@@ -1,5 +1,5 @@
 elapsedtime on;
-set spark.sql.shuffle.partitions=29;
+--set spark.sql.shuffle.partitions=29;
 
 SELECT * FROM Categories;
 SELECT * FROM Customers;

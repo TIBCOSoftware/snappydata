@@ -23,6 +23,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.DataSerializer
+import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.shared.{ClientSharedUtils, Version}
 import com.gemstone.gemfire.internal.{ByteArrayDataInput, InternalDataSerializer}
 import com.pivotal.gemfirexd.Attribute
@@ -36,7 +37,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLChar}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
-import io.snappydata.{Constant, QueryHint}
+import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
@@ -74,11 +75,11 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setSchema(schema)
+  session.setCurrentSchema(schema)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
-  private[this] val df = session.sql(sql)
+  private[this] val df = Utils.sqlInternal(session, sql)
 
   private[this] val thresholdListener = Misc.getMemStore.thresholdListener()
 
@@ -138,7 +139,7 @@ class SparkSQLExecuteImpl(val sql: String,
             // prepare SnappyResultHolder with all data and create new one
             SparkSQLExecuteImpl.handleLocalExecution(srh, hdos)
             msg.sendResult(srh)
-            srh = new SnappyResultHolder(this, msg.isUpdateOrDelete)
+            srh = new SnappyResultHolder(this, msg.isUpdateOrDeleteOrPut)
           } else {
             // throttle sending if target node is CRITICAL_UP
             val targetMember = msg.getSender
@@ -196,7 +197,7 @@ class SparkSQLExecuteImpl(val sql: String,
   private def getColumnTypes: Array[(Int, Int, Int)] =
     querySchema.map(f => {
       SparkSQLExecuteImpl.getSQLType(f.dataType, complexTypeAsJson,
-        f.metadata, f.name, allAsClob, columnsAsClob)
+        f.metadata, Utils.toLowerCase(f.name), allAsClob, columnsAsClob)
     }).toArray
 
   private def getColumnDataTypes: Array[DataType] =
@@ -214,7 +215,7 @@ object SparkSQLExecuteImpl {
   def getClobProperties(session: SnappySession): (Boolean, Set[String]) =
     session.getPreviousQueryHints.get(QueryHint.ColumnsAsClob.toString) match {
     case null => (false, Set.empty[String])
-    case v => Utils.parseColumnsAsClob(v)
+    case v => Utils.parseColumnsAsClob(v, session)
   }
 
   def getSQLType(dataType: DataType, complexTypeAsJson: Boolean,
@@ -376,7 +377,7 @@ object SparkSQLExecuteImpl {
         val writer = new CharArrayWriter()
         writers += writer
         generators += Utils.getJsonGenerator(d.asInstanceOf[DataType],
-          s"COL_$size", writer)
+          s"col_$size", writer)
       }
     }
     val execRow = new ValueRow(dvds)
@@ -481,7 +482,12 @@ object SnappySessionPerConnection {
     val session = connectionIdMap.get(connectionID)
     if (session != null) session
     else {
-      val session = SnappyContext().snappySession
+      val session = SnappyContext.globalSparkContext match {
+        // use a CancelException to force failover by client to another lead if available
+        case null => throw new CacheClosedException("No SparkContext ...")
+        case sc => new SnappySession(sc)
+      }
+      Property.PlanCaching.set(session.sessionState.conf, true)
       val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
       if (oldSession == null) session else oldSession
     }
