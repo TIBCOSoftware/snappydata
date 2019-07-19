@@ -268,14 +268,14 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Statement s = conn.createStatement();
       for (int i = 0; i < schemas.length; i++) {
         s.execute(schemas[i]);
-        sleepForMs(5);
+        // sleepForMs(5);
         // s.cancel();
         aStr.append(schemas[i] + "\n");
       }
       s.close();
       commit(conn);
     } catch (SQLException se) {
-        throw new TestException("Got exception while dropping schemas in snappy...");
+        throw new TestException("Got exception while dropping schemas in snappy...", se);
     }
     Log.getLogWriter().info(aStr.toString());
   }
@@ -414,9 +414,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     Log.getLogWriter().info("Loading data in snappy...");
     loadTablesInSnappy(dataLocation);
     Log.getLogWriter().info("Loaded data in snappy.");
-    Log.getLogWriter().info("Loading data in derby...");
-    loadTablesInDerby(dataLocation);
-    Log.getLogWriter().info("Loaded data in derby.");
+    if(hasDerbyServer) {
+      Log.getLogWriter().info("Loading data in derby...");
+      loadTablesInDerby(dataLocation);
+      Log.getLogWriter().info("Loaded data in derby.");
+    }
   }
 
   public void loadTablesInSnappy(String dataLocation) {
@@ -631,6 +633,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
           jarPath, SnappyPrms.getUserAppName());
     }
+    schemaChanged = true;
   }
 
   protected void recreateTables(Connection conn, boolean isDerby) {

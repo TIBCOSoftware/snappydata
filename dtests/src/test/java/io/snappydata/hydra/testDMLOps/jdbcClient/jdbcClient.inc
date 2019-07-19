@@ -46,6 +46,7 @@ threadGroups = snappyThreads;
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
+
 hydra.Prms-totalTaskTimeSec           = 900;
 hydra.Prms-maxResultWaitSec           = 600;
 
