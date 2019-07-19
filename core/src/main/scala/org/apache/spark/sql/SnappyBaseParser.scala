@@ -311,12 +311,26 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     quotedIdentifier
   }
 
+  protected final def packageIdentifierPart: Rule1[String] = rule {
+    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot).+)) ~ ws ~> { (s: String) =>
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
+    } |
+        quotedIdentifier
+  }
+
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (tableIdentifierPart ~ '.' ~ ws).? ~ tableIdentifierPart ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
+  final def packageIdentifier: Rule1[TableIdentifier] = rule {
+    // case-sensitivity already taken care of properly by "identifier"
+    (tableIdentifierPart ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
+      TableIdentifier(table, schema.asInstanceOf[Option[String]]))
+  }
 
   final def functionIdentifier: Rule1[FunctionIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
@@ -352,6 +366,8 @@ object SnappyParserConsts {
   final val lineHintEnd: String = ")\n\r\f" + EOI
   final val hintValueEnd: String = ")*" + EOI
   final val underscore: CharPredicate = CharPredicate('_')
+  final val dot: CharPredicate = CharPredicate('.')
+  final val hyphen: CharPredicate = CharPredicate('-')
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++ underscore
   final val alphaUnderscore: CharPredicate = CharPredicate.Alpha ++ underscore
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')

@@ -381,7 +381,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     val schemaName = formatDatabaseName(schema)
     validateSchemaName(schemaName, checkForDefault = false)
     super.setCurrentDatabase(schemaName)
-    externalCatalog.setCurrentDatabase(schemaName)
+    // since hive metastore doesn't have sys schema.
+    if (schemaName != SnappyExternalCatalog.SYS_SCHEMA) {
+      externalCatalog.setCurrentDatabase(schemaName)
+    }
   }
 
   override def listDatabases(): Seq[String] = synchronized {
@@ -613,7 +616,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
             val table = externalCatalog.getTable(schemaName, tableName)
             if (table.tableType == CatalogTableType.VIEW) {
               if (table.viewText.isEmpty) sys.error("Invalid view without text.")
-              snappySession.sessionState.sqlParser.parsePlan(table.viewText.get)
+              new SnappySqlParser(snappySession).parsePlan(table.viewText.get)
             } else if (CatalogObjectType.isPolicy(table)) {
               getPolicyPlan(table)
             } else {
