@@ -1210,7 +1210,6 @@ object SplitSnappyClusterDUnitTest
     for (i <- 1 to 5) {
       snc.sql("select * from t5").collect()
     }
-    dataFrame.write.insertInto("T5")
   }
 
   def doTestSmartConnectorForBucketRebalance(locatorPort: Int,
