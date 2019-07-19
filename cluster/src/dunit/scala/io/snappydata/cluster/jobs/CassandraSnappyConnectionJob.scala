@@ -14,11 +14,11 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.cluster
+package io.snappydata.cluster.jobs
 
 import com.typesafe.config.Config
-import org.apache.spark.sql._
-import org.junit.Assert
+
+import org.apache.spark.sql.{SaveMode, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 object CassandraSnappyConnectionJob extends SnappySQLJob {
 
