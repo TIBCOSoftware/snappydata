@@ -515,7 +515,9 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     super.setCurrentDatabase(schemaName)
     // also set in hive catalog if present
     if (snappySession.enableHiveSupport) {
-      hiveSessionCatalog.setCurrentDatabase(schema)
+      if (schema != null && !schema.equalsIgnoreCase(Constant.DEFAULT_SCHEMA)) {
+        hiveSessionCatalog.setCurrentDatabase(schema)
+      }
     }
     externalCatalog.setCurrentDatabase(schemaName)
   }
