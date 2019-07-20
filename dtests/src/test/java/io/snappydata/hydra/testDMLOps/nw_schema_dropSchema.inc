@@ -21,7 +21,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-snappyDDLExtn =
 " USING row OPTIONS(PERSISTENT '${persistenceMode}')"
 " USING row OPTIONS(PERSISTENT '${persistenceMode}')"
 " USING column OPTIONS(partition_by 'City,Country', buckets '19', redundancy '${redundantCopies}',PERSISTENT '${persistenceMode}')"
-" USING column OPTIONS(partition_by 'City,Country', buckets '19', colocate_with 'employees',redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
+" USING column OPTIONS(partition_by 'City,Country', buckets '19', colocate_with 'nw.employees', redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
 " USING column OPTIONS(partition_by 'OrderID', buckets '13', redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
 " USING column OPTIONS(partition_by 'OrderID', buckets '13', COLOCATE_WITH 'nw.orders', redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
 " USING column OPTIONS(partition_by 'ProductID,SupplierID', buckets '17', redundancy '${redundantCopies}', PERSISTENT '${persistenceMode}')"
@@ -110,9 +110,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
-"UPDATE nw.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = (SELECT max(CategoryID) from products where tid=$tid)"
+"UPDATE nw.products SET UnitPrice = UnitPrice * 1.1 WHERE CategoryID = (SELECT max(CategoryID) from nw.products where tid=$tid)"
 "UPDATE nw.products SET UnitPrice = UnitPrice * 0.9"
-"UPDATE nw.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = cast((ReorderLevel + 5) as smallint) WHERE CategoryID = (SELECT min(CategoryID) from products where tid=$tid)"
+"UPDATE nw.products SET UnitPrice = UnitPrice * 1.1, ReorderLevel = cast((ReorderLevel + 5) as smallint) WHERE CategoryID = (SELECT min(CategoryID) from nw.products where tid=$tid)"
 "UPDATE nw.products SET Discontinued=cast(-1 as smallint) where Discontinued=1"
 "UPDATE nw.products SET Discontinued=cast(-1 as smallint) WHERE Discontinued=-1"
 "UPDATE nw.order_details SET UnitPrice = UnitPrice * 1.1"
@@ -120,25 +120,25 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 "UPDATE nw.order_details SET Quantity = cast(0 as smallint) WHERE ProductID = 11"
 "UPDATE nw.employees SET TitleOfCourtesy='Mr.' WHERE FIRSTNAME LIKE '%3%'"
 "UPDATE nw.employees SET TitleOfCourtesy='Mrs.' WHERE FIRSTNAME LIKE '%3%'"
-"UPDATE nw.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from orders where tid=$tid)"
+"UPDATE nw.orders SET ShipVia = ShipVia + 1 WHERE OrderID IN (SELECT max(orderID) from nw.orders where tid=$tid)"
 "UPDATE nw.orders SET Freight = Freight * 1.1 WHERE Freight >= 100"
 "UPDATE nw.customers SET CompanyName='abc_$tid'"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
-"select ProductID,CategoryID,UnitPrice from products"
-"select ProductID,UnitPrice from products"
-"select ProductID,CategoryID,UnitPrice, ReorderLevel from products"
-"select ProductID,Discontinued from products where Discontinued=-1"
-"select ProductID,Discontinued from products where ReorderLevel=1"
-"select orderID,UnitPrice from order_details"
-"select orderID,UnitPrice from order_details"
-"select orderID,Quantity from order_details where Quantity=0"
-"select EmployeeID,TitleOfCourtesy from employees where TitleOfCourtesy='Mr.'"
-"select EmployeeID,TitleOfCourtesy from employees where TitleOfCourtesy='Mrs.'"
-"select OrderID,ShipVia from orders"
-"select OrderID,Freight from orders"
-"select customerID,companyname from customers"
+"select ProductID,CategoryID,UnitPrice from nw.products"
+"select ProductID,UnitPrice from nw.products"
+"select ProductID,CategoryID,UnitPrice, ReorderLevel from nw.products"
+"select ProductID,Discontinued from nw.products where Discontinued=-1"
+"select ProductID,Discontinued from nw.products where ReorderLevel=1"
+"select orderID,UnitPrice from nw.order_details"
+"select orderID,UnitPrice from nw.order_details"
+"select orderID,Quantity from nw.order_details where Quantity=0"
+"select EmployeeID,TitleOfCourtesy from nw.employees where TitleOfCourtesy='Mr.'"
+"select EmployeeID,TitleOfCourtesy from nw.employees where TitleOfCourtesy='Mrs.'"
+"select OrderID,ShipVia from nw.orders"
+"select OrderID,Freight from nw.orders"
+"select customerID,companyname from nw.customers"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
@@ -158,11 +158,11 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-deleteStmts =
-"delete from nw.orders where orderid IN (SELECT max(orderID) from orders where tid=$tid)"
+"delete from nw.orders where orderid IN (SELECT max(orderID) from nw.orders where tid=$tid)"
 "delete from nw.order_details where Quantity < 1 "
-"delete from nw.orders where orderid IN (SELECT min(orderID) from orders where tid=$tid)"
-"delete from nw.customers where CustomerID IN (SELECT min(CustomerID) from customers where tid=$tid)"
-"delete from nw.customers where CustomerID IN (SELECT max(CustomerID) from customers where tid=$tid)"
+"delete from nw.orders where orderid IN (SELECT min(orderID) from nw.orders where tid=$tid)"
+"delete from nw.customers where CustomerID IN (SELECT min(CustomerID) from nw.customers where tid=$tid)"
+"delete from nw.customers where CustomerID IN (SELECT max(CustomerID) from nw.customers where tid=$tid)"
 "delete from nw.employees where EmployeeID = 6"
 "delete from nw.employees where EmployeeID < 5"
 "delete from nw.employees where FIRSTNAME LIKE '%2'"
