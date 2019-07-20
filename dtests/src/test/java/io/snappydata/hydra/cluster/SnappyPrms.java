@@ -541,6 +541,11 @@ public class SnappyPrms extends BasePrms {
   public static Long kafkaDir;
 
   /**
+   * (String) path for kafka log directory
+   */
+  public static Long kafkaLogDir;
+
+  /**
    * (String) snappy-poc jar path
    */
   public static Long snappyPocJarPath;
