@@ -17,12 +17,11 @@
 package org.apache.spark.sql
 
 import java.sql.{SQLException, SQLWarning}
-import java.util.Calendar
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.{Calendar, Properties}
 
 import scala.collection.JavaConverters._
-import scala.collection.mutable
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
@@ -44,7 +43,7 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
-import org.apache.spark.sql.catalyst.analysis.{NoSuchTableException, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
 import org.apache.spark.sql.catalyst.expressions.aggregate.AggregateExpression
@@ -157,8 +156,21 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
 
-  override def sql(sqlText: String): CachedDataFrame =
+  override def sql(sqlText: String): DataFrame = {
+    try {
+      sqInternal(sqlText)
+    } catch {
+      // fallback to uncached flow for streaming queries
+      case ae: AnalysisException
+        if ae.message.contains(
+          "Queries with streaming sources must be executed with writeStream.start()"
+        ) => sqlUncached(sqlText)
+    }
+  }
+
+   private[sql] def sqInternal(sqlText: String): CachedDataFrame = {
     snappyContextFunctions.sql(SnappySession.sqlPlan(this, sqlText))
+  }
 
   @DeveloperApi
   def sqlUncached(sqlText: String): DataFrame = {
@@ -174,20 +186,31 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     }
   }
 
-  final def prepareSQL(sqlText: String): LogicalPlan = {
+  final def prepareSQL(sqlText: String, skipPromote: Boolean = false): LogicalPlan = {
     val sessionState = this.snappySessionState
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
-    sessionState.analyzerPrepare.execute(logical)
+    val ap: Analyzer = sessionState.analyzer
+    // logInfo(s"KN: Batches ${ap.batches.filter(
+    //  _.name.equalsIgnoreCase("Resolution")).mkString("_")}")
+    ap.execute(logical)
   }
 
-  private[sql] final def executePlan(plan: LogicalPlan): QueryExecution = {
+  private[sql] final def executePlan(plan: LogicalPlan, retryCnt: Int = 0): QueryExecution = {
     try {
       val execution = sessionState.executePlan(plan)
       execution.assertAnalyzed()
       execution
     } catch {
       case e: AnalysisException =>
+        val unresolvedNodes = plan.expressions.filter(
+          x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
+        if (e.getMessage().contains("cannot resolve") && unresolvedNodes.nonEmpty) {
+          reAnalyzeForUnresolvedAttribute(plan, e, retryCnt) match {
+            case Some(p) => return executePlan(p, retryCnt + 1)
+            case None => //
+          }
+        }
         // in case of connector mode, exception can be thrown if
         // table form is changed (altered) and we have old table
         // object in SnappyExternalCatalog cache
@@ -209,6 +232,51 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
             throw e
         }
     }
+  }
+
+  // Hack to fix SNAP-2440 ( TODO: Will return after 1.1.0 for a better fix )
+  private def reAnalyzeForUnresolvedAttribute(
+    originalPlan: LogicalPlan, e: AnalysisException,
+    retryCount: Int): Option[LogicalPlan] = {
+
+    if (!e.getMessage().contains("cannot resolve")) return None
+    val unresolvedNodes = originalPlan.expressions.filter(
+      x => x.isInstanceOf[UnresolvedStar] | x.isInstanceOf[UnresolvedAttribute])
+    if (retryCount > unresolvedNodes.size) return None
+
+    val errMsg = e.getMessage().split('\n').map(_.trim.filter(_ >= ' ')).mkString
+    val newPlan = originalPlan transformExpressions {
+      case us@UnresolvedStar(option) if option.isDefined =>
+        val targetString = option.get.mkString(".")
+        var matched = false
+        errMsg match {
+          case SnappySession.unresolvedStarRegex(_, schema, table, _) =>
+            if (sessionCatalog.tableExists(tableIdentifier(s"$schema.$table"))) {
+              val qname = s"$schema.$table"
+              if (qname.equalsIgnoreCase(targetString)) {
+                matched = true
+              }
+            }
+          case _ => matched = false
+        }
+        if (matched) UnresolvedStar(None) else us
+
+      case ua@UnresolvedAttribute(nameparts) =>
+        val targetString = nameparts.mkString(".")
+        var uqc = ""
+        var matched = false
+        errMsg match {
+          case SnappySession.unresolvedColRegex(_, schema, table, col, _) =>
+            if (sessionCatalog.tableExists(tableIdentifier(s"$schema.$table"))) {
+              val qname = s"$schema.$table.$col"
+              if (qname.equalsIgnoreCase(targetString)) matched = true
+              uqc = col
+            }
+          case _ => matched = false
+        }
+        if (matched) UnresolvedAttribute(uqc) else ua
+    }
+    if (!newPlan.equals(originalPlan)) Some(newPlan) else None
   }
 
   @transient
@@ -518,12 +586,12 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
 
   def tableIdentifier(table: String): TableIdentifier = {
     // hive meta-store is case-insensitive so always use upper case names for object names
-    val normalizedTable = Utils.toUpperCase(table)
-    val dotIndex = normalizedTable.indexOf('.')
+    val fullName = sessionCatalog.formatTableName(table)
+    val dotIndex = fullName.indexOf('.')
     if (dotIndex > 0) {
-      new TableIdentifier(normalizedTable.substring(dotIndex + 1),
-        Some(normalizedTable.substring(0, dotIndex)))
-    } else new TableIdentifier(normalizedTable, None)
+      new TableIdentifier(fullName.substring(dotIndex + 1),
+        Some(fullName.substring(0, dotIndex)))
+    } else new TableIdentifier(fullName, None)
   }
 
   /**
@@ -620,7 +688,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
   /**
@@ -660,9 +728,9 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       samplingOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), SnappyContext.SAMPLE_SOURCE,
-      Some(sessionCatalog.normalizeSchema(schema)), schemaDDL = None,
+      Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), samplingOptions), isBuiltIn = true)
+      addBaseTableOption(baseTable, samplingOptions), isBuiltIn = true)
   }
 
   /**
@@ -704,9 +772,9 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       topkOptions: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(topKName), SnappyContext.TOPK_SOURCE,
-      Some(sessionCatalog.normalizeSchema(inputDataSchema)), schemaDDL = None,
+      Some(JdbcExtendedUtils.normalizeSchema(inputDataSchema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), topkOptions) +
+      addBaseTableOption(baseTable, topkOptions) +
           ("key" -> keyColumnName), isBuiltIn = true)
   }
 
@@ -750,7 +818,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     createTableInternal(tableIdentifier(topKName), SnappyContext.TOPK_SOURCE,
       userSpecifiedSchema = None, schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists,
-      addBaseTableOption(baseTable.map(tableIdentifier), topkOptions) +
+      addBaseTableOption(baseTable, topkOptions) +
           ("key" -> keyColumnName), isBuiltIn = true)
   }
 
@@ -912,7 +980,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       options: Map[String, String],
       allowExisting: Boolean = false): DataFrame = {
     createTableInternal(tableIdentifier(tableName), provider,
-      Some(sessionCatalog.normalizeSchema(schema)), schemaDDL = None,
+      Some(JdbcExtendedUtils.normalizeSchema(schema)), schemaDDL = None,
       if (allowExisting) SaveMode.Ignore else SaveMode.ErrorIfExists, options, isBuiltIn = true)
   }
 
@@ -1130,19 +1198,25 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       mode: SaveMode,
       options: Map[String, String],
       isBuiltIn: Boolean,
-      query: Option[LogicalPlan] = None,
-      partitionSpec: Seq[String] = Nil,
-      bucketSpec: Option[BucketSpec] = None): DataFrame = {
+      partitionColumns: Array[String] = Utils.EMPTY_STRING_ARRAY,
+      bucketSpec: Option[BucketSpec] = None,
+      query: Option[LogicalPlan] = None): DataFrame = {
     val providerIsBuiltIn = SnappyContext.isBuiltInProvider(provider)
-    if (!isBuiltIn && providerIsBuiltIn) {
-      throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
-          s"used for builtin provider '$provider'")
-    }
-    // for builtin tables, never use partitionSpec since that has different semantics and
-    // implies support for add/drop/recover partitions which is not possible
-    if (providerIsBuiltIn && (partitionSpec.nonEmpty || bucketSpec.isDefined)) {
-      throw new AnalysisException(s"PARTITIONED BY or bucket specification used for builtin " +
-          s"provider '$provider'. Use PARTITION_BY option for column/row tables instead.")
+    if (providerIsBuiltIn) {
+      if (!isBuiltIn) {
+        throw new AnalysisException(s"CREATE EXTERNAL TABLE or createExternalTable API " +
+            s"used for inbuilt provider '$provider'")
+      }
+      // for builtin tables, never use partitionSpec or bucketSpec since that has different
+      // semantics and implies support for add/drop/recover partitions which is not possible
+      if (partitionColumns.length > 0) {
+        throw new AnalysisException(s"CREATE TABLE ... USING '$provider' does not support " +
+            "PARTITIONED BY clause.")
+      }
+      if (bucketSpec.isDefined) {
+        throw new AnalysisException(s"CREATE TABLE ... USING '$provider' does not support " +
+            s"CLUSTERED BY clause. Use '${ExternalStoreUtils.PARTITION_BY}' as an option.")
+      }
     }
     // check for permissions in the schema which should be done before the session catalog
     // createTable call since store table will be created by that time
@@ -1178,16 +1252,22 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       parameters.get(StoreUtils.COLOCATE_WITH) match {
         case None =>
         case Some(b) => fullOptions += SnappyExternalCatalog.BASETABLE_PROPERTY ->
-            sessionCatalog.resolveTableIdentifier(tableIdentifier(b)).unquotedString
+            sessionCatalog.resolveExistingTable(b).unquotedString
       }
     }
+    // if there is no path option for external DataSources, then mark as MANAGED except for JDBC
+    val storage = DataSource.buildStorageFormatFromOptions(fullOptions)
+    val tableType = if (!providerIsBuiltIn && storage.locationUri.isEmpty &&
+        !Utils.toLowerCase(provider).contains("jdbc")) {
+      CatalogTableType.MANAGED
+    } else CatalogTableType.EXTERNAL
     val tableDesc = CatalogTable(
       identifier = resolvedName,
-      tableType = CatalogTableType.EXTERNAL,
-      storage = DataSource.buildStorageFormatFromOptions(fullOptions),
+      tableType = tableType,
+      storage = storage,
       schema = schema,
       provider = Some(provider),
-      partitionColumnNames = partitionSpec,
+      partitionColumnNames = partitionColumns,
       bucketSpec = bucketSpec)
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
@@ -1199,9 +1279,10 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     df
   }
 
-  private[sql] def addBaseTableOption(baseTable: Option[TableIdentifier],
+  private[sql] def addBaseTableOption(baseTable: Option[String],
       options: Map[String, String]): Map[String, String] = baseTable match {
-    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY -> t.unquotedString)
+    case Some(t) => options + (SnappyExternalCatalog.BASETABLE_PROPERTY ->
+        sessionCatalog.resolveExistingTable(t).unquotedString)
     case _ => options
   }
 
@@ -1260,23 +1341,20 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     }
   }
 
-  def alterTable(tableName: String, isAddColumn: Boolean, column: StructField): Unit = {
+  def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
+      defaultValue: Option[String]): Unit = {
     val tableIdent = tableIdentifier(tableName)
-    if (sessionCatalog.caseSensitiveAnalysis) {
-      alterTable(tableIdent, isAddColumn, column)
-    } else {
-      alterTable(tableIdent, isAddColumn, sessionCatalog.normalizeField(column))
-    }
+    alterTable(tableIdent, isAddColumn, column, defaultValue)
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField): Unit = {
+      column: StructField, defaultValue: Option[String]): Unit = {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
-        ar.alterTable(tableIdent, isAddColumn, column)
+        ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
       case _ => throw new AnalysisException(
@@ -1383,11 +1461,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
       baseTable: String,
       indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
-
-    // normalize index column names for API calls
-    val columnsWithDirection = indexColumns.map(p => sessionCatalog.formatName(p._1) -> p._2)
-    createIndex(tableIdentifier(indexName), tableIdentifier(baseTable),
-      columnsWithDirection, options)
+    createIndex(tableIdentifier(indexName), tableIdentifier(baseTable), indexColumns, options)
   }
 
   private[sql] def createPolicy(policyName: TableIdentifier, tableName: TableIdentifier,
@@ -1400,7 +1474,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
     }
     */
 
-    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.upper)) {
+    if (!policyFor.equalsIgnoreCase(SnappyParserConsts.SELECT.lower)) {
       throw new AnalysisException("Currently Policy only For Select is supported")
     }
 
@@ -1534,7 +1608,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
 
   private def dropRowStoreIndex(indexName: String, ifExists: Boolean): Unit = {
     val connProperties = ExternalStoreUtils.validateAndGetAllProps(
-      Some(this), mutable.Map.empty[String, String])
+      Some(this), ExternalStoreUtils.emptyCIMutableMap)
     val jdbcOptions = new JDBCOptions(connProperties.url, "",
       connProperties.connProps.asScala.toMap)
     val conn = JdbcUtils.createConnectionFactory(jdbcOptions)()
@@ -1715,7 +1789,7 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
   }
 
   private[sql] def defaultConnectionProps: ConnectionProperties =
-    ExternalStoreUtils.validateAndGetAllProps(Some(this), mutable.Map.empty[String, String])
+    ExternalStoreUtils.validateAndGetAllProps(Some(this), ExternalStoreUtils.emptyCIMutableMap)
 
   private[sql] def defaultPooledConnection(name: String): java.sql.Connection =
     ConnectionUtil.getPooledConnection(name, new ConnectionConf(defaultConnectionProps))
@@ -1802,6 +1876,11 @@ object SnappySession extends Logging {
   private[sql] val ExecutionKey = "EXECUTION"
   private[sql] val CACHED_PUTINTO_UPDATE_PLAN = "cached_putinto_logical_plan"
 
+  private val unresolvedStarRegex =
+    """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
+  private val unresolvedColRegex =
+    """(cannot resolve '`)(\w+).(\w+).(\w+)(.*given input columns.*)""".r
+
   lazy val isEnterpriseEdition: Boolean = {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
@@ -1839,6 +1918,22 @@ object SnappySession extends Logging {
     case _ => (plan, null)
   }
 
+  private[sql] def setExecutionProperties(localProperties: Properties,
+      executionIdStr: String, queryLongForm: String): Unit = {
+    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
+    // trim query string to 10K to keep its UTF8 form always < 32K which is the limit
+    // for DataOutput.writeUTF used during task serialization
+    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION,
+      CachedDataFrame.queryStringShortForm(queryLongForm, 10240))
+    localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+  }
+
+  private[sql] def clearExecutionProperties(localProperties: Properties): Unit = {
+    localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
+    localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
+    localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
+  }
+
   /**
    * Snappy's execution happens in two phases. First phase the plan is executed
    * to create a rdd which is then used to create a CachedDataFrame.
@@ -1862,9 +1957,8 @@ object SnappySession extends Logging {
     val executionIdStr = java.lang.Long.toString(executionId)
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
-    localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, sqlShortText)
-    localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
+    setExecutionProperties(localProperties, executionIdStr, sqlText)
+    var propertiesSet = true
     val start = System.currentTimeMillis()
     try {
       // get below two with original "ParamLiteral(" tokens that will be replaced
@@ -1878,13 +1972,13 @@ object SnappySession extends Logging {
       context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
+      clearExecutionProperties(localProperties)
+      propertiesSet = false
       val rdd = f
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
-      localProperties.remove(SparkContext.SPARK_JOB_GROUP_ID)
-      localProperties.remove(SparkContext.SPARK_JOB_DESCRIPTION)
-      localProperties.remove(SQLExecution.EXECUTION_ID_KEY)
+      if (propertiesSet) clearExecutionProperties(localProperties)
     }
   }
 
@@ -2226,11 +2320,7 @@ object CachedKey {
       case a: AttributeReference =>
         AttributeReference(a.name, a.dataType, a.nullable)(exprId = ExprId(-1))
       case a: Alias =>
-        val name = if (a.name == Utils.WEIGHTAGE_COLUMN_NAME ||
-            a.name.startsWith(Utils.SKIP_ANALYSIS_PREFIX)) {
-          a.name
-        } else "none"
-        Alias(a.child, name)(exprId = ExprId(-1))
+        Alias(a.child, a.name)(exprId = ExprId(-1))
       case ae: AggregateExpression => ae.copy(resultId = ExprId(-1))
       case _: ScalarSubquery =>
         throw new IllegalStateException("scalar subquery should not have been present")

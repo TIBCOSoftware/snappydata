@@ -50,6 +50,10 @@ object TypeUtilities {
     metadata.map.get(key).asInstanceOf[Option[T]]
   }
 
+  def putMetadata(key: String, value: Any, metadata: Metadata): Metadata = {
+    new Metadata(metadata.map + (key -> value))
+  }
+
   def writeMetadata(metadata: Metadata, kryo: Kryo, output: Output): Unit = {
     val map = metadata.map
     if ((metadata eq Metadata.empty) || map.isEmpty) {

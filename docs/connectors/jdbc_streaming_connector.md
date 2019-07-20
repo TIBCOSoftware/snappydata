@@ -19,13 +19,13 @@ SnappyData core and SnappyData jdbc streaming connector maven dependencies would
 <dependency>
   <groupId>io.snappydata</groupId>
   <artifactId>snappydata-jdbc-stream-connector_2.11</artifactId>
-  <version>0.9.2.1</version>
+  <version>0.9.3</version>
   <scope>compile</scope>
 </dependency>
 <dependency>
   <groupId>io.snappydata</groupId>
   <artifactId>snappydata-core_2.11</artifactId>
-  <version>1.0.2.1</version>
+  <version>1.1.0</version>
   <scope>compile</scope>
 </dependency>    
 ```
@@ -95,6 +95,7 @@ return reader.writeStream()
         .format("snappystore")
         .option("sink", Mysink.class.getName())
         .option("checkpointLocation",
+            Utils.createTempDir("/data/wrk/w/snappydata/abc-temp", "abc-spark")
             Utils.createTempDir("/data/wrk/w/snappydata/temp", "snappy-sink")
                 .getCanonicalPath())
         .option("tableName", tableName)

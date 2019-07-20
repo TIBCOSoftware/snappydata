@@ -36,6 +36,8 @@ fi
 
 BACKGROUND=-bg
 clustermode=
+CONF_DIR_ARG=
+SKIP_CONF_COPY=0
 
 while (( "$#" )); do
   param="$1"
@@ -47,8 +49,19 @@ while (( "$#" )); do
     -fg | --foreground)
       BACKGROUND=-fg
     ;;
+    -conf | --config)
+      conf_dir="$2"
+      if [ ! -d $conf_dir ] ; then
+        echo "Conf directory $conf_dir does not exist"
+        exit 1
+      fi
+      CONF_DIR_ARG="--config $conf_dir"
+      shift ;;
     rowstore)
       clustermode="rowstore"
+    ;;
+    --skipconfcopy)
+      SKIP_CONF_COPY=1
     ;;
     *)
     ;;
@@ -56,14 +69,16 @@ while (( "$#" )); do
   shift
 done
 
+export START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
+export SKIP_CONF_COPY
 
 # Start Locators
-"$sbin"/snappy-locators.sh start $clustermode "$@"
+"$sbin"/snappy-locators.sh $CONF_DIR_ARG start $clustermode "$@"
 
 # Start Servers
-"$sbin"/snappy-servers.sh $BACKGROUND start $clustermode "$@"
+"$sbin"/snappy-servers.sh $BACKGROUND $CONF_DIR_ARG start $clustermode "$@"
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh start
+  "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
 fi

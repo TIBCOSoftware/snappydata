@@ -495,7 +495,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
 
-          val keyColumns = dr.getPrimaryKeyColumns
+          val keyColumns = dr.getPrimaryKeyColumns(state.snappySession)
           val childOutput = keyColumns.map(col =>
             child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
               case Some(a: Attribute) => a

@@ -29,9 +29,9 @@ import io.snappydata.Property.HashAggregateSize
 import org.apache.spark.Partition
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
-import org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, EliminateSubqueryAliases, NoSuchTableException, Star, UnresolvedRelation}
-import org.apache.spark.sql.catalyst.expressions.{And, EqualTo, In, ScalarSubquery, _}
+import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateSubqueryAliases, EliminateUnions, NoSuchTableException, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
 import org.apache.spark.sql.catalyst.plans.JoinType
@@ -124,40 +124,13 @@ class SnappySessionState(val snappySession: SnappySession)
 
   private[sql] var disableStoreOptimizations: Boolean = false
 
-  // Only Avoid rule PromoteStrings that remove ParamLiteral for its type being NullType
-  // Rest all rules, even if redundant, are same as analyzer for maintainability reason
-  lazy val analyzerPrepare: Analyzer = new Analyzer(catalog, conf) {
-
-    def getStrategy(strategy: analyzer.Strategy): Strategy = strategy match {
-      case analyzer.FixedPoint(_) => fixedPoint
-      case _ => Once
-    }
-
-    override lazy val batches: Seq[Batch] = analyzer.batches.map {
-      case batch if batch.name.equalsIgnoreCase("Resolution") =>
-        Batch(batch.name, getStrategy(batch.strategy), batch.rules.filter(_ match {
-          case PromoteStrings => if (sqlParser.sqlParser.questionMarkCounter > 0) {
-            false
-          } else {
-            true
-          }
-          case _ => true
-        }): _*)
-      case batch => Batch(batch.name, getStrategy(batch.strategy), batch.rules: _*)
-    }
-
-    override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
-      getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
-  }
-
   def getExtendedResolutionRules(analyzer: Analyzer): Seq[Rule[LogicalPlan]] =
     new HiveConditionalRule(_.catalog.ParquetConversions, this) ::
         new HiveConditionalRule(_.catalog.OrcConversions, this) ::
         AnalyzeCreateTable(snappySession) ::
         new PreprocessTable(this) ::
         ResolveRelationsExtended ::
+        ResolveAliasInGroupBy ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
         AnalyzeMutableOperations(snappySession, analyzer) ::
@@ -172,12 +145,12 @@ class SnappySessionState(val snappySession: SnappySession)
     Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
   }
 
-  override lazy val analyzer: Analyzer = new Analyzer(catalog, conf) {
+  override lazy val analyzer: Analyzer = new SnappyAnalyzer(this) {
+
+    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
 
     override val extendedResolutionRules: Seq[Rule[LogicalPlan]] =
       getExtendedResolutionRules(this)
-
-    override val extendedCheckRules: Seq[LogicalPlan => Unit] = getExtendedCheckRules
   }
 
   override lazy val optimizer: Optimizer = new SparkOptimizer(catalog, conf, experimentalMethods) {
@@ -267,7 +240,8 @@ class SnappySessionState(val snappySession: SnappySession)
           case e if e.foldable => foldExpression(e)
           // Like Spark's OptimizeIn but uses DynamicInSet to allow for tokenized literals
           // to be optimized too.
-          case expr@In(v, l) if !disableStoreOptimizations =>
+          case expr@In(v, l) if !disableStoreOptimizations && l.forall(e =>
+            e.isInstanceOf[Literal] || e.isInstanceOf[DynamicReplacableConstant] || e.foldable) =>
             val list = l.collect {
               case e@(_: Literal | _: DynamicReplacableConstant) => e
               case e if e.foldable => foldExpression(e)
@@ -450,6 +424,23 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
+  object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
+    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+      case p if !p.childrenResolved => p
+      case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
+          groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
+        val newGroups = groups.map {
+          case u@UnresolvedAttribute(nameParts) if nameParts.length == 1 =>
+            aggs.collectFirst {
+              case Alias(exp, name) if name.equalsIgnoreCase(nameParts.head) =>
+                exp
+            }.getOrElse(u)
+          case x => x
+        }
+        Aggregate(newGroups, aggs, child)
+      case o => o
+    }
+  }
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
     // Y combinator
@@ -570,7 +561,7 @@ class SnappySessionState(val snappySession: SnappySession)
     }
   }
 
-  case class AnalyzeMutableOperations(sparkSession: SparkSession,
+  case class AnalyzeMutableOperations(session: SnappySession,
       analyzer: Analyzer) extends Rule[LogicalPlan] with PredicateHelper {
 
     private def getKeyAttributes(table: LogicalPlan, child: LogicalPlan,
@@ -632,8 +623,8 @@ class SnappySessionState(val snappySession: SnappySession)
         else {
           // check that partitioning or key columns should not be updated
           val nonUpdatableColumns = (relation.relation.asInstanceOf[MutableRelation]
-              .partitionColumns.map(Utils.toUpperCase) ++
-              keyAttrs.map(k => Utils.toUpperCase(k.name))).toSet
+              .partitionColumns.map(Utils.toLowerCase) ++
+              keyAttrs.map(k => Utils.toLowerCase(k.name))).toSet
           // resolve the columns being updated and cast the expressions if required
           val (updateAttrs, newUpdateExprs) = updateCols.zip(updateExprs).map { case (c, expr) =>
             val attr = analysis.withPosition(relation) {
@@ -641,21 +632,41 @@ class SnappySessionState(val snappySession: SnappySession)
                 c.name.split('.'), analyzer.resolver).getOrElse(
                 throw new AnalysisException(s"Could not resolve update column ${c.name}"))
             }
-            val colName = Utils.toUpperCase(c.name)
+            val colName = Utils.toLowerCase(c.name)
             if (nonUpdatableColumns.contains(colName)) {
               throw new AnalysisException("Cannot update partitioning/key column " +
                   s"of the table for $colName (among [${nonUpdatableColumns.mkString(", ")}])")
             }
-            // cast the update expressions if required
+
             val newExpr = if (attr.dataType.sameType(expr.dataType)) {
               expr
             } else {
-              // avoid unnecessary copy+cast when inserting DECIMAL types
-              // into column table
-              expr.dataType match {
-                case _: DecimalType
-                  if attr.dataType.isInstanceOf[DecimalType] => expr
-                case _ => Alias(Cast(expr, attr.dataType), attr.name)()
+              def typesCompatible: Boolean = expr.dataType match {
+                // allowing assignment of narrower numeric expression to wider decimal attribute
+                case dt: NumericType if attr.dataType.isInstanceOf[DecimalType]
+                    && attr.dataType.asInstanceOf[DecimalType].isWiderThan(dt) => true
+                // allowing assignment of narrower numeric types to wider numeric types as far as
+                // precision is not compromised
+                case dt: NumericType if !attr.dataType.isInstanceOf[DecimalType]
+                    && numericPrecedence.indexOf(dt) < numericPrecedence.indexOf(attr.dataType) =>
+                  true
+                // allowing assignment of null value
+                case _: NullType => true
+                // allowing assignment to a string type column for all datatypes
+                case dt if attr.dataType.isInstanceOf[StringType] => true
+                case dt => false
+              }
+
+              // avoid unnecessary copy+cast when inserting DECIMAL types into column table
+              if (expr.dataType.isInstanceOf[DecimalType] && attr.dataType.isInstanceOf[DecimalType]
+                  && attr.dataType.asInstanceOf[DecimalType].isWiderThan(expr.dataType)) {
+                expr
+              } else if (typesCompatible) {
+                Alias(Cast(expr, attr.dataType), attr.name)()
+              } else {
+                val message = s"Data type of expression (${expr.dataType}) is not" +
+                    s" compatible with the data type of attribute '${attr.name}' (${attr.dataType})"
+                throw new AnalysisException(message)
               }
             }
             (attr, newExpr)
@@ -679,9 +690,9 @@ class SnappySessionState(val snappySession: SnappySession)
             keyColumns = keyAttrs.map(_.toAttribute))
         }
       case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
-        ColumnTableBulkOps.transformDeletePlan(sparkSession, d)
+        ColumnTableBulkOps.transformDeletePlan(session, d)
       case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
-        ColumnTableBulkOps.transformPutPlan(sparkSession, p)
+        ColumnTableBulkOps.transformPutPlan(session, p)
     }
 
     private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
@@ -808,5 +819,127 @@ class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: Snapp
     if (session.enableHiveSupport) state.withHiveState {
       strategy(state.hiveState.planner.asInstanceOf[HiveStrategies])(plan)
     } else Nil
+  }
+}
+
+
+class SnappyAnalyzer(sessionState: SnappySessionState)
+    extends Analyzer(sessionState.catalog, sessionState.conf) {
+
+  // This list of rule is exact copy of org.apache.spark.sql.catalyst.analysis.Analyzer.batches
+  // It is replicated to inject StringPromotionCheckForUpdate rule. Since Analyzer.batches is
+  // declared as a lazy val, it can not be accessed using super keywork.
+  private[sql] lazy val ruleBatches = Seq(
+    Batch("Substitution", fixedPoint,
+      CTESubstitution,
+      WindowsSubstitution,
+      EliminateUnions,
+      new SubstituteUnresolvedOrdinals(sessionState.conf)),
+    Batch("Resolution", fixedPoint,
+      ResolveTableValuedFunctions ::
+          ResolveRelations ::
+          ResolveReferences ::
+          ResolveCreateNamedStruct ::
+          ResolveDeserializer ::
+          ResolveNewInstance ::
+          ResolveUpCast ::
+          ResolveGroupingAnalytics ::
+          ResolvePivot ::
+          ResolveOrdinalInOrderByAndGroupBy ::
+          ResolveMissingReferences ::
+          ExtractGenerator ::
+          ResolveGenerate ::
+          ResolveFunctions ::
+          ResolveAliases ::
+          ResolveSubquery ::
+          ResolveWindowOrder ::
+          ResolveWindowFrame ::
+          ResolveNaturalAndUsingJoin ::
+          ExtractWindowExpressions ::
+          GlobalAggregates ::
+          ResolveAggregateFunctions ::
+          TimeWindowing ::
+          ResolveInlineTables ::
+          TypeCoercion.typeCoercionRules ++
+              extendedResolutionRules : _*),
+    Batch("Nondeterministic", Once,
+      PullOutNondeterministic),
+    Batch("UDF", Once,
+      HandleNullInputsForUDF),
+    Batch("FixNullability", Once,
+      FixNullability),
+    Batch("Cleanup", fixedPoint,
+      CleanupAliases)
+  )
+
+  override lazy val batches: Seq[Batch] = ruleBatches.map {
+    case batch if batch.name.equalsIgnoreCase("Resolution") =>
+      val rules = batch.rules.flatMap {
+        case PromoteStrings =>
+          StringPromotionCheckForUpdate.asInstanceOf[Rule[LogicalPlan]] :: SnappyPromoteStrings ::
+              PromoteStrings :: Nil
+        case r => r :: Nil
+      }
+
+      Batch(batch.name, batch.strategy, rules: _*)
+    case batch => Batch(batch.name, batch.strategy, batch.rules: _*)
+  }
+
+
+  // This Rule fails an update query when type of Arithmetic operators doesn't match. This
+  // need to be done because by default spark performs fail safe implicit type
+  // conversion when type of two operands does't match and this can lead to null values getting
+  // populated in the table.
+  private object StringPromotionCheckForUpdate extends Rule[LogicalPlan] {
+
+    override def apply(plan: LogicalPlan): LogicalPlan = {
+      plan match {
+        case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
+          updateExpressions.foreach {
+            case e if !e.childrenResolved => // do nothing
+            case BinaryArithmetic(_@StringType(), _) | BinaryArithmetic(_, _@StringType()) =>
+              throw new AnalysisException("Implicit type casting of string type to numeric" +
+                  " type is not performed for update statements.")
+            case _ => // do nothing
+          }
+          Update(table, child, keyColumns, updateColumns, updateExpressions)
+        case _ => plan
+      }
+    }
+  }
+
+  /*
+    SnappyPromoteStrings is applied before Spark's org.apache.spark.sql.catalyst.analysis.TypeCoercion.PromoteStrings rule.
+    Spark PromoteStrings rule causes issues in prepared statements by replacing ParamLiteral
+    with NULL in case of BinaryComparison with left node being StringType and right being
+    ParamLiteral (or vice-versa) as by default ParamLiteral datatype is NullType. In such a case, this rule
+    converts ParmaLiteral type to StringType to prevent it being replaced by NULL
+   */
+  object SnappyPromoteStrings extends Rule[LogicalPlan] {
+    override def apply(plan: LogicalPlan): LogicalPlan = {
+      plan resolveExpressions {
+        case e if !e.childrenResolved => e
+        case p @ BinaryComparison(left @ StringType(), right @ QuestionMark(pos))
+          if right.dataType == NullType =>
+          p.makeCopy(Array(left,
+            ParamLiteral(right.value, StringType, right.pos, execId = -1, tokenized = true)))
+        case p @ BinaryComparison(left @ QuestionMark(pos), right @ StringType())
+          if left.dataType == NullType =>
+          p.makeCopy(Array(
+            ParamLiteral(left.value, StringType, left.pos, execId = -1, tokenized = true),
+            right))
+      }
+    }
+  }
+}
+
+object QuestionMark {
+  def unapply(p: ParamLiteral): Option[Int] = {
+    if (p.pos == 0 && (p.dataType == NullType || p.dataType == StringType)) {
+      p.value match {
+        case r: Row => Some(r.getInt(0))
+        case _ => None
+      }
+    } else None
   }
 }

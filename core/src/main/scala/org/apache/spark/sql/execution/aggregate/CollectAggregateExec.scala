@@ -31,10 +31,12 @@ import org.apache.spark.sql.hive.SnappySessionState
  * Special plan to collect top-level aggregation on driver itself and avoid
  * an exchange for simple aggregates.
  */
-case class CollectAggregateExec(
-    @transient basePlan: SnappyHashAggregateExec,
-    child: SparkPlan,
-    override val output: Seq[Attribute]) extends UnaryExecNode {
+case class CollectAggregateExec(child: SparkPlan)(
+    @transient val basePlan: SnappyHashAggregateExec) extends UnaryExecNode {
+
+  override val output: Seq[Attribute] = basePlan.output
+
+  override protected def otherCopyArgs: Seq[AnyRef] = basePlan :: Nil
 
   override def nodeName: String = "CollectAggregate"
 

@@ -17,8 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.streaming.OffsetSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyOffsetSuite extends OffsetSuite with SharedSnappySessionContext{
-
-}
+class SnappyOffsetSuite extends OffsetSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil
