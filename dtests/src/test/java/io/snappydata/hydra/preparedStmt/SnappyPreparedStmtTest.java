@@ -44,13 +44,13 @@ public class SnappyPreparedStmtTest extends SnappyTest {
     String queryFilePathPS = queryFile.get(1).toString();
     try {
       conn = getLocatorConnection();
-      conn1 = getClientConnection();
+      conn1 = getLocatorConnection();
       for (int q = 0; q <= queryArr.length - 1; q++) {
 
         String queryName = queryArr[q];
         String filePath = queryFilePathPS + "/" + queryName + ".sql";
         String queryStringPS = new String(Files.readAllBytes(Paths.get(filePath)));
-        System.out.println("The query to be executed is " + queryStringPS);
+        Log.getLogWriter().info("The query to be executed is " + queryStringPS);
         PreparedStatement ps = conn.prepareStatement(queryStringPS);
         switch (queryName) {
           case "q2":
@@ -140,11 +140,11 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             break;
           case "q58":
             for (int i = 1; i <= 3; i++) {
-              System.out.println("Setting string value for " +i );
+              Log.getLogWriter().info("Setting string value for " +i );
               ps.setString(i, "2000-01-03");
             }
             for (int i = 4; i <= 9; i++) {
-              System.out.println("Setting double value for " +i );
+              Log.getLogWriter().info("Setting double value for " +i );
               ps.setDouble(i, Double.parseDouble(0.9 + ""));
             }
             break;
@@ -172,12 +172,12 @@ public class SnappyPreparedStmtTest extends SnappyTest {
         validateResultSet(rs, rsPS, queryName);
       }
     } catch (IOException ex) {
-      System.out.println("Caught exception " + ex.getMessage());
+      Log.getLogWriter().info("Caught exception " + ex.getMessage());
     } catch (SQLException se) {
-      System.out.println("QUERY FAILED. Exception is : \n" + se
+      Log.getLogWriter().info("QUERY FAILED. Exception is : \n" + se
           .getSQLState() + " : " + se.getMessage());
       while (se != null) {
-        System.out.println(se.getCause());
+        Log.getLogWriter().info(se.getCause());
         se = se.getNextException();
       }
     } finally {
@@ -185,7 +185,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
         conn.close();
         conn1.close();
       } catch (SQLException se) {
-        System.out.println("Failed to close the connection " + se.getMessage());
+        Log.getLogWriter().info("Failed to close the connection " + se.getMessage());
       }
     }
   }
@@ -217,7 +217,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       }
       rsPS.close();
 
-      System.out.println("Total row count for preparedStatment query " + queryName + " is = " + count + "\n");
+      Log.getLogWriter().info("Total row count for preparedStatment query " + queryName + " is = " + count + "\n");
       if (count != countPS) {
         throw new TestException("For query " + queryName + " the query count with prepared statement " + count + " is not equal" +
             " to that without prepared statement " + countPS);
