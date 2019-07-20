@@ -41,6 +41,7 @@ import com.gemstone.gemfire.cache.query.types.ObjectType;
 import hydra.Log;
 import hydra.Prms;
 import hydra.TestConfig;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import org.apache.commons.lang.ArrayUtils;
@@ -57,8 +58,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static boolean isHATest = TestConfig.tab().booleanAt(SnappySchemaPrms.isHATest, false);
   public static boolean largeDataSet = TestConfig.tab().booleanAt(SnappySchemaPrms
       .largeDataSet, false);
-
-  public static boolean schemaChanged = false;
 
   protected static hydra.blackboard.SharedLock bbLock;
 
@@ -606,6 +605,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
    */
   public static void HydraTask_changeTableSchema() {
     testInstance.changeTableSchema();
+    SnappyBB.getBB().getSharedMap().put("schemaChanged", true);
     HydraTask_saveTableMetaDataToBB();
     HydraTask_populateTables();
   }
@@ -633,7 +633,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       executeSnappyJob(SnappyPrms.getSnappyJobClassNames(), logFile, SnappyPrms.getUserAppJar(),
           jarPath, SnappyPrms.getUserAppName());
     }
-    schemaChanged = true;
   }
 
   protected void recreateTables(Connection conn, boolean isDerby) {
@@ -660,7 +659,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           + TestHelper.getStackTrace(se));
     }
     Log.getLogWriter().info(aStr.toString());
-    schemaChanged = true;
   }
 
   public static void HydraTask_performDMLOpsInAppAfterSchemaChange() {
@@ -732,7 +730,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     testInstance.releaseBBLock();
     String stmt;
     String uniqueKey = SnappySchemaPrms.getUniqueColumnName();
-    if (schemaChanged)
+    if (SnappyBB.getBB().getSharedMap().containsKey("schemaChanged") && ((boolean) SnappyBB.getBB().getSharedMap().get("schemaChanged")))
       stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(index);
     else
       stmt = SnappySchemaPrms.getInsertStmts().get(index);
