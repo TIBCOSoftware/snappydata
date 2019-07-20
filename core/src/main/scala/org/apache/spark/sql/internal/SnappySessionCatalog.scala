@@ -529,14 +529,14 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   private def listAllDatabases(): Seq[String] = {
     if (snappySession.enableHiveSupport) {
       (super.listDatabases() ++
-          hiveSessionCatalog.listDatabases().map(formatDatabaseName)).distinct.sorted
+          hiveSessionCatalog.listDatabases()).distinct.sorted
     } else super.listDatabases().distinct.sorted
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
     if (snappySession.enableHiveSupport) {
       (super.listDatabases(pattern) ++
-          hiveSessionCatalog.listDatabases(pattern).map(formatDatabaseName)).distinct.sorted
+          hiveSessionCatalog.listDatabases(pattern)).distinct.sorted
     } else super.listDatabases(pattern).distinct.sorted
   }
 
@@ -845,8 +845,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
     if (snappySession.enableHiveSupport && hiveSessionCatalog.databaseExists(schema)) {
       (super.listTables(schema, pattern).toSet ++
-          hiveSessionCatalog.listTables(schema, pattern).map(id => TableIdentifier(
-            formatTableName(id.table), id.database.map(formatDatabaseName))).toSet).toSeq
+          hiveSessionCatalog.listTables(schema, pattern).toSet).toSeq
     } else super.listTables(schema, pattern)
   }
 
