@@ -19,9 +19,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyDataFrameSuite extends DataFrameSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "sameResult() on aggregate"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

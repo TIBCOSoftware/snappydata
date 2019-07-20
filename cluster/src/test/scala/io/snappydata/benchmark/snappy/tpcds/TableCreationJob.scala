@@ -126,7 +126,7 @@ object TableCreationJob extends SnappySQLJob{
     buckets_ColumnTable = if (config.hasPath("Buckets_ColumnTable")) {
       config.getString("Buckets_ColumnTable")
     } else {
-      "15"
+      "8"
     }
 
     SnappyJobValid()

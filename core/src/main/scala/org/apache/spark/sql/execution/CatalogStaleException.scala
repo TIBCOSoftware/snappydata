@@ -18,6 +18,5 @@
 package org.apache.spark.sql.execution
 
 class CatalogStaleException(message: String, cause: Throwable)
-    extends Exception {
-  def this(message: String) = this(message, null)
+    extends Exception(message, cause) {
 }

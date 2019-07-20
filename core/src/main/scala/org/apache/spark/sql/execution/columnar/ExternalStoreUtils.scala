@@ -16,21 +16,25 @@
  */
 package org.apache.spark.sql.execution.columnar
 
-import java.sql.{Connection, PreparedStatement, Types}
+import java.sql.{Connection, PreparedStatement, SQLException, Statement, Types}
 import java.util.Properties
 import java.util.concurrent.atomic.AtomicReference
+import javax.naming.NameNotFoundException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.internal.cache.ExternalTableMetaData
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor
+import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.{AuthenticationServiceBase, LDAPAuthenticationSchemeImpl}
 import com.pivotal.gemfirexd.internal.impl.sql.execute.GranteeIterator
 import com.pivotal.gemfirexd.jdbc.ClientAttribute
 import io.snappydata.sql.catalog.SnappyExternalCatalog
+import io.snappydata.thrift.internal.ClientStatement
 import io.snappydata.thrift.snappydataConstants
 import io.snappydata.{Constant, Property}
 
@@ -39,7 +43,7 @@ import org.apache.spark.scheduler.local.LocalSchedulerBackend
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodegenContext}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, Expression, TokenLiteral}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, BinaryExpression, DynamicInSet, Expression, TokenLiteral}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.JDBCSourceAsColumnarStore
@@ -48,7 +52,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.DriverRegistry
 import org.apache.spark.sql.execution.ui.SQLListener
 import org.apache.spark.sql.execution.{BufferedRowIterator, CodegenSupport, CodegenSupportOnExecutor, ConnectionPool, RefreshMetadata}
 import org.apache.spark.sql.jdbc.{JdbcDialect, JdbcDialects}
-import org.apache.spark.sql.row.{SnappyStoreClientDialect, SnappyStoreDialect}
+import org.apache.spark.sql.row.SnappyStoreDialect
 import org.apache.spark.sql.sources.{ConnectionProperties, ExternalSchemaRelationProvider, JdbcExtendedDialect, JdbcExtendedUtils}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types._
@@ -79,22 +83,22 @@ object ExternalStoreUtils {
     }
   }
 
-  final val INDEX_TYPE = "INDEX_TYPE"
-  final val INDEX_NAME = "INDEX_NAME"
-  final val COLUMN_BATCH_SIZE = "COLUMN_BATCH_SIZE"
-  final val COLUMN_MAX_DELTA_ROWS = "COLUMN_MAX_DELTA_ROWS"
-  final val COMPRESSION_CODEC = "COMPRESSION"
-  final val RELATION_FOR_SAMPLE = "RELATION_FOR_SAMPLE"
+  final val INDEX_TYPE = "index_type"
+  final val INDEX_NAME = "index_name"
+  final val COLUMN_BATCH_SIZE = "column_batch_size"
+  final val COLUMN_MAX_DELTA_ROWS = "column_max_delta_rows"
+  final val COMPRESSION_CODEC = "compression"
 
   // inbuilt basic table properties
-  final val PARTITION_BY = "PARTITION_BY"
-  final val REPLICATE = "REPLICATE"
-  final val BUCKETS = "BUCKETS"
-  final val KEY_COLUMNS = "KEY_COLUMNS"
+  final val PARTITION_BY = "partition_by"
+  final val REPLICATE = "replicate"
+  final val BUCKETS = "buckets"
+  final val KEY_COLUMNS = "key_columns"
 
-  // these two are obsolete column table properties only for backward compatibility
-  final val COLUMN_BATCH_SIZE_TRANSIENT = "COLUMN_BATCH_SIZE_TRANSIENT"
-  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "COLUMN_MAX_DELTA_ROWS_TRANSIENT"
+  // these three are obsolete column table properties only for backward compatibility
+  final val COLUMN_BATCH_SIZE_TRANSIENT = "column_batch_size_transient"
+  final val COLUMN_MAX_DELTA_ROWS_TRANSIENT = "column_max_delta_rows_transient"
+  final val RELATION_FOR_SAMPLE = "relation_for_sample"
 
   val ddlOptions: Seq[String] = Seq(INDEX_NAME, COLUMN_BATCH_SIZE,
     COLUMN_BATCH_SIZE_TRANSIENT, COLUMN_MAX_DELTA_ROWS,
@@ -138,6 +142,7 @@ object ExternalStoreUtils {
       props.put("url", url)
       addProperty(props, "maxActive", defaultMaxPoolSize)
       addProperty(props, "maxIdle", defaultMaxPoolSize)
+      addProperty(props, "minIdle", "4")
       addProperty(props, "initialSize", "4")
       addProperty(props, "testOnBorrow", "true")
       // embedded validation check is cheap
@@ -179,7 +184,11 @@ object ExternalStoreUtils {
     }
   }
 
-  def removeInternalProps(parameters: mutable.Map[String, String]): String = {
+  val emptyCIMutableMap: CaseInsensitiveMutableHashMap[String] =
+    new CaseInsensitiveMutableHashMap[String](Map.empty)
+
+  def removeInternalPropsAndGetTable(parameters: mutable.Map[String, String],
+      tableAsUpper: Boolean = true): String = {
     val dbtableProp = SnappyExternalCatalog.DBTABLE_PROPERTY
     val table = parameters.remove(dbtableProp)
         .getOrElse(sys.error(s"Option '$dbtableProp' not specified"))
@@ -188,7 +197,7 @@ object ExternalStoreUtils {
     // remove the "path" property added by Spark hive catalog
     parameters.remove("path")
     parameters.remove("serialization.format")
-    table
+    if (tableAsUpper) Utils.toUpperCase(table) else Utils.toLowerCase(table)
   }
 
   def removeSamplingOptions(
@@ -203,11 +212,23 @@ object ExternalStoreUtils {
     optSequence.map(key => {
       val value = parameters.remove(key)
       value match {
-        case Some(v) => optMap += (Utils.toLowerCase(key) -> v)
+        case Some(v) => optMap += key -> v
         case None => // Do nothing
       }
     })
     new CaseInsensitiveMap(optMap.toMap)
+  }
+
+  def getLdapGroupsForUser(userId: String): Array[String] = {
+    val auth = Misc.getMemStoreBooting.getDatabase.getAuthenticationService.
+      asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
+
+    auth match {
+      case x: LDAPAuthenticationSchemeImpl => x.getLdapGroupsOfUser(userId).
+        toArray[String](Array.empty)
+      case _ => throw new NameNotFoundException("Require LDAP authentication scheme for " +
+        "LDAP group support but is " + auth)
+    }
   }
 
   def getExpandedGranteesIterator(grantees: Seq[String]): Iterator[String] = {
@@ -239,7 +260,7 @@ object ExternalStoreUtils {
   }
 
   def validateAndGetAllProps(session: Option[SparkSession],
-      parameters: mutable.Map[String, String]): ConnectionProperties = {
+      parameters: CaseInsensitiveMutableHashMap[String]): ConnectionProperties = {
 
     val url = parameters.remove("url").getOrElse(defaultStoreURL(
       session.map(_.sparkContext)))
@@ -253,16 +274,16 @@ object ExternalStoreUtils {
     val poolImpl = parameters.remove("poolimpl")
     val poolProperties = parameters.remove("poolproperties")
 
-    val hikariCP = poolImpl.map(Utils.toLowerCase) match {
-      case Some("hikari") => true
-      case Some("tomcat") => false
-      case Some(p) =>
-        throw new IllegalArgumentException("ExternalStoreUtils: " +
-            s"unsupported pool implementation '$p' " +
-            s"(supported values: tomcat, hikari)")
+    val hikariCP = poolImpl match {
       case None => Constant.DEFAULT_USE_HIKARICP
+      case Some(s) if s.equalsIgnoreCase("tomcat") => false
+      case Some(s) if s.equalsIgnoreCase("hikari") => true
+      case _ =>
+        throw new IllegalArgumentException("ExternalStoreUtils: " +
+            s"unsupported pool implementation '${poolImpl.get}' " +
+            s"(supported values: tomcat, hikari)")
     }
-    val poolProps = poolProperties.map(p => Map(p.split(",").map { s =>
+    val poolProps = poolProperties.map(p => Map(p.split(',').map { s =>
       val eqIndex = s.indexOf('=')
       if (eqIndex >= 0) {
         (s.substring(0, eqIndex).trim, s.substring(eqIndex + 1).trim)
@@ -281,7 +302,7 @@ object ExternalStoreUtils {
     val connProps = new Properties()
     val executorConnProps = new Properties()
     parameters.foreach { kv =>
-      if (!ddlOptions.contains(Utils.toUpperCase(kv._1))) {
+      if (!ddlOptions.contains(Utils.toLowerCase(kv._1))) {
         connProps.setProperty(kv._1, kv._2)
         executorConnProps.setProperty(kv._1, kv._2)
       }
@@ -299,7 +320,7 @@ object ExternalStoreUtils {
         connProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         executorConnProps.setProperty(ClientAttribute.ROUTE_QUERY, "false")
         // increase the lob-chunk-size to match/exceed column batch size
-        val batchSize = parameters.get(COLUMN_BATCH_SIZE.toLowerCase) match {
+        val batchSize = parameters.get(COLUMN_BATCH_SIZE) match {
           case Some(s) => sizeAsBytes(s, COLUMN_BATCH_SIZE)
           case None => session.map(defaultColumnBatchSize).getOrElse(
             sizeAsBytes(Property.ColumnBatchSize.defaultValue.get, Property.ColumnBatchSize.name))
@@ -422,7 +443,7 @@ object ExternalStoreUtils {
     if (indexedCols.contains(col)) Some(a.withName("\"" + col + '"'))
     else {
       // case-insensitive check
-      val ucol = Utils.toUpperCase(col)
+      val ucol = Utils.toLowerCase(col)
       if ((col ne ucol) && indexedCols.contains(ucol)) Some(a) else None
     }
   }
@@ -459,6 +480,8 @@ object ExternalStoreUtils {
       checkIndexedColumn(a, indexedCols).map(expressions.StartsWith(_, v))
     case expressions.In(a: Attribute, v) =>
       checkIndexedColumn(a, indexedCols).map(expressions.In(_, v))
+    case DynamicInSet(a: Attribute, v) =>
+      checkIndexedColumn(a, indexedCols).map(DynamicInSet(_, v))
     // At least one column should be indexed for the AND condition to be
     // evaluated efficiently
     // Commenting out the below conditions for SNAP-2463. This needs to be fixed
@@ -492,8 +515,8 @@ object ExternalStoreUtils {
    * @return A Catalyst schema corresponding to columns in the given order.
    */
   def pruneSchema(fieldMap: scala.collection.Map[String, StructField],
-      columns: Array[String], columnType: String): StructType = {
-    new StructType(columns.map { col =>
+      columns: Seq[String], columnType: String): StructType = {
+    StructType(columns.map { col =>
       fieldMap.get(col) match {
         case None => throw new AnalysisException("Cannot resolve " +
             s"""$columnType column name "$col" among (${fieldMap.keys.mkString(", ")})""")
@@ -615,7 +638,7 @@ object ExternalStoreUtils {
     (ctx, cleanedSource)
   }
 
-  def getExternalStoreOnExecutor(parameters: mutable.Map[String, String],
+  def getExternalStoreOnExecutor(parameters: CaseInsensitiveMutableHashMap[String],
       partitions: Int, tableName: String, schema: StructType): ExternalStore = {
     val connProperties: ConnectionProperties =
       ExternalStoreUtils.validateAndGetAllProps(None, parameters)
@@ -710,6 +733,47 @@ object ExternalStoreUtils {
 
   def getSQLListener: AtomicReference[SQLListener] = {
     SparkSession.sqlListener
+  }
+
+  def setSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {
+    var clientStmt: Option[Statement] = None
+    if (catalogVersion != -1) {
+      try {
+        clientStmt = Option(conn.createStatement())
+        clientStmt match {
+          case Some(c: ClientStatement) =>
+            val clientConn = c.getConnection
+            clientConn.setCommonStatementAttributes(
+              new io.snappydata.thrift.StatementAttrs().setCatalogVersion(catalogVersion))
+          case _ =>
+        }
+      } catch {
+        case sqle: SQLException =>
+          throw new java.io.IOException(sqle.toString, sqle)
+      } finally {
+        clientStmt.foreach(s => s.close())
+      }
+    }
+  }
+
+  def resetSchemaVersionOnConnection(catalogVersion: Long, conn: Connection): Unit = {
+    var clientStmt: Option[Statement] = None
+    if (catalogVersion != -1) {
+      try {
+        clientStmt = Option(conn.createStatement())
+        clientStmt match {
+          case Some(c: ClientStatement) =>
+            c.getConnection.setCommonStatementAttributes(null)
+          case _ =>
+        }
+      } catch {
+        case sqle: SQLException =>
+        // ignored
+      }
+      finally {
+        clientStmt.foreach(s => s.close())
+      }
+    }
   }
 }
 

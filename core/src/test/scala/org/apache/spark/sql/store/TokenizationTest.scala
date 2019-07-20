@@ -19,7 +19,8 @@ package org.apache.spark.sql.store
 import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.core.{Data, TestData2}
-import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
+import io.snappydata.{Property, SnappyFunSuite, SnappyTableStatsProviderService}
+import jdk.internal.org.objectweb.asm.tree.analysis.AnalyzerException
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -39,11 +40,14 @@ class TokenizationTest
   val table = "my_table"
   val table2 = "my_table2"
   val all_typetable = "my_table3"
+  var planCaching : Boolean = false
 
   override def beforeAll(): Unit = {
     // System.setProperty("org.codehaus.janino.source_debugging.enable", "true")
     System.setProperty("spark.sql.codegen.comments", "true")
     System.setProperty("spark.testing", "true")
+    planCaching = Property.PlanCaching.get(snc.sessionState.conf)
+    Property.PlanCaching.set(snc.sessionState.conf, true)
     super.beforeAll()
   }
 
@@ -51,6 +55,7 @@ class TokenizationTest
     // System.clearProperty("org.codehaus.janino.source_debugging.enable")
     System.clearProperty("spark.sql.codegen.comments")
     System.clearProperty("spark.testing")
+    Property.PlanCaching.set(snc.sessionState.conf, planCaching)
     super.afterAll()
   }
 
@@ -397,7 +402,6 @@ class TokenizationTest
 
       val cacheMap = SnappySession.getPlanCache.asMap()
       assert(cacheMap.size() == 1)
-
       newSession.sql(s"set snappydata.sql.planCaching=false").collect()
       assert(cacheMap.size() == 1)
 
@@ -413,8 +417,7 @@ class TokenizationTest
       newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
-      SnappySession.getPlanCache.invalidateAll()
-      assert(cacheMap.size() == 0)
+      cacheMap.clear()
 
       q.zipWithIndex.foreach { case (x, i) =>
         var result = newSession.sql(x).collect()
@@ -428,7 +431,7 @@ class TokenizationTest
       cacheMap.clear()
 
       val newSession2 = new SnappySession(snc.sparkSession.sparkContext)
-
+      Property.PlanCaching.set(newSession2.sessionState.conf, true)
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -439,14 +442,15 @@ class TokenizationTest
         })
       }
 
-      assert(cacheMap.size() == 1)
+      assert(SnappySession.getPlanCache.asMap().size() == 1)
       newSession.clear()
       newSession2.clear()
       cacheMap.clear()
 
       val newSession3 = new SnappySession(snc.sparkSession.sparkContext)
-      newSession3.sql(s"set snappydata.sql.tokenize=false").collect()
-
+      newSession3.sql(s"set snappydata.sql.tokenize=false")
+      // check that SQLConf property names are case-insensitive
+      newSession3.sql(s"set snappydata.sql.plancaching=true")
       assert(cacheMap.size() == 0)
 
       q.zipWithIndex.foreach { case (x, i) =>
@@ -1029,12 +1033,20 @@ class TokenizationTest
     // null, non-null combinations of updates
 
     // implicit int to string cast will cause it to be null (SNAP-2039)
-    res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
-        "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
-    val numUpdated0 = res2.foldLeft(0L)(_ + _.getLong(0))
-    assert(numUpdated0 > 0)
-    assert(snc.sql(s"select * from $colTableName where depdelay = 0 and arrdelay > 0 " +
-        "and airtime > 350 and dest is not null").collect().length === 0)
+    // Update [SNAP-2052]: this behavior is updated to fail the update query if a string expression is
+    // as part of arithmetic operator in update expression. Explicity casting the srring to int is a
+    // workaround. However, it is important to note that casting a non-numeric string value to int will
+    // still end up in a NULL.
+    try {
+      res2 = snc.sql(s"update $colTableName set DEST = DEST + 1000 where " +
+          "depdelay = 0 and arrdelay > 0 and airtime > 350").collect()
+      fail("AnalyzerException was expected here")
+    } catch {
+      case ex: AnalysisException =>
+        val expectedMessage = "Implicit type casting of string type to numeric type is not performed" +
+            " for update statements.;"
+        assertResult(expectedMessage)(ex.getMessage)
+    }
 
     // check null updates
     res2 = snc.sql(s"update $colTableName set DEST = null where " +

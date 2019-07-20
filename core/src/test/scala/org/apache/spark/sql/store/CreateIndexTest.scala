@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable.ListBuffer
@@ -220,13 +219,9 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql(
       s"""create table $tableName("version" BIGINT NOT NULL,
         "value" VARCHAR(20), PRIMARY KEY ("version"))""")
-    // fail index creation with incorrect case
-    try {
-      snContext.sql(s"CREATE UNIQUE INDEX $indexName ON $tableName (version)")
-      fail("expected exception with unquoted identifier")
-    } catch {
-      case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
-    }
+    // index creation should succeed with unquoted or quoted name (case-insensitive)
+    snContext.sql(s"CREATE UNIQUE INDEX $indexName ON $tableName (version)")
+    snContext.sql(s"DROP INDEX $indexName")
     snContext.sql(s"""CREATE UNIQUE INDEX $indexName ON $tableName ("version")""")
     val schema = snContext.table(tableName).schema
 
@@ -248,15 +243,11 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       """("version" BIGINT NOT NULL,
         "value" VARCHAR(20), PRIMARY KEY ("version"))""",
       Map.empty[String, String], allowExisting = false)
-    // fail index creation with incorrect case
-    try {
-      snContext.createIndex(indexName, tableName, Seq("Version" -> None),
-        Map("INDEX_TYPE" -> "UNIQUE"))
-      fail("expected exception with incorrect case")
-    } catch {
-      case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
-    }
+    // index creation should succeed with unquoted or quoted name (case-insensitive)
     snContext.createIndex(indexName, tableName, Seq("version" -> None),
+      Map("INDEX_TYPE" -> "UNIQUE"))
+    snContext.dropIndex(indexName, ifExists = false)
+    snContext.createIndex(indexName, tableName, Seq("Version" -> None),
       Map("INDEX_TYPE" -> "UNIQUE"))
 
     ds.write.insertInto(tableName)

@@ -18,15 +18,13 @@ package org.apache.spark.sql.internal;
 
 import javax.annotation.concurrent.GuardedBy;
 
+import com.pivotal.gemfirexd.internal.engine.Misc;
 import io.snappydata.sql.catalog.SnappyExternalCatalog;
 import io.snappydata.sql.catalog.impl.SmartConnectorExternalCatalog;
 import org.apache.spark.SparkContext;
 import org.apache.spark.sql.*;
 import org.apache.spark.sql.catalyst.catalog.ExternalCatalog;
-import org.apache.spark.sql.catalyst.catalog.GlobalTempViewManager;
-import org.apache.spark.sql.catalyst.catalog.SessionCatalog;
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan;
-import org.apache.spark.sql.collection.Utils;
 import org.apache.spark.sql.execution.CacheManager;
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils;
 import org.apache.spark.sql.execution.ui.SQLListener;
@@ -45,8 +43,6 @@ import org.apache.spark.ui.SparkUI;
  */
 public final class SnappySharedState extends SharedState {
 
-  public static String SPARK_DEFAULT_SCHEMA = Utils.toUpperCase(SessionCatalog.DEFAULT_DATABASE());
-
   /**
    * Instance of {@link SnappyCacheManager} to enable clearing cached plans.
    */
@@ -56,12 +52,6 @@ public final class SnappySharedState extends SharedState {
    * The ExternalCatalog implementation used for SnappyData in embedded mode.
    */
   private final HiveExternalCatalog embedCatalog;
-
-  /**
-   * Overrides to use upper-case "database" name as assumed by SnappyData
-   * conventions to follow other normal DBs.
-   */
-  private final GlobalTempViewManager globalViewManager;
 
   /**
    * Used to skip initializing meta-store in super's constructor.
@@ -131,13 +121,16 @@ public final class SnappySharedState extends SharedState {
    * Private constructor that allows sharing the global temp views and cache.
    */
   private SnappySharedState(SparkContext sparkContext, CacheManager cacheManager,
-      HiveExternalCatalog externalCatalog, GlobalTempViewManager globalViewManager) {
+      HiveExternalCatalog externalCatalog) {
     super(sparkContext);
 
     // avoid inheritance of activeSession
     SparkSession.clearActiveSession();
 
     this.snappyCacheManager = cacheManager == null ? new SnappyCacheManager() : cacheManager;
+
+    // ensure store catalog is initialized
+    Misc.getMemStoreBooting().getExistingExternalCatalog();
     if (externalCatalog == null) {
       ClusterMode clusterMode = SnappyContext.getClusterMode(sparkContext);
       if (clusterMode instanceof ThinClientConnectorMode) {
@@ -150,25 +143,15 @@ public final class SnappySharedState extends SharedState {
       this.embedCatalog = externalCatalog;
     }
 
-    if (globalViewManager == null) {
-      // Initialize global temporary view manager with upper-case schema name to match
-      // the convention used by SnappyData.
-      String globalSchemaName = Utils.toUpperCase(super.globalTempViewManager().database());
-      this.globalViewManager = new GlobalTempViewManager(globalSchemaName);
-    } else {
-      this.globalViewManager = globalViewManager;
-    }
-
     this.initialized = true;
   }
 
   public static SnappySharedState create(SparkContext sparkContext) {
-    return create(sparkContext, null, null, null);
+    return create(sparkContext, null, null);
   }
 
   private static synchronized SnappySharedState create(SparkContext sparkContext,
-      CacheManager cacheManager, HiveExternalCatalog externalCatalog,
-      GlobalTempViewManager globalViewManager) {
+      CacheManager cacheManager, HiveExternalCatalog externalCatalog) {
     // force in-memory catalog to avoid initializing external hive catalog at this point
     final String catalogImpl = sparkContext.conf().get(CATALOG_IMPLEMENTATION, null);
     // there is a small thread-safety issue in that if multiple threads
@@ -179,7 +162,7 @@ public final class SnappySharedState extends SharedState {
     createListenerAndUI(sparkContext);
 
     final SnappySharedState sharedState = new SnappySharedState(sparkContext,
-        cacheManager, externalCatalog, globalViewManager);
+        cacheManager, externalCatalog);
 
     // reset the catalog implementation to original
     if (catalogImpl != null) {
@@ -229,16 +212,6 @@ public final class SnappySharedState extends SharedState {
     }
   }
 
-  @Override
-  public GlobalTempViewManager globalTempViewManager() {
-    if (this.initialized) {
-      return this.globalViewManager;
-    } else {
-      // in super constructor, no harm in returning super's value at this point
-      return super.globalTempViewManager();
-    }
-  }
-
   /**
    * Create a Spark hive shared state while sharing the global temp view and cache managers.
    */
@@ -261,8 +234,7 @@ public final class SnappySharedState extends SharedState {
     } else {
       hiveCatalog = new HiveExternalCatalog(context.conf(), context.hadoopConfiguration());
     }
-    return (this.hiveState = create(context, this.snappyCacheManager, hiveCatalog,
-        this.globalViewManager));
+    return (this.hiveState = create(context, this.snappyCacheManager, hiveCatalog));
   }
 
   public synchronized SharedState getHiveSharedState() {

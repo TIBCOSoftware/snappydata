@@ -209,19 +209,21 @@ object RuleUtils extends PredicateHelper {
             r.collectFirst { case a: AttributeReference => a }
           }
     }.groupBy(_.map(_.qualifier)).collect { case (table, cols)
-      if table.nonEmpty & table.get.nonEmpty => (
+      if table.nonEmpty && table.get.nonEmpty => (
         table.get.get,
         cols.collect { case a if a.nonEmpty => a.get })
     }
 
+    val currentSchema = snappySession.getCurrentSchema
     val satisfyingPartitionColumns = for {
       (table, indexes) <- RuleUtils.fetchIndexes(snappySession, child)
       filterCols <- columnGroups.collectFirst {
         case (t, predicates) if predicates.nonEmpty =>
           table match {
-            case LogicalRelation(b: ColumnFormatRelation, _, _) if b.table.indexOf(t) > 0 =>
+            case LogicalRelation(b: ColumnFormatRelation, _, _)
+              if b.table.equalsIgnoreCase(t) || b.table.equalsIgnoreCase(s"$currentSchema.$t") =>
               predicates
-            case SubqueryAlias(alias, _, _) if alias.equals(t) =>
+            case SubqueryAlias(alias, _, _) if alias.equalsIgnoreCase(t) =>
               predicates
             case _ => Nil
           }
