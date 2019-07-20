@@ -19,7 +19,7 @@ package io.snappydata.hydra.preparedStmt
 import java.io.PrintWriter
 
 import scala.util.{Failure, Success, Try}
-
+import com.typesafe.config.Config
 import org.apache.spark.sql.types.StructType
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
