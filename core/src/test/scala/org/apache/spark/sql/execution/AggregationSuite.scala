@@ -16,9 +16,11 @@
  */
 package org.apache.spark.sql.execution
 
+import java.sql.Timestamp
+
 import io.snappydata.{Property, SnappyFunSuite}
 
-import org.apache.spark.sql.{Row, SnappySession, SparkSession}
+import org.apache.spark.sql.{Row, SparkSession}
 
 class AggregationSuite extends SnappyFunSuite {
 
@@ -79,5 +81,35 @@ class AggregationSuite extends SnappyFunSuite {
     val res = snappy.sql("SELECT id, part.lock, part.key FROM json " +
         "LATERAL VIEW explode(parts) partTable AS part")
     checkAnswer(res, Seq(Row(1, "One lock", "single key"), Row(1, "2 lock", "2 key")))
+  }
+
+  test("interval expression and literals") {
+    val snappy = snc.snappySession
+    val ts = "2019-05-20 02:04:01"
+    val tsTime = Timestamp.valueOf(ts).getTime
+
+    var expr = s"select timestamp('$ts') + interval 4 hours"
+    assert(snappy.sql(expr).collect() ===
+        Array(Row(new Timestamp(tsTime + 4L * 3600000L))))
+
+    expr = s"select timestamp('$ts') + interval '4' hours 3 mins"
+    assert(snappy.sql(expr).collect() ===
+        Array(Row(new Timestamp(tsTime + 4L * 3600000L + 3L * 60000L))))
+
+    expr = s"select timestamp('$ts') + interval hour('$ts') hours"
+    assert(snappy.sql(expr).collect() ===
+        Array(Row(new Timestamp(tsTime + 2L * 3600000L))))
+
+    expr = s"select timestamp('$ts') + interval hour('$ts') hours 3 minutes"
+    assert(snappy.sql(expr).collect() ===
+        Array(Row(new Timestamp(tsTime + 2L * 3600000L + 3L * 60000L))))
+
+    expr = s"select timestamp('$ts') + interval minute('$ts') minutes '3' secs"
+    assert(snappy.sql(expr).collect() ===
+        Array(Row(new Timestamp(tsTime + 4L * 60000L + 3L * 1000L))))
+
+    expr = s"select timestamp('$ts') + interval 4 hours second('$ts') seconds"
+    assert(snappy.sql(expr).collect() ===
+        Array(Row(new Timestamp(tsTime + 4L * 3600000L + 1L * 1000L))))
   }
 }
