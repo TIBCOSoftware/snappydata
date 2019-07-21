@@ -202,7 +202,7 @@ class SparkSQLExecuteImpl(val sql: String,
       relations.foreach { relation =>
         if (relation.output.map(_.exprId.id).contains(a.exprId.id)) {
           return Some(Seq(relation.catalogTable.get.identifier.database.getOrElse(""),
-              relation.catalogTable.get.identifier.table).mkString(","))
+              relation.catalogTable.get.identifier.table).mkString("."))
         }
       }
       None
@@ -215,10 +215,9 @@ class SparkSQLExecuteImpl(val sql: String,
               .map(_.asInstanceOf[AttributeReference])
           // for 'SELECT 1...', 'SELECT col1...', 'SELECT col1 * col2...' queries
           // attributes size will be 0, 1, 2 respectively
-          val qualifier = getQualifier(attributes.head)
-          if (attributes.size > 0 && qualifier.isDefined) {
+          if (attributes.size > 0 && getQualifier(attributes.head).isDefined) {
             // here 1st attribute is considered. Need to check if this behaviour is ok
-            projExp.toAttribute.withQualifier(qualifier)
+            projExp.toAttribute.withQualifier(getQualifier(attributes.head))
           } else {
             projExp.toAttribute
           }
