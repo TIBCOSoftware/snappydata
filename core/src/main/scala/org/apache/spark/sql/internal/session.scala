@@ -145,7 +145,8 @@ class SnappyConf(@transient val session: SnappySession)
     case Property.EnableHiveSupport.name =>
       value match {
         case Some(boolVal) => session.enableHiveSupport = boolVal.toString.toBoolean
-        case None => session.enableHiveSupport = Property.EnableHiveSupport.defaultValue.get
+        case None => session.enableHiveSupport = Property.EnableHiveSupport.defaultValue.get ||
+            SnappyContext.hasNonDefaultHiveMetastoreConf
       }
       key
 

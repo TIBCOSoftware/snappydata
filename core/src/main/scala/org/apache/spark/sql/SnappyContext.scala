@@ -35,6 +35,7 @@ import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+import org.apache.hadoop.hive.conf.HiveConf
 
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -814,6 +815,7 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  @volatile private[this] var _hasNonDefaultHiveMetastoreConf: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
 
@@ -1123,11 +1125,33 @@ object SnappyContext extends Logging {
               case _ => // Nothing
             }
           }
+          _hasNonDefaultHiveMetastoreConf = hasNonDefaultHiveMetastoreConf(sc)
           _globalSNContextInitialized = true
         }
       }
     }
   }
+
+  private def hasNonDefaultHiveMetastoreConf(sparkContext: SparkContext): Boolean = {
+    // check for hive config XMLs in default classpath
+    val classLoader = Thread.currentThread.getContextClassLoader match {
+      case null => classOf[HiveConf].getClassLoader
+      case cl => cl
+    }
+    if (classLoader.getResource("hive-default.xml") != null ||
+        classLoader.getResource("hive-site.xml") != null ||
+        classLoader.getResource("hivemetastore-site.xml") != null) {
+      return true
+    }
+    // next check for any explicit hive metastore settings in SparkConf
+    val sparkConf = sparkContext.conf
+    for (v <- HiveConf.ConfVars.values()) {
+      if (sparkConf.contains(v.varname)) return true
+    }
+    false
+  }
+
+  def hasNonDefaultHiveMetastoreConf: Boolean = _hasNonDefaultHiveMetastoreConf
 
   private[sql] def sharedState(sc: SparkContext): SnappySharedState = {
     var state = _sharedState
@@ -1211,6 +1235,7 @@ object SnappyContext extends Logging {
     }
     contextLock.synchronized {
       _clusterMode = null
+      _hasNonDefaultHiveMetastoreConf = false
       _globalSNContextInitialized = false
       _globalContextInitialized = false
     }

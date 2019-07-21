@@ -94,8 +94,9 @@ object Property extends Enumeration {
         "but starts the service in background.", Some(true), prefix = null)
 
   val EnableHiveSupport: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.enableHiveSupport", "Property on SnappySession to " +
-        "enable external hive meta-store support as configured using SparkConf and hive-site.xml",
+    s"${Constant.PROPERTY_PREFIX}sql.enableHiveSupport", "Property on SnappySession to enable " +
+        "external hive meta-store support as configured using SparkConf and hive-site.xml. " +
+        "Default is true when non-default hive meta-store properties are set and false otherwise.",
     Some(false))
 
   val HiveCompatible: SQLValue[Boolean] = SQLVal(
