@@ -40,6 +40,7 @@ import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsP
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
+import org.apache.spark.internal.config.ConfigEntry
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
@@ -301,7 +302,11 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
   private[sql] var disableHashJoin: Boolean = Property.DisableHashJoin.get(sessionState.conf)
 
   @transient
-  private[sql] var enableHiveSupport: Boolean = Property.EnableHiveSupport.get(sessionState.conf)
+  private[sql] var enableHiveSupport: Boolean = {
+    sessionState.conf.getConf(
+      Property.EnableHiveSupport.configEntry.entry.asInstanceOf[ConfigEntry[Boolean]],
+      Property.EnableHiveSupport.defaultValue.get || SnappyContext.hasNonDefaultHiveMetastoreConf)
+  }
 
   @transient
   private var sqlWarnings: SQLWarning = _

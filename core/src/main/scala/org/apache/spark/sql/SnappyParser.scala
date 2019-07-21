@@ -335,7 +335,7 @@ class SnappyParser(session: SnappySession)
   }
 
   final def alias: Rule1[String] = rule {
-    AS ~ identifierAs | strictIdentifier
+    AS ~ identifierExt | strictIdentifier
   }
 
   final def namedExpression: Rule1[Expression] = rule {

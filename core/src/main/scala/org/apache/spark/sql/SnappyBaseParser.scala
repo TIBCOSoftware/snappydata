@@ -169,16 +169,6 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     quotedIdentifier
   }
 
-  /** allow for first character of unquoted identifier to be a numeric */
-  protected final def identifierAs: Rule1[String] = rule {
-    atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
-      val ucase = Utils.toUpperCase(s)
-      test(!Consts.reservedKeywords.contains(ucase)) ~
-          push(if (caseSensitive) s else ucase)
-    } |
-    quotedIdentifier
-  }
-
   protected final def quotedIdentifier: Rule1[String] = rule {
     atomic('`' ~ capture((noneOf("`") | "``"). +) ~ '`') ~ ws ~> { (s: String) =>
       if (s.indexOf("``") >= 0) s.replace("``", "`") else s
@@ -312,7 +302,8 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     columnCharType | primitiveType | arrayType | mapType | structType
   }
 
-  protected final def tableIdentifierPart: Rule1[String] = rule {
+  /** allow for first character of unquoted identifier to be a numeric */
+  protected final def identifierExt: Rule1[String] = rule {
     atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
@@ -332,13 +323,13 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (tableIdentifierPart ~ '.' ~ ws).? ~ tableIdentifierPart ~> ((schema: Any, table: String) =>
+    (identifierExt ~ '.' ~ ws).? ~ identifierExt ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
   final def packageIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (tableIdentifierPart ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
+    (identifierExt ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
@@ -706,7 +697,7 @@ object SnappyParserConsts {
   final val TEMP: Keyword = new Keyword("temp")
   final val TRIGGER: Keyword = new Keyword("trigger")
   final val UNCACHE: Keyword = new Keyword("uncache")
-  final val UNIQUE: Keyword = new Keyword("unique")
   final val UNDEPLOY: Keyword = new Keyword("undeploy")
+  final val UNIQUE: Keyword = new Keyword("unique")
   final val UNSET: Keyword = new Keyword("unset")
 }

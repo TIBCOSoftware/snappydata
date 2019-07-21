@@ -43,7 +43,6 @@ import org.apache.log4j.{Level, LogManager}
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
@@ -262,8 +261,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val hiveState = sharedState.getHiveSharedState
           if (hiveState ne null) {
             allCatalogTables ++= SnappyExternalCatalog.getAllTables(hiveState.externalCatalog, Nil)
-                .map(t => t.copy(identifier = new TableIdentifier(Utils.toUpperCase(
-                  t.identifier.table), t.identifier.database.map(Utils.toUpperCase))))
+                .map(t => t.copy(identifier = new TableIdentifier(t.identifier.table,
+                  t.identifier.database)))
           }
         }
         for (table <- allCatalogTables) {
