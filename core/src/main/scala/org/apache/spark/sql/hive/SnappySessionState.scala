@@ -27,7 +27,6 @@ import io.snappydata.Property
 import io.snappydata.Property.HashAggregateSize
 
 import org.apache.spark.Partition
-import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateSubqueryAliases, EliminateUnions, NoSuchTableException, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation}
@@ -50,6 +49,7 @@ import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
 import org.apache.spark.sql.types._
+import org.apache.spark.sql.{Strategy, _}
 import org.apache.spark.streaming.Duration
 
 
@@ -81,24 +81,16 @@ class SnappySessionState(val snappySession: SnappySession)
     new StreamingQueryManager(snappySession)
   }
 
-  private[sql] lazy val hiveState: HiveSessionState = {
-    // switch the shared state to that of hive temporarily
-    snappySession.setSharedState(snappySharedState.getOrCreateHiveSharedState)
-    try {
-      val state = new HiveSessionState(snappySession)
-      snappySession.setSessionState(state)
-      try {
-        // initialize lazy members
-        state.metadataHive
-        state.catalog
-        state
-      } finally {
-        snappySession.setSessionState(this)
-      }
-    } finally {
-      snappySession.setSharedState(snappySharedState)
-    }
+  private[sql] lazy val hiveSession: SparkSession = {
+    val session = SnappyContext.newHiveSession()
+    val hiveConf = session.sessionState.conf
+    conf.foreach(hiveConf.setConfString)
+    hiveConf.setConfString(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
+    session
   }
+
+  private[sql] lazy val hiveState: HiveSessionState =
+    hiveSession.sessionState.asInstanceOf[HiveSessionState]
 
   /**
    * Execute a method switching the session and shared states in the session to external hive.
@@ -106,18 +98,14 @@ class SnappySessionState(val snappySession: SnappySession)
    * since session/shared states may be read from the session dynamically inside the body of
    * given function that will expect it to be the external hive ones.
    */
-  private[sql] def withHiveState[T](f: => T): T = {
-    snappySession.setSharedState(snappySharedState.getOrCreateHiveSharedState)
-    snappySession.setSessionState(hiveState)
+  private[sql] def withHiveSession[T](f: => T): T = {
+    SparkSession.setActiveSession(hiveSession)
     try {
       f
     } finally {
-      snappySession.setSessionState(this)
-      snappySession.setSharedState(snappySharedState)
+      SparkSession.setActiveSession(snappySession)
     }
   }
-
-  private[sql] def hiveSessionCatalog: HiveSessionCatalog = hiveState.catalog
 
   override lazy val sqlParser: SnappySqlParser =
     contextFunctions.newSQLParser(this.snappySession)
@@ -804,7 +792,7 @@ class HiveConditionalRule(rule: HiveSessionState => Rule[LogicalPlan], state: Sn
   override def apply(plan: LogicalPlan): LogicalPlan = {
     // Parquet/Orc conversion rules will indirectly read the session state from the session
     // so switch to it and restore at the end
-    if (state.snappySession.enableHiveSupport) state.withHiveState {
+    if (state.snappySession.enableHiveSupport) state.withHiveSession {
       rule(state.hiveState)(plan)
     } else plan
   }
@@ -816,7 +804,7 @@ class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: Snapp
     val session = state.snappySession
     // some strategies like DataSinks read the session state and expect it to be
     // HiveSessionState so switch it before invoking the strategy and restore at the end
-    if (session.enableHiveSupport) state.withHiveState {
+    if (session.enableHiveSupport) state.withHiveSession {
       strategy(state.hiveState.planner.asInstanceOf[HiveStrategies])(plan)
     } else Nil
   }

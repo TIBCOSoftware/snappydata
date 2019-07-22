@@ -311,7 +311,7 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
       Nil
     } else {
-      val sessionState = session.snappySessionState
+      val sessionState = session.sessionState
       val queryShortString = CachedDataFrame.queryStringShortForm(queryString)
       val localProperties = session.sparkContext.getLocalProperties
       val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)

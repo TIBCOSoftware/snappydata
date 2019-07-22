@@ -94,9 +94,15 @@ object Property extends Enumeration {
         "but starts the service in background.", Some(true), prefix = null)
 
   val EnableHiveSupport: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.enableHiveSupport", "Property on SnappySession to enable " +
+    s"${Constant.PROPERTY_PREFIX}sql.hive.enabled", "Property on SnappySession to enable " +
         "external hive meta-store support as configured using SparkConf and hive-site.xml. " +
         "Default is true when non-default hive meta-store properties are set and false otherwise.",
+    Some(false))
+
+  val UseHiveSourceAsDefault: SQLValue[Boolean] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hive.defaultHiveSource", s"When ${EnableHiveSupport.name} " +
+        "is enabled, then use hive datasource as the default when no provider is specified in " +
+        "CREATE TABLE. Default is false in which case 'row' provider is default in SnappySession.",
     Some(false))
 
   val HiveCompatible: SQLValue[Boolean] = SQLVal(

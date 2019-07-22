@@ -256,14 +256,12 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         val hiveTables = new mutable.ArrayBuffer[ExternalTableMetaData]
         var allCatalogTables = externalCatalog.getAllTables()
         // add hive external catalog tables if initialized in any of the sessions
-        val sharedState = SnappyContext.getSharedState
-        if (sharedState ne null) {
-          val hiveState = sharedState.getHiveSharedState
-          if (hiveState ne null) {
+        SnappyContext.getHiveSharedState match {
+          case None =>
+          case Some(hiveState) =>
             allCatalogTables ++= SnappyExternalCatalog.getAllTables(hiveState.externalCatalog, Nil)
                 .map(t => t.copy(identifier = new TableIdentifier(t.identifier.table,
                   t.identifier.database)))
-          }
         }
         for (table <- allCatalogTables) {
           val tableType = CatalogObjectType.getTableType(table)
