@@ -1112,8 +1112,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
            }
           $buildInitCode
 
-
-         //TODO:to tackle case where there is filter on build side
+          //TODO:to tackle case where there is filter on build side
           //such that it is specifically looking for not null values
           // the outer join needs to be converted to inner join
           if ($entryVar == null || $matchFailedCompletely) {
@@ -1133,6 +1132,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
         do { // single iteration loop meant for breaking out with "continue"
           $consumeCode
         } while (false);
+
         if ($entryVar == null || $keyIsUnique) break;
         // values will be repeatedly reassigned in the loop (if any)
         // while keys will remain the same
