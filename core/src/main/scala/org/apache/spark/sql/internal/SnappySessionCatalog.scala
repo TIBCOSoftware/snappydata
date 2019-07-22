@@ -91,7 +91,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
         Constant.DEFAULT_SCHEMA)
     }
     defaultName = formatDatabaseName(IdUtil.getUserAuthorizationId(defaultName).replace('-', '_'))
-    createSchema(defaultName, ignoreIfExists = true)
+    createSchema(defaultName, ignoreIfExists = true, createInStore = false)
     setCurrentDatabase(defaultName)
     defaultName
   }
@@ -321,7 +321,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    * This will never try to create a database in external hive meta-store.
    */
   def createSchema(schemaName: String, ignoreIfExists: Boolean,
-      authId: Option[(String, Boolean)] = None): Unit = {
+      authId: Option[(String, Boolean)] = None, createInStore: Boolean = true): Unit = {
     validateSchemaName(schemaName, checkForDefault = false)
 
     val schemaDescription = s"User $schemaName schema"
@@ -339,7 +339,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
 
     // then in store if catalog was successful
-    createStoreSchema(schemaName, ignoreIfExists, authId)
+    if (createInStore) createStoreSchema(schemaName, ignoreIfExists, authId)
   }
 
   private def createStoreSchema(schema: String, ignoreIfExists: Boolean,

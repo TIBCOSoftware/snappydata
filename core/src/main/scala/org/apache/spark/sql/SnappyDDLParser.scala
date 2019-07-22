@@ -291,8 +291,8 @@ abstract class SnappyDDLParser(session: SnappySession)
       val provider = remaining._1 match {
         case None =>
           // use hive source as default if appropriate is set else use 'row'
-          if (session.enableHiveSupport &&
-              Property.UseHiveSourceAsDefault.get(session.sessionState.conf)) {
+          if (session.enableHiveSupport && !Property.HiveCompatibility.get(
+            session.sessionState.conf).equalsIgnoreCase("default")) {
             DDLUtils.HIVE_PROVIDER
           } else Consts.DEFAULT_SOURCE
         case Some(p) => p
