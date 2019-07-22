@@ -969,21 +969,43 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       snc.sql("insert into dm_base values('abc7', '1', '1', '2')")
       snc.sql("insert into hierarchy_tag_dimension values('xyz7', '1', '1', '2')")
 
-      val rs1 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+    /*
+    val tempRs1 = snc.sql("SELECT * FROM dm_base t1 JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id and  t1.shop_id = t4.shop_id")
+    val temp1  = tempRs1.collect
+    assertEquals(49, temp1.length)
+
+    val tempRs = snc.sql("SELECT * FROM dm_base t1 JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id and  t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)")
+    val temp  = tempRs.collect
+   */
+    val rs = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
         "(SELECT * FROM hierarchy_tag_dimension)" +
         " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
-        "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+        "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)")
+      val rs1 = rs.collect
 
     val count1 = rs1.length
 
+    val rs2 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN (SELECT * " +
+      "FROM hierarchy_tag_dimension ORDER BY outlet_id) t4 ON t1.tenant_id = t4.tenant_id" +
+      " AND t1.shop_id = t4.shop_id AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id);").collect
+
+    val count2 = rs2.length
+    assertEquals(count1, count2)
+
     val snc1 = snc.newSession()
     snc1.setConf("snappydata.sql.disableHashJoin", "true")
-    val rs2 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+    val rs3 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
       "(SELECT * FROM hierarchy_tag_dimension)" +
       " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
       "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
-    val count2 = rs2.length
-    assertEquals(count1, count2)
+    val count3 = rs3.length
+    assertEquals(count2, count3)
+    assertEquals(count1, count3)
 
 
 
