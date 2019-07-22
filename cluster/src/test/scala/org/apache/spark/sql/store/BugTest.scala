@@ -957,57 +957,41 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     snc.sql("insert into hierarchy_tag_dimension values('xyz1', '1', '1', null)")
     snc.sql("insert into dm_base values('abc2', '1', '1', '1')")
-      snc.sql("insert into hierarchy_tag_dimension values('xyz2', '1', '1', null)")
-      snc.sql("insert into dm_base values('abc3', '1', '1', null)")
-      snc.sql("insert into hierarchy_tag_dimension values('xyz3', '1', '1', '1')")
-      snc.sql("insert into dm_base values('abc4', '1', '1', '1')")
-      snc.sql("insert into hierarchy_tag_dimension values('xyz4', '1', '1', '1')")
-      snc.sql("insert into dm_base values('abc5', '1', '1', '2')")
-      snc.sql("insert into hierarchy_tag_dimension values('xyz5', '1', '1', null)")
-      snc.sql("insert into dm_base values('abc6', '1', '1', null)")
-      snc.sql("insert into hierarchy_tag_dimension values('xyz6', '1', '1', '2')")
-      snc.sql("insert into dm_base values('abc7', '1', '1', '2')")
-      snc.sql("insert into hierarchy_tag_dimension values('xyz7', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz2', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc3', '1', '1', null)")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz3', '1', '1', '1')")
+    snc.sql("insert into dm_base values('abc4', '1', '1', '1')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz4', '1', '1', '1')")
+    snc.sql("insert into dm_base values('abc5', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz5', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc6', '1', '1', null)")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz6', '1', '1', '2')")
+    snc.sql("insert into dm_base values('abc7', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz7', '1', '1', '2')")
 
-    /*
-    val tempRs1 = snc.sql("SELECT * FROM dm_base t1 JOIN " +
-      "(SELECT * FROM hierarchy_tag_dimension)" +
-      " t4 ON t1.tenant_id = t4.tenant_id and  t1.shop_id = t4.shop_id")
-    val temp1  = tempRs1.collect
-    assertEquals(49, temp1.length)
 
-    val tempRs = snc.sql("SELECT * FROM dm_base t1 JOIN " +
-      "(SELECT * FROM hierarchy_tag_dimension)" +
-      " t4 ON t1.tenant_id = t4.tenant_id and  t1.shop_id = t4.shop_id " +
-      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)")
-    val temp  = tempRs.collect
-   */
     val rs = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
-        "(SELECT * FROM hierarchy_tag_dimension)" +
-        " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
-        "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)")
-      val rs1 = rs.collect
-
-    val count1 = rs1.length
-
-    val rs2 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN (SELECT * " +
-      "FROM hierarchy_tag_dimension ORDER BY outlet_id) t4 ON t1.tenant_id = t4.tenant_id" +
-      " AND t1.shop_id = t4.shop_id AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id);").collect
-
-    val count2 = rs2.length
-    assertEquals(count1, count2)
-
-    val snc1 = snc.newSession()
-    snc1.setConf("snappydata.sql.disableHashJoin", "true")
-    val rs3 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
       "(SELECT * FROM hierarchy_tag_dimension)" +
       " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
       "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
-    val count3 = rs3.length
-    assertEquals(count2, count3)
-    assertEquals(count1, count3)
 
+    val rs1 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN (SELECT * " +
+      "FROM hierarchy_tag_dimension ORDER BY outlet_id) t4 ON t1.tenant_id = t4.tenant_id" +
+      " AND t1.shop_id = t4.shop_id AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id);").collect
 
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.disableHashJoin", "true")
+    val rs2 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
 
+    checkResultsMatch(rs, rs1)
+    checkResultsMatch(rs, rs2)
+
+    def checkResultsMatch(arr1: Array[Row], arr2: Array[Row]): Unit = {
+      assertEquals(arr1.length, arr2.length)
+      arr1.foreach(row => assert(arr2.contains(row)))
+    }
   }
 }
