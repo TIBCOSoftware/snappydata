@@ -339,8 +339,17 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 }
 
-final class Keyword private[sql] (s: String) {
+final class Keyword private[sql](s: String) {
   val lower: String = Utils.toLowerCase(s)
+
+  override def hashCode(): Int = lower.hashCode
+
+  override def equals(obj: Any): Boolean = {
+    this.eq(obj.asInstanceOf[AnyRef]) ||
+        (obj.isInstanceOf[Keyword] && lower == obj.asInstanceOf[Keyword].lower)
+  }
+
+  override def toString: String = lower
 }
 
 final class ParseException(msg: String, cause: Option[Throwable] = None)
@@ -581,7 +590,7 @@ object SnappyParserConsts {
   final val MILLISECOND: Keyword = nonReservedKeyword("millisecond")
   final val MINUTE: Keyword = nonReservedKeyword("minute")
   final val MONTH: Keyword = nonReservedKeyword("month")
-  final val SECOND: Keyword = nonReservedKeyword("seconds")
+  final val SECOND: Keyword = nonReservedKeyword("second")
   final val WEEK: Keyword = nonReservedKeyword("week")
   final val YEAR: Keyword = nonReservedKeyword("year")
 

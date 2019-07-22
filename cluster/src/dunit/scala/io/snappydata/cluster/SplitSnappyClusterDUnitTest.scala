@@ -380,7 +380,12 @@ class SplitSnappyClusterDUnitTest(s: String)
     val snc = SnappyContext(sc)
     import scala.concurrent.ExecutionContext.Implicits.global
     val testTempDirectory = "/tmp/SplitSnappyClusterDUnitTest"
-
+    def cleanUp = {
+      snc.sql("drop table if exists SYNC_TABLE")
+      snc.sql("drop table if exists USERS")
+      Path(testTempDirectory).deleteRecursively()
+    }
+    cleanUp
     val future = Future {
       vm3.invoke(getClass, "doTestStaleCatalogRetryForStreamingSink",
         startArgs :+ Int.box(locatorClientPort) :+ testTempDirectory)
@@ -401,8 +406,7 @@ class SplitSnappyClusterDUnitTest(s: String)
       }
       Await.result(future, Duration(2, "min"))
     } finally {
-      snc.sql("drop table if exists T6")
-      snc.sql("drop table if exists T5")
+      cleanUp
     }
   }
 
@@ -431,6 +435,39 @@ class SplitSnappyClusterDUnitTest(s: String)
       // perform DDL
       snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
           s"USING column OPTIONS (PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+    } finally {
+      snc.sql("drop table if exists T6")
+      snc.sql("drop table if exists T5")
+    }
+  }
+
+  def testSmartConnectorAfterBucketRebalance(): Unit = {
+    val snc = SnappyContext(sc)
+    snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    snc.sql("insert into t5 values('1', '1')")
+    snc.sql("insert into t5 values('2', '2')")
+    snc.sql("insert into t5 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass,
+        "doTestSmartConnectorForBucketRebalance", startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T5").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing putInto as expected.")
+
+      // rebalance the buckets
+      snc.sql(s"CALL SYS.REBALANCE_ALL_BUCKETS()")
 
       Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
     } finally {
@@ -1151,6 +1188,10 @@ object SplitSnappyClusterDUnitTest
   def doTestStaleCatalogForSNAP3024(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
+    performSmartConnectorOps(locatorClientPort)
+  }
+
+  private def performSmartConnectorOps(locatorClientPort: Int) = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     snc.sql("select * from t5").collect()
@@ -1165,14 +1206,20 @@ object SplitSnappyClusterDUnitTest
         .add(StructField("col1", StringType))
         .add(StructField("col2", StringType))
     val dataFrame = snc.createDataFrame(rdd, schema)
-    import org.apache.spark.sql.snappy._
 
     dataFrame.write.insertInto("T5")
+    // wait for the embedded mode to change the catalog or rebalance buckets
     Thread.sleep(6000)
     // should not throw an exception
     for (i <- 1 to 5) {
       snc.sql("select * from t5").collect()
     }
+  }
+
+  def doTestSmartConnectorForBucketRebalance(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    performSmartConnectorOps(locatorClientPort)
   }
 
   def doTestInsertAfterStaleCatalog(locatorPort: Int,
