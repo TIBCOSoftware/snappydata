@@ -560,7 +560,7 @@ public class SnappyTest implements Serializable {
     ResultSet rs;
     try {
       Connection conn = getLocatorConnection();
-      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead'");
       while (rs.next()) {
         Log.getLogWriter().info("Checking the Lead node status...");
         if (rs.getString("STATUS").equals("RUNNING")) {
@@ -1387,10 +1387,16 @@ public class SnappyTest implements Serializable {
 
   public static void runQuery() throws SQLException {
     Connection conn = getLocatorConnection();
-    String query1 = "SELECT count(*) FROM airline";
-    ResultSet rs = conn.createStatement().executeQuery(query1);
-    while (rs.next()) {
-      Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+    // String query1 = "SELECT count(*) FROM airline";
+    Vector<String> queryVect = SnappyPrms.getQueryList();
+    for (String query : queryVect) {
+      long startTime = System.currentTimeMillis();
+      ResultSet rs = conn.createStatement().executeQuery(query);
+      long endTime = System.currentTimeMillis();
+      while (rs.next()) {
+        // Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+      }
+      Log.getLogWriter().info("Time to executed the query::  " + ((endTime - startTime) / 1000) + " s");
     }
     closeConnection(conn);
   }
@@ -2489,7 +2495,7 @@ public class SnappyTest implements Serializable {
           jobIds.add(jobID);
         }
       }
-      if(jobIds==null) {
+      if (jobIds == null) {
         Log.getLogWriter().info("Failed to start the snappy job.");
         return true;
       }
@@ -2985,8 +2991,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected void
-  cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
+  protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
       lastCycledTime, String vmName, boolean isDmlOp, boolean restart, boolean rebalance) {
     if (!cycleVms) {
       Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
