@@ -205,12 +205,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   final def prepareSQL(sqlText: String, skipPromote: Boolean = false): LogicalPlan = {
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
-    var ap: Analyzer = null
-    if (!skipPromote) {
-      ap = sessionState.analyzerPrepare
-    } else {
-      ap = sessionState.analyzerWithoutPromote
-    }
+    val ap: Analyzer = sessionState.analyzer
     // logInfo(s"KN: Batches ${ap.batches.filter(
     //  _.name.equalsIgnoreCase("Resolution")).mkString("_")}")
     ap.execute(logical)
@@ -1914,9 +1909,12 @@ object SnappySession extends Logging {
   }
 
   private[sql] def setExecutionProperties(localProperties: Properties,
-      executionIdStr: String, queryShortForm: String): Unit = {
+      executionIdStr: String, queryLongForm: String): Unit = {
     localProperties.setProperty(SQLExecution.EXECUTION_ID_KEY, executionIdStr)
-    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortForm)
+    // trim query string to 10K to keep its UTF8 form always < 32K which is the limit
+    // for DataOutput.writeUTF used during task serialization
+    localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION,
+      CachedDataFrame.queryStringShortForm(queryLongForm, 10240))
     localProperties.setProperty(SparkContext.SPARK_JOB_GROUP_ID, executionIdStr)
   }
 
@@ -1949,7 +1947,7 @@ object SnappySession extends Logging {
     val executionIdStr = java.lang.Long.toString(executionId)
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
-    setExecutionProperties(localProperties, executionIdStr, sqlShortText)
+    setExecutionProperties(localProperties, executionIdStr, sqlText)
     var propertiesSet = true
     val start = System.currentTimeMillis()
     try {

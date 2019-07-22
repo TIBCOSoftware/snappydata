@@ -33,6 +33,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import hydra.BasePrms;
 import hydra.HostPrms;
 import hydra.Log;
 import hydra.RemoteTestModule;
@@ -52,7 +53,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected static SnappyAdAnalyticsTest snappyAdAnalyticsTest;
   public static String zookeeperHost = null;
   public static String zookeeperPort = null;
-  public static String kafkaLogDir = null;
+  public static String kafkaLogDir = TestConfig.tab().stringAt(SnappyPrms.kafkaLogDir, null);
   public static int initialBrokerPort = 9092;
   public static int initialBrokerId = 0;
   public static int retryCount = SnappyPrms.getRetryCountForJob();
@@ -72,7 +73,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static String[] getNames(Long key) {
-    Vector vec = TestConfig.tab().vecAt(key, null);
+    Vector vec = BasePrms.tab().vecAt(key, null);
     if(vec == null) return null;
     String[] strArr = new String[vec.size()];
     for (int i = 0; i < vec.size(); i++) {
@@ -81,11 +82,23 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     return strArr;
   }
 
+
   public static String[] getHostNames() {
 
     String[] vmNames = getNames(HostPrms.names);
-    String[] vmHostNames = getNames(HostPrms.hostNames);
-    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    String[] vmHostNames = null;
+    int numServers=0;
+    if(SnappyTest.isUserConfTest) {
+      vmHostNames = getNames(SnappyPrms.hostNames);
+      SnappyBB.getBB().getSharedCounters().zero(SnappyBB.numServers);
+      SnappyBB.getBB().getSharedCounters().setIfLarger(SnappyBB.numServers,vmHostNames.length);
+      Log.getLogWriter().info("The vmHostNames size = " + vmHostNames.length);
+    }
+    else {
+      vmHostNames = getNames(HostPrms.hostNames);
+    }
+    numServers = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    Log.getLogWriter().info("Number of servers = " + numServers);
     hostnames = new String[numServers];
     if(vmHostNames==null) {
       for (int j = 0; j<numServers ;  j++)
@@ -93,8 +106,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     } else {
       int j = 0;
       for (int i = 0; i < vmNames.length; i++) {
-        if (vmNames[i].startsWith("snappyStore")) {
+        if (SnappyTest.isUserConfTest || vmNames[i].startsWith("snappyStore")) {
           hostnames[j] = vmHostNames[i];
+          Log.getLogWriter().info("Host name is " + hostnames[j]);
           j++;
         }
       }
@@ -106,10 +120,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     if (snappyAdAnalyticsTest == null)
       snappyAdAnalyticsTest = new SnappyAdAnalyticsTest();
     if (kafkaDir == null) {
-      String s = "Didnot specify kafka directory.";
+      String s = "Did not specify kafka directory.";
       throw new TestException(s);
     }
-    kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
+    if(kafkaLogDir==null)
+      kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
     new File(kafkaLogDir).mkdir();
     snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();
   }
@@ -133,6 +148,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected void startZookeeper() {
     ProcessBuilder pb = null;
     try {
+      getHostNames();
       String zookeeperLogDirPath = kafkaLogDir + sep + "zookeeper";
       new File(zookeeperLogDirPath).mkdir();
       String dest = zookeeperLogDirPath + sep + "zookeeperSystem.log";
@@ -242,9 +258,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         initialBrokerPort = initialBrokerPort + 2;
       }
     }  catch (IOException e) {
-    String s = "Problem while copying properties file.";
-    throw new TestException(s, e);
-  }
+      String s = "Problem while copying properties file.";
+      throw new TestException(s, e);
+    }
     recordSnappyProcessIDinNukeRun("Kafka");
   }
 
@@ -403,9 +419,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static void HydraTask_restartSnappyClusterForStreaming(){
-   HydraTask_stopSnappyCluster();
-   HydraTask_startSnappyCluster();
-   HydraTask_executeSnappyStreamingJob();
+    HydraTask_stopSnappyCluster();
+    HydraTask_startSnappyCluster();
+    HydraTask_executeSnappyStreamingJob();
   }
 
   public boolean getJobStatus(String jobID){
@@ -425,7 +441,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       while ((line = inputFile.readLine()) != null) {
         if(line.contains("status") ){
           if (line.contains("ERROR"))
-              return false;
+            return false;
           break;
         }
       } try { Thread.sleep(10*1000);} catch(InterruptedException ie) { }

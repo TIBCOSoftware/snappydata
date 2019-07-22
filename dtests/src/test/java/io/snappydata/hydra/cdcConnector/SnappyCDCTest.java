@@ -383,7 +383,6 @@ public class SnappyCDCTest extends SnappyTest {
     } catch (SQLException ex) {
       Log.getLogWriter().info("Caught sqlException in getResultSet method " + ex.getMessage());
     }
-
   }
 
   public ArrayList getQueryList(String fileName) {
@@ -688,6 +687,7 @@ public class SnappyCDCTest extends SnappyTest {
     Log.getLogWriter().info("the dirPath is " + dirPath);
     removeDiskStoreFiles(dirPath);
   }
+
 
   public void stopCluster(String snappyPath, File logFile) {
     ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");

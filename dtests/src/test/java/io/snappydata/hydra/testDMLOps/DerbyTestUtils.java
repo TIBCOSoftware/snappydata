@@ -134,10 +134,6 @@ public class DerbyTestUtils {
   }
 
   public static void HydraTask_shutDownDerbyDB() {
-    testInstance.shutDownDiscDB();
-  }
-
-  protected void shutDownDiscDB() {
     if (hasDerbyServer) {
       ClientDiscDBManager.shutDownDB();
     }
