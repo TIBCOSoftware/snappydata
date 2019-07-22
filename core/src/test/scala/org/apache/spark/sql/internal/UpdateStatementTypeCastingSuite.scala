@@ -187,7 +187,7 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
 
   test("SnappyAnalyzer rules matches the rules from upstream Analyzer") {
     val analyzer = new Analyzer(snc.sessionState.catalog, snc.sessionState.conf)
-    val snappyAnalyzer = new SnappyAnalyzer(snc.snappySessionState)
+    val snappyAnalyzer = new SnappyAnalyzer(snc.sessionState)
     assertEquals(analyzer.batches.size, snappyAnalyzer.batches.size)
     for ((expBatch, actBatch) <- analyzer.batches zip snappyAnalyzer.ruleBatches) {
       assertEquals(expBatch.name, actBatch.name)

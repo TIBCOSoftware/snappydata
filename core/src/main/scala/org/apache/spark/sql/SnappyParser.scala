@@ -962,7 +962,7 @@ class SnappyParser(session: SnappySession)
     ) |
     literal | paramLiteralQuestionMark |
     '{' ~ ws ~ FN ~ functionIdentifier ~ expressionList ~
-        ws ~ '}' ~ ws ~> { (fn: FunctionIdentifier, e: Seq[Expression]) =>
+        '}' ~ ws ~> { (fn: FunctionIdentifier, e: Seq[Expression]) =>
         val exprs = foldableFunctionsExpressionHandler(e.toIndexedSeq, fn.funcName)
         fn match {
           case f if f.funcName.equalsIgnoreCase("timestampadd") =>
@@ -1311,9 +1311,8 @@ class SnappyParser(session: SnappySession)
   final def parse[T](sqlText: String, parseRule: => Try[T],
       clearExecutionData: Boolean = false): T = session.synchronized {
     session.clearQueryData()
-    val sessionState = session.sessionState
-    if (clearExecutionData) sessionState.clearExecutionData()
-    caseSensitive = sessionState.conf.caseSensitiveAnalysis
+    if (clearExecutionData) session.sessionState.clearExecutionData()
+    caseSensitive = session.sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
   }
 

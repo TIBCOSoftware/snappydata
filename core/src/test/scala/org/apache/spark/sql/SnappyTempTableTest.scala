@@ -43,7 +43,7 @@ class SnappyTempTableTest extends SnappyFunSuite
 
     df.createOrReplaceTempView(tableName)
 
-    val catalog = snc.snappySessionState.catalog
+    val catalog = snc.sessionState.catalog
     val qName = snc.snappySession.tableIdentifier(tableName)
     val plan = catalog.resolveRelation(qName)
     plan match {
@@ -70,7 +70,7 @@ class SnappyTempTableTest extends SnappyFunSuite
         .load(file)
 
     df.createOrReplaceTempView(tableName)
-    val catalog = snc.snappySessionState.catalog
+    val catalog = snc.sessionState.catalog
     val qName = snc.snappySession.tableIdentifier(tableName)
     val plan = catalog.resolveRelation(qName)
     plan match {

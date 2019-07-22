@@ -505,11 +505,11 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     super.setCurrentDatabase(schemaName)
     // since hive metastore doesn't have sys schema.
     if (schemaName != SnappyExternalCatalog.SYS_SCHEMA) {
+      externalCatalog.setCurrentDatabase(schemaName)
       // also set in hive catalog if present
       if (snappySession.enableHiveSupport) {
         hiveSessionCatalog.setCurrentDatabase(schema)
       }
-      externalCatalog.setCurrentDatabase(schemaName)
     }
   }
 

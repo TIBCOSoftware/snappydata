@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.ui.SQLListener;
 import org.apache.spark.sql.execution.ui.SQLTab;
 import org.apache.spark.sql.execution.ui.SnappySQLListener;
 import org.apache.spark.sql.hive.HiveClientUtil$;
-import org.apache.spark.sql.hive.HiveExternalCatalog;
+import org.apache.spark.sql.hive.SnappyHiveExternalCatalog;
 import org.apache.spark.storage.StorageLevel;
 import org.apache.spark.ui.SparkUI;
 
@@ -55,7 +55,7 @@ public final class SnappySharedState extends SharedState {
   /**
    * The ExternalCatalog implementation used for SnappyData in embedded mode.
    */
-  private final HiveExternalCatalog embedCatalog;
+  private final SnappyHiveExternalCatalog embedCatalog;
 
   /**
    * Used to skip initializing meta-store in super's constructor.
@@ -119,9 +119,6 @@ public final class SnappySharedState extends SharedState {
     }
   }
 
-  /**
-   * Private constructor that allows sharing the global temp views and cache.
-   */
   private SnappySharedState(SparkContext sparkContext) {
     super(sparkContext);
 
@@ -174,7 +171,7 @@ public final class SnappySharedState extends SharedState {
       throw new IllegalStateException("getExternalCatalogInstance: unexpected invocation " +
           "from within SnappySharedState constructor");
     } else if (this.embedCatalog != null) {
-      return (SnappyExternalCatalog)this.embedCatalog;
+      return this.embedCatalog;
     } else {
       // create a new connector catalog instance for connector mode
       // each instance has its own set of credentials for authentication
