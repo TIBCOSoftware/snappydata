@@ -804,7 +804,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     // or if the plan is not a top-level one e.g. a subquery or inside
     // CollectAggregateExec (only top-level plan will catch and retry
     //   with disabled optimizations)
-    if (!topLevel || session.snappySessionState.disableStoreOptimizations) plan
+    if (!topLevel || session.sessionState.disableStoreOptimizations) plan
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan

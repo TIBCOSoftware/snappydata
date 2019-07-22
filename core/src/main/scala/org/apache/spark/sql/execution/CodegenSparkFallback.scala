@@ -91,7 +91,7 @@ case class CodegenSparkFallback(var child: SparkPlan,
           // fallback to Spark plan for code-generation exception
           execution match {
             case Some(exec) =>
-              val sessionState = session.snappySessionState
+              val sessionState = session.sessionState
               if (!isCatalogStale) {
                 val msg = new StringBuilder
                 var cause = t

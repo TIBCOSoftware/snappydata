@@ -113,7 +113,7 @@ class SnappyContextFunctions {
 
   def aqpTablePopulator(session: SnappySession): Unit = {
     // register blank tasks for the stream tables so that the streams start
-    session.snappySessionState.catalog.getDataSourceRelations[StreamBaseRelation](
+    session.sessionState.catalog.getDataSourceRelations[StreamBaseRelation](
       CatalogObjectType.Stream).foreach(_.rowStream.foreachRDD(_ => Unit))
   }
 

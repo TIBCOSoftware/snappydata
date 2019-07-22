@@ -18,6 +18,7 @@
 package org.apache.spark.sql.internal
 
 import java.util.Properties
+import java.util.function.BiConsumer
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -143,10 +144,15 @@ class SnappyConf(@transient val session: SnappySession)
       key
 
     case Property.EnableHiveSupport.name =>
+      val oldValue = session.enableHiveSupport
       value match {
         case Some(boolVal) => session.enableHiveSupport = boolVal.toString.toBoolean
         case None => session.enableHiveSupport = Property.EnableHiveSupport.defaultValue.get ||
             SnappyContext.hasNonDefaultHiveMetastoreConf
+      }
+      // if external hive catalog was enabled, then set its current schema
+      if (!oldValue && session.enableHiveSupport) {
+        session.sessionCatalog.setCurrentSchema(session.getCurrentSchema, force = true)
       }
       key
 
@@ -184,6 +190,8 @@ class SnappyConf(@transient val session: SnappySession)
       } else key
   }
 
+  private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
+
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
     if (session ne null) {
       if (executionShufflePartitions != -1) {
@@ -215,6 +223,7 @@ class SnappyConf(@transient val session: SnappySession)
   override def setConfString(key: String, value: String): Unit = {
     val rkey = keyUpdateActions(key, Some(value), doSet = true)
     super.setConfString(rkey, value)
+    if (session.enableHiveSupport) hiveConf.setConfString(key, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
@@ -225,16 +234,30 @@ class SnappyConf(@transient val session: SnappySession)
       case Some(_) => super.setConf(entry, value)
       case None => super.setConf(entry.asInstanceOf[ConfigEntry[Option[T]]], Some(value))
     }
+    if (session.enableHiveSupport) hiveConf.setConf(entry, value)
+  }
+
+  override def setConf(props: Properties): Unit = {
+    super.setConf(props)
+    if (session.enableHiveSupport) hiveConf.setConf(props)
   }
 
   override def unsetConf(key: String): Unit = {
     val rkey = keyUpdateActions(key, None, doSet = false)
     super.unsetConf(rkey)
+    if (session.enableHiveSupport) hiveConf.unsetConf(key)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
     keyUpdateActions(entry.key, None, doSet = false, search = false)
     super.unsetConf(entry)
+    if (session.enableHiveSupport) hiveConf.unsetConf(entry)
+  }
+
+  def foreach(f: (String, String) => Unit): Unit = settings.synchronized {
+    settings.forEach(new BiConsumer[String, String] {
+      override def accept(k: String, v: String): Unit = f(k, v)
+    })
   }
 }
 

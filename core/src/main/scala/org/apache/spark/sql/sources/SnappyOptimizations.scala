@@ -43,7 +43,7 @@ import org.apache.spark.sql.internal.SnappySessionCatalog
  */
 case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
 
-  private val catalog: SnappySessionCatalog = snappySession.snappySessionState.catalog
+  private val catalog: SnappySessionCatalog = snappySession.sessionState.catalog
 
   private def analyzer = snappySession.sessionState.analyzer
 

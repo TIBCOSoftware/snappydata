@@ -258,7 +258,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   /** spark parser used for hive DDLs that are not relevant to SnappyData's builtin sources */
   protected final lazy val sparkParser: SparkSqlParser =
-    new SparkSqlParser(session.snappySessionState.conf)
+    new SparkSqlParser(session.sessionState.conf)
 
   // DDLs, SET etc
 
@@ -290,8 +290,11 @@ abstract class SnappyDDLParser(session: SnappySession)
       }
       val provider = remaining._1 match {
         case None =>
-          // behave like SparkSession in case hive support has been enabled
-          if (session.enableHiveSupport) DDLUtils.HIVE_PROVIDER else Consts.DEFAULT_SOURCE
+          // use hive source as default if appropriate is set else use 'row'
+          if (session.enableHiveSupport &&
+              Property.UseHiveSourceAsDefault.get(session.sessionState.conf)) {
+            DDLUtils.HIVE_PROVIDER
+          } else Consts.DEFAULT_SOURCE
         case Some(p) => p
       }
       // check if hive provider is being used
@@ -434,7 +437,7 @@ abstract class SnappyDDLParser(session: SnappySession)
               s"Column ordering for buckets must be ASC but was DESC")
             case (c, _) => c
           }
-          BucketSpec(buckets.toInt, cols, sortColumns.toSeq)
+          BucketSpec(buckets.toInt, cols, sortColumns)
       })
   }
 

@@ -46,7 +46,7 @@ object StreamSqlHelper {
   }
 
   def getSchemaDStream(ssc: SnappyStreamingContext, tableName: String): SchemaDStream = {
-    val catalog = ssc.snappySession.snappySessionState.catalog
+    val catalog = ssc.snappySession.sessionState.catalog
     catalog.resolveRelation(ssc.snappySession.tableIdentifier(tableName)) match {
       case LogicalRelation(sr: StreamPlan, _, _) => new SchemaDStream(ssc,
         LogicalDStreamPlan(sr.schema.toAttributes, sr.rowStream)(ssc))

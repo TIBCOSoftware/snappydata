@@ -66,7 +66,7 @@ import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNes
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SessionBase, SnappySessionCatalog}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState}
 import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -78,7 +78,7 @@ import org.apache.spark.unsafe.types.UTF8String
 import org.apache.spark.{Logging, ShuffleDependency, SparkContext, SparkEnv}
 
 
-class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
+class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   self =>
 
@@ -97,18 +97,32 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
   new FinalizeSession(this)
 
   /**
+   * State shared across sessions, including the [[SparkContext]], cached data, listener,
+   * and a catalog that interacts with external systems.
+   */
+  @transient
+  override lazy val sharedState: SnappySharedState = SnappyContext.sharedState(sparkContext)
+
+  /**
    * State isolated across sessions, including SQL configurations, temporary tables, registered
    * functions, and everything else that accepts a [[org.apache.spark.sql.internal.SQLConf]].
    */
-  def snappySessionState: SnappySessionState = sessionState.asInstanceOf[SnappySessionState]
+  @transient
+  override lazy val sessionState: SnappySessionState = {
+    SnappySession.aqpSessionStateClass match {
+      case Some(aqpClass) => aqpClass.getConstructor(classOf[SnappySession]).
+          newInstance(self).asInstanceOf[SnappySessionState]
+      case None => new SnappySessionState(self)
+    }
+  }
 
-  def sessionCatalog: SnappySessionCatalog = snappySessionState.catalog
+  def sessionCatalog: SnappySessionCatalog = sessionState.catalog
 
-  def externalCatalog: SnappyExternalCatalog = snappySessionState.catalog.externalCatalog
+  def externalCatalog: SnappyExternalCatalog = sessionState.catalog.externalCatalog
 
-  def snappyParser: SnappyParser = snappySessionState.sqlParser.sqlParser
+  def snappyParser: SnappyParser = sessionState.sqlParser.sqlParser
 
-  private[spark] def snappyContextFunctions = snappySessionState.contextFunctions
+  private[spark] def snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
   SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
@@ -188,7 +202,6 @@ class SnappySession(_sc: SparkContext) extends SessionBase(_sc) {
   }
 
   final def prepareSQL(sqlText: String, skipPromote: Boolean = false): LogicalPlan = {
-    val sessionState = this.snappySessionState
     val logical = sessionState.sqlParser.parsePlan(sqlText, clearExecutionData = true)
     SparkSession.setActiveSession(this)
     val ap: Analyzer = sessionState.analyzer
@@ -1892,7 +1905,7 @@ object SnappySession extends Logging {
     GemFireVersion.isEnterpriseEdition
   }
 
-  lazy val aqpSessionStateClass: Option[Class[_]] = {
+  private lazy val aqpSessionStateClass: Option[Class[_]] = {
     if (isEnterpriseEdition) {
       try {
         Some(org.apache.spark.util.Utils.classForName(
@@ -2110,7 +2123,7 @@ object SnappySession extends Logging {
   def getPlanCache: Cache[CachedKey, CachedDataFrame] = planCache
 
   def sqlPlan(session: SnappySession, sqlText: String): CachedDataFrame = {
-    val parser = session.snappySessionState.sqlParser
+    val parser = session.sessionState.sqlParser
     val sqlShortText = CachedDataFrame.queryStringShortForm(sqlText)
     val plan = parser.parsePlan(sqlText, clearExecutionData = true)
     val planCaching = session.planCaching

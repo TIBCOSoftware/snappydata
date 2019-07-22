@@ -1311,7 +1311,7 @@ class SnappyParser(session: SnappySession)
   final def parse[T](sqlText: String, parseRule: => Try[T],
       clearExecutionData: Boolean = false): T = session.synchronized {
     session.clearQueryData()
-    val sessionState = session.snappySessionState
+    val sessionState = session.sessionState
     if (clearExecutionData) sessionState.clearExecutionData()
     caseSensitive = sessionState.conf.caseSensitiveAnalysis
     parseSQL(sqlText, parseRule)
