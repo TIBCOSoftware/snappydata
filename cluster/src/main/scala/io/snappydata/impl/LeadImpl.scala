@@ -113,7 +113,9 @@ class LeadImpl extends ServerImpl with Lead
       } else if (!propName.startsWith(SNAPPY_PREFIX) &&
           !propName.startsWith(JOBSERVER_PREFIX) &&
           !propName.startsWith("zeppelin.") &&
-          !propName.startsWith("hive.")) {
+          !propName.startsWith("hive.") &&
+          !propName.startsWith("hadoop.") &&
+          !propName.startsWith("javax.jdo.")) {
         bootProperties.setProperty(STORE_PREFIX + propName, bootProperties.getProperty(propName))
         bootProperties.remove(propName)
       }
@@ -139,7 +141,9 @@ class LeadImpl extends ServerImpl with Lead
       } else if (sysPropName.startsWith(SNAPPY_PREFIX) ||
           sysPropName.startsWith(JOBSERVER_PREFIX) ||
           sysPropName.startsWith("zeppelin.") ||
-          sysPropName.startsWith("hive.")) {
+          sysPropName.startsWith("hive.") ||
+          sysPropName.startsWith("hadoop.") ||
+          sysPropName.startsWith("javax.jdo.")) {
         setPropertyIfAbsent(bootProperties, sysPropName, sysProps.getProperty(sysPropName))
       }
     }
