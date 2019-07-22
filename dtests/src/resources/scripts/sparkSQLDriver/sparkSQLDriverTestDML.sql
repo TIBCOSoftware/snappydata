@@ -84,7 +84,7 @@ INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_special_chars_const_D
 
 INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_for_cq_query_STRING_with_filter_2 SELECT ''' |[]{}()&%#@$"\\';
 
-INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_query_col_STRING_with_filter_2 SELECT SELECT ''' |[]{}()&%#@$"\\';
+INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_query_col_STRING_with_filter_2 SELECT ''' |[]{}()&%#@$"\\';
 
 INSERT INTO sf_tmp_db_38611be8de554936beae283efdbe3ee8.tbl_special_chars_const_BIGINT SELECT 12;
 
@@ -414,7 +414,7 @@ SELECT `cq_query_param_StringType_STRING`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT ('X' IS NULL)LIMIT 1
+NOT ('X' IS NULL) LIMIT 1
 ) `cq_query_param_StringType_STRING`;
 
 SELECT `tbl_query_col_timestamp`.`col_TIMESTAMP` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_query_col_timestamp` `tbl_query_col_timestamp`;
@@ -423,7 +423,7 @@ SELECT `cq_query_param_StringType_VARCHAR`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT ('X' IS NULL)LIMIT 1
+NOT ('X' IS NULL) LIMIT 1
 ) `cq_query_param_StringType_VARCHAR`;
 
 SELECT `tbl_query_col_timestamp_with_filter`.`col_TIMESTAMP` FROM `sf_tmp_db_38611be8de554936beae283efdbe3ee8`.`tbl_query_col_timestamp_with_filter` `tbl_query_col_timestamp_with_filter` WHERE `tbl_query_col_timestamp_with_filter`.`col_TIMESTAMP` IN ('2004-02-12 10:20:30');
@@ -442,21 +442,21 @@ SELECT `cq_query_param_IntType_INT`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12 IS NULL)LIMIT 1
+NOT (12 IS NULL) LIMIT 1
 ) `cq_query_param_IntType_INT`;
 
 SELECT `cq_query_param_StringType`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT ('X' IS NULL)LIMIT 1
+NOT ('X' IS NULL) LIMIT 1
 ) `cq_query_param_StringType`;
 
 SELECT `cq_query_param_IntType`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12 IS NULL)LIMIT 1
+NOT (12 IS NULL) LIMIT 1
 ) `cq_query_param_IntType`;
 
 SELECT `cq_query_TIMESTAMP`.`col_TIMESTAMP` FROM (SELECT col_TIMESTAMP
@@ -472,14 +472,14 @@ SELECT `cq_query_param_StringType_STRING`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT ('X' IS NULL)LIMIT 1
+NOT ('X' IS NULL) LIMIT 1
 ) `cq_query_param_StringType_STRING`;
 
 SELECT `cq_query_param_StringType_VARCHAR`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT ('X' IS NULL)LIMIT 1
+NOT ('X' IS NULL) LIMIT 1
 ) `cq_query_param_StringType_VARCHAR`;
 
 SELECT `cq_query_TIMESTAMP_with_filter`.`col_TIMESTAMP` FROM (SELECT col_TIMESTAMP
@@ -496,14 +496,14 @@ SELECT `cq_query_param_StringType`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT ('X' IS NULL)LIMIT 1
+NOT ('X' IS NULL) LIMIT 1
 ) `cq_query_param_StringType`;
 
 SELECT `cq_query_param_IntType_INT`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12 IS NULL)LIMIT 1
+NOT (12 IS NULL) LIMIT 1
 ) `cq_query_param_IntType_INT`;
 
 SELECT `cq_query_TIMESTAMP`.`col_TIMESTAMP` FROM (SELECT col_TIMESTAMP
@@ -515,35 +515,35 @@ SELECT `cq_query_param_IntType`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12 IS NULL)LIMIT 1
+NOT (12 IS NULL) LIMIT 1
 ) `cq_query_param_IntType`;
 
 SELECT `cq_query_param_DoubleType_DOUBLE`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12.0 IS NULL)LIMIT 1
+NOT (12.0 IS NULL) LIMIT 1
 ) `cq_query_param_DoubleType_DOUBLE`;
 
 SELECT `cq_query_param_DoubleType`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12.0 IS NULL)LIMIT 1
+NOT (12.0 IS NULL) LIMIT 1
 ) `cq_query_param_DoubleType`;
 
 SELECT `cq_query_param_LongType_BIGINT`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12 IS NULL)LIMIT 1
+NOT (12 IS NULL) LIMIT 1
 ) `cq_query_param_LongType_BIGINT`;
 
 SELECT `cq_query_param_IntType_SMALLINT`.`dummy` FROM (SELECT 1
  AS dummy
 FROM sf_tmp_db_38611be8de554936beae283efdbe3ee8.info
 WHERE
-NOT (12 IS NULL)LIMIT 1
+NOT (12 IS NULL) LIMIT 1
 ) `cq_query_param_IntType_SMALLINT`;
 
 SELECT `cq_query_param_LongType`.`dummy` FROM (SELECT 1

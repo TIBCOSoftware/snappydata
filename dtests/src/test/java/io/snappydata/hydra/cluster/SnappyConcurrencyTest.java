@@ -58,6 +58,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
         int queryNum = new Random().nextInt(queryVect.size());
         query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {
+        }
       } catch (SQLException se) {
         throw new TestException("Got exception while executing pointLookUp query:" + query, se);
       }
@@ -68,6 +70,8 @@ public class SnappyConcurrencyTest extends SnappyTest {
         int queryNum = new Random().nextInt(queryVect.size());
         query = queryVect.elementAt(queryNum);
         rs = conn.createStatement().executeQuery(query);
+        while (rs.next()) {
+        }
         SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numQueriesExecuted);
         if (isPointLookUp)
           SnappyBB.getBB().getSharedCounters().increment(SnappyBB.numPointLookUpQueriesExecuted);
