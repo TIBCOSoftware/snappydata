@@ -79,12 +79,13 @@ class CubeRollupGroupingSetsTest extends SnappyFunSuite with BeforeAndAfterAll {
     assert(dfCubeResult.sameElements(snappyCubeResult))
 
     // grouping sets query equivalent to above cube query
-    val snappyGoupingSetResult = snc.sql("select col1, col2, sum(col3) from mytable group by col1, col2 " +
-        "grouping sets ((col1, col2), (col1), (col2), ()) order by col1, col2").collect()
+    val snappyGroupingSetResult = snc.sql(
+      "select col1, col2, sum(col3) from mytable group by col1, col2 " +
+          "grouping sets ((col1, col2), (col1), (col2), ()) order by col1, col2").collect()
     logInfo("DataFrame cube result")
     logInfo(dfCubeResult.mkString("\n"))
     logInfo("SnappySQL gouping sets result")
-    logInfo(snappyGoupingSetResult.mkString("\n"))
-    assert(dfCubeResult.sameElements(snappyGoupingSetResult))
+    logInfo(snappyGroupingSetResult.mkString("\n"))
+    assert(dfCubeResult.sameElements(snappyGroupingSetResult))
   }
 }
