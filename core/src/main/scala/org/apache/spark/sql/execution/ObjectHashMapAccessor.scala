@@ -1086,7 +1086,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       consumeResult: String, keyIsUnique: String, declareLocalVars: String,
       moveNextValue: String, inputCodes: String, localValueVar: String): String = {
   // scalastyle:on
-
+    val matchFailedCompletely = ctx.freshName("matchFailedCompletely")
     val consumeCode = checkCondition match {
       case None =>
         s"""$buildInitCode
@@ -1099,22 +1099,21 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
       case Some(ev) =>
         // assign null to entryVar if checkCondition fails so that it is
         // treated like an empty outer join match by subsequent code
-        val matchFailedCompletely = ctx.freshName("matchFailedCompletely")
+
         s"""
            ${ev.code}
-           boolean $matchFailedCompletely = false;
+
            if (${ev.isNull} || !${ev.value}) {
-             if ($localValueVar.$nextValueVar == null) {
-               $matchFailedCompletely = true;
-             } else {
+             if ($localValueVar.$nextValueVar != null) {
                continue;
              }
+           } else {
+             $matchFailedCompletely = false;
            }
-
           $buildInitCode
 
-                            |
- |        //TODO:to tackle case where there is filter on build side
+
+         //TODO:to tackle case where there is filter on build side
           //such that it is specifically looking for not null values
           // the outer join needs to be converted to inner join
           if ($entryVar == null || $matchFailedCompletely) {
@@ -1128,6 +1127,7 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
     s"""$declareLocalVars
       $mapKeyCodes
       $inputCodes
+      ${checkCondition.map(_ => s"boolean $matchFailedCompletely = true;").getOrElse("")}
       while (true) {
         $checkCode
         do { // single iteration loop meant for breaking out with "continue"
