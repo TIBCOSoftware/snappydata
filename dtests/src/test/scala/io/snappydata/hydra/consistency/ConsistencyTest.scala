@@ -172,7 +172,7 @@ class ConsistencyTest {
                 pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
                     before_result + " and number of after " + op + " start : " + after_result)
                 val expectedRs = after_result - before_result
-                if (!(expectedRs % batchSize == 0)) atomicityCheckFailed = true
+                if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("AVG")) {
                 val before_result: Double = rowBf.getDouble(j)
                 val after_result: Double = rowAf.getDouble(j)

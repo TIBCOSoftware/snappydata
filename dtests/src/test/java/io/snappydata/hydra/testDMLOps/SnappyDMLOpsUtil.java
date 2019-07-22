@@ -70,11 +70,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       testInstance = new SnappyDMLOpsUtil();
     int dmlTableLength = SnappySchemaPrms.getDMLTables().length;
     ArrayList<Integer> insertCounters = new ArrayList<>();
+    ArrayList<Integer> deleteCounters = new ArrayList<>();
     for (int i = 0; i < dmlTableLength; i++) {
       insertCounters.add(1);
+      deleteCounters.add(0);
     }
     if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
       SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
+    if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("deleteCounters"))
+      SnappyDMLOpsBB.getBB().getSharedMap().put("deleteCounters", insertCounters);
     if(derbyTestUtils == null)
       derbyTestUtils = new DerbyTestUtils();
   }
@@ -765,6 +769,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseBBLock();
     return initCounter;
+  }
+
+  public int getDeleteCounter(int index, int batchSize){
+    getBBLock();
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("deleteCounters");
+    int delCounter = counters.get(index) + batchSize;
+    counters.set(index, delCounter);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("deleteCounters", counters);
+    releaseBBLock();
+    return delCounter;
   }
 
   public void performInsertUsingBatch(Connection conn, String tableName,

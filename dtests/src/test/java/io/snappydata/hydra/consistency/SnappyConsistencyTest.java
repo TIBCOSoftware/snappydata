@@ -103,13 +103,19 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         throw new TestException("Invalid operation type.");
     }
     int batchSize = SnappySchemaPrms.getBatchSize();
+    index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
+    if(operation.equalsIgnoreCase("delete") && dmlSql.contains("$counter")){
+      int delCounter = getDeleteCounter(index,batchSize);
+      dmlSql = dmlSql.replace("$counter",delCounter+ "");
+      selectSql = selectSql.replace("$counter", delCounter + "");
+    }
+
     if (SnappySchemaPrms.isTestUniqueKeys() ) {
       if (!(operation.equalsIgnoreCase("insert") || operation.equalsIgnoreCase("putinto")))
         dmlSql = addTidToQuery(dmlSql, tid);
       selectSql = addTidToQuery(selectSql, tid);
     }
     if (conn.equals(ConnType.JDBC)) {
-      index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
       ExecutorService pool = Executors.newFixedThreadPool(2);
         Future<?> future1 =  pool.submit(new DMLOpsThread(tid, operation, batchSize, dmlSql,
             index, tableName));
@@ -119,7 +125,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
           future2.get();
           future1.get();
       } catch (Exception e) {
-        throw new TestException("Got Exception", e);
+        throw new TestException("Got Exception while performing operation " + operation +" : ", e);
       }
       pool.shutdown();
       try {
@@ -129,7 +135,6 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
             "tasks");
       }
     } else {
-      index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
       if(dmlSql.contains("$tid")) dmlSql = dmlSql.replace("$tid", tid + "");
       int initCounter = getInitialCounter(index,batchSize);
       if(dmlSql.contains("$range")){
@@ -356,7 +361,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
                     " start: " + before_result + " and number of after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
-                if (!(expectedRs % batchSize == 0)) {
+                if (!(expectedRs % before_result == 0)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {

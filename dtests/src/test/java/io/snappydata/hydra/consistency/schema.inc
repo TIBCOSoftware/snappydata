@@ -51,7 +51,7 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
 "select count(*), avg(code), sum(code), sum(code1), avg(code1) from table1"
 "select count(*), avg(code), sum(code), avg(code2), sum(code2) from table2"
-"select count(*), avg(code), sum(code), sum(code3), avg(code3) from table3"
+"select count(*), avg(code), sum(code), sum(code1), avg(code1) from table3"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
