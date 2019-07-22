@@ -1,5 +1,7 @@
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createSchemas = "create schema gemfire1";
 
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-dropSchemas = "drop schema app cascade";
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createTablesStatements =
 "create table gemfire1.regions (RegionID int,RegionDescription varchar(100),tid int)"
 "create table gemfire1.categories (CategoryID int,CategoryName varchar(100),Description varchar(100),Picture varchar(300),tid int)"
