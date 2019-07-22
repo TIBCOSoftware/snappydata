@@ -1,4 +1,4 @@
-package io.snappydata.cluster;
+package io.snappydata.cluster.jobs;
 
 import com.typesafe.config.Config;
 import org.apache.spark.sql.JavaSnappySQLJob;

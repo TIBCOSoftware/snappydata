@@ -24,6 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.primitives.Ints
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -36,7 +37,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
+import org.apache.spark.sql.execution.{PutIntoValuesColumnTable, ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
@@ -276,56 +277,70 @@ class SnappyParser(session: SnappySession)
     INTERVAL ~> (() => CalendarIntervalType)
   }
 
-  protected def intervalLiteral: Rule1[Expression] = rule {
+  protected def intervalExpression: Rule1[Expression] = rule {
     INTERVAL ~ (
         stringLiteral ~ (
-            YEAR ~ TO ~ MONTH ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromYearMonthString(s), CalendarIntervalType)) |
-            DAY ~ TO ~ (SECS | SECOND) ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromDayTimeString(s), CalendarIntervalType)) |
-            YEAR ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("year", s), CalendarIntervalType)) |
-            MONTH ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("month", s), CalendarIntervalType)) |
-            DAY ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("day", s), CalendarIntervalType)) |
-            HOUR ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("hour", s), CalendarIntervalType)) |
-            (MINS | MINUTE) ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("minute", s), CalendarIntervalType)) |
-            (SECS | SECOND) ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("second", s), CalendarIntervalType))
+            YEAR ~ TO ~ MONTH ~> ((s: String) => CalendarInterval.fromYearMonthString(s)) |
+            DAY ~ TO ~ (SECOND | SECS) ~> ((s: String) => CalendarInterval.fromDayTimeString(s))
         ) |
-        year.? ~ month.? ~ week.? ~ day.? ~ hour.? ~ minute.? ~
-            second.? ~ millisecond.? ~ microsecond.? ~> { (y: Any, m: Any,
-            w: Any, d: Any, h: Any, m2: Any, s: Any, m3: Any, m4: Any) =>
-          val year = y.asInstanceOf[Option[Int]]
-          val month = m.asInstanceOf[Option[Int]]
-          val week = w.asInstanceOf[Option[Long]]
-          val day = d.asInstanceOf[Option[Long]]
-          val hour = h.asInstanceOf[Option[Long]]
-          val minute = m2.asInstanceOf[Option[Long]]
-          val second = s.asInstanceOf[Option[Long]]
-          val millis = m3.asInstanceOf[Option[Long]]
-          val micros = m4.asInstanceOf[Option[Long]]
-          if (!Seq(year, month, week, day, hour, minute, second, millis,
-            micros).exists(_.isDefined)) {
-            throw new ParseException(
-              "No interval can be constructed, at least one" +
-                  " time unit should be given for interval literal")
-          }
-          val months = year.map(_ * 12).getOrElse(0) + month.getOrElse(0)
-          val microseconds =
-            week.map(_ * CalendarInterval.MICROS_PER_WEEK).getOrElse(0L) +
-            day.map(_ * CalendarInterval.MICROS_PER_DAY).getOrElse(0L) +
-            hour.map(_ * CalendarInterval.MICROS_PER_HOUR).getOrElse(0L) +
-            minute.map(_ * CalendarInterval.MICROS_PER_MINUTE).getOrElse(0L) +
-            second.map(_ * CalendarInterval.MICROS_PER_SECOND).getOrElse(0L) +
-            millis.map(_ * CalendarInterval.MICROS_PER_MILLI).getOrElse(0L) +
-            micros.getOrElse(0L)
-          newTokenizedLiteral(new CalendarInterval(months, microseconds), CalendarIntervalType)
-        }
-    )
+        (stringLiteral | integral | expression) ~ (
+            YEAR ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("year", s)
+              case _ => v.asInstanceOf[Expression] -> -1L
+            }) |
+            MONTH ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("month", s)
+              case _ => v.asInstanceOf[Expression] -> -2L
+            }) |
+            WEEK ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("week", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_WEEK
+            }) |
+            DAY ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("day", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_DAY
+            }) |
+            HOUR ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("hour", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_HOUR
+            }) |
+            (MINUTE | MINS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("minute", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_MINUTE
+            }) |
+            (SECOND | SECS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("second", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_SECOND
+            }) |
+            (MILLISECOND | MILLIS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("millisecond", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_MILLI
+            }) |
+            (MICROSECOND | MICROS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("microsecond", s)
+              case _ => v.asInstanceOf[Expression] -> 1L
+            })
+        )
+    ). + ~> ((s: Seq[Any]) =>
+      if (s.length == 1) s.head match {
+        case c: CalendarInterval => newTokenizedLiteral(c, CalendarIntervalType)
+        case (e: Expression, u: Long) => IntervalExpression(e :: Nil, u :: Nil)
+      } else if (s.forall(_.isInstanceOf[CalendarInterval])) {
+        newTokenizedLiteral(s.reduce((v1, v2) => v1.asInstanceOf[CalendarInterval].add(
+          v2.asInstanceOf[CalendarInterval])), CalendarIntervalType)
+      } else {
+        val (expressions, units) = s.flatMap {
+          case c: CalendarInterval =>
+            if (c.months != 0) {
+              newLiteral(c.months.toLong, LongType) -> -2L ::
+                  newLiteral(c.microseconds, LongType) -> 1L :: Nil
+            } else {
+              newLiteral(c.microseconds, LongType) -> 1L :: Nil
+            }
+          case p => p.asInstanceOf[(Expression, Long)] :: Nil
+        }.unzip
+        IntervalExpression(expressions, units)
+      })
   }
 
   protected final def unsignedFloat: Rule1[String] = rule {
@@ -912,7 +927,7 @@ class SnappyParser(session: SnappySession)
 
 
   protected final def primary: Rule1[Expression] = rule {
-    intervalLiteral |
+    intervalExpression |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -1168,9 +1183,33 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    capture(INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
+    capture(INSERT ~ INTO) ~ tableIdentifier ~
         capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
-        UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
+      UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
+  }
+
+  protected def putValuesOperation: Rule1[LogicalPlan] = rule {
+    capture(PUT ~ INTO) ~ tableIdentifier ~
+        capture(('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
+        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws) ~>
+        ((c: String, r: TableIdentifier, identifiers: Any, valueExpr: Any, s: String)
+        => {
+          val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
+          val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
+          val catalog = session.sessionState.catalog
+          val table = catalog.getTableMetadata(r)
+          val tableName = table.identifier.identifier
+          val db = table.database
+          val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
+            db, tableName)).toString
+          if (tableType == CatalogObjectType.Column.toString) {
+            PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
+          }
+          else {
+            DMLExternalTable(r,
+              UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
+          }
+        })
   }
 
   // It can be the following patterns:
@@ -1287,8 +1326,8 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
-            deployPackages | explain | analyze))
+        (DISABLE_TOKENIZE ~ (dmlOperation | putValuesOperation | ddl | show | set | reset | cache |
+            uncache | deployPackages | explain | analyze))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],

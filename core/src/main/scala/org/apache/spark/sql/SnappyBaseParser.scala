@@ -311,12 +311,26 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     quotedIdentifier
   }
 
+  protected final def packageIdentifierPart: Rule1[String] = rule {
+    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot).+)) ~ ws ~> { (s: String) =>
+      val lcase = lower(s)
+      test(!Consts.reservedKeywords.contains(lcase)) ~
+          push(if (caseSensitive) s else lcase)
+    } |
+        quotedIdentifier
+  }
+
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
     (tableIdentifierPart ~ '.' ~ ws).? ~ tableIdentifierPart ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
+  final def packageIdentifier: Rule1[TableIdentifier] = rule {
+    // case-sensitivity already taken care of properly by "identifier"
+    (tableIdentifierPart ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
+      TableIdentifier(table, schema.asInstanceOf[Option[String]]))
+  }
 
   final def functionIdentifier: Rule1[FunctionIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
@@ -325,8 +339,17 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 }
 
-final class Keyword private[sql] (s: String) {
+final class Keyword private[sql](s: String) {
   val lower: String = Utils.toLowerCase(s)
+
+  override def hashCode(): Int = lower.hashCode
+
+  override def equals(obj: Any): Boolean = {
+    this.eq(obj.asInstanceOf[AnyRef]) ||
+        (obj.isInstanceOf[Keyword] && lower == obj.asInstanceOf[Keyword].lower)
+  }
+
+  override def toString: String = lower
 }
 
 final class ParseException(msg: String, cause: Option[Throwable] = None)
@@ -343,6 +366,8 @@ object SnappyParserConsts {
   final val lineHintEnd: String = ")\n\r\f" + EOI
   final val hintValueEnd: String = ")*" + EOI
   final val underscore: CharPredicate = CharPredicate('_')
+  final val dot: CharPredicate = CharPredicate('.')
+  final val hyphen: CharPredicate = CharPredicate('-')
   final val identifier: CharPredicate = CharPredicate.AlphaNum ++ underscore
   final val alphaUnderscore: CharPredicate = CharPredicate.Alpha ++ underscore
   final val plusOrMinus: CharPredicate = CharPredicate('+', '-')
@@ -565,7 +590,7 @@ object SnappyParserConsts {
   final val MILLISECOND: Keyword = nonReservedKeyword("millisecond")
   final val MINUTE: Keyword = nonReservedKeyword("minute")
   final val MONTH: Keyword = nonReservedKeyword("month")
-  final val SECOND: Keyword = nonReservedKeyword("seconds")
+  final val SECOND: Keyword = nonReservedKeyword("second")
   final val WEEK: Keyword = nonReservedKeyword("week")
   final val YEAR: Keyword = nonReservedKeyword("year")
 

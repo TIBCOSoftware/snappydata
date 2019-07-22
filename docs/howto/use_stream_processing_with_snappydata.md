@@ -225,7 +225,7 @@ Processing **Delete(key1)** event without processing **Insert(key1)** event does
 
 ## Sink State Table
 
-A replicated row table with name **SNAPPYSYS_INTERNAL____SINK_STATE_TABLE** is created by **Snappy Sink** under schema specified by the **stateTableSchema** option if the table does not exist. If the **stateTableSchema** is not specified then the sink state table is created under the **APP** schema. During the processing of each batch, this state is updated.
+A replicated row table with name **snappysys_internal____sink_state_table** is created by **Snappy Sink** under schema specified by the **stateTableSchema** option if the table does not exist. If the **stateTableSchema** is not specified then the sink state table is created under the **APP** schema. During the processing of each batch, this state is updated.
 
 This table is used by **Snappy Sink** to maintain the state of the streaming queries. This state is important to maintain the idempotency of the sink In case of stream failures. The **Sink State** table contains the following fields:
 
