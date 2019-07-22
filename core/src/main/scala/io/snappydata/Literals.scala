@@ -279,7 +279,7 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
     s"The max capacity of value byte array in ByteBufferHashMap. " +
       s"Default value is ${Integer.MAX_VALUE}",
-    Some(Integer.MAX_VALUE))
+    Some(((Integer.MAX_VALUE - 1) / 8) * 8))
 
   val initialCapacityOfSHABBMap: SQLValue[Int] = SQLVal[Int](
     s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",
