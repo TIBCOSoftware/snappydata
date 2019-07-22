@@ -23,7 +23,7 @@ import sql.sqlutil.ResultSetHelper;
 
 public class SnappyPreparedStmtTest extends SnappyTest {
   public static SnappyPreparedStmtTest snappyPreparedStmtTest;
-  String[] queryArr = {"q2"};//, "q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53","q66", "q75", "q80"};
+  String[] queryArr = {"q2", "q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58","q66", "q75", "q80"};
   //q58
 
   public SnappyPreparedStmtTest() {
@@ -38,19 +38,18 @@ public class SnappyPreparedStmtTest extends SnappyTest {
 
   public void executePreparedStmts() {
     Connection conn = null;
-    Connection conn1 = null;
     Vector queryFile = SnappyPrms.getDataLocationList();
     String queryFilePath = queryFile.get(0).toString();
     String queryFilePathPS = queryFile.get(1).toString();
     try {
       conn = getLocatorConnection();
-      conn1 = getClientConnection();
       for (int q = 0; q <= queryArr.length - 1; q++) {
 
         String queryName = queryArr[q];
         String filePath = queryFilePathPS + "/" + queryName + ".sql";
+        Log.getLogWriter().info("SP: The filepath is " + filePath);       
         String queryStringPS = new String(Files.readAllBytes(Paths.get(filePath)));
-        System.out.println("The query to be executed is " + queryStringPS);
+        Log.getLogWriter().info("The query to be executed is : " + queryStringPS);
         PreparedStatement ps = conn.prepareStatement(queryStringPS);
         switch (queryName) {
           case "q2":
@@ -82,7 +81,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
           case "q13":
             ps.setString(1, "M");
             ps.setDouble(2, 100.00);
-            ps.setDouble(2, 150.00);
+            ps.setDouble(3, 150.00);
             break;
           case "q16":
             for (int i = 1; i <= 2; i++)
@@ -140,12 +139,10 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             break;
           case "q58":
             for (int i = 1; i <= 3; i++) {
-              System.out.println("Setting string value for " +i );
               ps.setString(i, "2000-01-03");
             }
             for (int i = 4; i <= 9; i++) {
-              System.out.println("Setting double value for " +i );
-              ps.setDouble(i, Double.parseDouble(0.9 + ""));
+              ps.setDouble(i, 0.9);
             }
             break;
           case "q66":
@@ -164,28 +161,29 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setString(i, "2000-08-03");
             break;
          }
-
+        Log.getLogWriter().info("Executing query : " +  queryName);
         ResultSet rsPS = ps.executeQuery();
+        Log.getLogWriter().info("Executed query : " +  queryName);
+        Log.getLogWriter().info("Executing non ps query for " +  queryFilePath + "/" + queryName + ".sql");
         String queryString = new String(Files.readAllBytes(Paths.get(queryFilePath + "/" + queryName + ".sql")));
-        ResultSet rs = conn1.createStatement().executeQuery(queryString);
+        ResultSet rs = conn.createStatement().executeQuery(queryString);
 
         validateResultSet(rs, rsPS, queryName);
       }
     } catch (IOException ex) {
-      System.out.println("Caught exception " + ex.getMessage());
+      throw new TestException("Caught exception " + ex.getMessage());
     } catch (SQLException se) {
-      System.out.println("QUERY FAILED. Exception is : \n" + se
+      throw new TestException("QUERY FAILED. Exception is : \n" + se
           .getSQLState() + " : " + se.getMessage());
       while (se != null) {
-        System.out.println(se.getCause());
+        Log.getLogWriter().info(se.getCause());
         se = se.getNextException();
       }
     } finally {
       try {
         conn.close();
-        conn1.close();
       } catch (SQLException se) {
-        System.out.println("Failed to close the connection " + se.getMessage());
+        throw new TestException("Failed to close the connection " + se.getMessage());
       }
     }
   }
@@ -204,7 +202,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       outputFile = logFile + File.separator + queryName + ".out";
       testInstance.listToFile(snappyList,outputFile);
       while (rs.next()) {
-        ++count;
+        count += 1;
       }
       rs.close();
 
@@ -213,11 +211,11 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       outputFilePS = logFile + File.separator + queryName + "_PS.out";
       testInstance.listToFile(snappyPSList,outputFilePS);
       while (rsPS.next()) {
-        ++countPS;
+        countPS += 1;
       }
       rsPS.close();
 
-      System.out.println("Total row count for preparedStatment query " + queryName + " is = " + count + "\n");
+      Log.getLogWriter().info("Total row count for preparedStatment query " + queryName + " is = " + count + "\n");
       if (count != countPS) {
         throw new TestException("For query " + queryName + " the query count with prepared statement " + count + " is not equal" +
             " to that without prepared statement " + countPS);
