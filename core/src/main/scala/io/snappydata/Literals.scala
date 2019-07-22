@@ -99,16 +99,15 @@ object Property extends Enumeration {
         "Default is true when non-default hive meta-store properties are set and false otherwise.",
     Some(false))
 
-  val UseHiveSourceAsDefault: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hive.defaultHiveSource", s"When ${EnableHiveSupport.name} " +
-        "is enabled, then use hive datasource as the default when no provider is specified in " +
-        "CREATE TABLE. Default is false in which case 'row' provider is default in SnappySession.",
-    Some(false))
-
-  val HiveCompatible: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
-        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
-    Some(false), prefix = null)
+  val HiveCompatibility: SQLValue[String] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hive.compatibility", "Property on SnappySession to make " +
+        "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
+        "CREATE TABLE which defaults to row tables. A value of 'spark' makes it fully Spark " +
+        s"compatible where CREATE TABLE defaults to hive tables when ${EnableHiveSupport.name} " +
+        "is enabled on the session.  When set to 'enabled' then in addition to the behaviour " +
+        "with 'spark', it makes the behavior hive compatible for statements like SHOW TABLES " +
+        "rather than being compatible with Spark SQL. Default is 'default'.",
+    Some("default"), prefix = null)
 
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +
