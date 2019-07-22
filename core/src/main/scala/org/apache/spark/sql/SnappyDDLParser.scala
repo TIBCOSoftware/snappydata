@@ -1002,7 +1002,6 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def partitionSpec: Rule1[Map[String, Option[String]]]
   protected def query: Rule1[LogicalPlan]
-  protected def literal: Rule1[Expression]
   protected def expression: Rule1[Expression]
   protected def parseSQL[T](sqlText: String, parseRule: => Try[T]): T
 
