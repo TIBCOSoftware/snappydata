@@ -1102,7 +1102,6 @@ case class ObjectHashMapAccessor(@transient session: SnappySession,
 
         s"""
            ${ev.code}
-
            if (${ev.isNull} || !${ev.value}) {
              if ($localValueVar.$nextValueVar != null) {
                continue;
