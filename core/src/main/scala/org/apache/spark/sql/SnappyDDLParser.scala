@@ -489,13 +489,13 @@ abstract class SnappyDDLParser(session: SnappySession)
     }
   }
 
-  protected final def globalTemporary: Rule1[Boolean] = rule {
+  protected final def globalOrTemporary: Rule1[Boolean] = rule {
     (GLOBAL ~ push(true)).? ~ TEMPORARY ~> ((g: Any) => g != None)
   }
 
   protected def createView: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (globalTemporary.? ~ VIEW |
-        globalTemporary ~ TABLE) ~ ifNotExists ~ tableIdentifier ~
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ (globalOrTemporary.? ~ VIEW |
+        globalOrTemporary ~ TABLE) ~ ifNotExists ~ tableIdentifier ~
         ('(' ~ ws ~ (identifierWithComment + commaSep) ~ ')' ~ ws).? ~
         (COMMENT ~ stringLiteral).? ~ (TBLPROPERTIES ~ options).? ~
         AS ~ capture(query) ~> { (replace: Any, gt: Any,
@@ -529,7 +529,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def createTempViewUsing: Rule1[LogicalPlan] = rule {
-    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalTemporary ~ (VIEW ~ push(false) |
+    CREATE ~ (OR ~ REPLACE ~ push(true)).? ~ globalOrTemporary ~ (VIEW ~ push(false) |
         TABLE ~ push(true)) ~ tableIdentifier ~ tableSchema.? ~ USING ~ qualifiedName ~
         (OPTIONS ~ options).? ~> ((replace: Any, global: Boolean, isTable: Boolean,
         table: TableIdentifier, schema: Any, provider: String, opts: Any) => CreateTempViewUsing(

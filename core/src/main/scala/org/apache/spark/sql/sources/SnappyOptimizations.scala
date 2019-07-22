@@ -18,6 +18,8 @@
 package org.apache.spark.sql.sources
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.QueryHint._
 
@@ -32,10 +34,6 @@ import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
-
-import org.apache.spark.sql.internal.SnappySessionCatalog
 
 
 /**
@@ -43,7 +41,7 @@ import org.apache.spark.sql.internal.SnappySessionCatalog
  */
 case class ResolveQueryHints(snappySession: SnappySession) extends Rule[LogicalPlan] {
 
-  private val catalog: SnappySessionCatalog = snappySession.sessionState.catalog
+  private def catalog = snappySession.sessionState.catalog
 
   private def analyzer = snappySession.sessionState.analyzer
 

@@ -91,7 +91,6 @@ case class CodegenSparkFallback(var child: SparkPlan,
           // fallback to Spark plan for code-generation exception
           execution match {
             case Some(exec) =>
-              val sessionState = session.sessionState
               if (!isCatalogStale) {
                 val msg = new StringBuilder
                 var cause = t
@@ -102,7 +101,7 @@ case class CodegenSparkFallback(var child: SparkPlan,
                 }
                 logInfo(s"SnappyData code generation failed due to $msg." +
                     s" Falling back to Spark plans.")
-                sessionState.disableStoreOptimizations = true
+                session.sessionState.disableStoreOptimizations = true
               }
               try {
                 val plan = exec().executedPlan.transform {
@@ -118,7 +117,7 @@ case class CodegenSparkFallback(var child: SparkPlan,
                   SnappySession.clearAllCache()
                   throw CachedDataFrame.catalogStaleFailure(t, session)
               } finally {
-                sessionState.disableStoreOptimizations = false
+                session.sessionState.disableStoreOptimizations = false
               }
             case _ => throw t
           }

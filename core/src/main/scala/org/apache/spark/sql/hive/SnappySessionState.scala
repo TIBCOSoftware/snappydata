@@ -68,9 +68,6 @@ class SnappySessionState(val snappySession: SnappySession)
     case _ => Nil
   }
 
-  protected[hive] val snappySharedState: SnappySharedState =
-    snappySession.sharedState.asInstanceOf[SnappySharedState]
-
   override lazy val streamingQueryManager: StreamingQueryManager = {
     // Disabling `SnappyAggregateStrategy` for streaming queries as it clashes with
     // `StatefulAggregationStrategy` which is applied by spark for streaming queries. This
@@ -695,7 +692,7 @@ class SnappySessionState(val snappySession: SnappySession)
    */
   override lazy val catalog: SnappySessionCatalog = {
     new SnappySessionCatalog(
-      snappySharedState.getExternalCatalogInstance(snappySession),
+      snappySession.sharedState.getExternalCatalogInstance(snappySession),
       snappySession,
       snappySession.sharedState.globalTempViewManager,
       functionResourceLoader,
