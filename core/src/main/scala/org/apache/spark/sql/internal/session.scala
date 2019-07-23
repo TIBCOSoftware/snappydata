@@ -235,7 +235,7 @@ class SnappyConf(@transient val session: SnappySession)
   override def setConfString(key: String, value: String): Unit = {
     val rkey = keyUpdateActions(key, Some(value), doSet = true)
     super.setConfString(rkey, value)
-    if (session.enableHiveSupport) hiveConf.setConfString(key, value)
+    if (session.enableHiveSupport) hiveConf.setConfString(rkey, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
@@ -257,7 +257,7 @@ class SnappyConf(@transient val session: SnappySession)
   override def unsetConf(key: String): Unit = {
     val rkey = keyUpdateActions(key, None, doSet = false)
     super.unsetConf(rkey)
-    if (session.enableHiveSupport) hiveConf.unsetConf(key)
+    if (session.enableHiveSupport) hiveConf.unsetConf(rkey)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
