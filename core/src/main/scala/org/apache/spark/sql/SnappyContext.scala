@@ -19,14 +19,12 @@ package org.apache.spark.sql
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
-import java.util.regex.Pattern
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-import scala.io.Source
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
 
@@ -38,7 +36,6 @@ import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
-import org.apache.hadoop.hive.conf.HiveConf
 
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -816,7 +813,6 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
-  @volatile private[this] var _hasNonDefaultHiveMetastoreConf: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
 
@@ -1099,7 +1095,6 @@ object SnappyContext extends Logging {
     if (!_globalSNContextInitialized) {
       contextLock.synchronized {
         if (!_globalSNContextInitialized) {
-          _hasNonDefaultHiveMetastoreConf = hasNonDefaultHiveMetastoreConf(sc)
           initGlobalSparkContext(sc)
           _sharedState = SnappySharedState.create(sc)
           _globalClear = session.snappyContextFunctions.clearStatic()
@@ -1134,48 +1129,6 @@ object SnappyContext extends Logging {
       }
     }
   }
-
-  private def hasNonDefaultHiveMetastoreConf(sparkContext: SparkContext): Boolean = {
-    // check for hive config XMLs in default classpath
-    val classLoader = Thread.currentThread.getContextClassLoader match {
-      case null => classOf[HiveConf].getClassLoader
-      case cl => cl
-    }
-    val resources = Seq("hive-default.xml", "hive-site.xml", "hivemetastore-site.xml")
-        .map(classLoader.getResourceAsStream).filter(_ ne null)
-    try {
-      // check for any explicit hive metastore settings in SparkConf
-      val sparkConf = sparkContext.conf
-      val search = if (resources.isEmpty) null else new StringBuilder
-      for (v <- HiveConf.ConfVars.values()) {
-        if (sparkConf.contains(v.varname)) return true
-        if (search ne null) {
-          if (search.nonEmpty) search.append('|')
-          search.append(v.varname)
-        }
-      }
-      if (search ne null) {
-        // search resource files for any relevant properties
-        val regex = Pattern.compile(search.toString())
-        resources.exists(Source.fromInputStream(_).getLines().exists {
-          case l if regex.matcher(l).matches() => true
-          case _ => false
-        })
-      } else false
-    } finally {
-      if (resources.nonEmpty) {
-        resources.foreach { r =>
-          try {
-            r.close()
-          } catch {
-            case _: java.io.IOException => // ignore
-          }
-        }
-      }
-    }
-  }
-
-  def hasNonDefaultHiveMetastoreConf: Boolean = _hasNonDefaultHiveMetastoreConf
 
   private[sql] def sharedState(sc: SparkContext): SnappySharedState = {
     var state = _sharedState
@@ -1279,7 +1232,6 @@ object SnappyContext extends Logging {
     }
     contextLock.synchronized {
       _clusterMode = null
-      _hasNonDefaultHiveMetastoreConf = false
       _globalSNContextInitialized = false
       _globalContextInitialized = false
       hiveSession = null
