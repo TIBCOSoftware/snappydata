@@ -273,4 +273,10 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       ("rm -r ./SNAP-2631-work-lead").!!
     }
   }
+  test("test_run_command"){
+    val (out, err) = executeCommand(snappyProductDir +
+        "/bin/snappy run file='somefile.sql'")
+    assert(!out.contains("[-locators=<addresses>]"),
+      s"-locators options has been removed successfully")
+  }
 }
