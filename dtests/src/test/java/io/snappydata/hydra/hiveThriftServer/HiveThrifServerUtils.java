@@ -76,7 +76,6 @@ public class HiveThrifServerUtils extends SnappyTest {
         try {
             snappyJDBCConnection = SnappyTest.getLocatorConnection();
             snappyJDBCConnection.createStatement().execute("create schema snappyDB");
-//            snappyJDBCConnection.createStatement().execute("create table if not exists snappyDB.Student(id int, name String, subject String, marks int, tid int) using column");
             snappyJDBCConnection.createStatement().execute("create external table if not exists snappyDB.stage_Student using csv options(path '/home/cbhatt/hts2/data.csv',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
             snappyJDBCConnection.createStatement().execute("create table snappyDB.Student(id int,name string,subject string,marks int,tid int) using column as select * from snappyDB.stage_Student");
             Log.getLogWriter().info("Table snappyDB.Student created successfully in snappy");
