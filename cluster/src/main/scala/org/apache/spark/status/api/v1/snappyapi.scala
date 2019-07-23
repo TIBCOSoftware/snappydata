@@ -90,7 +90,9 @@ class TableSummary private[spark](
     val sizeInMemory: Long,
     val sizeSpillToDisk: Long,
     val totalSize: Long,
-    val bucketCount: Int
+    val bucketCount: Int,
+    val redundancy: Int,
+    val redundancyImpaired: Boolean
 )
 
 class ExternalTableSummary private[spark](

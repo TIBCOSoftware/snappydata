@@ -227,6 +227,16 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       val tableTypes = hiveTables.map(ht =>
         Utils.toUpperCase(s"${ht.schema}.${ht.entityName}") -> ht.tableType).toMap
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        val tableRegion = Misc.getRegionForTable(rs.getTableName, false)
+        if (tableRegion != null) {
+          val tablePrRegion = tableRegion.asInstanceOf[PartitionedRegion]
+          val PrRegRedProvider = tablePrRegion.getRedundancyProvider
+          if (PrRegRedProvider != null) {
+            rs.setRedundancyImpaired(PrRegRedProvider.isRedundancyImpaired)
+            rs.setRedundancy(tablePrRegion.getRedundantCopies)
+          }
+        }
+
         try tableTypes.get(Utils.toUpperCase(rs.getTableName)) match {
           case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
             Utils.toUpperCase(t))) => rs.setColumnTable(true)
