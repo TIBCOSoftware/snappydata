@@ -962,11 +962,13 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     insertDataAndTestSNAP3082(conn, stmt, "STRING")
     insertDataAndTestSNAP3082(conn, stmt, "FLOAT")
     insertDataAndTestSNAP3082(conn, stmt, "DECIMAL")
+    // scalastyle:on println
 
   }
 
   private def insertDataAndTestSNAP3082(conn: Connection, stmt: Statement,
       dataTypeForSetParams: String): Unit = {
+    // scalastyle:off println
     println(s"Setting prepared statement parameters as $dataTypeForSetParams")
     stmt.execute("drop table if exists column_table")
     stmt.execute("create table column_table (col1 int, col2 decimal," +
@@ -1059,5 +1061,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     assert(result1.sameElements(result2),
       "results of prepared and unprepared statements do not match")
+    // scalastyle:on println
   }
 }
