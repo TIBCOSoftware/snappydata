@@ -597,8 +597,9 @@ class QueryRoutingDUnitTest(val s: String)
         cnt += 1
       }
       assert(cnt == 4)
-
       val md = rs.getMetaData
+      println(s"1891: metedata details = ${md.getColumnCount} ${md.getColumnName(1)} ${md.getTableName(1)}")
+
       assert(md.getColumnCount == 1)
       assert(md.getColumnName(1).equalsIgnoreCase("col1"))
       //      assert(md.getSchemaName(1).equalsIgnoreCase("test"))
@@ -1283,5 +1284,42 @@ class QueryRoutingDUnitTest(val s: String)
       assertEquals(null, rs4.getString(2))
       i4 = i4 + 1
     }
+  }
+
+  def testColumnAttributes: Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+
+    stmt.executeUpdate("create database db1")
+    stmt.executeUpdate("create database db2")
+
+    stmt.executeUpdate("create table db1.t1 (c1 integer, c2 integer)")
+    stmt.executeUpdate("create table db2.t1 (c1 integer, c2 integer)")
+
+    val rs = stmt.executeQuery("select * from db1.t1")
+    assert(rs.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"))
+    assert(rs.getMetaData.getTableName(1).equalsIgnoreCase("t1"))
+    assert(rs.getMetaData.getColumnCount.equals(2))
+    rs.close()
+
+    val rs2 = stmt.executeQuery("select a.c1, b.c2, 'static value' as c3 from db1.t1 a join db2.t1 b on a.c1 = b.c1")
+    assert(rs2.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"))
+    assert(rs2.getMetaData.getTableName(1).equalsIgnoreCase("t1"))
+    assert(rs2.getMetaData.getSchemaName(2).equalsIgnoreCase("db2"))
+    assert(rs2.getMetaData.getTableName(2).equalsIgnoreCase("t1"))
+    assert(rs2.getMetaData.getSchemaName(3).equalsIgnoreCase(""))
+    assert(rs2.getMetaData.getTableName(3).equalsIgnoreCase(""), "table name is not blank")
+    assert(rs2.getMetaData.getColumnCount.equals(3))
+    rs2.close()
+
+    val rs3 = stmt.executeQuery("select c1, count(c2) from db1.t1 group by c1")
+    assert(rs3.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"), s"expected getSchemaName to return db1 but returned ${rs3.getMetaData.getSchemaName(1)}")
+    assert(rs3.getMetaData.getTableName(1).equalsIgnoreCase("t1"))
+    assert(rs3.getMetaData.getSchemaName(2).equalsIgnoreCase(""))
+    assert(rs3.getMetaData.getTableName(2).equalsIgnoreCase(""))
+    assert(rs3.getMetaData.getColumnCount.equals(2))
+    rs3.close()
   }
 }

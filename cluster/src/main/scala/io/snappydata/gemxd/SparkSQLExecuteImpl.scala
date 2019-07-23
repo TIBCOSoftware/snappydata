@@ -41,9 +41,9 @@ import io.snappydata.{Constant, Property, QueryHint}
 
 import org.apache.spark.serializer.{KryoSerializerPool, StructTypeSerializer}
 import org.apache.spark.sql.catalyst.expressions
-import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, NamedExpression}
+import org.apache.spark.sql.catalyst.expressions.{Alias, AttributeReference, Expression, NamedExpression}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
-import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project, SubqueryAlias}
+import org.apache.spark.sql.catalyst.plans.logical.{Aggregate, Distinct, LogicalPlan, Project, SubqueryAlias, Union}
 import org.apache.spark.sql.catalyst.util.DateTimeUtils
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.LogicalRDD
@@ -194,39 +194,8 @@ class SparkSQLExecuteImpl(val sql: String,
 
   private lazy val (tableNames, nullability) = {
     val analyzed = df.queryExecution.analyzed
-    val relations = analyzed.collectLeaves
-        .filter(_.isInstanceOf[LogicalRelation])
-        .map(_.asInstanceOf[LogicalRelation])
-
-    def getQualifier(a: AttributeReference): Option[String] = {
-      relations.foreach { relation =>
-        if (relation.output.map(_.exprId.id).contains(a.exprId.id)) {
-          return Some(Seq(relation.catalogTable.get.identifier.database.getOrElse(""),
-              relation.catalogTable.get.identifier.table).mkString("."))
-        }
-      }
-      None
-    }
-
-    val attributes = analyzed match {
-      case Project(fields, child) =>
-        fields.map { projExp =>
-          val attributes = projExp.collectLeaves().filter(_.isInstanceOf[AttributeReference])
-              .map(_.asInstanceOf[AttributeReference])
-          // for 'SELECT 1...', 'SELECT col1...', 'SELECT col1 * col2...' queries
-          // attributes size will be 0, 1, 2 respectively
-          if (attributes.size > 0 && getQualifier(attributes.head).isDefined) {
-            // here 1st attribute is considered. Need to check if this behaviour is ok
-            projExp.toAttribute.withQualifier(getQualifier(attributes.head))
-          } else {
-            projExp.toAttribute
-          }
-        }
-      case _ => analyzed.output
-    }
-
     SparkSQLExecuteImpl.
-        getTableNamesAndNullability(session, attributes)
+        getTableNamesAndNullability(session, SparkSQLExecuteImpl.getAttributes(analyzed))
   }
 
   def getColumnNames: Array[String] = {
@@ -316,6 +285,49 @@ object SparkSQLExecuteImpl {
 
       // send across rest as objects that will be displayed as strings
       case _ => (StoredFormatIds.REF_TYPE_ID, -1, -1)
+    }
+  }
+
+  def getAttributes(analyzed: LogicalPlan): Seq[expressions.Attribute] = {
+    val relations = analyzed.collectLeaves
+        .filter(_.isInstanceOf[LogicalRelation])
+        .map(_.asInstanceOf[LogicalRelation])
+
+    def getQualifier(a: AttributeReference): Option[String] = {
+      relations.foreach { relation =>
+        if (relation.output.map(_.exprId.id).contains(a.exprId.id) &&
+            relation.catalogTable.isDefined) {
+          relation.catalogTable.get.identifier.database match {
+            case Some(db) => return Some(db + "." + relation.catalogTable.get.identifier.table)
+            case _ => return None
+          }
+        }
+      }
+      None
+    }
+
+    def meth(fields: Seq[NamedExpression]): Seq[expressions.Attribute] = {
+      fields.map { projExp =>
+        val attributes = projExp.collectLeaves().filter(_.isInstanceOf[AttributeReference])
+            .map(_.asInstanceOf[AttributeReference])
+        println(s"1891: projExp = ${projExp.name} attributes = ${attributes}")
+        // for 'SELECT 1...', 'SELECT col1...', 'SELECT col1 * col2...' queries
+        // attributes size will be 0, 1, 2 respectively
+        if (projExp.resolved && attributes.size == 1 && getQualifier(attributes.head).isDefined && projExp.isInstanceOf[AttributeReference]) {
+          // only when there is 1 attribute for a expression we set qualifier
+          projExp.toAttribute.withQualifier(getQualifier(attributes.head))
+        } else {
+          println(s"1891: in esle case for column ${projExp.name}: ${projExp.resolved} ${attributes.size} ")
+          projExp.toAttribute
+        }
+      }
+    }
+
+    println(s"1891: from getattributes: plan=${analyzed}")
+    analyzed match {
+      case Project(projectList, _) => meth(projectList)
+      case Aggregate(_, aggExpressions, _) => meth(aggExpressions)
+      case _ => analyzed.output
     }
   }
 

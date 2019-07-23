@@ -32,9 +32,10 @@ import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
 import org.apache.spark.sql.catalyst.expressions
-import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.catalyst.expressions.{AttributeReference, BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
+import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, Project}
 import org.apache.spark.sql.execution.PutIntoValuesColumnTable
+import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.internal.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
@@ -74,8 +75,12 @@ class SparkSQLPrepareImpl(val sql: String,
   protected[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, false, senderVersion)
 
-  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
-      getTableNamesAndNullability(session, analyzedPlan.output)
+  private lazy val (tableNames, nullability) = {
+    val (t, n) = SparkSQLExecuteImpl.
+        getTableNamesAndNullability(session, SparkSQLExecuteImpl.getAttributes(analyzedPlan))
+    println(s"1891: t and n = ${t} for ${analyzedPlan}")
+    (t, n)
+  }
 
   private lazy val (columnNames, columnDataTypes) = SparkSQLPrepareImpl.
       getTableNamesAndDatatype(analyzedPlan.output)
