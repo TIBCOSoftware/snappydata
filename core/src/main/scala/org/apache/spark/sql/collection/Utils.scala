@@ -679,7 +679,9 @@ object Utils {
           propName.startsWith(Constant.PROPERTY_PREFIX) ||
           propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
           propName.startsWith("zeppelin.") ||
-          propName.startsWith("hive.")) {
+          propName.startsWith("hive.") ||
+          propName.startsWith("hadoop.") ||
+          propName.startsWith("javax.jdo.")) {
         entry.getValue match {
           case v: String => conf.set(propName, v)
           case _ =>
@@ -852,6 +854,20 @@ object Utils {
       bucketIdGeneration(mutableRow).getInt(0)
     } else {
       -1
+    }
+  }
+
+  def executeIfSmartConnector[T](sc: SparkContext)(f: => T): Option[T] = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => Option(f)
+      case _ => None
+    }
+  }
+
+  def isSmartConnectorMode(sc: SparkContext): Boolean = {
+    SnappyContext.getClusterMode(sc) match {
+      case ThinClientConnectorMode(_, _) => true
+      case _ => false
     }
   }
 }
