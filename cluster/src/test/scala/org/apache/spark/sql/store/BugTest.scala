@@ -20,6 +20,8 @@ import java.io.{BufferedReader, FileReader}
 import java.sql.{DriverManager, SQLException}
 import java.util.Properties
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.{Property, SnappyFunSuite}
@@ -991,7 +993,13 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
     def checkResultsMatch(arr1: Array[Row], arr2: Array[Row]): Unit = {
       assertEquals(arr1.length, arr2.length)
-      arr1.foreach(row => assert(arr2.contains(row)))
+      val list = ArrayBuffer(arr2: _*)
+      arr1.foreach(row => {
+        val indx = list.indexOf(row)
+        assertTrue(indx >= 0)
+        list.remove(indx)
+      })
+      assertTrue(list.isEmpty)
     }
   }
 }
