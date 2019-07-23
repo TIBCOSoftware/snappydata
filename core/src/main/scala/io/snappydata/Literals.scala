@@ -104,7 +104,7 @@ object Property extends Enumeration {
         "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
         "CREATE TABLE which defaults to row tables. A value of 'spark' makes it fully Spark " +
         s"compatible where CREATE TABLE defaults to hive tables when ${EnableHiveSupport.name} " +
-        "is enabled on the session.  When set to 'enabled' then in addition to the behaviour " +
+        "is enabled on the session.  When set to 'full' then in addition to the behaviour " +
         "with 'spark', it makes the behavior hive compatible for statements like SHOW TABLES " +
         "rather than being compatible with Spark SQL. Default is 'default'.",
     Some("default"), prefix = null)

@@ -359,7 +359,7 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
     tablePattern: Option[String]) extends ShowTablesCommand(schemaOpt, tablePattern) {
 
   private val hiveCompatible = Property.HiveCompatibility.get(
-    session.sessionState.conf).equalsIgnoreCase("enabled")
+    session.sessionState.conf).equalsIgnoreCase("full")
 
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
@@ -392,7 +392,7 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     viewPattern: Option[String]) extends RunnableCommand {
 
   private val hiveCompatible = Property.HiveCompatibility.get(
-    session.sessionState.conf).equalsIgnoreCase("enabled")
+    session.sessionState.conf).equalsIgnoreCase("full")
 
   // The result of SHOW VIEWS has four columns: schemaName, tableName, isTemporary and isGlobal.
   override val output: Seq[Attribute] = {

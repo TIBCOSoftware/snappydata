@@ -38,6 +38,7 @@ import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.command._
 import org.apache.spark.sql.execution.datasources.{CreateTempViewUsing, DataSource, LogicalRelation, RefreshTable}
+import org.apache.spark.sql.internal.SQLConf
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.streaming.StreamPlanProvider
@@ -294,7 +295,10 @@ abstract class SnappyDDLParser(session: SnappySession)
           if (session.enableHiveSupport && !Property.HiveCompatibility.get(
             session.sessionState.conf).equalsIgnoreCase("default")) {
             DDLUtils.HIVE_PROVIDER
-          } else Consts.DEFAULT_SOURCE
+          } else {
+            session.sessionState.conf.getConfString(SQLConf.DEFAULT_DATA_SOURCE_NAME.key,
+              Consts.DEFAULT_SOURCE)
+          }
         case Some(p) => p
       }
       // check if hive provider is being used

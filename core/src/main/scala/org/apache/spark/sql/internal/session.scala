@@ -159,10 +159,10 @@ class SnappyConf(@transient val session: SnappySession)
     case Property.HiveCompatibility.name =>
       value match {
         case Some(level) => Utils.toLowerCase(level.toString) match {
-          case "default" | "enabled" | "spark" =>
+          case "default" | "spark" | "full" =>
           case _ => throw new IllegalArgumentException(
             s"Unexpected value '$level' for ${Property.HiveCompatibility.name}. " +
-                "Allowed values are: default, spark and enabled")
+                "Allowed values are: default, spark and full")
         }
         case None =>
       }
