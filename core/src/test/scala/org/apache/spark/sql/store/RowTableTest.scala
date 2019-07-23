@@ -447,6 +447,45 @@ class RowTableTest
     assert(snc.sql("SELECT * FROM " + tableName).schema.fields.length == 3)
   }
 
+  test("Test alter table drop column with restrict/cascade") {
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+    snc.createTable(tableName, "row", dataDF.schema, props)
+    dataDF.write.format("row").mode(SaveMode.Append).options(props).saveAsTable(tableName)
+    snc.alterTable(tableName, false, StructField("col3", IntegerType, true),"cascade")
+
+    assert(snc.sql(s"select * from $tableName").columns.length == 2)
+
+    snc.sql("create table tab1 (col1 int, col2 boolean, col3 string, col4 int" +
+        ", constraint pktab1 primary key(col1), constraint tab1_uq1 unique(col4), constraint" +
+        " chktab1 check(col3 in ('aaa', 'bbb', 'ccc', 'ddd')))")
+    snc.sql("insert into tab1 values (1,false, 'aaa',2222)")
+    snc.sql("insert into tab1 values (2,true, 'bbb',3333)")
+    snc.sql("insert into tab1 values (3,false, 'ccc',444)")
+
+    snc.sql("create table tab2 (c1 int , c2 boolean, c3 float, constraint fktab2_tab1" +
+        " foreign key(c1) references tab1(col4), constraint chktab2 check (c3 > 5.5))")
+    snc.sql("insert into tab2 values (2222,true,5.6)")
+    snc.sql("insert into tab2 values (3333,true,6.6)")
+
+    snc.sql("alter table tab2 drop column c1 cascade")
+    snc.sql("alter table tab2 drop column c3 cascade")
+    snc.sql("alter table tab1 drop column col2 restrict")
+    snc.sql("alter table tab1 drop column col4 cascade")
+
+    val df1 = snc.sql("select * from tab1")
+    val df2 = snc.sql("select * from tab2")
+    assert(df1.columns.length === 2 && df2.columns.length === 1)
+    assert(df1.count() === 3 && df2.count() === 2)
+
+    try{
+      snc.sql("alter table tab1 drop column col3 restrict")
+    } catch{
+      case e : Exception => assert(e.getMessage === "Operation 'DROP COLUMN' cannot be performed on object 'COL3' because CONSTRAINT 'CHKTAB1' is dependent on that object.")
+    }
+  }
+
   test("Test alter table add column SQL with default value") {
     snc.sql("drop table if exists employees")
     snc.sql("create table employees(name string, surname string)")

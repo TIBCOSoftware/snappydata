@@ -618,7 +618,12 @@ abstract class SnappyDDLParser(session: SparkSession)
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
         ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
-        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
+        DROP ~ COLUMN.? ~ identifier ~ EOI ~> ((table: TableIdentifier, col: String)
+        => AlterTableDropColumnCommand(table, col)) |
+        DROP ~ COLUMN.? ~ identifier ~ CASCADE ~ EOI ~> ((table: TableIdentifier, col: String)
+        => AlterTableDropColumnCommand(table, col, "cascade")) |
+        DROP ~ COLUMN.? ~ identifier ~ RESTRICT ~ EOI ~> ((table: TableIdentifier, col: String)
+        => AlterTableDropColumnCommand(table, col, "restrict")) |
         capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
           DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedUppercaseId(r)} $s"))
     )
