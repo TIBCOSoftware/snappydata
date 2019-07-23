@@ -7,20 +7,3 @@ INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/smartConnectorMode/testDMLOpsUsin
 INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/dmlOpsHA.bt
 
 //INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/dmlOpsUsingAPI.bt
-
-// Test for SNAP-2228
-io/snappydata/hydra/testDMLOps/smartConnectorMode/testDMLOpsInAppWithSchemaChange.conf
-  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
-  persistenceMode="sync" redundantCopies=1
-
-// Test for SNAP-3055
-io/snappydata/hydra/testDMLOps/testDMLOpsWithDropSchema.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
-  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
-  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  D=worker workerHosts=2 workerVMsPerHost=1 workerThreadsPerVM=1
-  persistenceMode="sync" redundantCopies=1
-

@@ -41,6 +41,7 @@ import com.gemstone.gemfire.cache.query.types.ObjectType;
 import hydra.Log;
 import hydra.Prms;
 import hydra.TestConfig;
+import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.consistency.SnappyConsistencyTest;
@@ -59,8 +60,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   public static boolean largeDataSet = TestConfig.tab().booleanAt(SnappySchemaPrms
       .largeDataSet, false);
 
-  public static boolean schemaChanged = false;
-
   protected static hydra.blackboard.SharedLock bbLock;
 
   protected static SnappyDMLOpsUtil testInstance;
@@ -71,11 +70,15 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       testInstance = new SnappyDMLOpsUtil();
     int dmlTableLength = SnappySchemaPrms.getDMLTables().length;
     ArrayList<Integer> insertCounters = new ArrayList<>();
+    ArrayList<Integer> deleteCounters = new ArrayList<>();
     for (int i = 0; i < dmlTableLength; i++) {
       insertCounters.add(1);
+      deleteCounters.add(0);
     }
     if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
       SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
+    if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("deleteCounters"))
+      SnappyDMLOpsBB.getBB().getSharedMap().put("deleteCounters", insertCounters);
     if(derbyTestUtils == null)
       derbyTestUtils = new DerbyTestUtils();
   }
@@ -273,17 +276,18 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       Statement s = conn.createStatement();
       for (int i = 0; i < schemas.length; i++) {
         s.execute(schemas[i]);
-        sleepForMs(5);
-        s.cancel();
+        // sleepForMs(5);
+        // s.cancel();
         aStr.append(schemas[i] + "\n");
       }
       s.close();
       commit(conn);
     } catch (SQLException se) {
-        throw new TestException("Got exception while dropping schemas in snappy...");
+        throw new TestException("Got exception while dropping schemas in snappy...", se);
     }
     Log.getLogWriter().info(aStr.toString());
   }
+
 
   public static synchronized void HydraTask_createSnappyTables() {
     testInstance.createSnappyTables();
@@ -419,9 +423,11 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     Log.getLogWriter().info("Loading data in snappy...");
     loadTablesInSnappy(dataLocation);
     Log.getLogWriter().info("Loaded data in snappy.");
-    Log.getLogWriter().info("Loading data in derby...");
-    loadTablesInDerby(dataLocation);
-    Log.getLogWriter().info("Loaded data in derby.");
+    if(hasDerbyServer) {
+      Log.getLogWriter().info("Loading data in derby...");
+      loadTablesInDerby(dataLocation);
+      Log.getLogWriter().info("Loaded data in derby.");
+    }
   }
 
   public void loadTablesInSnappy(String dataLocation) {
@@ -461,14 +467,13 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
   public static void HydraTask_populateTables() {
     String[] tableNames = SnappySchemaPrms.getTableNames();
-    int numInserts = SnappySchemaPrms.getBatchSize();
-    for (int i = 0; i < tableNames.length; i++) {
-      Log.getLogWriter().info("Loading data for " + tableNames[i]);
-      if (!SnappySchemaPrms.hasCsvData()) {
+    if (!SnappySchemaPrms.hasCsvData()) {
+      int numInserts = 1000000;
+      for (int i = 0; i < tableNames.length; i++) {
+        Log.getLogWriter().info("Loading data for " + tableNames[i]);
         testInstance.performInsertUsingBatch(tableNames[i], i, numInserts, true);
-      } else
-      testInstance.populateTables();
-    }
+      }
+    } else testInstance.populateTables();
   }
 
   protected void populateTables() {
@@ -610,6 +615,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
    */
   public static void HydraTask_changeTableSchema() {
     testInstance.changeTableSchema();
+    SnappyBB.getBB().getSharedMap().put("schemaChanged", true);
+    HydraTask_saveTableMetaDataToBB();
     HydraTask_populateTables();
   }
 
@@ -662,7 +669,6 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           + TestHelper.getStackTrace(se));
     }
     Log.getLogWriter().info(aStr.toString());
-    schemaChanged = true;
   }
 
   public static void HydraTask_performDMLOpsInAppAfterSchemaChange() {
@@ -736,7 +742,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       boolean isPopulate) {
     Connection conn;
     String stmt;
-    if (schemaChanged)
+    if (SnappyBB.getBB().getSharedMap().containsKey("schemaChanged") && ((boolean) SnappyBB.getBB().getSharedMap().get("schemaChanged")))
       stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(index);
     else {
       if(isPopulate) {
@@ -763,6 +769,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
     releaseBBLock();
     return initCounter;
+  }
+
+  public int getDeleteCounter(int index, int batchSize){
+    getBBLock();
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("deleteCounters");
+    int delCounter = counters.get(index) + batchSize;
+    counters.set(index, delCounter);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("deleteCounters", counters);
+    releaseBBLock();
+    return delCounter;
   }
 
   public void performInsertUsingBatch(Connection conn, String tableName,

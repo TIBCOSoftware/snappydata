@@ -52,7 +52,9 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
   } else {
     compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")

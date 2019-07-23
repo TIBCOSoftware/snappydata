@@ -2168,12 +2168,11 @@ public class SnappyTest implements Serializable {
   }
 
   protected String getPrimaryLeadHost() {
-    leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
     if (leadHost == null) {
       retrievePrimaryLeadHost();
       leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
       Log.getLogWriter().info("primaryLead Host is: " + leadHost);
-    }
+    }  else leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
     return leadHost;
   }
 
@@ -2196,10 +2195,8 @@ public class SnappyTest implements Serializable {
     if (appName == null) appName = SnappyPrms.getUserAppName() + "_" + System.currentTimeMillis();
     snappyTest.verifyDataForJobExecution(jobClassNames, userAppJar);
     leadHost = getLeadHost();
-    //String leadPort = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
     String leadPort = getLeadPort();
-    Log.getLogWriter().info("primaryLead Host is : " + leadHost);
-    Log.getLogWriter().info("primaryLead Port is : " + leadPort);
+    Log.getLogWriter().info("Primary Lead host:port =  " + leadHost + ":" + leadPort);
     try {
       for (int i = 0; i < jobClassNames.size(); i++) {
         String userJob = (String) jobClassNames.elementAt(i);
@@ -2982,6 +2979,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_cycleLeadVM() {
     if (cycleVms) {
+      leadHost = null;
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
       Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
