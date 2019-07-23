@@ -42,6 +42,7 @@ import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation,
 import org.apache.spark.sql.execution.{SecurityUtils, datasources}
 import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
+import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DecimalType, StringType}
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, SnappyParser, SnappySession}
@@ -143,12 +144,12 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
       key
 
-    case Property.EnableHiveSupport.name =>
+    case CATALOG_IMPLEMENTATION.key =>
       val oldValue = session.enableHiveSupport
       value match {
-        case Some(boolVal) => session.enableHiveSupport = boolVal.toString.toBoolean
-        case None => session.enableHiveSupport = Property.EnableHiveSupport.defaultValue.get ||
-            SnappyContext.hasNonDefaultHiveMetastoreConf
+        case Some(v) => session.enableHiveSupport = session.isHiveSupportEnabled(v.toString)
+        case None =>
+          session.enableHiveSupport = CATALOG_IMPLEMENTATION.defaultValueString == "hive"
       }
       // if external hive catalog was enabled, then set its current schema
       if (!oldValue && session.enableHiveSupport) {

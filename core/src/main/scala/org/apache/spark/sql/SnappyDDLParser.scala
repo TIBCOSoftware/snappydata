@@ -302,13 +302,8 @@ abstract class SnappyDDLParser(session: SnappySession)
         case Some(p) => p
       }
       // check if hive provider is being used
-      if (provider.equalsIgnoreCase(DDLUtils.HIVE_PROVIDER)) {
-        if (session.enableHiveSupport) {
-          sparkParser.parsePlan(input.sliceString(0, input.length))
-        } else {
-          throw Utils.analysisException(s"Hive support (${Property.EnableHiveSupport.name}) " +
-              "is required to create hive tables")
-        }
+      if (provider.equalsIgnoreCase(DDLUtils.HIVE_PROVIDER) && session.enableHiveSupport) {
+        sparkParser.parsePlan(input.sliceString(0, input.length))
       } else {
         val schemaString = schemaStr.toString().trim
         // check if a relation supporting free-form schema has been used that supports
@@ -661,7 +656,7 @@ abstract class SnappyDDLParser(session: SnappySession)
                 ((table: TableIdentifier, isAdd: Boolean, s: String) =>
                   AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
                     s"${if (isAdd) "ADD" else "DROP"} $s")) |
-            COLUMN.? ~ (column | identifier) ~ defaultVal ~> {
+            COLUMN.? ~ (column | identifier) ~ defaultVal ~ RESTRICT.? ~> {
               (t: TableIdentifier, isAdd: Boolean, c: Any, defVal: Option[String]) =>
                 val col = c match {
                   case s: String => if (isAdd) throw new ParseException(
@@ -675,8 +670,8 @@ abstract class SnappyDDLParser(session: SnappySession)
             }
         ) |
         // other store ALTER statements which don't effect the snappydata catalog
-        ALTER ~ capture(ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
-          AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} ALTER $s"))
+        capture((ALTER | SET) ~ ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
+          AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s"))
     )
   }
 
@@ -800,7 +795,7 @@ abstract class SnappyDDLParser(session: SnappySession)
    */
   protected def delegateToSpark: Rule1[LogicalPlan] = rule {
     (
-        ADD | ANALYZE | ALTER ~ (DATABASE | TABLE | VIEW) | CREATE ~ DATABASE |
+        ADD | ANALYZE | ALTER ~ (DATABASE | TABLE | VIEW) | CREATE ~ (DATABASE | TABLE) |
         DESCRIBE | DESC | LIST | LOAD | MSCK | REFRESH | SHOW | TRUNCATE
     ) ~ ANY.* ~ EOI ~>
         (() => sparkParser.parsePlan(input.sliceString(0, input.length)))

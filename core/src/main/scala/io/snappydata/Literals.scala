@@ -93,18 +93,12 @@ object Property extends Enumeration {
         "embedded HiveServer2 with thrift access will be started in foreground. Default is true " +
         "but starts the service in background.", Some(true), prefix = null)
 
-  val EnableHiveSupport: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hive.enabled", "Property on SnappySession to enable " +
-        "external hive meta-store support as configured using SparkConf and hive-site.xml. " +
-        "Default is true when non-default hive meta-store properties are set and false otherwise.",
-    Some(false))
-
   val HiveCompatibility: SQLValue[String] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hive.compatibility", "Property on SnappySession to make " +
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatibility", "Property on SnappySession to make " +
         "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
         "CREATE TABLE which defaults to row tables. A value of 'spark' makes it fully Spark " +
-        s"compatible where CREATE TABLE defaults to hive tables when ${EnableHiveSupport.name} " +
-        "is enabled on the session.  When set to 'full' then in addition to the behaviour " +
+        s"compatible where CREATE TABLE defaults to hive tables when catalogImplementation is " +
+        "'hive' for the session.  When set to 'full' then in addition to the behaviour " +
         "with 'spark', it makes the behavior hive compatible for statements like SHOW TABLES " +
         "rather than being compatible with Spark SQL. Default is 'default'.",
     Some("default"), prefix = null)

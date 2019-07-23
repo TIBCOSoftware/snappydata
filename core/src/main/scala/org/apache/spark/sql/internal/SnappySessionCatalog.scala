@@ -553,19 +553,13 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     // first check required permission to create objects in a schema
     val schemaName = getSchemaName(table.identifier)
     checkSchemaPermission(schemaName, table.identifier.table, defaultUser = null)
+    createSchema(schemaName, ignoreIfExists = true)
 
     // hive tables will be created in external hive catalog if enabled else will fail
     table.provider match {
-      case Some(DDLUtils.HIVE_PROVIDER) =>
-        if (snappySession.enableHiveSupport) {
-          createSchema(schemaName, ignoreIfExists = true)
-          hiveSessionCatalog.createTable(table, ignoreIfExists)
-        }
-        else throw Utils.analysisException(s"Hive support (${Property.EnableHiveSupport.name}) " +
-            "is required to create hive tables")
-      case _ =>
-        createSchema(schemaName, ignoreIfExists = true)
-        super.createTable(table, ignoreIfExists)
+      case Some(DDLUtils.HIVE_PROVIDER) if snappySession.enableHiveSupport =>
+        hiveSessionCatalog.createTable(table, ignoreIfExists)
+      case _ => super.createTable(table, ignoreIfExists)
     }
   }
 

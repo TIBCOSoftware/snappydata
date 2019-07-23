@@ -40,7 +40,6 @@ import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsP
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
-import org.apache.spark.internal.config.ConfigEntry
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession.CACHED_PUTINTO_UPDATE_PLAN
@@ -66,7 +65,7 @@ import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNes
 import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
 import org.apache.spark.sql.row.{JDBCMutableRelation, SnappyStoreDialect}
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
@@ -315,14 +314,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var disableHashJoin: Boolean = Property.DisableHashJoin.get(sessionState.conf)
 
   @transient
-  private[sql] var enableHiveSupport: Boolean = {
-    sessionState.conf.getConf(
-      Property.EnableHiveSupport.configEntry.entry.asInstanceOf[ConfigEntry[Boolean]],
-      Property.EnableHiveSupport.defaultValue.get || SnappyContext.hasNonDefaultHiveMetastoreConf)
-  }
+  private[sql] var enableHiveSupport: Boolean =
+    isHiveSupportEnabled(sessionState.conf.getConf(StaticSQLConf.CATALOG_IMPLEMENTATION))
 
   @transient
   private var sqlWarnings: SQLWarning = _
+
+  private[sql] def isHiveSupportEnabled(v: String): Boolean = Utils.toLowerCase(v) match {
+    case "hive" => true
+    case "in-memory" => false
+    case _ => throw new IllegalArgumentException(
+      s"Unexpected value '$v' for ${StaticSQLConf.CATALOG_IMPLEMENTATION.key}. " +
+          "Allowed values are: in-memory and hive")
+  }
 
   def getPreviousQueryHints: java.util.Map[String, String] =
     java.util.Collections.unmodifiableMap(queryHints)
@@ -1410,7 +1414,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
-      case LogicalRelation(r: JDBCMutableRelation, _, _) => r.executeUpdate(sql, getCurrentSchema)
+      case LogicalRelation(r: JDBCMutableRelation, _, _) =>
+        r.executeUpdate(sql, JdbcExtendedUtils.toUpperCase(getCurrentSchema))
       case _ => throw new AnalysisException(
         s"ALTER TABLE ${tableIdent.unquotedString} variant only supported for row tables")
     }
