@@ -84,17 +84,21 @@ class SnappyExecutor(
         val appNameAndJars = key.appNameAndJars
         lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
         val appDependencies = appNameAndJars.drop(2).toSeq
-        logInfo(s"Creating ClassLoader for $appName" +
-            s" with dependencies $appDependencies")
-        val urls = appDependencies.map(name => {
-          val localName = name.split("/").last
-          logInfo(s"Fetching file $name for App[$appName]")
-          Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
-            env.securityManager, hadoopConf, -1L, useCache = !isLocal)
-          val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
-          Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName, name)
-          url
-        })
+        var urls = Seq.empty[URL]
+        // Prepare urls only if this is not in dropped functions list
+        if (!ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, appName)) {
+          logInfo(s"Creating ClassLoader for $appName" +
+              s" with dependencies $appDependencies")
+          urls = appDependencies.map(name => {
+            val localName = name.split("/").last
+            logInfo(s"Fetching file $name for App[$appName]")
+            Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
+              env.securityManager, hadoopConf, -1L, useCache = !isLocal)
+            val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
+            Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName, name)
+            url
+          })
+        }
         val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
         KryoSerializerPool.clear()
         newClassLoader

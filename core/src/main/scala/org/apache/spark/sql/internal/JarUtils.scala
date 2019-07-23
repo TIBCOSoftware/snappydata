@@ -45,6 +45,8 @@ object ContextJarUtils extends Logging {
   val JAR_PATH = "snappy-jars"
   private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
   val functionKeyPrefix = "__FUNC__"
+  val droppedFunctionsKey = functionKeyPrefix + "DROPPED__"
+  val DELIMITER = ","
 
   def addDriverJar(key: String, classLoader: URLClassLoader): Option[URLClassLoader] = {
     driverJars.putIfAbsent(key, classLoader)
@@ -90,6 +92,8 @@ object ContextJarUtils extends Logging {
       val jarFile = new File(jarDir, changedFileName)
 
       try {
+        // Add to the list in (__FUNC__DROPPED__, dropped-udf-list)
+        addToTheListInCmdRegion(droppedFunctionsKey, prefix + DELIMITER, droppedFunctionsKey)
         if (jarFile.exists()) {
           jarFile.delete()
           RefreshMetadata.executeOnAll(sparkContext, RefreshMetadata.REMOVE_FUNCTION_JAR,
@@ -107,6 +111,35 @@ object ContextJarUtils extends Logging {
     val jarDirectory = new File(System.getProperty("user.dir"), JAR_PATH)
     if (!jarDirectory.exists()) jarDirectory.mkdir()
     jarDirectory
+  }
+
+  def addToTheListInCmdRegion(k: String, item: String, head: String): Unit = {
+    val r = Misc.getMemStore.getGlobalCmdRgn
+    var old1: String = null
+    var old2: String = null
+    do {
+      old1 = r.get(k)
+      val newValue = if (old1 != null) old1 + item else head + item
+      old2 = r.put(k, newValue)
+    } while (old1 != old2)
+  }
+
+  def removeFromTheListInCmdRegion(k: String, item: String): Unit = {
+    val r = Misc.getMemStore.getGlobalCmdRgn
+    var old1: String = null
+    var old2: String = null
+    do {
+      old1 = r.get(k)
+      if (old1 != null) {
+        val newValue = old1.replace(item, "")
+        old2 = r.put(k, newValue)
+      }
+    } while (old1 != old2)
+  }
+
+  def checkItemExists(k: String, item: String): Boolean = {
+    val value = Misc.getMemStore.getGlobalCmdRgn.get(k)
+    value != null && value.contains(item)
   }
 }
 

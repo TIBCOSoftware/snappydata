@@ -49,7 +49,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiv
 import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand}
 import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
-import org.apache.spark.sql.internal.{SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.internal.{ContextJarUtils, SnappySessionState, SnappySharedState}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -1110,8 +1110,10 @@ object SnappyContext extends Logging {
                     val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
                     DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
                   }
-                  else if (!cmdFields(0).startsWith("spark://")) {
+                  else if (!cmdFields(0).startsWith("spark://")
+                      && !cmdFields(0).startsWith(ContextJarUtils.droppedFunctionsKey)) {
                     // Skipped function jars above as these are locally copied.
+                    // Skipped dropped functions entry
                     // Jars we have
                     DeployJarCommand(null, cmdFields(0), restart = true).run(session)
                   }

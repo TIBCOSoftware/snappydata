@@ -594,6 +594,8 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
         var alias = t.getKey
+        // Skip dropped functions entry
+        if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
         // Explicitly mark functions as UDF while listing jars/packages.
         alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
         val value = t.getValue

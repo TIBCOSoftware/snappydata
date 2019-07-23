@@ -132,7 +132,7 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       if (!args(0).isEmpty) { // args(0) = appname-filename
         val appName = args(0).split('-')(0)
         val url = Misc.getMemStore.getGlobalCmdRgn.get(ContextJarUtils.functionKeyPrefix + appName)
-        if (!url.isEmpty) {
+        if (url != null && !url.isEmpty) {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
           val lockFileName = s"${url.hashCode}-1_lock"
