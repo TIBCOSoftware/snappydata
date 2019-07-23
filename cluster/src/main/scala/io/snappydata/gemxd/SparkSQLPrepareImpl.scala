@@ -75,12 +75,8 @@ class SparkSQLPrepareImpl(val sql: String,
   protected[this] val hdos = new GfxdHeapDataOutputStream(
     thresholdListener, sql, false, senderVersion)
 
-  private lazy val (tableNames, nullability) = {
-    val (t, n) = SparkSQLExecuteImpl.
+  private lazy val (tableNames, nullability) = SparkSQLExecuteImpl.
         getTableNamesAndNullability(session, SparkSQLExecuteImpl.getAttributes(analyzedPlan))
-    println(s"1891: t and n = ${t} for ${analyzedPlan}")
-    (t, n)
-  }
 
   private lazy val (columnNames, columnDataTypes) = SparkSQLPrepareImpl.
       getTableNamesAndDatatype(analyzedPlan.output)

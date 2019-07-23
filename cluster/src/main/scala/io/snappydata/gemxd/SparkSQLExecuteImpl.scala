@@ -306,27 +306,26 @@ object SparkSQLExecuteImpl {
       None
     }
 
-    def meth(fields: Seq[NamedExpression]): Seq[expressions.Attribute] = {
+    def addQualifier(fields: Seq[NamedExpression]): Seq[expressions.Attribute] = {
       fields.map { projExp =>
         val attributes = projExp.collectLeaves().filter(_.isInstanceOf[AttributeReference])
             .map(_.asInstanceOf[AttributeReference])
-        println(s"1891: projExp = ${projExp.name} attributes = ${attributes}")
         // for 'SELECT 1...', 'SELECT col1...', 'SELECT col1 * col2...' queries
         // attributes size will be 0, 1, 2 respectively
-        if (projExp.resolved && attributes.size == 1 && getQualifier(attributes.head).isDefined && projExp.isInstanceOf[AttributeReference]) {
+        if (projExp.resolved && attributes.size == 1 &&
+            getQualifier(attributes.head).isDefined &&
+            projExp.isInstanceOf[AttributeReference]) {
           // only when there is 1 attribute for a expression we set qualifier
           projExp.toAttribute.withQualifier(getQualifier(attributes.head))
         } else {
-          println(s"1891: in esle case for column ${projExp.name}: ${projExp.resolved} ${attributes.size} ")
           projExp.toAttribute
         }
       }
     }
 
-    println(s"1891: from getattributes: plan=${analyzed}")
     analyzed match {
-      case Project(projectList, _) => meth(projectList)
-      case Aggregate(_, aggExpressions, _) => meth(aggExpressions)
+      case Project(projectList, _) => addQualifier(projectList)
+      case Aggregate(_, aggExpressions, _) => addQualifier(aggExpressions)
       case _ => analyzed.output
     }
   }

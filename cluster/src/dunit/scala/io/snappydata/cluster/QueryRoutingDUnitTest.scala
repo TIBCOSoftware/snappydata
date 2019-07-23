@@ -598,8 +598,6 @@ class QueryRoutingDUnitTest(val s: String)
       }
       assert(cnt == 4)
       val md = rs.getMetaData
-      println(s"1891: metedata details = ${md.getColumnCount} ${md.getColumnName(1)} ${md.getTableName(1)}")
-
       assert(md.getColumnCount == 1)
       assert(md.getColumnName(1).equalsIgnoreCase("col1"))
       //      assert(md.getSchemaName(1).equalsIgnoreCase("test"))
@@ -1299,27 +1297,42 @@ class QueryRoutingDUnitTest(val s: String)
     stmt.executeUpdate("create table db2.t1 (c1 integer, c2 integer)")
 
     val rs = stmt.executeQuery("select * from db1.t1")
-    assert(rs.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"))
-    assert(rs.getMetaData.getTableName(1).equalsIgnoreCase("t1"))
+    assert(rs.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"),
+      s"expected db1 but received ${rs.getMetaData.getSchemaName(1)}")
+    assert(rs.getMetaData.getTableName(1).equalsIgnoreCase("t1"),
+      s"expected t1 but received ${rs.getMetaData.getTableName(1)}")
     assert(rs.getMetaData.getColumnCount.equals(2))
     rs.close()
 
-    val rs2 = stmt.executeQuery("select a.c1, b.c2, 'static value' as c3 from db1.t1 a join db2.t1 b on a.c1 = b.c1")
-    assert(rs2.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"))
-    assert(rs2.getMetaData.getTableName(1).equalsIgnoreCase("t1"))
-    assert(rs2.getMetaData.getSchemaName(2).equalsIgnoreCase("db2"))
-    assert(rs2.getMetaData.getTableName(2).equalsIgnoreCase("t1"))
-    assert(rs2.getMetaData.getSchemaName(3).equalsIgnoreCase(""))
-    assert(rs2.getMetaData.getTableName(3).equalsIgnoreCase(""), "table name is not blank")
-    assert(rs2.getMetaData.getColumnCount.equals(3))
+    val rs2 = stmt.executeQuery(
+      "select a.c1, b.c2, 'static value' as c3 from db1.t1 a join db2.t1 b on a.c1 = b.c1")
+    assert(rs2.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"),
+      s"expected db1 but received ${rs2.getMetaData.getSchemaName(1)}")
+    assert(rs2.getMetaData.getTableName(1).equalsIgnoreCase("t1"),
+      s"expected t1 but received ${rs2.getMetaData.getSchemaName(2)}")
+    assert(rs2.getMetaData.getSchemaName(2).equalsIgnoreCase("db2"),
+      s"expected db2 but received ${rs2.getMetaData.getSchemaName(2)}")
+    assert(rs2.getMetaData.getTableName(2).equalsIgnoreCase("t1"),
+      s"expected t1 but received ${rs2.getMetaData.getTableName(2)}")
+    assert(rs2.getMetaData.getSchemaName(3).equalsIgnoreCase(""),
+      s"expected blank but received ${rs2.getMetaData.getSchemaName(3)}")
+    assert(rs2.getMetaData.getTableName(3).equalsIgnoreCase(""),
+      s"expected blank but received ${rs2.getMetaData.getTableName(3)}")
+    assert(rs2.getMetaData.getColumnCount.equals(3),
+      s"expected column count to be 3 but received ${rs2.getMetaData.getColumnCount}")
     rs2.close()
 
     val rs3 = stmt.executeQuery("select c1, count(c2) from db1.t1 group by c1")
-    assert(rs3.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"), s"expected getSchemaName to return db1 but returned ${rs3.getMetaData.getSchemaName(1)}")
-    assert(rs3.getMetaData.getTableName(1).equalsIgnoreCase("t1"))
-    assert(rs3.getMetaData.getSchemaName(2).equalsIgnoreCase(""))
-    assert(rs3.getMetaData.getTableName(2).equalsIgnoreCase(""))
-    assert(rs3.getMetaData.getColumnCount.equals(2))
+    assert(rs3.getMetaData.getSchemaName(1).equalsIgnoreCase("db1"),
+      s"expected db1 but received ${rs3.getMetaData.getSchemaName(1)}")
+    assert(rs3.getMetaData.getTableName(1).equalsIgnoreCase("t1"),
+      s"expected t1 but received ${rs3.getMetaData.getTableName(1)}")
+    assert(rs3.getMetaData.getSchemaName(2).equalsIgnoreCase(""),
+      s"expected blank but received ${rs3.getMetaData.getSchemaName(2)}")
+    assert(rs3.getMetaData.getTableName(2).equalsIgnoreCase(""),
+      s"expected blank but received ${rs3.getMetaData.getTableName(2)}")
+    assert(rs3.getMetaData.getColumnCount.equals(2),
+      s"expected column count to be 2 but received ${rs3.getMetaData.getColumnCount}")
     rs3.close()
   }
 }
