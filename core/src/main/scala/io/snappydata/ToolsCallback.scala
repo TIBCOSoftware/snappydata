@@ -54,6 +54,8 @@ trait ToolsCallback {
   def addURIs(alias: String, jars: Array[String],
       deploySql: String, isPackage: Boolean = true): Unit
 
+  def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
+
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
   def getAllGlobalCmnds: Array[String]

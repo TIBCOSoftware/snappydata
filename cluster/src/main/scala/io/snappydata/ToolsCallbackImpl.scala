@@ -18,13 +18,12 @@ package io.snappydata
 
 import java.io.File
 import java.lang.reflect.InvocationTargetException
-import java.net.URLClassLoader
+import java.net.{URI, URLClassLoader}
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.impl.LeadImpl
-
+import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
@@ -162,4 +161,17 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def checkSchemaPermission(schema: String, currentUser: String): String =
     StoreCallbacksImpl.checkSchemaPermission(schema, currentUser)
+
+  override def removeURIs(uris: Array[String], isPackage: Boolean): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    val allURLs = lead.urlclassloader.getURLs
+    val updatedURLs = allURLs.toBuffer
+    uris.foreach(uri => {
+      val newUri = new URI("file:" + uri)
+      updatedURLs.remove(updatedURLs.indexOf(newUri.toURL))
+    })
+    val parent = Thread.currentThread().getContextClassLoader
+    lead.urlclassloader = new ExtendibleURLClassLoader(parent)
+    updatedURLs.foreach(url => lead.urlclassloader.addURL(url))
+  }
 }
