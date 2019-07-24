@@ -20,6 +20,8 @@ import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 
+import scala.collection.JavaConverters._
+
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.cluster.ExecutorInitiator
@@ -157,7 +159,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
-    Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
+    val r = Misc.getMemStore.getGlobalCmdRgn
+    val keys = r.keySet().asScala.filter(p => !p.startsWith(ContextJarUtils.functionKeyPrefix))
+    r.getAll(keys.asJava).values().toArray.map(_.asInstanceOf[String])
   }
 
   override def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]] = {

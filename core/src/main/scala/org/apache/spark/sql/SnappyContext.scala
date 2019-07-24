@@ -1100,7 +1100,7 @@ object SnappyContext extends Logging {
                 val nonEmpty = deployCmds.length > 0
                 if (nonEmpty) {
                   logInfo(s"deploycmnds size = ${deployCmds.length}")
-                  deployCmds.foreach(s => logDebug(s"s"))
+                  deployCmds.foreach(s => logDebug(s"$s"))
                 }
                 if (nonEmpty) deployCmds.foreach(d => {
                   val cmdFields = d.split('|')
@@ -1110,10 +1110,7 @@ object SnappyContext extends Logging {
                     val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
                     DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
                   }
-                  else if (!cmdFields(0).startsWith("spark://")
-                      && !cmdFields(0).startsWith(ContextJarUtils.droppedFunctionsKey)) {
-                    // Skipped function jars above as these are locally copied.
-                    // Skipped dropped functions entry
+                  else {
                     // Jars we have
                     DeployJarCommand(null, cmdFields(0), restart = true).run(session)
                   }
