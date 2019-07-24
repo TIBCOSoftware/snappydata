@@ -25,7 +25,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -323,6 +323,26 @@ class SplitSnappyClusterDUnitTest(s: String)
           "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2")
     }
     assert(thrown.getMessage === s"""Invalid input \"mongo-#\", expected packageIdentifierPart or stringLiteral (line 1, column 26):\ndeploy package \"testsch\".mongo-###park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2\n                         ^;""")
+
+  }
+
+  def testDeployPackageDuplicateName: Unit = {
+    val sns = new SnappySession(sc)
+    sns.sql("deploy package mongo-spark_v.1.5" +
+        " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+
+    sns.sql("deploy package mongo-spark_v.1.5_dup" +
+        "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+
+    assert(sns.sql("list packages").count() == 2)
+
+    sns.sql("deploy package akka 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
+
+    Try(sns.sql("deploy package akka 'com.databricks:spark-avro_2.11:4.0.0'")) match {
+      case Success(df) => throw new AssertionError(
+        "Should not have succedded with incorrect options")
+      case Failure(error) => // Do nothing
+    }
 
   }
 
