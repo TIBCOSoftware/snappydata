@@ -144,7 +144,7 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
       key
 
-    case CATALOG_IMPLEMENTATION.key =>
+    case CATALOG_IMPLEMENTATION.key if session.initialized =>
       val oldValue = session.enableHiveSupport
       value match {
         case Some(v) => session.enableHiveSupport = session.isHiveSupportEnabled(v.toString)
