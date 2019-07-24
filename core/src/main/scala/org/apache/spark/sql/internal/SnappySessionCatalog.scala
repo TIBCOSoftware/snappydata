@@ -113,8 +113,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    * "snappydata.sql.hive.enabled" is set on the session.
    */
   protected final lazy val hiveSessionCatalog: HiveSessionCatalog =
-    snappySession.sessionState.hiveSession.sessionState
-        .catalog.asInstanceOf[HiveSessionCatalog]
+    snappySession.sessionState.hiveState.catalog
 
   /**
    * Return true if the given table is not present in the builtin catalog and

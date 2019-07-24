@@ -280,6 +280,13 @@ abstract class SnappyDDLParser(session: SnappySession)
         ((id: String, cm: Any) => id -> cm.asInstanceOf[Option[String]])
   }
 
+  protected def createHiveTable: Rule1[LogicalPlan] = rule {
+    test(session.enableHiveSupport) ~ capture(CREATE ~ TABLE ~ ifNotExists ~
+        tableIdentifier ~ tableSchema.?) ~ USING ~ ignoreCase("hive") ~ ws ~ capture(ANY.*) ~>
+        ((_: Boolean, _: TableIdentifier, _: Any, head: String, tail: String) =>
+          sparkParser.parsePlan(head + tail))
+  }
+
   protected def createTable: Rule1[LogicalPlan] = rule {
     CREATE ~ (EXTERNAL ~ push(true)).? ~ TABLE ~ ifNotExists ~
         tableIdentifier ~ tableEnd ~> { (external: Any, allowExisting: Boolean,
@@ -884,15 +891,11 @@ abstract class SnappyDDLParser(session: SnappySession)
           if (separatorIndex >= 0) {
             val key = rest.substring(0, separatorIndex).trim
             val value = rest.substring(separatorIndex + 1).trim
-            if (key.startsWith("spark.sql.aqp.")) {
-              new SetCommand(Some(key -> Option(value))) with InvalidateCachedPlans
-            } else {
-              SetCommand(Some(key -> Option(value)))
-            }
+            new SetSnappyCommand(Some(key -> Option(value)))
           } else if (rest.nonEmpty) {
-            SetCommand(Some(rest.trim -> None))
+            new SetSnappyCommand(Some(rest.trim -> None))
           } else {
-            SetCommand(None)
+            new SetSnappyCommand(None)
           }
         }
     ) |
@@ -992,9 +995,9 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTableLike | createTable | describe | refreshTable | dropTable | truncateTable |
-    createView | createTempViewUsing | dropView | alterView | createSchema | dropSchema |
-    alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
+    createTableLike | createHiveTable | createTable | describe | refreshTable | dropTable |
+    truncateTable | createView | createTempViewUsing | dropView | alterView | createSchema |
+    dropSchema | alterTableToggleRowLevelSecurity | createPolicy | dropPolicy |
     alterTableProps | alterTableOrView | alterTable | createStream | streamContext |
     createIndex | dropIndex | createFunction | dropFunction | passThrough
   }

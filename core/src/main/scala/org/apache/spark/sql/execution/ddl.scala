@@ -45,10 +45,10 @@ import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.internal.BypassRowLevelSecurity
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, StaticSQLConf}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
@@ -456,6 +456,17 @@ class DescribeSnappyTableCommand(table: TableIdentifier,
         catalog.convertCharTypesInMetadata = false
       }
     }
+  }
+}
+
+class SetSnappyCommand(kv: Option[(String, Option[String])]) extends SetCommand(kv) {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = kv match {
+    // SnappySession allows attaching external hive catalog at runtime
+    case Some((k, Some(v))) if k.equalsIgnoreCase(StaticSQLConf.CATALOG_IMPLEMENTATION.key) =>
+      sparkSession.sessionState.conf.setConfString(k, v)
+      Row(k, v) :: Nil
+    case _ => super.run(sparkSession)
   }
 }
 

@@ -798,10 +798,9 @@ class HiveConditionalRule(rule: HiveSessionState => Rule[LogicalPlan], state: Sn
 class HiveConditionalStrategy(strategy: HiveStrategies => Strategy, state: SnappySessionState)
     extends Strategy {
   override def apply(plan: LogicalPlan): Seq[SparkPlan] = {
-    val session = state.snappySession
     // some strategies like DataSinks read the session state and expect it to be
     // HiveSessionState so switch it before invoking the strategy and restore at the end
-    if (session.enableHiveSupport) state.withHiveSession {
+    if (state.snappySession.enableHiveSupport) state.withHiveSession {
       strategy(state.hiveState.planner.asInstanceOf[HiveStrategies])(plan)
     } else Nil
   }
