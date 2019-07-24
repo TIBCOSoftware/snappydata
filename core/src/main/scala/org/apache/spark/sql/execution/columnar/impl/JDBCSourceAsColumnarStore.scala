@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
+import java.sql.{Connection, PreparedStatement, ResultSet, SQLException, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
@@ -112,6 +112,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         case Some(bucket) => bucket.updateInProgressSize(-batchSize)
       }
     }
+  }
+
+  def beginTxSmartConnector(delayRollover: Boolean, catalogVersion: Long): Array[_ <: Object] = {
+    val txIdConnArray = beginTx(delayRollover)
+    val conn: Connection = txIdConnArray(0).asInstanceOf[Connection]
+    ExternalStoreUtils.setSchemaVersionOnConnection(catalogVersion, conn)
+    txIdConnArray
   }
 
   // begin should decide the connection which will be used by insert/commit/rollback

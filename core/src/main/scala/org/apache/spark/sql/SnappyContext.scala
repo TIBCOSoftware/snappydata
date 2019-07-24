@@ -1100,7 +1100,7 @@ object SnappyContext extends Logging {
                 val nonEmpty = deployCmds.length > 0
                 if (nonEmpty) {
                   logInfo(s"deploycmnds size = ${deployCmds.length}")
-                  deployCmds.foreach(s => logDebug(s"s"))
+                  deployCmds.foreach(s => logDebug(s"$s"))
                 }
                 if (nonEmpty) deployCmds.foreach(d => {
                   val cmdFields = d.split('|')
