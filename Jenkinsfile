@@ -86,5 +86,10 @@ node {
     stage('Copy'){
         fileOperations([folderCopyOperation(destinationFolderPath: '/home/ubuntu/build-backups/', sourceFolderPath: '/var/lib/jenkins/workspace/tibco-computedb-ci/build-artifacts')])
     }
+
+    emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
+    compressLog: true, recipientProviders: [developers()],
+    subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: 'psurale@tibco.com'
+
 }
 

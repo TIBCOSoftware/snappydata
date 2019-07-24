@@ -119,7 +119,7 @@ node {
 
 	stage('Test') {
 		script {
-			sh "./gradlew ${params.buildtarget}"
+			sh "./gradlew ${buildtarget}"
 		}
 	}
 
