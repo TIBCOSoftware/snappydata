@@ -58,6 +58,8 @@ trait ToolsCallback {
 
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
 
+  def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit
+
   def getAllGlobalCmnds: Array[String]
 
   def getGlobalCmndsSet: java.util.Set[java.util.Map.Entry[String, String]]

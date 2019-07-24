@@ -17,18 +17,16 @@
 package org.apache.spark.executor
 
 import java.io.File
-import java.net.URL
+import java.net.{URI, URL}
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.tcp.ConnectionTable
 import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.util.{MutableURLClassLoader, ShutdownHookManager, SparkExitCode, Utils}
@@ -168,6 +166,27 @@ class SnappyExecutor(
           env.securityManager, hadoopConf, -1L, true)
         val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
         urlClassLoader.addURL(url)
+      })
+    }
+  }
+
+  def removeJarsFromExecutorLoader(jars: Array[String]): Unit = {
+    synchronized {
+      jars.foreach(name => {
+        val localName = name.split("/").last
+        var jarFile = new File(SparkFiles.getRootDirectory(), localName)
+        Utils.deleteRecursively(jarFile)
+        var updatedURLs = urlClassLoader.getURLs().toBuffer
+        updatedURLs.foreach(url => {
+          if (url != null && url.toString.contains(jarFile.toString)) {
+            updatedURLs.remove(updatedURLs.indexOf(url))
+            val parent = Thread.currentThread().getContextClassLoader
+            updatedURLs.foreach(url => urlClassLoader.addURL(url))
+            urlClassLoader = new SnappyMutableURLClassLoader(updatedURLs.toArray, parent)
+            replClassLoader = addReplClassLoaderIfNeeded(urlClassLoader)
+          }
+        })
+        updatedURLs = urlClassLoader.getURLs().toBuffer
       })
     }
   }

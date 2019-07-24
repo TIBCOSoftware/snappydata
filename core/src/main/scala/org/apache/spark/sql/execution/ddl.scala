@@ -622,6 +622,7 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     var value = ""
+    val sc = sparkSession.sparkContext
     if (alias != null) {
       val cmndsSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
       cmndsSet.forEach(new Consumer[Entry[String, String]] {
@@ -641,10 +642,12 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
         val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
           repos, jarCache)
         val pkgs = jarsstr.split(",")
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
         ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
       }
       else {
         val jars = value.split(',')
+        RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
         ToolsCallbackInit.toolsCallback.removeURIs(jars)
       }
     }

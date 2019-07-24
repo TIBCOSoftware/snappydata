@@ -117,6 +117,13 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
   }
 
+  override def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit = {
+    if (ExecutorInitiator.snappyExecBackend != null) {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.removeJarsFromExecutorLoader(jars)
+    }
+  }
+
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     Misc.getMemStore.getGlobalCmdRgn.values().toArray.map(_.asInstanceOf[String])
