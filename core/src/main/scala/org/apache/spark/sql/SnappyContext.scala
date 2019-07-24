@@ -156,7 +156,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param tableName
    * @param isAddColumn
    * @param column
-   * @param defaultValue
+   * @param referentialAction value can be either be CASCADE or RESTRICT
    */
   def alterTable(tableName: String, isAddColumn: Boolean,
       column: StructField, referentialAction: String): Unit = {
