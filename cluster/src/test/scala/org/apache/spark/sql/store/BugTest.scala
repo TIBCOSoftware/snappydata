@@ -1023,7 +1023,8 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       })
       assertTrue(expectedResults.isEmpty)
     }
-
+    snc.dropTable("t1", true)
+    snc.dropTable("t2", true)
     snc.sql("create table t1 (c1 int, c2 int) using column ")
     snc.sql("create table t2 (c1 int, c2 int) using column ")
 
@@ -1047,6 +1048,8 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     val expectedResults3 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
       (3, 1, 3, 3), (3, 2, 3, 3))
     checkResultsMatch(rs3, expectedResults3)
+    snc.dropTable("t1", true)
+    snc.dropTable("t2", true)
   }
 
   test("SNAP3082") {
