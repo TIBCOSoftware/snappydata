@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql
 
-import java.math.{MathContext, RoundingMode}
 import java.sql.{SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -34,7 +33,7 @@ import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
-import com.pivotal.gemfirexd.internal.iapi.types.{SQLDecimal, TypeId}
+import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
@@ -171,6 +170,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val rowRDD = RDDConversions.productToRowRdd(rdd, schema.map(_.dataType))
     Dataset.ofRows(self, LogicalRDD(attributeSeq, rowRDD)(self))
   }
+
+  private[sql] def overrideConfs: Map[String, String] = Map.empty
 
   override def sql(sqlText: String): DataFrame = {
     try {

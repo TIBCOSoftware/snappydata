@@ -25,10 +25,10 @@ import scala.util.control.NonFatal
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
+import io.snappydata.Constant
 import io.snappydata.sql.catalog.CatalogObjectType.getTableType
 import io.snappydata.sql.catalog.SnappyExternalCatalog.{DBTABLE_PROPERTY, getTableWithSchema}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-import io.snappydata.{Constant, Property}
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.fs.Path
 

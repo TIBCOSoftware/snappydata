@@ -76,6 +76,15 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
+  resetOverrides()
+
+  private def resetOverrides(): Unit = {
+    val overrideConfs = session.overrideConfs
+    if (overrideConfs.nonEmpty) {
+      overrideConfs.foreach(p => setConfString(p._1, p._2))
+    }
+  }
+
   private def coreCountForShuffle: Int = {
     val count = SnappyContext.totalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
@@ -271,6 +280,11 @@ class SnappyConf(@transient val session: SnappySession)
     settings.forEach(new BiConsumer[String, String] {
       override def accept(k: String, v: String): Unit = f(k, v)
     })
+  }
+
+  override def clear(): Unit = {
+    super.clear()
+    resetOverrides()
   }
 }
 
