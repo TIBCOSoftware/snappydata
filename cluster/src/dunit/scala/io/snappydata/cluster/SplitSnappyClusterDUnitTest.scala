@@ -337,18 +337,21 @@ class SplitSnappyClusterDUnitTest(s: String)
 
       assert(sns.sql("list packages").count() == 2)
 
-      sns.sql("deploy package akka 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
+      sns.sql("deploy package akka-v1 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
 
-      Try(sns.sql("deploy package akka 'com.databricks:spark-avro_2.11:4.0.0'")) match {
+      Try(sns.sql("deploy package akka-v1 'com.datastax.spark:" +
+          "spark-cassandra-connector_2.11:2.3.2'")) match {
         case Success(df) => throw new AssertionError(
-          "Should not have succedded with incorrect options")
-        case Failure(error) => // Do nothing
+          "Deploy command should have failed because of the duplicate alias.")
+        case Failure(error) => assert(error.getMessage == "Name 'akka-v1' specified in context" +
+            " 'of deploying jars/packages' is not unique.")
       }
+      assert(sns.sql("list packages").count() == 3)
     }
     finally {
       sns.sql("undeploy  mongo-spark_v.1.5")
       sns.sql("undeploy  mongo-spark_v.1.5_dup")
-      sns.sql("undeploy  akka")
+      sns.sql("undeploy  akka-v1")
       assert(sns.sql("list packages").count() == 0)
     }
 
