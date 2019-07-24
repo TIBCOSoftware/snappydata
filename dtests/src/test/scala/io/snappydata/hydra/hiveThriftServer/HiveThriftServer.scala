@@ -26,7 +26,7 @@ import org.apache.spark.rdd.JdbcRDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.hive.HiveContext
 
-class vi HiveThriftServer extends SnappySQLJob {
+class HiveThriftServer extends SnappySQLJob {
 
   var connection : Connection = null
   var result : String = ""
