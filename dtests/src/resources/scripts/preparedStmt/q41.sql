@@ -14,7 +14,7 @@ WHERE (i_manufact = i1.i_manufact AND
       (i_units = 'Bunch' OR i_units = 'Ton') AND
       (i_size = 'N/A' OR i_size = 'small')
     ) OR
-    (i_category = 'Men' AND
+    (i_category = ? AND
       (i_color = 'floral' OR i_color = 'deep') AND
       (i_units = 'N/A' OR i_units = 'Dozen') AND
       (i_size = 'petite' OR i_size = 'large')
@@ -30,7 +30,7 @@ WHERE (i_manufact = i1.i_manufact AND
       (i_units = 'Pallet' OR i_units = 'Gross') AND
       (i_size = 'medium' OR i_size = 'extra large')
     ) OR
-      (i_category = 'Women' AND
+      (i_category = ? AND
         (i_color = 'cyan' OR i_color = 'papaya') AND
         (i_units = 'Cup' OR i_units = 'Dram') AND
         (i_size = 'N/A' OR i_size = 'small')

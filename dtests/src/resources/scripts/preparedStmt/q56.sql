@@ -13,7 +13,7 @@ WITH ss AS (
       AND d_year = 2001
       AND d_moy = 2
       AND ss_addr_sk = ca_address_sk
-      AND ca_gmt_offset = -5
+      AND ca_gmt_offset = ?
   GROUP BY i_item_id),
     cs AS (
     SELECT
@@ -30,7 +30,7 @@ WITH ss AS (
         AND d_year = 2001
         AND d_moy = 2
         AND cs_bill_addr_sk = ca_address_sk
-        AND ca_gmt_offset = -5
+        AND ca_gmt_offset = ?
     GROUP BY i_item_id),
     ws AS (
     SELECT
@@ -47,7 +47,7 @@ WITH ss AS (
         AND d_year = 2001
         AND d_moy = 2
         AND ws_bill_addr_sk = ca_address_sk
-        AND ca_gmt_offset = -5
+        AND ca_gmt_offset = ?
     GROUP BY i_item_id)
 SELECT
   i_item_id,

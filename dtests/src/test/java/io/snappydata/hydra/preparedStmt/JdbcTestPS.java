@@ -1,10 +1,17 @@
 package io.snappydata.hydra.preparedStmt;
 
+import java.math.BigDecimal;
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.sql.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -14,15 +21,20 @@ import java.util.concurrent.TimeUnit;
 
 public class JdbcTestPS implements Runnable {
   private String hostPort;
+  private String threadName;
+  private int thrdCnt;
+  Map<String, Long> finalQueryMap;
+  String path;
   protected String url = "jdbc:snappydata://";
   protected String driver = "io.snappydata.jdbc.ClientDriver";
-  String[] queryArr = {"q2", "q8", "q9", "q10", "q23a", "q31", "q33", "q34"};
-  //q13 q16 q28 q41 q44 q48 q49 q53 q56 q58 q66 q69 q75 q77 q83
-  String queryFilePath = "";//"/home/supriya/snappy/snappydata/dtests/src/resources/scripts/preparedStmt";
+  String[] queryArr = {"q2", "q8", "q9", "q10", "q13", "q16", "q23a", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58", "q66", "q75", "q80"};
+  String queryFilePath = "/export/dev9a/users/spillai/snappydata/dtests/src/resources/scripts/preparedStmt";
 
-  public JdbcTestPS(String hostname, String filePath) {
+  public JdbcTestPS(String hostname, Integer threadN, Map<String, Long> finalMap, String filePath) {
+    threadName = "Thread_" + threadN;
     hostPort = hostname;
-    queryFilePath = filePath;
+    finalQueryMap = finalMap;
+    path = filePath;
   }
 
   public void run() {
@@ -43,7 +55,7 @@ public class JdbcTestPS implements Runnable {
     return con;
   }
 
-  public void executeSQLStmts(String hostport) {
+public void executeSQLStmts(String hostport) {
     Connection conn = null;
     try {
       conn = getConnection(hostport);
@@ -52,7 +64,7 @@ public class JdbcTestPS implements Runnable {
         String queryName = queryArr[q];
         String filePath = queryFilePath + "/" + queryName + ".sql";
         String queryString = new String(Files.readAllBytes(Paths.get(filePath)));
-        System.out.println("The query to be executed is " + queryString);
+        System.out.println("The query to be executed is " + queryName);
         PreparedStatement ps = conn.prepareStatement(queryString);
         switch (queryName) {
           case "q2":
@@ -84,7 +96,7 @@ public class JdbcTestPS implements Runnable {
           case "q13":
             ps.setString(1, "M");
             ps.setDouble(2, 100.00);
-            ps.setDouble(2, 150.00);
+            ps.setDouble(3, 150.00);
             break;
           case "q16":
             for (int i = 1; i <= 2; i++)
@@ -130,9 +142,11 @@ public class JdbcTestPS implements Runnable {
             ps.setDouble(4, 100.00);
             break;
           case "q49":
+            System.out.println("Setting int value for "  );
             ps.setInt(1, 10000);
-            for (int i = 2; i <= 5; i++)
-              ps.setInt(i, 10);
+            ps.setInt(2, 2001);
+            ps.setInt(3,12);
+            break;
           case "q53":
             ps.setString(1, "scholaramalgamalg #14");
             ps.setString(2, "scholaramalgamalg #7");
@@ -140,10 +154,14 @@ public class JdbcTestPS implements Runnable {
             ps.setString(4, "scholaramalgamalg #9");
             break;
           case "q58":
-            for (int i = 1; i <= 3; i++)
+              for (int i = 1; i <= 3; i++) {
+              System.out.println("Setting string value for " +i );
               ps.setString(i, "2000-01-03");
-            for (int i = 4; i <= 9; i++)
-              ps.setDouble(i, 0.9);
+            }
+            for (int i = 4; i <= 9; i++) {
+              ps.setBigDecimal(i, new BigDecimal(0.9));
+ System.out.println("Finished Setting double value for " +i );
+            }
             break;
           case "q66":
             ps.setInt(1,12);
@@ -159,6 +177,10 @@ public class JdbcTestPS implements Runnable {
           case "q77":
             for(int i=1;i<=12;i++)
               ps.setString(i,"2000-08-03");
+            break;
+          case "q80":
+            for (int i = 1; i <= 6; i++)
+              ps.setString(i, "2000-08-03");
             break;
         }
 
@@ -191,10 +213,11 @@ public class JdbcTestPS implements Runnable {
     int threadCnt = Integer.parseInt(args[1]);
     String filePath = args[2];
     ExecutorService executor = Executors.newFixedThreadPool(threadCnt);
+    Map<String, Long> perThrdAvg = new HashMap<>();
     for (int i = 1; i <= threadCnt; i++) {
       String threadName = "Thread-" + i;
       System.out.println("Creating " + threadName);
-      executor.execute(new JdbcTestPS(hostName, filePath));
+      executor.execute(new JdbcTestPS(hostName, i, perThrdAvg, filePath));
     }
     executor.shutdown();
     try {
@@ -203,6 +226,9 @@ public class JdbcTestPS implements Runnable {
       System.out.println("Got Exception while waiting for all threads to complete populate" +
           " tasks");
     }
-  }
+    long finalSum = 0l;
+    for (Map.Entry<String, Long> val : perThrdAvg.entrySet()) {
+      finalSum += val.getValue();
+    }
+ }
 }
-

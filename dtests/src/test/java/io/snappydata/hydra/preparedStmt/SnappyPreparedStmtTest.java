@@ -23,8 +23,9 @@ import sql.sqlutil.ResultSetHelper;
 
 public class SnappyPreparedStmtTest extends SnappyTest {
   public static SnappyPreparedStmtTest snappyPreparedStmtTest;
-  String[] queryArr = {"q2"};//, "q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53","q66", "q75", "q80"};
-  //q58
+  String[] queryArr = {"q2","q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58","q66", "q75", "q80",
+      "q4","q6","q11","q15","q18","q19","q26","q27","q38","q41","q46","q47","q50","q56","q57"};
+  //q4,q6,q11,q15,q18,q19,q26,q27,q38,q41,q46,q47,q50,q56,q57
 
   public SnappyPreparedStmtTest() {
   }
@@ -38,17 +39,16 @@ public class SnappyPreparedStmtTest extends SnappyTest {
 
   public void executePreparedStmts() {
     Connection conn = null;
-    Connection conn1 = null;
     Vector queryFile = SnappyPrms.getDataLocationList();
     String queryFilePath = queryFile.get(0).toString();
     String queryFilePathPS = queryFile.get(1).toString();
     try {
       conn = getLocatorConnection();
-      conn1 = getLocatorConnection();
       for (int q = 0; q <= queryArr.length - 1; q++) {
 
         String queryName = queryArr[q];
         String filePath = queryFilePathPS + "/" + queryName + ".sql";
+        Log.getLogWriter().info("SP: The filepath is " + filePath);       
         String queryStringPS = new String(Files.readAllBytes(Paths.get(filePath)));
         Log.getLogWriter().info("The query to be executed is " + queryStringPS);
         PreparedStatement ps = conn.prepareStatement(queryStringPS);
@@ -57,6 +57,70 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             ps.setString(1, "Sunday");
             ps.setString(2, "Monday");
             ps.setString(3, "Tuesday");
+            break;
+          case "q4":
+            ps.setString(1, "s");
+            ps.setString(2, "c");
+            ps.setString(3, "w");
+            break;
+          case "q6":
+            ps.setDouble(1,1.2);
+            ps.setInt(2,10);
+            break;
+          case "q11":
+            for(int i=1;i<=4;i++)
+              ps.setInt(i,0);
+            break;
+          case "q15":
+            ps.setString(1,"80348");
+            ps.setString(2, "GA");
+            break;
+          case "q18":
+            ps.setString(1,"F");
+            ps.setString(2,"IN");
+            break;
+          case "q19":
+            ps.setInt(1,1);
+            ps.setInt(2,5);
+            break;
+          case "q26":
+            for (int i=1;i<=2;i++)
+              ps.setString(i,"N");
+            break;
+          case "q27":
+            for(int i=1;i<=6;i++)
+              ps.setString(i,"TN");
+            break;
+          case "q38":
+            for(int i=1;i<=6;i++)
+              ps.setInt(i,1200);
+            break;
+          case "q41":
+            ps.setString(1,"Men");
+            ps.setString(2,"Women");
+            break;
+          case "q46":
+            ps.setInt(1,4);
+            ps.setInt(2,0);
+            for(int i=3;i<=6;i++)
+              ps.setString(i,"Fairview");
+            break;
+          case "q47":
+            for(int i=1;i<=5;i++)
+              ps.setInt(i,1);
+            ps.setDouble(6,0.1);
+            break;
+          case "q50":
+            for(int i=1;i<=3;i++)
+              ps.setInt(i,120);
+            break;
+          case "q56":
+            for(int i=1;i<=3;i++)
+              ps.setInt(i,-5);
+            break;
+          case "q57":
+            for(int i=1;i<=4;i++)
+              ps.setInt(i,1999);
             break;
           case "q8":
             ps.setString(1, "26231");
@@ -82,7 +146,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
           case "q13":
             ps.setString(1, "M");
             ps.setDouble(2, 100.00);
-            ps.setDouble(2, 150.00);
+            ps.setDouble(3, 150.00);
             break;
           case "q16":
             for (int i = 1; i <= 2; i++)
@@ -140,11 +204,9 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             break;
           case "q58":
             for (int i = 1; i <= 3; i++) {
-              Log.getLogWriter().info("Setting string value for " +i );
               ps.setString(i, "2000-01-03");
             }
             for (int i = 4; i <= 9; i++) {
-              Log.getLogWriter().info("Setting double value for " +i );
               ps.setDouble(i, Double.parseDouble(0.9 + ""));
             }
             break;
@@ -164,28 +226,27 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setString(i, "2000-08-03");
             break;
          }
-
+        Log.getLogWriter().info("Executing query : " +  queryName);
         ResultSet rsPS = ps.executeQuery();
+        Log.getLogWriter().info("Executed query : " +  queryName);
+        Log.getLogWriter().info("Executing non ps query for " +  queryFilePath + "/" + queryName + ".sql");
         String queryString = new String(Files.readAllBytes(Paths.get(queryFilePath + "/" + queryName + ".sql")));
-        ResultSet rs = conn1.createStatement().executeQuery(queryString);
+        ResultSet rs = conn.createStatement().executeQuery(queryString);
 
         validateResultSet(rs, rsPS, queryName);
       }
     } catch (IOException ex) {
-      Log.getLogWriter().info("Caught exception " + ex.getMessage());
+     throw new TestException("Caught exception " + ex.getMessage());
+
     } catch (SQLException se) {
-      Log.getLogWriter().info("QUERY FAILED. Exception is : \n" + se
-          .getSQLState() + " : " + se.getMessage());
-      while (se != null) {
-        Log.getLogWriter().info(se.getCause());
-        se = se.getNextException();
-      }
+      throw new TestException("QUERY FAILED. Exception is : \n" + se.getSQLState() + " : " + se.getMessage());
     } finally {
       try {
         conn.close();
-        conn1.close();
       } catch (SQLException se) {
-        Log.getLogWriter().info("Failed to close the connection " + se.getMessage());
+
+        throw new TestException("Failed to close the connection " + se.getMessage());
+
       }
     }
   }
@@ -204,7 +265,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       outputFile = logFile + File.separator + queryName + ".out";
       testInstance.listToFile(snappyList,outputFile);
       while (rs.next()) {
-        ++count;
+        count += 1;
       }
       rs.close();
 
@@ -213,7 +274,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       outputFilePS = logFile + File.separator + queryName + "_PS.out";
       testInstance.listToFile(snappyPSList,outputFilePS);
       while (rsPS.next()) {
-        ++countPS;
+        countPS += 1;
       }
       rsPS.close();
 
