@@ -22,6 +22,7 @@ import java.net.URL
 import scala.util.control.NonFatal
 
 import com.pivotal.gemfirexd.Attribute
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.CatalogObjectType.getTableType
@@ -752,7 +753,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
     funcDefinition.resources.foreach { r =>
-      ContextJarUtils.deleteFile(funcDefinition.identifier.toString(), r.uri)
+      ContextJarUtils.deleteFile(funcDefinition.identifier.toString(), r.uri, isEmbeddedMode())
     }
     ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
   }
@@ -785,6 +786,24 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     createSchema(schemaName, ignoreIfExists = true)
 
     super.createFunction(funcDefinition, ignoreIfExists)
+
+    if (isEmbeddedMode()) {
+      val k = funcDefinition.identifier.copy(database = Some(schemaName)).toString
+      // resources has just one jar
+      val jarPath = if (funcDefinition.resources.isEmpty) "" else funcDefinition.resources(0).uri
+      Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + k,
+        jarPath)
+      // Remove from the list in (__FUNC__DROPPED__, dropped-udf-list)
+      ContextJarUtils.removeFromTheListInCmdRegion(ContextJarUtils.droppedFunctionsKey,
+        k + ContextJarUtils.DELIMITER)
+    }
+  }
+
+  def isEmbeddedMode(): Boolean = {
+    SnappyContext.getClusterMode(snappySession.sparkContext) match {
+      case SnappyEmbeddedMode(_, _) => true
+      case _ => false
+    }
   }
 
   override def makeFunctionBuilder(funcName: String, className: String): FunctionBuilder = {
