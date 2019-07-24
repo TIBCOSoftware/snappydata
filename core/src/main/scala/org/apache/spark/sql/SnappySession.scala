@@ -323,7 +323,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   @transient
   private var sqlWarnings: SQLWarning = _
 
-  private[sql] val initialized = true
+  private[sql] var initialized = true
 
   private[sql] def isHiveSupportEnabled(v: String): Boolean = Utils.toLowerCase(v) match {
     case "hive" => true

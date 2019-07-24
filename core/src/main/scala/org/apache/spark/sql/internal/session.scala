@@ -155,13 +155,20 @@ class SnappyConf(@transient val session: SnappySession)
 
     case CATALOG_IMPLEMENTATION.key if session.initialized =>
       val oldValue = session.enableHiveSupport
-      value match {
-        case Some(v) => session.enableHiveSupport = session.isHiveSupportEnabled(v.toString)
-        case None =>
-          session.enableHiveSupport = CATALOG_IMPLEMENTATION.defaultValueString == "hive"
+      val newValue = value match {
+        case Some(v) => session.isHiveSupportEnabled(v.toString)
+        case None => CATALOG_IMPLEMENTATION.defaultValueString == "hive"
       }
+      // initialize hive session upfront else it runs into recursion trying
+      // to copy conf to the session
+      if (newValue) {
+        session.initialized = false
+        assert(session.sessionState.hiveSession ne null)
+        session.initialized = true
+      }
+      session.enableHiveSupport = newValue
       // if external hive catalog was enabled, then set its current schema
-      if (!oldValue && session.enableHiveSupport) {
+      if (!oldValue && newValue) {
         session.sessionCatalog.setCurrentSchema(session.getCurrentSchema, force = true)
       }
       key
@@ -196,6 +203,10 @@ class SnappyConf(@transient val session: SnappySession)
         key
       case _ => key
     }
+
+    case _ if key.startsWith("spark.sql.aqp.") =>
+      session.clearPlanCache()
+      key
 
     case _ =>
       // search case-insensitively for other keys if required
