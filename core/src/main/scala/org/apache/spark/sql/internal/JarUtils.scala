@@ -82,7 +82,7 @@ object ContextJarUtils extends Logging {
     new File(jarDir, changedFileName).toURI.toURL
   }
 
-  def deleteFile(prefix: String, path: String): Unit = {
+  def deleteFile(prefix: String, path: String, isEmbedded: Boolean): Unit = {
     def getName(path: String): String = new File(path).getName
 
     val callbacks = ToolsCallbackInit.toolsCallback
@@ -92,15 +92,19 @@ object ContextJarUtils extends Logging {
       val jarFile = new File(jarDir, changedFileName)
 
       try {
-        // Add to the list in (__FUNC__DROPPED__, dropped-udf-list)
-        addToTheListInCmdRegion(droppedFunctionsKey, prefix + DELIMITER, droppedFunctionsKey)
+        if (isEmbedded) {
+          // Add to the list in (__FUNC__DROPPED__, dropped-udf-list)
+          addToTheListInCmdRegion(droppedFunctionsKey, prefix + DELIMITER, droppedFunctionsKey)
+        }
         if (jarFile.exists()) {
           jarFile.delete()
           RefreshMetadata.executeOnAll(sparkContext, RefreshMetadata.REMOVE_FUNCTION_JAR,
             Array(changedFileName))
         }
       } finally {
-        Misc.getMemStore.getGlobalCmdRgn.remove(functionKeyPrefix + prefix)
+        if (isEmbedded) {
+          Misc.getMemStore.getGlobalCmdRgn.remove(functionKeyPrefix + prefix)
+        }
       }
     }
   }
