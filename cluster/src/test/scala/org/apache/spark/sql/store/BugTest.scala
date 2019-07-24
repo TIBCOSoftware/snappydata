@@ -948,7 +948,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  test("SNAP-3045. Incorrect Hashjoin results") {
+  test("SNAP-3045. Incorrect Hashjoin results - 1") {
     snc
     snc.sql("create table dm_base (c1 STRING, tenant_id STRING, shop_id STRING, olet_id STRING)" +
       " using column options(BUCKETS '40', PARTITION_BY 'TENANT_ID',REDUNDANCY '1'," +
@@ -1001,5 +1001,61 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       })
       assertTrue(list.isEmpty)
     }
+  }
+
+
+  test("SNAP-3045. Incorrect Hashjoin results - 2") {
+    snc
+
+    def checkResultsMatch(arr: Array[Row],
+      expectedResults: ArrayBuffer[(Int, Int, Int, Int)]): Unit = {
+      assertEquals(arr.length, expectedResults.length)
+
+      arr.foreach(row => {
+        val first = if (row.isNullAt(0)) -1 else row.getInt(0)
+        val sec = if (row.isNullAt(1)) -1 else row.getInt(1)
+        val th = if (row.isNullAt(2)) -1 else row.getInt(2)
+        val fth = if (row.isNullAt(3)) -1 else row.getInt(3)
+        val tup = (first, sec, th, fth)
+        val indx = expectedResults.indexOf(tup)
+        assertTrue(indx >= 0)
+        expectedResults.remove(indx)
+      })
+      assertTrue(expectedResults.isEmpty)
+    }
+    snc.sql("create table t1 (c1 int, c2 int) using column ")
+    snc.sql("create table t2 (c1 int, c2 int) using column ")
+
+    snc.sql("insert into t1 values (1, 1), (1, 2), (2,1), (2,2), (3, 1)," +
+      " (3,2), (4, 1), (4,2), (5, 1), (5,2)")
+
+    snc.sql("insert into t2 values(1, 1), (2,2), (3,3)")
+
+    val rs1 = snc.sql("select * from t1 left outer join t2 on t1.c1 = t2.c1").collect()
+
+    val expectedResults1 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
+      (3, 1, 3, 3), (3, 2, 3, 3), (4, 1, -1, -1), (4, 2, -1, -1), (5, 1, -1, -1), (5, 2, -1, -1))
+
+    checkResultsMatch(rs1, expectedResults1)
+
+
+    val rs2 = snc.sql("select * from t1 left outer join t2 " +
+      "on t1.c1 = t2.c1 where t1.c2 <> 1").collect()
+
+    val expectedResults2 = ArrayBuffer((1, 2, 1, 1), (2, 2, 2, 2),
+      (3, 2, 3, 3), (4, 2, -1, -1), (5, 2, -1, -1))
+
+    checkResultsMatch(rs2, expectedResults2)
+
+
+    val rs3 = snc.sql("select * from t1 left outer join t2 on t1.c1 = t2.c1 " +
+      "where t2.c1 is not null").collect()
+
+    val expectedResults3 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
+      (3, 1, 3, 3), (3, 2, 3, 3))
+
+    checkResultsMatch(rs3, expectedResults3)
+
+
   }
 }
