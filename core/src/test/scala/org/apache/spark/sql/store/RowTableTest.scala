@@ -470,14 +470,27 @@ class RowTableTest
     snc.sql("insert into tab2 values (3333,true,6.6)")
 
     snc.sql("alter table tab2 drop column c1 cascade")
+    var colsTab2 = snc.sql("select * from tab2").columns
+    assert(colsTab2.mkString(",") === "c2,c3", "Columns don't match after the alter command.")
+
     snc.sql("alter table tab2 drop column c3 cascade")
+    colsTab2 = snc.sql("select * from tab2").columns
+    assert(colsTab2.mkString(",") === "c2", "Columns don't match after the alter command.")
+
     snc.sql("alter table tab1 drop column col2 restrict")
+    var colsTab1 = snc.sql("select * from tab1").columns
+    assert(colsTab1.mkString(",") === "col1,col3,col4", "Columns don't match after the alter command.")
+
     snc.sql("alter table tab1 drop column col4 cascade")
+    colsTab1 = snc.sql("select * from tab1").columns
+    assert(colsTab1.mkString(",") === "col1,col3", "Columns don't match after the alter command.")
 
     val df1 = snc.sql("select * from tab1")
     val df2 = snc.sql("select * from tab2")
-    assert(df1.columns.length === 2 && df2.columns.length === 1)
-    assert(df1.count() === 3 && df2.count() === 2)
+    assert(df1.columns.length === 2, "Number of columns does not match after the drop column command.")
+    assert(df2.columns.length === 1, "Number of columns does not match after the drop column command.")
+    assert(df1.count() === 3 , "Row count mismatch for table: tab1")
+    assert(df2.count() === 2, "Row count mismatch for table: tab2")
 
     try{
       snc.sql("alter table tab1 drop column col3 restrict")
