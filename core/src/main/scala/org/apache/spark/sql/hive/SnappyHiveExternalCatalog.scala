@@ -77,13 +77,19 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   protected val cachedCatalogTables: LoadingCache[(String, String), CatalogTable] = {
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
-        logDebug(s"Looking up data source for ${name._1}.${name._2}")
-        withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
-          name._1, name._2)) match {
-          case None =>
-            nonExistentTables.put(name, java.lang.Boolean.TRUE)
-            throw new TableNotFoundException(name._1, name._2)
-          case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+        try {
+          withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
+            name._1, name._2)) match {
+            case None =>
+              nonExistentTables.put(name, java.lang.Boolean.TRUE)
+              throw new TableNotFoundException(name._1, name._2)
+            case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+          }
+        } catch {
+          case _: NullPointerException =>
+            throw new AnalysisException(
+              s"Table ${name._1}.${name._2} might be inconsistent in hive catalog. " +
+                  "refer to troubleshooting section of documentation for resolution")
         }
       }
     }
@@ -495,12 +501,6 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       Some(getTable(schema, table))
     } catch {
-      // Observed a scenario(SNAP-3055) where drop database cascade is cancelled before
-      // completion which leads to inconsistent catalog state and causes NPE
-      case re: RuntimeException =>
-        logWarning(s"Metastore look up failed for $schema.$table. metastore might be in" +
-            s" a inconsistent state. Skipping $schema.$table")
-        None
       case _: TableNotFoundException | _: NoSuchTableException => None
     }
   }
