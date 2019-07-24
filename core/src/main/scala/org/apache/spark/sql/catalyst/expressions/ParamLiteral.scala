@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -27,15 +27,13 @@ import com.gemstone.gemfire.internal.shared.ClientResolverUtils
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.json4s.JsonAST.JField
 
-import org.apache.spark.memory.{MemoryConsumer, MemoryMode, TaskMemoryManager}
+import org.apache.spark.memory.{MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.analysis.TypeCheckResult
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types._
-import org.apache.spark.unsafe.Platform
 import org.apache.spark.unsafe.types.UTF8String
 
 case class TermValues(literalValueRef: String, isNull: String, valueTerm: String)
@@ -315,7 +313,7 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def valueString: String = value match {
     case null => "null"
-    case binary: Array[Byte] => s"0x" + DatatypeConverter.printHexBinary(binary)
+    case binary: Array[Byte] => "0x" + DatatypeConverter.printHexBinary(binary)
     case other => other.toString
   }
 
@@ -530,201 +528,5 @@ trait ParamLiteralHolder {
     parameterizedConstants.clear()
     if (paramConstantMap ne null) paramConstantMap = null
     paramListId += 1
-  }
-}
-
-final class DirectStringConsumer(memoryManager: TaskMemoryManager, pageSize: Int)
-    extends MemoryConsumer(memoryManager, pageSize, MemoryMode.OFF_HEAP) {
-
-  def this(memoryManager: TaskMemoryManager) = this(memoryManager, 8)
-
-  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
-
-  def copyUTF8String(s: UTF8String): UTF8String = {
-    if ((s ne null) && (s.getBaseObject ne null)) {
-      val size = s.numBytes()
-      val page = taskMemoryManager.allocatePage(Math.max(pageSize, size), this)
-      if ((page ne null) && page.size >= size) {
-        used += page.size
-        val ds = UTF8String.fromAddress(null, page.getBaseOffset, size)
-        Platform.copyMemory(s.getBaseObject, s.getBaseOffset, null, ds.getBaseOffset, size)
-        return ds
-      } else if (page ne null) {
-        taskMemoryManager.freePage(page, this)
-      }
-    }
-    s
-  }
-}
-
-/**
- * Wrap any TokenizedLiteral expression with this so that we can invoke literal
- * initialization code within the <code>.init()</code> method of the generated class.
- * <br><br>
- *
- * This pushes itself as reference object and uses a call to eval() on itself for actual
- * evaluation and avoids embedding any generated code. This allows it to keep the
- * generated code identical regardless of the constant expression (and in addition
- *   DynamicReplacableConstant trait casts to itself rather than actual object type).
- * <br><br>
- *
- * We try to locate first foldable expression in a query tree such that all its child is foldable
- * but parent isn't. That way we locate the exact point where an expression is safe to evaluate
- * once instead of evaluating every row.
- * <br><br>
- *
- * Expressions like <code> select c from tab where
- *  case col2 when 1 then col3 else 'y' end = 22 </code>
- * like queries don't convert literal evaluation into init method.
- *
- * @param expr minimal expression tree that can be evaluated only once and turn into a constant.
- */
-case class DynamicFoldableExpression(var expr: Expression) extends UnaryExpression
-    with DynamicReplacableConstant with KryoSerializable {
-
-  override def checkInputDataTypes(): TypeCheckResult = expr.checkInputDataTypes()
-
-  override def child: Expression = expr
-
-  override def eval(input: InternalRow): Any = expr.eval(input)
-
-  override def dataType: DataType = expr.dataType
-
-  override def value: Any = eval(null)
-
-  override private[sql] def getValueForTypeCheck: Any = null
-
-  override def nodeName: String = "DynamicExpression"
-
-  override def prettyName: String = "DynamicExpression"
-
-  override def toString: String = {
-    def removeCast(expr: Expression): Expression = expr match {
-      case Cast(child, _) => removeCast(child)
-      case _ => expr
-    }
-    "DynExpr(" + removeCast(expr) + ")"
-  }
-
-  override def makeCopy(newArgs: Array[AnyRef]): Expression = {
-    assert(newArgs.length == 1)
-    if (newArgs(0) eq expr) this
-    else DynamicFoldableExpression(newArgs(0).asInstanceOf[Expression])
-  }
-
-  override def withNewChildren(newChildren: Seq[Expression]): Expression = {
-    assert(newChildren.length == 1)
-    if (newChildren.head ne expr) expr = newChildren.head
-    this
-  }
-
-  override def write(kryo: Kryo, output: Output): Unit = {
-    kryo.writeClassAndObject(output, value)
-    StructTypeSerializer.writeType(kryo, output, dataType)
-  }
-
-  override def read(kryo: Kryo, input: Input): Unit = {
-    val value = kryo.readClassAndObject(input)
-    val dateType = StructTypeSerializer.readType(kryo, input)
-    expr = new TokenLiteral(value, dateType)
-  }
-}
-
-/**
- * Unlike Spark's InSet expression, this allows for TokenizedLiterals that can
- * change dynamically in executions.
- */
-case class DynamicInSet(child: Expression, hset: IndexedSeq[Expression])
-    extends UnaryExpression with Predicate {
-
-  require((hset ne null) && hset.nonEmpty, "hset cannot be null or empty")
-  // all expressions must be constant types
-  require(hset.forall(TokenLiteral.isConstant), "hset can only have constant expressions")
-
-  override def toString: String =
-    s"$child DynInSet ${hset.mkString("(", ",", ")")}"
-
-  override def nullable: Boolean = hset.exists(_.nullable)
-
-  @transient private lazy val (hashSet, hasNull) = {
-    val m = new java.util.HashMap[AnyRef, AnyRef](hset.length)
-    var hasNull = false
-    for (e <- hset) {
-      val v = e.eval(null).asInstanceOf[AnyRef]
-      if (v ne null) {
-        m.put(v, v)
-      } else if (!hasNull) {
-        hasNull = true
-      }
-    }
-    (m, hasNull)
-  }
-
-  protected override def nullSafeEval(value: Any): Any = {
-    if (hashSet.containsKey(value)) {
-      true
-    } else if (hasNull) {
-      null
-    } else {
-      false
-    }
-  }
-
-  override def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode = {
-    // JDK8 HashMap consistently clocks fastest for gets at small/medium sizes
-    // over scala maps, Fastutil/Koloboke and others.
-    val setName = classOf[java.util.HashMap[AnyRef, AnyRef]].getName
-    val exprClass = classOf[Expression].getName
-    val elements = new Array[AnyRef](hset.length)
-    val childGen = child.genCode(ctx)
-    val hsetTerm = ctx.freshName("hset")
-    val elementsTerm = ctx.freshName("elements")
-    val idxTerm = ctx.freshName("idx")
-    val idx = ctx.references.length
-    ctx.references += elements
-    val hasNullTerm = ctx.freshName("hasNull")
-
-    for (i <- hset.indices) {
-      val e = hset(i)
-      val v = e match {
-        case d: DynamicReplacableConstant => d
-        case _ => e.eval(null).asInstanceOf[AnyRef]
-      }
-      elements(i) = v
-    }
-
-    ctx.addMutableState("boolean", hasNullTerm, "")
-    ctx.addMutableState(setName, hsetTerm,
-      s"""
-         |Object[] $elementsTerm = (Object[])references[$idx];
-         |$hsetTerm = new $setName($elementsTerm.length, 0.7f);
-         |for (int $idxTerm = 0; $idxTerm < $elementsTerm.length; $idxTerm++) {
-         |  Object e = $elementsTerm[$idxTerm];
-         |  if (e instanceof $exprClass) e = (($exprClass)e).eval(null);
-         |  if (e != null) {
-         |    $hsetTerm.put(e, e);
-         |  } else if (!$hasNullTerm) {
-         |    $hasNullTerm = true;
-         |  }
-         |}
-      """.stripMargin)
-
-    ev.copy(code = s"""
-      ${childGen.code}
-      boolean ${ev.isNull} = ${childGen.isNull};
-      boolean ${ev.value} = false;
-      if (!${ev.isNull}) {
-        ${ev.value} = $hsetTerm.containsKey(${childGen.value});
-        if (!${ev.value} && $hasNullTerm) {
-          ${ev.isNull} = true;
-        }
-      }
-     """)
-  }
-
-  override def sql: String = {
-    val valueSQL = child.sql
-    val listSQL = hset.map(_.eval(null)).mkString(", ")
-    s"($valueSQL IN ($listSQL))"
   }
 }

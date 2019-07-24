@@ -18,6 +18,7 @@
 package org.apache.spark.sql.hive
 
 import java.lang.reflect.InvocationTargetException
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -39,7 +40,6 @@ import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, R
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.ql.metadata.Hive
-import org.apache.http.annotation.GuardedBy
 import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.SparkConf
