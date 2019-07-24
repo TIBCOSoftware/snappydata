@@ -328,20 +328,28 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testDeployPackageDuplicateName: Unit = {
     val sns = new SnappySession(sc)
-    sns.sql("deploy package mongo-spark_v.1.5" +
-        " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    try {
+      sns.sql("deploy package mongo-spark_v.1.5" +
+          " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
 
-    sns.sql("deploy package mongo-spark_v.1.5_dup" +
-        "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+      sns.sql("deploy package mongo-spark_v.1.5_dup" +
+          "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
 
-    assert(sns.sql("list packages").count() == 2)
+      assert(sns.sql("list packages").count() == 2)
 
-    sns.sql("deploy package akka 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
+      sns.sql("deploy package akka 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
 
-    Try(sns.sql("deploy package akka 'com.databricks:spark-avro_2.11:4.0.0'")) match {
-      case Success(df) => throw new AssertionError(
-        "Should not have succedded with incorrect options")
-      case Failure(error) => // Do nothing
+      Try(sns.sql("deploy package akka 'com.databricks:spark-avro_2.11:4.0.0'")) match {
+        case Success(df) => throw new AssertionError(
+          "Should not have succedded with incorrect options")
+        case Failure(error) => // Do nothing
+      }
+    }
+    finally {
+      sns.sql("undeploy  mongo-spark_v.1.5")
+      sns.sql("undeploy  mongo-spark_v.1.5_dup")
+      sns.sql("undeploy  akka")
+      assert(sns.sql("list packages").count() == 0)
     }
 
   }
