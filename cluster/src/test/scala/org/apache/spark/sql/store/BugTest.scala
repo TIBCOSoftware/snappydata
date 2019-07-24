@@ -17,7 +17,8 @@
 package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
-import java.sql.{DriverManager, SQLException}
+import java.lang
+import java.sql.{Connection, DriverManager, SQLException, Statement}
 import java.util.Properties
 
 import com.pivotal.gemfirexd.TestUtil
@@ -944,5 +945,122 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     }
     assert(se4.getSQLState.equals("42X04"))
 
+  }
+
+
+  test("SNAP3082") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+
+    // scalastyle:off println
+    println(s"SNAP3082: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    insertDataAndTestSNAP3082(conn, stmt, "DOUBLE")
+    insertDataAndTestSNAP3082(conn, stmt, "STRING")
+    insertDataAndTestSNAP3082(conn, stmt, "FLOAT")
+    insertDataAndTestSNAP3082(conn, stmt, "DECIMAL")
+    // scalastyle:on println
+
+  }
+
+  private def insertDataAndTestSNAP3082(conn: Connection, stmt: Statement,
+      dataTypeForSetParams: String): Unit = {
+    // scalastyle:off println
+    println(s"Setting prepared statement parameters as $dataTypeForSetParams")
+    stmt.execute("drop table if exists column_table")
+    stmt.execute("create table column_table (col1 int, col2 decimal," +
+        " col3 decimal(10, 5)) using column")
+    val ps1 = conn.prepareStatement("insert into column_table values (?, ?, ?)")
+    val numRows = 10
+    for (i <- 0 until numRows) {
+      ps1.setInt(1, i)
+      dataTypeForSetParams match {
+        case "DOUBLE" =>
+          ps1.setDouble(2, java.lang.Double.valueOf(i * 0.1))
+          ps1.setDouble(3, java.lang.Double.valueOf(i * 0.1))
+        case "STRING" =>
+          ps1.setString(2, s"$i" + 0.1)
+          ps1.setString(3, s"$i" + 0.1)
+        case "FLOAT" =>
+          ps1.setFloat(2, java.lang.Float.valueOf(new lang.Float(i*0.1)))
+          ps1.setFloat(3, java.lang.Float.valueOf(new lang.Float(i*0.1)))
+        case "DECIMAL" =>
+          ps1.setBigDecimal(2, new java.math.BigDecimal(s"$i" + 0.1))
+          ps1.setBigDecimal(3, new java.math.BigDecimal(s"$i" + 0.1))
+      }
+      ps1.executeUpdate()
+    }
+
+    println("executing prepared select statement")
+    var result1: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
+    val ps2 = conn.prepareStatement("select * from column_table where col2 = ? order by col1")
+    for (j <- 0 until numRows) {
+      dataTypeForSetParams match {
+        case "DOUBLE" =>
+          ps2.setDouble(1, java.lang.Double.valueOf(j * 0.1))
+        case "STRING" =>
+          ps2.setString(1, s"$j" + 0.1)
+        case "FLOAT" =>
+          ps2.setFloat(1, java.lang.Float.valueOf(new lang.Float(j * 0.1)))
+        case "DECIMAL" =>
+          ps2.setBigDecimal(1, new java.math.BigDecimal(s"$j" + 0.1))
+      }
+
+      val rs2 = ps2.executeQuery()
+
+      while (rs2.next()) {
+        val columnValue1 = rs2.getBigDecimal(2)
+        val columnValue2 = rs2.getBigDecimal(3)
+        result1(j) = (columnValue1, columnValue2)
+        // debug statement
+//        println(s"rowNumber = $j (columnVale1, columnVale2) = ($columnValue1, $columnValue2) " +
+//            s" columnVale1 precision = ${columnValue1.precision()} " +
+//            s" columnVale1 scale =  ${columnValue1.scale ()} " +
+//            s" columnVale2 precision = ${columnValue2.precision()} " +
+//            s" columnVale2 scale =  ${columnValue2.scale ()}")
+      }
+    }
+
+    println("executing unprepared select statement")
+    var result2: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
+    for (j <- 0 until numRows) {
+      var rs3: java.sql.ResultSet = null
+      dataTypeForSetParams match {
+        case "DOUBLE" =>
+          val v = j * 0.1
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as double) order by col1")
+        case "STRING" =>
+          val v = s"$j" + 0.1
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as string) order by col1")
+        case "FLOAT" =>
+          val v = j * 0.1
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as float) order by col1")
+        case "DECIMAL" =>
+          val v = new java.math.BigDecimal(s"$j" + 0.1)
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as decimal) order by col1")
+      }
+      while (rs3.next()) {
+        val columnValue1 = rs3.getBigDecimal(2)
+        val columnValue2 = rs3.getBigDecimal(3)
+        result2(j) = (columnValue1, columnValue2)
+        // debug statement
+//        println(s"rowNumber = $j (columnVale1, columnVale2) = ($columnValue1, $columnValue2) " +
+//            s" columnVale1 precision = ${columnValue1.precision()} " +
+//            s" columnVale1 scale =  ${columnValue1.scale ()} " +
+//            s" columnVale2 precision = ${columnValue2.precision()} " +
+//            s" columnVale2 scale =  ${columnValue2.scale ()}")
+      }
+    }
+
+    assert(result1.sameElements(result2),
+      "results of prepared and unprepared statements do not match")
+    // scalastyle:on println
   }
 }
