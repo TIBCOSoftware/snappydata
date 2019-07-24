@@ -23,10 +23,9 @@ import sql.sqlutil.ResultSetHelper;
 
 public class SnappyPreparedStmtTest extends SnappyTest {
   public static SnappyPreparedStmtTest snappyPreparedStmtTest;
-  String[] queryArr = {"q2","q8", "q9", "q10", "q13", "q16", "q23a", "q28", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58","q66", "q75", "q80",
+  String[] queryArr = {"q2","q8", "q9", "q10", "q13", "q16", "q23a", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58","q66", "q75", "q80",
       "q4","q6","q11","q15","q18","q19","q26","q27","q38","q41","q46","q47","q50","q56","q57"};
-  //q4,q6,q11,q15,q18,q19,q26,q27,q38,q41,q46,q47,q50,q56,q57
-
+ //"q21,"q97","q96","95","q94","q92","q89","q87","q86","q85","q84","q83","q77","q69","q65","q64","q63","q59",
   public SnappyPreparedStmtTest() {
   }
 
@@ -53,6 +52,73 @@ public class SnappyPreparedStmtTest extends SnappyTest {
         Log.getLogWriter().info("The query to be executed is " + queryStringPS);
         PreparedStatement ps = conn.prepareStatement(queryStringPS);
         switch (queryName) {
+          case "q21":
+            for (int i =1;i<=4;i++)
+              ps.setString(i,"2000-03-11");
+            break;
+          case "q97":
+            for (int i =1;i<=4;i++)
+              ps.setInt(i,1200);
+            break;
+          case "q96":
+            ps.setString(1,"ese");
+            break;
+          case "q95":
+            for(int i=1;i<=2;i++)
+              ps.setString(i,"1999-02-01");
+            break;
+          case "q94":
+            ps.setString(1,"IL");
+            break;
+          case "q92":
+            for (int i =1;i<=4;i++)
+              ps.setString(i,"2000-01-27");
+            break;
+          case "q89":
+            ps.setInt(1,1999);
+            break;
+          case "q87":
+            for(int i=1;i<=6;i++)
+              ps.setInt(i,1200);
+            break;
+          case "q86":
+            for(int i=1;i<=2;i++)
+              ps.setInt(i,0);
+            break;
+          case "q85":
+            for(int i=1;i<=2;i++)
+              ps.setDouble(i,100.00);
+            break;
+          case "q84":
+            ps.setString(1,"Edgewood");
+            break;
+          case "q83":
+            for(int i=1;i<=3;i++)
+              ps.setString(i,"2000-11-17");
+            break;
+          case "q77":
+            for(int i =1;i<=12;i++)
+              ps.setString(i,"2000-08-03");
+            break;
+          case "q69":
+            for(int i=1;i<=6;i++)
+              ps.setInt(i,4);
+            break;
+          case "q65":
+            for (int i =1;i<=4;i++)
+              ps.setInt(i,1176);
+            break;
+          case "q64":
+            ps.setInt(1,2);
+            break;
+          case "q63":
+            for(int i =1;i<=12;i++)
+              ps.setInt(i,1200);
+            break;
+          case "q59":
+            for(int i=1;i<=4;i++)
+              ps.setInt(i,1212);
+            break;
           case "q2":
             ps.setString(1, "Sunday");
             ps.setString(2, "Monday");
@@ -111,7 +177,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             ps.setDouble(6,0.1);
             break;
           case "q50":
-            for(int i=1;i<=3;i++)
+            for(int i=1;i<=2;i++)
               ps.setInt(i,120);
             break;
           case "q56":

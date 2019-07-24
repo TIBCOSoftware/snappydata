@@ -22,7 +22,7 @@ FROM
     household_demographics.hd_vehicle_count = 3)
     AND date_dim.d_dow IN (6, ?)
     AND date_dim.d_year IN (1999, 1999 + 1, 1999 + 2)
-    AND store.s_city IN ('?', 'Midway', '?', '?', '?')
+    AND store.s_city IN (?, 'Midway', ?, ?, ?)
   GROUP BY ss_ticket_number, ss_customer_sk, ss_addr_sk, ca_city) dn, customer,
   customer_address current_addr
 WHERE ss_customer_sk = c_customer_sk

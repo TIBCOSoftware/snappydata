@@ -23,10 +23,10 @@ SELECT
   sum(CASE WHEN (sr_returned_date_sk - ss_sold_date_sk > 90) AND
     (sr_returned_date_sk - ss_sold_date_sk <= ?)
     THEN 1
-      ELSE 0 END)  AS `91 - ? days `,
+      ELSE 0 END)  AS `91 - 120 days `,
   sum(CASE WHEN (sr_returned_date_sk - ss_sold_date_sk > ?)
     THEN 1
-      ELSE 0 END)  AS `>? days `
+      ELSE 0 END)  AS `>120 days `
 FROM
   store_sales, store_returns, store, date_dim d1, date_dim d2
 WHERE
