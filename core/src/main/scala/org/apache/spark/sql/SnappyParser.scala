@@ -18,11 +18,13 @@ package org.apache.spark.sql
 
 import java.util.function.BiConsumer
 
+import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.primitives.Ints
+import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -34,9 +36,8 @@ import org.apache.spark.sql.catalyst.expressions.aggregate.{AggregateExpression,
 import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
+import org.apache.spark.sql.execution.{PutIntoValuesColumnTable, ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
@@ -44,6 +45,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{SnappyParserConsts => Consts}
 import org.apache.spark.streaming.Duration
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+import org.apache.spark.util.random.RandomSampler
 
 class SnappyParser(session: SnappySession)
     extends SnappyDDLParser(session) with ParamLiteralHolder {
@@ -53,6 +55,9 @@ class SnappyParser(session: SnappySession)
   protected final var _questionMarkCounter: Int = _
   protected final var _isPreparePhase: Boolean = _
   protected final var _parameterValueSet: Option[_] = None
+  protected final var _fromRelations: mutable.Stack[LogicalPlan] = new mutable.Stack[LogicalPlan]
+  // type info for parameters of a prepared statement
+  protected final var _preparedParamsTypesInfo: Option[Array[Int]] = None
 
   override final def input: ParserInput = _input
 
@@ -69,6 +74,11 @@ class SnappyParser(session: SnappySession)
   private[sql] def setPreparedQuery(preparePhase: Boolean, paramSet: Option[_]): Unit = {
     _isPreparePhase = preparePhase
     _parameterValueSet = paramSet
+    if (preparePhase) _preparedParamsTypesInfo = None
+  }
+
+  private[sql] def setPrepareParamsTypesInfo(info: Array[Int]): Unit = {
+    _preparedParamsTypesInfo = Option(info)
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -180,12 +190,19 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  private final def assertNoQueryHint(hint: QueryHint.Value, msg: => String): Unit = {
+  private final def assertNoQueryHint(plan: LogicalPlan, optAlias: Option[String]): Unit = {
     if (!queryHints.isEmpty) {
-      val hintStr = hint.toString
+      val hintStr = QueryHint.Index.toString
       queryHints.forEach(new BiConsumer[String, String] {
         override def accept(key: String, value: String): Unit = {
-          if (key.startsWith(hintStr)) throw new ParseException(msg)
+          if (key.startsWith(hintStr)) {
+            val tableString = optAlias match {
+              case Some(a) => a
+              case None => plan.treeString(verbose = false)
+            }
+            throw new ParseException(
+              s"Query hint '$hintStr' cannot be applied to derived table: $tableString")
+          }
         }
       })
     }
@@ -207,7 +224,7 @@ class SnappyParser(session: SnappySession)
         assert(_parameterValueSet.isDefined,
           "For Prepared Statement, Parameter constants are not provided")
         val (scalaTypeVal, dataType) = session.getParameterValue(
-          _questionMarkCounter, _parameterValueSet.get)
+          _questionMarkCounter, _parameterValueSet.get, _preparedParamsTypesInfo)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
         newTokenizedLiteral(catalystTypeVal, dataType)
       }
@@ -267,56 +284,70 @@ class SnappyParser(session: SnappySession)
     INTERVAL ~> (() => CalendarIntervalType)
   }
 
-  protected def intervalLiteral: Rule1[Expression] = rule {
+  protected def intervalExpression: Rule1[Expression] = rule {
     INTERVAL ~ (
         stringLiteral ~ (
-            YEAR ~ TO ~ MONTH ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromYearMonthString(s), CalendarIntervalType)) |
-            DAY ~ TO ~ (SECS | SECOND) ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromDayTimeString(s), CalendarIntervalType)) |
-            YEAR ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("year", s), CalendarIntervalType)) |
-            MONTH ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("month", s), CalendarIntervalType)) |
-            DAY ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("day", s), CalendarIntervalType)) |
-            HOUR ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("hour", s), CalendarIntervalType)) |
-            (MINS | MINUTE) ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("minute", s), CalendarIntervalType)) |
-            (SECS | SECOND) ~> ((s: String) => newTokenizedLiteral(
-              CalendarInterval.fromSingleUnitString("second", s), CalendarIntervalType))
+            YEAR ~ TO ~ MONTH ~> ((s: String) => CalendarInterval.fromYearMonthString(s)) |
+            DAY ~ TO ~ (SECOND | SECS) ~> ((s: String) => CalendarInterval.fromDayTimeString(s))
         ) |
-        year.? ~ month.? ~ week.? ~ day.? ~ hour.? ~ minute.? ~
-            second.? ~ millisecond.? ~ microsecond.? ~> { (y: Any, m: Any,
-            w: Any, d: Any, h: Any, m2: Any, s: Any, m3: Any, m4: Any) =>
-          val year = y.asInstanceOf[Option[Int]]
-          val month = m.asInstanceOf[Option[Int]]
-          val week = w.asInstanceOf[Option[Long]]
-          val day = d.asInstanceOf[Option[Long]]
-          val hour = h.asInstanceOf[Option[Long]]
-          val minute = m2.asInstanceOf[Option[Long]]
-          val second = s.asInstanceOf[Option[Long]]
-          val millis = m3.asInstanceOf[Option[Long]]
-          val micros = m4.asInstanceOf[Option[Long]]
-          if (!Seq(year, month, week, day, hour, minute, second, millis,
-            micros).exists(_.isDefined)) {
-            throw new ParseException(
-              "No interval can be constructed, at least one" +
-                  " time unit should be given for interval literal")
-          }
-          val months = year.map(_ * 12).getOrElse(0) + month.getOrElse(0)
-          val microseconds =
-            week.map(_ * CalendarInterval.MICROS_PER_WEEK).getOrElse(0L) +
-            day.map(_ * CalendarInterval.MICROS_PER_DAY).getOrElse(0L) +
-            hour.map(_ * CalendarInterval.MICROS_PER_HOUR).getOrElse(0L) +
-            minute.map(_ * CalendarInterval.MICROS_PER_MINUTE).getOrElse(0L) +
-            second.map(_ * CalendarInterval.MICROS_PER_SECOND).getOrElse(0L) +
-            millis.map(_ * CalendarInterval.MICROS_PER_MILLI).getOrElse(0L) +
-            micros.getOrElse(0L)
-          newTokenizedLiteral(new CalendarInterval(months, microseconds), CalendarIntervalType)
-        }
-    )
+        (stringLiteral | integral | expression) ~ (
+            YEAR ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("year", s)
+              case _ => v.asInstanceOf[Expression] -> -1L
+            }) |
+            MONTH ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("month", s)
+              case _ => v.asInstanceOf[Expression] -> -2L
+            }) |
+            WEEK ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("week", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_WEEK
+            }) |
+            DAY ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("day", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_DAY
+            }) |
+            HOUR ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("hour", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_HOUR
+            }) |
+            (MINUTE | MINS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("minute", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_MINUTE
+            }) |
+            (SECOND | SECS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("second", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_SECOND
+            }) |
+            (MILLISECOND | MILLIS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("millisecond", s)
+              case _ => v.asInstanceOf[Expression] -> CalendarInterval.MICROS_PER_MILLI
+            }) |
+            (MICROSECOND | MICROS) ~> ((v: Any) => v match {
+              case s: String => CalendarInterval.fromSingleUnitString("microsecond", s)
+              case _ => v.asInstanceOf[Expression] -> 1L
+            })
+        )
+    ). + ~> ((s: Seq[Any]) =>
+      if (s.length == 1) s.head match {
+        case c: CalendarInterval => newTokenizedLiteral(c, CalendarIntervalType)
+        case (e: Expression, u: Long) => IntervalExpression(e :: Nil, u :: Nil)
+      } else if (s.forall(_.isInstanceOf[CalendarInterval])) {
+        newTokenizedLiteral(s.reduce((v1, v2) => v1.asInstanceOf[CalendarInterval].add(
+          v2.asInstanceOf[CalendarInterval])), CalendarIntervalType)
+      } else {
+        val (expressions, units) = s.flatMap {
+          case c: CalendarInterval =>
+            if (c.months != 0) {
+              newLiteral(c.months.toLong, LongType) -> -2L ::
+                  newLiteral(c.microseconds, LongType) -> 1L :: Nil
+            } else {
+              newLiteral(c.microseconds, LongType) -> 1L :: Nil
+            }
+          case p => p.asInstanceOf[(Expression, Long)] :: Nil
+        }.unzip
+        IntervalExpression(expressions, units)
+      })
   }
 
   protected final def unsignedFloat: Rule1[String] = rule {
@@ -354,6 +385,10 @@ class SnappyParser(session: SnappySession)
 
   final def parseIdentifier: Rule1[String] = rule {
     ws ~ identifier ~ EOI
+  }
+
+  final def parseIdentifiers: Rule1[Seq[String]] = rule {
+    ws ~ (identifier + commaSep) ~ EOI
   }
 
   protected final def expression: Rule1[Expression] = rule {
@@ -583,44 +618,71 @@ class SnappyParser(session: SnappySession)
         })
   }
 
+  private def createSample(fraction: Double): LogicalPlan => Sample = child => {
+    // The range of fraction accepted by Sample is [0, 1]. Because Hive's block sampling
+    // function takes X PERCENT as the input and the range of X is [0, 100], we need to
+    // adjust the fraction.
+    val eps = RandomSampler.roundingEpsilon
+    if (!(fraction >= 0.0 - eps && fraction <= 1.0 + eps)) {
+      throw new ParseException(s"Sampling fraction ($fraction) must be on interval [0, 1]")
+    }
+    Sample(0.0, fraction, withReplacement = false, (math.random * 1000).toInt, child)(true)
+  }
+
+  protected final def toDouble(s: String): Double =
+    toNumericLiteral(s).eval(EmptyRow).asInstanceOf[Number].doubleValue()
+
+  protected final def sample: Rule1[LogicalPlan => LogicalPlan] = rule {
+    TABLESAMPLE ~ '(' ~ ws ~ (
+        numericLiteral ~ PERCENT ~> ((s: String) => createSample(toDouble(s))) |
+        integral ~ OUT ~ OF ~ integral ~> ((n: String, d: String) =>
+          createSample(toDouble(n) / toDouble(d))) |
+        expression ~ ROWS ~> ((e: Expression) => { child: LogicalPlan => Limit(e, child) })
+    ) ~ ')' ~ ws
+  }
+
   protected final def relationFactor: Rule1[LogicalPlan] = rule {
-    tableIdentifier ~ (
-        '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~ alias.? ~>
-            ((ident: TableIdentifier, e: Any, a: Any) => a.asInstanceOf[Option[String]] match {
-              case None => UnresolvedTableValuedFunction(
-                Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]])
-              case Some(n) => SubqueryAlias(n, UnresolvedTableValuedFunction(
-                Utils.toLowerCase(ident.unquotedString), e.asInstanceOf[Seq[Expression]]), None)
-            }) |
-        streamWindowOptions.? ~ alias.? ~> ((tableIdent: TableIdentifier,
-            window: Any, alias: Any) => window.asInstanceOf[Option[
-            (Duration, Option[Duration])]] match {
-          case None =>
-            val optAlias = alias.asInstanceOf[Option[String]]
-            updatePerTableQueryHint(tableIdent, optAlias)
-            UnresolvedRelation(tableIdent, optAlias)
-          case Some(win) =>
-            val optAlias = alias.asInstanceOf[Option[String]]
-            updatePerTableQueryHint(tableIdent, optAlias)
-            WindowLogicalPlan(win._1, win._2,
-              UnresolvedRelation(tableIdent, optAlias))
-        })
-    ) |
-    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~
-        alias.? ~> { (child: LogicalPlan, w: Any, alias: Any) =>
-      val aliasPlan = alias.asInstanceOf[Option[String]] match {
-        case None => child
-        case Some(name) => SubqueryAlias(name, child, None)
+    relationLeaf ~ sample.? ~ alias.? ~> { (rel: LogicalPlan, s: Any, a: Any) =>
+      val optAlias = a.asInstanceOf[Option[String]]
+      val plan = rel match {
+        case u@UnresolvedRelation(tableIdent, None) =>
+          updatePerTableQueryHint(tableIdent, optAlias)
+          if (optAlias.isEmpty) u else u.copy(alias = optAlias)
+        case w@WindowLogicalPlan(_, _, u@UnresolvedRelation(tableIdent, None), _) =>
+          updatePerTableQueryHint(tableIdent, optAlias)
+          if (optAlias.isDefined) w.child = u.copy(alias = optAlias)
+          w
+        case w@WindowLogicalPlan(_, _, child, _) =>
+          assertNoQueryHint(rel, optAlias)
+          if (optAlias.isDefined) w.child = SubqueryAlias(optAlias.get, child, None)
+          w
+        case _ =>
+          assertNoQueryHint(rel, optAlias)
+          if (optAlias.isEmpty) rel else SubqueryAlias(optAlias.get, rel, None)
       }
+      s.asInstanceOf[Option[LogicalPlan => LogicalPlan]] match {
+        case None => plan
+        case Some(cs) => cs(plan)
+      }
+    }
+  }
+
+  protected final def relationLeaf: Rule1[LogicalPlan] = rule {
+    tableIdentifier ~ (
+        '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
+            ((ident: TableIdentifier, e: Any) => UnresolvedTableValuedFunction(
+              ident.unquotedString, e.asInstanceOf[Seq[Expression]])) |
+        streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
+          window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
+            case None => UnresolvedRelation(tableIdent, None)
+            case Some(win) =>
+              WindowLogicalPlan(win._1, win._2, UnresolvedRelation(tableIdent, None))
+          })
+    ) |
+    '(' ~ ws ~ start ~ ')' ~ ws ~ streamWindowOptions.? ~> { (child: LogicalPlan, w: Any) =>
       w.asInstanceOf[Option[(Duration, Option[Duration])]] match {
-        case None =>
-          assertNoQueryHint(QueryHint.Index,
-            s"${QueryHint.Index} cannot be applied to derived table $alias")
-          aliasPlan
-        case Some(win) =>
-          assertNoQueryHint(QueryHint.Index,
-            s"${QueryHint.Index} cannot be applied to derived table $alias")
-          WindowLogicalPlan(win._1, win._2, aliasPlan)
+        case None => child
+        case Some(win) => WindowLogicalPlan(win._1, win._2, child)
       }
     }
   }
@@ -776,7 +838,11 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relationWithExternal: Rule1[LogicalPlan] = rule {
-    inlineTable | relationFactor
+    inlineTable | relationFactor |
+    '(' ~ ws ~ relation ~ ')' ~ ws ~ alias.? ~> ((r: LogicalPlan, a: Any) => a match {
+      case None => r
+      case Some(n) => SubqueryAlias(n.asInstanceOf[String], r, None)
+    })
   }
 
   protected final def withHints(plan: LogicalPlan): LogicalPlan = {
@@ -847,7 +913,7 @@ class SnappyParser(session: SnappySession)
         session.planCaching = false
         exprs
       case args =>
-        exprs.indices.map(index => exprs(index) match {
+        exprs.indices.map(index => exprs(index).transformUp {
           case l: TokenizedLiteral if (args(0) == -3 && !Ints.contains(args, index)) ||
               (args(0) != -3 && (Ints.contains(args, index) ||
               // all args          // all odd args
@@ -868,7 +934,7 @@ class SnappyParser(session: SnappySession)
 
 
   protected final def primary: Rule1[Expression] = rule {
-    intervalLiteral |
+    intervalExpression |
     identifier ~ (
       ('.' ~ identifier).? ~ '(' ~ ws ~ (
         '*' ~ ws ~ ')' ~ ws ~> ((n1: String, n2: Option[String]) =>
@@ -876,21 +942,26 @@ class SnappyParser(session: SnappySession)
             AggregateExpression(Count(Literal(1, IntegerType)),
               mode = Complete, isDistinct = false)
           } else {
-            val n2str = if (n2.isEmpty) "" else s".${n2.get}"
-            throw new ParseException(s"invalid expression $n1$n2str(*)")
+            val fnName = n2 match {
+              case None => new FunctionIdentifier(n1)
+              case Some(f) => new FunctionIdentifier(f, Some(n1))
+            }
+            UnresolvedFunction(fnName, UnresolvedStar(None) :: Nil, isDistinct = false)
           }) |
           (DISTINCT ~ push(true)).? ~ (expression * commaSep) ~ ')' ~ ws ~
             (OVER ~ windowSpec).? ~> { (n1: String, n2: Any, d: Any, e: Any, w: Any) =>
-            val f2 = n2.asInstanceOf[Option[String]]
-            val udfName = f2.fold(new FunctionIdentifier(n1))(new FunctionIdentifier(_, Some(n1)))
+            val fnName = n2.asInstanceOf[Option[String]] match {
+              case None => new FunctionIdentifier(n1)
+              case Some(f) => new FunctionIdentifier(f, Some(n1))
+            }
             val allExprs = e.asInstanceOf[Seq[Expression]]
             val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
-              UnresolvedFunction(udfName, exprs, isDistinct = false)
-            } else if (udfName.funcName.equalsIgnoreCase("COUNT")) {
+              UnresolvedFunction(fnName, exprs, isDistinct = false)
+            } else if (fnName.funcName.equalsIgnoreCase("COUNT")) {
               aggregate.Count(exprs).toAggregateExpression(isDistinct = true)
             } else {
-              UnresolvedFunction(udfName, exprs, isDistinct = true)
+              UnresolvedFunction(fnName, exprs, isDistinct = true)
             }
             w.asInstanceOf[Option[WindowSpec]] match {
               case None => function
@@ -918,10 +989,10 @@ class SnappyParser(session: SnappySession)
         val allExprs = e.asInstanceOf[Seq[Expression]].toList
         val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
         fn match {
-          case f if f.funcName.equalsIgnoreCase("TIMESTAMPADD") =>
+          case f if f.funcName.equalsIgnoreCase("timestampadd") =>
             assert(exprs.length == 3)
             assert(exprs.head.isInstanceOf[UnresolvedAttribute] &&
-                exprs.head.asInstanceOf[UnresolvedAttribute].name.equals("SQL_TSI_DAY"))
+                exprs.head.asInstanceOf[UnresolvedAttribute].name.equalsIgnoreCase("sql_tsi_day"))
             DateAdd(exprs(2), exprs(1))
           case f => UnresolvedFunction(f, exprs, isDistinct = false)
         }
@@ -968,7 +1039,7 @@ class SnappyParser(session: SnappySession)
         q: LogicalPlan => LogicalPlan) =>
       val base = f match {
         case Some(plan) => plan.asInstanceOf[LogicalPlan]
-        case _ => OneRowRelation
+        case _ => if (_fromRelations.isEmpty) OneRowRelation else _fromRelations.top
       }
       val withFilter = w match {
         case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
@@ -1012,7 +1083,7 @@ class SnappyParser(session: SnappySession)
     select2 | inlineTable | ctes
   }
 
-  protected final def query: Rule1[LogicalPlan] = rule {
+  protected final def select0: Rule1[LogicalPlan] = rule {
     select1.named("select") ~ (
         UNION ~ (
             ALL ~ select1.named("select") ~>
@@ -1026,6 +1097,15 @@ class SnappyParser(session: SnappySession)
             ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
 
     ).*
+  }
+
+  protected final def query: Rule1[LogicalPlan] = rule {
+    select0 |
+    FROM ~ relations ~> (_fromRelations.push(_): Unit) ~
+        (select0 | insert). + ~> { (queries: Seq[LogicalPlan]) =>
+      _fromRelations.pop()
+      if (queries.length == 1) queries.head else Union(queries)
+    }
   }
 
   // TODO: remove once planner allows for null padding for different number
@@ -1110,9 +1190,33 @@ class SnappyParser(session: SnappySession)
   }
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
-    capture(INSERT ~ INTO | PUT ~ INTO) ~ tableIdentifier ~
+    capture(INSERT ~ INTO) ~ tableIdentifier ~
         capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
-        UnresolvedRelation(r), s"$c ${quotedNormalizedId(r)} $s"))
+      UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
+  }
+
+  protected def putValuesOperation: Rule1[LogicalPlan] = rule {
+    capture(PUT ~ INTO) ~ tableIdentifier ~
+        capture(('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
+        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws) ~>
+        ((c: String, r: TableIdentifier, identifiers: Any, valueExpr: Any, s: String)
+        => {
+          val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
+          val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
+          val catalog = session.sessionState.catalog
+          val table = catalog.getTableMetadata(r)
+          val tableName = table.identifier.identifier
+          val db = table.database
+          val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
+            db, tableName)).toString
+          if (tableType == CatalogObjectType.Column.toString) {
+            PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
+          }
+          else {
+            DMLExternalTable(r,
+              UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
+          }
+        })
   }
 
   // It can be the following patterns:
@@ -1182,6 +1286,31 @@ class SnappyParser(session: SnappySession)
     })
   }
 
+  protected def analyze: Rule1[LogicalPlan] = rule {
+    ANALYZE ~ TABLE ~ tableIdentifier ~ COMPUTE ~ STATISTICS ~
+    (FOR ~ COLUMNS ~ (identifier + commaSep) | identifier).? ~>
+        ((table: TableIdentifier, ids: Any) => ids.asInstanceOf[Option[Any]] match {
+          case None => AnalyzeTableCommand(table, noscan = false)
+          case Some(id: String) =>
+            if (id.toLowerCase != "noscan") {
+              throw new ParseException(s"Expected `NOSCAN` instead of `$id`")
+            }
+            AnalyzeTableCommand(table)
+          case Some(cols) => AnalyzeColumnCommand(table, cols.asInstanceOf[Seq[String]])
+        })
+  }
+
+  protected final def partitionVal: Rule1[(String, Option[String])] = rule {
+    identifier ~ ('=' ~ '='.? ~ ws ~ (stringLiteral | numericLiteral |
+        booleanLiteral ~> ((b: Boolean) => b.toString))).? ~>
+        ((id: String, e: Any) => id -> e.asInstanceOf[Option[String]])
+  }
+
+  protected final def partitionSpec: Rule1[Map[String, Option[String]]] = rule {
+    PARTITION ~ '(' ~ ws ~ (partitionVal + commaSep) ~ ')' ~ ws ~>
+        ((s: Seq[(String, Option[String])]) => s.toMap)
+  }
+
   private var tokenize = false
 
   private var canTokenize = false
@@ -1204,8 +1333,8 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache | uncache |
-            deployPackages | explain))
+        (DISABLE_TOKENIZE ~ (dmlOperation | putValuesOperation | ddl | show | set | reset | cache |
+            uncache | deployPackages | explain | analyze))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],
@@ -1222,8 +1351,8 @@ class SnappyParser(session: SnappySession)
     parseRule match {
       case Success(p) => p
       case Failure(e: ParseError) =>
-        throw new ParseException(formatError(e, new ErrorFormatter(
-          showTraces = Property.ParserTraceError.get(session.sessionState.conf))))
+        throw new ParseException(formatError(e, new ErrorFormatter(showTraces =
+            (session ne null) && Property.ParserTraceError.get(session.sessionState.conf))))
       case Failure(e) =>
         throw new ParseException(e.toString, Some(e))
     }

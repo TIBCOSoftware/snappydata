@@ -4,7 +4,7 @@ If you want to store/retrieve objects for complex data types (Array, Map and Str
 
 *	A column of type **ARRAY** can store array of Java objects (Object[]), typed arrays, java.util.Collection, and scala.collection.Seq.
 *	A column of type **MAP** can store java.util.Map or scala.collection.Map.
-*	A column of type **STRUCT** can store array of Java objects (Object[]), typed arrays, java.util.Collection, scala.collection.Seq, or scala.Product
+*	A column of type **STRUCT** can store array of Java objects (Object[]), typed arrays, java.util.Collection, scala.collection.Seq, or scala.Product.
 
 !!! Note
 	Complex data types are supported only for column tables.
@@ -21,7 +21,7 @@ val conn = DriverManager.getConnection(url)
 
 val stmt = conn.createStatement()
 // create a table with a column of type array
-stmt.execute("CREATE TABLE TABLE_WITH_COMPLEX_TYPES (col1 Int, col2 Array<Decimal>) USING column options()""")
+stmt.execute("CREATE TABLE TABLE_WITH_COMPLEX_TYPES (col1 Int, col2 Array<Decimal>) USING column options()")
 ```
 
 ### Inserting Data
@@ -29,7 +29,7 @@ stmt.execute("CREATE TABLE TABLE_WITH_COMPLEX_TYPES (col1 Int, col2 Array<Decima
 1.	Insert a single row having a complex type (array)
 
 		val arrDecimal = Array(Decimal("4.92"), Decimal("51.98"))
-		val pstmt = conn.prepareStatement("insert into TABLE_WITH_COMPLEX_TYPE values (?, ?)")
+		val pstmt = conn.prepareStatement("insert into TABLE_WITH_COMPLEX_TYPES values (?, ?)")
 
 2.	Create a serializer that can be used to serialize array data and insert into the table.
     
