@@ -178,12 +178,15 @@ class ConsistencyTest {
                 val after_result: Double = rowAf.getDouble(j)
                 pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
                     before_result + " and avg after " + op + " start : " + after_result)
-                // TODO
+                val expectedRs = after_result - before_result
+                if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("SUM")) {
                 val before_result: Double = rowBf.getDouble(j)
                 val after_result: Double = rowAf.getDouble(j)
                 pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
                     before_result + " and sum after " + op + " start : " + after_result)
+                val expectedRs = after_result - before_result
+                if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               }
             case DMLOp.PUTINTO =>
               defaultValue = -1

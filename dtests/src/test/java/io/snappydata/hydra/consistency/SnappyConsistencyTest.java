@@ -361,17 +361,20 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                 Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
                     " start: " + before_result + " and number of after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
-                if (!(expectedRs % before_result == 0)) {
+                if (!(expectedRs % before_result == 0))
                   atomicityCheckFailed = true;
-                }
               } else if (colName.toUpperCase().startsWith("AVG")) {
                 Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and avg after " + op + " start : " + after_result);
-                //TODO
+                int expectedRs = after_result - before_result;
+                if (!(expectedRs % before_result == 0))
+                  atomicityCheckFailed = true;
               } else if (colName.toUpperCase().startsWith("SUM")) {
                 Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
                     " start: " + before_result + " and sum after " + op + " start : " + after_result);
-                //TODO
+                  int expectedRs = after_result - before_result;
+                  if (!(expectedRs % before_result == 0))
+                    atomicityCheckFailed = true;
               }break;
             case PUTINTO:
               defaultValue = -1;
