@@ -52,12 +52,10 @@ public class HiveThrifServerUtils extends SnappyTest {
         Connection jdbcConnection = connectToBeeline();
         try {
             Vector filePath = SnappyPrms.getDataLocationList();
-            Log.getLogWriter().info("Hive Thrift Server data path : " + filePath.firstElement().toString());
+            Log.getLogWriter().info("Hive Thrift Server data path : " + filePath.firstElement());
             jdbcConnection.createStatement().execute("create schema beelineDB");
-            //Below line needs to be added when external hive meta store merged into the master.
-            //htsUtils.jdbcConnection.createStatement().execute("create table if not exists beelineDB.Student(id int, name String, subject String, marks int, tid int) row format delimited fields terminated by ','");
-            //htsUtils.jdbcConnection.createStatement().execute("load data local inpath '/home/cbhatt/hts1/' overwrite into table beelineDB.Student");
-            jdbcConnection.createStatement().execute("create external table if not exists beelineDB.stage_Student using csv options(path '" + filePath.firstElement().toString() + "',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
+            Log.getLogWriter().info("Query : " + "create external table if not exists beelineDB.stage_Student using csv options(path '" + filePath.firstElement() + "',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
+            jdbcConnection.createStatement().execute("create external table if not exists beelineDB.stage_Student using csv options(path '" + filePath.firstElement() + "',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
             jdbcConnection.createStatement().execute("create table beelineDB.Student(id int,name string,subject string,marks int,tid int) using column as select * from beelineDB.stage_Student");
             Log.getLogWriter().info("Table beelineDB.Student created successfully in beeline");
             Statement st = jdbcConnection.createStatement();
@@ -75,10 +73,10 @@ public class HiveThrifServerUtils extends SnappyTest {
         Connection snappyJDBCConnection = null;
         try {
             Vector filePath = SnappyPrms.getDataLocationList();
-            Log.getLogWriter().info("Hive Thrift Server data path : " + filePath.firstElement().toString());
+            Log.getLogWriter().info("Hive Thrift Server data path : " + filePath.firstElement());
             snappyJDBCConnection = SnappyTest.getLocatorConnection();
             snappyJDBCConnection.createStatement().execute("create schema snappyDB");
-            snappyJDBCConnection.createStatement().execute("create external table if not exists snappyDB.stage_Student using csv options(path '" + filePath.firstElement().toString()  + "',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
+            snappyJDBCConnection.createStatement().execute("create external table if not exists snappyDB.stage_Student using csv options(path '" + filePath.firstElement()  + "',header 'true', inferSchema 'false',nullValue 'NULL', maxCharsPerColumn '4096')");
             snappyJDBCConnection.createStatement().execute("create table snappyDB.Student(id int,name string,subject string,marks int,tid int) using column as select * from snappyDB.stage_Student");
             Log.getLogWriter().info("Table snappyDB.Student created successfully in snappy");
             Statement st = snappyJDBCConnection.createStatement();
