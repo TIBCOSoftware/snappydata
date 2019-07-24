@@ -25,9 +25,9 @@ fi
 
  validate() {
    cd $finalResultDir
-   outputFile = $1
-   echo "Comparing $1 with output_1.log"
-   diff output_sorted_1.log outputFile
+   fileNo=$(($2-1))
+   echo "Comparing $1 with output_sorted_$fileNo.log"
+   diff output_sorted_$fileNo.log $1
  }
 
 for i in "$@";
@@ -65,7 +65,7 @@ for i in "$@";
     if [ $cnt -gt 1 ]; then
       sh $i/bin/snappy run -file=$validationScript -client-bind-address=localhost -client-port=1527 >> $finalResultDir/outputBfrOps_$cnt.log
       sort $finalResultDir/outputBfrOps_$cnt.log > $finalResultDir/outputBfrOps_sorted_$cnt.log
-      validate outputBfrOps_sorted_$cnt.log
+      validate outputBfrOps_sorted_$cnt.log cnt
     fi
 
     sh $i/bin/snappy run -file=$dmlScript -client-bind-address=localhost -client-port=1527 > $finalResultDir/dmlOutput_$cnt.log
