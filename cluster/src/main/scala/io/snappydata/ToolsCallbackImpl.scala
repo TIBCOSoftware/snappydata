@@ -20,10 +20,12 @@ import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
 import java.net.URLClassLoader
 
+import com.gemstone.gemfire.cache.EntryExistsException
 import scala.collection.JavaConverters._
-
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
 
@@ -96,7 +98,12 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   override def addURIs(alias: String, jars: Array[String],
       deploySql: String, isPackage: Boolean = true): Unit = {
     if (alias != null) {
-      Misc.getMemStore.getGlobalCmdRgn.put(alias, deploySql)
+      try {
+        Misc.getMemStore.getGlobalCmdRgn.create(alias, deploySql)
+      } catch {
+        case eee: EntryExistsException => throw StandardException.newException(
+          SQLState.LANG_DB2_DUPLICATE_NAMES, alias , "of deploying jars/packages")
+      }
     }
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     val loader = lead.urlclassloader

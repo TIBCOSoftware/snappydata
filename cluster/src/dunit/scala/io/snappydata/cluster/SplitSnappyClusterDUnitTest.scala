@@ -25,7 +25,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -323,6 +323,37 @@ class SplitSnappyClusterDUnitTest(s: String)
           "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2")
     }
     assert(thrown.getMessage === s"""Invalid input \"mongo-#\", expected packageIdentifierPart or stringLiteral (line 1, column 26):\ndeploy package \"testsch\".mongo-###park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2\n                         ^;""")
+
+  }
+
+  def testDeployPackageDuplicateName: Unit = {
+    val sns = new SnappySession(sc)
+    try {
+      sns.sql("deploy package mongo-spark_v.1.5" +
+          " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+
+      sns.sql("deploy package mongo-spark_v.1.5_dup" +
+          "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+
+      assert(sns.sql("list packages").count() == 2)
+
+      sns.sql("deploy package akka-v1 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
+
+      Try(sns.sql("deploy package akka-v1 'com.datastax.spark:" +
+          "spark-cassandra-connector_2.11:2.3.2'")) match {
+        case Success(df) => throw new AssertionError(
+          "Deploy command should have failed because of the duplicate alias.")
+        case Failure(error) => assert(error.getMessage == "Name 'akka-v1' specified in context" +
+            " 'of deploying jars/packages' is not unique.")
+      }
+      assert(sns.sql("list packages").count() == 3)
+    }
+    finally {
+      sns.sql("undeploy  mongo-spark_v.1.5")
+      sns.sql("undeploy  mongo-spark_v.1.5_dup")
+      sns.sql("undeploy  akka-v1")
+      assert(sns.sql("list packages").count() == 0)
+    }
 
   }
 
