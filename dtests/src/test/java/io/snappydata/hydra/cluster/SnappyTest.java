@@ -2174,11 +2174,12 @@ public class SnappyTest implements Serializable {
   }
 
   protected String getPrimaryLeadHost() {
+    leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
     if (leadHost == null) {
       retrievePrimaryLeadHost();
       leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
       Log.getLogWriter().info("primaryLead Host is: " + leadHost);
-    }  else leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
+    }
     return leadHost;
   }
 
