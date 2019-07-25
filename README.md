@@ -3,7 +3,7 @@ By fusing a in-memory hybrid database inside Apache Spark it provides analytic q
 
 Its primary use case is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, often there is no need to pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs. It enables complex processing on large data sets in sub-second timeframes. 
 
-![SnappyData Positioning](docs/Images/Snappy_intro.1.png)
+![SnappyData Positioning](docs/Images/Snappy_intro.1.png =250x200)
 
 **Note:** SnappyData is not meant to be yet another EDW platform, but, rather a nimble computational cluster that augments traditional EDWs and data lakes.  
 
