@@ -42,7 +42,7 @@ object RefreshMetadata extends Enumeration
   // list of various action types possible with this function
   // first argument to the execute() methods should be this
   val UPDATE_CATALOG_SCHEMA_VERSION, FLUSH_ROW_BUFFER, REMOVE_CACHED_OBJECTS, CLEAR_CODEGEN_CACHE,
-  ADD_URIS_TO_CLASSLOADER, REMOVE_URIS_FROM_CLASSLOADER = Value
+  ADD_URIS_TO_CLASSLOADER, REMOVE_FUNCTION_JAR, REMOVE_URIS_FROM_CLASSLOADER = Value
 
   override def getId: String = ID
 
@@ -114,10 +114,12 @@ object RefreshMetadata extends Enumeration
       case ADD_URIS_TO_CLASSLOADER =>
         ToolsCallbackInit.toolsCallback.addURIsToExecutorClassLoader(
           args.asInstanceOf[Array[String]])
+      case REMOVE_FUNCTION_JAR =>
+        ToolsCallbackInit.toolsCallback.removeFunctionJars(
+          args.asInstanceOf[Array[String]])
       case REMOVE_URIS_FROM_CLASSLOADER =>
         ToolsCallbackInit.toolsCallback.removeURIsFromExecutorClassLoader(
-          args.asInstanceOf[Array[String]]
-        )
+          args.asInstanceOf[Array[String]])
     }
   }
 

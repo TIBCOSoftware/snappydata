@@ -17,15 +17,16 @@
 package org.apache.spark.sql.udf
 
 import java.io.File
-import java.net.URL
 
+import scala.language.{implicitConversions, postfixOps}
+import scala.sys.process._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 
-import org.apache.spark.TestUtils
+import org.apache.spark.{SparkUtilsAccess, TestUtils}
 import org.apache.spark.TestUtils.JavaSourceFromString
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest._
 import org.apache.spark.sql.{SnappyContext, SnappySession}
@@ -263,29 +264,12 @@ object UserDefinedFunctionsDUnitTest {
 
   private def sc = SnappyContext.globalSparkContext
 
-  private val userDir = System.getProperty("user.dir")
-
-  def destDir: File = {
-    val jarDir = new File(s"$userDir/jars")
-    if (!jarDir.exists()) {
-      jarDir.mkdir()
-    }
-    jarDir
-  }
-
-  def getJavaSourceFromString(name: String, code: String): JavaSourceFromString = {
-    new JavaSourceFromString(name, code)
-  }
-
   def createUDFClass(name: String, code: String): File = {
-    TestUtils.createCompiledClass(name, destDir,
-      getJavaSourceFromString(name, code), Nil)
+    SparkUtilsAccess.createUDFClass(name, code)
   }
 
   def createJarFile(files: Seq[File]): String = {
-    val jarFile = new File(destDir, "testJar-%s.jar".format(System.currentTimeMillis()))
-    TestUtils.createJar(files, jarFile)
-    jarFile.getPath
+    SparkUtilsAccess.createJarFile(files)
   }
 
   def failTheExecutors(): Unit = {
