@@ -30,20 +30,23 @@ object TestUtils extends Logging {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       val catalog = session.sessionCatalog
-      val skipSchemas = Seq(catalog.defaultSchemaName, "DEFAULT", "SYS", "SYSIBM")
-      val userSchemas = catalog.listDatabases().filterNot(s => skipSchemas.contains(s.toUpperCase))
+      val skipSchemas = Seq(catalog.defaultSchemaName, "default", "sys", "sysibm")
+      val userSchemas = catalog.listDatabases().filterNot(skipSchemas.contains)
       if (userSchemas.nonEmpty) {
         userSchemas.foreach { s =>
           try {
             session.sql(s"drop schema $s cascade")
           } catch {
-            case t: Throwable => logError(s"Failure in dropping schema $s in cleanup", t)
+            case t: Throwable =>
+              if (!t.getMessage.contains("Cannot drop own schema")) {
+                logError(s"Failure in dropping schema $s in cleanup", t)
+              }
           }
         }
       }
       catalog.dropAllSchemaObjects(catalog.defaultSchemaName,
         ignoreIfNotExists = true, cascade = true)
-      catalog.dropAllSchemaObjects("DEFAULT", ignoreIfNotExists = true, cascade = true)
+      catalog.dropAllSchemaObjects("default", ignoreIfNotExists = true, cascade = true)
       catalog.clearTempTables()
     }
   }
@@ -52,7 +55,7 @@ object TestUtils extends Logging {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       try {
-        val catalog = session.snappySessionState.catalog
+        val catalog = session.sessionState.catalog
         catalog.destroyAndRegisterBuiltInFunctionsForTests()
       } catch {
         case t: Throwable => logError("Failure in dropping function in cleanup", t)

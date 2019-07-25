@@ -19,16 +19,14 @@ package org.apache.spark.sql.policy
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import com.pivotal.gemfirexd.internal.impl.jdbc.authentication.LDAPAuthenticationSchemeImpl
 import io.snappydata.Constant
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.{Expression, LeafExpression, Literal}
+import org.apache.spark.sql.catalyst.expressions.LeafExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
 import org.apache.spark.sql.catalyst.util.ArrayData
-import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.types.{ArrayType, BooleanType, DataType, StringType}
+import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.unsafe.types.UTF8String
 
@@ -54,10 +52,10 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
   override def prettyName: String = "current_user"
 }
 
-
-case class  LdapGroupsOfCurrentUser() extends LeafExpression
+case class LdapGroupsOfCurrentUser() extends LeafExpression
     with CodegenFallback {
   override def foldable: Boolean = true
+
   override def nullable: Boolean = false
 
   override def dataType: DataType = LdapGroupsOfCurrentUser.dataType
@@ -65,12 +63,13 @@ case class  LdapGroupsOfCurrentUser() extends LeafExpression
   override def eval(input: InternalRow): Any = {
     val snappySession = SparkSession.getActiveSession.getOrElse(
       throw new IllegalStateException("SnappySession unavailable")).asInstanceOf[SnappySession]
-    var owner = snappySession.conf.get(Attribute.USERNAME_ATTR, Constant.DEFAULT_SCHEMA)
+    var owner = snappySession.conf.get(Attribute.USERNAME_ATTR, "")
 
-    owner = IdUtil.getUserAuthorizationId(Utils.toUpperCase(owner))
+    owner = IdUtil.getUserAuthorizationId(
+      if (owner.isEmpty) Constant.DEFAULT_SCHEMA
+      else snappySession.sessionCatalog.formatName(owner))
 
-    val array = ExternalStoreUtils.getLdapGroupsForUser(owner).
-       map(UTF8String.fromString(_))
+    val array = ExternalStoreUtils.getLdapGroupsForUser(owner).map(UTF8String.fromString)
     ArrayData.toArrayData(array)
   }
 

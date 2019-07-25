@@ -316,6 +316,6 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
   }
 
   private def streamName(testId: Int) = {
-    s"USERS_$testId"
+    s"users_$testId"
   }
 }

@@ -18,6 +18,7 @@
 package org.apache.spark.sql.internal
 
 import java.util.Properties
+import java.util.function.BiConsumer
 
 import scala.reflect.{ClassTag, classTag}
 
@@ -41,6 +42,7 @@ import org.apache.spark.sql.execution.datasources.{CreateTable, LogicalRelation,
 import org.apache.spark.sql.execution.{SecurityUtils, datasources}
 import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.SQLConf.SQLConfigBuilder
+import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.types.{DecimalType, StringType}
 import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, SnappyParser, SnappySession}
@@ -74,18 +76,30 @@ class SnappyConf(@transient val session: SnappySession)
       dynamicShufflePartitions = -1
   }
 
+  resetOverrides()
+
+  private def resetOverrides(): Unit = {
+    val overrideConfs = session.overrideConfs
+    if (overrideConfs.nonEmpty) {
+      overrideConfs.foreach(p => setConfString(p._1, p._2))
+    }
+  }
+
   private def coreCountForShuffle: Int = {
     val count = SnappyContext.totalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
     else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
   }
 
-  private def keyUpdateActions(key: String, value: Option[Any], doSet: Boolean): Unit = key match {
+  private def keyUpdateActions(key: String, value: Option[Any],
+      doSet: Boolean, search: Boolean = true): String = key match {
     // clear plan cache when some size related key that effects plans changes
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
          Property.HashAggregateSize.name |
-         Property.ForceLinkPartitionsToBuckets.name => session.clearPlanCache()
+         Property.ForceLinkPartitionsToBuckets.name =>
+      session.clearPlanCache()
+      key
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
@@ -95,18 +109,22 @@ class SnappyConf(@transient val session: SnappySession)
         dynamicShufflePartitions = coreCountForShuffle
       }
       session.clearPlanCache()
+      key
     case Property.SchedulerPool.name =>
       schedulerPool = value match {
         case None => Property.SchedulerPool.defaultValue.get
         case Some(pool: String) if session.sparkContext.getPoolForName(pool).isDefined => pool
         case Some(pool) => throw new IllegalArgumentException(s"Invalid Pool $pool")
       }
+      key
 
-    case Property.PartitionPruning.name => value match {
-      case Some(b) => session.partitionPruning = b.toString.toBoolean
-      case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
-    }
+    case Property.PartitionPruning.name =>
+      value match {
+        case Some(b) => session.partitionPruning = b.toString.toBoolean
+        case None => session.partitionPruning = Property.PartitionPruning.defaultValue.get
+      }
       session.clearPlanCache()
+      key
 
     case Property.PlanCaching.name =>
       value match {
@@ -117,6 +135,7 @@ class SnappyConf(@transient val session: SnappySession)
           session.planCaching = boolVal.toString.toBoolean
         case None => session.planCaching = Property.PlanCaching.defaultValue.get
       }
+      key
 
     case Property.Tokenize.name =>
       value match {
@@ -124,6 +143,7 @@ class SnappyConf(@transient val session: SnappySession)
         case None => session.tokenize = Property.Tokenize.defaultValue.get
       }
       session.clearPlanCache()
+      key
 
     case Property.DisableHashJoin.name =>
       value match {
@@ -131,15 +151,43 @@ class SnappyConf(@transient val session: SnappySession)
         case None => session.disableHashJoin = Property.DisableHashJoin.defaultValue.get
       }
       session.clearPlanCache()
+      key
 
-    case Property.EnableHiveSupport.name =>
-      value match {
-        case Some(boolVal) => session.enableHiveSupport = boolVal.toString.toBoolean
-        case None => session.enableHiveSupport = Property.EnableHiveSupport.defaultValue.get
+    case CATALOG_IMPLEMENTATION.key if session.initialized =>
+      val oldValue = session.enableHiveSupport
+      val newValue = value match {
+        case Some(v) => session.isHiveSupportEnabled(v.toString)
+        case None => CATALOG_IMPLEMENTATION.defaultValueString == "hive"
       }
-      session.clearPlanCache()
+      // initialize hive session upfront else it runs into recursion trying
+      // to copy conf to the session
+      if (newValue) {
+        session.initialized = false
+        assert(session.sessionState.hiveSession ne null)
+        session.initialized = true
+      }
+      session.enableHiveSupport = newValue
+      // if external hive catalog was enabled, then set its current schema
+      if (!oldValue && newValue) {
+        session.sessionCatalog.setCurrentSchema(session.getCurrentSchema, force = true)
+      }
+      key
 
-    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key => session.clearPlanCache()
+    case Property.HiveCompatibility.name =>
+      value match {
+        case Some(level) => Utils.toLowerCase(level.toString) match {
+          case "default" | "spark" | "full" =>
+          case _ => throw new IllegalArgumentException(
+            s"Unexpected value '$level' for ${Property.HiveCompatibility.name}. " +
+                "Allowed values are: default, spark and full")
+        }
+        case None =>
+      }
+      key
+
+    case SQLConf.WHOLESTAGE_CODEGEN_ENABLED.key =>
+      session.clearPlanCache()
+      key
 
     case Constant.TRIGGER_AUTHENTICATION => value match {
       case Some(boolVal) if boolVal.toString.toBoolean =>
@@ -152,11 +200,30 @@ class SnappyConf(@transient val session: SnappySession)
               throw Util.generateCsSQLException(SQLState.NET_CONNECT_AUTH_FAILED, failure)
           }
         }
-      case _ =>
+        key
+      case _ => key
     }
 
-    case _ => // ignore others
+    case _ if key.startsWith("spark.sql.aqp.") =>
+      session.clearPlanCache()
+      key
+
+    case _ =>
+      // search case-insensitively for other keys if required
+      if (search) {
+        getAllDefinedConfs.collectFirst {
+          case (k, _, _) if k.equalsIgnoreCase(key) => k
+        } match {
+          case None => key
+          case Some(k) =>
+            // execute keyUpdateActions again since it might be one of the pre-defined ones
+            keyUpdateActions(k, value, doSet, search = false)
+            k
+        }
+      } else key
   }
+
+  private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
 
   private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
     if (session ne null) {
@@ -187,28 +254,48 @@ class SnappyConf(@transient val session: SnappySession)
   def activeSchedulerPool: String = schedulerPool
 
   override def setConfString(key: String, value: String): Unit = {
-    keyUpdateActions(key, Some(value), doSet = true)
-    super.setConfString(key, value)
+    val rkey = keyUpdateActions(key, Some(value), doSet = true)
+    super.setConfString(rkey, value)
+    if (session.enableHiveSupport) hiveConf.setConfString(rkey, value)
   }
 
   override def setConf[T](entry: ConfigEntry[T], value: T): Unit = {
-    keyUpdateActions(entry.key, Some(value), doSet = true)
+    keyUpdateActions(entry.key, Some(value), doSet = true, search = false)
     require(entry != null, "entry cannot be null")
     require(value != null, s"value cannot be null for key: ${entry.key}")
     entry.defaultValue match {
       case Some(_) => super.setConf(entry, value)
       case None => super.setConf(entry.asInstanceOf[ConfigEntry[Option[T]]], Some(value))
     }
+    if (session.enableHiveSupport) hiveConf.setConf(entry, value)
+  }
+
+  override def setConf(props: Properties): Unit = {
+    super.setConf(props)
+    if (session.enableHiveSupport) hiveConf.setConf(props)
   }
 
   override def unsetConf(key: String): Unit = {
-    keyUpdateActions(key, None, doSet = false)
-    super.unsetConf(key)
+    val rkey = keyUpdateActions(key, None, doSet = false)
+    super.unsetConf(rkey)
+    if (session.enableHiveSupport) hiveConf.unsetConf(rkey)
   }
 
   override def unsetConf(entry: ConfigEntry[_]): Unit = {
-    keyUpdateActions(entry.key, None, doSet = false)
+    keyUpdateActions(entry.key, None, doSet = false, search = false)
     super.unsetConf(entry)
+    if (session.enableHiveSupport) hiveConf.unsetConf(entry)
+  }
+
+  def foreach(f: (String, String) => Unit): Unit = settings.synchronized {
+    settings.forEach(new BiConsumer[String, String] {
+      override def accept(k: String, v: String): Unit = f(k, v)
+    })
+  }
+
+  override def clear(): Unit = {
+    super.clear()
+    resetOverrides()
   }
 }
 
@@ -423,13 +510,17 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
       val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
       val provider = tableDesc.provider.get
-      // treat saveAsTable with mode=Append as insertInto
-      if (mode == SaveMode.Append && queryOpt.isDefined && state.catalog.tableExists(tableIdent)) {
-        new Insert(table = UnresolvedRelation(tableDesc.identifier),
+      val isBuiltin = SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider)
+      // treat saveAsTable with mode=Append as insertInto for builtin tables and "normal" cases
+      // where no explicit bucket/partitioning has been specified
+      if (mode == SaveMode.Append && queryOpt.isDefined && (isBuiltin ||
+          (tableDesc.bucketSpec.isEmpty && tableDesc.partitionColumnNames.isEmpty)) &&
+          state.catalog.tableExists(tableIdent)) {
+        new Insert(table = UnresolvedRelation(tableIdent),
           partition = Map.empty, child = queryOpt.get,
           overwrite = OverwriteOptions(enabled = false), ifNotExists = false)
-      } else if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) {
+      } else if (isBuiltin) {
         val tableName = tableIdent.unquotedString
         // dependent tables are stored as comma-separated so don't allow comma in table name
         if (tableName.indexOf(',') != -1) {
@@ -439,11 +530,13 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
             (SnappyExternalCatalog.DBTABLE_PROPERTY -> tableName)
         if (CatalogObjectType.isColumnTable(SnappyContext.getProviderType(provider))) {
           // add default batchSize and maxDeltaRows options for column tables
-          if (!newOptions.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
+          val parameters = new ExternalStoreUtils.CaseInsensitiveMutableHashMap[String](
+            tableDesc.storage.properties)
+          if (!parameters.contains(ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS)) {
             newOptions += (ExternalStoreUtils.COLUMN_MAX_DELTA_ROWS ->
                 ExternalStoreUtils.defaultColumnMaxDeltaRows(state.snappySession).toString)
           }
-          if (!newOptions.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
+          if (!parameters.contains(ExternalStoreUtils.COLUMN_BATCH_SIZE)) {
             newOptions += (ExternalStoreUtils.COLUMN_BATCH_SIZE ->
                 ExternalStoreUtils.defaultColumnBatchSize(state.snappySession).toString)
           }
@@ -495,7 +588,7 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
       EliminateSubqueryAliases(table) match {
         case l@LogicalRelation(dr: MutableRelation, _, _) =>
 
-          val keyColumns = dr.getPrimaryKeyColumns
+          val keyColumns = dr.getPrimaryKeyColumns(state.snappySession)
           val childOutput = keyColumns.map(col =>
             child.resolveQuoted(col, analysis.caseInsensitiveResolution) match {
               case Some(a: Attribute) => a

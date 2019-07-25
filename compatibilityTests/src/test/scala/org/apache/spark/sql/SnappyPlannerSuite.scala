@@ -20,12 +20,4 @@ import org.apache.spark.sql.execution.PlannerSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyPlannerSuite extends PlannerSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "efficient terminal limit -> sort should use TakeOrderedAndProject",
-    "terminal limit -> project -> sort should use TakeOrderedAndProject",
-    "CollectLimit can appear in the middle of a plan when caching is used",
-    "InMemoryRelation statistics propagation"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -48,8 +49,8 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand}
-import org.apache.spark.sql.hive.{SnappyHiveExternalCatalog, SnappySessionState}
-import org.apache.spark.sql.internal.{SessionState, SnappySharedState}
+import org.apache.spark.sql.hive.{HiveExternalCatalog, SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.internal.{SharedState, SnappySharedState, StaticSQLConf}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -96,9 +97,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   override def newSession(): SnappyContext =
     snappySession.newSession().snappyContext
 
-  override def sessionState: SessionState = snappySession.sessionState
-
-  def snappySessionState: SnappySessionState = snappySession.snappySessionState
+  override def sessionState: SnappySessionState = snappySession.sessionState
 
   def clear(): Unit = {
     snappySession.clear()
@@ -817,6 +816,8 @@ object SnappyContext extends Logging {
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
 
+  @GuardedBy("contextLock") private var hiveSession: SparkSession = _
+
   val SAMPLE_SOURCE = "column_sample"
   val SAMPLE_SOURCE_CLASS = "org.apache.spark.sql.sampling.DefaultSource"
   val TOPK_SOURCE = "approx_topk"
@@ -1142,7 +1143,27 @@ object SnappyContext extends Logging {
     }
   }
 
-  def getSharedState: SnappySharedState = _sharedState
+  def newHiveSession(): SparkSession = contextLock.synchronized {
+    val sc = globalSparkContext
+    sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
+    if (this.hiveSession ne null) this.hiveSession.newSession()
+    else {
+      val session = SparkSession.builder().enableHiveSupport().getOrCreate()
+      if (session.sharedState.externalCatalog.isInstanceOf[HiveExternalCatalog] &&
+          session.sessionState.getClass.getName.contains("HiveSessionState")) {
+        this.hiveSession = session
+        // this session can be shared via Builder.getOrCreate() so create a new one
+        session.newSession()
+      } else {
+        this.hiveSession = new SparkSession(sc)
+        this.hiveSession
+      }
+    }
+  }
+
+  def getHiveSharedState: Option[SharedState] = contextLock.synchronized {
+    if (this.hiveSession ne null) Some(this.hiveSession.sharedState) else None
+  }
 
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
@@ -1199,7 +1220,7 @@ object SnappyContext extends Logging {
       contextLock.synchronized {
         val sharedState = _sharedState
         if (sharedState ne null) {
-          sharedState.globalTempViewManager().clear()
+          sharedState.globalTempViewManager.clear()
           _sharedState = null
         }
         if (_globalClear ne null) {
@@ -1213,6 +1234,7 @@ object SnappyContext extends Logging {
       _clusterMode = null
       _globalSNContextInitialized = false
       _globalContextInitialized = false
+      hiveSession = null
     }
   }
 

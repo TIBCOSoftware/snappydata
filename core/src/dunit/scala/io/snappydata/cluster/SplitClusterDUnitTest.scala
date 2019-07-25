@@ -45,7 +45,7 @@ import org.apache.spark.util.collection.OpenHashSet
 class SplitClusterDUnitTest(s: String)
     extends DistributedTestBase(s)
     with SplitClusterDUnitTestBase
-    with Serializable {
+    with Serializable with SnappyJobTestSupport {
 
   private[this] val bootProps: Properties = new Properties()
   bootProps.setProperty("log-file", "snappyStore.log")
@@ -71,7 +71,7 @@ class SplitClusterDUnitTest(s: String)
   override def startArgs: Array[AnyRef] = Array(
     SplitClusterDUnitTest.locatorPort, bootProps).asInstanceOf[Array[AnyRef]]
 
-  private val snappyProductDir =
+  override val snappyProductDir =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
 
   override protected val sparkProductDir: String =
@@ -124,6 +124,8 @@ class SplitClusterDUnitTest(s: String)
     // no change to network servers at runtime in this mode
   }
 
+  override def writeToFile(str: String, fileName: String): Unit = super.writeToFile(str, fileName)
+
   override protected def testObject = SplitClusterDUnitTest
 
   // test to make sure that stock spark-shell works with SnappyData core jar
@@ -135,6 +137,11 @@ class SplitClusterDUnitTest(s: String)
   def testSparkShellCurrent(): Unit = {
     testObject.invokeSparkShellCurrent(snappyProductDir, sparkProductDir, currentProductDir,
       locatorClientPort, new Properties(), vm3)
+  }
+
+  def testSNAP3028(): Unit = {
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
   }
 }
 
@@ -687,7 +694,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
-      "snappydata-core*.jar")
+      "TIB_compute-core*.jar")
     var securityConf = ""
     if (props.containsKey(Attribute.USERNAME_ATTR)) {
       securityConf = s" --conf spark.snappydata.store.user=${props.getProperty(Attribute
@@ -739,7 +746,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
     try {
       // perform some operations through spark-shell using JDBC pool driver API on current Spark
       val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
-        "snappydata-jdbc_*.jar")
+        "TIB_compute-jdbc*.jar")
       var securityConf = ""
       if (props.containsKey(Attribute.USERNAME_ATTR)) {
         securityConf = s" --conf spark.snappydata.user=" +

@@ -2,7 +2,7 @@
 source PerfRun.conf
 
 #top master and slaves from master machines
-ssh $master sh $SnappyData/sbin/stop-all.sh
+ssh $master bash $SnappyData/sbin/stop-all.sh
 
 rm -rf $SnappyData/conf/slaves
 

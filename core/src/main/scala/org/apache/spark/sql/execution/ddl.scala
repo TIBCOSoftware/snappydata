@@ -40,37 +40,39 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Cast, Expression, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.internal.BypassRowLevelSecurity
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, StaticSQLConf}
 import org.apache.spark.sql.sources.DestroyRelation
-import org.apache.spark.sql.types.{BooleanType, LongType, StringType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
+import org.apache.spark.unsafe.types.CalendarInterval
 
 case class CreateTableUsingCommand(
     tableIdent: TableIdentifier,
-    baseTable: Option[TableIdentifier],
+    baseTable: Option[String],
     userSpecifiedSchema: Option[StructType],
     schemaDDL: Option[String],
     provider: String,
     mode: SaveMode,
     options: Map[String, String],
+    partitionColumns: Array[String],
+    bucketSpec: Option[BucketSpec],
     query: Option[LogicalPlan],
-    isBuiltIn: Boolean,
-    partitionSpec: Seq[String] = Nil,
-    bucketSpec: Option[BucketSpec] = None) extends RunnableCommand {
+    isBuiltIn: Boolean) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val allOptions = session.addBaseTableOption(baseTable, options)
     session.createTableInternal(tableIdent, provider, userSpecifiedSchema,
-      schemaDDL, mode, allOptions, isBuiltIn, query, partitionSpec, bucketSpec)
+      schemaDDL, mode, allOptions, isBuiltIn, partitionColumns, bucketSpec, query)
     Nil
   }
 }
@@ -152,8 +154,8 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
   }
 }
 
-case class AlterTableAddDropColumnCommand(tableIdent: TableIdentifier,
-    column: StructField, isAdd: Boolean, defaultValue: Option[String]) extends RunnableCommand {
+case class AlterTableAddDropColumnCommand(tableIdent: TableIdentifier, isAdd: Boolean,
+    column: StructField, defaultValue: Option[String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
@@ -309,21 +311,20 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
       if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
       Nil
     } else {
-      val sessionState = session.snappySessionState
       val queryShortString = CachedDataFrame.queryStringShortForm(queryString)
       val localProperties = session.sparkContext.getLocalProperties
       val previousJobDescription = localProperties.getProperty(SparkContext.SPARK_JOB_DESCRIPTION)
       localProperties.setProperty(SparkContext.SPARK_JOB_DESCRIPTION, queryShortString)
       try {
-        sessionState.enableExecutionCache = true
+        session.sessionState.enableExecutionCache = true
         // Get the actual QueryExecution used by InMemoryRelation so that
         // "withNewExecutionId" runs on the same and shows proper metrics in GUI.
         val cachedExecution = try {
           if (isOffHeap) df.persist(StorageLevel.OFF_HEAP) else df.persist()
-          sessionState.getExecution(df.logicalPlan)
+          session.sessionState.getExecution(df.logicalPlan)
         } finally {
-          sessionState.enableExecutionCache = false
-          sessionState.clearExecutionCache()
+          session.sessionState.enableExecutionCache = false
+          session.sessionState.clearExecutionCache()
         }
         val memoryPlan = df.queryExecution.executedPlan.collectFirst {
           case plan: InMemoryTableScanExec => plan.relation
@@ -357,7 +358,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
 class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
     tablePattern: Option[String]) extends ShowTablesCommand(schemaOpt, tablePattern) {
 
-  private val hiveCompatible = Property.HiveCompatible.get(session.sessionState.conf)
+  private val hiveCompatible = Property.HiveCompatibility.get(
+    session.sessionState.conf).equalsIgnoreCase("full")
 
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
@@ -370,9 +372,7 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
     if (!hiveCompatible) {
-      // current schema name will be upper-case so convert all to lower-case for consistency
-      return super.run(sparkSession).map(r => Row(Utils.toLowerCase(r.getString(0)),
-        r.getString(1), r.getBoolean(2)))
+      return super.run(sparkSession)
     }
 
     val catalog = sparkSession.sessionState.catalog
@@ -391,7 +391,8 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
 case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     viewPattern: Option[String]) extends RunnableCommand {
 
-  private val hiveCompatible = Property.HiveCompatible.get(session.sessionState.conf)
+  private val hiveCompatible = Property.HiveCompatibility.get(
+    session.sessionState.conf).equalsIgnoreCase("full")
 
   // The result of SHOW VIEWS has four columns: schemaName, tableName, isTemporary and isGlobal.
   override val output: Seq[Attribute] = {
@@ -429,9 +430,9 @@ case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
         else {
           val viewSchema = viewIdent.database match {
             case None => ""
-            case Some(s) => Utils.toLowerCase(s)
+            case Some(s) => s
           }
-          Row(viewSchema, Utils.toLowerCase(viewIdent.table), isTemp, isGlobalTemp)
+          Row(viewSchema, viewIdent.table, isTemp, isGlobalTemp)
         }
     }
   }
@@ -455,6 +456,17 @@ class DescribeSnappyTableCommand(table: TableIdentifier,
         catalog.convertCharTypesInMetadata = false
       }
     }
+  }
+}
+
+class SetSnappyCommand(kv: Option[(String, Option[String])]) extends SetCommand(kv) {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = kv match {
+    // SnappySession allows attaching external hive catalog at runtime
+    case Some((k, Some(v))) if k.equalsIgnoreCase(StaticSQLConf.CATALOG_IMPLEMENTATION.key) =>
+      sparkSession.sessionState.conf.setConfString(k, v)
+      Row(k, v) :: Nil
+    case _ => super.run(sparkSession)
   }
 }
 
@@ -580,5 +592,72 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     ToolsCallbackInit.toolsCallback.removePackage(alias)
     Nil
+  }
+}
+
+case class PutIntoValuesColumnTable(db: String, tableName: String,
+    colNames: Option[Seq[String]],
+    values: Seq[Expression])
+    extends RunnableCommand {
+
+  def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
+    case BooleanType => value.toBoolean
+    case BinaryType => value.toCharArray.map(ch => ch.toByte)
+    case ByteType => value.toByte
+    case DoubleType => value.toDouble
+    case FloatType => value.toFloat
+    case ShortType => value.toShort
+    case IntegerType => value.toInt
+    case LongType => value.toLong
+    case DateType => java.sql.Date.valueOf(value)
+    case TimestampType => java.sql.Timestamp.valueOf(value)
+    case CalendarIntervalType => CalendarInterval.fromString(value)
+    case t: DecimalType =>
+      val d = Decimal(value)
+      assert(d.changePrecision(t.precision, t.scale))
+      d
+    case _ => value
+  }
+
+  override lazy val output: Seq[Attribute] = AttributeReference("count", LongType)() :: Nil
+
+  override def run(sparkSession: SparkSession): Seq[Row] = {
+
+    val snc = sparkSession.asInstanceOf[SnappySession]
+    val sc = sparkSession.sparkContext
+    val tableWithDB = db + "." + tableName
+    val v1 = values.zipWithIndex.map { case (e, _) =>
+      if (e != null) Cast(e, StringType).eval() else null
+    }
+    val schema = sparkSession.sharedState
+        .externalCatalog.getTable(db, tableName).schema
+    import snappy._
+    var rowRdd = List.empty[Any]
+    val valuesList = v1.toList
+    if (colNames.isEmpty) {
+      rowRdd = valuesList.zip(schema)
+          .map { case (value, struct) =>
+            if (value != null) convertTypes(value.toString, struct) else null
+          }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      val someDF1 = snc.createDataFrame(rdd1, schema)
+      Seq(Row(someDF1.write.putInto(tableWithDB)))
+    }
+    else {
+      val colSchema = StructType(colNames.head.toList
+          .map(column => schema.fields.find(_.name
+              .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
+            s"Field $column does not exist in $tableWithDB with schema=$schema."))))
+      rowRdd = valuesList.zip(colSchema)
+          .map { case (value, struct) =>
+            if (value != null) convertTypes(value.toString, struct) else null
+          }
+      val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
+      val someDF = snc.createDataFrame(rdd1, colSchema)
+      val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
+      val df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
+        df.withColumn(c.name, lit(null).cast(c.dataType)))
+      Seq(Row(df2.write.putInto(tableWithDB)))
+    }
   }
 }

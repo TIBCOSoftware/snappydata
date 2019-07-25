@@ -90,17 +90,18 @@ object Property extends Enumeration {
 
   val HiveServerEnabled: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.enabled", "If true on a lead node, then an " +
-        "embedded HiveServer2 with thrift access will be started", Some(false), prefix = null)
+        "embedded HiveServer2 with thrift access will be started in foreground. Default is true " +
+        "but starts the service in background.", Some(true), prefix = null)
 
-  val EnableHiveSupport: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.enableHiveSupport", "Property on SnappySession to " +
-        "enable external hive meta-store support as configured using SparkConf and hive-site.xml",
-    Some(false))
-
-  val HiveCompatible: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
-        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
-    Some(false), prefix = null)
+  val HiveCompatibility: SQLValue[String] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatibility", "Property on SnappySession to make " +
+        "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
+        "CREATE TABLE which defaults to row tables. A value of 'spark' makes it fully Spark " +
+        s"compatible where CREATE TABLE defaults to hive tables when catalogImplementation is " +
+        "'hive' for the session.  When set to 'full' then in addition to the behaviour " +
+        "with 'spark', it makes the behavior hive compatible for statements like SHOW TABLES " +
+        "rather than being compatible with Spark SQL. Default is 'default'.",
+    Some("default"), prefix = null)
 
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +

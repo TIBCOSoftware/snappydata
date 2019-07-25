@@ -16,8 +16,7 @@
  */
 package org.apache.spark.sql
 
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyUserDefinedTypeSuite extends UserDefinedTypeSuite  with SharedSnappySessionContext{
-
-}
+class SnappyUserDefinedTypeSuite extends UserDefinedTypeSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

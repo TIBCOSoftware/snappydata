@@ -17,10 +17,7 @@
 package org.apache.spark.sql
 
 import org.apache.spark.sql.execution.UnsafeFixedWidthAggregationMapSuite
-import org.apache.spark.sql.test.SharedSnappySessionContext
+import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
-class SnappyUnsafeFixedWidthAggregationMapSuite
-    extends UnsafeFixedWidthAggregationMapSuite
-        with SharedSnappySessionContext{
-
-}
+class SnappyUnsafeFixedWidthAggregationMapSuite extends UnsafeFixedWidthAggregationMapSuite
+    with SharedSnappySessionContext with SnappySparkTestUtil

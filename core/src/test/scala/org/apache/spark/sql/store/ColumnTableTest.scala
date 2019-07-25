@@ -29,6 +29,8 @@ import io.snappydata.core.{Data, TestData, TestData2}
 import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, SnappyEmbeddedTableStatsProviderService, SnappyFunSuite}
 import org.apache.commons.io.FileUtils
+import org.apache.hadoop.hive.ql.parse.ParseDriver
+import org.junit.Assert._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
 import org.apache.spark.Logging
@@ -37,11 +39,10 @@ import org.apache.spark.sql.catalyst.expressions.codegen.CodeGenerator
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
-import org.junit.Assert._
 
 /**
-  * Tests for column tables in GFXD.
-  */
+ * Tests for column tables in GFXD.
+ */
 class ColumnTableTest
     extends SnappyFunSuite
         with Logging
@@ -1070,7 +1071,7 @@ class ColumnTableTest
     try {
 
       val pi = new ParserImpl(cc)
-      // val pd = new ParseDriver
+      val pd = new ParseDriver
 
       // timed runs for the parsers
       var start: Double = 0.0
@@ -1129,7 +1130,6 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Spark parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
-      /*
       println()
 
       println(s"Warmup runs for Hive parser ...")
@@ -1145,7 +1145,6 @@ class ColumnTableTest
       elapsed = (end - start) / 1000000.0
       println(s"Time taken by Hive parser = ${elapsed}ms " +
           s"average=${elapsed / timedRuns}ms")
-      */
     } finally {
       conn.getLanguageConnection.popCompilerContext(cc)
       conn.restoreContextStack()
@@ -1211,7 +1210,7 @@ class ColumnTableTest
     } catch {
       case e: AnalysisException =>
         assert(e.getMessage().contains(
-          "APP.ORDER_DETAILS_COL cannot be dropped because of dependent objects"))
+          "app.order_details_col cannot be dropped because of dependent objects"))
         // Execute second time to see we are getting same exception instead of table not found
         try {
           snc.sql("DROP TABLE ORDER_DETAILS_COL")
@@ -1219,7 +1218,7 @@ class ColumnTableTest
         } catch {
           case e: AnalysisException => {
             assert(e.getMessage().contains(
-              "APP.ORDER_DETAILS_COL cannot be dropped because of dependent objects"))
+              "app.order_details_col cannot be dropped because of dependent objects"))
           }
         }
     }
@@ -1241,9 +1240,9 @@ class ColumnTableTest
 
     snc.sql("create table t3 using column options() as (select * from t1)")
 
-    val struct = (new StructType())
-        .add(StructField("C", IntegerType, true))
-        .add(StructField("D", IntegerType, true))
+    val struct = new StructType()
+        .add(StructField("c", IntegerType, nullable = true))
+        .add(StructField("d", IntegerType, nullable = true))
 
 
     val df1 = snc.sql("select * from t1")
@@ -1271,9 +1270,9 @@ class ColumnTableTest
     snc.sql("insert into test2 values(2,3)")
     val df3 = snc.sql("select _col1,__col2 from test2")
     df3.collect()
-    val struct = (new StructType())
-        .add(StructField("_COL1", IntegerType, true))
-        .add(StructField("__COL2", IntegerType, true))
+    val struct = new StructType()
+        .add(StructField("_col1", IntegerType, nullable = true))
+        .add(StructField("__col2", IntegerType, nullable = true))
 
     assert(struct == df3.schema)
   }
@@ -1309,11 +1308,10 @@ class ColumnTableTest
     val rows: Array[String] = nameAndAddress.toJSON.collect()
 
     assert(rows(0) ==
-        "{\"NAME\":\"Yin\",\"CITY\":\"Columbus\",\"STATE\":\"Ohio\"," +
-            "\"DISTRICT\":\"Pune\"}")
+        "{\"name\":\"Yin\",\"city\":\"Columbus\",\"state\":\"Ohio\"," +
+            "\"district\":\"Pune\"}")
     assert(rows(1) ==
-        "{\"NAME\":\"Michael\",\"STATE\":\"California\",\"LANE\":\"15\"}")
-
+        "{\"name\":\"Michael\",\"state\":\"California\",\"lane\":\"15\"}")
   }
 
   test("SNAP-2087 failure in JSON queries with complex types") {
@@ -1538,15 +1536,15 @@ class ColumnTableTest
     assert(rows.count() == 3)
     val row1 = snc.sql("select str from t1 where id = 1").collect()
     for (row <- row1) {
-      assertEquals("cc", row.getAs[String]("STR"))
+      assertEquals("cc", row.getAs[String]("str"))
     }
     val row2 = snc.sql("select str from t1 where id = 2").collect()
     for (row <- row2) {
-      assertEquals("aa", row.getAs[String]("STR"))
+      assertEquals("aa", row.getAs[String]("str"))
     }
     val row3 = snc.sql("select str from t1 where id = 3").collect()
     for (row <- row3) {
-      assertEquals("bb", row.getAs[String]("STR"))
+      assertEquals("bb", row.getAs[String]("str"))
     }
   }
 }
