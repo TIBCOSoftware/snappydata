@@ -12,68 +12,49 @@ Its primary use case is to provide analytics at interactive speeds over large vo
 
 <TODO> - we could shorten the description of each capability and retain the description in the new concepts chapter later. 
 
-> **Easily discover and catalog big data sets:** You can connect and discover datasets in SQL DBs, hadoop, NoSQL stores, file systems or even cloud data stores like S3 easily using SQL, infer schemas automatically and register them in a secure catalog. A wide variety of data formats are supported out of the box - JSON, CSV, text, Objects, Parquet, ORC, SQL, XML and more. 
+**Easily discover and catalog big data sets:**  *You can connect and discover datasets in SQL DBs, hadoop, NoSQL stores, file systems or even cloud data stores like S3 easily using SQL, infer schemas automatically and register them in a secure catalog. A wide variety of data formats are supported out of the box - JSON, CSV, text, Objects, Parquet, ORC, SQL, XML and more.* 
 
-> **Rich connectivity:** As ComputeDB is built with Apache Spark inside, any data store that has a Spark connector (and virtually all modern stores do (link to spark-packages.org) ) can be accessed using SQL or using the Spark RDD/Dataset API. You can dynamically deploy connectors to a running computeDB cluster. 
+**Rich connectivity:**  *As ComputeDB is built with Apache Spark inside, any data store that has a Spark connector (and virtually all modern stores do (link to spark-packages.org) ) can be accessed using SQL or using the Spark RDD/Dataset API. You can dynamically deploy connectors to a running computeDB cluster.* 
 
-> **Virtual or in-memory data:** you can decide which datasets need to be provisioned into distributed memory or left at the source. When data is left at source (modeled as a virtual/external tables) the analytic query processing is completely parallelized, query fragments pushed down where possible and executed at high speed. 
-When speed is important, applications can selectively copy the external data into memory using a single SQL command. 
+**Virtual or in-memory data:** *you can decide which datasets need to be provisioned into distributed memory or left at the source. When data is left at source (modeled as a virtual/external tables) the analytic query processing is completely parallelized, query fragments pushed down where possible and executed at high speed. 
+When speed is important, applications can selectively copy the external data into memory using a single SQL command.* 
 
-> **In-memory columnar + Row store:** You can choose in-memory data to be stored in columnar form - compressed and designed for scanning/aggregating large data sets or in row oriented form - very fast key or highly selective access. The columnar store is automatically indexed using a skipping index and applications can explicitly add indexes for the row store. 
+**In-memory columnar + Row store:** *You can choose in-memory data to be stored in columnar form - compressed and designed for scanning/aggregating large data sets or in row oriented form - very fast key or highly selective access. The columnar store is automatically indexed using a skipping index and applications can explicitly add indexes for the row store.* 
 
-> **High performance:** When data is loaded, the engine parallelizes all access by carefully taking into account - the available distributed cores, whether the source data can be partitioned and the available memory, to deliver very high speed loading. So, unlike a traditional warehouse, you can just bring up a ComputeDB just when required, load, process and tear it down. Query processing used code generation, and vectorization techniques to shift the processing to the modern day multi-core processor and L1/L2/L3 caches to the extent possible. 
+**High performance:** *When data is loaded, the engine parallelizes all access by carefully taking into account - the available distributed cores, whether the source data can be partitioned and the available memory, to deliver very high speed loading. So, unlike a traditional warehouse, you can just bring up a ComputeDB just when required, load, process and tear it down. Query processing used code generation, and vectorization techniques to shift the processing to the modern day multi-core processor and L1/L2/L3 caches to the extent possible.* 
 
-> **Flexible, rich data transformations:** External data sets when discovered automatically through schema inference will have the schema of the source. Users can cleanse, blend, reshape data using a SQL function library (Spark SQL+) or even submit Spark jobs and use custom logic. The entire, rich Spark API is at your disposal. This logic can be written in SQL, Java, Scala or even Python.
+**Flexible, rich data transformations:** *External data sets when discovered automatically through schema inference will have the schema of the source. Users can cleanse, blend, reshape data using a SQL function library (Spark SQL+) or even submit Spark jobs and use custom logic. The entire, rich Spark API is at your disposal. This logic can be written in SQL, Java, Scala or even Python.*
 
-> **Preparing data for data science:** Through the use Spark API for statistics and machine learning raw or curated datasets can be prepared for machine learning very easily. You can understand the statistical characteristics - correlations, independence of different variables, etc. You can generate distributed feature vectors from your data - using things like one-hot encoder, binarizer, and a range of functions built into Spark ML library. These features can be stored back into column tables and shared across a group of users with security and avoid having to dump copies to disk (slow and error prone).
+**Preparing data for data science:** *Through the use Spark API for statistics and machine learning raw or curated datasets can be prepared for machine learning very easily. You can understand the statistical characteristics - correlations, independence of different variables, etc. You can generate distributed feature vectors from your data - using things like one-hot encoder, binarizer, and a range of functions built into Spark ML library. These features can be stored back into column tables and shared across a group of users with security and avoid having to dump copies to disk (slow and error prone).*
  
-> **Stream ingestion and liveness:** While it is common to see query service engines today, most resort to periodic refreshing of data sets from the source as the managed data cannot be mutated. E.g. query engines like Presto, HDFS formats like parquet, etc. And, when updates can be applied pre-processing, re-shaping of the data is not necessarily simple. 
-In ComputeDB, operational systems can feed updates to data through Kafka to ComputeDB. The incoming data can be CDC events (i.e. insert, updates or deletes) and can be easily ingested into respective in-memory tables with ease, consistency and exactly-once semantics. The Application can apply smart logic to reduce incoming streams, apply transformations, etc using Spark structured streaming APIs. 
+**Stream ingestion and liveness:** *While it is common to see query service engines today, most resort to periodic refreshing of data sets from the source as the managed data cannot be mutated. E.g. query engines like Presto, HDFS formats like parquet, etc. And, when updates can be applied pre-processing, re-shaping of the data is not necessarily simple. 
+In ComputeDB, operational systems can feed updates to data through Kafka to ComputeDB. The incoming data can be CDC events (i.e. insert, updates or deletes) and can be easily ingested into respective in-memory tables with ease, consistency and exactly-once semantics. The Application can apply smart logic to reduce incoming streams, apply transformations, etc using Spark structured streaming APIs.* 
 
-> **Approximate Query Processing(AQP):** When dealing with very large data sets (IoT sensor streaming time series data, for instance) it may not be possible to provision the data in-memory and if left at the source (say hadoop or S3) your analytic query processing will likely take too long. In ComputeDB, you can create one or more stratified data samples on the full data set. These samples will automatically be used by the query engine for aggregation queries and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart, etc.  
+**Approximate Query Processing(AQP):** *When dealing with very large data sets (IoT sensor streaming time series data, for instance) it may not be possible to provision the data in-memory and if left at the source (say hadoop or S3) your analytic query processing will likely take too long. In ComputeDB, you can create one or more stratified data samples on the full data set. These samples will automatically be used by the query engine for aggregation queries and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart, etc.*  
 
-> **Access from anywhere:** You can use JDBC, ODBC, REST or any of the Spark API. The product is fully compatible with Spark 2.1.1. ComputeDB natively supports modern visualization tools - TIBCO Spotfire, Tableau and Qlikview. 
+**Access from anywhere:** *You can use JDBC, ODBC, REST or any of the Spark API. The product is fully compatible with Spark 2.1.1. ComputeDB natively supports modern visualization tools - TIBCO Spotfire, Tableau and Qlikview.* 
 
-----
-BELOW THE FLOW SHOULD BE ....
-... download and install
-... getting started in 10 mins
-... docs
-... blog
-... community  (This should be there in the main docs too)
-... Link with snappydata
-
-Add the following:
-Early published papers highlighting the innovations and motivations
--- link to the CIDR paper
- -- link to the Sigmod paper
-
-Also add:
--- Performance comparisons to Apache Spark, etc (blog links)
-
-Then retain the section ... delta with spark ... adAnalytics, etc
-
-----
-
-
-
-If you are already using Spark, experience 20x speed up for your query performance. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala).
-
-## Getting Started
-We provide multiple options to get going with SnappyData. The easiest option is, if you are already using Spark 2.1.1.
-You can simply get started by adding SnappyData as a package dependency. You can find more information on options for running SnappyData [here](docs/quickstart.md).
 
 ## Downloading and Installing SnappyData
-You can download and install the latest version of SnappyData from the [SnappyData Download Page](https://www.snappydata.io/download).
+You can download and install the latest version of SnappyData from [github](https://github.com/SnappyDataInc/snappydata/releases) or you download the enterprise version (TIBCO ComputeDB Enterprise edition) from [here](PUT_the_Tibco_download_URL_HERE). 
 Refer to the [documentation](docs/install.md) for installation steps.
 
-If you would like to build SnappyData from source, refer to the [documentation on building from source](docs/install/building_from_source.md).
+## Getting Started
+We provide multiple options to get going with SnappyData. You can run on your laptop, on on-prem clusters, AWS, Docker or Kubernetes. 
+You can find more information on options for running SnappyData [here](docs/quickstart.md).
 
-## SnappyData in 5 Minutes!
-Refer to the [5 minutes guide](docs/quickstart.md) which is intended for both first time and experienced SnappyData users. It provides you with references and common examples to help you get started quickly!
+## Quick test to measure performance vs Apache Spark
+If you are already using Spark, experience upto 20x speed up for your query performance. Try out this [test](https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala) using the Spark Shell.
 
 ## Documentation
 To understand SnappyData and its features refer to the [documentation](http://snappydatainc.github.io/snappydata/).
+
+## Other relevant content
+- [Paper](http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf) on Snappydata at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems
+- [Another early Paper](https://www.snappydata.io/snappy-industrial) that focusses on overall architecture, use cases and benchmarks. ACM Sigmod 2016
+- [TPC-H benchmark](https://www.snappydata.io/whitepapers/snappydata-tpch) comparing Apache Spark with SnappyData
+- Checkout the [SnappyData blog](https://www.snappydata.io/blog) for developer content
+- And, finally, the [TIBCO community page](https://community.tibco.com/products/tibco-computedb) for the latest info. 
 
 ## Community Support
 
@@ -119,6 +100,10 @@ val workaround = {
 ```
 
 For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.com/sbt/sbt/issues/3618).
+
+
+## Building from source
+If you would like to build SnappyData from source, refer to the [documentation on building from source](docs/install/building_from_source.md).
 
 
 ## What is the delta between SnappyData and Apache Spark ? 
