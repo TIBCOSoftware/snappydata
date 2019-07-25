@@ -240,15 +240,15 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     val fixedKeySize = this.fixedKeySize
     val newCapacity = SharedUtils.checkCapacity(_capacity << 1)
     val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
-    acquireMemory(_capacity * fixedKeySize)
-    _maxMemory += _capacity * fixedKeySize
+
     // clear the key data
     allocator.clearPostAllocate(newKeyBuffer, 0)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
     val newKeyObject = newKeyData.baseObject
     val newKeyBaseOffset = newKeyData.baseOffset
     val newMask = newCapacity - 1
-
+    acquireMemory(newKeyData.capacity - this.keyData.capacity)
+    _maxMemory += newKeyData.capacity - this.keyData.capacity
     val keyData = this.keyData
     val keyObject = keyData.baseObject
     var keyOffset = keyData.baseOffset
@@ -360,8 +360,8 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   def release(allocator: BufferAllocator): Unit = {
     allocator.release(buffer)
   }
-
 }
+
 object ByteBufferHashMap {
   val bsle = new BufferSizeLimitExceededException("ByteBufferData capacity reached to max")
 }
