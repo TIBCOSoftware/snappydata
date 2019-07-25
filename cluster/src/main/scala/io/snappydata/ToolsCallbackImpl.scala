@@ -177,8 +177,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       val newUri = new URI("file:" + uri)
       updatedURLs.remove(updatedURLs.indexOf(newUri.toURL))
     })
-    val parent = Thread.currentThread().getContextClassLoader
-    lead.urlclassloader = new ExtendibleURLClassLoader(parent)
+    lead.urlclassloader = new ExtendibleURLClassLoader(lead.urlclassloader.getParent)
     updatedURLs.foreach(url => lead.urlclassloader.addURL(url))
+    Thread.currentThread().setContextClassLoader(lead.urlclassloader)
   }
 }

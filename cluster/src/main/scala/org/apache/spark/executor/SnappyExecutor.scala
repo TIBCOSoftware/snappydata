@@ -16,7 +16,7 @@
  */
 package org.apache.spark.executor
 
-import java.io.File
+import java.io.{File, IOException}
 import java.net.{URI, URL}
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
@@ -175,7 +175,12 @@ class SnappyExecutor(
       jars.foreach(name => {
         val localName = name.split("/").last
         var jarFile = new File(SparkFiles.getRootDirectory(), localName)
-        Utils.deleteRecursively(jarFile)
+        if (jarFile.exists()) {
+          jarFile.delete()
+          logDebug(s"Deleted jarFile $jarFile")
+        } else {
+          throw new IOException("Failed to delete: " + jarFile.getAbsolutePath)
+        }
         var updatedURLs = urlClassLoader.getURLs().toBuffer
         updatedURLs.foreach(url => {
           if (url != null && url.toString.contains(jarFile.toString)) {

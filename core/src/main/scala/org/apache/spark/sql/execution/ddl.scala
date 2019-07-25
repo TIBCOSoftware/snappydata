@@ -641,14 +641,18 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
         val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
         val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
           repos, jarCache)
-        val pkgs = jarsstr.split(",")
-        RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
-        ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+        if (jarsstr.nonEmpty) {
+          val pkgs = jarsstr.split(",")
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
+          ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+        }
       }
       else {
-        val jars = value.split(',')
-        RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
-        ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        if (value.nonEmpty) {
+          val jars = value.split(',')
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
+          ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        }
       }
     }
     ToolsCallbackInit.toolsCallback.removePackage(alias)
