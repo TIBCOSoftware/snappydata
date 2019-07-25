@@ -3,6 +3,8 @@
 
 TIBCO ComputeDB runs on UNIX-like systems (for example, Linux, Mac OS). With on-premises installation, TIBCO ComputeDB is installed and operated from your in-house computing infrastructure.
 
+For quick start instructions on Installing TIBCO ComputeDB on-premise, refer [Getting Started with TIBCO ComputeDB On-premise](/quickstart/getting_started_by_installing_snappydata_on-premise.md). 
+
 <a id="singlehost"></a>
 ## Single-Host Installation
 

@@ -32,10 +32,14 @@ The following topics are covered in this section:
 
 !!! Note
 	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
+    
+In cases where you cannot access the TIBCO ComputeDB Monitoring Console to analyse Jobs and tasks, you must turn on the [Spark History server](#historyserver). 
 
 On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB.
 
 ![](../Images/MonitoringUI/TIBCO-ComputeDB-UI-About-Box.png)
+
+
 
 <a id="dashboard"></a>
 ## Dashboard
@@ -130,8 +134,8 @@ The following columns are displayed in this section:
 
 <a id="memberdetails"></a>
 ## Member Details
-
-The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generated for a cluster member.
+Console
+The **Member Details** view shows the usage trend and [statistics](#memberstat) of a specific cluster member. To check the **Member** **Details** view,  go to the [Members](#member) section and click the link in the **Member** column. Here you can also view the [Member Logs](#memberlogs) generhistoryserverated for a cluster member.
 The usage trends and the statistics of a specific member are auto updated periodically after every five seconds. If you want to turn off the auto-refresh, use the **Auto Refresh** switch that is provided on the upper-right corner. You can view, on demand, the latest logs by clicking on the **Load New** button provided at the bottom of the logs. You can also click the **Load More** button to view the older logs.
 
 ![Member Detail View](../Images/MonitoringUI/TIBCO-ComputeDB-UI-MemberDetails.png)
@@ -238,3 +242,18 @@ On this page, you can view the total time required for all the tasks in a job to
 * **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
 
 * **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
+
+<a id="historyserver"></a>
+## Spark History Server
+The Spark History server is an HTTP server that let you analyze the Spark jobs.
+
+The first step in tuning query performance in TIBCO ComputeDB is to understand the query physical plan that is available through the SQL tab on the TIBCO ComputeDB Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the TIBCO ComputeDB Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
+
+To turn on the History server, do the following:
+
+1.	Ensure to provide a shared disk that can be accessed from all the TIBCO ComputeDB nodes. If you do not have the NFS access, use HDFS. 
+2.	Provide the permissions to access the shared folder when you start TIBCO ComputeDB.  <!--- provide info with examples for how to do this .... (see spark docs). --->
+3.	Start the History server.
+			./sbin/start-history-server.sh
+	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed applications and attempts. 
+    For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).
