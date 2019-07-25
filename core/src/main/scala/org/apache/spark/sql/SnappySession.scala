@@ -1354,19 +1354,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
-      defaultValue: Option[String]): Unit = {
+      defaultValue: Option[String], referentialAction: String): Unit = {
     val tableIdent = tableIdentifier(tableName)
-    alterTable(tableIdent, isAddColumn, column, defaultValue)
+    alterTable(tableIdent, isAddColumn, column, defaultValue, referentialAction)
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField, defaultValue: Option[String]): Unit = {
+      column: StructField, defaultValue: Option[String], referentialAction: String = ""): Unit = {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
-        ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
+        ar.alterTable(tableIdent, isAddColumn, column, defaultValue, referentialAction)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
       case _ =>
