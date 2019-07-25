@@ -69,4 +69,3 @@ public class hiveMetaStore extends SnappyTest
 
     }
 }
-}
