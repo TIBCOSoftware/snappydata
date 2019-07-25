@@ -161,9 +161,9 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   }
 
   override def removeTableUnsafeIfExists(schema: String, table: String,
-      ignoreException: Boolean): Unit = {
+      forceDrop: Boolean): Unit = {
     val q = new CatalogQuery[Unit](
-      REMOVE_TABLE_UNSAFE, table, schema, if (ignoreException) 1 else 0)
+      REMOVE_TABLE_UNSAFE, table, schema, forceDrop = forceDrop)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
@@ -195,7 +195,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   private final class CatalogQuery[R](qType: Int, tableName: String, schemaName: String,
       catalogOperation: Int = 0, getRequest: CatalogMetadataRequest = null,
-      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null)
+      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null, forceDrop: Boolean = false)
       extends Callable[R] {
 
     private lazy val formattedTable = toLowerCase(tableName)
@@ -330,7 +330,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       // and other catalog info related to it will remain and may cause issues
       case REMOVE_TABLE_UNSAFE =>
         externalCatalog.dropTableUnsafe(formattedSchema, formattedTable,
-          catalogOperation).asInstanceOf[R]
+          forceDrop).asInstanceOf[R]
 
       case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]

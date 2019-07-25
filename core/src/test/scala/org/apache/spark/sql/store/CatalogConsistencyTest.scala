@@ -332,8 +332,11 @@ class CatalogConsistencyTest
     snc.sql("create table app.rowtable1 (c1 integer, c2 string, c3 float)")
     snc.sql("insert into app.rowtable1 values (11, '11', 1.1)")
 
-    intercept[EmbedSQLException] {
+    try {
       snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'false');")
+    } catch {
+      case e: EmbedSQLException =>
+        assert(e.getMessage.contains("Table retrieved successfully"))
     }
 
     snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'true');")

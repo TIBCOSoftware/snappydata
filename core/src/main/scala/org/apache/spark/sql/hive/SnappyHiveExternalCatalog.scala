@@ -81,6 +81,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   protected val cachedCatalogTables: LoadingCache[(String, String), CatalogTable] = {
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
+        logDebug(s"Looking up data source for ${name._1}.${name._2}")
         try {
           withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
             name._1, name._2)) match {
@@ -91,9 +92,11 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
           }
         } catch {
           case _: NullPointerException =>
+            // dropTableUnsafe() searches for below exception message. check before changing.
             throw new AnalysisException(
               s"Table ${name._1}.${name._2} might be inconsistent in hive catalog. " +
-                  "refer to troubleshooting section of documentation for resolution")
+                  "Use system procedure SYS.REMOVE_METASTORE_ENTRY to remove inconsistency. " +
+                  "Refer to troubleshooting section of documentation for more details")
         }
       }
     }
@@ -375,20 +378,27 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(refreshRelations)
   }
 
-  def dropTableUnsafe(schema: String, table: String, ignoreException: Int): Unit = {
+  def dropTableUnsafe(schema: String, table: String, forceDrop: Boolean): Unit = {
     try {
-      val catalogTable = super.getTable(schema, table)
+      super.getTable(schema, table)
       // no exception raised while getting catalogTable
-      if (ignoreException == 1) {
+      if (forceDrop) {
+        // parameter to force drop entry from metastore is set
         withHiveExceptionHandling(super.dropTable(schema, table, true, true))
       } else {
+        // AnalysisException not thrown while getting table. suspecting that wrong table
+        // name is passed. throwing exception as a precaution.
         throw StandardException.newException(
           SQLState.LANG_UNEXPECTED_USER_EXCEPTION, null, "Table retrieved successfully. To " +
-              "continue to drop this table change ignoreException argument in procedure to true");
+              "continue to drop this table change FORCE_DROP argument in procedure to true");
       }
     } catch {
-      case a: AnalysisException =>
+      case a: AnalysisException if (a.message.contains("might be inconsistent in hive catalog")) =>
+        // exception is expected as table might be inconsistent. continuing to drop
         withHiveExceptionHandling(super.dropTable(schema, table, true, true))
+      case e => throw StandardException.newException(
+        SQLState.LANG_UNEXPECTED_USER_EXCEPTION, null,
+        "Exception thrown while verifying if the table is retrievable. message:" + e.getMessage);
     }
   }
 
