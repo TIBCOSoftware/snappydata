@@ -19,6 +19,8 @@ package org.apache.spark.sql.store
 
 import java.sql.{Connection, DriverManager, SQLException}
 
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -330,8 +332,11 @@ class CatalogConsistencyTest
     snc.sql("create table app.rowtable1 (c1 integer, c2 string, c3 float)")
     snc.sql("insert into app.rowtable1 values (11, '11', 1.1)")
 
-    snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1');")
-    // snc.sql("select * from rowtable1").show
+    intercept[EmbedSQLException] {
+      snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'false');")
+    }
+
+    snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'true');")
 
     intercept[TableNotFoundException] {
       snc.snappySession.sessionCatalog.lookupRelation(
