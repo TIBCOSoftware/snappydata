@@ -326,11 +326,11 @@ class CatalogConsistencyTest
 
   }
 
-  test("DROP_CATALOG_TABLE_UNSAFE procedure should drop table from catalog") {
+  test("REMOVE_METASTORE_ENTRY procedure should drop table from catalog") {
     snc.sql("create table app.rowtable1 (c1 integer, c2 string, c3 float)")
     snc.sql("insert into app.rowtable1 values (11, '11', 1.1)")
 
-    snc.sql("call sys.DROP_CATALOG_TABLE_UNSAFE('app.rowtable1');")
+    snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1');")
     // snc.sql("select * from rowtable1").show
 
     intercept[TableNotFoundException] {

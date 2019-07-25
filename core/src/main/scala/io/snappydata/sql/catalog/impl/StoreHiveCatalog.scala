@@ -160,8 +160,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
-  override def removeTableUnsafeIfExists(schema: String, table: String): Unit = {
-    val q = new CatalogQuery[Unit](REMOVE_TABLE_UNSAFE, table, schema)
+  override def removeTableUnsafeIfExists(schema: String, table: String,
+      ignoreException: Boolean): Unit = {
+    val q = new CatalogQuery[Unit](
+      REMOVE_TABLE_UNSAFE, table, schema, if (ignoreException) 1 else 0)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
@@ -327,7 +329,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       // this will only remove table from catalog but any policies, base tables related to table
       // and other catalog info related to it will remain and may cause issues
       case REMOVE_TABLE_UNSAFE =>
-        externalCatalog.dropTableUnsafe(formattedSchema, formattedTable).asInstanceOf[R]
+        externalCatalog.dropTableUnsafe(formattedSchema, formattedTable,
+          catalogOperation).asInstanceOf[R]
 
       case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]

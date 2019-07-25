@@ -19,6 +19,8 @@ package org.apache.spark.sql.hive
 
 import java.lang.reflect.InvocationTargetException
 import javax.annotation.concurrent.GuardedBy
+import javax.naming.OperationNotSupportedException
+import javax.ws.rs.NotAllowedException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -34,7 +36,9 @@ import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
+import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import org.apache.commons.io.FileUtils
@@ -371,8 +375,21 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(refreshRelations)
   }
 
-  def dropTableUnsafe(schema: String, table: String): Unit = {
-    withHiveExceptionHandling(super.dropTable(schema, table, true, true))
+  def dropTableUnsafe(schema: String, table: String, ignoreException: Int): Unit = {
+    try {
+      val catalogTable = super.getTable(schema, table)
+      // no exception raised while getting catalogTable
+      if (ignoreException == 1) {
+        withHiveExceptionHandling(super.dropTable(schema, table, true, true))
+      } else {
+        throw StandardException.newException(
+          SQLState.LANG_UNEXPECTED_USER_EXCEPTION, null, "Table retrieved successfully. To " +
+              "continue to drop this table change ignoreException argument in procedure to true");
+      }
+    } catch {
+      case a: AnalysisException =>
+        withHiveExceptionHandling(super.dropTable(schema, table, true, true))
+    }
   }
 
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
