@@ -1226,8 +1226,7 @@ object SHAMapAccessor {
      """.stripMargin
   }
 
-  def calculateNumberOfBytesForNullBits(numAttributes: Int): Int = numAttributes / 8 +
-    (if (numAttributes % 8 > 0) 1 else 0)
+  def calculateNumberOfBytesForNullBits(numAttributes: Int): Int = (numAttributes + 7 )/ 8
 
   def generateNullKeysBitTermForStruct(structName: String): String = s"${structName}_nullKeysBitset"
 

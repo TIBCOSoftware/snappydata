@@ -1021,10 +1021,13 @@ case class SnappyHashAggregateExec(
           }
         }
 
+
         if ($localIterValueOffsetTerm == $endIterValueOffset) {
-          $hashMapTerm.release();
+          // Not releasing memory here as it will be freed by the task completion listener
+          //$hashMapTerm.release();
           $hashMapTerm = null;
         }
+
       }
     """
   }
