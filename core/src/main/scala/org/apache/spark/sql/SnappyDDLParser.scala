@@ -146,6 +146,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def FN: Rule0 = rule { keyword(Consts.FN) }
   final def FOR: Rule0 = rule { keyword(Consts.FOR) }
   final def FOREIGN: Rule0 = rule { keyword(Consts.FOREIGN) }
+  final def FORMAT: Rule0 = rule { keyword(Consts.FORMAT) }
   final def FORMATTED: Rule0 = rule { keyword(Consts.FORMATTED) }
   final def FULL: Rule0 = rule { keyword(Consts.FULL) }
   final def FUNCTION: Rule0 = rule { keyword(Consts.FUNCTION) }
@@ -200,11 +201,13 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def SERDE: Rule0 = rule { keyword(Consts.SERDE) }
   final def SERDEPROPERTIES: Rule0 = rule { keyword(Consts.SERDEPROPERTIES) }
   final def SHOW: Rule0 = rule { keyword(Consts.SHOW) }
+  final def SKEWED: Rule0 = rule { keyword(Consts.SKEWED) }
   final def SORT: Rule0 = rule { keyword(Consts.SORT) }
   final def SORTED: Rule0 = rule { keyword(Consts.SORTED) }
   final def START: Rule0 = rule { keyword(Consts.START) }
   final def STATISTICS: Rule0 = rule { keyword(Consts.STATISTICS) }
   final def STOP: Rule0 = rule { keyword(Consts.STOP) }
+  final def STORED: Rule0 = rule { keyword(Consts.STORED) }
   final def STREAM: Rule0 = rule { keyword(Consts.STREAM) }
   final def STREAMING: Rule0 = rule { keyword(Consts.STREAMING) }
   final def TABLES: Rule0 = rule { keyword(Consts.TABLES) }
@@ -282,9 +285,12 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def createHiveTable: Rule1[LogicalPlan] = rule {
     test(session.enableHiveSupport) ~ capture(CREATE ~ TABLE ~ ifNotExists ~
-        tableIdentifier ~ tableSchema.?) ~ USING ~ ignoreCase("hive") ~ ws ~ capture(ANY.*) ~>
-        ((_: Boolean, _: TableIdentifier, _: Any, head: String, tail: String) =>
-          sparkParser.parsePlan(head + tail))
+        tableIdentifier ~ tableSchema.?) ~ (COMMENT ~ stringLiteral).? ~
+        capture(USING ~ ignoreCase("hive") ~ ws | PARTITIONED ~ BY | CLUSTERED ~ BY |
+            SKEWED ~ BY | ROW ~ FORMAT | STORED | LOCATION | TBLPROPERTIES) ~ capture(ANY.*) ~>
+        ((_: Boolean, _: TableIdentifier, _: Any, head: String, _: Any, k: String, tail: String) =>
+          if (Utils.toLowerCase(k).startsWith("using")) sparkParser.parsePlan(head + tail)
+          else sparkParser.parsePlan(head + k + tail))
   }
 
   protected def createTable: Rule1[LogicalPlan] = rule {
@@ -706,7 +712,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected final def resourceType: Rule1[FunctionResource] = rule {
     identifier ~ stringLiteral ~> { (rType: String, path: String) =>
-      val resourceType = rType.toLowerCase
+      val resourceType = Utils.toLowerCase(rType)
       resourceType match {
         case "jar" =>
           FunctionResource(FunctionResourceType.fromString(resourceType), path)
@@ -802,7 +808,7 @@ abstract class SnappyDDLParser(session: SnappySession)
    */
   protected def delegateToSpark: Rule1[LogicalPlan] = rule {
     (
-        ADD | ANALYZE | ALTER ~ (DATABASE | TABLE | VIEW) | CREATE ~ (DATABASE | TABLE) |
+        ADD | ANALYZE | ALTER ~ (DATABASE | TABLE | VIEW) | CREATE ~ DATABASE |
         DESCRIBE | DESC | LIST | LOAD | MSCK | REFRESH | SHOW | TRUNCATE
     ) ~ ANY.* ~ EOI ~>
         (() => sparkParser.parsePlan(input.sliceString(0, input.length)))

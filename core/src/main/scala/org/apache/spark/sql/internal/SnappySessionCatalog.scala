@@ -401,6 +401,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   private[sql] def setCurrentSchema(schema: String, force: Boolean = false): Unit = {
     val schemaName = formatDatabaseName(schema)
+    // logWarning(s"SW:1: setting current schema to $schemaName")
     if (force || schemaName != getCurrentSchema) {
       // create the schema implicitly if not present
       createSchema(schemaName, ignoreIfExists = true)
@@ -501,15 +502,16 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def setCurrentDatabase(schema: String): Unit = {
     val schemaName = formatDatabaseName(schema)
     validateSchemaName(schemaName, checkForDefault = false)
+    // logWarning(s"SW:1: setting current db to $schemaName", new Throwable())
     super.setCurrentDatabase(schemaName)
-    // since hive metastore doesn't have sys schema.
-    if (schemaName != SnappyExternalCatalog.SYS_SCHEMA) {
-      externalCatalog.setCurrentDatabase(schemaName)
-      // also set in hive catalog if present
-      if (snappySession.enableHiveSupport) {
-        hiveSessionCatalog.setCurrentDatabase(schema)
-      }
+    externalCatalog.setCurrentDatabase(schemaName)
+    // also set in hive catalog if present
+    if (snappySession.enableHiveSupport) {
+      hiveSessionCatalog.setCurrentDatabase(schema)
+      // logWarning(s"SW:1: current db in hive = ${hiveSessionCatalog.getCurrentDatabase}")
+      // logWarning(s"SW:1: current db in hive = ${hiveSessionCatalog.getCurrentDatabase}")
     }
+    // logWarning(s"SW:1: current db = $getCurrentDatabase")
   }
 
   override def getDatabaseMetadata(schema: String): CatalogDatabase = {
@@ -551,8 +553,18 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {
     // first check required permission to create objects in a schema
     val schemaName = getSchemaName(table.identifier)
-    checkSchemaPermission(schemaName, table.identifier.table, defaultUser = null)
+    val tableName = formatTableName(table.identifier.table)
+    checkSchemaPermission(schemaName, tableName, defaultUser = null)
     createSchema(schemaName, ignoreIfExists = true)
+
+    if (tableExists(table.identifier)) {
+      if (ignoreIfExists) return
+      else {
+        val objectType = CatalogObjectType.getTableType(table)
+        throw new AnalysisException(s"Object '$tableName' of type " +
+            s"$objectType already exists in schema '$schemaName'")
+      }
+    }
 
     // hive tables will be created in external hive catalog if enabled else will fail
     table.provider match {
