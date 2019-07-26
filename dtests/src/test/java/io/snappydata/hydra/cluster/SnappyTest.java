@@ -2566,11 +2566,11 @@ public class SnappyTest implements Serializable {
   }
 
   /*
-   * Returns the log file name.  Autogenerates the directory name at runtime
-   * using the same path as the master.  The directory is created if needed.
-   *
-   * @throws HydraRuntimeException if the directory cannot be created.
-   */
+  * Returns the log file name.  Autogenerates the directory name at runtime
+  * using the same path as the master.  The directory is created if needed.
+  *
+  * @throws HydraRuntimeException if the directory cannot be created.
+  */
   private synchronized String getLogDir() {
     if (this.logFile == null) {
       Vector<String> names = TestConfig.tab().vecAt(ClientPrms.gemfireNames);
@@ -2993,8 +2993,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected void
-  cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
+  protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
       lastCycledTime, String vmName, boolean isDmlOp, boolean restart, boolean rebalance) {
     if (!cycleVms) {
       Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
@@ -3335,7 +3334,7 @@ public class SnappyTest implements Serializable {
       pr.waitFor();
 
       for (String pidString : pidList) {
-        Map<String, Integer> thrMap = new HashMap<String, Integer>();
+        Map<String,Integer> thrMap = new HashMap<String, Integer>();
         try {
           String fileName = getCurrentDirPath() + File.separator + pidString + "_dump.txt";
           String line = null;
@@ -3365,7 +3364,7 @@ public class SnappyTest implements Serializable {
           }
           StringBuilder aStr = new StringBuilder("The " + totalThrdCnt + " threads in process " +
               pidString + " are :\n");
-          for (Map.Entry<String, Integer> entry : thrMap.entrySet()) {
+          for(Map.Entry<String,Integer> entry : thrMap.entrySet()) {
             aStr.append(entry.getKey() + " : " + entry.getValue() + "\n");
           }
           Log.getLogWriter().info(aStr.toString());
@@ -3722,7 +3721,7 @@ public class SnappyTest implements Serializable {
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
       sleepForMs(30);
-      for (int i = 0; i < hostNames.size(); i++)
+      for(int i = 0; i< hostNames.size(); i++)
         recordSnappyProcessIDinNukeRun(hostNames.get(i), "LocatorLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
@@ -3752,7 +3751,7 @@ public class SnappyTest implements Serializable {
         startSnappyServer();*/
       }
       sleepForMs(30);
-      for (int i = 0; i < hostNames.size(); i++)
+      for(int i = 0; i< hostNames.size(); i++)
         recordSnappyProcessIDinNukeRun(hostNames.get(i), "ServerLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
@@ -3760,7 +3759,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  public static void sleepForMs(int sleepTimeInSec) {
+  public static void sleepForMs(int sleepTimeInSec){
     try {
       Thread.sleep(sleepTimeInSec * 1000);
     } catch (InterruptedException ie) {
@@ -3779,7 +3778,7 @@ public class SnappyTest implements Serializable {
       File logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
       sleepForMs(30);
-      for (int i = 0; i < hostNames.size(); i++)
+      for(int i = 0; i< hostNames.size(); i++)
         recordSnappyProcessIDinNukeRun(hostNames.get(i), "LeaderLauncher");
     } catch (IOException e) {
       String s = "problem occurred while retriving logFile path " + log;
