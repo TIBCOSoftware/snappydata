@@ -46,7 +46,7 @@ object TableDetails {
       new TableSummary(table.getTableName, storageModel, distributionType,
         table.isColumnTable, table.isReplicatedTable, table.getRowCount, table.getSizeInMemory,
         table.getSizeSpillToDisk, table.getTotalSize, table.getBucketCount,
-        table.getRedundancy, table.isRedundancyImpaired)
+        table.getRedundancy, table.isRedundancyImpaired, table.isAnyBucketLost)
     }).values.toList
 
   }

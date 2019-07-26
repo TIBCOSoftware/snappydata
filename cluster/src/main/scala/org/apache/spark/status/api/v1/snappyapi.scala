@@ -92,7 +92,8 @@ class TableSummary private[spark](
     val totalSize: Long,
     val bucketCount: Int,
     val redundancy: Int,
-    val redundancyImpaired: Boolean
+    val redundancyImpaired: Boolean,
+    val isAnyBucketLost: Boolean
 )
 
 class ExternalTableSummary private[spark](

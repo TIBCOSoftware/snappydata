@@ -470,7 +470,8 @@ object SnappyDashboardPage {
   tableStatsColumn += ("totalSizeTooltip" ->
       "Tables Total Size (In Memory size + Overflown To Disk Size)")
   tableStatsColumn += ("bucketCount" -> "Buckets")
-  tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
+  tableStatsColumn += ("bucketCountTooltip" ->
+      "Number of Buckets in Table. Red number indicates some buckets are offline.")
   tableStatsColumn += ("redundancy" -> "Redundancy")
   tableStatsColumn += ("redundancyTooltip" -> "Number of redundant copies")
   tableStatsColumn += ("redundancyStatus" -> "Redundancy Status")
