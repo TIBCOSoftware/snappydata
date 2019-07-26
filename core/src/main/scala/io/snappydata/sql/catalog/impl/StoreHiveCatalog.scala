@@ -69,6 +69,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private val GET_METADATA = 8
   private val UPDATE_METADATA = 9
   private val CLOSE_HMC = 10
+  private val REMOVE_TABLE_UNSAFE = 11
 
   private val catalogQueriesExecutorService: ExecutorService = {
     val hmsThreadGroup = LogWriterImpl.createThreadGroup(THREAD_GROUP_NAME, Misc.getI18NLogWriter)
@@ -159,6 +160,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
+  override def removeTableUnsafeIfExists(schema: String, table: String,
+      forceDrop: Boolean): Unit = {
+    val q = new CatalogQuery[Unit](
+      REMOVE_TABLE_UNSAFE, table, schema, forceDrop = forceDrop)
+    handleFutureResult(catalogQueriesExecutorService.submit(q))
+  }
+
   override def catalogSchemaName: String = SystemProperties.SNAPPY_HIVE_METASTORE
 
   override def close(): Unit = {
@@ -187,7 +195,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   private final class CatalogQuery[R](qType: Int, tableName: String, schemaName: String,
       catalogOperation: Int = 0, getRequest: CatalogMetadataRequest = null,
-      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null)
+      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null, forceDrop: Boolean = false)
       extends Callable[R] {
 
     private lazy val formattedTable = toLowerCase(tableName)
@@ -317,6 +325,12 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
       case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
         ignoreIfNotExists = true, purge = false).asInstanceOf[R]
+
+      // this will only remove table from catalog but any policies, base tables related to table
+      // and other catalog info related to it will remain and may cause issues
+      case REMOVE_TABLE_UNSAFE =>
+        externalCatalog.dropTableUnsafe(formattedSchema, formattedTable,
+          forceDrop).asInstanceOf[R]
 
       case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
