@@ -94,7 +94,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
       val schemaObj = result.getCatalogSchema
       CatalogDatabase(name = schemaObj.getName, description = schemaObj.getDescription,
         locationUri = schemaObj.getLocationUri, properties = schemaObj.getProperties.asScala.toMap)
-    } else throw schemaNotFoundException(schema)
+    } else throw SnappyExternalCatalog.schemaNotFoundException(schema)
   }
 
   override def databaseExists(schema: String): Boolean = {
@@ -125,6 +125,10 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
 
   override def setCurrentDatabase(schema: String): Unit = synchronized {
     connectorHelper.setCurrentSchema(schema)
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    throw new UnsupportedOperationException("Schema/database definitions cannot be altered")
   }
 
   override def createTable(table: CatalogTable, ignoreIfExists: Boolean): Unit = {

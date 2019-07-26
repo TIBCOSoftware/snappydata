@@ -404,7 +404,6 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   private[sql] def setCurrentSchema(schema: String, force: Boolean = false): Unit = {
     val schemaName = formatDatabaseName(schema)
-    // logWarning(s"SW:1: setting current schema to $schemaName")
     if (force || schemaName != getCurrentSchema) {
       // create the schema implicitly if not present
       createSchema(schemaName, ignoreIfExists = true)
@@ -488,7 +487,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
-    dropSchema(schema, ignoreIfNotExists, cascade)
+    if (!ignoreIfNotExists && !databaseExists(schema)) {
+      throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
+    // schema/database can exist in only one of the two catalogs so use ignoreIfNotExists=true
+    // for both (exists check above ensures it should be present at least in one)
+    dropSchema(schema, ignoreIfNotExists = true, cascade)
     if (snappySession.enableHiveSupport) {
       hiveSessionCatalog.dropDatabase(schema, ignoreIfNotExists = true, cascade)
     }
@@ -505,16 +509,12 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   override def setCurrentDatabase(schema: String): Unit = {
     val schemaName = formatDatabaseName(schema)
     validateSchemaName(schemaName, checkForDefault = false)
-    // logWarning(s"SW:1: setting current db to $schemaName", new Throwable())
     super.setCurrentDatabase(schemaName)
     externalCatalog.setCurrentDatabase(schemaName)
     // also set in hive catalog if present
     if (snappySession.enableHiveSupport) {
       hiveSessionCatalog.setCurrentDatabase(schema)
-      // logWarning(s"SW:1: current db in hive = ${hiveSessionCatalog.getCurrentDatabase}")
-      // logWarning(s"SW:1: current db in hive = ${hiveSessionCatalog.getCurrentDatabase}")
     }
-    // logWarning(s"SW:1: current db = $getCurrentDatabase")
   }
 
   override def getDatabaseMetadata(schema: String): CatalogDatabase = {

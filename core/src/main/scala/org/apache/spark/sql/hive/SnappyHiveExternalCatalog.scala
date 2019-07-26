@@ -39,6 +39,7 @@ import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.log4j.{Level, LogManager}
 
@@ -205,7 +206,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (schema == SYS_SCHEMA) {
       throw new AnalysisException(s"$schema is a system preserved database/schema")
     }
-    withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    try {
+      withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
   }
 
   // Special in-built SYS schema does not have hive catalog entry so the methods below
@@ -216,7 +222,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       if (schema == SYS_SCHEMA) systemSchemaDefinition
       else withHiveExceptionHandling(super.getDatabase(schema).copy(name = schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
     }
   }
 
@@ -238,7 +245,17 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       withHiveExceptionHandling(super.setCurrentDatabase(schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    try {
+      withHiveExceptionHandling(super.alterDatabase(schemaDefinition))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schemaDefinition.name)
     }
   }
 

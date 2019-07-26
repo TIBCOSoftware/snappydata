@@ -46,11 +46,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
 
   // Overrides for better exceptions that say "schema" instead of "database"
 
-  protected def schemaNotFoundException(schema: String): AnalysisException =
-    Utils.analysisException(s"Schema '$schema' not found")
-
   override def requireDbExists(schema: String): Unit = {
-    if (!databaseExists(schema)) throw schemaNotFoundException(schema)
+    if (!databaseExists(schema)) throw SnappyExternalCatalog.schemaNotFoundException(schema)
   }
 
   override def requireTableExists(schema: String, table: String): Unit = {
@@ -70,10 +67,6 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     if (functionExists(schema, funcName)) {
       throw Utils.analysisException(s"Function '$funcName' already exists in schema '$schema'")
     }
-  }
-
-  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
-    throw new UnsupportedOperationException("Schema definitions cannot be altered")
   }
 
   override def getTable(schema: String, table: String): CatalogTable = {
@@ -286,7 +279,7 @@ object SnappyExternalCatalog {
   val INDEXED_TABLE_LOWER: String = Utils.toLowerCase("INDEXED_TABLE")
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
-  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
+  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd|secret).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 
@@ -342,6 +335,9 @@ object SnappyExternalCatalog {
       if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
       else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
   }
+
+  def schemaNotFoundException(schema: String): AnalysisException =
+    Utils.analysisException(s"Schema or database '$schema' not found")
 }
 
 object CatalogObjectType extends Enumeration {

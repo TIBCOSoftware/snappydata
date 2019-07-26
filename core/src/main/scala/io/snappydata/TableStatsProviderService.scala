@@ -205,7 +205,7 @@ trait TableStatsProviderService extends Logging {
       aggregatedStatsIndex.put(stat.getIndexName, stat)
     }
     externalTableStats.foreach { stat =>
-      aggregatedExtTableStats.put(stat.getTableName, stat)
+      aggregatedExtTableStats.put(stat.getTableFullyQualifiedName, stat)
     }
     (Utils.immutableMap(aggregatedStats),
         Utils.immutableMap(aggregatedStatsIndex),
