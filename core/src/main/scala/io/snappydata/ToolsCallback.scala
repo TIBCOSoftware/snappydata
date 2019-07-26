@@ -48,7 +48,7 @@ trait ToolsCallback {
 
   def setSessionDependencies(sparkContext: SparkContext,
       appName: String,
-      classLoader: ClassLoader): Unit = {
+      classLoader: ClassLoader, addAllJars: Boolean): Unit = {
   }
 
   def addURIs(alias: String, jars: Array[String],

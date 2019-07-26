@@ -22,6 +22,7 @@ import java.net.{URL, URLClassLoader}
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
 
@@ -52,6 +53,7 @@ object ContextJarUtils extends Logging {
     driverJars.putIfAbsent(key, classLoader)
   }
 
+  // FIXME Unused, remove.
   def addIfNotPresent(key: String, urls: Array[URL], parent: ClassLoader): Unit = {
     if (driverJars.get(key).isEmpty) {
       driverJars.putIfAbsent(key, new MutableURLClassLoader(urls, parent))
@@ -61,6 +63,13 @@ object ContextJarUtils extends Logging {
   def getDriverJar(key: String): Option[URLClassLoader] = driverJars.get(key)
 
   def removeDriverJar(key: String) : Unit = driverJars.remove(key)
+
+  def getDriverJarURLs(): Array[URL] = {
+    var sm = new mutable.HashSet[URL]()
+    driverJars.foreach(_._2.getURLs.foreach(sm += _))
+    logInfo(s"ABS returning ${sm.size} driver jars")
+    sm.toArray
+  }
 
   /**
     * This method will copy the given jar to Spark root directory

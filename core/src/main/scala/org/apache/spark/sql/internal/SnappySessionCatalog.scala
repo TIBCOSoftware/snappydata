@@ -743,7 +743,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     SnappyContext.getClusterMode(snappySession.sparkContext) match {
       case SnappyEmbeddedMode(_, _) =>
         callbacks.setSessionDependencies(snappySession.sparkContext,
-          functionQualifiedName, newClassLoader)
+          functionQualifiedName, newClassLoader, true)
       case _ =>
         newClassLoader.getURLs.foreach(url =>
           snappySession.sparkContext.addJar(url.getFile))

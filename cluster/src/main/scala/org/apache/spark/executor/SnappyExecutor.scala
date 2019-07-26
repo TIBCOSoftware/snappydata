@@ -96,7 +96,7 @@ class SnappyExecutor(
               env.securityManager, hadoopConf, -1L, useCache = !isLocal)
             val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
             Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName, name)
-            url
+            url // points to the jar in executor's work directory
           })
         }
         val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
