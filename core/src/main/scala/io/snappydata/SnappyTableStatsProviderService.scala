@@ -209,15 +209,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         // External Tables
         hiveTables.collect {
           case table if table.tableType == CatalogObjectType.External.toString =>
-            val tableSrcPath = table.dataSourcePath
-            val maskedSrcPath = if (tableSrcPath.toLowerCase().startsWith("s3a://") ||
-                tableSrcPath.toLowerCase().startsWith("s3://") ||
-                tableSrcPath.toLowerCase().startsWith("s3n://") ) {
-              tableSrcPath.replace(tableSrcPath.slice(tableSrcPath.indexOf("//") + 2,
-                tableSrcPath.indexOf("@")), "****:****")
-          } else tableSrcPath
             new SnappyExternalTableStats(table.entityName, table.tableType, table.schema,
-              table.shortProvider, table.externalStore, maskedSrcPath, table.driverClass)
+              table.shortProvider, table.externalStore, table.dataSourcePath, table.driverClass)
         }
       }
       catch {
