@@ -254,7 +254,6 @@ class CassandraSnappyDUnitTest(val s: String)
       case _: SQLException => // expected
       case t: Throwable => assert(false, s"Unexpected exception $t")
     }
-    logInfo("^^^^^^^^^^^")
     stmt1.execute("deploy package cassandraJar " +
         "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
     stmt1.execute("deploy package GoogleGSONAndAvro " +
