@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.io.File
+import java.io.{File, FileFilter}
 import java.nio.file.{Files, Paths}
 import java.sql.{Connection, SQLException, Statement}
 import java.util.Properties
@@ -34,6 +34,7 @@ import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host,
 import io.snappydata.util.TestUtils
 import org.apache.commons.io.FileUtils
 
+import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql.types.{IntegerType, StructField}
 import org.apache.spark.sql.{ParseException, Row, SnappyContext, SnappySession, TableNotFoundException}
 
@@ -917,6 +918,226 @@ class SplitClusterDUnitSecurityTest(s: String)
 
   def _testConcurrentUsers(): Unit = {
   }
+
+  def testUDFSNAP_2636(): Unit = {
+    // Build a jar with UDF
+    val udf1Source = "public class StringLengthUDF1 implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() - 1000); " +
+        "} }"
+    val file1 = SparkUtilsAccess.createUDFClass("StringLengthUDF1", udf1Source)
+    val jar1 = SparkUtilsAccess.createJarFile(Seq(file1), "user1udf", true)
+
+    val udf2Source = "public class StringLengthUDF2 implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() + 1000); " +
+        "} }"
+    val file2 = SparkUtilsAccess.createUDFClass("StringLengthUDF2", udf2Source)
+    val jar2 = SparkUtilsAccess.createJarFile(Seq(file2))
+
+    // Create function 1 with the jar with one user
+    user1Conn = getConn(jdbcUser1)
+    var stmt1 = user1Conn.createStatement()
+    executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
+        s"StringLengthUDF1 returns Integer using jar '$jar1'")
+    // Select with that UDF
+    var stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    var rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == -996, s"Expected -996, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    // Create function 2 with the jar with another user
+    user2Conn = getConn(jdbcUser2)
+    stmt1 = user2Conn.createStatement()
+    executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
+        s"StringLengthUDF2 returns Integer using jar '$jar2'")
+    // Select with that UDF
+    stmt2 = user2Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == 1004, s"Expected 1004, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    var rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        val udfName = rs.getString(1)
+        assert(udfName.equalsIgnoreCase(s"[UDF]$jdbcUser1.myUDF")
+            || udfName.equalsIgnoreCase(s"[UDF]$jdbcUser2.myUDF"),
+          s"Unexpected UDF name $udfName")
+      }
+    }
+
+    // Verify jar file paths
+    val leadDir = new File(s"$snappyProductDir/work/localhost-lead-1/snappy-jars")
+    val server1Dir = new File(s"$snappyProductDir/work/localhost-server-1")
+    val server2Dir = new File(s"$snappyProductDir/work/localhost-server-2")
+
+    leadDir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server1Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server2Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"BEFORE DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+
+
+    // Drop a function of jdbcUser2
+    executeSQL(stmt2, s"drop function myUDF")
+
+    // Verify function does not execute
+    stmt2 = user2Conn.createStatement()
+    try {
+      stmt2.execute(s"select myUDF('abcd')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    } finally {
+      if (stmt2.getResultSet ne null) stmt2.getResultSet.close()
+    }
+    // Verify jar file paths
+    leadDir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server1Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+    server2Dir.listFiles(new FileFilter {
+      override def accept(pathname: File): Boolean = {
+        pathname.getName.contains("myudf") && pathname.getName.contains("jar")
+      }
+    }).foreach(x => println(s"AFTER DROP  [snappy-jars]: ${x.getAbsolutePath}"))
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        val udfName = rs.getString(1)
+        assert(udfName.equalsIgnoreCase(s"[UDF]$jdbcUser1.myUDF"),
+          s"Unexpected UDF name $udfName")
+      }
+    }
+
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+
+    logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
+
+    user1Conn = getConn(jdbcUser1)
+    // Select with the existing UDF
+    stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == -996, s"Expected -996 post reboot, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    user2Conn = getConn(jdbcUser2)
+    // Select with the dropped UDF
+    stmt2 = user2Conn.createStatement()
+    try {
+      stmt2.execute(s"select myUDF('abcd')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    } finally {
+      if (stmt2.getResultSet ne null) stmt2.getResultSet.close()
+    }
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        val udfName = rs.getString(1)
+        assert(udfName.equalsIgnoreCase(s"[UDF]$jdbcUser1.myUDF"),
+          s"Unexpected UDF name $udfName")
+      }
+    }
+
+    val udf1SourceNew = "public class StringLengthUDF1 implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() * 1000); " +
+        "} }"
+    val file1New = SparkUtilsAccess.createUDFClass("StringLengthUDF1", udf1SourceNew)
+    val jar1New = SparkUtilsAccess.createJarFile(Seq(file1New), "user1udf", true)
+
+    stmt1 = user1Conn.createStatement()
+    executeSQL(stmt1, s"DROP FUNCTION myUDF")
+
+    stmt2 = user1Conn.createStatement()
+    try {
+      stmt2.execute(s"select myUDF('abcd')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    }
+
+    // Verify list jars
+    stmt2.execute(s"list jars")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        val udfName = rs.getString(1)
+        assert(false, s"Unexpected UDF name $udfName")
+      }
+    }
+
+    executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
+        s"StringLengthUDF1 returns Integer using jar '$jar1New'")
+    // Select with that UDF
+    stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('11223344')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == 8000, s"Expected 8000 with new source, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
+    executeSQL(user1Conn.createStatement(), s"drop function if exists myUDF")
+    executeSQL(user2Conn.createStatement(), s"drop function if exists myUDF")
+  }
+
 }
 
 object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
