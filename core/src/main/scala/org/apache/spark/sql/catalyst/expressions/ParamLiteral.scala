@@ -17,6 +17,7 @@
 
 package org.apache.spark.sql.catalyst.expressions
 
+import java.util
 import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable
@@ -42,7 +43,8 @@ case class TermValues(literalValueRef: String, isNull: String, valueTerm: String
 // A literal that can change across multiple query execution.
 trait DynamicReplacableConstant extends Expression {
 
-  @transient private lazy val termMap = new mutable.HashMap[CodegenContext, TermValues]
+  @transient private lazy val termMap =
+    java.util.Collections.synchronizedMap(new util.HashMap[CodegenContext, TermValues]())
 
   def value: Any
 
@@ -77,9 +79,9 @@ trait DynamicReplacableConstant extends Expression {
       termMap.put(ctx, tv)
       tv
     } else {
-      val tvOption = termMap.get(ctx)
-      assert(tvOption.isDefined)
-      tvOption.get
+      val tv = termMap.get(ctx)
+      assert(tv != null)
+      tv
     }
     // temporary variable for storing value() result for cases where it can be
     // potentially expensive (e.g. for DynamicFoldableExpression)
