@@ -2835,7 +2835,6 @@ public class SnappyTest implements Serializable {
    * Stops snappy lead.
    */
   public static synchronized void HydraTask_stopSnappyLeader() {
-    initSnappyArtifacts();
     File log = null;
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
@@ -2858,7 +2857,6 @@ public class SnappyTest implements Serializable {
    * Stops snappy server/servers.
    */
   public static synchronized void HydraTask_stopSnappyServers() {
-    initSnappyArtifacts();
     File log = null;
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop");
@@ -2880,7 +2878,6 @@ public class SnappyTest implements Serializable {
    * Stops a snappy locator.
    */
   public static synchronized void HydraTask_stopSnappyLocator() {
-    initSnappyArtifacts();
     File log = null;
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh")

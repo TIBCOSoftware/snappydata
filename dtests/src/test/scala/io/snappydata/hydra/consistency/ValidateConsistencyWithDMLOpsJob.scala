@@ -41,9 +41,6 @@ object ValidateConsistencyWithDMLOpsJob extends SnappySQLJob {
     // scalastyle:off println
     Try {
       val snc = snSession.sqlContext
-      snc.sql("set spark.sql.shuffle.partitions=23")
-      val sc = SparkContext.getOrCreate()
-      val sqlContext = SQLContext.getOrCreate(sc)
       val startTime = System.currentTimeMillis
       val consistencyTest = new ConsistencyTest()
       pw.println("Starting execution for dml operation " +  operation)

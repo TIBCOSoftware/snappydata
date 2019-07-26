@@ -99,11 +99,12 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         tableName = SnappySchemaPrms.getInsertTables()[index];
         break;
       default:
-        Log.getLogWriter().info("Invalid operation. ");
-        throw new TestException("Invalid operation type.");
+        Log.getLogWriter().info("Got invalid operation " + operation);
+        throw new TestException("Invalid operation type " + operation);
     }
     int batchSize = SnappySchemaPrms.getBatchSize();
     index = Arrays.asList(SnappySchemaPrms.getTableNames()).indexOf(tableName);
+
     if(operation.equalsIgnoreCase("delete") && dmlSql.contains("$counter")){
       int delCounter = getDeleteCounter(index,batchSize);
       dmlSql = dmlSql.replace("$counter",delCounter+ "");
@@ -125,11 +126,11 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
           future2.get();
           future1.get();
       } catch (Exception e) {
-        throw new TestException("Got Exception while performing operation " + operation +" : ", e);
+        throw new TestException("Got Exception while performing operation " + operation + " : ", e);
       }
       pool.shutdown();
       try {
-        pool.awaitTermination(2400, TimeUnit.SECONDS);
+        pool.awaitTermination(120, TimeUnit.SECONDS);
       } catch (InterruptedException ie) {
         Log.getLogWriter().info("Got exception while waiting for all threads to complete the " +
             "tasks");
@@ -195,9 +196,11 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     public void run() {
       try {
         performDMLOp(tid, operation, batchSize, dmlStmt, tableName, index);
-      } catch (TestException te){
-        Log.getLogWriter().info("Got exception in dmlOps..", te);
-        throw new TestException("Got TestException ", te);
+      } catch (Exception te){
+        Log.getLogWriter().info("Got exception while executing " + operation + ". Exception " +
+            "is :", te);
+        throw new TestException("Got exception while executing " + operation + ". Exception is :"
+            , te);
       }
     }
   }
@@ -220,7 +223,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       }
       conn.close();
     } catch (SQLException se) {
-      throw new TestException("Got Exception while closing jdbc connection.", se);
+      throw new TestException("Got SQLException while executing " +  operation + ".", se);
     } finally{
       try {
         conn.close();
@@ -249,9 +252,11 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     public void run() {
       try {
         executeSelect(tid, sql, operation, tableName, batchSize);
-      } catch (TestException tex){
-        Log.getLogWriter().info("got TestException.." + tex);
-        throw new TestException("Got TestException", tex);
+      } catch (Exception e) {
+        Log.getLogWriter().info("Got exception while executing " + operation + ". Exception " +
+            "is :" + e);
+        throw new TestException("Got exception while executing " + operation + ". Exception is :"
+            , e);
       }
     }
   }
@@ -270,16 +275,17 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       conn.close();
       Log.getLogWriter().info("Verifying the results for atomicity..");
       if (verifyAtomicity(beforeDMLRS, afterDMLRS, dmlOp, tableName, batchSize)) {
-        Log.getLogWriter().info("Test failed to get atomic data during DML operations");
-        throw new TestException("Test failed to get atomic data during DML operations");
+        Log.getLogWriter().info("Test failed to get atomic data during " + dmlOp + ".");
+        throw new TestException("Test failed to get atomic data during " + dmlOp + ".");
       }
     } catch (SQLException se) {
       Log.getLogWriter().info("Got exception while executing select query", se);
+      throw new TestException("Got exeception while executing select query for " + dmlOp + ".", se);
     } finally{
       try {
         conn.close();
       } catch (SQLException se){
-        throw new TestException("Got exception while closing connection");
+        throw new TestException("Got exception while closing connection",se);
       }
     }
   }
@@ -301,55 +307,44 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
           String colName = rsmd.getColumnLabel(i);
           before_result = beforeDMLRS.getInt(i);
           after_result = afterDMLRS.getInt(i);
+          Log.getLogWriter().info(colName + " in table " + tableName + " before " + op +
+              " start: " + before_result + " and " + colName + " after " + op + " start : " +
+              after_result);
           switch (DMLOp.getOperation(op)) {
             case INSERT:
               defaultValue = -1;
               if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
-                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
-                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
                 if (!(expectedRs == 0 || expectedRs == batchSize)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs =
                     ((before_result * rowCount) + (defaultValue * batchSize))/(rowCount+batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
                 int expectedRs = before_result + (defaultValue * batchSize);
-                if (!(after_result == before_result || after_result == expectedRs)) {
+                if (!(after_result == before_result || after_result == expectedRs))
                   atomicityCheckFailed = true;
-                }
               }
               break;
             case UPDATE:
               defaultValue = 1;
               if (colName.toUpperCase().startsWith("COUNT")) {
-                rowCount = before_result;
-                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
-                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
-                if (expectedRs == 0) {
+                if (!(expectedRs == 0)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs = before_result + defaultValue;
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
-                int expectedRs = before_result + (defaultValue * rowCount);
+                int expectedRs = before_result + (defaultValue * batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
@@ -357,21 +352,14 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
             case DELETE:
               defaultValue = 0;
               if (colName.toUpperCase().startsWith("COUNT")) {
-                rowCount = before_result;
-                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
-                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
                 if (!(expectedRs % before_result == 0))
                   atomicityCheckFailed = true;
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
                 if (!(expectedRs % before_result == 0))
                   atomicityCheckFailed = true;
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
                   int expectedRs = after_result - before_result;
                   if (!(expectedRs % before_result == 0))
                     atomicityCheckFailed = true;
@@ -380,23 +368,17 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
               defaultValue = -1;
               if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
-                Log.getLogWriter().info("Number of rows in table " + tableName + " before " + op +
-                    " start: " + before_result + " and number of after " + op + " start : " + after_result);
                 int expectedRs = after_result - before_result;
                 if (!(expectedRs % batchSize == 0)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                Log.getLogWriter().info("Avg of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and avg after " + op + " start : " + after_result);
                 int expectedRs =
                     ((before_result * rowCount) + (defaultValue * batchSize))/(rowCount+batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                Log.getLogWriter().info("Sum of column in table " + tableName + " before " + op +
-                    " start: " + before_result + " and sum after " + op + " start : " + after_result);
                 int expectedRs = before_result + (defaultValue * batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
