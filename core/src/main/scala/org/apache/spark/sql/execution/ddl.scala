@@ -119,8 +119,7 @@ case class DropSchemaOrDbCommand(schemaName: String, ifExists: Boolean, cascade:
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
     // drop from catalog first to cascade drop all objects if required
-    if (isDb) catalog.dropDatabase(schema, ifExists, cascade) // drop from hive too
-    else catalog.dropSchema(schema, ifExists, cascade)
+    catalog.dropDatabase(schema, ifExists, cascade)
     Nil
   }
 }

@@ -462,7 +462,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  def dropSchema(schema: String, ignoreIfNotExists: Boolean,
+  private def dropSchema(schema: String, ignoreIfNotExists: Boolean,
       cascade: Boolean): Unit = {
     val schemaName = formatDatabaseName(schema)
     // user cannot drop own schema
@@ -490,7 +490,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
       cascade: Boolean): Unit = {
     dropSchema(schema, ignoreIfNotExists, cascade)
     if (snappySession.enableHiveSupport) {
-      hiveSessionCatalog.dropDatabase(schema, ignoreIfNotExists, cascade)
+      hiveSessionCatalog.dropDatabase(schema, ignoreIfNotExists = true, cascade)
     }
   }
 
