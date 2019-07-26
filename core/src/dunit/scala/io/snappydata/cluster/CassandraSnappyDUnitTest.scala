@@ -18,21 +18,28 @@ package io.snappydata.cluster
 
 import java.io._
 import java.nio.file.{Files, Paths}
+import java.sql.{Connection, DriverManager, SQLException}
 import java.util
 
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{IOFileFilter, TrueFileFilter, WildcardFileFilter}
-import org.apache.spark.Logging
+import org.apache.spark.{Logging, SparkContext}
+import org.apache.spark.sql.{AnalysisException, SnappyContext, SnappySession}
+import io.snappydata.Constant
 
 import scala.language.postfixOps
 import scala.sys.process._
+import org.scalatest.Assertions.intercept
 
 class CassandraSnappyDUnitTest(val s: String)
     extends DistributedTestBase(s) with SnappyJobTestSupport with Logging {
   // scalastyle:off println
 
-  val snappyProductDir = System.getenv("SNAPPY_HOME")
+  def getConnection(netPort: Int): Connection =
+    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort")
+
+  override val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
 
@@ -166,6 +173,7 @@ class CassandraSnappyDUnitTest(val s: String)
   }
 
   def testDeployPackageWithCassandra(): Unit = {
+    snap_2772BugTest()
     snappyJobTest()
     externalTableCreateTest()
   }
@@ -191,6 +199,91 @@ class CassandraSnappyDUnitTest(val s: String)
             " spark.cassandra.input.fetch.size_in_rows '200000'," +
             " spark.cassandra.read.timeout_ms '10000');",
         "select * from customer2;",
+        "undeploy cassandraJar;",
         "exit;"))
+  }
+
+  def snap_2772BugTest(): Unit = {
+    var user1Conn = getConnection(netPort)
+    var stmt1 = user1Conn.createStatement()
+    stmt1.execute("deploy package cassandraJar " +
+        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+    stmt1.execute("drop table if exists customer2")
+    stmt1.execute("create external table customer2 using org.apache.spark.sql.cassandra options" +
+        " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
+        " spark.cassandra.read.timeout_ms '10000')")
+    stmt1.execute("select * from customer2")
+    var rs = stmt1.getResultSet
+    var count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 3)
+
+    stmt1.execute("list packages")
+    rs = stmt1.getResultSet
+    count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 1)
+    stmt1.execute("undeploy cassandrajar")
+    stmt1.execute("list packages")
+    rs = stmt1.getResultSet
+    count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 0)
+    try {
+      stmt1.execute("create external table customer2 using org.apache.spark.sql.cassandra options" +
+          " (table 'customer', keyspace 'test', " +
+          "spark.cassandra.input.fetch.size_in_rows '200000'," +
+          " spark.cassandra.read.timeout_ms '10000')")
+      assert(false, s"Expected an exception!")
+    } catch {
+      case _: SQLException => // expected
+      case t: Throwable => assert(false, s"Unexpected exception $t")
+    }
+    logInfo("^^^^^^^^^^^")
+    stmt1.execute("deploy package cassandraJar " +
+        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+    stmt1.execute("deploy package GoogleGSONAndAvro " +
+        "'com.google.code.gson:gson:2.8.5,com.databricks:spark-avro_2.11:4.0.0'")
+    stmt1.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        " repos 'http://clojars.org/repo/'")
+    stmt1.execute("list packages")
+    rs = stmt1.getResultSet
+    count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 3)
+    stmt1.execute("undeploy mssql")
+    stmt1.execute("undeploy cassandrajar")
+    stmt1.execute("undeploy googlegsonandavro")
+    stmt1.execute("list packages")
+    rs = stmt1.getResultSet
+    count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 0)
+
   }
 }
