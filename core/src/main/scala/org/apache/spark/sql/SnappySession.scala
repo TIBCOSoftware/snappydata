@@ -1429,10 +1429,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   /**
    * Set current schema for the session.
    *
-   * @param schemaName schema name which goes in the catalog
+   * @param schemaName        schema name which goes in the catalog
+   * @param createIfNotExists create the schema if it does not exist
    */
-  def setCurrentSchema(schemaName: String): Unit = {
-    sessionCatalog.setCurrentSchema(schemaName)
+  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
+    if (createIfNotExists) {
+      sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+    }
+    sessionCatalog.setCurrentDatabase(schemaName)
   }
 
   def getCurrentSchema: String = sessionCatalog.getCurrentSchema

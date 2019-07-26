@@ -107,7 +107,7 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
-    catalog.createSchema(schema, ifNotExists, authId)
+    catalog.createSchema(schema, ifNotExists, authId, createInExternalHive = true)
     Nil
   }
 }

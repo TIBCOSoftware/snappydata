@@ -59,7 +59,7 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  session.setCurrentSchema(schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 

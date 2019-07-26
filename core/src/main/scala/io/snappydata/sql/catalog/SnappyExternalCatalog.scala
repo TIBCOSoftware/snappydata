@@ -336,8 +336,11 @@ object SnappyExternalCatalog {
       else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
   }
 
-  def schemaNotFoundException(schema: String): AnalysisException =
-    Utils.analysisException(s"Schema or database '$schema' not found")
+  def schemaNotFoundException(schema: String): AnalysisException = {
+    if (SnappyContext.hasHiveSession) {
+      Utils.analysisException(s"Schema or database '$schema' not found")
+    } else Utils.analysisException(s"Schema '$schema' not found")
+  }
 }
 
 object CatalogObjectType extends Enumeration {

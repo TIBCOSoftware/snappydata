@@ -169,7 +169,12 @@ class SnappyConf(@transient val session: SnappySession)
       session.enableHiveSupport = newValue
       // if external hive catalog was enabled, then set its current schema
       if (!oldValue && newValue) {
-        session.sessionCatalog.setCurrentSchema(session.getCurrentSchema, force = true)
+        val catalog = session.sessionCatalog
+        val defaultSchema = catalog.getCurrentSchema
+        // create the schema/database in hive catalog too
+        catalog.createSchema(defaultSchema, ignoreIfExists = true,
+          createInStore = false, createInExternalHive = true)
+        catalog.setCurrentDatabase(defaultSchema)
       }
       key
 

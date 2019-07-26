@@ -628,12 +628,13 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Set current database/schema.
-   * @param schemaName schema name which goes in the catalog
+   *
+   * @param schemaName        schema name which goes in the catalog
+   * @param createIfNotExists create the schema if it does not exist
    */
-  def setSchema(schemaName: String): Unit = {
-    snappySession.setCurrentSchema(schemaName)
+  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
+    snappySession.setCurrentSchema(schemaName, createIfNotExists)
   }
-
 
   /**
    * Create an index on a table.
@@ -1173,6 +1174,8 @@ object SnappyContext extends Logging {
       }
     }
   }
+
+  def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)
 
   def getHiveSharedState: Option[SharedState] = contextLock.synchronized {
     if (this.hiveSession ne null) Some(this.hiveSession.sharedState) else None
