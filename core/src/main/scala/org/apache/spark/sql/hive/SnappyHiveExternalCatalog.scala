@@ -391,9 +391,6 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       case a: AnalysisException if (a.message.contains("might be inconsistent in hive catalog")) =>
         // exception is expected as table might be inconsistent. continuing to drop
         withHiveExceptionHandling(super.dropTable(schema, table, true, true))
-      case e: Exception if (!e.getMessage.contains("Table retrieved successfully")) =>
-        throw new AnalysisException(
-        "Exception thrown while verifying if the table is retrievable.", cause = Some(e));
     }
   }
 
