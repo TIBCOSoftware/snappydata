@@ -217,13 +217,14 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
 }
 
 case class AlterTableDropColumnCommand(
-    tableIdent: TableIdentifier, column: String) extends RunnableCommand {
+    tableIdent: TableIdentifier, column: String,
+    referentialAction: String = "") extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snc = session.asInstanceOf[SnappySession]
     // drop column doesn't need anything apart from name so fill dummy values
     snc.alterTable(tableIdent, isAddColumn = false,
-      StructField(column, NullType), defaultValue = None)
+      StructField(column, NullType), defaultValue = None, referentialAction)
     Nil
   }
 }
