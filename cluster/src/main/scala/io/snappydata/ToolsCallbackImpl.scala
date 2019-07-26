@@ -222,7 +222,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     val updatedURLs = allURLs.toBuffer
     uris.foreach(uri => {
       val newUri = new URI("file:" + uri)
-      updatedURLs.remove(updatedURLs.indexOf(newUri.toURL))
+      if (updatedURLs.contains(newUri.toURL)) {
+        updatedURLs.remove(updatedURLs.indexOf(newUri.toURL))
+      }
     })
     lead.urlclassloader = new ExtendibleURLClassLoader(lead.urlclassloader.getParent)
     updatedURLs.foreach(url => lead.urlclassloader.addURL(url))

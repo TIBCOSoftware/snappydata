@@ -184,8 +184,6 @@ class SnappyExecutor(
         if (jarFile.exists()) {
           jarFile.delete()
           logDebug(s"Deleted jarFile $jarFile")
-        } else {
-          throw new IOException("Failed to delete: " + jarFile.getAbsolutePath)
         }
         var updatedURLs = urlClassLoader.getURLs().toBuffer
         updatedURLs.foreach(url => {
