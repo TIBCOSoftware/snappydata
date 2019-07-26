@@ -49,7 +49,7 @@ INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 
 //INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 
-hydra.Prms-totalTaskTimeSec           = 300;
+hydra.Prms-totalTaskTimeSec           = 600;
 hydra.Prms-maxResultWaitSec           = 900;
 hydra.Prms-maxCloseTaskResultWaitSec  = 900;
 

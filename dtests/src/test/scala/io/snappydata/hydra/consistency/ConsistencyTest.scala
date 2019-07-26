@@ -18,7 +18,7 @@
 package io.snappydata.hydra.consistency
 
 import java.io.PrintWriter
-import java.sql.SQLException
+import java.sql.{SQLException, Timestamp}
 import java.util.concurrent.{CyclicBarrier, Executors, TimeUnit}
 
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil.DMLOp
@@ -28,6 +28,11 @@ import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
 
 class ConsistencyTest {
   val barrier = new CyclicBarrier(2)
+
+  def printTime: String = {
+    "[" + new Timestamp(System.currentTimeMillis()).toString + "] "
+  }
+
 
   // scalastyle:off println
   def performOpsAndVerifyConsistency(snc: SnappyContext, pw: PrintWriter, tid: Int, dmlOp: String,
@@ -40,21 +45,21 @@ class ConsistencyTest {
       pool.awaitTermination(120, TimeUnit.SECONDS)
     catch {
       case ie: InterruptedException =>
-        pw.println("Got Exception while waiting for all threads to complete the tasks")
+        pw.println(s"${printTime} Got Exception while waiting for threads to complete the tasks.")
         pw.flush()
     }
-    pw.println("Done with the execution.")
+    pw.println(s"${printTime} Done with the execution.")
     pw.flush()
   }
 
   // scalastyle:off println
   class DMLOpsThread(snc: SnappyContext, pw: PrintWriter, tid: Int, stmt: String) extends Runnable {
     override def run(): Unit = {
-      pw.println(s"Executing dml statement $stmt")
+      pw.println(s"${printTime} Executing dml statement $stmt")
       pw.flush()
       waitForBarrier(tid + "", 2, pw)
       snc.sql(stmt)
-      pw.println("Executed the dml statement")
+      pw.println(s"${printTime} Executed the dml statement")
       pw.flush()
     }
   }
@@ -72,16 +77,16 @@ class ConsistencyTest {
         waitForBarrier(tid + "", 2, pw)
         val afterDF = snc.sql(stmt)
         pw.println(afterDF.collectAsList())
-        pw.println("Verifying the results for atomicity..")
+        pw.println(s"${printTime} Verifying the results for atomicity..")
         pw.flush()
         if (!verifyAtomicity(beforeDF, afterDF, op, tableName, batchSize, pw)) {
-          pw.println("Verified that data is atomic")
+          pw.println(s"${printTime} Verified that data is atomic")
         }
-        else pw.println("Failed to get atomic data.")
+        else pw.println(s"${printTime} Failed to get atomic data for $op.")
         pw.flush()
       } catch {
         case se: SQLException =>
-          pw.println("Got exception while executing select query", se)
+          pw.println(s"${printTime} Got exception while executing select query for $op", se)
           pw.flush()
       }
     }
@@ -103,32 +108,24 @@ class ConsistencyTest {
         val rowAf: Row = dfAft_list.get(i)
         for (j <- 0 until schema.length) {
           val colName: String = schema(j)
+          val before_result: Double = rowBf.getDouble(j)
+          val after_result: Double = rowAf.getDouble(j)
+          pw.println(s"${printTime} $colName in table $tableName before $op start: $before_result" +
+              s" and $colName after $op start : $after_result")
           DMLOp.getOperation(op) match {
             case DMLOp.INSERT =>
               defaultValue = -1
               if (colName.toUpperCase.startsWith("COUNT")) {
-                val before_result: Long = rowBf.getLong(j)
-                val after_result: Long = rowAf.getLong(j)
-                rowCount = before_result
-                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                    before_result + " and number of after " + op + " start : " + after_result)
+                rowCount = before_result.toLong
                 val expectedRs = after_result - before_result
                 if (!(expectedRs == 0 || expectedRs == batchSize)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("AVG")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and avg after " + op + " start : " + after_result)
                 val expectedRs =
                   ((before_result * rowCount) + (defaultValue * batchSize)) / (rowCount + batchSize)
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true
                 }
               } else if (colName.toUpperCase.startsWith("SUM")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and sum after " + op + " start : " + after_result)
                 val expectedRs = before_result + (defaultValue * batchSize)
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true
@@ -137,27 +134,14 @@ class ConsistencyTest {
             case DMLOp.UPDATE =>
               defaultValue = 1
               if (colName.toUpperCase.startsWith("COUNT")) {
-                val before_result: Long = rowBf.getLong(j)
-                val after_result: Long = rowAf.getLong(j)
-                rowCount = before_result
-                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                    before_result + " and number of after " + op + " start : " + after_result)
                 val expectedRs = after_result - before_result
                 if (expectedRs == 0) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("AVG")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and avg after " + op + " start : " + after_result)
                 val expectedRs = before_result + defaultValue
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true
                 }
               } else if (colName.toUpperCase.startsWith("SUM")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and sum after " + op + " start : " + after_result)
                 val expectedRs = before_result + (defaultValue * rowCount)
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true
@@ -166,50 +150,28 @@ class ConsistencyTest {
             case DMLOp.DELETE =>
               defaultValue = 0
               if (colName.toUpperCase.startsWith("COUNT")) {
-                val before_result: Long = rowBf.getLong(j)
-                val after_result: Long = rowAf.getLong(j)
-                rowCount = before_result
-                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                    before_result + " and number of after " + op + " start : " + after_result)
                 val expectedRs = after_result - before_result
                 if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("AVG")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and avg after " + op + " start : " + after_result)
-                // TODO
+                val expectedRs = after_result - before_result
+                if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("SUM")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and sum after " + op + " start : " + after_result)
+                val expectedRs = after_result - before_result
+                if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               }
             case DMLOp.PUTINTO =>
               defaultValue = -1
               if (colName.toUpperCase.startsWith("COUNT")) {
-                val before_result: Long = rowBf.getLong(j)
-                val after_result: Long = rowAf.getLong(j)
-                rowCount = before_result
-                pw.println("Number of rows in table " + tableName + " before " + op + " start: " +
-                    before_result + " and number of after " + op + " start : " + after_result)
+                rowCount = before_result.toLong
                 val expectedRs = after_result - before_result
                 if (!(expectedRs % batchSize == 0)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("AVG")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Avg of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and avg after " + op + " start : " + after_result)
                 val expectedRs =
                   ((before_result * rowCount) + (defaultValue * batchSize)) / (rowCount + batchSize)
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true
                 }
               } else if (colName.toUpperCase.startsWith("SUM")) {
-                val before_result: Double = rowBf.getDouble(j)
-                val after_result: Double = rowAf.getDouble(j)
-                pw.println("Sum of column in table " + tableName + " before " + op + " start: " +
-                    before_result + " and sum after " + op + " start : " + after_result)
                 val expectedRs = before_result + (defaultValue * batchSize)
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true

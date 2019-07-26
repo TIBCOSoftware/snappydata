@@ -13,3 +13,5 @@ TASK        taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = H
 
 CLOSETASK   taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLeadConfigData
             threadGroups = snappyThreads;
+
+io.snappydata.hydra.testDMLOps.SnappySchemaPrms-isHATest = true;

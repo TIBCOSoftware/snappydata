@@ -1,7 +1,5 @@
 insert into colTable select id, 'somedata'||id, 'company'||cast((id/100) as int), date('2019-10-05')  from range(2000001,2000201);
 select count(*) from colTable;
-put into colTable select id,'somedata'||id, 'company'||cast((id/100) as int), date('2019-10-05') from range(2000001,2000301);
-select count(*) from colTable;
 insert into rowPartitionedTable select id, 'somedata'||id, 'company'||cast((id/100) as int), date('2019-10-05')  from range(2000001,2000101);
 select count(*) from rowPartitionedTable;
 insert into rowReplicatedTable select id, 'somedata'||id, 'company'||cast((id/100) as int), date('2019-10-05')  from range(2000001,2000101);
@@ -18,3 +16,7 @@ delete from rowPartitionedTable where company='company1094';
 select count(*) from rowPartitionedTable where company='company1094';
 delete from rowReplicatedTable where company='company1094';
 select count(*) from rowReplicatedTable where company='company1094';
+put into coltable_cap select id,'somedata'||id, 'company'||cast((id/100) as int), date('2019-10-05') from range(2000001,2000301);
+select count(*) from coltable_cap;
+put into colTable select id,'somedata'||id, 'company'||cast((id/100) as int), date('2019-10-05') from range(2000001,2000301);
+select count(*) from colTable;

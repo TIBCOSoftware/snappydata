@@ -56,6 +56,8 @@ class SnappyParser(session: SnappySession)
   protected final var _isPreparePhase: Boolean = _
   protected final var _parameterValueSet: Option[_] = None
   protected final var _fromRelations: mutable.Stack[LogicalPlan] = new mutable.Stack[LogicalPlan]
+  // type info for parameters of a prepared statement
+  protected final var _preparedParamsTypesInfo: Option[Array[Int]] = None
 
   override final def input: ParserInput = _input
 
@@ -72,6 +74,11 @@ class SnappyParser(session: SnappySession)
   private[sql] def setPreparedQuery(preparePhase: Boolean, paramSet: Option[_]): Unit = {
     _isPreparePhase = preparePhase
     _parameterValueSet = paramSet
+    if (preparePhase) _preparedParamsTypesInfo = None
+  }
+
+  private[sql] def setPrepareParamsTypesInfo(info: Array[Int]): Unit = {
+    _preparedParamsTypesInfo = Option(info)
   }
 
   protected final type WhenElseType = (Seq[(Expression, Expression)],
@@ -217,7 +224,7 @@ class SnappyParser(session: SnappySession)
         assert(_parameterValueSet.isDefined,
           "For Prepared Statement, Parameter constants are not provided")
         val (scalaTypeVal, dataType) = session.getParameterValue(
-          _questionMarkCounter, _parameterValueSet.get)
+          _questionMarkCounter, _parameterValueSet.get, _preparedParamsTypesInfo)
         val catalystTypeVal = CatalystTypeConverters.convertToCatalyst(scalaTypeVal)
         newTokenizedLiteral(catalystTypeVal, dataType)
       }

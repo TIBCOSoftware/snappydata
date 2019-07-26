@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql
 
+import java.math.{MathContext, RoundingMode}
 import java.sql.{SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
@@ -33,6 +34,7 @@ import com.gemstone.gemfire.internal.shared.{ClientResolverUtils, FinalizeHolder
 import com.google.common.cache.{Cache, CacheBuilder}
 import com.pivotal.gemfirexd.internal.GemFireXDVersion
 import com.pivotal.gemfirexd.internal.iapi.sql.ParameterValueSet
+import com.pivotal.gemfirexd.internal.iapi.types.{SQLDecimal, TypeId}
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
@@ -1352,19 +1354,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
-      defaultValue: Option[String]): Unit = {
+      defaultValue: Option[String], referentialAction: String): Unit = {
     val tableIdent = tableIdentifier(tableName)
-    alterTable(tableIdent, isAddColumn, column, defaultValue)
+    alterTable(tableIdent, isAddColumn, column, defaultValue, referentialAction)
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField, defaultValue: Option[String]): Unit = {
+      column: StructField, defaultValue: Option[String], referentialAction: String = ""): Unit = {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
-        ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
+        ar.alterTable(tableIdent, isAddColumn, column, defaultValue, referentialAction)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
       case _ =>
@@ -1816,7 +1818,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   def setPreparedQuery(preparePhase: Boolean, paramSet: Option[ParameterValueSet]): Unit =
     snappyParser.setPreparedQuery(preparePhase, paramSet)
 
-  private[sql] def getParameterValue(questionMarkCounter: Int, pvs: Any): (Any, DataType) = {
+  def setPreparedParamsTypeInfo(info: Array[Int]): Unit =
+    snappyParser.setPrepareParamsTypesInfo(info)
+
+  private[sql] def getParameterValue(
+      questionMarkCounter: Int, pvs: Any, preparedParamsTypesInfo: Option[Array[Int]]) = {
     val parameterValueSet = pvs.asInstanceOf[ParameterValueSet]
     if (questionMarkCounter > parameterValueSet.getParameterCount) {
       assert(assertion = false, s"For Prepared Statement, Got more number of" +
@@ -1825,15 +1831,24 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           s" constants = ${parameterValueSet.getParameterCount}")
     }
     val dvd = parameterValueSet.getParameter(questionMarkCounter - 1)
-    val scalaTypeVal = SnappySession.getValue(dvd)
+    var scalaTypeVal = SnappySession.getValue(dvd)
     val storeType = dvd.getTypeFormatId
-    val storePrecision = dvd match {
-      case d: stypes.SQLDecimal => d.getDecimalValuePrecision
-      case _ => -1
-    }
-    val storeScale = dvd match {
-      case d: stypes.SQLDecimal => d.getDecimalValueScale
-      case _ => -1
+    val (storePrecision, storeScale) = dvd match {
+      case d: stypes.SQLDecimal =>
+        // try to normalize parameter value into target column's scale/precision
+        val index = (questionMarkCounter - 1) * 4 + 1
+        // actual scale of the target column
+        val scale = preparedParamsTypesInfo.map(a => a(index + 2)).getOrElse(-1)
+
+        val decimalValue = new com.pivotal.gemfirexd.internal.iapi.types.SQLDecimal()
+        val typeId = TypeId.getBuiltInTypeId(java.sql.Types.DECIMAL)
+        val dtd = new com.pivotal.gemfirexd.internal.iapi.types.DataTypeDescriptor(
+          typeId, DecimalType.MAX_PRECISION, scale, true, typeId.getMaximumMaximumWidth)
+        decimalValue.normalize(dtd, dvd)
+        scalaTypeVal = decimalValue.getBigDecimal
+        (decimalValue.getDecimalValuePrecision, scale)
+
+      case _ => (-1, -1)
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
