@@ -8,6 +8,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Date;
 import java.util.List;
 import java.util.Vector;
 
@@ -26,7 +27,13 @@ public class SnappyPreparedStmtTest extends SnappyTest {
   String[] queryArr = {"q2", "q8", "q9", "q10", "q13", "q16", "q23a", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58", "q66", "q75", "q80",
       "q4", "q6", "q11", "q15", "q18", "q19", "q26", "q27", "q38", "q41", "q46", "q47", "q50", "q56", "q57",
       "q21", "q97", "q96", "q95", "q94", "q92", "q89", "q87", "q86", "q85", "q84", "q83", "q69", "q65", "q64", "q63", "q59"};
-  String[] dateCol = {"2000-03-11", "2000-01-27", "1999-02-01"};
+  String[] dateCol = {"'2000-03-11'", "'2000-01-27'", "'1999-02-01'"};
+  Integer[] dYearVal = {1999, 2000, 2001};
+  Integer[] intVal = {1200, 1212, 1201};
+  Double[] doubleVal = {50.00, 10.00, 100.00};
+  String[] categoryVal = {"'Books'", "'Electronics'", "'Jewelry'"};
+  String[] ca_cityVal = {"'Springfield'", "'Maple Grove'", "'Edgewood'"};
+
 
   public SnappyPreparedStmtTest() {
   }
@@ -49,7 +56,6 @@ public class SnappyPreparedStmtTest extends SnappyTest {
         String queryName = queryArr[q];
         boolean isChangingConstant = false;
         String filePath = queryFilePathPS + "/" + queryName + ".sql";
-        Log.getLogWriter().info("SP: The filepath is " + filePath);
         String queryStringPS = new String(Files.readAllBytes(Paths.get(filePath)));
         String tempQueryStringPS = queryStringPS;
         String queryStringWithCC = null;
@@ -58,36 +64,55 @@ public class SnappyPreparedStmtTest extends SnappyTest {
         for (int j = 0; j < 3; j++) {
           switch (queryName) {
             case "q21":
-              for (int i = 1; i <= 4; i++)
-                // ps.setString(i, "2000-03-11");
-                ps.setString(i, dateCol[j]);
-              queryStringWithCC = tempQueryStringPS.replaceAll("/?", dateCol[j]);
+              for (int i = 1; i <= 4; i++) {
+                String subStr = dateCol[j].substring(1, dateCol[j].length() - 1);
+                Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+                ps.setString(i, subStr);
+              }
+              queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
               isChangingConstant = true;
               break;
             case "q97":
               for (int i = 1; i <= 4; i++)
-                ps.setInt(i, 1200);
+                ps.setInt(i, intVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", intVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q96":
               ps.setString(1, "ese");
               break;
             case "q95":
-              for (int i = 1; i <= 2; i++)
-                ps.setString(i, "1999-02-01");
+              for (int i = 1; i <= 2; i++) {
+                String subStr = dateCol[j].substring(1, dateCol[j].length() - 1);
+                Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+                ps.setString(i, subStr);
+              }
+              queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
+              isChangingConstant = true;
               break;
             case "q94":
               ps.setString(1, "IL");
               break;
             case "q92":
-              for (int i = 1; i <= 4; i++)
-                ps.setString(i, "2000-01-27");
+              for (int i = 1; i <= 4; i++) {
+                String subStr = dateCol[j].substring(1, dateCol[j].length() - 1);
+                Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+                ps.setString(i, subStr);
+              }
+              queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
+              isChangingConstant = true;
               break;
             case "q89":
-              ps.setInt(1, 1999);
+              ps.setInt(1, dYearVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
+              isChangingConstant = true;
+
               break;
             case "q87":
               for (int i = 1; i <= 6; i++)
-                ps.setInt(i, 1200);
+                ps.setInt(i, intVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", intVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q86":
               for (int i = 1; i <= 2; i++)
@@ -95,14 +120,26 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               break;
             case "q85":
               for (int i = 1; i <= 2; i++)
-                ps.setDouble(i, 100.00);
+                ps.setDouble(i, doubleVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", doubleVal[j].toString());
+              isChangingConstant = true;
               break;
-            case "q84":
-              ps.setString(1, "Edgewood");
-              break;
+            case "q84": {
+              String subStr = ca_cityVal[j].substring(1, ca_cityVal[j].length() - 1);
+              Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+              ps.setString(1, subStr);
+            }
+            queryStringWithCC = tempQueryStringPS.replace("?", ca_cityVal[j]);
+            isChangingConstant = true;
+            break;
             case "q83":
-              for (int i = 1; i <= 3; i++)
-                ps.setString(i, "2000-11-17");
+              for (int i = 1; i <= 3; i++) {
+                String subStr = dateCol[j].substring(1, dateCol[j].length() - 1);
+                Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+                ps.setString(i, subStr);
+              }
+              queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
+              isChangingConstant = true;
               break;
             case "q77":
               for (int i = 1; i <= 12; i++)
@@ -114,18 +151,24 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               break;
             case "q65":
               for (int i = 1; i <= 4; i++)
-                ps.setInt(i, 1176);
+                ps.setInt(i, intVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", intVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q64":
               ps.setInt(1, 2);
               break;
             case "q63":
               for (int i = 1; i <= 12; i++)
-                ps.setInt(i, 1200);
+                ps.setInt(i, intVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", intVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q59":
               for (int i = 1; i <= 4; i++)
-                ps.setInt(i, 1212);
+                ps.setInt(i, intVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", intVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q2":
               ps.setString(1, "Sunday");
@@ -167,7 +210,9 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               break;
             case "q38":
               for (int i = 1; i <= 6; i++)
-                ps.setInt(i, 1200);
+                ps.setInt(i, intVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", intVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q41":
               ps.setString(1, "Men");
@@ -194,7 +239,9 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               break;
             case "q57":
               for (int i = 1; i <= 4; i++)
-                ps.setInt(i, 1999);
+                ps.setInt(1, dYearVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
+              isChangingConstant = true;
               break;
             case "q8":
               ps.setString(1, "26231");
@@ -219,8 +266,10 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               break;
             case "q13":
               ps.setString(1, "M");
-              ps.setDouble(2, 100.00);
+              ps.setDouble(2, doubleVal[j]);
               ps.setDouble(3, 150.00);
+              queryStringWithCC = tempQueryStringPS.replace("?", doubleVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q16":
               for (int i = 1; i <= 2; i++)
@@ -247,8 +296,13 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setInt(3, 0);
               break;
             case "q33":
-              for (int i = 1; i <= 3; i++)
-                ps.setString(i, "Electronics");
+              for (int i = 1; i <= 3; i++) {
+                String subStr = categoryVal[j].substring(1, categoryVal[j].length() - 1);
+                Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+                ps.setString(i, subStr);
+              }
+              queryStringWithCC = tempQueryStringPS.replace("?", categoryVal[j]);
+              isChangingConstant = true;
               break;
             case "q34":
               ps.setInt(1, 1);
@@ -263,7 +317,9 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setString(1, "D");
               ps.setString(2, "2 yr Degree");
               ps.setDouble(3, 50.00);
-              ps.setDouble(4, 100.00);
+              ps.setDouble(4, doubleVal[j]);
+              queryStringWithCC = tempQueryStringPS.replace("?", doubleVal[j].toString());
+              isChangingConstant = true;
               break;
             case "q49":
               ps.setInt(1, 10000);
@@ -292,8 +348,13 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setString(5, "BARIAN");
               break;
             case "q75":
-              for (int i = 1; i <= 3; i++)
-                ps.setString(i, "Books");
+              for (int i = 1; i <= 3; i++) {
+                String subStr = categoryVal[j].substring(1, categoryVal[j].length() - 1);
+                Log.getLogWriter().info("The subString for " + queryName + " = " + subStr);
+                ps.setString(i, subStr);
+              }
+              queryStringWithCC = tempQueryStringPS.replace("?", categoryVal[j]);
+              isChangingConstant = true;
               break;
             case "q80":
               for (int i = 1; i <= 6; i++)
@@ -305,12 +366,10 @@ public class SnappyPreparedStmtTest extends SnappyTest {
           Log.getLogWriter().info("Executed query : " + queryName);
           Log.getLogWriter().info("Executing non ps query for " + queryFilePath + "/" + queryName + ".sql");
           String queryString = null;
-          //Execute the query without prepared statement on snappy.
+
           if (!isChangingConstant) {
-            Log.getLogWriter().info("Inside Changing Constant = false");
             queryString = new String(Files.readAllBytes(Paths.get(queryFilePath + "/" + queryName + ".sql")));
           } else {
-            Log.getLogWriter().info("Inside changing constant = true");
             queryString = queryStringWithCC;
             Log.getLogWriter().info("The query with changing constant is " + queryString);
           }
@@ -340,9 +399,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
     try {
       SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
       String logFile = getCurrentDirPath();
-      String outputFile = null;
-      String outputFilePS = null;
-
+      String outputFile,outputFilePS;
       StructTypeImpl snappyStrtTyp = ResultSetHelper.getStructType(rs);
       List<Struct> snappyList = ResultSetHelper.asList(rs, snappyStrtTyp, false);
       outputFile = logFile + File.separator + queryName + ".out";
@@ -358,7 +415,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       rsPS.close();
 
       Log.getLogWriter().info("Heading for full resultSet validation");
-      testInstance.compareFiles(logFile, outputFile, outputFilePS, true, queryName);
+      testInstance.compareFiles(logFile, outputFile, outputFilePS, true, queryName + System.currentTimeMillis());
 
     } catch (SQLException ex) {
       throw new TestException("Caught SQLException " + ex.getMessage());
