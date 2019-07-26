@@ -4,9 +4,9 @@ io/snappydata/hydra/rowTableCPP/rowTableCPPTest.conf
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
   dataFilesLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind/"
-  scriptLocation="$GEMFIRE/../../../store/native/tests/unitTest_3.sh"
+  scriptLocation="$GEMFIRE/../../../store/native/tests/failoverTest_Retry.sh"
   tableType="PartitionedRow"
-  timeduration=30
+  timeduration=60
   scriptPWD="$GEMFIRE/../../../store/native/tests/"
   numVMsToStop=1
 
