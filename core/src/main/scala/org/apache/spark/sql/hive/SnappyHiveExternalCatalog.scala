@@ -23,6 +23,7 @@ import javax.annotation.concurrent.GuardedBy
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionException
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
@@ -79,12 +80,21 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
         logDebug(s"Looking up data source for ${name._1}.${name._2}")
-        withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
-          name._1, name._2)) match {
-          case None =>
-            nonExistentTables.put(name, java.lang.Boolean.TRUE)
-            throw new TableNotFoundException(name._1, name._2)
-          case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+        try {
+          withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
+            name._1, name._2)) match {
+            case None =>
+              nonExistentTables.put(name, java.lang.Boolean.TRUE)
+              throw new TableNotFoundException(name._1, name._2)
+            case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+          }
+        } catch {
+          case _: NullPointerException =>
+            // dropTableUnsafe() searches for below exception message. check before changing.
+            throw new AnalysisException(
+              s"Table ${name._1}.${name._2} might be inconsistent in hive catalog. " +
+                  "Use system procedure SYS.REMOVE_METASTORE_ENTRY to remove inconsistency. " +
+                  "Refer to troubleshooting section of documentation for more details")
         }
       }
     }
@@ -380,6 +390,30 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
 
     // refresh cache for required tables
     registerCatalogSchemaChange(refreshRelations)
+  }
+
+  def dropTableUnsafe(schema: String, table: String, forceDrop: Boolean): Unit = {
+    try {
+      super.getTable(schema, table)
+      // no exception raised while getting catalogTable
+      if (forceDrop) {
+        // parameter to force drop entry from metastore is set
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
+      } else {
+        // AnalysisException not thrown while getting table. suspecting that wrong table
+        // name is passed. throwing exception as a precaution.
+        throw new AnalysisException("Table retrieved successfully. To " +
+            "continue to drop this table change FORCE_DROP argument in procedure to true")
+      }
+    } catch {
+      case a: AnalysisException if a.message.contains("might be inconsistent in hive catalog") =>
+        // exception is expected as table might be inconsistent. continuing to drop
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
+      case NonFatal(e) => throw new AnalysisException(
+        "Exception thrown while verifying if the table is retrievable. Message: " + e.getMessage)
+    }
   }
 
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,

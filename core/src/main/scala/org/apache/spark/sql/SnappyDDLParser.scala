@@ -669,21 +669,13 @@ abstract class SnappyDDLParser(session: SnappySession)
                 ((table: TableIdentifier, isAdd: Boolean, s: String) =>
                   AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
                     s"${if (isAdd) "ADD" else "DROP"} $s")) |
-            COLUMNS ~ ANY.+ ~> ((_: TableIdentifier, _: Boolean) =>
-              sparkParser.parsePlan(input.sliceString(0, input.length))) |
-            COLUMN.? ~ (column | identifier) ~ defaultVal ~ RESTRICT.? ~> {
-              (t: TableIdentifier, isAdd: Boolean, c: Any, defVal: Option[String]) =>
-                val col = c match {
-                  case s: String => if (isAdd) throw new ParseException(
-                    s"ALTER TABLE ADD COLUMN needs column definition but got '$c'")
-                    StructField(s, NullType)
-                  case f: StructField => if (!isAdd) throw new ParseException(
-                    s"ALTER TABLE DROP COLUMN needs column name but got '$c'")
-                    f
-                }
-                AlterTableAddDropColumnCommand(t, isAdd, col, defVal)
-            }
+            COLUMNS ~ ANY. + ~> ((_: TableIdentifier, _: Boolean) =>
+              sparkParser.parsePlan(input.sliceString(0, input.length)))
         ) |
+        ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
+        DROP ~ COLUMN.? ~ identifier ~ (CASCADE ~ push(true) | RESTRICT ~ push(false)).? ~ EOI ~>
+            ((table: TableIdentifier, col: String, refAction: Any) =>
+              AlterTableDropColumnCommand(table, col, refAction.asInstanceOf[Option[Boolean]])) |
         // other store ALTER statements which don't effect the snappydata catalog
         capture((ALTER | SET) ~ ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
           AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s"))

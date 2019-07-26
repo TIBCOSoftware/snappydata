@@ -48,7 +48,7 @@ import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.functions._
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, StaticSQLConf}
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, StaticSQLConf}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
@@ -153,12 +153,12 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
   }
 }
 
-case class AlterTableAddDropColumnCommand(tableIdent: TableIdentifier, isAdd: Boolean,
-    column: StructField, defaultValue: Option[String]) extends RunnableCommand {
+case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
+    addColumn: StructField, defaultValue: Option[String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
-    snappySession.alterTable(tableIdent, isAdd, column, defaultValue)
+    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
     Nil
   }
 }
@@ -169,6 +169,24 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
     snappySession.alterTableToggleRLS(tableIdent, enableRls)
+    Nil
+  }
+}
+
+case class AlterTableDropColumnCommand(
+    tableIdent: TableIdentifier, column: String,
+    referentialAction: Option[Boolean]) extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snappySession = session.asInstanceOf[SnappySession]
+    val refActionString = referentialAction match {
+      case None => ""
+      case Some(true) => "cascade"
+      case Some(false) => "restrict"
+    }
+    // drop column doesn't need anything apart from name so fill dummy values
+    snappySession.alterTable(tableIdent, isAddColumn = false,
+      StructField(column, NullType), defaultValue = None, refActionString)
     Nil
   }
 }
@@ -559,7 +577,11 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
-        val alias = t.getKey
+        var alias = t.getKey
+        // Skip dropped functions entry
+        if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
+        // Explicitly mark functions as UDF while listing jars/packages.
+        alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
         val value = t.getValue
         val indexOf = value.indexOf('|')
         if (indexOf > 0) {
