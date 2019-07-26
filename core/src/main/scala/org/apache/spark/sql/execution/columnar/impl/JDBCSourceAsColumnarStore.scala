@@ -130,7 +130,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
-            val rgn = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
+            val rgn = Misc.getRegionForTable(tableName.toUpperCase, true).asInstanceOf[LocalRegion]
             val ds = rgn.getDiskStore
             if (ds != null) {
               ds.acquireDiskStoreReadLock()
@@ -184,10 +184,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
+            val rgn = Misc.getRegionForTable(tableName.toUpperCase, true).asInstanceOf[LocalRegion]
             try {
               Misc.getGemFireCache.getCacheTransactionManager.commit()
             } finally {
-              val rgn = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
               val ds = rgn.getDiskStore
               if (ds != null) {
                 ds.releaseDiskStoreReadLock()
@@ -227,10 +227,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
+            val rgn = Misc.getRegionForTable(tableName.toUpperCase, true).asInstanceOf[LocalRegion]
             try {
               Misc.getGemFireCache.getCacheTransactionManager.rollback()
             } finally {
-              val rgn = Misc.getRegionForTable(tableName, true).asInstanceOf[LocalRegion]
               val ds = rgn.getDiskStore
               if (ds != null) {
                 ds.releaseDiskStoreReadLock()
