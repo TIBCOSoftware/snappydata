@@ -445,7 +445,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           locURI.toLowerCase().startsWith("s3n://") ) {
         locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
           locURI.indexOf("@")), "****:****")
-      } else locURI
+      } else maskPassword(locURI)
       maskedSrcPath
     }
 
@@ -453,13 +453,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     private def getDataSourcePath(properties: scala.collection.Map[String, String],
         storage: CatalogStorageFormat): String = {
       properties.get("path") match {
-        case Some(p) if !p.isEmpty => maskPassword(p)
+        case Some(p) if !p.isEmpty => maskLocationURI(p)
         case _ => properties.get("region.path") match { // for external GemFire connector
-          case Some(p) if !p.isEmpty => maskPassword(p)
+          case Some(p) if !p.isEmpty => maskLocationURI(p)
           case _ => properties.get("url") match { // jdbc
             case Some(p) if !p.isEmpty =>
               // mask the password if present
-              val url = maskPassword(p)
+              val url = maskLocationURI(p)
               // add dbtable if present
               properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
                 case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
