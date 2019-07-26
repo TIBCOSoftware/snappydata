@@ -67,7 +67,6 @@ object ContextJarUtils extends Logging {
   def getDriverJarURLs(): Array[URL] = {
     var sm = new mutable.HashSet[URL]()
     driverJars.foreach(_._2.getURLs.foreach(sm += _))
-    logInfo(s"ABS returning ${sm.size} driver jars")
     sm.toArray
   }
 
