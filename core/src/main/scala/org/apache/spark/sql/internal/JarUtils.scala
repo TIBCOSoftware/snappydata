@@ -23,9 +23,12 @@ import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.JavaConverters._
 
+import com.pivotal.gemfirexd.internal.engine.Misc
+
 import org.apache.spark.Logging
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.util.MutableURLClassLoader
 
 /**
@@ -41,6 +44,9 @@ import org.apache.spark.util.MutableURLClassLoader
 object ContextJarUtils extends Logging {
   val JAR_PATH = "snappy-jars"
   private val driverJars = new ConcurrentHashMap[String, URLClassLoader]().asScala
+  val functionKeyPrefix = "__FUNC__"
+  val droppedFunctionsKey = functionKeyPrefix + "DROPPED__"
+  val DELIMITER = ","
 
   def addDriverJar(key: String, classLoader: URLClassLoader): Option[URLClassLoader] = {
     driverJars.putIfAbsent(key, classLoader)
@@ -76,7 +82,7 @@ object ContextJarUtils extends Logging {
     new File(jarDir, changedFileName).toURI.toURL
   }
 
-  def deleteFile(prefix: String, path: String): Unit = {
+  def deleteFile(prefix: String, path: String, isEmbedded: Boolean): Unit = {
     def getName(path: String): String = new File(path).getName
 
     val callbacks = ToolsCallbackInit.toolsCallback
@@ -85,8 +91,20 @@ object ContextJarUtils extends Logging {
       val changedFileName = s"${prefix}-${localName}"
       val jarFile = new File(jarDir, changedFileName)
 
-      if (jarFile.exists()) {
-        jarFile.delete()
+      try {
+        if (isEmbedded) {
+          // Add to the list in (__FUNC__DROPPED__, dropped-udf-list)
+          addToTheListInCmdRegion(droppedFunctionsKey, prefix + DELIMITER, droppedFunctionsKey)
+        }
+        if (jarFile.exists()) {
+          jarFile.delete()
+          RefreshMetadata.executeOnAll(sparkContext, RefreshMetadata.REMOVE_FUNCTION_JAR,
+            Array(changedFileName))
+        }
+      } finally {
+        if (isEmbedded) {
+          Misc.getMemStore.getGlobalCmdRgn.remove(functionKeyPrefix + prefix)
+        }
       }
     }
   }
@@ -97,6 +115,35 @@ object ContextJarUtils extends Logging {
     val jarDirectory = new File(System.getProperty("user.dir"), JAR_PATH)
     if (!jarDirectory.exists()) jarDirectory.mkdir()
     jarDirectory
+  }
+
+  def addToTheListInCmdRegion(k: String, item: String, head: String): Unit = {
+    val r = Misc.getMemStore.getGlobalCmdRgn
+    var old1: String = null
+    var old2: String = null
+    do {
+      old1 = r.get(k)
+      val newValue = if (old1 != null) old1 + item else head + item
+      old2 = r.put(k, newValue)
+    } while (old1 != old2)
+  }
+
+  def removeFromTheListInCmdRegion(k: String, item: String): Unit = {
+    val r = Misc.getMemStore.getGlobalCmdRgn
+    var old1: String = null
+    var old2: String = null
+    do {
+      old1 = r.get(k)
+      if (old1 != null) {
+        val newValue = old1.replace(item, "")
+        old2 = r.put(k, newValue)
+      }
+    } while (old1 != old2)
+  }
+
+  def checkItemExists(k: String, item: String): Boolean = {
+    val value = Misc.getMemStore.getGlobalCmdRgn.get(k)
+    value != null && value.contains(item)
   }
 }
 
