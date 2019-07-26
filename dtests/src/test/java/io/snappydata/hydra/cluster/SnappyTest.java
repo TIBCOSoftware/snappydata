@@ -2174,11 +2174,12 @@ public class SnappyTest implements Serializable {
   }
 
   protected String getPrimaryLeadHost() {
+    leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
     if (leadHost == null) {
       retrievePrimaryLeadHost();
       leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
       Log.getLogWriter().info("primaryLead Host is: " + leadHost);
-    }  else leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
+    }
     return leadHost;
   }
 
@@ -2982,10 +2983,10 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_cycleLeadVM() {
     if (cycleVms) {
-      leadHost = null;
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
       Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
+      SnappyBB.getBB().getSharedMap().put("primaryLeadHost", null);
       snappyTest.cycleVM(numToKill, stopStartVms, "leadVmCycled", lastCycledTimeForLeadFromBB,
           lastCycledTimeForLead, "lead", false, false, false);
     }
