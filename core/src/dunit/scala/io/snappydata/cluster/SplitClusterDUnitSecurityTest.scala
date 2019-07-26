@@ -926,7 +926,19 @@ class SplitClusterDUnitSecurityTest(s: String)
       rs.close()
     }
 
+    // SNAP-3069
+    stmt2 = user1Conn.createStatement()
+    stmt2.execute(s"select myUDF('abcd')")
+    rs = stmt2.getResultSet
+    if (rs ne null) {
+      while (rs.next()) {
+        assert(rs.getInt(1) == -996, s"Expected -996, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+
     // Verify list jars
+    stmt2 = user2Conn.createStatement()
     stmt2.execute(s"list jars")
     rs = stmt2.getResultSet
     var rows = 0
@@ -939,6 +951,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           s"Unexpected UDF name $udfName")
       }
     }
+    assert(rows == 2, s"Expected 2 UDFs, but found $rows")
 
     // Verify jar file paths
     val leadDir = new File(s"$snappyProductDir/work/localhost-lead-1/snappy-jars")
@@ -1005,6 +1018,7 @@ class SplitClusterDUnitSecurityTest(s: String)
           s"Unexpected UDF name $udfName")
       }
     }
+    assert(rows == 1, s"Expected just 1 UDF, but found $rows")
 
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
 
@@ -1072,10 +1086,7 @@ class SplitClusterDUnitSecurityTest(s: String)
     stmt2.execute(s"list jars")
     rs = stmt2.getResultSet
     if (rs ne null) {
-      while (rs.next()) {
-        val udfName = rs.getString(1)
-        assert(false, s"Unexpected UDF name $udfName")
-      }
+      assert(!rs.next(), "'list jars' should output zero jars but didn't!")
     }
 
     executeSQL(stmt1, s"CREATE FUNCTION myUDF AS " +
