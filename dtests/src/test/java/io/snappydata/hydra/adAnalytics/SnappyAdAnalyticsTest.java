@@ -18,7 +18,13 @@
 package io.snappydata.hydra.adAnalytics;
 
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,7 +33,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
-import hydra.HostHelper;
+import hydra.BasePrms;
+import hydra.HostPrms;
+import hydra.HydraVector;
 import hydra.Log;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
@@ -46,11 +54,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected static SnappyAdAnalyticsTest snappyAdAnalyticsTest;
   public static String zookeeperHost = null;
   public static String zookeeperPort = null;
-  public static String kafkaLogDir = null;
+  public static String kafkaLogDir = TestConfig.tab().stringAt(SnappyPrms.kafkaLogDir, null);
   public static int initialBrokerPort = 9092;
   public static int initialBrokerId = 0;
   public static int retryCount = SnappyPrms.getRetryCountForJob();
-
+  public static String[] hostnames;
   public SnappyAdAnalyticsTest() {
   }
 
@@ -65,14 +73,58 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     return currentDir;
   }
 
+  public static String[] getNames(Long key) {
+    Vector vec = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));;
+    String[] strArr = new String[vec.size()];
+    for (int i = 0; i < vec.size(); i++) {
+      strArr[i] = (String)vec.elementAt(i); //get what tables are in the tests
+    }
+    return strArr;
+  }
+
+
+  public static String[] getHostNames() {
+
+    String[] vmNames = getNames(HostPrms.names);
+    String[] vmHostNames = null;
+    int numServers=0;
+    if(SnappyTest.isUserConfTest) {
+      vmHostNames = getNames(SnappyPrms.hostNames);
+      SnappyBB.getBB().getSharedCounters().zero(SnappyBB.numServers);
+      SnappyBB.getBB().getSharedCounters().setIfLarger(SnappyBB.numServers,vmHostNames.length);
+      Log.getLogWriter().info("The vmHostNames size = " + vmHostNames.length);
+    }
+    else {
+      vmHostNames = getNames(HostPrms.hostNames);
+    }
+    numServers = (int) SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    Log.getLogWriter().info("Number of servers = " + numServers);
+    hostnames = new String[numServers];
+    if(vmHostNames==null) {
+      for (int j = 0; j<numServers ;  j++)
+        hostnames[j] = "localhost";
+    } else {
+      int j = 0;
+      for (int i = 0; i < vmHostNames.length; i++) {
+        if (SnappyTest.isUserConfTest || vmNames[i].startsWith("snappyStore")) {
+          hostnames[j] = vmHostNames[i];
+          Log.getLogWriter().info("Host name is " + hostnames[j]);
+          j++;
+        }
+      }
+    }
+    return hostnames;
+  }
+
   public static synchronized void HydraTask_initializeSnappyAdAnalyticsTest() {
     if (snappyAdAnalyticsTest == null)
       snappyAdAnalyticsTest = new SnappyAdAnalyticsTest();
     if (kafkaDir == null) {
-      String s = "Didnot specify kafka directory.";
+      String s = "Did not specify kafka directory.";
       throw new TestException(s);
     }
-    kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
+    if(kafkaLogDir==null)
+      kafkaLogDir = getCurrentDirPath() + sep + "kafka_logs";
     new File(kafkaLogDir).mkdir();
     snappyAdAnalyticsTest.writeSnappyPocToSparkEnv();
   }
@@ -95,6 +147,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   protected void startZookeeper() {
     ProcessBuilder pb = null;
     try {
+      getHostNames();
       String zookeeperLogDirPath = kafkaLogDir + sep + "zookeeper";
       new File(zookeeperLogDirPath).mkdir();
       String dest = zookeeperLogDirPath + sep + "zookeeperSystem.log";
@@ -109,9 +162,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       //create copy of properties file to modify
       FileUtils.copyFile(orgPropFile, myPropFile);
       // change log dir in properperty file
-      modifyPropFile(myPropFile, "dataDir", zookeeperLogDirPath);
-
-      String command = "nohup " + script + " " + myPropFilePath + " > " + logFile + " &";
+      zookeeperHost = hostnames[0];
+      modifyPropFile(myPropFile, "dataDir=", zookeeperLogDirPath);
+      modifyPropFile(myPropFile,"host.name=", zookeeperHost);
+      String command = "";
+      if(!zookeeperHost.equals("localhost"))
+        command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + zookeeperHost;
+      command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun("QuorumPeerMain");
@@ -129,7 +186,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   // save zookeeper host and port details on blackboard
   protected void updateBlackboard(File file, String searchString) {
     try {
-      zookeeperHost = HostHelper.getIPAddress().getLocalHost().getHostName();
       SnappyBB.getBB().getSharedMap().put("zookeeperHost", zookeeperHost);
       FileInputStream fis = new FileInputStream(file);
       BufferedReader br = new BufferedReader(new InputStreamReader(fis));
@@ -160,8 +216,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   protected void startKafkaBroker() {
-    String command;
-    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    String command = "";
+    int numServers = 0 ;
+    numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
     String orgPropFilePath = snappyTest.getScriptLocation(kafkaDir + sep + "config/server.properties");
@@ -179,32 +236,36 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         File myPropFile = new File(myPropFilePath);
         //create copy of properties file to modify
         FileUtils.copyFile(orgPropFile, myPropFile);
-
+        String hostname = hostnames[i-1];
         //change port and logdir for servers
-        modifyPropFile(myPropFile,"log.dir", brokerLogDirPath);
+        modifyPropFile(myPropFile,"log.dirs=", brokerLogDirPath);
+        modifyPropFile(myPropFile,"zookeeper.connect=",zookeeperHost+":"+ zookeeperPort);
+        modifyPropFile(myPropFile,"host.name=",hostname);
         modifyPropFile(myPropFile,"port=",Integer.toString(initialBrokerPort));
-        modifyPropFile(myPropFile,"broker.id",Integer.toString(initialBrokerId++));
+        modifyPropFile(myPropFile,"broker.id=",Integer.toString(initialBrokerId++));
         Log.getLogWriter().info(broker + " properties files is  " + myPropFile);
-
-        command = "nohup " + script + " " + myPropFilePath + " > " + logFile + " &";
+        if(!hostname.equals("localhost"))
+          command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
+        command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
 
         Log.getLogWriter().info("Started kafka " + broker);
         if (i == 1)
-          SnappyBB.getBB().getSharedMap().put("brokerList", "localhost--" + initialBrokerPort);
+          SnappyBB.getBB().getSharedMap().put("brokerList", hostname + "--" + initialBrokerPort);
         initialBrokerPort = initialBrokerPort + 2;
       }
     }  catch (IOException e) {
-    String s = "Problem while copying properties file.";
-    throw new TestException(s, e);
-  }
+      String s = "Problem while copying properties file.";
+      throw new TestException(s, e);
+    }
     recordSnappyProcessIDinNukeRun("Kafka");
   }
 
   //change log directory and port for property file
   protected void modifyPropFile(File file, String searchString, String replaceString) {
     String str = null;
+    boolean isReplaced = false;
     ArrayList<String> lines = new ArrayList<String>();
     try {
       FileInputStream fis = new FileInputStream(file);
@@ -212,10 +273,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       while ((str = br.readLine()) != null) {
         if (str.trim().startsWith(searchString)) {
           str = str.replace(str.split("=")[1], replaceString);
+          isReplaced = true;
           Log.getLogWriter().info("File str is ::" + str);
         }
         lines.add(str + "\n");
       }
+      if(!isReplaced)
+        lines.add(searchString + replaceString);
       br.close();
       fis.close();
       FileWriter fw = new FileWriter(file);
@@ -246,7 +310,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String topic = (String)topics.elementAt(i);
       String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-topics.sh");
       String command = script + " --create --zookeeper " + zookeeperHost + ":" + zookeeperPort +
-          " --partition 8 --topic " + topic + " --replication-factor=1";
+          " --partition 8 --topic " + topic + " --replication-factor=1 " ;
 
       String dest = kafkaLogDir + sep + "startTopic-" + topic + ".log";
       File logFile = new File(dest);
@@ -351,9 +415,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static void HydraTask_restartSnappyClusterForStreaming(){
-   HydraTask_stopSnappyCluster();
-   HydraTask_startSnappyCluster();
-   HydraTask_executeSnappyStreamingJob();
+    HydraTask_stopSnappyCluster();
+    HydraTask_startSnappyCluster();
+    HydraTask_executeSnappyStreamingJob();
   }
 
   public boolean getJobStatus(String jobID){
@@ -373,7 +437,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       while ((line = inputFile.readLine()) != null) {
         if(line.contains("status") ){
           if (line.contains("ERROR"))
-              return false;
+            return false;
           break;
         }
       } try { Thread.sleep(10*1000);} catch(InterruptedException ie) { }

@@ -36,7 +36,15 @@ class CassandraSnappyDUnitTest(val s: String)
 
   val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
 
-  val downloadLoc = s"$snappyProductDir/../distributions"
+  lazy val downloadLoc = {
+    val path = if (System.getenv().containsKey("GRADLE_USER_HOME")) {
+      Paths.get(System.getenv("GRADLE_USER_HOME"), "cassandraDist")
+    } else {
+      Paths.get(System.getenv("HOME"), ".gradle", "cassandraDist")
+    }
+    Files.createDirectories(path)
+    path.toString
+  }
 
   val userHome = System.getProperty("user.home")
 
