@@ -277,6 +277,6 @@ class CommandLineToolsSuite extends SnappyTestRunner {
     val (out, err) = executeCommand(snappyProductDir +
         "/bin/snappy run file='somefile.sql'")
     assert(!out.contains("[-locators=<addresses>]"),
-      s"-locators options has been removed successfully")
+      s"-locators option still displayed in run command's usage text!")
   }
 }
