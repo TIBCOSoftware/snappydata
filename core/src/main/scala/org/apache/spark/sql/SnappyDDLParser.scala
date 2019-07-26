@@ -669,6 +669,8 @@ abstract class SnappyDDLParser(session: SnappySession)
                 ((table: TableIdentifier, isAdd: Boolean, s: String) =>
                   AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
                     s"${if (isAdd) "ADD" else "DROP"} $s")) |
+            COLUMNS ~ ANY.+ ~> ((_: TableIdentifier, _: Boolean) =>
+              sparkParser.parsePlan(input.sliceString(0, input.length))) |
             COLUMN.? ~ (column | identifier) ~ defaultVal ~ RESTRICT.? ~> {
               (t: TableIdentifier, isAdd: Boolean, c: Any, defVal: Option[String]) =>
                 val col = c match {

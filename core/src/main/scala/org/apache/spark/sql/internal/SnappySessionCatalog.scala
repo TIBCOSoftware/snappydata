@@ -274,7 +274,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
    */
   final def resolveRelation(tableIdent: TableIdentifier): LogicalPlan = {
     // resolve the relation right away
-    resolveRelationWithAlias(tableIdent).asInstanceOf[SubqueryAlias].child
+    resolveRelationWithAlias(tableIdent) match {
+      case s: SubqueryAlias => s.child
+      case p => p // external hive table
+    }
   }
 
   // NOTE: Many of the overrides below are due to SnappyData allowing absence of
@@ -557,19 +560,17 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     checkSchemaPermission(schemaName, tableName, defaultUser = null)
     createSchema(schemaName, ignoreIfExists = true)
 
-    if (tableExists(table.identifier)) {
-      if (ignoreIfExists) return
-      else {
-        val objectType = CatalogObjectType.getTableType(table)
-        throw new AnalysisException(s"Object '$tableName' of type " +
-            s"$objectType already exists in schema '$schemaName'")
-      }
-    }
-
     // hive tables will be created in external hive catalog if enabled else will fail
     table.provider match {
-      case Some(DDLUtils.HIVE_PROVIDER) if snappySession.enableHiveSupport =>
-        hiveSessionCatalog.createTable(table, ignoreIfExists)
+      case Some(DDLUtils.HIVE_PROVIDER) =>
+        if (snappySession.enableHiveSupport) {
+          hiveSessionCatalog.createTable(table, ignoreIfExists)
+        } else {
+          throw Utils.analysisException(
+            s"External hive support (${StaticSQLConf.CATALOG_IMPLEMENTATION.key} = hive) " +
+                "is required to create hive tables")
+
+        }
       case _ => super.createTable(table, ignoreIfExists)
     }
   }
