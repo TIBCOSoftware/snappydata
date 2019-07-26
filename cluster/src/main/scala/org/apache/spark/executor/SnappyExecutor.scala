@@ -178,7 +178,7 @@ class SnappyExecutor(
 
   def removeJarsFromExecutorLoader(jars: Array[String]): Unit = {
     synchronized {
-      var updatedURLs: mutable.Buffer[URL] = mutable.Buffer.empty
+      var updatedURLs = urlClassLoader.getURLs().toBuffer
       jars.foreach(name => {
         val localName = name.split("/").last
         var jarFile = new File(SparkFiles.getRootDirectory(), localName)
@@ -186,15 +186,14 @@ class SnappyExecutor(
           jarFile.delete()
           logDebug(s"Deleted jarFile $jarFile")
         }
-        updatedURLs = urlClassLoader.getURLs().toBuffer
         updatedURLs.foreach(url => {
           if (url != null && url.toString.contains(jarFile.toString)) {
             updatedURLs.remove(updatedURLs.indexOf(url))
           }
         })
       })
-      val parent = Thread.currentThread().getContextClassLoader
-      urlClassLoader = new SnappyMutableURLClassLoader(updatedURLs.toArray, parent)
+      urlClassLoader = new SnappyMutableURLClassLoader(updatedURLs.toArray,
+        urlClassLoader.getParent)
       replClassLoader = addReplClassLoaderIfNeeded(urlClassLoader)
     }
   }

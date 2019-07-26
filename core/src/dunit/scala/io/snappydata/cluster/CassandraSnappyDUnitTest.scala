@@ -284,5 +284,29 @@ class CassandraSnappyDUnitTest(val s: String)
     }
     assert(count == 0)
 
+    val jarPath = s"$snappyProductDir/jars/hadoop-client-2.7.7.jar"
+    stmt1.execute(s"""deploy jar avro-v_1.0 '$jarPath'""")
+    stmt1.execute("list jars")
+    rs = stmt1.getResultSet
+    count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 1)
+    stmt1.execute("undeploy  avro-v_1.0 ")
+    stmt1.execute("list jars")
+    rs = stmt1.getResultSet
+    count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    assert(count == 0)
+
   }
 }
