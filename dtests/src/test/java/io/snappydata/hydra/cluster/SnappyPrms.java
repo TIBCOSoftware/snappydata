@@ -250,6 +250,11 @@ public class SnappyPrms extends BasePrms {
   public static Long isUserConfTest;
 
   /**
+   * (boolean) - whether to run the CPP script in hydra.
+   */
+  public static Long isCppTest;
+
+  /**
    * (boolean) - whether TPCH schema is used in test for running the queries concurrently.
    */
   public static Long isTPCHSchema;

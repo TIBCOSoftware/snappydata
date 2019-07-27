@@ -36,7 +36,7 @@ import org.apache.commons.io.FileUtils
 
 import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{Row, SnappyContext, SnappySession, TableNotFoundException}
+import org.apache.spark.sql.{ParseException, Row, SnappyContext, SnappySession, TableNotFoundException}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -787,6 +787,49 @@ class SplitClusterDUnitSecurityTest(s: String)
           throw t
         }
     }
+  }
+
+  def testMetastoreAccessAdminOnlySmartConn: Unit = {
+    getConn(adminUser1, true)
+    import org.scalatest.Assertions.intercept
+    var thrown = intercept[ParseException] {
+      snc.sql("select * from SNAPPY_HIVE_METASTORE.version")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+    thrown = intercept[ParseException] {
+      snc.sql("update SNAPPY_HIVE_METASTORE.version set version_comment = 'comment changed'")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+    thrown = intercept[ParseException] {
+      snc.sql("insert into SNAPPY_HIVE_METASTORE.version values (4, '1.2.3', 'dummy comment')")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+    thrown = intercept[ParseException] {
+      snc.sql("delete from SNAPPY_HIVE_METASTORE.version where ver_id = 2")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+
+    getConn(jdbcUser1, true)
+    thrown = intercept[ParseException] {
+      snc.sql("select * from SNAPPY_HIVE_METASTORE.version")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+    thrown = intercept[ParseException] {
+      snc.sql("update SNAPPY_HIVE_METASTORE.version set version_comment = 'comment changed'")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+
+    thrown = intercept[ParseException] {
+      snc.sql("insert into SNAPPY_HIVE_METASTORE.version values (4, '1.2.3', 'dummy comment')")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
+    thrown = intercept[ParseException] {
+      snc.sql("delete from SNAPPY_HIVE_METASTORE.version where ver_id = 2")
+    }
+    assert(thrown.getMessage().startsWith("Invalid input \"SNAPPY_HIVE_METASTORE.v\""))
   }
 
   def _testLDAPGroupOwnershipSmartConnector(): Unit = {

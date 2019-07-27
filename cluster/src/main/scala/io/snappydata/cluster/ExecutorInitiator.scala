@@ -63,7 +63,7 @@ object ExecutorInitiator extends Logging {
     private[cluster] val testLock = new Object()
     @volatile private[cluster] var testStartDone = false
 
-    val membershipListener = new MembershipListener {
+    val membershipListener: MembershipListener = new MembershipListener {
       override def quorumLost(failures: util.Set[InternalDistributedMember],
           remaining: util.List[InternalDistributedMember]): Unit = {}
 

@@ -26,6 +26,7 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
 import scala.util.control.NonFatal
+import scala.util.control.Breaks._
 
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
@@ -227,6 +228,27 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       val tableTypes = hiveTables.map(ht =>
         Utils.toUpperCase(s"${ht.schema}.${ht.entityName}") -> ht.tableType).toMap
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        val tableRegion = Misc.getRegionForTable(rs.getTableName, false)
+        if (tableRegion != null && tableRegion.isInstanceOf[PartitionedRegion]) {
+          val tablePrRegion = tableRegion.asInstanceOf[PartitionedRegion]
+          val PrRegRedProvider = tablePrRegion.getRedundancyProvider
+          if (PrRegRedProvider != null) {
+            rs.setRedundancyImpaired(PrRegRedProvider.isRedundancyImpaired)
+            rs.setRedundancy(tablePrRegion.getRedundantCopies)
+          }
+
+          val numBuckets = tablePrRegion.getPartitionAttributes.getTotalNumBuckets
+          breakable {
+            for (i <- 0 until numBuckets) {
+              val idm = tablePrRegion.getNodeForBucketRead(i)
+              if (idm == null) {
+                rs.setAnyBucketLost(true)
+                break
+              }
+            }
+          }
+        }
+
         try tableTypes.get(Utils.toUpperCase(rs.getTableName)) match {
           case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
             Utils.toUpperCase(t))) => rs.setColumnTable(true)

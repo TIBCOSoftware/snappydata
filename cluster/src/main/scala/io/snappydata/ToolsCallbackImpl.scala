@@ -18,7 +18,7 @@ package io.snappydata
 
 import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
-import java.net.URLClassLoader
+import java.net.{URI, URLClassLoader}
 
 import com.gemstone.gemfire.cache.EntryExistsException
 import scala.collection.JavaConverters._
@@ -27,8 +27,7 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
-import io.snappydata.impl.LeadImpl
-
+import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
@@ -165,6 +164,13 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     }
   }
 
+  override def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit = {
+    if (ExecutorInitiator.snappyExecBackend != null) {
+      val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
+      snappyexecutor.removeJarsFromExecutorLoader(jars)
+    }
+  }
+
   override def getAllGlobalCmnds: Array[String] = {
     GemFireXDUtils.waitForNodeInitialization()
     val r = Misc.getMemStore.getGlobalCmdRgn
@@ -210,4 +216,19 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
 
   override def checkSchemaPermission(schema: String, currentUser: String): String =
     StoreCallbacksImpl.checkSchemaPermission(schema, currentUser)
+
+  override def removeURIs(uris: Array[String], isPackage: Boolean): Unit = {
+    val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
+    val allURLs = lead.urlclassloader.getURLs
+    val updatedURLs = allURLs.toBuffer
+    uris.foreach(uri => {
+      val newUri = new URI("file:" + uri)
+      if (updatedURLs.contains(newUri.toURL)) {
+        updatedURLs.remove(updatedURLs.indexOf(newUri.toURL))
+      }
+    })
+    lead.urlclassloader = new ExtendibleURLClassLoader(lead.urlclassloader.getParent)
+    updatedURLs.foreach(url => lead.urlclassloader.addURL(url))
+    Thread.currentThread().setContextClassLoader(lead.urlclassloader)
+  }
 }
