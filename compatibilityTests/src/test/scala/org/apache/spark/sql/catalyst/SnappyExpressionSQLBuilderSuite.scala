@@ -14,14 +14,15 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package org.apache.spark.sql.execution
+package org.apache.spark.sql.catalyst
 
-import org.apache.spark.sql.{Row, SnappySession, SparkSession}
-import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.hive.TestHiveSnappySession
+import org.apache.spark.sql.hive.test.TestHive
+import org.apache.spark.sql.test.SnappySparkTestUtil
 
-trait InvalidateCachedPlans extends RunnableCommand{
- abstract override def run(sparkSession: SparkSession): Seq[Row] = {
-   sparkSession.asInstanceOf[SnappySession].clearPlanCache()
-   super.run(sparkSession)
- }
+class SnappyExpressionSQLBuilderSuite
+/* extends ExpressionSQLBuilderSuite with SnappySparkTestUtil {
+
+  assume(TestHive.sparkSession.isInstanceOf[TestHiveSnappySession])
 }
+*/

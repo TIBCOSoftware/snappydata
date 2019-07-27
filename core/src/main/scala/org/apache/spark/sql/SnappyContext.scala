@@ -19,6 +19,7 @@ package org.apache.spark.sql
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -48,8 +49,8 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
 import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand}
-import org.apache.spark.sql.hive.SnappyHiveExternalCatalog
-import org.apache.spark.sql.internal.{SnappySessionState, SnappySharedState}
+import org.apache.spark.sql.hive.{HiveExternalCatalog, SnappyHiveExternalCatalog, SnappySessionState}
+import org.apache.spark.sql.internal.{SharedState, SnappySharedState, StaticSQLConf}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -608,28 +609,32 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    * @param indexName Index name which goes in the catalog
    * @param baseTable Fully qualified name of table on which the index is created.
    * @param indexColumns Columns on which the index has to be created along with the
-   *                     sorting direction.The direction of index will be ascending
-   *                     if value is true and descending when value is false.
-   *                     Direction can be specified as null
+   *                     sorting direction.
+   * @param sortOrders   Sorting direction for indexColumns. The direction of index will be
+   *                     ascending if value is true and descending when value is false.
+   *                     The values in this list must exactly match indexColumns list.
+   *                     Direction can be specified as null in which case ascending is used.
    * @param options Options for indexes. For e.g.
    *                column table index - ("COLOCATE_WITH"->"CUSTOMER").
    *                row table index - ("INDEX_TYPE"->"GLOBAL HASH") or ("INDEX_TYPE"->"UNIQUE")
    */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: java.util.Map[String, java.lang.Boolean],
+      indexColumns: java.util.List[String],
+      sortOrders: java.util.List[java.lang.Boolean],
       options: java.util.Map[String, String]): Unit = {
-    snappySession.createIndex(indexName, baseTable, indexColumns, options)
+    snappySession.createIndex(indexName, baseTable, indexColumns, sortOrders, options)
   }
 
   /**
    * Set current database/schema.
-   * @param schemaName schema name which goes in the catalog
+   *
+   * @param schemaName        schema name which goes in the catalog
+   * @param createIfNotExists create the schema if it does not exist
    */
-  def setSchema(schemaName: String): Unit = {
-    snappySession.setCurrentSchema(schemaName)
+  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
+    snappySession.setCurrentSchema(schemaName, createIfNotExists)
   }
-
 
   /**
    * Create an index on a table.
@@ -643,7 +648,7 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
    */
   def createIndex(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
     snappySession.createIndex(indexName, baseTable, indexColumns, options)
   }
@@ -824,6 +829,8 @@ object SnappyContext extends Logging {
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
+
+  @GuardedBy("contextLock") private var hiveSession: SparkSession = _
 
   val SAMPLE_SOURCE = "column_sample"
   val SAMPLE_SOURCE_CLASS = "org.apache.spark.sql.sampling.DefaultSource"
@@ -1150,6 +1157,30 @@ object SnappyContext extends Logging {
     }
   }
 
+  def newHiveSession(): SparkSession = contextLock.synchronized {
+    val sc = globalSparkContext
+    sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
+    if (this.hiveSession ne null) this.hiveSession.newSession()
+    else {
+      val session = SparkSession.builder().enableHiveSupport().getOrCreate()
+      if (session.sharedState.externalCatalog.isInstanceOf[HiveExternalCatalog] &&
+          session.sessionState.getClass.getName.contains("HiveSessionState")) {
+        this.hiveSession = session
+        // this session can be shared via Builder.getOrCreate() so create a new one
+        session.newSession()
+      } else {
+        this.hiveSession = new SparkSession(sc)
+        this.hiveSession
+      }
+    }
+  }
+
+  def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)
+
+  def getHiveSharedState: Option[SharedState] = contextLock.synchronized {
+    if (this.hiveSession ne null) Some(this.hiveSession.sharedState) else None
+  }
+
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()
@@ -1219,6 +1250,7 @@ object SnappyContext extends Logging {
       _clusterMode = null
       _globalSNContextInitialized = false
       _globalContextInitialized = false
+      hiveSession = null
     }
   }
 
