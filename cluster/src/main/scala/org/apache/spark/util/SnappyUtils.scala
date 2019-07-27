@@ -25,11 +25,12 @@ import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
+
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.SparkUI
 import org.apache.spark.{SparkContext, SparkEnv}
-
 import scala.util.Try
 
 object SnappyUtils {
@@ -41,6 +42,7 @@ object SnappyUtils {
     case _ => new SnappyContextLoader(parent)
   }
 
+  // FIXME Unused method, remove.
   def removeJobJar(sc: SparkContext): Unit = {
     def getName(path: String): String = new File(path).getName
 
@@ -57,6 +59,7 @@ object SnappyUtils {
     }
   }
 
+  // FIXME Unused method, remove.
   def removeJobJar(sc: SparkContext, jarName: String): Unit = {
     def getName(path: String): String = new File(path).getName
 
@@ -74,9 +77,13 @@ object SnappyUtils {
 
   def setSessionDependencies(sparkContext: SparkContext,
       appName: String,
-      classLoader: ClassLoader): Unit = {
+      classLoader: ClassLoader, addAllJars: Boolean = false): Unit = {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
-    val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
+    val dependentJars = if (addAllJars) {
+      ContextJarUtils.getDriverJarURLs()
+    } else {
+      classLoader.asInstanceOf[URLClassLoader].getURLs
+    }
     val sparkJars = dependentJars.map(url => {
       Try(sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))).getOrElse("")
     })
