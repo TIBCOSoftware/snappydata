@@ -752,10 +752,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
   private def removeFromFuncJars(funcDefinition: CatalogFunction,
       qualifiedName: FunctionIdentifier): Unit = {
+    ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
     funcDefinition.resources.foreach { r =>
       ContextJarUtils.deleteFile(funcDefinition.identifier.toString(), r.uri, isEmbeddedMode())
     }
-    ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
   }
 
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {

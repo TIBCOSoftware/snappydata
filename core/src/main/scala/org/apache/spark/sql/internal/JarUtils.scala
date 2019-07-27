@@ -53,21 +53,14 @@ object ContextJarUtils extends Logging {
     driverJars.putIfAbsent(key, classLoader)
   }
 
-  // FIXME Unused, remove.
-  def addIfNotPresent(key: String, urls: Array[URL], parent: ClassLoader): Unit = {
-    if (driverJars.get(key).isEmpty) {
-      driverJars.putIfAbsent(key, new MutableURLClassLoader(urls, parent))
-    }
-  }
-
   def getDriverJar(key: String): Option[URLClassLoader] = driverJars.get(key)
 
   def removeDriverJar(key: String) : Unit = driverJars.remove(key)
 
   def getDriverJarURLs(): Array[URL] = {
-    var sm = new mutable.HashSet[URL]()
-    driverJars.foreach(_._2.getURLs.foreach(sm += _))
-    sm.toArray
+    var urls = new mutable.HashSet[URL]()
+    driverJars.foreach(_._2.getURLs.foreach(urls += _))
+    urls.toArray
   }
 
   /**

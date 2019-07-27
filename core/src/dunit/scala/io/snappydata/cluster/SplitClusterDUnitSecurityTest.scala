@@ -1106,6 +1106,134 @@ class SplitClusterDUnitSecurityTest(s: String)
     executeSQL(user2Conn.createStatement(), s"drop function if exists myUDF")
   }
 
+  def testUDFWithQueries(): Unit = {
+    // Build a jar with UDF
+    val udf1Source = "public class StringLengthUDF implements " +
+        "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
+        " @Override public Integer call(String s){ " +
+        "               return (s.length() + 100); " +
+        "} }"
+    var classfile = SparkUtilsAccess.createUDFClass("StringLengthUDF", udf1Source)
+    val jar1 = SparkUtilsAccess.createJarFile(Seq(classfile), "stringlengthudf", true)
+
+    val udf2Source = "public class StringifyIntUDF implements " +
+        "org.apache.spark.sql.api.java.UDF1<Integer,String> {" +
+        " @Override public String call(Integer s){ " +
+        "               return (s + \" stringified\"); " +
+        "} }"
+    classfile = SparkUtilsAccess.createUDFClass("StringifyIntUDF", udf2Source)
+    val jar2 = SparkUtilsAccess.createJarFile(Seq(classfile))
+
+    var user1stmt = getConn(jdbcUser1).createStatement()
+
+    // create table and run some queries
+    val tabName = "udf_coltab"
+    executeSQL(user1stmt, s"create table $tabName (id int, name string, address varchar(100)," +
+        " contact string) using column")
+    for (i <- 1001 to 3000) {
+      executeSQL(user1stmt, s"insert into $tabName values ($i, 'name_$i', 'address_$i'," +
+          s" '98$i-765')")
+    }
+    executeSQL(user1stmt, s"select count(*) from $tabName")
+    executeSQL(user1stmt, s"select id, contact from $tabName where id > 2980")
+    executeSQL(user1stmt, s"select name, address from $tabName where contact = '981500-765'")
+
+    // create and execute udfs
+    executeSQL(user1stmt, s"CREATE FUNCTION strlen AS " +
+        s"StringLengthUDF returns Integer using jar '$jar1'")
+    executeSQL(user1stmt, s"CREATE FUNCTION stringifyInt AS " +
+        s"StringifyIntUDF returns String using jar '$jar2'")
+
+    user1stmt.execute(s"select strlen('11223344')")
+    var rs = user1stmt.getResultSet
+    var rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) == 108, s"Expected 108, found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+    user1stmt.execute(s"select stringifyInt(11223344)")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getString(1).equals("11223344 stringified"), s"Expected" +
+            s" '11223344 stringified', found '${rs.getString(1)}'")
+      }
+      rs.close()
+    }
+
+    executeSQL(user1stmt, s"drop function if exists strlen")
+    executeSQL(user1stmt, s"drop function if exists stringifyInt")
+
+    // Now execute old queries again with new constants
+    user1stmt.execute(s"select count(*) from $tabName")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) == 2000, s"Expected 2000 rows," +
+            s" found ${rs.getInt(1)}")
+      }
+      rs.close()
+    }
+    user1stmt.execute(s"select id, contact from $tabName where id > 2985")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) > 2985)
+      }
+      rs.close()
+    }
+    assert(rows == 15)
+    user1stmt.execute(s"select name, address from $tabName where contact = '9812000-765'")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getString(1).equalsIgnoreCase("name_2000"))
+        assert(rs.getString(2).equalsIgnoreCase("address_2000"))
+      }
+      rs.close()
+    }
+
+    // Execute some other queries too
+    user1stmt.execute(s"select * from $tabName where id = 2333")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) == 2333)
+        assert(rs.getString(2).equalsIgnoreCase(s"name_2333"))
+        assert(rs.getString(3).equalsIgnoreCase(s"address_2333"))
+        assert(rs.getString(4).equalsIgnoreCase(s"982333-765"))
+      }
+      rs.close()
+    }
+    user1stmt.execute(s"select id, contact, name from $tabName where id < 2500 " +
+        s"and name like 'name_159%'")
+    rs = user1stmt.getResultSet
+    rows = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        rows += 1
+        assert(rs.getInt(1) < 1600 && rs.getInt(1) > 1589)
+        assert(rs.getString(2).contains(s"98159"))
+        assert(rs.getString(3).contains(s"name_159"))
+      }
+      rs.close()
+    }
+    assert(rows == 10, s"Expected 10 rows found $rows")
+  }
+
 }
 
 object SplitClusterDUnitSecurityTest extends SplitClusterDUnitTestObject {
