@@ -679,7 +679,9 @@ object Utils {
           propName.startsWith(Constant.PROPERTY_PREFIX) ||
           propName.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) ||
           propName.startsWith("zeppelin.") ||
-          propName.startsWith("hive.")) {
+          propName.startsWith("hive.") ||
+          propName.startsWith("hadoop.") ||
+          propName.startsWith("javax.jdo.")) {
         entry.getValue match {
           case v: String => conf.set(propName, v)
           case _ =>
