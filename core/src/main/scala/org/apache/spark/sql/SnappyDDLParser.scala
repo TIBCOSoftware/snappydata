@@ -744,6 +744,10 @@ abstract class SnappyDDLParser(session: SnappySession)
             case VarcharType(Int.MaxValue) => "string"
             case _ => t.catalogString
           }
+          functionIdent.database match {
+            case None => SnappyExternalCatalog.currentFunctionIdentifier.set(functionIdent)
+            case _ =>
+          }
           val classNameWithType = className + "__" + catalogString
           CreateFunctionCommand(
             functionIdent.database,
