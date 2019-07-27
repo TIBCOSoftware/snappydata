@@ -306,6 +306,22 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                 {SnappyDashboardPage.tableStatsColumn("bucketCount")}
               </span>
             </th>
+            <th class="table-th-col-heading" style="width: 100px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.tableStatsColumn("redundancyTooltip")
+                    }>
+                {SnappyDashboardPage.tableStatsColumn("redundancy")}
+              </span>
+            </th>
+            <th class="table-th-col-heading" style="width: 100px;">
+              <span data-toggle="tooltip" title=""
+                    data-original-title={
+                    SnappyDashboardPage.tableStatsColumn("redundancyStatusTooltip")
+                    }>
+                {SnappyDashboardPage.tableStatsColumn("redundancyStatus")}
+              </span>
+            </th>
           </tr>
         </thead>
       </table>
@@ -454,7 +470,12 @@ object SnappyDashboardPage {
   tableStatsColumn += ("totalSizeTooltip" ->
       "Tables Total Size (In Memory size + Overflown To Disk Size)")
   tableStatsColumn += ("bucketCount" -> "Buckets")
-  tableStatsColumn += ("bucketCountTooltip" -> "Number of Buckets in Table")
+  tableStatsColumn += ("bucketCountTooltip" ->
+      "Number of Buckets in Table. Red number indicates some buckets are offline.")
+  tableStatsColumn += ("redundancy" -> "Redundancy")
+  tableStatsColumn += ("redundancyTooltip" -> "Number of redundant copies")
+  tableStatsColumn += ("redundancyStatus" -> "Redundancy Status")
+  tableStatsColumn += ("redundancyStatusTooltip" -> "Is redundancy satisfied or broken")
 
   val extTablesStatsTitle = "External Tables"
   val extTablesStatsTitleTooltip = "External Tables Summary"
