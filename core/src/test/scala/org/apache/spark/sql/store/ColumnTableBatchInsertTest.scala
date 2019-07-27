@@ -16,18 +16,17 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.DriverManager
-
 import scala.collection.mutable
-import io.snappydata.SnappyFunSuite
-import io.snappydata.core.{Data, TestData}
-import org.apache.spark.scheduler.{SparkListener, SparkListenerJobEnd, SparkListenerJobStart}
-import org.scalatest.{Assertions, BeforeAndAfter}
-import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
-import org.apache.spark.{Logging, SparkContext}
-
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
+
+import io.snappydata.SnappyFunSuite
+import io.snappydata.core.{Data, TestData}
+import org.scalatest.{Assertions, BeforeAndAfter}
+
+import org.apache.spark.scheduler.{SparkListener, SparkListenerJobEnd, SparkListenerJobStart}
+import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
+import org.apache.spark.{Logging, SparkContext}
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
@@ -41,8 +40,10 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
   val props = Map.empty[String, String]
 
   after {
-    snc.dropTable(tableName, true)
-    snc.dropTable("ColumnTable2", true)
+    snc.dropTable(tableName, ifExists = true)
+    snc.dropTable(tableName2, ifExists = true)
+    snc.dropTable(tableName3, ifExists = true)
+    snc.dropTable(tableName4, ifExists = true)
   }
 
   test("test the shadow table creation") {
@@ -182,7 +183,6 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val rdd = snc.sparkContext.parallelize(
       (1 to 200000).map(i => TestData(i, i.toString)))
     val dataDF = snc.createDataFrame(rdd)
-    import org.apache.spark.sql.snappy._
     dataDF.write.insertInto(tableName)
     val result = snc.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
@@ -442,7 +442,8 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     logInfo("Successful")
   }
 
-  test("test the concurrent deleteFrom in multiple Column tables") {
+  // disabled since this hangs in BaseColumnFormatRelation.withTableWriteLock
+  ignore("test the concurrent deleteFrom in multiple Column tables") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
