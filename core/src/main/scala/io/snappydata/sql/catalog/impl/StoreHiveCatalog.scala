@@ -40,7 +40,7 @@ import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, S
 import io.snappydata.thrift._
 import org.apache.log4j.{Level, LogManager}
 
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
@@ -50,6 +50,7 @@ import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
+import org.apache.spark.sql.{AnalysisException, SnappyContext}
 import org.apache.spark.{Logging, SparkConf}
 
 class StoreHiveCatalog extends ExternalCatalog with Logging {
@@ -261,7 +262,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       case GET_HIVE_TABLES =>
         // exclude row tables and policies from the list of hive tables
         val hiveTables = new mutable.ArrayBuffer[ExternalTableMetaData]
-        for (table <- externalCatalog.getAllTables()) {
+        var allCatalogTables = externalCatalog.getAllTables()
+        // add hive external catalog tables if initialized in any of the sessions
+        SnappyContext.getHiveSharedState match {
+          case None =>
+          case Some(hiveState) =>
+            allCatalogTables ++= SnappyExternalCatalog.getAllTables(hiveState.externalCatalog, Nil)
+                .map(t => t.copy(identifier = new TableIdentifier(t.identifier.table,
+                  t.identifier.database)))
+        }
+        for (table <- allCatalogTables) {
           val tableType = CatalogObjectType.getTableType(table)
           if (tableType != CatalogObjectType.Row && tableType != CatalogObjectType.Policy) {
             val parameters = new CaseInsensitiveMutableHashMap[String](table.storage.properties)
