@@ -21,6 +21,8 @@ import java.lang
 import java.sql.{Connection, DriverManager, SQLException, Statement}
 import java.util.Properties
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.{Property, SnappyFunSuite}
@@ -944,9 +946,111 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       conn.prepareStatement("delete from t1 where col2 = ?")
     }
     assert(se4.getSQLState.equals("42X04"))
-
   }
 
+  test("SNAP-3045. Incorrect Hashjoin results - 1") {
+    snc
+    snc.sql("create table dm_base (c1 STRING, tenant_id STRING, shop_id STRING, olet_id STRING)" +
+      " using column options(BUCKETS '40', PARTITION_BY 'TENANT_ID',REDUNDANCY '1'," +
+      "PERSISTENCE 'ASYNCHRONOUS')")
+    snc.sql("create table hierarchy_tag_dimension (c2 clob, tenant_id clob, shop_id clob," +
+      " outlet_id clob)")
+    snc.sql("insert into dm_base values('abc1', '1', '1', null)")
+
+    snc.sql("insert into hierarchy_tag_dimension values('xyz1', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc2', '1', '1', '1')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz2', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc3', '1', '1', null)")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz3', '1', '1', '1')")
+    snc.sql("insert into dm_base values('abc4', '1', '1', '1')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz4', '1', '1', '1')")
+    snc.sql("insert into dm_base values('abc5', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz5', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc6', '1', '1', null)")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz6', '1', '1', '2')")
+    snc.sql("insert into dm_base values('abc7', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz7', '1', '1', '2')")
+
+
+    val rs = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+
+    val rs1 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN (SELECT * " +
+      "FROM hierarchy_tag_dimension ORDER BY outlet_id) t4 ON t1.tenant_id = t4.tenant_id" +
+      " AND t1.shop_id = t4.shop_id AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id);").collect
+
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.disableHashJoin", "true")
+    val rs2 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+
+    checkResultsMatch(rs, rs1)
+    checkResultsMatch(rs, rs2)
+
+    def checkResultsMatch(arr1: Array[Row], arr2: Array[Row]): Unit = {
+      assertEquals(arr1.length, arr2.length)
+      val list = ArrayBuffer(arr2: _*)
+      arr1.foreach(row => {
+        val indx = list.indexOf(row)
+        assertTrue(indx >= 0)
+        list.remove(indx)
+      })
+      assertTrue(list.isEmpty)
+    }
+  }
+
+
+  test("SNAP-3045. Incorrect Hashjoin result-2") {
+    snc
+
+    def checkResultsMatch(arr: Array[Row],
+      expectedResults: ArrayBuffer[(Int, Int, Int, Int)]): Unit = {
+      assertEquals(arr.length, expectedResults.length)
+
+      arr.foreach(row => {
+        val first = if (row.isNullAt(0)) -1 else row.getInt(0)
+        val sec = if (row.isNullAt(1)) -1 else row.getInt(1)
+        val th = if (row.isNullAt(2)) -1 else row.getInt(2)
+        val fth = if (row.isNullAt(3)) -1 else row.getInt(3)
+        val tup = (first, sec, th, fth)
+        val indx = expectedResults.indexOf(tup)
+        assertTrue(indx >= 0)
+        expectedResults.remove(indx)
+      })
+      assertTrue(expectedResults.isEmpty)
+    }
+    snc.dropTable("t1", true)
+    snc.dropTable("t2", true)
+    snc.sql("create table t1 (c1 int, c2 int) using column ")
+    snc.sql("create table t2 (c1 int, c2 int) using column ")
+
+    snc.sql("insert into t1 values (1, 1), (1, 2), (2,1), (2,2), (3, 1)," +
+      " (3,2), (4, 1), (4,2), (5, 1), (5,2)")
+    snc.sql("insert into t2 values(1, 1), (2,2), (3,3)")
+
+    val rs1 = snc.sql("select * from t1 left outer join t2 on t1.c1 = t2.c1").collect()
+    val expectedResults1 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
+      (3, 1, 3, 3), (3, 2, 3, 3), (4, 1, -1, -1), (4, 2, -1, -1), (5, 1, -1, -1), (5, 2, -1, -1))
+    checkResultsMatch(rs1, expectedResults1)
+
+    val rs2 = snc.sql("select * from t1 left outer join t2 " +
+      "on t1.c1 = t2.c1 where t1.c2 <> 1").collect()
+    val expectedResults2 = ArrayBuffer((1, 2, 1, 1), (2, 2, 2, 2),
+      (3, 2, 3, 3), (4, 2, -1, -1), (5, 2, -1, -1))
+    checkResultsMatch(rs2, expectedResults2)
+
+    val rs3 = snc.sql("select * from t1 left outer join t2 on t1.c1 = t2.c1 " +
+      "where t2.c1 is not null").collect()
+    val expectedResults3 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
+      (3, 1, 3, 3), (3, 2, 3, 3))
+    checkResultsMatch(rs3, expectedResults3)
+    snc.dropTable("t1", true)
+    snc.dropTable("t2", true)
+  }
 
   test("SNAP3082") {
     val session = snc.snappySession
@@ -1062,5 +1166,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     assert(result1.sameElements(result2),
       "results of prepared and unprepared statements do not match")
     // scalastyle:on println
+
   }
 }
