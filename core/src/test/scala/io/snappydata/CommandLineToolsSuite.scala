@@ -29,6 +29,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   override def clusterSuccessString: String = "Distributed system now has 3 members"
 
   private val snappyProductDir = System.getenv("SNAPPY_HOME")
+  private val snappyNativeTestDir = s"$snappyProductDir/../../../store/native/tests"
 
   // scalastyle:off println
   test("backup restore") {
@@ -285,5 +286,27 @@ class CommandLineToolsSuite extends SnappyTestRunner {
     assert(code != 0)
     assert(!out.toString().contains("[-locators=<addresses>]"),
       s"-locators option still displayed in run command's usage text!")
+  }
+
+  ignore("ODBC_FailOverTest_NEWSERVER"){
+    try {
+      var scriptPath = s"$snappyNativeTestDir/failoverTest_NewServer.sh"
+      var consoleOutput = s"$scriptPath $snappyProductDir $snappyNativeTestDir".!!
+      assert(consoleOutput.contains("Test executed successfully"),
+        s"FailOver failed $consoleOutput")
+    } finally {
+
+    }
+  }
+
+  ignore("ODBC_FailOverTest_NONE"){
+    try {
+      var scriptPath = s"$snappyNativeTestDir/failoverTest_None.sh"
+      var consoleOutput = s"$scriptPath $snappyProductDir $snappyNativeTestDir".!!
+      assert(consoleOutput.contains("Test executed successfully, no failover tried"),
+        s"There failover tried but failed $consoleOutput")
+    } finally {
+
+    }
   }
 }
