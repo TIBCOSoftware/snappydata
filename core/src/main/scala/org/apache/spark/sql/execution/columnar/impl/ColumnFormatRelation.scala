@@ -320,7 +320,7 @@ abstract class BaseColumnFormatRelation(
       f()
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context. in Delete")
+      logDebug(s"Added the ${lock} object to the context.")
       if (lock != null) {
         snc.addContextObject(
           SnappySession.BULKWRITE_LOCK, lock)

@@ -568,7 +568,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         (conn, new TableIdentifier(table, Some(schemaName)))
       }
       case _ => {
-        logDebug(s"Taking lock in insertrowsplan " +
+        logDebug(s"Taking lock in " +
           s" ${Thread.currentThread().getId} ")
         PartitionedRegion.getRegionLock("BULKWRITE_" + table,
           GemFireCacheImpl.getExisting)
