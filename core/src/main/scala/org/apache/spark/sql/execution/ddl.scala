@@ -24,7 +24,6 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
@@ -33,9 +32,8 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
-
 import org.apache.spark.SparkContext
-import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.deploy.{SparkSubmit, SparkSubmitUtils}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -611,6 +609,40 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
 case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    var value = ""
+    val sc = sparkSession.sparkContext
+    if (alias != null) {
+      val cmndsSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
+      cmndsSet.forEach(new Consumer[Entry[String, String]] {
+        override def accept(t: Entry[String, String]): Unit = {
+          val alias1 = t.getKey
+          if(alias == alias1) {
+            value = t.getValue
+          }
+        }
+      })
+      val indexOf = value.indexOf("|")
+      val lastIndexOf = value.lastIndexOf("|")
+      if (indexOf > 0) {
+        val coordinates = value.substring(0, indexOf)
+        val repos = Option(value.substring(indexOf + 1, lastIndexOf))
+        val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
+        val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+          repos, jarCache)
+        if (jarsstr.nonEmpty) {
+          val pkgs = jarsstr.split(",")
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
+          ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+        }
+      }
+      else {
+        if (value.nonEmpty) {
+          val jars = value.split(',')
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
+          ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        }
+      }
+    }
     ToolsCallbackInit.toolsCallback.removePackage(alias)
     Nil
   }
