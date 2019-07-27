@@ -458,16 +458,32 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       }
     }
 
+    private def maskPassword(s: String): String = {
+      SnappyExternalCatalog.PASSWORD_MATCH.replaceAllIn(s, "xxx")
+    }
+
+    // Mask access key and secret access key in case of S3 URI
+    private def maskLocationURI(locURI: String): String = {
+      val maskedSrcPath = if (locURI.toLowerCase().startsWith("s3a://") ||
+          locURI.toLowerCase().startsWith("s3://") ||
+          locURI.toLowerCase().startsWith("s3n://") ) {
+        locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
+          locURI.indexOf("@")), "****:****")
+      } else maskPassword(locURI)
+      maskedSrcPath
+    }
+
+    // latest change is here - mask it here - include s3 masking here too
     private def getDataSourcePath(properties: scala.collection.Map[String, String],
         storage: CatalogStorageFormat): String = {
       properties.get("path") match {
-        case Some(p) if !p.isEmpty => p
+        case Some(p) if !p.isEmpty => maskLocationURI(p)
         case _ => properties.get("region.path") match { // for external GemFire connector
-          case Some(p) if !p.isEmpty => p
+          case Some(p) if !p.isEmpty => maskLocationURI(p)
           case _ => properties.get("url") match { // jdbc
             case Some(p) if !p.isEmpty =>
               // mask the password if present
-              val url = SnappyExternalCatalog.PASSWORD_MATCH.replaceAllIn(p, "xxx")
+              val url = maskLocationURI(p)
               // add dbtable if present
               properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
                 case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
@@ -475,7 +491,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               }
             case _ => storage.locationUri match { // fallback to locationUri
               case None => ""
-              case Some(l) => l
+              case Some(l) => maskLocationURI(l)
             }
           }
         }

@@ -23,7 +23,6 @@ import javax.annotation.concurrent.GuardedBy
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.concurrent.ExecutionException
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.CacheClosedException
 import com.gemstone.gemfire.internal.cache.{LocalRegion, PartitionedRegion}
@@ -411,8 +410,6 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         // exception is expected as table might be inconsistent. continuing to drop
         withHiveExceptionHandling(super.dropTable(schema, table,
           ignoreIfNotExists = true, purge = true))
-      case NonFatal(e) => throw new AnalysisException(
-        "Exception thrown while verifying if the table is retrievable. Message: " + e.getMessage)
     }
   }
 
