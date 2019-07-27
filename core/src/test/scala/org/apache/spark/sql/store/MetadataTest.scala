@@ -177,7 +177,7 @@ object MetadataTest extends Assertions {
     // check schema of the returned Dataset
     assert(ds.schema === StructType(sysSchemasColumns.map(p =>
       StructField(p._1, StringType, nullable = false, getMetadata(p._1, p._2, p._3)))))
-    val expectedDefaultSchemas = List("APP", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
+    val expectedDefaultSchemas = List("APP", "DEFAULT", "NULLID", "SNAPPY_HIVE_METASTORE", "SQLJ",
       "SYS", "SYSCAT", "SYSCS_DIAG", "SYSCS_UTIL", "SYSFUN", "SYSIBM", "SYSPROC", "SYSSTAT")
     assert(rs.length === expectedDefaultSchemas.length,
       s"Got ${rs.map(_.getString(1)).mkString(", ")}")

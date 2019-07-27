@@ -20,7 +20,9 @@ import org.apache.spark.sql.hive.TestHiveSnappySession
 import org.apache.spark.sql.hive.test.TestHive
 import org.apache.spark.sql.test.SnappySparkTestUtil
 
-class SnappyExpressionSQLBuilderSuite extends ExpressionSQLBuilderSuite with SnappySparkTestUtil {
+class SnappyExpressionSQLBuilderSuite
+/* extends ExpressionSQLBuilderSuite with SnappySparkTestUtil {
 
   assume(TestHive.sparkSession.isInstanceOf[TestHiveSnappySession])
 }
+*/
