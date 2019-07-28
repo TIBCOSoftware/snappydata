@@ -60,6 +60,7 @@ import org.apache.spark.sql.hive.client.HiveClientImpl
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
 import org.apache.spark.sql.types.LongType
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
@@ -490,6 +491,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
    * using the properties if required.
    */
   protected def finalizeCatalogTable(table: CatalogTable): CatalogTable = {
+    // schema is always "normalized" below to deal with upgrade from previous
+    // releases that stored column names in upper-case (SNAP-3090)
     val tableIdent = table.identifier
     // VIEW text is stored as split text for large view strings,
     // so restore its full text and schema from properties if present
@@ -500,19 +503,26 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         table.properties).orElse(table.viewOriginalText)
       // update the meta-data from properties
       ExternalStoreUtils.getTableSchema(table.properties, forView = true) match {
-        case Some(s) => table.copy(identifier = tableIdent, schema = s, viewText = viewText,
-          viewOriginalText = viewOriginalText)
-        case None => table.copy(identifier = tableIdent, viewText = viewText,
-          viewOriginalText = viewOriginalText)
+        case Some(s) => table.copy(identifier = tableIdent, schema = normalizeSchema(s),
+          viewText = viewText, viewOriginalText = viewOriginalText)
+        case None => table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+          viewText = viewText, viewOriginalText = viewOriginalText)
       }
+    } else if (CatalogObjectType.isPolicy(table)) {
+      // explicitly change table name in policy properties to lower-case
+      // to deal with older releases that stored the name in upper-case
+      table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+        properties = table.properties.updated(PolicyProperties.targetTable,
+          JdbcExtendedUtils.toLowerCase(table.properties(PolicyProperties.targetTable))))
     } else table.provider match {
       // add dbtable property which is not present in old releases
       case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
           CatalogObjectType.isGemFireProvider(provider)) &&
           !table.storage.properties.contains(DBTABLE_PROPERTY) =>
         table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
-            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
-      case _ => table.copy(identifier = tableIdent)
+            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)),
+          schema = normalizeSchema(table.schema))
+      case _ => table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema))
     }
     // explicitly add weightage column to sample tables for old catalog data
     if (CatalogObjectType.getTableType(newTable) == CatalogObjectType.Sample &&
