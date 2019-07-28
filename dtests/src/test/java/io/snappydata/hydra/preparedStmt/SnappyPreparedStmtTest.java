@@ -266,10 +266,8 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               break;
             case "q13":
               ps.setString(1, "M");
-              ps.setDouble(2, doubleVal[j]);
+              ps.setDouble(2, 100.00);
               ps.setDouble(3, 150.00);
-              queryStringWithCC = tempQueryStringPS.replace("?", doubleVal[j].toString());
-              isChangingConstant = true;
               break;
             case "q16":
               for (int i = 1; i <= 2; i++)
@@ -317,9 +315,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setString(1, "D");
               ps.setString(2, "2 yr Degree");
               ps.setDouble(3, 50.00);
-              ps.setDouble(4, doubleVal[j]);
-              queryStringWithCC = tempQueryStringPS.replace("?", doubleVal[j].toString());
-              isChangingConstant = true;
+              ps.setDouble(4, 100.00);
               break;
             case "q49":
               ps.setInt(1, 10000);
@@ -364,7 +360,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
           Log.getLogWriter().info("Executing query : " + queryName);
           ResultSet rsPS = ps.executeQuery();
           Log.getLogWriter().info("Executed query : " + queryName);
-          Log.getLogWriter().info("Executing non ps query for " + queryFilePath + "/" + queryName + ".sql");
+        //  Log.getLogWriter().info("Executing non ps query for " + queryFilePath + "/" + queryName + ".sql");
           String queryString = null;
 
           if (!isChangingConstant) {
@@ -399,17 +395,18 @@ public class SnappyPreparedStmtTest extends SnappyTest {
     try {
       SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
       String logFile = getCurrentDirPath();
+      Long currentTime=System.currentTimeMillis();
       String outputFile,outputFilePS;
       StructTypeImpl snappyStrtTyp = ResultSetHelper.getStructType(rs);
       List<Struct> snappyList = ResultSetHelper.asList(rs, snappyStrtTyp, false);
-      outputFile = logFile + File.separator + queryName + ".out";
+      outputFile = logFile + File.separator + queryName+"_"+currentTime + ".out";
       Log.getLogWriter().info("The total num of rows for  " + queryName + " without prepared statement is  = " + snappyList.size());
       testInstance.listToFile(snappyList, outputFile);
       rs.close();
 
       StructTypeImpl snappyPSStrtTyp = ResultSetHelper.getStructType(rsPS);
       List<Struct> snappyPSList = ResultSetHelper.asList(rsPS, snappyPSStrtTyp, false);
-      outputFilePS = logFile + File.separator + queryName + "_PS.out";
+      outputFilePS = logFile + File.separator + queryName+"_"+currentTime + "_PS.out";
       Log.getLogWriter().info("The total num of rows for  " + queryName + " with prepared statement is  = " + snappyPSList.size());
       testInstance.listToFile(snappyPSList, outputFilePS);
       rsPS.close();
