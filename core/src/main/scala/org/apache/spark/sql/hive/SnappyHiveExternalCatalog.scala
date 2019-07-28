@@ -495,18 +495,16 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     // VIEW text is stored as split text for large view strings,
     // so restore its full text and schema from properties if present
     val newTable = if (table.tableType == CatalogTableType.VIEW) {
-      // update the meta-data from properties
       val viewText = JdbcExtendedUtils.readSplitProperty(SPLIT_VIEW_TEXT_PROPERTY,
         table.properties).orElse(table.viewText)
       val viewOriginalText = JdbcExtendedUtils.readSplitProperty(SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY,
         table.properties).orElse(table.viewOriginalText)
-      // schema is "normalized" to deal with upgrade from previous
-      // releases that store column names in upper-case (SNAP-3090)
+      // update the meta-data from properties
       ExternalStoreUtils.getTableSchema(table.properties, forView = true) match {
-        case Some(s) => table.copy(identifier = tableIdent, schema = normalizeSchema(s),
-          viewText = viewText, viewOriginalText = viewOriginalText)
-        case None => table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
-          viewText = viewText, viewOriginalText = viewOriginalText)
+        case Some(s) => table.copy(identifier = tableIdent, schema = s, viewText = viewText,
+          viewOriginalText = viewOriginalText)
+        case None => table.copy(identifier = tableIdent, viewText = viewText,
+          viewOriginalText = viewOriginalText)
       }
     } else if (CatalogObjectType.isPolicy(table)) {
       // explicitly change table name in policy properties to lower-case
