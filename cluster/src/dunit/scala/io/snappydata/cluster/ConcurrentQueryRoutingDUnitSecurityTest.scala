@@ -28,32 +28,34 @@ class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
 
   def columnTableRouting(thr: Int, iter: Int, jdbcUser1: String, jdbcUser2: String,
       serverHostPort: Int): Int = {
-    val tableName = s"order_line_col_${thr}_${iter}"
-    QueryRoutingDUnitSecurityTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName,
-      serverHostPort)
-    // scalastyle:off println
-    println(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting-${thr}-${iter} done")
-    // scalastyle:on println
+    val tableName = s"order_line_col_${thr}_$iter"
+    try {
+      QueryRoutingDUnitSecurityTest.columnTableRouting(jdbcUser1, jdbcUser2, tableName,
+        serverHostPort)
+    } catch {
+      case e: Exception =>
+        logError(s"columnTableRouting failure in $thr-$iter", e)
+        throw e
+    }
+    logInfo(s"ConcurrentQueryRoutingDUnitSecureTest.columnTableRouting-$thr-$iter done")
     1
   }
 
   def rowTableRouting(thr: Int, iter: Int, jdbcUser1: String, jdbcUser2: String,
       serverHostPort: Int): Int = {
-    val tableName = s"order_line_row_${thr}_${iter}"
-    QueryRoutingDUnitSecurityTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
-    // scalastyle:off println
-    println(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting-${thr}-${iter} done")
-    // scalastyle:on println
+    val tableName = s"order_line_row_${thr}_$iter"
+    try {
+      QueryRoutingDUnitSecurityTest.rowTableRouting(jdbcUser1, jdbcUser2, tableName, serverHostPort)
+    } catch {
+      case e: Exception =>
+        logError(s"rowTableRouting failure in $thr-$iter", e)
+        throw e
+    }
+    logInfo(s"ConcurrentQueryRoutingDUnitSecureTest.rowTableRouting-$thr-$iter done")
     1
   }
 
   def testConcurrency(): Unit = {
-    // disabled since it consistently fails with:
-    //  EXCEPTION: java.lang.AssertionError: assertion failed:
-    //   ConcurrentQueryRoutingDUnitSecureTest.testConcurrency: columnTableRoutingCompleted-1=1
-    //     at scala.Predef$.assert(Predef.scala:170)
-    //     at io.snappydata.cluster.ConcurrentQueryRoutingDUnitSecurityTest.testConcurrency(..:116)
-    if (true) return
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
     // scalastyle:off println
@@ -68,7 +70,6 @@ class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
         })
       }
     })
-    colThread1.start()
 
     val thrCount2 = new AtomicInteger(0)
     val colThread2 = new Thread(new Runnable {def run() {
@@ -77,7 +78,6 @@ class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
       })
     }
     })
-    colThread2.start()
 
     val thrCount3 = new AtomicInteger(0)
     val rowThread1 = new Thread(new Runnable {def run() {
@@ -86,7 +86,6 @@ class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
       })
     }
     })
-    rowThread1.start()
 
     val thrCount4 = new AtomicInteger(0)
     val rowThread2 = new Thread(new Runnable {def run() {
@@ -95,6 +94,10 @@ class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
       })
     }
     })
+
+    colThread1.start()
+    colThread2.start()
+    rowThread1.start()
     rowThread2.start()
 
     colThread1.join(5 * 60 * 1000)
