@@ -491,17 +491,17 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
    * using the properties if required.
    */
   protected def finalizeCatalogTable(table: CatalogTable): CatalogTable = {
-    // schema is always "normalized" below to deal with upgrade from previous
-    // releases that store column names in upper-case (SNAP-3090)
     val tableIdent = table.identifier
     // VIEW text is stored as split text for large view strings,
     // so restore its full text and schema from properties if present
     val newTable = if (table.tableType == CatalogTableType.VIEW) {
+      // update the meta-data from properties
       val viewText = JdbcExtendedUtils.readSplitProperty(SPLIT_VIEW_TEXT_PROPERTY,
         table.properties).orElse(table.viewText)
       val viewOriginalText = JdbcExtendedUtils.readSplitProperty(SPLIT_VIEW_ORIGINAL_TEXT_PROPERTY,
         table.properties).orElse(table.viewOriginalText)
-      // update the meta-data from properties
+      // schema is "normalized" to deal with upgrade from previous
+      // releases that store column names in upper-case (SNAP-3090)
       ExternalStoreUtils.getTableSchema(table.properties, forView = true) match {
         case Some(s) => table.copy(identifier = tableIdent, schema = normalizeSchema(s),
           viewText = viewText, viewOriginalText = viewOriginalText)
@@ -515,14 +515,20 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         properties = table.properties.updated(PolicyProperties.targetTable,
           JdbcExtendedUtils.toLowerCase(table.properties(PolicyProperties.targetTable))))
     } else table.provider match {
-      // add dbtable property which is not present in old releases
-      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) &&
-          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
-        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
-            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)),
-          schema = normalizeSchema(table.schema))
-      case _ => table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema))
+      case Some(provider) if SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider) =>
+        // add dbtable property which is not present in old releases
+        val storageFormat =
+          if (table.storage.properties.contains(DBTABLE_PROPERTY)) table.storage
+          else {
+            table.storage.copy(properties = table.storage.properties +
+                (DBTABLE_PROPERTY -> tableIdent.unquotedString))
+          }
+        // schema is "normalized" to deal with upgrade from previous
+        // releases that store column names in upper-case (SNAP-3090)
+        table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+          storage = storageFormat)
+      case _ => table.copy(identifier = tableIdent)
     }
     // explicitly add weightage column to sample tables for old catalog data
     if (CatalogObjectType.getTableType(newTable) == CatalogObjectType.Sample &&
