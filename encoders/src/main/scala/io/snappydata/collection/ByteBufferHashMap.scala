@@ -189,8 +189,14 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   }
 
   final def release(): Unit = {
-    keyData.release(allocator)
-    valueData.release(allocator)
+    // The fields could be null, if the ByteBufferData could not be
+    // created due to insufficient memory
+    if (keyData ne null ) {
+      keyData.release(allocator)
+    }
+    if (valueData ne null) {
+      valueData.release(allocator)
+    }
     keyData = null
     valueData = null
     this.maxSizeReached = false
