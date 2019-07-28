@@ -492,7 +492,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
    */
   protected def finalizeCatalogTable(table: CatalogTable): CatalogTable = {
     // schema is always "normalized" below to deal with upgrade from previous
-    // releases that stored column names in upper-case (SNAP-3090)
+    // releases that store column names in upper-case (SNAP-3090)
     val tableIdent = table.identifier
     // VIEW text is stored as split text for large view strings,
     // so restore its full text and schema from properties if present
@@ -510,7 +510,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       }
     } else if (CatalogObjectType.isPolicy(table)) {
       // explicitly change table name in policy properties to lower-case
-      // to deal with older releases that stored the name in upper-case
+      // to deal with older releases that store the name in upper-case
       table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
         properties = table.properties.updated(PolicyProperties.targetTable,
           JdbcExtendedUtils.toLowerCase(table.properties(PolicyProperties.targetTable))))
