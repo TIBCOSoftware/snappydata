@@ -72,7 +72,7 @@ object LocalDirectoryCleanupUtil extends Logging {
 
   private def delete(path: Path): Unit = {
     if (Files.exists(path)) {
-      ClientSharedUtils.deletePath(path, false, false)
+      ClientSharedUtils.deletePath(path, false, true)
     } else {
       logInfo(s"File or directory does not exists : $path")
     }
