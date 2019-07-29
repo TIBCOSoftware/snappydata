@@ -20,12 +20,10 @@ package org.apache.spark.sql.execution
 import java.io.File
 import java.lang
 import java.nio.file.{Files, Paths}
-import java.sql.SQLException
 import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
@@ -34,26 +32,25 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
-
 import org.apache.spark.SparkContext
-import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.deploy.{SparkSubmit, SparkSubmitUtils}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
-import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
+import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Cast, Expression, GenericRow, SortDirection}
 import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
-import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, ShowTablesCommand}
+import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
-import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils}
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, StaticSQLConf}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
 import org.apache.spark.streaming.{Duration, SnappyStreamingContext}
-import org.apache.spark.sql.functions._
 import org.apache.spark.unsafe.types.CalendarInterval
 
 case class CreateTableUsingCommand(
@@ -108,63 +105,19 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
-
-    // create schema in catalog first
-    catalog.createSchema(schema, ifNotExists)
-
-    // next in store if catalog was successful
-    val authClause = authId match {
-      case None => ""
-      case Some((id, false)) => s""" AUTHORIZATION "$id""""
-      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
-    }
-    val conn = session.defaultPooledConnection(schema)
-    try {
-      val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""CREATE SCHEMA "${Utils.toUpperCase(schema)}"$authClause""")
-      stmt.close()
-    } catch {
-      case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
-      case err: Error if SystemFailure.isJVMFailureError(err) =>
-        SystemFailure.initiateFailure(err)
-        // If this ever returns, rethrow the error. We're poisoned
-        // now, so don't let this thread continue.
-        throw err
-      case t: Throwable =>
-        // drop from catalog
-        catalog.dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
-        // Whenever you catch Error or Throwable, you must also
-        // check for fatal JVM error (see above).  However, there is
-        // _still_ a possibility that you are dealing with a cascading
-        // error condition, so you also need to check to see if the JVM
-        // is still usable:
-        SystemFailure.checkFailure()
-        throw t
-    } finally {
-      conn.close()
-    }
+    catalog.createSchema(schema, ifNotExists, authId, createInExternalHive = true)
     Nil
   }
 }
 
-case class DropSchemaCommand(schemaName: String, ifExists: Boolean, cascade: Boolean)
-    extends RunnableCommand {
+case class DropSchemaOrDbCommand(schemaName: String, ifExists: Boolean, cascade: Boolean,
+    isDb: Boolean) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
     // drop from catalog first to cascade drop all objects if required
     catalog.dropDatabase(schema, ifExists, cascade)
-    // drop the schema from store (no cascade required since catalog drop will take care)
-    val checkIfExists = if (ifExists) " IF EXISTS" else ""
-    val conn = session.defaultPooledConnection(schema)
-    try {
-      val stmt = conn.createStatement()
-      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "${Utils.toUpperCase(schema)}" RESTRICT""")
-      stmt.close()
-    } finally {
-      conn.close()
-    }
     Nil
   }
 }
@@ -173,8 +126,8 @@ case class DropPolicyCommand(ifExists: Boolean,
     policyIdentifer: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.dropPolicy(policyIdentifer, ifExists)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.dropPolicy(policyIdentifer, ifExists)
     Nil
   }
 }
@@ -202,8 +155,8 @@ case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
     addColumn: StructField, defaultValue: Option[String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
     Nil
   }
 }
@@ -212,32 +165,48 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
     enableRls: Boolean) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.alterTableToggleRLS(tableIdent, enableRls)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTableToggleRLS(tableIdent, enableRls)
     Nil
   }
 }
 
 case class AlterTableDropColumnCommand(
-    tableIdent: TableIdentifier, column: String) extends RunnableCommand {
+    tableIdent: TableIdentifier, column: String,
+    referentialAction: Option[Boolean]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
+    val snappySession = session.asInstanceOf[SnappySession]
+    val refActionString = referentialAction match {
+      case None => ""
+      case Some(true) => "cascade"
+      case Some(false) => "restrict"
+    }
     // drop column doesn't need anything apart from name so fill dummy values
-    snc.alterTable(tableIdent, isAddColumn = false,
-      StructField(column, NullType), defaultValue = None)
+    snappySession.alterTable(tableIdent, isAddColumn = false,
+      StructField(column, NullType), defaultValue = None, refActionString)
+    Nil
+  }
+}
+
+case class AlterTableMiscCommand(tableIdent: TableIdentifier, sql: String)
+    extends RunnableCommand {
+
+  override def run(session: SparkSession): Seq[Row] = {
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTableMisc(tableIdent, sql)
     Nil
   }
 }
 
 case class CreateIndexCommand(indexName: TableIdentifier,
     baseTable: TableIdentifier,
-    indexColumns: Map[String, Option[SortDirection]],
+    indexColumns: Seq[(String, Option[SortDirection])],
     options: Map[String, String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.createIndex(indexName, baseTable, indexColumns, options)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.createIndex(indexName, baseTable, indexColumns, options)
     Nil
   }
 }
@@ -259,9 +228,9 @@ case class CreatePolicyCommand(policyIdent: TableIdentifier,
         null, new IllegalStateException("CREATE POLICY failed: Row level security (" +
             GemXDProperty.SNAPPY_ENABLE_RLS + ") not enabled in the system"))
     }
-    val snc = session.asInstanceOf[SnappySession]
-    SparkSession.setActiveSession(snc)
-    snc.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
+    val snappySession = session.asInstanceOf[SnappySession]
+    SparkSession.setActiveSession(snappySession)
+    snappySession.createPolicy(policyIdent, tableIdent, policyFor, applyTo, expandedPolicyApplyTo,
       currentUser, filterStr, filter)
     Nil
   }
@@ -271,8 +240,8 @@ case class DropIndexCommand(ifExists: Boolean,
     indexName: TableIdentifier) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
-    val snc = session.asInstanceOf[SnappySession]
-    snc.dropIndex(indexName, ifExists)
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.dropIndex(indexName, ifExists)
     Nil
   }
 }
@@ -404,7 +373,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
 class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
     tablePattern: Option[String]) extends ShowTablesCommand(schemaOpt, tablePattern) {
 
-  private val hiveCompatible = Property.HiveCompatible.get(session.sessionState.conf)
+  private val hiveCompatible = Property.HiveCompatibility.get(
+    session.sessionState.conf).equalsIgnoreCase("full")
 
   override val output: Seq[Attribute] = {
     if (hiveCompatible) AttributeReference("name", StringType, nullable = false)() :: Nil
@@ -436,7 +406,8 @@ class ShowSnappyTablesCommand(session: SnappySession, schemaOpt: Option[String],
 case class ShowViewsCommand(session: SnappySession, schemaOpt: Option[String],
     viewPattern: Option[String]) extends RunnableCommand {
 
-  private val hiveCompatible = Property.HiveCompatible.get(session.sessionState.conf)
+  private val hiveCompatible = Property.HiveCompatibility.get(
+    session.sessionState.conf).equalsIgnoreCase("full")
 
   // The result of SHOW VIEWS has four columns: schemaName, tableName, isTemporary and isGlobal.
   override val output: Seq[Attribute] = {
@@ -500,6 +471,17 @@ class DescribeSnappyTableCommand(table: TableIdentifier,
         catalog.convertCharTypesInMetadata = false
       }
     }
+  }
+}
+
+class SetSnappyCommand(kv: Option[(String, Option[String])]) extends SetCommand(kv) {
+
+  override def run(sparkSession: SparkSession): Seq[Row] = kv match {
+    // SnappySession allows attaching external hive catalog at runtime
+    case Some((k, Some(v))) if k.equalsIgnoreCase(StaticSQLConf.CATALOG_IMPLEMENTATION.key) =>
+      sparkSession.sessionState.conf.setConfString(k, v)
+      Row(k, v) :: Nil
+    case _ => super.run(sparkSession)
   }
 }
 
@@ -627,6 +609,40 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
 case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    var value = ""
+    val sc = sparkSession.sparkContext
+    if (alias != null) {
+      val cmndsSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
+      cmndsSet.forEach(new Consumer[Entry[String, String]] {
+        override def accept(t: Entry[String, String]): Unit = {
+          val alias1 = t.getKey
+          if(alias == alias1) {
+            value = t.getValue
+          }
+        }
+      })
+      val indexOf = value.indexOf("|")
+      val lastIndexOf = value.lastIndexOf("|")
+      if (indexOf > 0) {
+        val coordinates = value.substring(0, indexOf)
+        val repos = Option(value.substring(indexOf + 1, lastIndexOf))
+        val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
+        val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+          repos, jarCache)
+        if (jarsstr.nonEmpty) {
+          val pkgs = jarsstr.split(",")
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
+          ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+        }
+      }
+      else {
+        if (value.nonEmpty) {
+          val jars = value.split(',')
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
+          ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        }
+      }
+    }
     ToolsCallbackInit.toolsCallback.removePackage(alias)
     Nil
   }
@@ -639,7 +655,7 @@ case class PutIntoValuesColumnTable(db: String, tableName: String,
 
   def convertTypes(value: String, struct: StructField): Any = struct.dataType match {
     case BooleanType => value.toBoolean
-    case BinaryType => value.toCharArray().map(ch => ch.toByte)
+    case BinaryType => value.toCharArray.map(ch => ch.toByte)
     case ByteType => value.toByte
     case DoubleType => value.toDouble
     case FloatType => value.toFloat
@@ -663,25 +679,25 @@ case class PutIntoValuesColumnTable(db: String, tableName: String,
     val snc = sparkSession.asInstanceOf[SnappySession]
     val sc = sparkSession.sparkContext
     val tableWithDB = db + "." + tableName
-    var v1 = values.zipWithIndex.map { case (e, ci) =>
+    val v1 = values.zipWithIndex.map { case (e, _) =>
       if (e != null) Cast(e, StringType).eval() else null
     }
-    var schema = sparkSession.sharedState
+    val schema = sparkSession.sharedState
         .externalCatalog.getTable(db, tableName).schema
     import snappy._
     var rowRdd = List.empty[Any]
     val valuesList = v1.toList
-    if (colNames == None) {
+    if (colNames.isEmpty) {
       rowRdd = valuesList.zip(schema)
           .map { case (value, struct) =>
             if (value != null) convertTypes(value.toString, struct) else null
           }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      var someDF1 = snc.createDataFrame(rdd1, schema)
+      val someDF1 = snc.createDataFrame(rdd1, schema)
       Seq(Row(someDF1.write.putInto(tableWithDB)))
     }
     else {
-      var colSchema = StructType(colNames.head.toList
+      val colSchema = StructType(colNames.head.toList
           .map(column => schema.fields.find(_.name
               .equalsIgnoreCase(column)).getOrElse(throw Utils.analysisException(
             s"Field $column does not exist in $tableWithDB with schema=$schema."))))
@@ -690,9 +706,9 @@ case class PutIntoValuesColumnTable(db: String, tableName: String,
             if (value != null) convertTypes(value.toString, struct) else null
           }
       val rdd1 = sc.parallelize(Seq(new GenericRow(rowRdd.toArray).asInstanceOf[Row]))
-      var someDF = snc.createDataFrame(rdd1, colSchema)
+      val someDF = snc.createDataFrame(rdd1, colSchema)
       val nonKeyCols = schema.fields.filterNot(f => colNames.head.contains(f.name))
-      var df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
+      val df2 = nonKeyCols.foldLeft(someDF)((df, c) =>
         df.withColumn(c.name, lit(null).cast(c.dataType)))
       Seq(Row(df2.write.putInto(tableWithDB)))
     }

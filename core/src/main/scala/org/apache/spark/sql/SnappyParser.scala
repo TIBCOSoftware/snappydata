@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.util.function.BiConsumer
+import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -90,24 +91,28 @@ class SnappyParser(session: SnappySession)
     val decimal = BigDecimal(s)
     if (checkExactNumeric) {
       try {
-        return newTokenizedLiteral(decimal.toIntExact, IntegerType)
+        val longValue = decimal.toLongExact
+        if (longValue >= Int.MinValue && longValue <= Int.MaxValue) {
+          return newTokenizedLiteral(longValue.toInt, IntegerType)
+        } else {
+          return newTokenizedLiteral(longValue, LongType)
+        }
       } catch {
         case _: ArithmeticException =>
-          try {
-            return newTokenizedLiteral(decimal.toLongExact, LongType)
-          } catch {
-            case _: ArithmeticException =>
-          }
       }
     }
     val precision = decimal.precision
     val scale = decimal.scale
     val sysDefaultType = DecimalType.SYSTEM_DEFAULT
-    if (precision == sysDefaultType.precision &&
-        scale == sysDefaultType.scale) {
+    if (precision == sysDefaultType.precision && scale == sysDefaultType.scale) {
       newTokenizedLiteral(Decimal(decimal), sysDefaultType)
     } else {
-      newTokenizedLiteral(Decimal(decimal), DecimalType(Math.max(precision, scale), scale))
+      val userDefaultType = DecimalType.USER_DEFAULT
+      if (precision == userDefaultType.precision && scale == userDefaultType.scale) {
+        newTokenizedLiteral(Decimal(decimal), userDefaultType)
+      } else {
+        newTokenizedLiteral(Decimal(decimal), DecimalType(Math.max(precision, scale), scale))
+      }
     }
   }
 
@@ -144,6 +149,18 @@ class SnappyParser(session: SnappySession)
       } else {
         throw new ParseException(s"Found non numeric token $s")
       }
+      case 'S' | 's' => if (Character.isDigit(s.charAt(len - 2))) {
+        return newTokenizedLiteral(
+          java.lang.Short.parseShort(s.substring(0, len - 1)), LongType)
+      } else {
+        throw new ParseException(s"Found non numeric token $s")
+      }
+      case 'Y' | 'y' => if (Character.isDigit(s.charAt(len - 2))) {
+        return newTokenizedLiteral(
+          java.lang.Byte.parseByte(s.substring(0, len - 1)), LongType)
+      } else {
+        throw new ParseException(s"Found non numeric token $s")
+      }
       case _ =>
     }
     while (index < len) {
@@ -174,7 +191,6 @@ class SnappyParser(session: SnappySession)
     } else {
       toDecimalLiteral(s, checkExactNumeric = false)
     }
-
   }
 
   private def updatePerTableQueryHint(tableIdent: TableIdentifier,
@@ -212,7 +228,10 @@ class SnappyParser(session: SnappySession)
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
     booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
-    NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
+    NULL ~> (() => Literal(null, NullType)) | // no tokenization for nulls
+    (ch('X') | ch('x')) ~ ws ~ stringLiteral ~> ((s: String) =>
+      newTokenizedLiteral(DatatypeConverter.parseHexBinary(
+        if ((s.length & 0x1) == 1) "0" + s else s), BinaryType))
   }
 
   protected final def paramLiteralQuestionMark: Rule1[Expression] = rule {
@@ -242,42 +261,6 @@ class SnappyParser(session: SnappySession)
 
   protected final def newLiteral(v: Any, dataType: DataType): Expression = {
     if (tokenize) new TokenLiteral(v, dataType).markFoldable(true) else Literal(v, dataType)
-  }
-
-  protected final def month: Rule1[Int] = rule {
-    integral ~ MONTH ~> ((num: String) => num.toInt)
-  }
-
-  protected final def year: Rule1[Int] = rule {
-    integral ~ YEAR ~> ((num: String) => num.toInt)
-  }
-
-  protected final def microsecond: Rule1[Long] = rule {
-    integral ~ (MICROS | MICROSECOND) ~> ((num: String) => num.toLong)
-  }
-
-  protected final def millisecond: Rule1[Long] = rule {
-    integral ~ (MILLIS | MILLISECOND) ~> ((num: String) => num.toLong)
-  }
-
-  protected final def second: Rule1[Long] = rule {
-    integral ~ (SECS | SECOND) ~> ((num: String) => num.toLong)
-  }
-
-  protected final def minute: Rule1[Long] = rule {
-    integral ~ (MINS | MINUTE) ~> ((num: String) => num.toLong)
-  }
-
-  protected final def hour: Rule1[Long] = rule {
-    integral ~ HOUR ~> ((num: String) => num.toLong)
-  }
-
-  protected final def day: Rule1[Long] = rule {
-    integral ~ DAY ~> ((num: String) => num.toLong)
-  }
-
-  protected final def week: Rule1[Long] = rule {
-    integral ~ WEEK ~> ((num: String) => num.toLong)
   }
 
   protected final def intervalType: Rule1[DataType] = rule {
@@ -359,7 +342,7 @@ class SnappyParser(session: SnappySession)
   }
 
   final def alias: Rule1[String] = rule {
-    AS ~ identifier | strictIdentifier
+    AS ~ identifierExt | strictIdentifier
   }
 
   final def namedExpression: Rule1[Expression] = rule {
@@ -394,6 +377,10 @@ class SnappyParser(session: SnappySession)
   protected final def expression: Rule1[Expression] = rule {
     andExpression ~ (OR ~ andExpression ~>
         ((e1: Expression, e2: Expression) => Or(e1, e2))).*
+  }
+
+  protected final def expressionList: Rule1[Seq[Expression]] = rule {
+    '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~> ((e: Any) => e.asInstanceOf[Seq[Expression]])
   }
 
   protected final def expressionNoTokens: Rule1[Expression] = rule {
@@ -584,8 +571,7 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def groupingSetExpr: Rule1[Seq[Expression]] = rule {
-    '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
-        ((e: Any) => e.asInstanceOf[Seq[Expression]]) |
+    expressionList |
     (expression + commaSep)
   }
 
@@ -669,9 +655,8 @@ class SnappyParser(session: SnappySession)
 
   protected final def relationLeaf: Rule1[LogicalPlan] = rule {
     tableIdentifier ~ (
-        '(' ~ ws ~ (expression * commaSep) ~ ')' ~ ws ~>
-            ((ident: TableIdentifier, e: Any) => UnresolvedTableValuedFunction(
-              ident.unquotedString, e.asInstanceOf[Seq[Expression]])) |
+        expressionList ~> ((ident: TableIdentifier, e: Seq[Expression]) =>
+          UnresolvedTableValuedFunction(ident.unquotedString, e)) |
         streamWindowOptions.? ~> ((tableIdent: TableIdentifier, window: Any) =>
           window.asInstanceOf[Option[(Duration, Option[Duration])]] match {
             case None => UnresolvedRelation(tableIdent, None)
@@ -689,8 +674,7 @@ class SnappyParser(session: SnappySession)
 
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
     VALUES ~ push(tokenize) ~ push(canTokenize) ~ DISABLE_TOKENIZE ~
-    (expression + commaSep) ~ alias.? ~
-    ('(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws).? ~>
+    (expression + commaSep) ~ alias.? ~ identifierList.? ~>
         ((tokenized: Boolean, canTokenized: Boolean,
         valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
           canTokenize = canTokenized
@@ -865,7 +849,7 @@ class SnappyParser(session: SnappySession)
         joinType.? ~ JOIN ~ (relationWithExternal ~> (plan => withHints(plan))) ~ (
             ON ~ expression ~> ((l: LogicalPlan, t: Any, r: LogicalPlan, e: Expression) =>
               withHints(Join(l, r, t.asInstanceOf[Option[JoinType]].getOrElse(Inner), Some(e)))) |
-            USING ~ '(' ~ ws ~ (identifier + commaSep) ~ ')' ~ ws ~>
+            USING ~ identifierList ~>
                 ((l: LogicalPlan, t: Any, r: LogicalPlan, ids: Any) =>
                   withHints(Join(l, r, UsingJoin(t.asInstanceOf[Option[JoinType]]
                       .getOrElse(Inner), ids.asInstanceOf[Seq[String]]), None))) |
@@ -905,7 +889,7 @@ class SnappyParser(session: SnappySession)
           (altPart, elsePart).asInstanceOf[WhenElseType])
   }
 
-  protected final def foldableFunctionsExpressionHandler(exprs: Seq[Expression],
+  protected final def foldableFunctionsExpressionHandler(exprs: IndexedSeq[Expression],
       fnName: String): Seq[Expression] = Consts.FOLDABLE_FUNCTIONS.get(fnName) match {
       case null => exprs
       case args if args.length == 0 =>
@@ -954,7 +938,7 @@ class SnappyParser(session: SnappySession)
               case None => new FunctionIdentifier(n1)
               case Some(f) => new FunctionIdentifier(f, Some(n1))
             }
-            val allExprs = e.asInstanceOf[Seq[Expression]]
+            val allExprs = e.asInstanceOf[Seq[Expression]].toIndexedSeq
             val exprs = foldableFunctionsExpressionHandler(allExprs, n1)
             val function = if (d.asInstanceOf[Option[Boolean]].isEmpty) {
               UnresolvedFunction(fnName, exprs, isDistinct = false)
@@ -984,10 +968,9 @@ class SnappyParser(session: SnappySession)
         MATCH ~> UnresolvedAttribute.quoted _
     ) |
     literal | paramLiteralQuestionMark |
-    '{' ~ ws ~ FN ~ functionIdentifier ~ '(' ~ ws ~ (expression * commaSep) ~ ')' ~
-        ws ~ '}' ~ ws ~> { (fn: FunctionIdentifier, e: Any) =>
-        val allExprs = e.asInstanceOf[Seq[Expression]].toList
-        val exprs = foldableFunctionsExpressionHandler(allExprs, fn.funcName)
+    '{' ~ ws ~ FN ~ functionIdentifier ~ expressionList ~
+        '}' ~ ws ~> { (fn: FunctionIdentifier, e: Seq[Expression]) =>
+        val exprs = foldableFunctionsExpressionHandler(e.toIndexedSeq, fn.funcName)
         fn match {
           case f if f.funcName.equalsIgnoreCase("timestampadd") =>
             assert(exprs.length == 3)
@@ -1126,16 +1109,15 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def lateralView: Rule1[LogicalPlan => LogicalPlan] = rule {
-    LATERAL ~ VIEW ~ (OUTER ~ push(true)).? ~ functionIdentifier ~ '(' ~ ws ~
-        (expression * commaSep) ~ ')' ~ ws ~ identifier ~ (AS.? ~ (identifier + commaSep)).? ~>
-        ((o: Any, functionName: FunctionIdentifier, e: Any, tableName: String,
+    LATERAL ~ VIEW ~ (OUTER ~ push(true)).? ~ functionIdentifier ~ expressionList ~
+        identifier ~ (AS.? ~ (identifier + commaSep)).? ~>
+        ((o: Any, functionName: FunctionIdentifier, e: Seq[Expression], tableName: String,
             cols: Any) => (child: LogicalPlan) => {
-          val expressions = e.asInstanceOf[Seq[Expression]]
           val columnNames = cols.asInstanceOf[Option[Seq[String]]] match {
             case Some(s) => s.map(UnresolvedAttribute.apply)
             case None => Nil
           }
-          Generate(UnresolvedGenerator(functionName, expressions), join = true,
+          Generate(UnresolvedGenerator(functionName, e), join = true,
             outer = o.asInstanceOf[Option[Boolean]].isDefined, Some(tableName),
             columnNames, child)
         })
@@ -1274,15 +1256,14 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def explain: Rule1[LogicalPlan] = rule {
-    EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ start ~> ((flagVal: Any,
+    EXPLAIN ~ (EXTENDED ~ push(true) | CODEGEN ~ push(false)).? ~ sql ~> ((flagVal: Any,
         plan: LogicalPlan) => plan match {
       case _: DescribeTableCommand => ExplainCommand(OneRowRelation)
       case _ =>
         val flag = flagVal.asInstanceOf[Option[Boolean]]
         // ensure plan is sent back as CLOB for large plans especially with CODEGEN
         queryHints.put(QueryHint.ColumnsAsClob.toString, "*")
-        ExplainCommand(plan, extended = flag.isDefined && flag.get,
-          codegen = flag.isDefined && !flag.get)
+        ExplainCommand(plan, extended = flag.contains(true), codegen = flag.contains(false))
     })
   }
 
@@ -1334,7 +1315,7 @@ class SnappyParser(session: SnappySession)
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
         (DISABLE_TOKENIZE ~ (dmlOperation | putValuesOperation | ddl | show | set | reset | cache |
-            uncache | deployPackages | explain | analyze))
+            uncache | deployPackages | explain | analyze | delegateToSpark))
   }
 
   final def parse[T](sqlText: String, parseRule: => Try[T],

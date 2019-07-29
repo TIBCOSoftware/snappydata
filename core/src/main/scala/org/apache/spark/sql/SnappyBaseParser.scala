@@ -232,9 +232,9 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   final def VARCHAR: Rule0 = newDataType(Consts.VARCHAR)
 
   protected final def fixedDecimalType: Rule1[DataType] = rule {
-    (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ commaSep ~ digits ~ ')' ~ ws ~>
-        ((precision: String, scale: String) =>
-          DecimalType(precision.toInt, scale.toInt))
+    (DECIMAL | NUMERIC) ~ '(' ~ ws ~ digits ~ (commaSep ~ digits).? ~ ')' ~ ws ~>
+        ((precision: String, scale: Any) => DecimalType(precision.toInt,
+          if (scale == None) 0 else scale.asInstanceOf[Option[String]].get.toInt))
   }
 
   protected final def primitiveType: Rule1[DataType] = rule {
@@ -302,7 +302,8 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
     columnCharType | primitiveType | arrayType | mapType | structType
   }
 
-  protected final def tableIdentifierPart: Rule1[String] = rule {
+  /** allow for first character of unquoted identifier to be a numeric */
+  protected final def identifierExt: Rule1[String] = rule {
     atomic(capture(Consts.identifier. +)) ~ delimiter ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
@@ -312,7 +313,7 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
   }
 
   protected final def packageIdentifierPart: Rule1[String] = rule {
-    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot).+)) ~ ws ~> { (s: String) =>
+    atomic(capture((Consts.identifier | Consts.hyphen | Consts.dot). +)) ~ ws ~> { (s: String) =>
       val lcase = lower(s)
       test(!Consts.reservedKeywords.contains(lcase)) ~
           push(if (caseSensitive) s else lcase)
@@ -322,13 +323,13 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
 
   final def tableIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (tableIdentifierPart ~ '.' ~ ws).? ~ tableIdentifierPart ~> ((schema: Any, table: String) =>
+    (identifierExt ~ '.' ~ ws).? ~ identifierExt ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
   final def packageIdentifier: Rule1[TableIdentifier] = rule {
     // case-sensitivity already taken care of properly by "identifier"
-    (tableIdentifierPart ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
+    (identifierExt ~ '.' ~ ws).? ~ packageIdentifierPart ~> ((schema: Any, table: String) =>
       TableIdentifier(table, schema.asInstanceOf[Option[String]]))
   }
 
@@ -375,7 +376,8 @@ object SnappyParserConsts {
   final val exponent: CharPredicate = CharPredicate('e', 'E')
   final val numeric: CharPredicate = CharPredicate.Digit ++
       CharPredicate('.')
-  final val numericSuffix: CharPredicate = CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b')
+  final val numericSuffix: CharPredicate =
+    CharPredicate('D', 'd', 'F', 'f', 'L', 'l', 'B', 'b', 'S', 's', 'Y', 'y')
   final val plural: CharPredicate = CharPredicate('s', 'S')
 
   final val reservedKeywords: UnifiedSet[String] = new UnifiedSet[String]
@@ -499,7 +501,6 @@ object SnappyParserConsts {
   final val TO: Keyword = reservedKeyword("to")
   final val TRUE: Keyword = reservedKeyword("true")
   final val UNION: Keyword = reservedKeyword("union")
-  final val UNIQUE: Keyword = reservedKeyword("unique")
   final val UPDATE: Keyword = reservedKeyword("update")
   final val WHEN: Keyword = reservedKeyword("when")
   final val WHERE: Keyword = reservedKeyword("where")
@@ -644,6 +645,8 @@ object SnappyParserConsts {
   final val BUCKETS: Keyword = new Keyword("buckets")
   final val CACHE: Keyword = new Keyword("cache")
   final val CASCADE: Keyword = new Keyword("cascade")
+  final val CHECK: Keyword = new Keyword("check")
+  final val CONSTRAINT: Keyword = new Keyword("constraint")
   final val CLUSTER: Keyword = new Keyword("cluster")
   final val CLUSTERED: Keyword = new Keyword("clustered")
   final val CODEGEN: Keyword = new Keyword("codegen")
@@ -652,7 +655,9 @@ object SnappyParserConsts {
   final val DATABASE: Keyword = new Keyword("database")
   final val DATABASES: Keyword = new Keyword("databases")
   final val DEPLOY: Keyword = new Keyword("deploy")
-  final val DISK_STORE: Keyword = new Keyword("diskstore")
+  final val DISKSTORE: Keyword = new Keyword("diskstore")
+  final val FOREIGN: Keyword = new Keyword("foreign")
+  final val FORMAT: Keyword = new Keyword("format")
   final val FORMATTED: Keyword = new Keyword("formatted")
   final val GLOBAL: Keyword = new Keyword("global")
   final val HASH: Keyword = new Keyword("hash")
@@ -663,8 +668,10 @@ object SnappyParserConsts {
   final val LDAPGROUP: Keyword = new Keyword("ldapgroup")
   final val LEVEL: Keyword = new Keyword("level")
   final val LIST: Keyword = new Keyword("list")
+  final val LOAD: Keyword = new Keyword("load")
   final val LOCATION: Keyword = new Keyword("location")
   final val MEMBERS: Keyword = new Keyword("members")
+  final val MSCK: Keyword = new Keyword("msck")
   final val OF: Keyword = new Keyword("of")
   final val OUT: Keyword = new Keyword("out")
   final val PACKAGE: Keyword = new Keyword("package")
@@ -674,6 +681,7 @@ object SnappyParserConsts {
   final val PARTITIONED: Keyword = new Keyword("partitioned")
   final val PERCENT: Keyword = new Keyword("percent")
   final val POLICY: Keyword = new Keyword("policy")
+  final val PRIMARY: Keyword = new Keyword("primary")
   final val PURGE: Keyword = new Keyword("purge")
   final val PUT: Keyword = new Keyword("put")
   final val REFRESH: Keyword = new Keyword("refresh")
@@ -682,14 +690,18 @@ object SnappyParserConsts {
   final val SECURITY: Keyword = new Keyword("security")
   final val SERDE: Keyword = new Keyword("serde")
   final val SERDEPROPERTIES: Keyword = new Keyword("serdeproperties")
+  final val SKEWED: Keyword = new Keyword("skewed")
   final val SORTED: Keyword = new Keyword("sorted")
   final val STATISTICS: Keyword = new Keyword("statistics")
+  final val STORED: Keyword = nonReservedKeyword("stored")
   final val STREAM: Keyword = new Keyword("stream")
   final val STREAMING: Keyword = new Keyword("streaming")
   final val TABLESAMPLE: Keyword = new Keyword("tablesample")
   final val TBLPROPERTIES: Keyword = new Keyword("tblproperties")
   final val TEMP: Keyword = new Keyword("temp")
-  final val UNDEPLOY: Keyword = new Keyword("undeploy")
+  final val TRIGGER: Keyword = new Keyword("trigger")
   final val UNCACHE: Keyword = new Keyword("uncache")
+  final val UNDEPLOY: Keyword = new Keyword("undeploy")
+  final val UNIQUE: Keyword = new Keyword("unique")
   final val UNSET: Keyword = new Keyword("unset")
 }

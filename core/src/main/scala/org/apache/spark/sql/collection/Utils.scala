@@ -19,6 +19,7 @@ package org.apache.spark.sql.collection
 import java.io.ObjectOutputStream
 import java.lang.reflect.Method
 import java.nio.ByteBuffer
+import java.nio.file.{Files, Path}
 import java.sql.{DriverManager, ResultSet}
 import java.util.TimeZone
 
@@ -68,7 +69,7 @@ import org.apache.spark.util.AccumulatorV2
 import org.apache.spark.util.collection.BitSet
 import org.apache.spark.util.io.ChunkedByteBuffer
 
-object Utils {
+object Utils extends Logging {
 
   final val EMPTY_STRING_ARRAY = SharedUtils.EMPTY_STRING_ARRAY
   final val WEIGHTAGE_COLUMN_NAME = "snappy_sampler_weightage"
@@ -870,6 +871,36 @@ object Utils {
       case _ => false
     }
   }
+
+  def deletePath(path: Path, throwOnError: Boolean = false,
+      logIfNotExists: Boolean = false): Unit = {
+    if (Files.exists(path)) {
+      var failure: Exception = null
+      Files.walk(path).sorted(java.util.Collections.reverseOrder()).forEach(
+        new java.util.function.Consumer[Path] {
+          override def accept(p: Path): Unit = {
+            try {
+              Files.delete(p)
+            } catch {
+              case e: Exception =>
+                logError(s"Failure while deleting file or directory: $p", e)
+                failure = e
+            }
+          }
+        })
+      if (throwOnError && (failure ne null)) throw failure
+    } else if (throwOnError) {
+      throw new java.io.IOException(s"File or directory does not exist: $path")
+    } else if (logIfNotExists) {
+      logInfo(s"File or directory does not exist: $path")
+    }
+  }
+
+  override def logInfo(msg: => String): Unit = super.logInfo(msg)
+
+  override def logWarning(msg: => String): Unit = super.logWarning(msg)
+
+  override def logError(msg: => String): Unit = super.logError(msg)
 }
 
 class ExecutorLocalRDD[T: ClassTag](_sc: SparkContext, blockManagerIds: Seq[BlockManagerId],
@@ -1083,17 +1114,17 @@ private[spark] class CoGroupExecutorLocalPartition(
   override def hashCode(): Int = idx
 }
 
-object ToolsCallbackInit extends Logging {
+object ToolsCallbackInit {
   final val toolsCallback: ToolsCallback = {
     try {
       val c = org.apache.spark.util.Utils.classForName(
         "io.snappydata.ToolsCallbackImpl$")
       val tc = c.getField("MODULE$").get(null).asInstanceOf[ToolsCallback]
-      logInfo("toolsCallback initialized")
+      Utils.logInfo("toolsCallback initialized")
       tc
     } catch {
       case _: ClassNotFoundException =>
-        logWarning("ToolsCallback couldn't be INITIALIZED. " +
+        Utils.logWarning("ToolsCallback couldn't be INITIALIZED. " +
             "DriverURL won't get published to others.")
         null
     }

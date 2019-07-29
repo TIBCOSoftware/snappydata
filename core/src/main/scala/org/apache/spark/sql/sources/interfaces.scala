@@ -264,7 +264,7 @@ trait IndexableRelation {
     */
   def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit
 
   /**
@@ -289,9 +289,12 @@ trait AlterableRelation {
    * @param tableIdent  Table identifier
    * @param isAddColumn True if column is to be added else it is to be dropped
    * @param column      Column to be added or dropped
+   * @param defaultValue Default value in case a value is not provided while inserting
+   * @param referentialAction Referential Action (cascade or restrict or empty)
    */
   def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit
+      isAddColumn: Boolean, column: StructField, defaultValue: Option[String],
+      referentialAction: String): Unit
 }
 
 trait RowLevelSecurityRelation {
