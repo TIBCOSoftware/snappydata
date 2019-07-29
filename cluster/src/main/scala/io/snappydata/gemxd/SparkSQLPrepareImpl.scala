@@ -33,8 +33,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
-import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
-import org.apache.spark.sql.execution.PutIntoValuesColumnTable
+import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
 import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
@@ -95,11 +94,15 @@ class SparkSQLPrepareImpl(val sql: String,
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
-      analyzedPlan match {
-        case PutIntoValuesColumnTable(_, _, _, _) => analyzedPlan.expressions.foreach {
-          exp => exp.map {
-            case QuestionMark(pos) =>
-              SparkSQLPrepareImpl.addParamLiteral(pos, exp.dataType, exp.nullable, paramLiterals)
+      analyzedPlan.foreach {
+        case LocalRelation(output, data) => data.foreach { row =>
+          for (i <- output.indices) {
+            val attr = output(i)
+            row.get(i, attr.dataType) match {
+              case QuestionMark(pos) => SparkSQLPrepareImpl.addParamLiteral(
+                pos, attr.dataType, attr.nullable, paramLiterals)
+              case _ =>
+            }
           }
         }
         case _ =>

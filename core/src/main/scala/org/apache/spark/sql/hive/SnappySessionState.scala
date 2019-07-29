@@ -29,7 +29,7 @@ import io.snappydata.Property.HashAggregateSize
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateSubqueryAliases, EliminateUnions, NoSuchTableException, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateUnions, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -45,6 +45,7 @@ import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchang
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
 import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
+import org.apache.spark.sql.row.JDBCMutableRelation
 import org.apache.spark.sql.sources._
 import org.apache.spark.sql.store.StoreUtils
 import org.apache.spark.sql.streaming.{LogicalDStreamPlan, StreamingQueryManager, WindowLogicalPlan}
@@ -114,7 +115,6 @@ class SnappySessionState(val snappySession: SnappySession)
         new HiveConditionalRule(_.catalog.OrcConversions, this) ::
         AnalyzeCreateTable(snappySession) ::
         new PreprocessTable(this) ::
-        ResolveRelationsExtended ::
         ResolveAliasInGroupBy ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
@@ -318,29 +318,6 @@ class SnappySessionState(val snappySession: SnappySession)
     new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
 
   /**
-   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
-   */
-  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
-    private def getTable(u: UnresolvedRelation): LogicalPlan = {
-      try {
-        catalog.lookupRelation(u.tableIdentifier, u.alias)
-      } catch {
-        case _: TableNotFoundException | _: NoSuchTableException =>
-          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
-      }
-    }
-
-    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-      case i@PutIntoTable(u: UnresolvedRelation, _) =>
-        i.copy(table = EliminateSubqueryAliases(getTable(u)))
-      case d@DeleteFromTable(u: UnresolvedRelation, _) =>
-        d.copy(table = EliminateSubqueryAliases(getTable(u)))
-      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
-        d.copy(query = EliminateSubqueryAliases(getTable(u)))
-    }
-  }
-
-  /**
    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
    */
   object OrderJoinConditions extends Rule[LogicalPlan] with JoinQueryPlanning {
@@ -428,6 +405,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
+    // noinspection ScalaUnnecessaryParentheses
     // Y combinator
     val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
       (f: (Expression => Boolean)) =>
@@ -440,8 +418,9 @@ class SnappySessionState(val snappySession: SnappySession)
             })
 
 
-    def rlsConditionChecker(f: (Expression => Boolean) => (Expression => Boolean)):
-    Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
+    // noinspection ScalaUnnecessaryParentheses
+    def rlsConditionChecker(f: (Expression => Boolean) =>
+        (Expression => Boolean)): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       val memStore = GemFireStore.getBootingInstance
@@ -595,10 +574,54 @@ class SnappySessionState(val snappySession: SnappySession)
       }
     }
 
-    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-      case c: DMLExternalTable if !c.query.resolved =>
-        c.copy(query = analyzeQuery(c.query))
+    /**
+     * For "partial" inserts/puts like "insert into table(col2, col1) ..." add a projection
+     * to re-arrange the columns as specified and add nulls for missing columns (if nullable).
+     * For row tables which may need default values return a DMLExternalTable.
+     */
+    private def addTableProjection(plan: LogicalPlan, child: LogicalPlan,
+        op: String, childStr: String): (LogicalPlan, LogicalPlan) = plan match {
+      case UnresolvedTableValuedFunction(name, args)
+        if args.nonEmpty && args.forall(_.isInstanceOf[Attribute]) =>
+        val tableId = session.tableIdentifier(name)
+        val columnNames = args.map(_.asInstanceOf[Attribute].name)
+        session.sessionCatalog.resolveRelation(tableId) match {
+          case lr: LogicalRelation if lr.relation.isInstanceOf[JDBCMutableRelation] =>
+            val cols = columnNames.map(JdbcExtendedUtils.quotedName(_)).mkString(", ")
+            val cmd = s"$op ${JdbcExtendedUtils.quotedName(name)}($cols) $childStr"
+            plan -> DMLExternalTable(tableId, child, cmd)
+          case table =>
+            // search for columnNames in table output
+            val output = table.output
+            val childOutput = child.output
+            val resolver = session.sessionState.analyzer.resolver
+            val projection = new Array[NamedExpression](output.length)
+            for (i <- columnNames.indices) {
+              val col = columnNames(i)
+              val index = output.indexWhere(a => resolver(a.name, col))
+              if (index == -1) {
+                throw new AnalysisException(s"Could not resolve $col for $op " +
+                    s"in table $name among (${output.map(_.name).mkString(", ")})")
+              }
+              projection(index) = Alias(childOutput(i), output(index).name)()
+            }
+            for (i <- projection.indices) {
+              if (projection(i) eq null) {
+                // add NULL of target type
+                val attr = output(i)
+                if (!attr.nullable) {
+                  throw new AnalysisException(
+                    s"For $op in $name, ${attr.name} not specified but is NOT NULL")
+                }
+                projection(i) = Alias(Literal(null, attr.dataType), attr.name)()
+              }
+            }
+            UnresolvedRelation(tableId) -> Project(projection.toSeq, child)
+        }
+      case _ => plan -> child
+    }
 
+    def apply(plan: LogicalPlan): LogicalPlan = plan transform {
       case u@Update(table, child, keyColumns, updateCols, updateExprs)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
@@ -638,8 +661,8 @@ class SnappySessionState(val snappySession: SnappySession)
                 // allowing assignment of null value
                 case _: NullType => true
                 // allowing assignment to a string type column for all datatypes
-                case dt if attr.dataType.isInstanceOf[StringType] => true
-                case dt => false
+                case _ if attr.dataType.isInstanceOf[StringType] => true
+                case _ => false
               }
 
               // avoid unnecessary copy+cast when inserting DECIMAL types into column table
@@ -676,14 +699,28 @@ class SnappySessionState(val snappySession: SnappySession)
         }
       case d@DeleteFromTable(table, child) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformDeletePlan(session, d)
-      case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
+      case i: Insert if !i.table.resolved => addTableProjection(i.table, i.child,
+        s"INSERT ${if (i.overwrite.enabled) "OVERWRITE" else "INTO"}", i.childStr) match {
+        case (_, d: DMLExternalTable) =>
+          // no support for OVERWRITE or PARTITION for this case
+          if (i.overwrite.enabled) {
+            throw new AnalysisException(s"INSERT OVERWRITE not supported with " +
+                s"table column specification on row table ${d.tableName.unquotedString}")
+          }
+          if (i.partition.nonEmpty) {
+            throw new AnalysisException(s"INSERT with PARTITION not supported with " +
+                s"table column specification on row table ${d.tableName.unquotedString}")
+          }
+          d
+        case (t, c) => if ((t eq i.table) && (c eq i.child)) i else i.copy(table = t, child = c)
+      }
+      case p@PutIntoTable(table, child, childStr) if !table.resolved => addTableProjection(
+        table, child, "PUT INTO", childStr) match {
+        case (_, d: DMLExternalTable) => d
+        case (t, c) => if ((t eq table) && (c eq child)) p else p.copy(table = t, child = c)
+      }
+      case p@PutIntoTable(table, child, _) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformPutPlan(session, p)
-    }
-
-    private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
-      val qe = executePlan(query)
-      qe.assertAnalyzed()
-      qe.analyzed
     }
   }
 
@@ -903,11 +940,11 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
     override def apply(plan: LogicalPlan): LogicalPlan = {
       plan resolveExpressions {
         case e if !e.childrenResolved => e
-        case p @ BinaryComparison(left @ StringType(), right @ QuestionMark(pos))
+        case p@BinaryComparison(left@StringType(), right@QuestionMark(_))
           if right.dataType == NullType =>
           p.makeCopy(Array(left,
             ParamLiteral(right.value, StringType, right.pos, execId = -1, tokenized = true)))
-        case p @ BinaryComparison(left @ QuestionMark(pos), right @ StringType())
+        case p@BinaryComparison(left@QuestionMark(_), right@StringType())
           if left.dataType == NullType =>
           p.makeCopy(Array(
             ParamLiteral(left.value, StringType, left.pos, execId = -1, tokenized = true),

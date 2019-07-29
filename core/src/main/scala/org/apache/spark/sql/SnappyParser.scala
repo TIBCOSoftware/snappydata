@@ -25,7 +25,6 @@ import scala.util.{Failure, Success, Try}
 
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils
 import com.google.common.primitives.Ints
-import io.snappydata.sql.catalog.CatalogObjectType
 import io.snappydata.{Property, QueryHint}
 import org.parboiled2._
 import shapeless.{::, HNil}
@@ -38,7 +37,7 @@ import org.apache.spark.sql.catalyst.plans._
 import org.apache.spark.sql.catalyst.plans.logical.{LogicalPlan, _}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.execution.command._
-import org.apache.spark.sql.execution.{PutIntoValuesColumnTable, ShowSnappyTablesCommand, ShowViewsCommand}
+import org.apache.spark.sql.execution.{ShowSnappyTablesCommand, ShowViewsCommand}
 import org.apache.spark.sql.internal.{LikeEscapeSimplification, LogicalPlanWithHints}
 import org.apache.spark.sql.sources.{Delete, DeleteFromTable, Insert, PutIntoTable, Update}
 import org.apache.spark.sql.streaming.WindowLogicalPlan
@@ -1091,23 +1090,6 @@ class SnappyParser(session: SnappySession)
     }
   }
 
-  // TODO: remove once planner allows for null padding for different number
-  // of columns being inserted/put either with inlineTable or subselect
-  protected final def subSelectQuery: Rule1[LogicalPlan] = rule {
-    select2.named("select") ~ (
-      UNION ~ (
-        ALL ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Union(q1, q2)) |
-          DISTINCT.? ~ select2.named("select") ~>
-            ((q1: LogicalPlan, q2: LogicalPlan) => Distinct(Union(q1, q2)))
-        ) |
-        INTERSECT ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Intersect(q1, q2)) |
-        (EXCEPT | MINUS) ~ select2.named("select") ~>
-          ((q1: LogicalPlan, q2: LogicalPlan) => Except(q1, q2))
-      ).*
-  }
-
   protected final def lateralView: Rule1[LogicalPlan => LogicalPlan] = rule {
     LATERAL ~ VIEW ~ (OUTER ~ push(true)).? ~ functionIdentifier ~ expressionList ~
         identifier ~ (AS.? ~ (identifier + commaSep)).? ~>
@@ -1125,13 +1107,13 @@ class SnappyParser(session: SnappySession)
 
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
-    TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
-        s: LogicalPlan) => new Insert(r, Map.empty[String,
-        Option[String]], s, OverwriteOptions(o), ifNotExists = false))
+    TABLE.? ~ relationFactor ~ capture(query) ~> ((o: Boolean, r: LogicalPlan,
+        q: LogicalPlan, queryStr: String) => new Insert(r, Map.empty[String,
+        Option[String]], q, OverwriteOptions(o), ifNotExists = false)(queryStr))
   }
 
   protected final def put: Rule1[LogicalPlan] = rule {
-    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ subSelectQuery ~> PutIntoTable
+    PUT ~ INTO ~ TABLE.? ~ relationFactor ~ capture(query) ~> PutIntoTable
   }
 
   protected final def update: Rule1[LogicalPlan] = rule {
@@ -1175,30 +1157,6 @@ class SnappyParser(session: SnappySession)
     capture(INSERT ~ INTO) ~ tableIdentifier ~
         capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
       UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
-  }
-
-  protected def putValuesOperation: Rule1[LogicalPlan] = rule {
-    capture(PUT ~ INTO) ~ tableIdentifier ~
-        capture(('(' ~ ws ~ (identifier * commaSep) ~ ')' ~ ws ).? ~
-        VALUES ~ ('(' ~ ws ~ (expression * commaSep) ~ ')').* ~ ws) ~>
-        ((c: String, r: TableIdentifier, identifiers: Any, valueExpr: Any, s: String)
-        => {
-          val colNames = identifiers.asInstanceOf[Option[Seq[String]]]
-          val valueExpr1 = valueExpr.asInstanceOf[Seq[Seq[Expression]]]
-          val catalog = session.sessionState.catalog
-          val table = catalog.getTableMetadata(r)
-          val tableName = table.identifier.identifier
-          val db = table.database
-          val tableType = CatalogObjectType.getTableType(session.externalCatalog.getTable(
-            db, tableName)).toString
-          if (tableType == CatalogObjectType.Column.toString) {
-            PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
-          }
-          else {
-            DMLExternalTable(r,
-              UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
-          }
-        })
   }
 
   // It can be the following patterns:
@@ -1314,7 +1272,7 @@ class SnappyParser(session: SnappySession)
 
   override protected def start: Rule1[LogicalPlan] = rule {
     (ENABLE_TOKENIZE ~ (query.named("select") | insert | put | update | delete | ctes)) |
-        (DISABLE_TOKENIZE ~ (dmlOperation | putValuesOperation | ddl | show | set | reset | cache |
+        (DISABLE_TOKENIZE ~ (dmlOperation | ddl | show | set | reset | cache |
             uncache | deployPackages | explain | analyze | delegateToSpark))
   }
 

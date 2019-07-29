@@ -30,6 +30,7 @@ import org.json4s.JsonAST.JField
 
 import org.apache.spark.memory.{MemoryMode, TaskMemoryManager}
 import org.apache.spark.serializer.StructTypeSerializer
+import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.CatalystTypeConverters._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
@@ -250,7 +251,10 @@ case class ParamLiteral(var value: Any, var dataType: DataType,
 
   override def nullable: Boolean = dataType eq NullType
 
-  override def eval(input: InternalRow): Any = value
+  override def eval(input: InternalRow): Any = value match {
+    case _: Row => this
+    case _ => value
+  }
 
   override def nodeName: String = "ParamLiteral"
 

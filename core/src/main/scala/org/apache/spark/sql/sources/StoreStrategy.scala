@@ -45,7 +45,7 @@ object StoreStrategy extends Strategy {
     case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
       ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
 
-    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
+    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query, _) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
 
     case PutIntoColumnTable(LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
@@ -88,7 +88,7 @@ case class ExternalTableDMLCmd(
   override lazy val output: Seq[Attribute] = childOutput
 }
 
-case class PutIntoTable(table: LogicalPlan, child: LogicalPlan)
+case class PutIntoTable(table: LogicalPlan, child: LogicalPlan, childStr: String = "")
     extends LogicalPlan with TableMutationPlan {
 
   override def children: Seq[LogicalPlan] = table :: child :: Nil
@@ -113,18 +113,20 @@ final class Insert(
     partition: Map[String, Option[String]],
     child: LogicalPlan,
     overwrite: OverwriteOptions,
-    ifNotExists: Boolean)
+    ifNotExists: Boolean)(val childStr: String = "")
     extends InsertIntoTable(table, partition, child, overwrite, ifNotExists) {
 
   override def output: Seq[Attribute] = AttributeReference(
     "count", LongType)() :: Nil
+
+  override protected def otherCopyArgs: Seq[AnyRef] = childStr :: Nil
 
   override def copy(table: LogicalPlan = table,
       partition: Map[String, Option[String]] = partition,
       child: LogicalPlan = child,
       overwrite: OverwriteOptions = overwrite,
       ifNotExists: Boolean = ifNotExists): Insert = {
-    new Insert(table, partition, child, overwrite, ifNotExists)
+    new Insert(table, partition, child, overwrite, ifNotExists)(childStr)
   }
 }
 
