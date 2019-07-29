@@ -152,16 +152,16 @@ class SplitClusterDUnitTest(s: String)
   }
 
   def testSNAP3010(): Unit = {
-    logInfo("Killing server process. Should leave server block-manager directories orphan.")
-    val serverPIDFile = Paths.get(snappyProductDir, "work/localhost-server-1/snappyserver.pid")
-    val serverPID = new String(Files.readAllBytes(serverPIDFile)).toInt
-    logInfo(s"kill -9 $serverPID".!!)
+    logInfo("Killing first server process. Should leave server block-manager directories orphan.")
+    val server1PIDFile = Paths.get(snappyProductDir, "work/localhost-server-1/snappyserver.pid")
+    val server1PID = new String(Files.readAllBytes(server1PIDFile)).toInt
+    logInfo(s"kill -9 $server1PID".!!)
 
-    val serverTempFilesList = Paths.get(snappyProductDir, "work/localhost-server-1/.tempfiles.list")
-    val serverBlockManagerDirs = Files.readAllLines(serverTempFilesList)
-    assert(serverBlockManagerDirs.size() == 3)
+    val server1TempFiles = Paths.get(snappyProductDir, "work/localhost-server-1/.tempfiles.list")
+    val server1BlockManagerDirs = Files.readAllLines(server1TempFiles)
+    assert(server1BlockManagerDirs.size() == 3)
 
-    serverBlockManagerDirs.asScala.zip(localDirs).foreach {
+    server1BlockManagerDirs.asScala.zip(localDirs).foreach {
       case (bmDir: String, localDir: String) =>
         Assert.assertEquals(Paths.get(bmDir).getParent, Paths.get(localDir))
         Assert.assertTrue(Files.exists(Paths.get(bmDir)))
@@ -172,8 +172,8 @@ class SplitClusterDUnitTest(s: String)
     val leadPID = new String(Files.readAllBytes(leadPIDFile)).toInt
     logInfo(s"kill -9 $leadPID".!!)
 
-    val leadTempFilesList = Paths.get(snappyProductDir, "work/localhost-lead-1/.tempfiles.list")
-    val leadBlockManagerDirs = Files.readAllLines(leadTempFilesList)
+    val leadTempFiles = Paths.get(snappyProductDir, "work/localhost-lead-1/.tempfiles.list")
+    val leadBlockManagerDirs = Files.readAllLines(leadTempFiles)
 
     Assert.assertEquals(3, leadBlockManagerDirs.size())
 
@@ -182,6 +182,26 @@ class SplitClusterDUnitTest(s: String)
         Assert.assertEquals(Paths.get(bmDir).getParent, Paths.get(localDir))
         Assert.assertTrue(Files.exists(Paths.get(bmDir)))
     }
+
+    logInfo("Killing second server process. Should leave server block-manager directories orphan.")
+    val server2PIDFile = Paths.get(snappyProductDir, "work/localhost-server-2/snappyserver.pid")
+    val server2PID = new String(Files.readAllBytes(server2PIDFile)).toInt
+    logInfo(s"kill -9 $server2PID".!!)
+
+    val server2TempFiles = Paths.get(snappyProductDir, "work/localhost-server-2/.tempfiles.list")
+    val server2BlockManagerDirs = Files.readAllLines(server2TempFiles)
+    assert(server2BlockManagerDirs.size() == 3)
+
+    server2BlockManagerDirs.asScala.zip(localDirs).foreach {
+      case (bmDir: String, localDir: String) =>
+        Assert.assertEquals(Paths.get(bmDir).getParent, Paths.get(localDir))
+        Assert.assertTrue(Files.exists(Paths.get(bmDir)))
+    }
+
+    logInfo("Killing locator process.")
+    val locatorPIDFile = Paths.get(snappyProductDir, "work/localhost-locator-1/snappylocator.pid")
+    val locatorPID = new String(Files.readAllBytes(locatorPIDFile)).toInt
+    logInfo(s"kill -9 $locatorPID".!!)
 
     logInfo("Stopping snappy cluster.")
     logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
@@ -206,11 +226,15 @@ class SplitClusterDUnitTest(s: String)
         " Orphan directories from the previous run should have been deleted.")
     logInfo(s"$snappyProductDir/sbin/snappy-start-all.sh".!!)
 
-
     leadBlockManagerDirs.forEach(new Consumer[String] {
       override def accept(t: String): Unit = assert(!Files.exists(Paths.get(t)))
     })
-    serverBlockManagerDirs.forEach(new Consumer[String] {
+    server1BlockManagerDirs.forEach(new Consumer[String] {
+      override def accept(t: String): Unit = {
+        assert(!Files.exists(Paths.get(t)))
+      }
+    })
+    server2BlockManagerDirs.forEach(new Consumer[String] {
       override def accept(t: String): Unit = {
         assert(!Files.exists(Paths.get(t)))
       }

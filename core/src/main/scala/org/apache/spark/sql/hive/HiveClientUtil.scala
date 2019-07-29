@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.hive
 
+import java.util.Properties
+
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -83,7 +85,7 @@ object HiveClientUtil extends Logging {
     metadataConf.setVar(ConfVars.METASTORECONNECTURLKEY, secureDbURL)
     metadataConf.setVar(ConfVars.METASTORE_CONNECTION_DRIVER, dbDriver)
 
-    initCommonHiveMetaStoreProperties(metadataConf)
+    val props = initCommonHiveMetaStoreProperties(metadataConf)
 
     // set warehouse directory as per Spark's default
     val warehouseDir = sparkConf.get(WAREHOUSE_PATH)
@@ -106,6 +108,11 @@ object HiveClientUtil extends Logging {
       SnappyHiveExternalCatalog.getInstance(sparkConf, metadataConf)
     } finally {
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
+      // clear the system properties set for hive
+      val propertyNames = props.stringPropertyNames.iterator()
+      while (propertyNames.hasNext) {
+        System.clearProperty(propertyNames.next())
+      }
     }
   }
 
@@ -116,7 +123,7 @@ object HiveClientUtil extends Logging {
    * <p>
    * Should be called after all other properties have been filled in.
    */
-  private def initCommonHiveMetaStoreProperties(metadataConf: SnappyHiveConf): Unit = {
+  private def initCommonHiveMetaStoreProperties(metadataConf: SnappyHiveConf): Properties = {
     metadataConf.set("datanucleus.mapping.Schema", Misc.SNAPPY_HIVE_METASTORE)
     // Tomcat pool has been shown to work best but does not work in split mode
     // because upstream spark does not ship with it (and the one in snappydata-core
@@ -153,6 +160,8 @@ object HiveClientUtil extends Logging {
     metadataConf.set("datanucleus.connectionPool.minIdle", "0")
     // throw pool exhausted exception after 30s
     metadataConf.set("datanucleus.connectionPool.maxWait", "30000")
+
+    props
   }
 
   private def setDefaultPath(metadataConf: SnappyHiveConf, v: ConfVars, path: String): String = {

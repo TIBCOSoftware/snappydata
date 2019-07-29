@@ -19,8 +19,6 @@ package org.apache.spark.sql.hive
 
 import java.lang.reflect.InvocationTargetException
 import javax.annotation.concurrent.GuardedBy
-import javax.naming.OperationNotSupportedException
-import javax.ws.rs.NotAllowedException
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -36,13 +34,12 @@ import com.pivotal.gemfirexd.internal.engine.ddl.catalog.GfxdSystemProcedures
 import com.pivotal.gemfirexd.internal.engine.ddl.resolver.GfxdPartitionByExpressionResolver
 import com.pivotal.gemfirexd.internal.engine.diag.SysVTIs
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException
 import org.apache.hadoop.hive.ql.metadata.Hive
 import org.apache.log4j.{Level, LogManager}
 
@@ -218,7 +215,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (schema == SYS_SCHEMA) {
       throw new AnalysisException(s"$schema is a system preserved database/schema")
     }
-    withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    try {
+      withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
   }
 
   // Special in-built SYS schema does not have hive catalog entry so the methods below
@@ -229,7 +231,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       if (schema == SYS_SCHEMA) systemSchemaDefinition
       else withHiveExceptionHandling(super.getDatabase(schema).copy(name = schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
     }
   }
 
@@ -251,7 +254,17 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       withHiveExceptionHandling(super.setCurrentDatabase(schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    try {
+      withHiveExceptionHandling(super.alterDatabase(schemaDefinition))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schemaDefinition.name)
     }
   }
 
@@ -384,21 +397,19 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       // no exception raised while getting catalogTable
       if (forceDrop) {
         // parameter to force drop entry from metastore is set
-        withHiveExceptionHandling(super.dropTable(schema, table, true, true))
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
       } else {
         // AnalysisException not thrown while getting table. suspecting that wrong table
         // name is passed. throwing exception as a precaution.
-        throw StandardException.newException(
-          SQLState.LANG_UNEXPECTED_USER_EXCEPTION, null, "Table retrieved successfully. To " +
-              "continue to drop this table change FORCE_DROP argument in procedure to true");
+        throw new AnalysisException("Table retrieved successfully. To " +
+            "continue to drop this table change FORCE_DROP argument in procedure to true")
       }
     } catch {
-      case a: AnalysisException if (a.message.contains("might be inconsistent in hive catalog")) =>
+      case a: AnalysisException if a.message.contains("might be inconsistent in hive catalog") =>
         // exception is expected as table might be inconsistent. continuing to drop
-        withHiveExceptionHandling(super.dropTable(schema, table, true, true))
-      case e => throw StandardException.newException(
-        SQLState.LANG_UNEXPECTED_USER_EXCEPTION, null,
-        "Exception thrown while verifying if the table is retrievable. message:" + e.getMessage);
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
     }
   }
 

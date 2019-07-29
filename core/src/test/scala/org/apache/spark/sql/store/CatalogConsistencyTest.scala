@@ -19,7 +19,6 @@ package org.apache.spark.sql.store
 
 import java.sql.{Connection, DriverManager, SQLException}
 
-import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
