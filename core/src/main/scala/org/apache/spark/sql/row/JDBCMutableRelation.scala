@@ -333,15 +333,12 @@ abstract case class JDBCMutableRelation(
 
   protected def constructSQL(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
-      options: Map[String, String]): String = {
-
-    ""
-  }
+      indexColumns: Seq[(String, Option[SortDirection])],
+      options: Map[String, String]): String = ""
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
     val conn = connFactory()
     try {
@@ -398,7 +395,8 @@ abstract case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit = {
+      isAddColumn: Boolean, column: StructField, defaultValue: Option[String],
+      referentialAction: String): Unit = {
     val conn = connFactory()
     try {
       val columnName = JdbcExtendedUtils.toUpperCase(column.name)
@@ -418,7 +416,7 @@ abstract case class JDBCMutableRelation(
            | add column "$columnName"
            |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
       } else {
-        s"""alter table ${quotedName(table)} drop column "$columnName""""
+        s"""alter table ${quotedName(table)} drop column "$columnName" $referentialAction"""
       }
       if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)

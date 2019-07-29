@@ -370,6 +370,7 @@ trait SplitClusterDUnitTestObject extends Logging {
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
       logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
+
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
@@ -423,7 +424,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
         if ("row".equalsIgnoreCase(tableType)) {
-          snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
+          snc.createIndex("tableName" + "_index", tableName, Seq("COL1" -> None),
             Map.empty[String, String])
         }
       case _ =>
