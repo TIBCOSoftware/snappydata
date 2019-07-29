@@ -219,7 +219,7 @@ class RowFormatRelation(
 
   override protected def constructSQL(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): String = {
 
     val columns = indexColumns.tail.foldLeft[String](

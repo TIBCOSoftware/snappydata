@@ -37,6 +37,8 @@ trait ExternalStore extends Serializable with Logging {
 
   def tableName: String
 
+  def withTable(tableName: String, numPartitions: Int): ExternalStore
+
   def storeColumnBatch(tableName: String, batch: ColumnBatch,
       partitionId: Int, batchId: Long, maxDeltaRows: Int,
       compressionCodecId: Int, conn: Option[Connection]): Unit

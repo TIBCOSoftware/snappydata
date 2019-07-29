@@ -17,10 +17,7 @@
 
 package org.apache.spark.sql.execution
 
-import java.sql.SQLException
-
 import com.gemstone.gemfire.SystemFailure
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.codehaus.commons.compiler.CompileException
 
 import org.apache.spark.rdd.RDD
@@ -30,7 +27,7 @@ import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
 import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.CodeGenerationException
-import org.apache.spark.sql.{CachedDataFrame, SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql.{CachedDataFrame, SnappySession}
 
 /**
  * Catch exceptions in code generation of SnappyData plans and fallback
