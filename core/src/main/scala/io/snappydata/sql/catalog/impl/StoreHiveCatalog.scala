@@ -51,7 +51,7 @@ import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
 import org.apache.spark.sql.{AnalysisException, SnappyContext}
-import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 class StoreHiveCatalog extends ExternalCatalog with Logging {
 
@@ -419,7 +419,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       var done = false
       while (!done) {
         try {
-          val conf = new SparkConf
+          val conf = SparkEnv.get match {
+            case null => new SparkConf
+            case env => env.conf.clone()
+          }
           for ((k, v) <- Misc.getMemStoreBooting.getBootProperties.asScala) {
             val key = k.toString
             if ((v ne null) && (key.startsWith(Constant.SPARK_PREFIX) ||
