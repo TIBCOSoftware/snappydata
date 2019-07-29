@@ -36,6 +36,7 @@ import org.apache.spark.executor.SnappyCoarseGrainedExecutorBackend
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
 import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.util.LocalDirectoryCleanupUtil
 import org.apache.spark.{Logging, SparkCallbacks, SparkEnv}
 
 /**
@@ -105,6 +106,7 @@ object ExecutorInitiator extends Logging {
     }
 
     override def run(): Unit = {
+      LocalDirectoryCleanupUtil.clean()
       stopped = false
       var prevDriverURL = ""
       var env: SparkEnv = null
@@ -184,6 +186,7 @@ object ExecutorInitiator extends Logging {
                     env = SparkCallbacks.createExecutorEnv(driverConf,
                       memberId, executorHost, port, cores, ioEncryptionKey, isLocal = false)
 
+                    LocalDirectoryCleanupUtil.save()
                     // This is not required with snappy
                     val userClassPath = new mutable.ListBuffer[URL]()
 
