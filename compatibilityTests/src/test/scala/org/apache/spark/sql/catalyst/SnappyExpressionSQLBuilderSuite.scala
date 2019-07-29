@@ -20,7 +20,21 @@ import org.apache.spark.sql.hive.TestHiveSnappySession
 import org.apache.spark.sql.hive.test.TestHive
 import org.apache.spark.sql.test.SnappySparkTestUtil
 
+<<<<<<< HEAD:compatibilityTests/src/test/scala/org/apache/spark/sql/catalyst/SnappyExpressionSQLBuilderSuite.scala
 class SnappyExpressionSQLBuilderSuite extends ExpressionSQLBuilderSuite with SnappySparkTestUtil {
 
   assume(TestHive.sparkSession.isInstanceOf[TestHiveSnappySession])
+||||||| merged common ancestors:core/src/main/scala/org/apache/spark/sql/execution/InvalidateCachedPlans.scala
+trait InvalidateCachedPlans extends RunnableCommand{
+ abstract override def run(sparkSession: SparkSession): Seq[Row] = {
+   sparkSession.asInstanceOf[SnappySession].clearPlanCache()
+   super.run(sparkSession)
+ }
+=======
+class SnappyExpressionSQLBuilderSuite
+/* extends ExpressionSQLBuilderSuite with SnappySparkTestUtil {
+
+  assume(TestHive.sparkSession.isInstanceOf[TestHiveSnappySession])
+>>>>>>> master:compatibilityTests/src/test/scala/org/apache/spark/sql/catalyst/SnappyExpressionSQLBuilderSuite.scala
 }
+*/

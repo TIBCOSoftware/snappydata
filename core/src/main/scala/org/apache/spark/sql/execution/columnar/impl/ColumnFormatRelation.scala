@@ -18,13 +18,13 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import scala.util.control.NonFatal
+import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
+import scala.util.control.NonFatal
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
@@ -208,8 +208,10 @@ abstract class BaseColumnFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
-      this, externalColumnTableName)
+    withTableWriteLock() { () =>
+      new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
+        this, externalColumnTableName)
+    }
   }
 
   override def getKeyColumns: Seq[String] = {
@@ -234,9 +236,11 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    withTableWriteLock() {() =>
+      ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
+        updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    }
   }
 
   /**
@@ -245,9 +249,11 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      this, keyColumns, connProperties, onExecutor = false)
+    withTableWriteLock() { () =>
+      ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
+        this, keyColumns, connProperties, onExecutor = false)
+    }
   }
 
   /**
@@ -265,22 +271,59 @@ abstract class BaseColumnFormatRelation(
     val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert directly into column store for large number of rows
-    if (numRows > (batchSize * numBuckets)) {
-      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        resolvedName, putInto = false)
-    } else {
-      // insert into the row buffer
-      val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP)
-      try {
-        val stmt = connection.prepareStatement(rowInsertStr)
-        val result = CodeGeneration.executeUpdate(table, stmt,
-          rows, numRows > 1, batchSize, schema.fields, dialect)
-        stmt.close()
-        result
-      } finally {
-        connection.commit()
-        connection.close()
+
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+      SnappySession.PUTINTO_LOCK) match {
+      case None => snc.grabLock(table, schemaName, connProperties)
+      case Some(a) => null // Do nothing as putInto will release lock
+    }
+    if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
+    try {
+      if (numRows > (batchSize * numBuckets)) {
+        ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+          resolvedName, putInto = false)
+      } else {
+        // insert into the row buffer
+        val connection = ConnectionPool.getPoolConnection(table, dialect,
+          connProperties.poolProps, connProps, connProperties.hikariCP)
+        try {
+          val stmt = connection.prepareStatement(rowInsertStr)
+
+          val result = CodeGeneration.executeUpdate(table, stmt,
+            rows, numRows > 1, batchSize, schema.fields, dialect)
+          stmt.close()
+          result
+        } finally {
+          connection.commit()
+          connection.close()
+        }
+      }
+    }
+    finally {
+      logDebug(s"Added the ${lock} object to the context. in InsertRows")
+      if (lock != null) {
+        snc.releaseLock(lock)
+      }
+    }
+  }
+
+  def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+      SnappySession.PUTINTO_LOCK) match {
+      case None => snc.grabLock(table, schemaName, connProperties)
+      case Some(_) => null // Do nothing as putInto will release lock
+    }
+    if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
+    try {
+      f()
+    }
+    finally {
+      logDebug(s"Added the ${lock} object to the context.")
+      if (lock != null) {
+        snc.addContextObject(
+          SnappySession.BULKWRITE_LOCK, lock)
       }
     }
   }

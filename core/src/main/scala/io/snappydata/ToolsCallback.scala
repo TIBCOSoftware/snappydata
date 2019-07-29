@@ -48,13 +48,19 @@ trait ToolsCallback {
 
   def setSessionDependencies(sparkContext: SparkContext,
       appName: String,
-      classLoader: ClassLoader): Unit = {
+      classLoader: ClassLoader, addAllJars: Boolean): Unit = {
   }
 
   def addURIs(alias: String, jars: Array[String],
       deploySql: String, isPackage: Boolean = true): Unit
 
+  def removeURIs(uris: Array[String], isPackage: Boolean = true): Unit
+
   def addURIsToExecutorClassLoader(jars: Array[String]): Unit
+
+  def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit
+
+  def removeFunctionJars(args: Array[String]): Unit
 
   def getAllGlobalCmnds: Array[String]
 

@@ -24,7 +24,6 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
-
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
@@ -33,9 +32,8 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
-
 import org.apache.spark.SparkContext
-import org.apache.spark.deploy.SparkSubmitUtils
+import org.apache.spark.deploy.{SparkSubmit, SparkSubmitUtils}
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -47,8 +45,15 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.InMemoryTableScanExec
 import org.apache.spark.sql.execution.command.{DescribeTableCommand, DropTableCommand, RunnableCommand, SetCommand, ShowTablesCommand}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
+<<<<<<< HEAD
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, StaticSQLConf}
+||||||| merged common ancestors
+import org.apache.spark.sql.internal.BypassRowLevelSecurity
+=======
+import org.apache.spark.sql.functions._
+import org.apache.spark.sql.internal.{BypassRowLevelSecurity, ContextJarUtils, StaticSQLConf}
+>>>>>>> master
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.types._
 import org.apache.spark.storage.StorageLevel
@@ -107,7 +112,47 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
+<<<<<<< HEAD
     catalog.createSchema(schema, ifNotExists, authId)
+||||||| merged common ancestors
+
+    // create schema in catalog first
+    catalog.createSchema(schema, ifNotExists)
+
+    // next in store if catalog was successful
+    val authClause = authId match {
+      case None => ""
+      case Some((id, false)) => s""" AUTHORIZATION "$id""""
+      case Some((id, true)) => s""" AUTHORIZATION ldapGroup: "$id""""
+    }
+    val conn = session.defaultPooledConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""CREATE SCHEMA "${Utils.toUpperCase(schema)}"$authClause""")
+      stmt.close()
+    } catch {
+      case se: SQLException if ifNotExists && se.getSQLState == "X0Y68" => // ignore
+      case err: Error if SystemFailure.isJVMFailureError(err) =>
+        SystemFailure.initiateFailure(err)
+        // If this ever returns, rethrow the error. We're poisoned
+        // now, so don't let this thread continue.
+        throw err
+      case t: Throwable =>
+        // drop from catalog
+        catalog.dropDatabase(schema, ignoreIfNotExists = true, cascade = false)
+        // Whenever you catch Error or Throwable, you must also
+        // check for fatal JVM error (see above).  However, there is
+        // _still_ a possibility that you are dealing with a cascading
+        // error condition, so you also need to check to see if the JVM
+        // is still usable:
+        SystemFailure.checkFailure()
+        throw t
+    } finally {
+      conn.close()
+    }
+=======
+    catalog.createSchema(schema, ifNotExists, authId, createInExternalHive = true)
+>>>>>>> master
     Nil
   }
 }
@@ -119,8 +164,24 @@ case class DropSchemaOrDbCommand(schemaName: String, ifExists: Boolean, cascade:
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
     // drop from catalog first to cascade drop all objects if required
+<<<<<<< HEAD
     if (isDb) catalog.dropDatabase(schema, ifExists, cascade) // drop from hive too
     else catalog.dropSchema(schema, ifExists, cascade)
+||||||| merged common ancestors
+    catalog.dropDatabase(schema, ifExists, cascade)
+    // drop the schema from store (no cascade required since catalog drop will take care)
+    val checkIfExists = if (ifExists) " IF EXISTS" else ""
+    val conn = session.defaultPooledConnection(schema)
+    try {
+      val stmt = conn.createStatement()
+      stmt.executeUpdate(s"""DROP SCHEMA$checkIfExists "${Utils.toUpperCase(schema)}" RESTRICT""")
+      stmt.close()
+    } finally {
+      conn.close()
+    }
+=======
+    catalog.dropDatabase(schema, ifExists, cascade)
+>>>>>>> master
     Nil
   }
 }
@@ -158,8 +219,16 @@ case class AlterTableAddDropColumnCommand(tableIdent: TableIdentifier, isAdd: Bo
     column: StructField, defaultValue: Option[String]) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
+<<<<<<< HEAD
     val snappySession = session.asInstanceOf[SnappySession]
     snappySession.alterTable(tableIdent, isAdd, column, defaultValue)
+||||||| merged common ancestors
+    val snc = session.asInstanceOf[SnappySession]
+    snc.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
+=======
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
+>>>>>>> master
     Nil
   }
 }
@@ -174,12 +243,48 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
   }
 }
 
+<<<<<<< HEAD
+case class AlterTableMiscCommand(tableIdent: TableIdentifier, sql: String)
+    extends RunnableCommand {
+||||||| merged common ancestors
+case class AlterTableDropColumnCommand(
+    tableIdent: TableIdentifier, column: String) extends RunnableCommand {
+=======
+case class AlterTableDropColumnCommand(
+    tableIdent: TableIdentifier, column: String,
+    referentialAction: Option[Boolean]) extends RunnableCommand {
+>>>>>>> master
+
+  override def run(session: SparkSession): Seq[Row] = {
+<<<<<<< HEAD
+    val snappySession = session.asInstanceOf[SnappySession]
+    snappySession.alterTableMisc(tableIdent, sql)
+||||||| merged common ancestors
+    val snc = session.asInstanceOf[SnappySession]
+    // drop column doesn't need anything apart from name so fill dummy values
+    snc.alterTable(tableIdent, isAddColumn = false,
+      StructField(column, NullType), defaultValue = None)
+=======
+    val snappySession = session.asInstanceOf[SnappySession]
+    val refActionString = referentialAction match {
+      case None => ""
+      case Some(true) => "cascade"
+      case Some(false) => "restrict"
+    }
+    // drop column doesn't need anything apart from name so fill dummy values
+    snappySession.alterTable(tableIdent, isAddColumn = false,
+      StructField(column, NullType), defaultValue = None, refActionString)
+    Nil
+  }
+}
+
 case class AlterTableMiscCommand(tableIdent: TableIdentifier, sql: String)
     extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
     snappySession.alterTableMisc(tableIdent, sql)
+>>>>>>> master
     Nil
   }
 }
@@ -560,7 +665,11 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
     val rows = new ArrayBuffer[Row]
     commands.forEach(new Consumer[Entry[String, String]] {
       override def accept(t: Entry[String, String]): Unit = {
-        val alias = t.getKey
+        var alias = t.getKey
+        // Skip dropped functions entry
+        if (alias.contains(ContextJarUtils.droppedFunctionsKey)) return
+        // Explicitly mark functions as UDF while listing jars/packages.
+        alias = alias.replace(ContextJarUtils.functionKeyPrefix, "[UDF]")
         val value = t.getValue
         val indexOf = value.indexOf('|')
         if (indexOf > 0) {
@@ -590,6 +699,40 @@ case class ListPackageJarsCommand(isJar: Boolean) extends RunnableCommand {
 case class UnDeployCommand(alias: String) extends RunnableCommand {
 
   override def run(sparkSession: SparkSession): Seq[Row] = {
+    var value = ""
+    val sc = sparkSession.sparkContext
+    if (alias != null) {
+      val cmndsSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
+      cmndsSet.forEach(new Consumer[Entry[String, String]] {
+        override def accept(t: Entry[String, String]): Unit = {
+          val alias1 = t.getKey
+          if(alias == alias1) {
+            value = t.getValue
+          }
+        }
+      })
+      val indexOf = value.indexOf("|")
+      val lastIndexOf = value.lastIndexOf("|")
+      if (indexOf > 0) {
+        val coordinates = value.substring(0, indexOf)
+        val repos = Option(value.substring(indexOf + 1, lastIndexOf))
+        val jarCache = Option(value.substring(lastIndexOf + 1, value.length))
+        val jarsstr = SparkSubmitUtils.resolveMavenCoordinates(coordinates,
+          repos, jarCache)
+        if (jarsstr.nonEmpty) {
+          val pkgs = jarsstr.split(",")
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, pkgs)
+          ToolsCallbackInit.toolsCallback.removeURIs(pkgs)
+        }
+      }
+      else {
+        if (value.nonEmpty) {
+          val jars = value.split(',')
+          RefreshMetadata.executeOnAll(sc, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, jars)
+          ToolsCallbackInit.toolsCallback.removeURIs(jars)
+        }
+      }
+    }
     ToolsCallbackInit.toolsCallback.removePackage(alias)
     Nil
   }

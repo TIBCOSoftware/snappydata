@@ -20,4 +20,11 @@ import org.apache.spark.sql.internal.CatalogSuite
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyCatalogSuite extends CatalogSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil
+    with SharedSnappySessionContext with SnappySparkTestUtil {
+
+  override protected def beforeAll(): Unit = {
+    super.beforeAll()
+    // some tests use "hive" as the provider so enable external hive catalog support
+    spark.sessionState.conf.setConfString("spark.sql.catalogImplementation", "hive")
+  }
+}

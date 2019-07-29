@@ -147,9 +147,22 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     */
   def alterTable(tableName: String, isAddColumn: Boolean,
       column: StructField, defaultValue: Option[String] = None): Unit = {
-    snappySession.alterTable(tableName, isAddColumn, column, defaultValue)
+    snappySession.alterTable(tableName, isAddColumn, column, defaultValue, "")
   }
 
+  /**
+   * alter table adds/drops provided column, only supprted for row tables.
+   * For adding a column isAddColumn should be true, else it will be drop column
+   *
+   * @param tableName
+   * @param isAddColumn
+   * @param column
+   * @param referentialAction value can be either be CASCADE or RESTRICT
+   */
+  def alterTable(tableName: String, isAddColumn: Boolean,
+      column: StructField, referentialAction: String): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column, None, referentialAction)
+  }
   /**
     * alter table adds/drops provided column, only supprted for row tables.
     * For adding a column isAddColumn should be true, else it will be drop column
@@ -615,12 +628,13 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
 
   /**
    * Set current database/schema.
-   * @param schemaName schema name which goes in the catalog
+   *
+   * @param schemaName        schema name which goes in the catalog
+   * @param createIfNotExists create the schema if it does not exist
    */
-  def setSchema(schemaName: String): Unit = {
-    snappySession.setCurrentSchema(schemaName)
+  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
+    snappySession.setCurrentSchema(schemaName, createIfNotExists)
   }
-
 
   /**
    * Create an index on a table.
@@ -1106,7 +1120,7 @@ object SnappyContext extends Logging {
                 val nonEmpty = deployCmds.length > 0
                 if (nonEmpty) {
                   logInfo(s"deploycmnds size = ${deployCmds.length}")
-                  deployCmds.foreach(s => logDebug(s"s"))
+                  deployCmds.foreach(s => logDebug(s"$s"))
                 }
                 if (nonEmpty) deployCmds.foreach(d => {
                   val cmdFields = d.split('|')
@@ -1143,6 +1157,7 @@ object SnappyContext extends Logging {
     }
   }
 
+<<<<<<< HEAD
   def newHiveSession(): SparkSession = contextLock.synchronized {
     val sc = globalSparkContext
     sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
@@ -1165,6 +1180,33 @@ object SnappyContext extends Logging {
     if (this.hiveSession ne null) Some(this.hiveSession.sharedState) else None
   }
 
+||||||| merged common ancestors
+=======
+  def newHiveSession(): SparkSession = contextLock.synchronized {
+    val sc = globalSparkContext
+    sc.conf.set(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
+    if (this.hiveSession ne null) this.hiveSession.newSession()
+    else {
+      val session = SparkSession.builder().enableHiveSupport().getOrCreate()
+      if (session.sharedState.externalCatalog.isInstanceOf[HiveExternalCatalog] &&
+          session.sessionState.getClass.getName.contains("HiveSessionState")) {
+        this.hiveSession = session
+        // this session can be shared via Builder.getOrCreate() so create a new one
+        session.newSession()
+      } else {
+        this.hiveSession = new SparkSession(sc)
+        this.hiveSession
+      }
+    }
+  }
+
+  def hasHiveSession: Boolean = contextLock.synchronized(this.hiveSession ne null)
+
+  def getHiveSharedState: Option[SharedState] = contextLock.synchronized {
+    if (this.hiveSession ne null) Some(this.hiveSession.sharedState) else None
+  }
+
+>>>>>>> master
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()

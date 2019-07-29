@@ -184,6 +184,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PATH: Rule0 = rule { keyword(Consts.PATH) }
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
+  final def PRIMARY: Rule0 = rule { keyword(Consts.PRIMARY) }
   final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -663,6 +664,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 
   protected def alterTable: Rule1[LogicalPlan] = rule {
     ALTER ~ TABLE ~ tableIdentifier ~ (
+<<<<<<< HEAD
         (ADD ~ push(true) | DROP ~ push(false)) ~ (
             // other store ALTER statements which don't effect the snappydata catalog
             capture((CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
@@ -685,6 +687,29 @@ abstract class SnappyDDLParser(session: SnappySession)
         // other store ALTER statements which don't effect the snappydata catalog
         capture((ALTER | SET) ~ ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
           AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s"))
+||||||| merged common ancestors
+        ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
+        DROP ~ COLUMN.? ~ identifier ~ EOI ~> AlterTableDropColumnCommand |
+        capture(ANY. +) ~ EOI ~> ((r: TableIdentifier, s: String) =>
+          DMLExternalTable(r, UnresolvedRelation(r), s"ALTER TABLE ${quotedUppercaseId(r)} $s"))
+=======
+        (ADD ~ push(true) | DROP ~ push(false)) ~ (
+            // other store ALTER statements which don't effect the snappydata catalog
+            capture((PRIMARY | CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
+                ((table: TableIdentifier, isAdd: Boolean, s: String) =>
+                  AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
+                    s"${if (isAdd) "ADD" else "DROP"} $s")) |
+            COLUMNS ~ ANY. + ~> ((_: TableIdentifier, _: Boolean) =>
+              sparkParser.parsePlan(input.sliceString(0, input.length)))
+        ) |
+        ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
+        DROP ~ COLUMN.? ~ identifier ~ (CASCADE ~ push(true) | RESTRICT ~ push(false)).? ~ EOI ~>
+            ((table: TableIdentifier, col: String, refAction: Any) =>
+              AlterTableDropColumnCommand(table, col, refAction.asInstanceOf[Option[Boolean]])) |
+        // other store ALTER statements which don't effect the snappydata catalog
+        capture((ALTER | SET) ~ ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
+          AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s"))
+>>>>>>> master
     )
   }
 

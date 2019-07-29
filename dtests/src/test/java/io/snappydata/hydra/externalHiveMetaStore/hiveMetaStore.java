@@ -1,3 +1,4 @@
+
 package io.snappydata.hydra.externalHiveMetaStore;
 
 import com.gemstone.gemfire.cache.query.Struct;
@@ -273,3 +274,4 @@ public class hiveMetaStore extends SnappyTest
         }
     }
 }
+

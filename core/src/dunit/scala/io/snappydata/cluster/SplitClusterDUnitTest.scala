@@ -16,10 +16,12 @@
  */
 package io.snappydata.cluster
 
+import java.io.File
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 import java.sql.{Blob, Clob, Connection, ResultSet, SQLException, Statement, Timestamp}
 import java.util.Properties
+import java.util.function.Consumer
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
@@ -31,8 +33,10 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.snappy.ComplexTypeSerializer
 import io.snappydata.Constant
+import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, Host, VM}
 import io.snappydata.util.TestUtils
+import org.apache.commons.io.FileUtils
 import org.junit.Assert
 
 import org.apache.spark.sql.SnappyContext
@@ -82,6 +86,8 @@ class SplitClusterDUnitTest(s: String)
 
   override protected def locatorClientPort = { testObject.locatorNetPort }
 
+  private val localDirs = Seq("/tmp/localdir1", "/tmp/localdir2", "/tmp/localdir3")
+
   override def beforeClass(): Unit = {
     super.beforeClass()
 
@@ -98,8 +104,8 @@ class SplitClusterDUnitTest(s: String)
     val confDir = s"$snappyProductDir/conf"
     writeToFile(s"localhost  -peer-discovery-port=$port -client-port=$netPort",
       s"$confDir/locators")
-    writeToFile(s"localhost  -locators=localhost[$port] $waitForInit $compressionArg",
-      s"$confDir/leads")
+    writeToFile(s"localhost  -spark.local.dir=${localDirs.mkString(",")}" +
+        s" -locators=localhost[$port] $waitForInit $compressionArg", s"$confDir/leads")
     writeToFile(
       s"""localhost  -locators=localhost[$port] -client-port=$netPort2 $compressionArg
           |localhost  -locators=localhost[$port] -client-port=$netPort3 $compressionArg
@@ -118,6 +124,7 @@ class SplitClusterDUnitTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    localDirs.foreach(d => FileUtils.deleteDirectory(new File(d)))
   }
 
   override protected def startNetworkServers(): Unit = {
@@ -142,6 +149,96 @@ class SplitClusterDUnitTest(s: String)
   def testSNAP3028(): Unit = {
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.SNAP3028TestJob")
+  }
+
+  def testSNAP3010(): Unit = {
+    logInfo("Killing first server process. Should leave server block-manager directories orphan.")
+    val server1PIDFile = Paths.get(snappyProductDir, "work/localhost-server-1/snappyserver.pid")
+    val server1PID = new String(Files.readAllBytes(server1PIDFile)).toInt
+    logInfo(s"kill -9 $server1PID".!!)
+
+    val server1TempFiles = Paths.get(snappyProductDir, "work/localhost-server-1/.tempfiles.list")
+    val server1BlockManagerDirs = Files.readAllLines(server1TempFiles)
+    assert(server1BlockManagerDirs.size() == 3)
+
+    server1BlockManagerDirs.asScala.zip(localDirs).foreach {
+      case (bmDir: String, localDir: String) =>
+        Assert.assertEquals(Paths.get(bmDir).getParent, Paths.get(localDir))
+        Assert.assertTrue(Files.exists(Paths.get(bmDir)))
+    }
+
+    logInfo("Killing lead process. Should leave lead block-manager directories orphan.")
+    val leadPIDFile = Paths.get(snappyProductDir, "work/localhost-lead-1/snappyleader.pid")
+    val leadPID = new String(Files.readAllBytes(leadPIDFile)).toInt
+    logInfo(s"kill -9 $leadPID".!!)
+
+    val leadTempFiles = Paths.get(snappyProductDir, "work/localhost-lead-1/.tempfiles.list")
+    val leadBlockManagerDirs = Files.readAllLines(leadTempFiles)
+
+    Assert.assertEquals(3, leadBlockManagerDirs.size())
+
+    leadBlockManagerDirs.asScala.zip(localDirs).foreach {
+      case (bmDir: String, localDir: String) =>
+        Assert.assertEquals(Paths.get(bmDir).getParent, Paths.get(localDir))
+        Assert.assertTrue(Files.exists(Paths.get(bmDir)))
+    }
+
+    logInfo("Killing second server process. Should leave server block-manager directories orphan.")
+    val server2PIDFile = Paths.get(snappyProductDir, "work/localhost-server-2/snappyserver.pid")
+    val server2PID = new String(Files.readAllBytes(server2PIDFile)).toInt
+    logInfo(s"kill -9 $server2PID".!!)
+
+    val server2TempFiles = Paths.get(snappyProductDir, "work/localhost-server-2/.tempfiles.list")
+    val server2BlockManagerDirs = Files.readAllLines(server2TempFiles)
+    assert(server2BlockManagerDirs.size() == 3)
+
+    server2BlockManagerDirs.asScala.zip(localDirs).foreach {
+      case (bmDir: String, localDir: String) =>
+        Assert.assertEquals(Paths.get(bmDir).getParent, Paths.get(localDir))
+        Assert.assertTrue(Files.exists(Paths.get(bmDir)))
+    }
+
+    logInfo("Killing locator process.")
+    val locatorPIDFile = Paths.get(snappyProductDir, "work/localhost-locator-1/snappylocator.pid")
+    val locatorPID = new String(Files.readAllBytes(locatorPIDFile)).toInt
+    logInfo(s"kill -9 $locatorPID".!!)
+
+    logInfo("Stopping snappy cluster.")
+    logInfo((snappyProductDir + "/sbin/snappy-stop-all.sh").!!)
+
+    logInfo("Will wait for locator to stop.")
+    val waitCriterion: WaitCriterion = new WaitCriterion {
+      var status: String = _
+
+      override def done(): Boolean = {
+        status = s"""$snappyProductDir/sbin/snappy-locator.sh status
+                    | -dir=$snappyProductDir/work/localhost-locator-1""".stripMargin.!!
+        status.trim.endsWith("stopped")
+      }
+
+      override def description(): String = s"Timeout while stopping locator." +
+          s" Most recent status: $status"
+    }
+
+    DistributedTestBase.waitForCriterion(waitCriterion, 120000, 2000, true)
+
+    logInfo("Starting snappy cluster." +
+        " Orphan directories from the previous run should have been deleted.")
+    logInfo(s"$snappyProductDir/sbin/snappy-start-all.sh".!!)
+
+    leadBlockManagerDirs.forEach(new Consumer[String] {
+      override def accept(t: String): Unit = assert(!Files.exists(Paths.get(t)))
+    })
+    server1BlockManagerDirs.forEach(new Consumer[String] {
+      override def accept(t: String): Unit = {
+        assert(!Files.exists(Paths.get(t)))
+      }
+    })
+    server2BlockManagerDirs.forEach(new Consumer[String] {
+      override def accept(t: String): Unit = {
+        assert(!Files.exists(Paths.get(t)))
+      }
+    })
   }
 }
 
