@@ -78,7 +78,7 @@ class SnappyExecutor(
   private val classLoaderCache = {
     val loader = new CacheLoader[ClassLoaderKey, SnappyMutableURLClassLoader]() {
       override def load(key: ClassLoaderKey): SnappyMutableURLClassLoader = {
-        val appName = key.appName
+        val appName = key.appName  // appName = "schemaname.functionname"
         val appNameAndJars = key.appNameAndJars
         lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
         val appDependencies = appNameAndJars.drop(2).toSeq
@@ -89,15 +89,28 @@ class SnappyExecutor(
               s" with dependencies $appDependencies")
           urls = appDependencies.map(name => {
             val localName = name.split("/").last
-            logInfo(s"Fetching file $name for App[$appName]")
-            Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
-              env.securityManager, hadoopConf, -1L, useCache = !isLocal)
-            val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
-            Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName, name)
-            url // points to the jar in executor's work directory
+            var fetch = true
+            val firstHyphen = localName.indexOf("-")
+            if (firstHyphen > -1) {
+              val udfName = localName.substring(0, firstHyphen)
+              fetch = udfName.equalsIgnoreCase(appName) ||
+                  !ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, udfName)
+            }
+            if (fetch) {
+              logInfo(s"Fetching file $name for App[$appName]")
+              Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
+                env.securityManager, hadoopConf, -1L, useCache = !isLocal)
+              val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
+              Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName
+                , name)
+              url // points to the jar in executor's work directory
+            } else {
+              null
+            }
           })
         }
-        val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
+        val newClassLoader = new SnappyMutableURLClassLoader(urls.filter(_ != null).toArray,
+          replClassLoader)
         KryoSerializerPool.clear()
         newClassLoader
       }
