@@ -28,7 +28,8 @@ class ClusterSummary private[spark](
     val clusterInfo: mutable.HashMap[String, Any],
     val membersInfo: Seq[MemberSummary],
     val tablesInfo: Seq[TableSummary],
-    val externalTablesInfo: Seq[ExternalTableSummary]
+    val externalTablesInfo: Seq[ExternalTableSummary],
+    val globalTempViewsInfo: Seq[GlobalTemporaryViewSummary]
 )
 
 class MemberSummary private[spark](
@@ -100,4 +101,11 @@ class ExternalTableSummary private[spark](
     val tableFQName: String,
     val provider: String,
     val source: String
+)
+
+class GlobalTemporaryViewSummary private[spark](
+    val tableFQName: String,
+    val tableName: String,
+    val tableType: String,
+    val columnsInfo: mutable.HashMap[String, Any]
 )

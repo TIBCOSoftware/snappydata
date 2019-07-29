@@ -18,7 +18,11 @@
  */
 package org.apache.spark.status.api.v1
 
+import scala.collection.mutable
+
 import io.snappydata.SnappyTableStatsProviderService
+
+import org.apache.spark.sql.types.StructType
 
 object TableDetails {
 
@@ -59,6 +63,29 @@ object TableDetails {
     externalTableBuff.mapValues(table => {
       new ExternalTableSummary(table.getTableFullyQualifiedName, table.getProvider,
         table.getDataSourcePath)
+    }).values.toList
+  }
+
+  def getAllGlobalTempViewsInfo: Seq[GlobalTemporaryViewSummary] = {
+
+    val gblTempViewBuff =
+      SnappyTableStatsProviderService.getService.getAllGlobalTempViewStatsFromService
+
+    gblTempViewBuff.mapValues(view => {
+      val colCount = view.getSchema.asInstanceOf[StructType].size
+      val schemaFields = view.getSchema.asInstanceOf[StructType].fields
+      val schemaStringBuilder = new StringBuilder
+      schemaFields.foreach(field => {
+        schemaStringBuilder.append("(" + field.name + ":" + field.dataType + ", " +
+            "nullable=" + { if (field.nullable) "Yes" else "No" } + ")\n")
+      })
+
+      val columnsInfo = mutable.HashMap.empty[String, Any]
+      columnsInfo += ("numColumns" -> colCount);
+      columnsInfo += ("fieldsString" -> schemaStringBuilder.toString());
+
+      new GlobalTemporaryViewSummary(view.getFullyQualifiedName, view.getTableName,
+        view.getTableType, columnsInfo)
     }).values.toList
   }
 }

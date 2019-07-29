@@ -61,8 +61,10 @@ object ClusterDetails {
     val membersInfo = MemberDetails.getAllMembersInfo
     val tablesInfo = TableDetails.getAllTablesInfo
     val extTablesInfo = TableDetails.getAllExternalTablesInfo
+    val gblTempViewsInfo = TableDetails.getAllGlobalTempViewsInfo
 
-    clusterBuff += new ClusterSummary(clusterInfo, membersInfo, tablesInfo, extTablesInfo)
+    clusterBuff += new ClusterSummary(clusterInfo, membersInfo, tablesInfo,
+      extTablesInfo, gblTempViewsInfo)
     clusterBuff.toList
   }
 }
