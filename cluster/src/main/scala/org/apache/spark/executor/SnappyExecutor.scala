@@ -83,7 +83,7 @@ class SnappyExecutor(
         lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
         val appDependencies = appNameAndJars.drop(2).toSeq
         var urls = Seq.empty[URL]
-        // Prepare urls only if this is not in dropped functions list
+        // Fetch urls only if appName is not in dropped functions list
         if (!ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, appName)) {
           logInfo(s"Creating ClassLoader for $appName" +
               s" with dependencies $appDependencies")
@@ -91,6 +91,14 @@ class SnappyExecutor(
             val localName = name.split("/").last
             var fetch = true
             val firstHyphen = localName.indexOf("-")
+            // With a fix for SNAP-3069, we set all jar URLs (ContextJarUtils.driverJars) as
+            // session dependencies and not just the URLs of some specific function.
+            // In some cases, when session dependencies get updated during or after a function
+            // is dropped and its jar URLs are received by the executors, they try to fetch
+            // them from lead node and fail because the jars at lead node have been deleted.
+            // To avoid this, we fetch the jar only if a) the URL belongs to the function of this
+            // particular ClassLoaderKey (appName) or b) the URL belongs to another function which
+            // is not yet dropped.
             if (firstHyphen > -1) {
               val udfName = localName.substring(0, firstHyphen)
               fetch = udfName.equalsIgnoreCase(appName) ||
@@ -101,8 +109,8 @@ class SnappyExecutor(
               Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
                 env.securityManager, hadoopConf, -1L, useCache = !isLocal)
               val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
-              Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName
-                , name)
+              Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName,
+                name)
               url // points to the jar in executor's work directory
             } else {
               null
