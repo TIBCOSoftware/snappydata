@@ -184,6 +184,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PATH: Rule0 = rule { keyword(Consts.PATH) }
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
+  final def PRIMARY: Rule0 = rule { keyword(Consts.PRIMARY) }
   final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -665,7 +666,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     ALTER ~ TABLE ~ tableIdentifier ~ (
         (ADD ~ push(true) | DROP ~ push(false)) ~ (
             // other store ALTER statements which don't effect the snappydata catalog
-            capture((CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
+            capture((PRIMARY | CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
                 ((table: TableIdentifier, isAdd: Boolean, s: String) =>
                   AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
                     s"${if (isAdd) "ADD" else "DROP"} $s")) |
