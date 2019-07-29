@@ -819,7 +819,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         int replaceQuestion = 1;
         for (int i = 0; i < oTypes.length; i++) {
           if (fieldNames[i].equalsIgnoreCase(uniqueKey)) value = j + "";
-          else value = "-1";
+          else value = "1";
           String clazz = oTypes[i].getSimpleClassName();
           switch (clazz) {
             case "Date":

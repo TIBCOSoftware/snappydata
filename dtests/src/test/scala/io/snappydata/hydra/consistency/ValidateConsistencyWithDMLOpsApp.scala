@@ -21,7 +21,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 
 import scala.util.{Failure, Success, Try}
 
-import org.apache.spark.sql.{SQLContext, SnappyContext}
+import org.apache.spark.sql.SnappySession
 import org.apache.spark.{SparkConf, SparkContext}
 
 object ValidateConsistencyWithDMLOpsApp {
@@ -30,8 +30,7 @@ object ValidateConsistencyWithDMLOpsApp {
     val conf = new SparkConf().setAppName("VerifyConsistency_App_" + tid + "_" + System
         .currentTimeMillis())
     val sc = SparkContext.getOrCreate(conf)
-    val sqlContext = SQLContext.getOrCreate(sc)
-    val snc = SnappyContext(sc)
+    val snc: SnappySession = new SnappySession(sc)
     def getCurrentDirectory = new java.io.File(".").getCanonicalPath
     val outputFile = "VerifyConsistency_thr_" + tid + "_" + System.currentTimeMillis + ".out"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true))

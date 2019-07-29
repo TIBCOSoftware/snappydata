@@ -312,7 +312,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
               after_result);
           switch (DMLOp.getOperation(op)) {
             case INSERT:
-              defaultValue = -1;
+              defaultValue = 1;
               if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
                 int expectedRs = after_result - before_result;
@@ -365,7 +365,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
                     atomicityCheckFailed = true;
               }break;
             case PUTINTO:
-              defaultValue = -1;
+              defaultValue = 1;
               if (colName.toUpperCase().startsWith("COUNT")) {
                 rowCount = before_result;
                 int expectedRs = after_result - before_result;

@@ -18,13 +18,10 @@
 package io.snappydata.hydra.consistency
 
 import java.io.{File, FileOutputStream, PrintWriter}
-
+import com.typesafe.config.Config
 import scala.util.{Failure, Success, Try}
 
-import com.typesafe.config.Config
-
-import org.apache.spark.SparkContext
-import org.apache.spark.sql.{SQLContext, SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
+import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
 object ValidateConsistencyWithDMLOpsJob extends SnappySQLJob {
 
@@ -40,13 +37,12 @@ object ValidateConsistencyWithDMLOpsJob extends SnappySQLJob {
     val tableName = jobConfig.getString("tableName")
     // scalastyle:off println
     Try {
-      val snc = snSession.sqlContext
       val startTime = System.currentTimeMillis
       val consistencyTest = new ConsistencyTest()
       pw.println("Starting execution for dml operation " +  operation)
       pw.flush()
-      consistencyTest.performOpsAndVerifyConsistency(snc, pw, tid, operation, batchSize, dmlStmt,
-        selectStmt, tableName)
+      consistencyTest.performOpsAndVerifyConsistency(snSession, pw, tid, operation, batchSize,
+        dmlStmt, selectStmt, tableName)
       val endTime = System.currentTimeMillis
       val totalTime = (endTime - startTime) / 1000
       pw.println(s"Total time for execution is :: ${totalTime} seconds.")

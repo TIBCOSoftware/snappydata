@@ -23,7 +23,7 @@ import java.util.concurrent.{CyclicBarrier, Executors, TimeUnit}
 
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil.DMLOp
 
-import org.apache.spark.sql.{DataFrame, Row, SnappyContext}
+import org.apache.spark.sql.{DataFrame, Row, SnappySession, SparkSession}
 
 
 class ConsistencyTest {
@@ -33,13 +33,20 @@ class ConsistencyTest {
     "[" + new Timestamp(System.currentTimeMillis()).toString + "] "
   }
 
+  def createSnappySession() : SnappySession = {
+    val snappySpark = new SnappySession(SparkSession.builder().getOrCreate().sparkContext);
+    snappySpark
+  }
 
   // scalastyle:off println
-  def performOpsAndVerifyConsistency(snc: SnappyContext, pw: PrintWriter, tid: Int, dmlOp: String,
+  def performOpsAndVerifyConsistency(snc: SnappySession, pw: PrintWriter, tid: Int, dmlOp: String,
       batchSize: Int, dmlStmt: String, selectStmt: String, tableName: String) : Unit = {
     val pool = Executors.newFixedThreadPool(2)
-    pool.execute(new DMLOpsThread(snc, pw, tid, dmlStmt))
-    pool.execute(new SelectOpsThread(snc, pw, tid, selectStmt, dmlOp, tableName, batchSize))
+    val snappySnDML: SnappySession = createSnappySession()
+    val snappySnSelect: SnappySession = createSnappySession()
+    pool.execute(new DMLOpsThread(snappySnDML, pw, tid, dmlStmt))
+    pool.execute(new SelectOpsThread(snappySnSelect, pw, tid, selectStmt, dmlOp, tableName,
+      batchSize))
     pool.shutdown()
     try
       pool.awaitTermination(120, TimeUnit.SECONDS)
@@ -47,13 +54,16 @@ class ConsistencyTest {
       case ie: InterruptedException =>
         pw.println(s"${printTime} Got Exception while waiting for threads to complete the tasks.")
         pw.flush()
+    } finally {
+      snappySnDML.close()
+      snappySnSelect.close()
     }
     pw.println(s"${printTime} Done with the execution.")
     pw.flush()
   }
 
   // scalastyle:off println
-  class DMLOpsThread(snc: SnappyContext, pw: PrintWriter, tid: Int, stmt: String) extends Runnable {
+  class DMLOpsThread(snc: SnappySession, pw: PrintWriter, tid: Int, stmt: String) extends Runnable {
     override def run(): Unit = {
       pw.println(s"${printTime} Executing dml statement $stmt")
       pw.flush()
@@ -65,7 +75,7 @@ class ConsistencyTest {
   }
 
   // scalastyle:off println
-  class SelectOpsThread(snc: SnappyContext, pw: PrintWriter, tid: Int, stmt: String, op: String,
+  class SelectOpsThread(snc: SnappySession, pw: PrintWriter, tid: Int, stmt: String, op: String,
       tableName: String, batchSize: Int) extends
   Runnable {
     override def run(): Unit = {
@@ -114,7 +124,7 @@ class ConsistencyTest {
               s" and $colName after $op start : $after_result")
           DMLOp.getOperation(op) match {
             case DMLOp.INSERT =>
-              defaultValue = -1
+              defaultValue = 1
               if (colName.toUpperCase.startsWith("COUNT")) {
                 rowCount = before_result.toLong
                 val expectedRs = after_result - before_result
@@ -135,7 +145,7 @@ class ConsistencyTest {
               defaultValue = 1
               if (colName.toUpperCase.startsWith("COUNT")) {
                 val expectedRs = after_result - before_result
-                if (expectedRs == 0) atomicityCheckFailed = true
+                if (!(expectedRs == 0)) atomicityCheckFailed = true
               } else if (colName.toUpperCase.startsWith("AVG")) {
                 val expectedRs = before_result + defaultValue
                 if (!(after_result == before_result || after_result == expectedRs)) {
@@ -160,7 +170,7 @@ class ConsistencyTest {
                 if (!(expectedRs % before_result == 0)) atomicityCheckFailed = true
               }
             case DMLOp.PUTINTO =>
-              defaultValue = -1
+              defaultValue = 1
               if (colName.toUpperCase.startsWith("COUNT")) {
                 rowCount = before_result.toLong
                 val expectedRs = after_result - before_result
