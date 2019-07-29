@@ -1,9 +1,0 @@
-diff --git a/gradle.properties b/gradle.properties
-index e09726734..66fd9597b 100644
---- a/gradle.properties
-+++ b/gradle.properties
-@@ -16,3 +16,4 @@ buildRoot=
- # Empty credentials for maven publish on Sonatype
- ossrhUsername=
- ossrhPassword=
-+snappydata.enterprise=true
