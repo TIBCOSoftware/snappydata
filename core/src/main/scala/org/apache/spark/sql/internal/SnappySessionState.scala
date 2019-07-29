@@ -1154,6 +1154,22 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
       val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
       val provider = tableDesc.provider.get
+
+      if (mode == SaveMode.Overwrite && queryOpt.isDefined && queryOpt.get.resolved) {
+        EliminateSubqueryAliases(queryOpt.get) match {
+          case plan: LogicalPlan =>
+            val srcRelationNames = plan.collect {
+              case LogicalRelation(src: MutableRelation, _, _) => src.table
+            }
+            // we store table as Uppercase in relation
+            if (srcRelationNames.contains(tableIdent.unquotedString.toUpperCase)) {
+              throw new AnalysisException(s"Target and source table should be different" +
+                s" when overwriting a table.")
+            }
+          case _ =>
+        }
+      }
+
       val isBuiltin = SnappyContext.isBuiltInProvider(provider) ||
           CatalogObjectType.isGemFireProvider(provider)
       // treat saveAsTable with mode=Append as insertInto for builtin tables and "normal" cases
