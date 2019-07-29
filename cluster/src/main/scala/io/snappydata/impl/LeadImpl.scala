@@ -187,8 +187,7 @@ class LeadImpl extends ServerImpl with Lead
 
       conf.setAll(bootProperties.asScala)
       // set spark ui port to 5050 that is snappy's default
-      conf.set("spark.ui.port",
-        bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
+      conf.setIfMissing("spark.ui.port", LeadImpl.SPARKUI_PORT.toString)
 
       // wait for log service to initialize so that Spark also uses the same
       while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {

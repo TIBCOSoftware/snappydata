@@ -18,6 +18,8 @@ package org.apache.spark.sql.hive
 
 import java.util.Properties
 
+import java.nio.file.Paths
+
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.engine.Misc
@@ -41,7 +43,18 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  */
 object HiveClientUtil extends Logging {
 
+  val HIVE_TMPDIR = "./hive"
+
+  val HIVE_DEFAULT_SETTINGS = Map(ConfVars.SCRATCHDIR -> hivePath("scratch"),
+    ConfVars.LOCALSCRATCHDIR -> hivePath("local_scratch"),
+    ConfVars.DOWNLOADED_RESOURCES_DIR -> hivePath("resources"),
+    ConfVars.HIVEHISTORYFILELOC -> hivePath("query_logs"),
+    ConfVars.HIVE_SERVER2_LOGGING_OPERATION_LOG_LOCATION -> hivePath("operation_logs"))
+
   ExternalStoreUtils.registerBuiltinDrivers()
+
+  private def hivePath(name: String): String =
+    Paths.get(s"$HIVE_TMPDIR/$name").toAbsolutePath.toString
 
   /**
    * Create a SnappyHiveExternalCatalog appropriate for the cluster.
@@ -100,6 +113,9 @@ object HiveClientUtil extends Logging {
     sparkConf.set("spark.sql.hive.metastore.isolation", "false")
     sparkConf.set(HiveUtils.HIVE_METASTORE_SHARED_PREFIXES, Seq(
       "io.snappydata.jdbc", "com.pivotal.gemfirexd.jdbc"))
+    for ((hiveVar, dirName) <- HiveClientUtil.HIVE_DEFAULT_SETTINGS) {
+      sparkConf.set(hiveVar.varname, dirName)
+    }
 
     val skipFlags = GfxdDataDictionary.SKIP_CATALOG_OPS.get()
     val oldSkipCatalogCalls = skipFlags.skipHiveCatalogCalls
@@ -134,8 +150,6 @@ object HiveClientUtil extends Logging {
     // The DBCP 1.x versions are thoroughly outdated and should not be used but
     // the expectation is that the one bundled in datanucleus will be in better shape.
     metadataConf.setVar(ConfVars.METASTORE_CONNECTION_POOLING_TYPE, "dbcp-builtin")
-    // set the scratch dir inside current working directory (unused but created)
-    setDefaultPath(metadataConf, ConfVars.SCRATCHDIR, "./hive")
     metadataConf.setVar(ConfVars.HADOOPFS, "file:///")
     metadataConf.set("datanucleus.connectionPool.testSQL", "VALUES(1)")
 
@@ -162,16 +176,6 @@ object HiveClientUtil extends Logging {
     metadataConf.set("datanucleus.connectionPool.maxWait", "30000")
 
     props
-  }
-
-  private def setDefaultPath(metadataConf: SnappyHiveConf, v: ConfVars, path: String): String = {
-    var pathUsed = metadataConf.get(v.varname)
-    if ((pathUsed eq null) || pathUsed.isEmpty || pathUsed.equals(v.getDefaultExpr)) {
-      // set the path to provided
-      pathUsed = new java.io.File(path).getAbsolutePath
-      metadataConf.setVar(v, pathUsed)
-    }
-    pathUsed
   }
 
   private def resolveMetaStoreDBProps(clusterMode: ClusterMode): (String, String) = {
