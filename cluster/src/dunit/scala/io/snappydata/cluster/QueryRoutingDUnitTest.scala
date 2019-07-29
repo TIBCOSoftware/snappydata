@@ -1297,9 +1297,9 @@ class QueryRoutingDUnitTest(val s: String)
 
     val rs = stmt.executeQuery("select * from db1.t1")
     assert(rs.getMetaData.getSchemaName(1).equalsIgnoreCase(""),
-      s"expected 't1' but received ${rs.getMetaData.getSchemaName(1)}")
+      s"expected '' but received ${rs.getMetaData.getSchemaName(1)}")
     assert(rs.getMetaData.getTableName(1).equalsIgnoreCase("t1"),
-      s"expected '' but received ${rs.getMetaData.getTableName(1)}")
+      s"expected 't1' but received ${rs.getMetaData.getTableName(1)}")
     assert(rs.getMetaData.getColumnCount.equals(2))
     rs.close()
   }
