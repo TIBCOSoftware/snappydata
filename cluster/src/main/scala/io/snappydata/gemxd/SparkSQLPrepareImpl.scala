@@ -35,7 +35,7 @@ import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.PutIntoValuesColumnTable
-import org.apache.spark.sql.internal.QuestionMark
+import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -59,7 +59,7 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  session.setCurrentSchema(schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 

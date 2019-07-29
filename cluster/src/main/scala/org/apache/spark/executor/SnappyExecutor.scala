@@ -16,19 +16,17 @@
  */
 package org.apache.spark.executor
 
-import java.io.File
-import java.net.URL
+import java.io.{File, IOException}
+import java.net.{URI, URL}
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
-
 import com.gemstone.gemfire.internal.tcp.ConnectionTable
 import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql.internal.ContextJarUtils
@@ -96,7 +94,7 @@ class SnappyExecutor(
               env.securityManager, hadoopConf, -1L, useCache = !isLocal)
             val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
             Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName, name)
-            url
+            url // points to the jar in executor's work directory
           })
         }
         val newClassLoader = new SnappyMutableURLClassLoader(urls.toArray, replClassLoader)
@@ -175,6 +173,28 @@ class SnappyExecutor(
         val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
         urlClassLoader.addURL(url)
       })
+    }
+  }
+
+  def removeJarsFromExecutorLoader(jars: Array[String]): Unit = {
+    synchronized {
+      var updatedURLs = urlClassLoader.getURLs().toBuffer
+      jars.foreach(name => {
+        val localName = name.split("/").last
+        var jarFile = new File(SparkFiles.getRootDirectory(), localName)
+        if (jarFile.exists()) {
+          jarFile.delete()
+          logDebug(s"Deleted jarFile $jarFile")
+        }
+        updatedURLs.foreach(url => {
+          if (url != null && url.toString.contains(jarFile.toString)) {
+            updatedURLs.remove(updatedURLs.indexOf(url))
+          }
+        })
+      })
+      urlClassLoader = new SnappyMutableURLClassLoader(updatedURLs.toArray,
+        urlClassLoader.getParent)
+      replClassLoader = addReplClassLoaderIfNeeded(urlClassLoader)
     }
   }
 

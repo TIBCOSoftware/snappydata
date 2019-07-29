@@ -109,6 +109,9 @@ final class ColumnBatchCreator(
         references(batchIdRef) = batchID
         references(batchIdRef + 1) = bucketID
         references(batchIdRef + 2) = columnTableName
+        // update table name and partitions in ExternalStore
+        references(batchIdRef - 1) = references(batchIdRef - 1).asInstanceOf[ExternalStore]
+            .withTable(tableName, bufferRegion.getTotalNumberOfBuckets)
         // no harm in passing a references array with an extra element at end
         val iter = gen._1.generate(references).asInstanceOf[BufferedRowIterator]
         iter.init(bucketID, Array(execRows.asInstanceOf[Iterator[InternalRow]]))

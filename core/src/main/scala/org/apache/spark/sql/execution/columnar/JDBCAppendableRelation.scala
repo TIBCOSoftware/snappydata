@@ -183,7 +183,7 @@ abstract case class JDBCAppendableRelation(
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
     throw new UnsupportedOperationException(s"Indexes are not supported for $toString")
   }

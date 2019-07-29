@@ -22,13 +22,16 @@ import io.snappydata.{Constant, Property}
 import org.eclipse.collections.impl.set.mutable.UnifiedSet
 
 import org.apache.spark.TaskContext
+import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession
+import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode, GenerateUnsafeProjection}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, BoundReference, Expression, Literal}
 import org.apache.spark.sql.catalyst.util.{SerializedArray, SerializedMap, SerializedRow}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.encoding.{BitSet, ColumnEncoder, ColumnEncoding, ColumnStatsSchema}
 import org.apache.spark.sql.execution.columnar.impl.BaseColumnFormatRelation
-import org.apache.spark.sql.execution.{SparkPlan, TableExec}
+import org.apache.spark.sql.execution.{SparkPlan, TableExec, WholeStageCodegenExec}
 import org.apache.spark.sql.sources.DestroyRelation
 import org.apache.spark.sql.store.CompressionCodecId
 import org.apache.spark.sql.types._
@@ -501,7 +504,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
   private def doConsumeWideTables(ctx: CodegenContext, input: Seq[ExprCode],
                                   row: ExprCode): String = {
     val schema = tableSchema
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
     val sizeTerm = ctx.freshName("size")
@@ -557,14 +559,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     initEncoders = loop(cursorLoopCode, schema.length)
     val calculateSize = loop(encoderLoopCode, schema.length)
     val columnBatchClass = classOf[ColumnBatch].getName
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
+    val bucketId = ctx.addReferenceObj("partitionId", -1, "Integer")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
       batchBucketIdTerm.getOrElse(
         // add as a reference object which can be updated by caller if required
-        s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
+        s"$bucketId.intValue()")
     }
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
@@ -649,7 +653,7 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     """.stripMargin
   }
 
-  private def generateBeginSnapshotTx(ctx: CodegenContext, externalStoreTerm: String) = {
+  private def generateBeginSnapshotTx(ctx: CodegenContext, externalStoreTerm: String): Unit = {
     beginSnapshotTx = ctx.freshName("beginSnapshotTx")
     catalogVersion = ctx.addReferenceObj("catalogVersion", catalogSchemaVersion)
     if (!onExecutor && Utils.isSmartConnectorMode(sqlContext.sparkContext)) {
@@ -677,7 +681,6 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
       return doConsumeWideTables(ctx, input, row)
     }
     val schema = tableSchema
-    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
 
     val buffers = ctx.freshName("buffers")
     val columnBatch = ctx.freshName("columnBatch")
@@ -716,14 +719,16 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
     cursorsArrayCreate = ""
 
     val columnBatchClass = classOf[ColumnBatch].getName
+    val externalStoreTerm = ctx.addReferenceObj("externalStore", externalStore)
     batchIdRef = ctx.references.length
     val batchUUID = ctx.addReferenceObj("batchUUID", invalidUUID, "Long")
+    val bucketId = ctx.addReferenceObj("partitionId", -1, "Integer")
     val partitionIdCode = if (partitioned) "partitionIndex"
     else {
       // check for bucketId variable if available
       batchBucketIdTerm.getOrElse(
         // add as a reference object which can be updated by caller if required
-        s"${ctx.addReferenceObj("partitionId", -1, "Integer")}.intValue()")
+        s"$bucketId.intValue()")
     }
     val tableName = ctx.addReferenceObj("columnTable", columnTable,
       "java.lang.String")
@@ -796,6 +801,17 @@ case class ColumnInsertExec(child: SparkPlan, partitionColumns: Seq[String],
        |$batchSizeTerm++;
     """.stripMargin
   }
+
+  override protected def doExecute(): RDD[InternalRow] = {
+    // don't expect code generation to fail
+    try {
+      WholeStageCodegenExec(this).execute()
+    }
+    finally {
+      sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
+    }
+  }
+
 
   private def genCodeColumnWrite(ctx: CodegenContext, dataType: DataType,
       nullable: Boolean, encoder: String, cursorTerm: String,

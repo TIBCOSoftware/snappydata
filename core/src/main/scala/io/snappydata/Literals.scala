@@ -93,10 +93,15 @@ object Property extends Enumeration {
         "embedded HiveServer2 with thrift access will be started in foreground. Default is true " +
         "but starts the service in background.", Some(true), prefix = null)
 
-  val HiveCompatible: SQLValue[Boolean] = SQLVal(
-    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatible", "Property on SnappySession to make " +
-        "it more hive compatible (like for 'show tables') rather than Spark SQL. Default is false.",
-    Some(false), prefix = null)
+  val HiveCompatibility: SQLValue[String] = SQLVal(
+    s"${Constant.PROPERTY_PREFIX}sql.hiveCompatibility", "Property on SnappySession to make " +
+        "alter the hive compatibility level. The 'default' level is Spark compatible except for " +
+        "CREATE TABLE which defaults to row tables. A value of 'spark' makes it fully Spark " +
+        s"compatible where CREATE TABLE defaults to hive tables when catalogImplementation is " +
+        "'hive' for the session.  When set to 'full' then in addition to the behaviour " +
+        "with 'spark', it makes the behavior hive compatible for statements like SHOW TABLES " +
+        "rather than being compatible with Spark SQL. Default is 'default'.",
+    Some("default"), prefix = null)
 
   val HiveServerUseHiveSession: SparkValue[Boolean] = Val(
     s"${Constant.PROPERTY_PREFIX}hiveServer.useHiveSession", "If true, then the session " +
@@ -211,8 +216,6 @@ object Property extends Enumeration {
     s"${Constant.SPARK_PREFIX}sql.aqp.numBootStrapTrials",
     "Number of bootstrap trials to do for calculating error bounds. Default value is 100.",
     Some(100))
-
-  // TODO: check with suyog  Why are we having two different error defaults one as 1 & other as .2?
 
   val MaxErrorAllowed: SQLValue[Double] = SQLVal[Double](
     s"${Constant.SPARK_PREFIX}sql.aqp.maxErrorAllowed",
@@ -334,7 +337,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 --+ complexTypeAsJson(0)
    */
-  val ComplexTypeAsJson = Value(Constant.COMPLEX_TYPE_AS_JSON_HINT)
+  val ComplexTypeAsJson: Type = Value(Constant.COMPLEX_TYPE_AS_JSON_HINT)
 
   /**
    * Query hint followed by table to override optimizer choice of index per table.
@@ -344,7 +347,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 /`*`+ index(xxx) *`/`, t2 --+ withIndex(yyy)
    */
-  val Index = Value("index")
+  val Index: Type = Value("index")
 
   /**
    * Query hint after FROM clause to indicate following tables have join order fixed and
@@ -355,7 +358,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM /`*`+ joinOrder(fixed) *`/` t1, t2
    */
-  val JoinOrder = Value("joinOrder")
+  val JoinOrder: Type = Value("joinOrder")
 
   /**
    * Query hint to force a join type for the current join. This should appear after
@@ -369,7 +372,7 @@ object QueryHint extends Enumeration {
    * Example:<br>
    * SELECT * FROM t1 /`*`+ joinType(broadcast) -- broadcast t1 *`/`, t2 where ...
    */
-  val JoinType: Value = Value("joinType")
+  val JoinType: Type = Value("joinType")
 
   /**
    * Query hint for SQL queries to serialize STRING type as CLOB rather than
@@ -383,7 +386,7 @@ object QueryHint extends Enumeration {
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(addr)
    * SELECT id, name, addr, medical_history FROM t1 --+ columnsAsClob(*)
    */
-  val ColumnsAsClob = Value("columnsAsClob")
+  val ColumnsAsClob: Type = Value("columnsAsClob")
 }
 
 /**
@@ -408,7 +411,7 @@ object JOS extends Enumeration {
    * `Note:` user specified index hint will be honored and optimizer will only attempt for
    * other tables in the query.
    */
-  val ContinueOptimizations = Value("continueOpts")
+  val ContinueOptimizations: Type = Value("continueOpts")
 
   /**
    * By default if query have atleast one colocated join conditions mentioned between a pair of
@@ -417,10 +420,10 @@ object JOS extends Enumeration {
    * partition like indirect colocation possibilities even if partition -> partition join
    * conditions are mentioned.
    */
-  val IncludeGeneratedPaths = Value("includeGeneratedPaths")
+  val IncludeGeneratedPaths: Type = Value("includeGeneratedPaths")
 
   /**
    * Don't alter the join order provided by the user.
    */
-  val Fixed = Value("fixed")
+  val Fixed: Type = Value("fixed")
 }

@@ -40,11 +40,11 @@ To view the members of cluster, query:
 
 ```pre
 snappy> show members;
-ID                            |HOST     |KIND             |STATUS |THRIFTSERVERS            |SERVERGROUPS
+ID                            |HOST     |KIND          |STATUS |THRIFTSERVERS            |SERVERGROUPS
 --------------------------------------------------------------------------------------------------------- 
-127.0.0.1(10749)<ec><v0>:51430|localhost|locator(normal)  |RUNNING|localhost/127.0.0.1[1527]|
-127.0.0.1(10889)<v1>:43634    |localhost|datastore(normal)|RUNNING|localhost/127.0.0.1[1528]|
-127.0.0.1(11045)<v2>:19283    |localhost|accessor(normal) |RUNNING|                         |IMPLICIT_LEADER_SERVERGROUP 
+127.0.0.1(10749)<ec><v0>:51430|localhost|locator       |RUNNING|localhost/127.0.0.1[1527]|
+127.0.0.1(10889)<v1>:43634    |localhost|datastore     |RUNNING|localhost/127.0.0.1[1528]|
+127.0.0.1(11045)<v2>:19283    |localhost|primary lead  |RUNNING|                         |
 
 3 rows selected
 ```
