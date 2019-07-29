@@ -196,8 +196,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   private final class CatalogQuery[R](qType: Int, tableName: String, schemaName: String,
       catalogOperation: Int = 0, getRequest: CatalogMetadataRequest = null,
-      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null, forceDrop: Boolean = false)
-      extends Callable[R] {
+      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null,
+      forceDrop: Boolean = false) extends Callable[R] {
 
     private lazy val formattedTable = toLowerCase(tableName)
     private lazy val formattedSchema = toLowerCase(schemaName)
@@ -464,9 +464,10 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
     // Mask access key and secret access key in case of S3 URI
     private def maskLocationURI(locURI: String): String = {
-      val maskedSrcPath = if (locURI.toLowerCase().startsWith("s3a://") ||
-          locURI.toLowerCase().startsWith("s3://") ||
-          locURI.toLowerCase().startsWith("s3n://") ) {
+      val uri = toLowerCase(locURI)
+      val maskedSrcPath = if (uri.startsWith("s3a://") ||
+          uri.startsWith("s3://") ||
+          uri.startsWith("s3n://")) {
         locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
           locURI.indexOf("@")), "****:****")
       } else maskPassword(locURI)
