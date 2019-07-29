@@ -69,7 +69,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromBeeline(hiveThriftServer,
       "create TablE if not exists Emp1(id long, name String) using row", pw)
     insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp1 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(3000000)", snc,
       spark, pw, sqlContext, "Emp1", "Row")
     executeShowTables(hiveThriftServer, "show TabLES in default", pw)
     updateTableFromBeeline(hiveThriftServer,
@@ -84,7 +84,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromBeeline(hiveThriftServer,
       "create TablE if not exists Emp2(id long, name String) using column", pw)
     insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp2 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(40000000)", snc,
       spark, pw, sqlContext, "Emp2", "column")
     executeShowTables(hiveThriftServer, "show TabLES in default", pw)
     updateTableFromSnappy(hiveThriftServer,
@@ -100,7 +100,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromSnappy(snc,
       "create TablE if not exists Emp3(id long, name String) using row", pw)
     insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp3 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(3000000)", snc,
       spark, pw, sqlContext, "Emp3", "Row")
     executeShowTables(hiveThriftServer, "show TabLES in default", pw)
     updateTableFromBeeline(hiveThriftServer,
@@ -132,7 +132,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromSnappy(snc,
       "create TablE if not exists Emp4(id long, name String) using column", pw)
     insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp4 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(40000000)", snc,
       spark, pw, sqlContext, "Emp4", "column")
     executeShowTables(hiveThriftServer, "show TabLES in default", pw)
     updateTableFromBeeline(hiveThriftServer,
@@ -153,7 +153,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromBeeline(hiveThriftServer,
       "create TablE if not exists Emp5(id long, name String) using row", pw)
     insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp5 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc, spark,
+      "id, concat(id, '_Snappy_TIBCO') from range(3000000)", snc, spark,
       pw, sqlContext, "Emp5", "row")
     executeShowTables(hiveThriftServer, "show TabLES in app", pw)
     updateTableFromBeeline(hiveThriftServer,
@@ -168,7 +168,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromBeeline(hiveThriftServer,
       "create TablE if not exists Emp6(id long, name String) using column", pw)
     insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp6 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(40000000)", snc,
       spark, pw, sqlContext, "Emp6", "column")
     executeShowTables(hiveThriftServer, "show TabLES in app", pw)
     updateTableFromSnappy(hiveThriftServer,
@@ -183,7 +183,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromSnappy(snc,
       "create TablE if not exists Emp7(id long, name String) using row", pw)
     insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp7 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(4000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(3000000)", snc,
       spark, pw, sqlContext, "Emp7", "row")
     executeShowTables(hiveThriftServer, "show TabLES in app", pw)
     updateTableFromBeeline(hiveThriftServer,
@@ -214,7 +214,7 @@ class HiveThriftServer extends SnappySQLJob {
     createRowOrColumnTableFromSnappy(snc,
       "create TablE if not exists Emp8(id long, name String) using column", pw)
     insertIntoTableFromBeeline(hiveThriftServer, "insert into Emp8 select " +
-      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
+      "id, concat(id, '_Snappy_TIBCO') from range(40000000)", snc,
       spark, pw, sqlContext, "Emp8", "column")
     executeShowTables(hiveThriftServer, "show TabLES in app", pw)
     updateTableFromBeeline(hiveThriftServer,
