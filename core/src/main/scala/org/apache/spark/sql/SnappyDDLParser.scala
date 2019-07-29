@@ -30,7 +30,6 @@ import shapeless.{::, HNil}
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
@@ -1011,14 +1010,8 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def newInstance(): SnappyDDLParser
 }
 
-case class DMLExternalTable(
-    tableName: TableIdentifier,
-    query: LogicalPlan,
-    command: String)
-    extends LeafNode with Command {
-  
-  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+case class DMLExternalTable(tableName: TableIdentifier,
+    child: LogicalPlan, command: String) extends UnaryNode {
 
-  override lazy val resolved: Boolean = query.resolved
   override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }

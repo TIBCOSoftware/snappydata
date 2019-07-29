@@ -196,7 +196,7 @@ abstract case class JDBCMutableRelation(
         partition = Map.empty[String, Option[String]],
         child = data.logicalPlan,
         OverwriteOptions(overwrite),
-        ifNotExists = false)).toRdd
+        ifNotExists = false)()).toRdd
   }
 
   override def insert(rows: Seq[Row]): Int = {
