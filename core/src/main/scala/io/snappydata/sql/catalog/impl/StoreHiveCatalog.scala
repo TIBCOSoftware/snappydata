@@ -34,7 +34,9 @@ import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
+import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
 import io.snappydata.Constant
+import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
@@ -421,7 +423,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
         try {
           val conf = SparkEnv.get match {
             case null => new SparkConf
-            case env => env.conf.clone()
+            case env =>
+              val sparkConf = env.conf.clone()
+              sparkConf.remove(SPARK_STORE_PREFIX + USERNAME_ATTR)
+              sparkConf.remove(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+              sparkConf.remove(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+              sparkConf.remove(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+              sparkConf
           }
           for ((k, v) <- Misc.getMemStoreBooting.getBootProperties.asScala) {
             val key = k.toString
