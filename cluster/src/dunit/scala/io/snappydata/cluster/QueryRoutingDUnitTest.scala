@@ -1284,4 +1284,23 @@ class QueryRoutingDUnitTest(val s: String)
       i4 = i4 + 1
     }
   }
+
+  def testSchemaAndTableNames: Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val conn = getANetConnection(netPort1)
+    val stmt = conn.createStatement()
+
+    stmt.executeUpdate("create database db1")
+
+    stmt.executeUpdate("create table db1.t1 (c1 integer, c2 integer)")
+
+    val rs = stmt.executeQuery("select * from db1.t1")
+    assert(rs.getMetaData.getSchemaName(1).equalsIgnoreCase(""),
+      s"expected 't1' but received ${rs.getMetaData.getSchemaName(1)}")
+    assert(rs.getMetaData.getTableName(1).equalsIgnoreCase("t1"),
+      s"expected '' but received ${rs.getMetaData.getTableName(1)}")
+    assert(rs.getMetaData.getColumnCount.equals(2))
+    rs.close()
+  }
 }
