@@ -16,14 +16,14 @@
  */
 package org.apache.spark.sql.store
 
+import java.util.concurrent.atomic.AtomicInteger
+
 import scala.collection.mutable
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
-
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
 import org.scalatest.{Assertions, BeforeAndAfter}
-
 import org.apache.spark.scheduler.{SparkListener, SparkListenerJobEnd, SparkListenerJobStart}
 import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
 import org.apache.spark.{Logging, SparkContext}
@@ -155,7 +155,6 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
     override def onJobStart(job: SparkListenerJobStart): Unit = {
       this.synchronized {
-        assert(count == 0)
         logInfo(s"SK The concurrent job count in jobstart is $count , job is $job")
         count += 1
       }
@@ -442,8 +441,40 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     logInfo("Successful")
   }
 
-  // disabled since this hangs in BaseColumnFormatRelation.withTableWriteLock
-  ignore("test the concurrent deleteFrom in multiple Column tables") {
+  test("simple write lock") {
+    snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Key1'," +
+      "KEY_COLUMNS 'Key1'," +
+      "BUCKETS '1')")
+
+    val rdd = sc.parallelize(
+      (1 to 200000).map(i => TestData(i, i.toString)))
+    val dataDF = snc.createDataFrame(rdd)
+    import org.apache.spark.sql.snappy._
+    dataDF.write.putInto(tableName)
+    dataDF.write.deleteFrom(tableName)
+
+
+    val t = new Thread(new Runnable {
+      override def run(): Unit = {
+        val snc = new SnappySession(sc)
+        val rdd = sc.parallelize(
+          (1 to 200000).map(i => TestData(i, i.toString)))
+
+        val dataDF = snc.createDataFrame(rdd)
+        import org.apache.spark.sql.snappy._
+        dataDF.write.putInto(tableName)
+        dataDF.write.deleteFrom(tableName)
+      }
+    })
+    t.start()
+    t.join()
+  }
+
+  test("test the concurrent deleteFrom in multiple Column tables") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
 
     snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
@@ -480,9 +511,9 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
     import scala.concurrent.ExecutionContext.Implicits.global
     val doPut = (table: String) => Future {
+      val snc = new SnappySession(sc)
       val rdd = sc.parallelize(
         (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(table)
@@ -491,21 +522,34 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       assert(r2.length == 200000)
     }
 
+    Seq(tableName, tableName2, tableName3, tableName4).foreach(doPut(_))
 
-    val putTasks = Array.fill(5)(doPut(tableName))
-    val putTasks2 = Array.fill(5)(doPut(tableName2))
-    val putTasks3 = Array.fill(5)(doPut(tableName3))
-    val putTasks4 = Array.fill(5)(doPut(tableName4))
+    val counter = new AtomicInteger(0)
+
+    val doDelete = (table: String, maxKey: Int) => Future {
+      val snc = new SnappySession(sc)
+      val rdd = sc.parallelize(
+        (1 to 200000).map(i => TestData(i, i.toString)))
+      val dataDF = snc.createDataFrame(rdd)
+      import org.apache.spark.sql.snappy._
+      dataDF.filter(s"key1 < $maxKey").write.deleteFrom(table)
+    }
 
 
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    putTasks2.foreach(Await.result(_, Duration.Inf))
-    putTasks3.foreach(Await.result(_, Duration.Inf))
-    putTasks4.foreach(Await.result(_, Duration.Inf))
+    val delTasks = Array.fill(5)(doDelete(tableName, counter.addAndGet(50000)))
+    val delTasks2 = Array.fill(5)(doDelete(tableName2, counter.addAndGet(50000)))
+    val delTasks3 = Array.fill(5)(doDelete(tableName3, counter.addAndGet(50000)))
+    val delTasks4 = Array.fill(5)(doDelete(tableName4, counter.addAndGet(50000)))
+
+
+    delTasks.foreach(Await.result(_, Duration.Inf))
+    delTasks2.foreach(Await.result(_, Duration.Inf))
+    delTasks3.foreach(Await.result(_, Duration.Inf))
+    delTasks4.foreach(Await.result(_, Duration.Inf))
 
     Seq(tableName, tableName2, tableName3, tableName4).foreach(table => {
       val result = snc.sql("SELECT * FROM " + table).collect()
-      assert(result.length == 200000)
+      assert(result.length == 0)
     })
     logInfo("Successful")
   }
