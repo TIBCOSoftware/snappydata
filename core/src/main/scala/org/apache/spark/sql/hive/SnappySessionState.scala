@@ -388,6 +388,10 @@ class SnappySessionState(val snappySession: SnappySession)
 
   object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+      // pivot with '*' projection messes up references for some reason
+      // in older versions of Spark
+      case Project(projectList, p: Pivot)
+        if projectList.length == 1 && projectList.head.isInstanceOf[Star] => p
       case p if !p.childrenResolved => p
       case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
           groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
@@ -400,6 +404,14 @@ class SnappySessionState(val snappySession: SnappySession)
           case x => x
         }
         Aggregate(newGroups, aggs, child)
+
+      // add implicit grouping columns to pivot
+      case p@Pivot(groupBy, pivotColumn, _, aggregates, child)
+        if groupBy.isEmpty && pivotColumn.resolved && aggregates.forall(_.resolved) =>
+        val pivotColAndAggRefs = pivotColumn.references ++ AttributeSet(aggregates)
+        val groupByExprs = child.output.filterNot(pivotColAndAggRefs.contains)
+        p.copy(groupByExprs = groupByExprs)
+
       case o => o
     }
   }
@@ -539,8 +551,7 @@ class SnappySessionState(val snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Nil, DMLExternalTable(snappySession.tableIdentifier(
-                  mutable.table), lr, currentKey.sqlText), lr)
+                return (Nil, DMLExternalTable(lr, currentKey.sqlText), lr)
               case _ =>
                 throw new AnalysisException(
                   s"Empty key columns for update/delete on $mutable")
@@ -589,7 +600,7 @@ class SnappySessionState(val snappySession: SnappySession)
           case lr: LogicalRelation if lr.relation.isInstanceOf[JDBCMutableRelation] =>
             val cols = columnNames.map(JdbcExtendedUtils.quotedName(_)).mkString(", ")
             val cmd = s"$op ${JdbcExtendedUtils.quotedName(name)}($cols) $childStr"
-            plan -> DMLExternalTable(tableId, child, cmd)
+            plan -> DMLExternalTable(child, cmd)
           case table =>
             // search for columnNames in table output
             val output = table.output
@@ -703,13 +714,17 @@ class SnappySessionState(val snappySession: SnappySession)
         s"INSERT ${if (i.overwrite.enabled) "OVERWRITE" else "INTO"}", i.childStr) match {
         case (_, d: DMLExternalTable) =>
           // no support for OVERWRITE or PARTITION for this case
+          val tableName = d.child match {
+            case LogicalRelation(m: JDBCMutableRelation, _, _) => " " + m.resolvedName
+            case _ => ""
+          }
           if (i.overwrite.enabled) {
             throw new AnalysisException(s"INSERT OVERWRITE not supported with " +
-                s"table column specification on row table ${d.tableName.unquotedString}")
+                s"table column specification on row table$tableName")
           }
           if (i.partition.nonEmpty) {
             throw new AnalysisException(s"INSERT with PARTITION not supported with " +
-                s"table column specification on row table ${d.tableName.unquotedString}")
+                s"table column specification on row table$tableName")
           }
           d
         case (t, c) => if ((t eq i.table) && (c eq i.child)) i else i.copy(table = t, child = c)
