@@ -5,7 +5,7 @@
   //D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
 
   io/snappydata/hydra/hiveThriftServer/htsConcurrency.conf
-    A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=3
+    A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
     B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
     C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
     D=worker workerHosts=3 workerVMsPerHost=1 workerThreadsPerVM=1
