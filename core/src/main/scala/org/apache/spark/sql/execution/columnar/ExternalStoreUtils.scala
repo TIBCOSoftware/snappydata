@@ -221,13 +221,13 @@ object ExternalStoreUtils {
 
   def getLdapGroupsForUser(userId: String): Array[String] = {
     val auth = Misc.getMemStoreBooting.getDatabase.getAuthenticationService.
-      asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
+        asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
 
     auth match {
       case x: LDAPAuthenticationSchemeImpl => x.getLdapGroupsOfUser(userId).
-        toArray[String](Array.empty)
+          toArray[String](Array.empty)
       case _ => throw new NameNotFoundException("Require LDAP authentication scheme for " +
-        "LDAP group support but is " + auth)
+          "LDAP group support but is " + auth)
     }
   }
 
@@ -767,8 +767,7 @@ object ExternalStoreUtils {
           case _ =>
         }
       } catch {
-        case sqle: SQLException =>
-        // ignored
+        case _: SQLException => // ignored
       }
       finally {
         clientStmt.foreach(s => s.close())

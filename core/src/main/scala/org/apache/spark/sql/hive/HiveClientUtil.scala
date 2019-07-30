@@ -160,7 +160,8 @@ object HiveClientUtil extends Logging {
     val propertyNames = props.stringPropertyNames.iterator()
     while (propertyNames.hasNext) {
       val name = propertyNames.next()
-      System.setProperty(name, props.getProperty(name))
+      val value = props.getProperty(name)
+      if (value ne null) System.setProperty(name, value)
     }
 
     // set integer properties after the system properties have been used by
