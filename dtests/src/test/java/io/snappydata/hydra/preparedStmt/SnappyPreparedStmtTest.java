@@ -27,14 +27,14 @@ public class SnappyPreparedStmtTest extends SnappyTest {
   public static SnappyPreparedStmtTest snappyPreparedStmtTest;
   String[] queryArr = {"q2", "q8", "q9", "q10", "q13", "q16", "q23a", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58", "q66", "q75", "q80",
       "q4", "q6", "q11", "q15", "q18", "q19", "q26", "q27", "q38", "q41", "q46", "q47", "q50", "q56", "q57",
-      "q21", "q97", "q96", "q95", "q94", "q92", "q89", "q87", "q86", "q85", "q84", "q83", "q69", "q65", "q64", "q63", "q59"};
+      "q21", "q97", "q96", "q95", "q94", "q92", "q89", "q87", "q86", "q85", "q84", "q83", "q69", "q65", "q64", "q63", "q59","q16View","q53View"};
   String[] dateCol = {"'2000-03-11'", "'2000-01-27'", "'1999-02-01'"};
   Integer[] dYearVal = {1999, 2000, 2001};
   Integer[] intVal = {1200, 1212, 1201};
   Double[] doubleVal = {50.00, 10.00, 100.00};
   String[] categoryVal = {"'Books'", "'Electronics'", "'Jewelry'"};
   String[] ca_cityVal = {"'Springfield'", "'Maple Grove'", "'Edgewood'"};
-
+  Integer[] viewVal = {467,132,214};
 
   public SnappyPreparedStmtTest() {
   }
@@ -101,7 +101,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             break;
           case "q89":
             ps.setInt(1, dYearVal[j]);
-            queryStringWithCC = tempQueryStringPS.replace("?", dateCol[j]);
+            queryStringWithCC = tempQueryStringPS.replace("?", dYearVal[j].toString());
             isChangingConstant = true;
 
             break;
@@ -353,11 +353,15 @@ public class SnappyPreparedStmtTest extends SnappyTest {
             for (int i = 1; i <= 6; i++)
               ps.setString(i, "2000-08-23");
             break;
+          case "q53View":
+            ps.setDouble(1, 132);
+            queryStringWithCC = tempQueryStringPS.replace("?", viewVal[j].toString());
+            isChangingConstant = true;
+            break;
         }
         Log.getLogWriter().info("Executing query : " + queryName);
         ResultSet rsPS = ps.executeQuery();
         Log.getLogWriter().info("Executed query : " + queryName);
-        //  Log.getLogWriter().info("Executing non ps query for " + queryFilePath + "/" + queryName + ".sql");
         String queryString = null;
 
         if (!isChangingConstant) {
@@ -405,27 +409,34 @@ public class SnappyPreparedStmtTest extends SnappyTest {
 
   public void validateResultSet(ResultSet rs, ResultSet rsPS, String queryName) {
     try {
+      String dest = getCurrentDirPath()+ File.separator + "queryResultFiles";
+      File queryResultDir = new File(dest);
+      if (!queryResultDir.exists()) queryResultDir.mkdir();
+
+      String perQueryDir =  dest + File.separator + queryName;
+      File perQueryResultDir = new File(perQueryDir);
+      if (!perQueryResultDir.exists()) perQueryResultDir.mkdir();
+
       SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-      String logFile = getCurrentDirPath();
       Long currentTime=System.currentTimeMillis();
       String fileName = queryName+"_"+getMyTid()+"_"+currentTime;
       String outputFile,outputFilePS;
       StructTypeImpl snappyStrtTyp = ResultSetHelper.getStructType(rs);
       List<Struct> snappyList = ResultSetHelper.asList(rs, snappyStrtTyp, false);
-      outputFile = logFile + File.separator + fileName + ".out";
+      outputFile = perQueryResultDir + File.separator + fileName + ".out";
       Log.getLogWriter().info("The total num of rows for  " + queryName + " without prepared statement is  = " + snappyList.size());
       testInstance.listToFile(snappyList, outputFile);
       rs.close();
 
       StructTypeImpl snappyPSStrtTyp = ResultSetHelper.getStructType(rsPS);
       List<Struct> snappyPSList = ResultSetHelper.asList(rsPS, snappyPSStrtTyp, false);
-      outputFilePS = logFile + File.separator + fileName + "_PS.out";
+      outputFilePS = perQueryResultDir + File.separator + fileName + "_PS.out";
       Log.getLogWriter().info("The total num of rows for  " + queryName + " with prepared statement is  = " + snappyPSList.size());
       testInstance.listToFile(snappyPSList, outputFilePS);
       rsPS.close();
 
       Log.getLogWriter().info("Heading for full resultSet validation");
-      testInstance.compareFiles(logFile, outputFile, outputFilePS, true, fileName);
+      testInstance.compareFiles(perQueryDir, outputFile, outputFilePS, true, fileName);
 
     } catch (SQLException ex) {
       throw new TestException("Caught SQLException " + ex.getMessage());
