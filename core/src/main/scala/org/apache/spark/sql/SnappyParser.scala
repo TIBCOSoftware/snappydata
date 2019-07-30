@@ -1207,7 +1207,7 @@ class SnappyParser(session: SnappySession)
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     capture(INSERT ~ INTO) ~ tableIdentifier ~
-        capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
+        capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(
       UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
   }
 
@@ -1229,8 +1229,7 @@ class SnappyParser(session: SnappySession)
             PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
           }
           else {
-            DMLExternalTable(r,
-              UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
+            DMLExternalTable(UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
           }
         })
   }

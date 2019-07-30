@@ -30,7 +30,6 @@ import shapeless.{::, HNil}
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
@@ -790,11 +789,9 @@ abstract class SnappyDDLParser(session: SnappySession)
     (GRANT | REVOKE | (CREATE | DROP) ~ (DISKSTORE | TRIGGER) |
         (ch('{').? ~ ws ~ (CALL | EXECUTE))) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
-          Some(JdbcExtendedUtils.SYSIBM_SCHEMA)),
-          LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-            Map(SnappyExternalCatalog.DBTABLE_PROPERTY -> JdbcExtendedUtils
-                .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))
+        (() => DMLExternalTable(LogicalRelation(new execution.row.DefaultSource().createRelation(
+          session.sqlContext, Map(SnappyExternalCatalog.DBTABLE_PROPERTY -> JdbcExtendedUtils
+              .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))
   }
 
   /**
@@ -1012,14 +1009,8 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def newInstance(): SnappyDDLParser
 }
 
-case class DMLExternalTable(
-    tableName: TableIdentifier,
-    query: LogicalPlan,
-    command: String)
-    extends LeafNode with Command {
-  
-  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+case class DMLExternalTable(child: LogicalPlan, command: String) extends UnaryNode {
 
-  override lazy val resolved: Boolean = query.resolved
+  override lazy val resolved: Boolean = child.resolved
   override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }
