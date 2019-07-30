@@ -17,8 +17,9 @@
 
 package io.snappydata.cluster
 
-import java.sql.{Connection, SQLException, Statement}
+import java.sql.{Connection, DriverManager, SQLException, Statement}
 import java.util
+import java.util.Properties
 
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -141,6 +142,64 @@ class SetIsolationDUnitTest (val s: String)
     val stmt2 = queryRoutingDisabledConn.createStatement()
     checkUnsupportedQueries(stmt2, "select count(*) from coltable")
     queryRoutingDisabledConn.close()
+  }
+
+  def testSNAP3088(): Unit = {
+    val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
+    val props = new Properties()
+    props.setProperty("allow-explicit-commit", "true")
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + netPort1, props)
+
+    logInfo("Creating tables for the test")
+    createTables(conn)
+
+    // with autocommit false transactions on column tables
+    // allowed when "allow-explicit-commit" is set to true
+    logInfo("setting autocommit false")
+    conn.setAutoCommit(false)
+    conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+    performOperationsOnTable(conn, "coltable")
+    performOperationsOnTable(conn, "rowtable")
+
+    val stmt1 = conn.createStatement()
+    // few queries involving column tables that should not throw exception
+    stmt1.execute("insert into rowtable select col1, col2, col3 from coltable")
+    var rs1 = stmt1.executeQuery("select count(*) from rowtable")
+    assert(rs1.next())
+    val numRows1 = rs1.getInt(1)
+    assert(numRows1 == 200, s"Did not get expected count. Expected = 200, actual = $numRows1")
+    rs1.close()
+
+    stmt1.execute("insert into coltable values(101, 101, 101)")
+    // rollback will be a no-op
+    conn.rollback()
+    rs1 = stmt1.executeQuery("select count(*) from coltable")
+    assert(rs1.next())
+    val numRows2 = rs1.getInt(1)
+    assert(numRows2 == 101, s"Did not get expected count. Expected = 101, actual = $numRows2")
+    rs1.close()
+
+    // commit will be a no-op
+    conn.commit()
+    conn.close()
+
+    // explicitly set "allow-explicit-commit" to false
+    // transaction on column tables will throw error
+    props.setProperty("allow-explicit-commit", "false")
+    val conn2 = DriverManager.getConnection(
+      "jdbc:snappydata://localhost:" + netPort1, props)
+    logInfo("Creating tables for the test")
+    conn2.createStatement().execute("drop table coltable")
+    conn2.createStatement().execute("drop table rowtable")
+    createTables(conn2)
+    logInfo("setting autocommit false")
+    conn2.setAutoCommit(false)
+    conn2.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED)
+    val stmt2 = conn2.createStatement()
+    checkUnsupportedQueries(stmt2, "select count(*) from coltable")
+    conn2.close()
   }
 
   var gotConflict = false
