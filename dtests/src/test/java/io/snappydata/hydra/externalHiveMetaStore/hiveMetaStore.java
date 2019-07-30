@@ -28,48 +28,48 @@ public class hiveMetaStore extends SnappyTest
     static String showTblsApp = "show tables in app";
     static String showTblsDefault = "show tables in default";
 
-    static String createHiveRegions = "create table hive_regions(RegionID int,RegionDescription string) row format delimited fields terminated by ','  " +
-            "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveRegions = "create table hive_regions(RegionID int,RegionDescription string) row format delimited fields terminated by ','  ";
+            //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveRegions = "load data local inpath '/home/cbhatt/north_wind/regions.csv' overwrite into table hive_regions";
 
-    static String createHiveCategories = "create table hive_categories(CategoryID int,CategoryName string,Description string,Picture string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveCategories = "create table hive_categories(CategoryID int,CategoryName string,Description string,Picture string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveCategories = "load data local inpath '/home/cbhatt/north_wind/categories.csv' overwrite into table hive_categories";
 
-    static String createHiveShippers = "create table hive_shippers(ShipperID int ,CompanyName string ,Phone string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveShippers = "create table hive_shippers(ShipperID int ,CompanyName string ,Phone string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveShippers = "load data local inpath '/home/cbhatt/north_wind/shippers.csv' overwrite into table hive_shippers";
 
-    static String createHiveEmployees = "create table hive_employees(EmployeeID int,LastName string,FirstName string,Title string,TitleOfCourtesy string,BirthDate timestamp,HireDate timestamp,Address string,City string,Region string,PostalCode string,Country string,HomePhone string,Extension string,Photo string,Notes string,ReportsTo int,PhotoPath string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveEmployees = "create table hive_employees(EmployeeID int,LastName string,FirstName string,Title string,TitleOfCourtesy string,BirthDate timestamp,HireDate timestamp,Address string,City string,Region string,PostalCode string,Country string,HomePhone string,Extension string,Photo string,Notes string,ReportsTo int,PhotoPath string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveEmployees = "load data local inpath '/home/cbhatt/north_wind/employees.csv' overwrite into table hive_employees";
 
-    static String createHiveCustomers = "create table hive_customers(CustomerID string,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveCustomers = "create table hive_customers(CustomerID string,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveCustomers = "load data local inpath '/home/cbhatt/north_wind/customers.csv' overwrite into table hive_customers";
 
-    static String createHiveOrders = "create table hive_orders(OrderID int,CustomerID string,EmployeeID int,OrderDate timestamp,RequiredDate timestamp,ShippedDate timestamp,ShipVia int,Freight double,ShipName string,ShipAddress string,ShipCity string,ShipRegion string,ShipPostalCode string,ShipCountry string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveOrders = "create table hive_orders(OrderID int,CustomerID string,EmployeeID int,OrderDate timestamp,RequiredDate timestamp,ShippedDate timestamp,ShipVia int,Freight double,ShipName string,ShipAddress string,ShipCity string,ShipRegion string,ShipPostalCode string,ShipCountry string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveOrders = "load data local inpath '/home/cbhatt/north_wind/orders.csv' overwrite into table hive_orders";
 
-    static String createHiveOrderDetails = "create table hive_order_details(OrderID int,ProductID int,UnitPrice double,Quantity smallint,Discount double) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveOrderDetails = "create table hive_order_details(OrderID int,ProductID int,UnitPrice double,Quantity smallint,Discount double) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveOrderDetails = "load data local inpath '/home/cbhatt/north_wind/order_details.csv' overwrite into table hive_order_details";
 
-    static String createHiveProducts = "create table hive_products(ProductID int,ProductName string,SupplierID int,CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint,UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveProducts = "create table hive_products(ProductID int,ProductName string,SupplierID int,CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint,UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveProducts = "load data local inpath '/home/cbhatt/north_wind/products.csv' overwrite into table hive_products";
 
-    static String createHiveSuppliers = "create table hive_suppliers(SupplierID int,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string,HomePage string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveSuppliers = "create table hive_suppliers(SupplierID int,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string,HomePage string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveSuppliers = "load data local inpath '/home/cbhatt/north_wind/suppliers.csv' overwrite into table hive_suppliers";
 
-    static String createHiveTerritories = "create table hive_territories(TerritoryID string,TerritoryDescription string,RegionID string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveTerritories = "create table hive_territories(TerritoryID string,TerritoryDescription string,RegionID string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveTerritories = "load data local inpath '/home/cbhatt/north_wind/territories.csv' overwrite into table hive_territories";
 
-    static String createHiveEmployeeTerritories = "create table hive_employee_territories(EmployeeID int,TerritoryID string) row format delimited fields terminated by ',' " +
-    "tblproperties(\"skip.header.line.count\"=\"1\")";
+    static String createHiveEmployeeTerritories = "create table hive_employee_territories(EmployeeID int,TerritoryID string) row format delimited fields terminated by ',' ";
+    //"tblproperties(\"skip.header.line.count\"=\"1\")";
     static String loadHiveEmployeeTerritories = "load data local inpath '/home/cbhatt/north_wind/employee_territories.csv' overwrite into table hive_employee_territories";
 
     static String dropHiveRegions = "drop table if exists default.hive_regions";
@@ -163,8 +163,16 @@ public class hiveMetaStore extends SnappyTest
     };
 
     static String[] joinQueries = {
-            "SELECT default.hive_employees.EmployeeID, default.hive_employees.FirstName,default.hive_employees.LastName,app.snappy_orders.OrderID,app.snappy_orders.OrderDate FROM default.hive_employees " +
-                    "JOIN app.snappy_orders ON (default.hive_employees.EmployeeID = app.snappy_orders.EmployeeID) ORDER BY app.snappy_orders.OrderDate"
+            "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate",
+            //Below Query has different output than Snappy.
+            //"SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM default.hive_orders o JOIN default.hive_employees e ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) ORDER BY c.CompanyName"
+    };
+
+    static String[] beelineJoinQueries = {
+            "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN default.hive_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate"
+            //"SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate",
+            //Below Query has different output than Beeline.
+            //"SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM snappy_orders o JOIN snappy_employees e ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) ORDER BY c.CompanyName"
     };
 
 
@@ -192,6 +200,7 @@ public class hiveMetaStore extends SnappyTest
         }
     }
 
+
     public static void HydraTask_ConnectToSnappy() {
         try {
             metaStore.snappyConnection = SnappyTest.getLocatorConnection();
@@ -200,6 +209,19 @@ public class hiveMetaStore extends SnappyTest
             throw new TestException("Snappy : Exception in  acquiring connection", se);
         }
     }
+
+    public static void HydraTask_DropAllTheTblsIfPresent() {
+        try {
+            metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
+            HydraTask_DropSnappyTables();
+            HydraTask_DropBeelineTablesFromSnappy();
+        } catch (SQLException se) {
+            throw new TestException("Snapppy :  Exception in dropping all tables ", se);
+        }
+    }
+
+    
+
 
     public static void HydraTask_CreateTableAndLoadDataFromBeeline() {
         try {
@@ -289,8 +311,8 @@ public class hiveMetaStore extends SnappyTest
             for(int index =0 ; index < snappyQueries.length;index++) {
                 metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery(snappyQueries[index]);
                 metaStore.rs = metaStore.beelineConnection.createStatement().executeQuery(beelineQueries[index]);
-                StructTypeImpl beelineSti = ResultSetHelper.getStructType(metaStore.snappyRS);
-                StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.rs);
+                StructTypeImpl beelineSti = ResultSetHelper.getStructType(metaStore.rs);
+                StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.snappyRS);
                 List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(metaStore.rs, beelineSti, false);
                 List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
                 metaStore.snappyRS.close();
@@ -300,8 +322,8 @@ public class hiveMetaStore extends SnappyTest
                 testInstance.listToFile(snappyList, snappyFile);
                 testInstance.listToFile(beelineList, beelineFile);
                 String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index + "_"+ System.currentTimeMillis());
-//                snappyList.clear();
-//                beelineList.clear();
+                snappyList.clear();
+                beelineList.clear();
                 if (msg.length() > 0) {
                     throw new util.TestException("Validation failed : " + msg);
                 }
@@ -313,54 +335,43 @@ public class hiveMetaStore extends SnappyTest
 
     public static void HydraTask_JoinBetweenHiveAndSnappy() {
         try {
-//            SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-//            String logFile = getCurrentDirPath() + "/joinresultdir";
-//            String beelineFile, snappyFile;
-//            File queryResultDir = new File(logFile);
-//            if (!queryResultDir.exists())
-//                queryResultDir.mkdirs();
+            SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+            ResultSet verificationRS = null;
 
-            //metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
-            //Log.getLogWriter().info("Pointing to external hive meta store");
-            //metaStore.snappyST = metaStore.snappyConnection.createStatement();
-            //Log.getLogWriter().info("create statement from snappy");
-            //metaStore.snappyRS = metaStore.metaStore.snappyST.executeQuery(showTblsDefault);
-            //Log.getLogWriter().info("execute show tables in default");
-            //Log.getLogWriter().info("---------------------------------------------------------------------------------------------------------------");
-            metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
-            Log.getLogWriter().info("Pointing to external hive meta store");
+            String logFile = getCurrentDirPath() + "/joinresultdir";
+            String beelineFile, snappyFile;
+            File queryResultDir = new File(logFile);
+            if (!queryResultDir.exists())
+                queryResultDir.mkdirs();
             for(int index =0 ; index < joinQueries.length;index++) {
                 metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery(joinQueries[index]);
-                Log.getLogWriter().info("Joining Result........");
-                while (metaStore.snappyRS.next()) {
-                    Log.getLogWriter().info(metaStore.snappyRS.getString(1) + "," + metaStore.snappyRS.getString(2) + "," + metaStore.snappyRS.getString(3) + "," + metaStore.snappyRS.getString(4) + "," +
-                            metaStore.snappyRS.getString(5));
-                }
-//                metaStore.rs = metaStore.beelineConnection.createStatement().executeQuery(beelineQueries[index]);
-//                StructTypeImpl beelineSti = ResultSetHelper.getStructType(metaStore.snappyRS);
-//                StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.rs);
-//                List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(metaStore.rs, beelineSti, false);
-//                List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
-//                metaStore.snappyRS.close();
-//                metaStore.rs.close();
-//                beelineFile = logFile + File.separator + "beelinejoinQuery_" + index + ".out";
-//                snappyFile = logFile + File.separator + "snappyjoinQuery_" + index + ".out";
-//                testInstance.listToFile(snappyList, snappyFile);
-//                testInstance.listToFile(beelineList, beelineFile);
-//                String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index);
-////                snappyList.clear();
-////                beelineList.clear();
-//                if (msg.length() > 0) {
-//                    throw new util.TestException("Validation failed : " + msg);
+//                Log.getLogWriter().info("Joining Result........");
+//                while (metaStore.snappyRS.next()) {
+//                    Log.getLogWriter().info(metaStore.snappyRS.getString(1) + "," + metaStore.snappyRS.getString(2) + "," + metaStore.snappyRS.getString(3) + "," + metaStore.snappyRS.getString(4) + "," +
+//                            metaStore.snappyRS.getString(5));
 //                }
+                verificationRS = metaStore.snappyConnection.createStatement().executeQuery(beelineJoinQueries[index]);
+                StructTypeImpl beelineSti = ResultSetHelper.getStructType(verificationRS);
+                StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.snappyRS);
+                List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(verificationRS, beelineSti, false);
+                List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
+                metaStore.snappyRS.close();
+                verificationRS.close();
+                beelineFile = logFile + File.separator + "beelinejoinQuery_" + index + ".out";
+                snappyFile = logFile + File.separator + "snappyjoinQuery_" + index + ".out";
+                testInstance.listToFile(snappyList, snappyFile);
+                testInstance.listToFile(beelineList, beelineFile);
+                String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index);
+                snappyList.clear();
+                beelineList.clear();
+                if (msg.length() > 0) {
+                    throw new util.TestException("Validation failed : " + msg);
+                }
             }
         } catch(SQLException se) {
             throw new TestException("Snappy : Exception in joing tables", se);
         }
-
     }
-
-
 
     public static void HydraTask_DropSnappyTables() {
         try {
