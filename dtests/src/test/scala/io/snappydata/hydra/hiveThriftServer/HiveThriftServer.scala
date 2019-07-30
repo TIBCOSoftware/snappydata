@@ -109,24 +109,6 @@ class HiveThriftServer extends SnappySQLJob {
     deleteFromTableFromBeeline(hiveThriftServer, "delete from Emp3",
       snc, spark, pw, sqlContext, "Emp3", "Row")
     executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp3")
-
-//    pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 4 : Create column table from Snappy, insert,update,delete from beeline...")
-//    createRowOrColumnTableFromSnappy(snc,
-//      "create TablE if not exists Emp4(id long, name String) using column", pw)
-//    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp4 select " +
-//      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
-//      spark, pw, sqlContext, "Emp4", "column")
-//    executeShowTables(hiveThriftServer, "show TabLES in default", pw)
-//    updateTableFromSnappy(hiveThriftServer,
-//      "update Emp4 set name = " +
-//        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp4", "column")
-//    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp4",
-//      snc, spark, pw, sqlContext, "Emp4", "column")
-//    executeDropTableFromSnappy(snc, "drop table if exists Emp4")
-//
-//    executeShowTables(hiveThriftServer, "ShoW tAbLES iN DEFAULT", pw)
-
     pw.println("-------------------------------------------------------------------------------")
     pw.println("Case 4 : Create column table from Snappy, insert,update,delete from beeline...")
     createRowOrColumnTableFromSnappy(snc,
@@ -194,22 +176,6 @@ class HiveThriftServer extends SnappySQLJob {
     executeDropTableFromBeeLine(hiveThriftServer, "drop table if exists Emp7")
 
     pw.println("-------------------------------------------------------------------------------")
-//    pw.println("Case 8 : Create column table from Snappy, insert,update,delete from Snappy...")
-//    createRowOrColumnTableFromSnappy(snc,
-//      "create TablE if not exists Emp8(id long, name String) using column", pw)
-//    insertIntoTableFromSnappy(hiveThriftServer, "insert into Emp8 select " +
-//      "id, concat(id, '_Snappy_TIBCO') from range(50000000)", snc,
-//      spark, pw, sqlContext, "Emp8", "column")
-//    executeShowTables(hiveThriftServer, "show TabLES in app", pw)
-//    updateTableFromSnappy(hiveThriftServer,
-//      "update Emp8 set name = " +
-//        "'_TIBCO' where id > 1000 and id < 2000", snc, spark, pw, sqlContext, "Emp8", "column")
-//    deleteFromTableFromSnappy(hiveThriftServer, "delete from Emp8",
-//      snc, spark, pw, sqlContext, "Emp8", "column")
-//    executeDropTableFromSnappy(snc, "drop table if exists Emp8")
-//
-//    executeShowTables(hiveThriftServer, "ShoW tAbLES iN app", pw)
-
     pw.println("Case 8 : Create column table from Snappy, insert,update,delete from Snappy...")
     createRowOrColumnTableFromSnappy(snc,
       "create TablE if not exists Emp8(id long, name String) using column", pw)
