@@ -85,6 +85,8 @@ abstract class ClusterManagerTestBase(s: String)
 
   sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
 
+  sysProps.setProperty("gemfire.DISALLOW_RESERVE_SPACE", "true")
+
   var host: Host = _
   var vm0: VM = _
   var vm1: VM = _
