@@ -65,7 +65,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected var keyData: ByteBufferData = null,
     protected var valueData: ByteBufferData = null,
     protected var valueDataPosition: Long = 0L,
-    val approxMaxCapacity: Int = Integer.MAX_VALUE) {
+    val approxMaxCapacity: Int = ((Integer.MAX_VALUE - 7) >>> 3) << 3) {
   val taskContext: TaskContext = TaskContext.get()
   private var maxSizeReached: Boolean = false
   private[this] val consumer = if ((taskContext ne null) && !GemFireCacheImpl.hasNewOffHeap) {
@@ -343,7 +343,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   def resize(required: Int, allocator: BufferAllocator, maxCapacity: Int): ByteBufferData = {
     val currentUsed = this.buffer.limit;
     val currentCapacity = this.buffer.capacity;
-    if (maxCapacity - currentUsed < required ) {
+    if (currentCapacity > maxCapacity || maxCapacity - currentUsed < required ) {
       throw new BufferSizeLimitExceededException(currentUsed, required, maxCapacity);
     }
     // the expand will not full respect max capacity , but that is ok , ...

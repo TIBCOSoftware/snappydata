@@ -912,10 +912,22 @@ case class SnappyHashAggregateExec(
             }
            |int $numKeyBytesTerm = 0;
            |$childProduce
-           |long $maxMemory = $hashMapTerm.maxMemory();
-           |$peakMemory.add($maxMemory);
-           |if ($hashMapTerm.taskContext() != null) {
-           |  $hashMapTerm.taskContext().taskMetrics().incPeakExecutionMemory($maxMemory);
+           |if ($overflowHashMapsTerm == null) {
+           |  long $maxMemory = $hashMapTerm.maxMemory();
+           |  $peakMemory.add($maxMemory);
+           |  if ($hashMapTerm.taskContext() != null) {
+           |    $hashMapTerm.taskContext().taskMetrics().incPeakExecutionMemory($maxMemory);
+           |  }
+           |} else {
+              $iterClassName tempIter = $overflowHashMapsTerm.iterator();
+              while(tempIter.hasNext()) {
+                $hashSetClassName tempMap = ($hashSetClassName)tempIter.next();
+                long $maxMemory = tempMap.maxMemory();
+                $peakMemory.add($maxMemory);
+                if (tempMap.taskContext() != null) {
+                  tempMap.taskContext().taskMetrics().incPeakExecutionMemory($maxMemory);
+                }
+              }
            |}
          |}""".stripMargin)
 
@@ -1027,7 +1039,6 @@ case class SnappyHashAggregateExec(
           //$hashMapTerm.release();
           $hashMapTerm = null;
         }
-
       }
     """
   }
