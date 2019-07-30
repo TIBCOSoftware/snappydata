@@ -224,6 +224,8 @@ public class HiveThrifServerUtils extends SnappyTest {
                 testInstance.listToFile(beelineList, beelineFile);
 
                 String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index);
+                snappyList.clear();
+                beelineList.clear();
                 if (msg.length() > 0) {
                     throw new TestException("Validation failed : " + msg);
                 }
