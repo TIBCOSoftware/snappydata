@@ -584,16 +584,17 @@ object SnappyParserConsts {
   final val UNBOUNDED: Keyword = nonReservedKeyword("unbounded")
   final val WINDOW: Keyword = nonReservedKeyword("window")
 
-  // interval units are not reserved
-  final val DAY: Keyword = nonReservedKeyword("day")
-  final val HOUR: Keyword = nonReservedKeyword("hour")
-  final val MICROSECOND: Keyword = nonReservedKeyword("microsecond")
-  final val MILLISECOND: Keyword = nonReservedKeyword("millisecond")
-  final val MINUTE: Keyword = nonReservedKeyword("minute")
-  final val MONTH: Keyword = nonReservedKeyword("month")
-  final val SECOND: Keyword = nonReservedKeyword("second")
-  final val WEEK: Keyword = nonReservedKeyword("week")
-  final val YEAR: Keyword = nonReservedKeyword("year")
+  // interval units are neither reserved nor non-reserved and can be freely
+  // used as named strictIdentifier
+  final val DAY: Keyword = new Keyword("day")
+  final val HOUR: Keyword = new Keyword("hour")
+  final val MICROSECOND: Keyword = new Keyword("microsecond")
+  final val MILLISECOND: Keyword = new Keyword("millisecond")
+  final val MINUTE: Keyword = new Keyword("minute")
+  final val MONTH: Keyword = new Keyword("month")
+  final val SECOND: Keyword = new Keyword("second")
+  final val WEEK: Keyword = new Keyword("week")
+  final val YEAR: Keyword = new Keyword("year")
 
   // cube, rollup, grouping sets etc are not reserved
   final val CUBE: Keyword = nonReservedKeyword("cube")
@@ -601,6 +602,7 @@ object SnappyParserConsts {
   final val GROUPING: Keyword = nonReservedKeyword("grouping")
   final val SETS: Keyword = nonReservedKeyword("sets")
   final val LATERAL: Keyword = nonReservedKeyword("lateral")
+  final val PIVOT: Keyword = nonReservedKeyword("pivot")
 
   // datatypes are not reserved
   final val ARRAY: Keyword = nonReservedKeyword("array")

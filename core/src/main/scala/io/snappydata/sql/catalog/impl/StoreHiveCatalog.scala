@@ -28,6 +28,7 @@ import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemfireCacheHelper, LocalRegion, PolicyTableData}
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
@@ -35,6 +36,7 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
+import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
@@ -51,7 +53,7 @@ import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
 import org.apache.spark.sql.{AnalysisException, SnappyContext}
-import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 class StoreHiveCatalog extends ExternalCatalog with Logging {
 
@@ -419,7 +421,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       var done = false
       while (!done) {
         try {
-          val conf = new SparkConf
+          val conf = SparkEnv.get match {
+            case null => new SparkConf
+            case env =>
+              val sparkConf = env.conf.clone()
+              sparkConf.remove(SPARK_STORE_PREFIX + USERNAME_ATTR)
+              sparkConf.remove(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+              sparkConf.remove(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+              sparkConf.remove(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+              sparkConf
+          }
           for ((k, v) <- Misc.getMemStoreBooting.getBootProperties.asScala) {
             val key = k.toString
             if ((v ne null) && (key.startsWith(Constant.SPARK_PREFIX) ||
