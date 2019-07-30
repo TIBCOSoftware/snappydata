@@ -291,7 +291,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   test("ODBC_FailOverTest_AddServer_BeforeConn") {
     val flag = System.getenv("SNAPPY_NATIVE_ENABLED")
     if (flag.equalsIgnoreCase("true")) {
-      var scriptPath = s"$snappyNativeTestDir/failoverTest_NewServer.sh"
+      var scriptPath = s"$snappyNativeTestDir/failoverTest_AddServer_BeforeConn.sh"
       var consoleOutput = s"$scriptPath $snappyProductDir $snappyNativeTestDir".!!
       assert(consoleOutput.contains("Test executed successfully connected to"),
         s"FailOver failed $consoleOutput")
@@ -302,7 +302,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   test("ODBC_FailOverTest_AddServer_AfterConn") {
     val flag = System.getenv("SNAPPY_NATIVE_ENABLED")
     if (flag.equalsIgnoreCase("true")) {
-      var scriptPath = s"$snappyNativeTestDir/failoverTest_None.sh"
+      var scriptPath = s"$snappyNativeTestDir/failoverTest_AddServer_AfterConn.sh"
       var consoleOutput = s"$scriptPath $snappyProductDir $snappyNativeTestDir".!!
       assert(consoleOutput.contains("Test executed successfully connected to"),
         s"Failed to create new connection $consoleOutput")
