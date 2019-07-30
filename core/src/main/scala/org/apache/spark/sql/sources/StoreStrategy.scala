@@ -42,8 +42,11 @@ object StoreStrategy extends Strategy {
       val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
-    case d@DMLExternalTable(_, storeRelation: LogicalRelation, insertCommand) =>
-      ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, insertCommand, d.output)) :: Nil
+    case d@DMLExternalTable(child, cmd) => child.find(_.isInstanceOf[LogicalRelation]) match {
+      case Some(storeRelation: LogicalRelation) =>
+        ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, cmd, d.output)) :: Nil
+      case _ => Nil
+    }
 
     case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query) =>
       ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
