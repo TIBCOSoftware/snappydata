@@ -28,13 +28,13 @@ import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemfireCacheHelper, LocalRegion, PolicyTableData}
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
-import com.pivotal.gemfirexd.Attribute.{USERNAME_ATTR, PASSWORD_ATTR}
 import io.snappydata.Constant
 import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
