@@ -17,6 +17,7 @@
 package org.apache.spark.sql
 
 import java.util.concurrent.ConcurrentHashMap
+import javax.xml.bind.DatatypeConverter
 
 import com.gemstone.gemfire.internal.shared.SystemProperties
 import io.snappydata.QueryHint
@@ -135,6 +136,11 @@ abstract class SnappyBaseParser(session: SparkSession) extends Parser {
       ParserUtils.unescapeSQLString(
         if (s.indexOf("''") >= 0) "'" + s.substring(1, s.length - 1).replace("''", "\\'") + "'"
         else s))
+  }
+
+  protected final def hexLiteral: Rule1[Array[Byte]] = rule {
+    (ch('X') | ch('x')) ~ ws ~ stringLiteral ~> ((s: String) =>
+      DatatypeConverter.parseHexBinary(if ((s.length & 0x1) == 1) "0" + s else s))
   }
 
   final def keyword(k: Keyword): Rule0 = rule {
@@ -521,7 +527,6 @@ object SnappyParserConsts {
   final val COMMENT: Keyword = nonReservedKeyword("comment")
   final val CROSS: Keyword = nonReservedKeyword("cross")
   final val CURRENT_USER: Keyword = nonReservedKeyword("current_user")
-  final val DEFAULT: Keyword = nonReservedKeyword("default")
   final val DESCRIBE: Keyword = nonReservedKeyword("describe")
   final val DISABLE: Keyword = nonReservedKeyword("disable")
   final val DISTRIBUTE: Keyword = nonReservedKeyword("distribute")
