@@ -212,20 +212,20 @@ public class HiveThrifServerUtils extends SnappyTest {
 
                 StructTypeImpl beelineSti = ResultSetHelper.getStructType(beelineRs);
                 StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRs);
-                List<Struct> beelineList = ResultSetHelper.asList(beelineRs, beelineSti, false);
-                List<Struct> snappyList = ResultSetHelper.asList(snappyRs, snappySti, false);
-                beelineRs.close();
-                snappyRs.close();
-
                 beelineFile = logFile + File.separator + "beelineQuery_" + index + "_" + tid + ".out";
                 snappyFile = logFile + File.separator + "snappyQuery_" + index + "_" + tid + ".out";
 
-                testInstance.listToFile(snappyList, snappyFile);
+                List<Struct> beelineList = ResultSetHelper.asList(beelineRs, beelineSti, false);
+                beelineRs.close();
                 testInstance.listToFile(beelineList, beelineFile);
+                beelineList.clear();
+                List<Struct> snappyList = ResultSetHelper.asList(snappyRs, snappySti, false);
+                snappyRs.close();
+                testInstance.listToFile(snappyList, snappyFile);
+                snappyList.clear();
 
                 String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index);
-                snappyList.clear();
-                beelineList.clear();
+
                 if (msg.length() > 0) {
                     throw new TestException("Validation failed : " + msg);
                 }
