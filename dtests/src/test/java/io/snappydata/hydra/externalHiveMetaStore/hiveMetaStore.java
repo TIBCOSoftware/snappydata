@@ -169,8 +169,8 @@ public class hiveMetaStore extends SnappyTest
     };
 
     static String[] beelineJoinQueries = {
-            "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN default.hive_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate"
-            //"SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate",
+            //"SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM default.hive_employees emp JOIN default.hive_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate"
+            "SELECT emp.EmployeeID, emp.FirstName, emp.LastName, o.OrderID, o.OrderDate FROM snappy_employees emp JOIN snappy_orders o ON (emp.EmployeeID = o.EmployeeID) ORDER BY o.OrderDate",
             //Below Query has different output than Beeline.
             //"SELECT o.OrderID, c.CompanyName, e.FirstName, e.LastName FROM snappy_orders o JOIN snappy_employees e ON (e.EmployeeID = o.EmployeeID) JOIN snappy_customers c ON (c.CustomerID = o.CustomerID) WHERE o.ShippedDate > o.RequiredDate AND o.OrderDate > Cast('1998-01-01' as TIMESTAMP) ORDER BY c.CompanyName"
     };
@@ -220,7 +220,25 @@ public class hiveMetaStore extends SnappyTest
         }
     }
 
-    
+    public static void HydraTask_InsertData_AlterTableFromSnappy() {
+        try {
+            metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
+            metaStore.snappyConnection.createStatement().execute("drop table if exists default.t1");
+            metaStore.snappyConnection.createStatement().execute("drop table if exists default.renamedt1");
+            metaStore.snappyConnection.createStatement().execute("create table if not exists default.t1(id int, name String) using hive");
+            metaStore.snappyConnection.createStatement().execute("insert into default.t1 select id, concat('TIBCO_',id) from range(100000)");
+            metaStore.snappyConnection.createStatement().execute("alter table default.t1 rename to default.renamedt1");
+            metaStore.snappyRS =  metaStore.snappyConnection.createStatement().executeQuery("select count(*) as Total from default.renamedt1");
+            while(metaStore.snappyRS.next()) {
+                Log.getLogWriter().info("Total Count in default.renamedt1 is : " + metaStore.snappyRS.getString(1));
+            }
+            metaStore.snappyConnection.createStatement().execute("drop table if exists default.renamedt1");
+            Log.getLogWriter().info("Create the table in beeline from snappy, \n insert data into it from snappy, \nrename the table name from snappy, \ncount the no. of records from snappy and dropping the beeline table from snappy\n is sucessful");
+
+        } catch(SQLException se) {
+            throw new TestException("Exception in Alter table statement", se);
+        }
+    }
 
 
     public static void HydraTask_CreateTableAndLoadDataFromBeeline() {
