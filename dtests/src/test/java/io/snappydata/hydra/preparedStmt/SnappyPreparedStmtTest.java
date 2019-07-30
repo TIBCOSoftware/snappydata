@@ -452,8 +452,10 @@ public class SnappyPreparedStmtTest extends SnappyTest {
       rsPS.close();
 
       Log.getLogWriter().info("Heading for full resultSet validation");
-      testInstance.compareFiles(perQueryDir, outputFile, outputFilePS, true, fileName);
-
+      String mismatchStr = testInstance.compareFiles(perQueryDir, outputFile, outputFilePS, true, fileName);
+      if(mismatchStr.length() > 0){
+        throw new TestException("Observed data mismatch in query  " + queryName);
+      }
     } catch (SQLException ex) {
       throw new TestException("Caught SQLException " + ex.getMessage());
     }
