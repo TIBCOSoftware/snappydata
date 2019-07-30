@@ -387,6 +387,10 @@ class SnappySessionState(val snappySession: SnappySession)
 
   object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+      // pivot with '*' projection messes up references for some reason
+      // in older versions of Spark
+      case Project(projectList, p: Pivot)
+        if projectList.length == 1 && projectList.head.isInstanceOf[Star] => p
       case p if !p.childrenResolved => p
       case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
           groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
@@ -399,6 +403,14 @@ class SnappySessionState(val snappySession: SnappySession)
           case x => x
         }
         Aggregate(newGroups, aggs, child)
+
+      // add implicit grouping columns to pivot
+      case p@Pivot(groupBy, pivotColumn, _, aggregates, child)
+        if groupBy.isEmpty && pivotColumn.resolved && aggregates.forall(_.resolved) =>
+        val pivotColAndAggRefs = pivotColumn.references ++ AttributeSet(aggregates)
+        val groupByExprs = child.output.filterNot(pivotColAndAggRefs.contains)
+        p.copy(groupByExprs = groupByExprs)
+
       case o => o
     }
   }
