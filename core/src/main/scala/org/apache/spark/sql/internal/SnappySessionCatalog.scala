@@ -1035,7 +1035,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
 
     if (isEmbeddedMode) {
       callbacks.setSessionDependencies(snappySession.sparkContext,
-        functionQualifiedName, newClassLoader, true)
+        functionQualifiedName, newClassLoader, addAllJars = true)
     } else {
       newClassLoader.getURLs.foreach(url =>
         snappySession.sparkContext.addJar(url.getFile))
