@@ -1277,6 +1277,31 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test1")
   }
 
+  ignore("SNAP-3077 test if default max capacity nearing Integer.MAX_VALUE is reached." +
+    " Disabled due to heap requirements being more than 16G") {
+    snc
+    snc.sql("drop table if exists test1")
+    snc.sql("create table test1 (col1 int, col2 binary) using column ")
+
+    val conn = getSqlConnection
+    val insertPs = conn.prepareStatement("insert into test1 values (?,?)")
+
+
+    for (j <- 0 until 8) {
+        insertPs.setInt(1, j)
+        val bytes = Array.ofDim[Byte](Integer.MAX_VALUE/4 - 8)
+        bytes(j) = 1
+        insertPs.setBytes(2, bytes)
+        insertPs.addBatch()
+    }
+    insertPs.executeBatch()
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.initialCapacityOfSHABBMap", "4")
+    val rs = snc1.sql("select col2, sum(col1) from test1 group by col2").collect
+    assertEquals(8, rs.length)
+    snc.dropTable("test1")
+  }
+
 
   def getSqlConnection: Connection =
     DriverManager.getConnection(s"jdbc:snappydata://$serverHostPort2")
