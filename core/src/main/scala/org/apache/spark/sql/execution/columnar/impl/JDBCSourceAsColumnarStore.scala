@@ -17,7 +17,7 @@
 package org.apache.spark.sql.execution.columnar.impl
 
 import java.nio.ByteBuffer
-import java.sql.{Connection, PreparedStatement, ResultSet, SQLException, Statement}
+import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
@@ -66,6 +66,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   self =>
 
   override final def tableName: String = _tableName
+
+  override def withTable(tableName: String, numPartitions: Int): ExternalStore =
+    new JDBCSourceAsColumnarStore(connProperties, numPartitions, tableName, schema)
 
   override final def connProperties: ConnectionProperties = _connProperties
 
@@ -130,6 +133,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
+            val rgn = Misc.getRegionForTable(
+              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+            val ds = rgn.getDiskStore
+            if (ds != null) {
+              ds.acquireDiskStoreReadLock()
+            }
             val context = TXManagerImpl.currentTXContext()
             if (context == null ||
                 (context.getSnapshotTXState == null && context.getTXState == null)) {
@@ -179,7 +188,16 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
-            Misc.getGemFireCache.getCacheTransactionManager.commit()
+            val rgn = Misc.getRegionForTable(
+              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.commit()
+            } finally {
+              val ds = rgn.getDiskStore
+              if (ds != null) {
+                ds.releaseDiskStoreReadLock()
+              }
+            }
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
             val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
@@ -214,7 +232,17 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
-            Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            val rgn = Misc.getRegionForTable(
+              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            } finally {
+              val ds = rgn.getDiskStore
+              if (ds != null) {
+                ds.releaseDiskStoreReadLock()
+              }
+            }
+
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
@@ -493,8 +521,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       onExecutor: Boolean): ConnectedExternalStore =
     new JDBCSourceAsColumnarStore(connProperties, numPartitions, tableName, schema)
         with ConnectedExternalStore {
+
       @transient protected[this] override val connectedInstance: Connection =
         self.getConnection(table, onExecutor)
+
+      override def withTable(tableName: String, numPartitions: Int): ExternalStore =
+        throw new UnsupportedOperationException(s"withTable unexpected for ConnectedExternalStore")
     }
 
   override def getColumnBatchRDD(tableName: String,
@@ -651,8 +683,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       case _ => (Random.nextInt(numPartitions), None, 0L)
     }
   }
-}
 
+  override def toString: String = s"ColumnarStore[$tableName, partitions=$numPartitions, " +
+      s"connectionProperties=$connProperties, schema=$schema]"
+}
 
 final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
@@ -911,7 +945,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val (conn, txId) = helper.getConnectionAndTXId(connProperties,
       thePart.asInstanceOf[SmartExecutorBucketPartition], preferHostName)
     if (context ne null) {
-      val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
         try {
           val statement = conn.createStatement()

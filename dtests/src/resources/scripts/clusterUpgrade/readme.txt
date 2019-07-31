@@ -10,9 +10,12 @@ clusterUpgrade.conf file to point to your latest SnappyData checkout and also th
 The parameters are as follows:
 
     snappydataDir=<Latest SnappyData checkout path>
-    resultDir=<Directory where the results will be stored>
+    resultDir=<Directory where the test results will be stored>
 
 After setting the above parameters in the  clusterUpgrade.conf file, execute the following:
+ *** Make sure that the conf inside <snappyBuildPath1> should be modified to overwrite the default log dir path,
+     as this conf will be used for the rest of the builds.
 
 Run the following command
     ./clusterUpgrade.sh <snappyBuildPath1> <snappyBuildPath2> ... <snappyBuildPathN>
+

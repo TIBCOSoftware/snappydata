@@ -86,6 +86,7 @@ public class SnappyTest implements Serializable {
   private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtests);
   public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
   public static boolean isUserConfTest = TestConfig.tab().booleanAt(SnappyPrms.isUserConfTest, false);  //default to false
+  public static boolean isCppTest = TestConfig.tab().booleanAt(SnappyPrms.isCppTest, false);  //default to false
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
@@ -560,7 +561,7 @@ public class SnappyTest implements Serializable {
     ResultSet rs;
     try {
       Connection conn = getLocatorConnection();
-      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead'");
       while (rs.next()) {
         Log.getLogWriter().info("Checking the Lead node status...");
         if (rs.getString("STATUS").equals("RUNNING")) {
@@ -1387,10 +1388,16 @@ public class SnappyTest implements Serializable {
 
   public static void runQuery() throws SQLException {
     Connection conn = getLocatorConnection();
-    String query1 = "SELECT count(*) FROM airline";
-    ResultSet rs = conn.createStatement().executeQuery(query1);
-    while (rs.next()) {
-      Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+    // String query1 = "SELECT count(*) FROM airline";
+    Vector<String> queryVect = SnappyPrms.getQueryList();
+    for (String query : queryVect) {
+      long startTime = System.currentTimeMillis();
+      ResultSet rs = conn.createStatement().executeQuery(query);
+      long endTime = System.currentTimeMillis();
+      while (rs.next()) {
+        // Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+      }
+      Log.getLogWriter().info("Time to executed the query::  " + ((endTime - startTime) / 1000) + " s");
     }
     closeConnection(conn);
   }
@@ -1760,7 +1767,14 @@ public class SnappyTest implements Serializable {
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
         String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
-        String command = filePath + " " + comma_separated_args_list;
+        String command = null;
+        if (isCppTest) {
+
+          String primaryLocatorHost = getPrimaryLocatorHost();
+          String primaryLocatorPort = getPrimaryLocatorPort();
+          Log.getLogWriter().info("inside cpp test: " + primaryLocatorHost + primaryLocatorPort);
+          command = filePath + " " + comma_separated_args_list + " " + primaryLocatorHost + " " + primaryLocatorPort;
+        } else command = filePath + " " + comma_separated_args_list;
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
       }
@@ -2168,11 +2182,12 @@ public class SnappyTest implements Serializable {
   }
 
   protected String getPrimaryLeadHost() {
+    leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
     if (leadHost == null) {
       retrievePrimaryLeadHost();
       leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
       Log.getLogWriter().info("primaryLead Host is: " + leadHost);
-    }  else leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
+    }
     return leadHost;
   }
 
@@ -2489,7 +2504,7 @@ public class SnappyTest implements Serializable {
           jobIds.add(jobID);
         }
       }
-      if(jobIds==null) {
+      if (jobIds == null) {
         Log.getLogWriter().info("Failed to start the snappy job.");
         return true;
       }
@@ -2985,8 +3000,7 @@ public class SnappyTest implements Serializable {
     }
   }
 
-  protected void
-  cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
+  protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
       lastCycledTime, String vmName, boolean isDmlOp, boolean restart, boolean rebalance) {
     if (!cycleVms) {
       Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
