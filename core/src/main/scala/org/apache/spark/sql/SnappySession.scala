@@ -1440,19 +1440,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   def alterTable(tableName: String, isAddColumn: Boolean, column: StructField,
-      defaultValue: Option[String], referentialAction: String): Unit = {
+      extensions: String): Unit = {
     val tableIdent = tableIdentifier(tableName)
-    alterTable(tableIdent, isAddColumn, column, defaultValue, referentialAction)
+    alterTable(tableIdent, isAddColumn, column, extensions)
   }
 
   private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField, defaultValue: Option[String], referentialAction: String = ""): Unit = {
+      column: StructField, extensions: String): Unit = {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
-        ar.alterTable(tableIdent, isAddColumn, column, defaultValue, referentialAction)
+        ar.alterTable(tableIdent, isAddColumn, column, extensions)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
         sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
       case _ => throw new AnalysisException(
@@ -1668,10 +1668,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def constructDropSQL(indexName: String,
       ifExists: Boolean): String = {
-
-    val ifExistsClause = if (ifExists) "IF EXISTS" else ""
-
-    s"DROP INDEX $ifExistsClause $indexName"
+    val ifExistsClause = if (ifExists) " IF EXISTS" else ""
+    s"DROP INDEX$ifExistsClause ${JdbcExtendedUtils.quotedName(indexName)}"
   }
 
   /**
@@ -1691,7 +1689,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val indexIdent = getIndexTable(indexName)
     // Since the index does not exist in catalog, it may be a row table index.
     if (!sessionCatalog.tableExists(indexIdent)) {
-      dropRowStoreIndex(indexName.unquotedString, ifExists)
+      dropRowStoreIndex(sessionCatalog.resolveTableIdentifier(indexName).unquotedString, ifExists)
     } else {
       sessionCatalog.resolveRelation(indexIdent) match {
         case LogicalRelation(ir: IndexColumnFormatRelation, _, _) =>
@@ -1700,6 +1698,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.resolveRelation(baseTableIdent) match {
             case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
               cr.dropIndex(indexIdent, baseTableIdent, ifExists)
+            case _ => throw new AnalysisException(
+              s"No index ${indexName.unquotedString} on ${baseTableIdent.unquotedString}")
           }
 
         case _ => if (!ifExists) {
