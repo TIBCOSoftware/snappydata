@@ -170,9 +170,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     schemas
   }
 
-  override def isColumnTable(qualifiedName: String): Boolean =
-    ColumnFormatRelation.isColumnTable(qualifiedName)
-
   override def skipEvictionForEntry(entry: LRUEntry): Boolean = {
     // skip eviction of stats rows (SNAP-2102)
     entry.getRawKey match {

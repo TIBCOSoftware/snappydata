@@ -22,7 +22,7 @@ import java.nio.ByteBuffer
 import com.gemstone.gemfire.cache.{EntryEvent, EntryNotFoundException, Region}
 import com.gemstone.gemfire.internal.cache.delta.Delta
 import com.gemstone.gemfire.internal.cache.versions.{VersionSource, VersionTag}
-import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl}
+import com.gemstone.gemfire.internal.cache.{DiskEntry, EntryEventImpl, GemFireCacheImpl, PartitionedRegion}
 import com.gemstone.gemfire.internal.shared.FetchRequest
 import com.pivotal.gemfirexd.internal.engine.GfxdSerializable
 import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
@@ -300,7 +300,7 @@ object ColumnDelta {
    * Delete entire batch from column store for the batchId and partitionId
    * matching those of given key.
    */
-  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: Region[_, _],
+  private[columnar] def deleteBatch(key: ColumnFormatKey, columnRegion: PartitionedRegion,
       columnTableName: String): Unit = {
 
     // delete all the rows with matching batchId
@@ -312,7 +312,7 @@ object ColumnDelta {
       }
     }
 
-    val numColumns = key.getNumColumnsInTable(columnTableName)
+    val numColumns = columnRegion.getNumColumns
     // delete the stats rows first
     destroyKey(key.withColumnIndex(ColumnFormatEntry.STATROW_COL_INDEX))
     destroyKey(key.withColumnIndex(ColumnFormatEntry.DELTA_STATROW_COL_INDEX))
