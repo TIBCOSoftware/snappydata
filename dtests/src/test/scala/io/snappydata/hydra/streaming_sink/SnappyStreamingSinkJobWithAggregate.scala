@@ -23,7 +23,6 @@ import com.typesafe.config.Config
 
 import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, SnappySession}
 
-
 class SnappyStreamingSinkJobWithAggregate extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
@@ -34,22 +33,29 @@ class SnappyStreamingSinkJobWithAggregate extends SnappySQLJob {
     val kafkaTopic: String = jobConfig.getString("kafkaTopic")
     val tableName: String = jobConfig.getString("tableName")
     val isConflationTest: Boolean = jobConfig.getBoolean("isConflation")
+    val aggType: String = jobConfig.getString("aggType")
     val useCustomCallback: Boolean = false // jobConfig.getBoolean("useCustomCallback")
     val outputMode: String = jobConfig.getString("outputMode")
     val outputFile = "KafkaStreamingJob_output" + tid + "_" + System.currentTimeMillis() + ".txt"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
 
     // scalastyle:off println
-
     pw.println("Starting stream query...")
     pw.flush()
 
-    StructuredStreamingTestUtil.createAndStartAggStreamingQuery(snc, tableName, brokerList,
-      kafkaTopic, tid, pw, isConflationTest, true, useCustomCallback, outputMode)
-
+    aggType match {
+      case "join" => StructuredStreamingTestUtil.createAndStartAggStreamingQueryJoin(snc, tableName,
+        brokerList, kafkaTopic, tid, pw, isConflationTest, true, useCustomCallback, outputMode)
+      case "avg" => StructuredStreamingTestUtil.createAndStartAggStreamingQueryAvg(snc, tableName,
+        brokerList, kafkaTopic, tid, pw, isConflationTest, true, useCustomCallback, outputMode)
+      case "count" => StructuredStreamingTestUtil.createAndStartAggStreamingQueryCount(snc,
+        tableName, brokerList, kafkaTopic, tid, pw, isConflationTest, true,
+        useCustomCallback, outputMode)
+      case "sum" => StructuredStreamingTestUtil.createAndStartAggStreamingQuerySum(snc, tableName,
+        brokerList, kafkaTopic, tid, pw, isConflationTest, true, useCustomCallback, outputMode)
+    }
     pw.println("started streaming query")
     pw.flush()
-
   }
 
   override def isValidJob(snsc: SnappySession, config: Config): SnappyJobValidation = {

@@ -5,7 +5,6 @@ hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
 hydra.GemFirePrms-distributedSystem = ds;
 io.snappydata.hydra.cluster.SnappyPrms-kafkaDir="${kafkaDir}";
-//io.snappydata.hydra.cluster.SnappyPrms-snappyPocJarPath="${snappyPocJarPath}";
 
 THREADGROUP snappyStoreThreads
             totalThreads = fcn "(${${A}Hosts} * ${${A}VMsPerHost} *  ${${A}ThreadsPerVM}) -1 " ncf
@@ -86,13 +85,18 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 	threadGroups = snappyThreads;
 
 
+INITTASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_executeSQLScripts
+   io.snappydata.hydra.cluster.SnappyPrms-logFileName = create_temp_table.log
+   io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = createTempTableForStreaming.sql
+   threadGroups = snappyThreads;
+
 INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_executeSnappyJob
     io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.streaming_sink.CreateTableInSnappyJob
-    io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "isRowTable=${isRowTable},withKeyColumn=${withKeyColumn},isPartitioned=${isPartitioned}"
+    io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "tableName=persoon,isRowTable=${isRowTable},withKeyColumn=${withKeyColumn},isPartitioned=${isPartitioned}"
     io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
     threadGroups = snappyThreads;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-largeDataSet = true;
 
-INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
+//INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;
 INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/schema.inc;
