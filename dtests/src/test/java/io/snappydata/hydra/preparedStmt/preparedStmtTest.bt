@@ -3,5 +3,5 @@
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
   queryFileWithPS="$GEMFIRE/../../../dtests/src/resources/scripts/preparedStmt/tpcds_PSQueries"
-  queryFile="$GEMFIRE/../../../dtests/src/resources/scripts/preparedStmt/tpcdsQueris"
+  queryFile="$GEMFIRE/../../../dtests/src/resources/scripts/preparedStmt/tpcdsQueries"
   dataFilesLocation="/export/shared/QA_DATA/TPCDS/data"

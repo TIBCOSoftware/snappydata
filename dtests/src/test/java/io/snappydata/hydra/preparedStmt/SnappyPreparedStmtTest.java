@@ -41,9 +41,9 @@ import sql.sqlutil.ResultSetHelper;
 
 public class SnappyPreparedStmtTest extends SnappyTest {
   public static SnappyPreparedStmtTest snappyPreparedStmtTest;
-  String[] queryArr = {"q2", "q8", "q9", "q10", "q13", "q16", "q23a", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58", "q66", "q75", "q80",
-      "q4", "q6", "q11", "q15", "q18", "q19", "q26", "q27", "q38", "q41", "q46", "q47", "q50", "q56", "q57",
-      "q21", "q97", "q96", "q95", "q94", "q92", "q89", "q87", "q86", "q85", "q84", "q83", "q69", "q65", "q64", "q63", "q59","q53View"};
+  String[] queryArr = {"q2", "q8", "q9","q53View", "q10", "q13", "q16", "q23a", "q31", "q33", "q34", "q44", "q48", "q49", "q53", "q58", "q66", "q75", "q80",
+      "q4", "q6", "q11", "q15", "q18", "q19", "q26","q53View", "q27", "q38", "q41", "q46", "q47", "q50", "q56", "q57","q53View",
+      "q21", "q97", "q96", "q95", "q94", "q53View","q92", "q89", "q87", "q86", "q85", "q84", "q83", "q69", "q65", "q64", "q63", "q59","q53View"};
   String[] dateCol = {"'2000-03-11'", "'2000-01-27'", "'1999-02-01'"};
   Integer[] dYearVal = {1999, 2000, 2001};
   Integer[] intVal = {1200, 1212, 1201};
@@ -370,7 +370,7 @@ public class SnappyPreparedStmtTest extends SnappyTest {
               ps.setString(i, "2000-08-23");
             break;
           case "q53View":
-            ps.setDouble(1, 132);
+            ps.setInt(1, viewVal[j]);
             queryStringWithCC = tempQueryStringPS.replace("?", viewVal[j].toString());
             isChangingConstant = true;
             break;
