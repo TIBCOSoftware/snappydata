@@ -203,9 +203,13 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         log.debug(e.getMessage, e)
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
+    // handle the case of a rare race condition where external catalog is still being initialized
+    val hiveTables = Misc.getMemStore.getExternalCatalog match {
+      case null => Nil
+      case catalog => catalog.getCatalogTables.asScala
+    }
 
-    val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
+    val externalTables: Seq[SnappyExternalTableStats] = {
       try {
         // External Tables
         hiveTables.collect {
