@@ -22,6 +22,5 @@ bloodGrp varchar(3),
 occupation varchar(15),
 hasChildren boolean,
 numChild int,
-hasSiblings boolean,
-primary key (id)
-) using row options (partition_by 'id', redundancy '1');
+hasSiblings boolean
+) using column options (partition_by 'id', redundancy '1', key_columns 'id');

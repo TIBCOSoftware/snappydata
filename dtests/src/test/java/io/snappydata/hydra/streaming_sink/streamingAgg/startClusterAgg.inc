@@ -95,6 +95,6 @@ runMode = always
 threadGroups = snappyThreads;
 
 INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod = HydraTask_generateAndPublishMethod
-io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "150000,streamingSinkTopic,0,0"
+io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "500000,streamingSinkTopic,0,0"
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
 threadGroups = snappyThreads;

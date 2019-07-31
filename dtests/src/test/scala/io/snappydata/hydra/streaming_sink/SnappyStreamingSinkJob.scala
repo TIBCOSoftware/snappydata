@@ -27,7 +27,6 @@ import org.apache.spark.sql.{SnappyJobValid, SnappyJobValidation, SnappySQLJob, 
 class SnappyStreamingSinkJob extends SnappySQLJob {
 
   override def runSnappyJob(snc: SnappySession, jobConfig: Config): Any = {
-
     val tid: Int = jobConfig.getString("tid").toInt
     var brokerList: String = jobConfig.getString("brokerList")
     brokerList = brokerList.replace("--", ":")
@@ -36,11 +35,10 @@ class SnappyStreamingSinkJob extends SnappySQLJob {
     val isConflationTest: Boolean = jobConfig.getBoolean("isConflation")
     val useCustomCallback: Boolean = false // jobConfig.getBoolean("useCustomCallback")
 
-    val outputFile = "KafkaStreamingJob_output" + tid + "_" + System.currentTimeMillis() + ".txt"
+    val outputFile = "KafkaStreamingJob_output_" + tid + "_" + System.currentTimeMillis() + ".txt"
     val pw = new PrintWriter(new FileOutputStream(new File(outputFile), true));
 
     // scalastyle:off println
-
     pw.println("Starting stream query...")
     pw.flush()
 
@@ -49,7 +47,6 @@ class SnappyStreamingSinkJob extends SnappySQLJob {
 
     pw.println("started streaming query")
     pw.flush()
-
   }
 
   override def isValidJob(snsc: SnappySession, config: Config): SnappyJobValidation = {

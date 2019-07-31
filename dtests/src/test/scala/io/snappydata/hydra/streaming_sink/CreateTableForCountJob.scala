@@ -60,7 +60,6 @@ class CreateTableForCountJob extends SnappySQLJob{
     pw.flush()
     snc.sql(s)
     pw.println("Table created")
-    )
   }
 
   override def isValidJob(snSession: SnappySession, config: Config): SnappyJobValidation = {

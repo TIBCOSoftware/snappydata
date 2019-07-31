@@ -1,6 +1,6 @@
 TASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod = HydraTask_generateAndPublishMethod
     //io.snappydata.hydra.cluster.SnappyPrms-streamingJobClassNames = "io.snappydata.hydra.streaming_sink.StringMessageProducer"
-io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "150000,streamingSinkTopic,150000,0"
+io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "1000000,streamingSinkTopic,200000,0"
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
 threadGroups = leadThread
 maxTimesToRun = 1;
@@ -26,8 +26,8 @@ threadGroups = snappyThreads;
 INCLUDE $JTESTS/io/snappydata/hydra/streaming_sink/stopClusters.inc;
 
 hydra.Prms-alwaysDoEndTasks = true;
-hydra.Prms-totalTaskTimeSec = 750;
-hydra.Prms-maxResultWaitSec = 750;
+hydra.Prms-totalTaskTimeSec = 900;
+hydra.Prms-maxResultWaitSec = 900;
 
 hydra.VmPrms-extraVMArgs   += fcn "hydra.TestConfigFcns.duplicate
 (\"-Xms1512m -Xmx2g \", ${${A}Hosts}, true)"

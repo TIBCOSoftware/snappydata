@@ -34,6 +34,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import com.gemstone.gemfire.cache.query.Struct;
+import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.BasePrms;
 import hydra.HostPrms;
 import hydra.Log;
@@ -46,6 +48,7 @@ import io.snappydata.hydra.streaming_sink.StringMessageProducer;
 import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import org.apache.commons.io.FileUtils;
+import sql.sqlutil.ResultSetHelper;
 import util.TestException;
 
 public class SnappyAdAnalyticsTest extends SnappyTest {
@@ -324,7 +327,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_executeSnappyStreamingJob() {
     snappyAdAnalyticsTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames(),
-        "snappyStreamingJobTaskResult_" + System.currentTimeMillis() + ".log");
+        "snappyStreamingJobResult_" + System.currentTimeMillis() + ".log");
   }
 
   protected void executeSnappyStreamingJob(Vector jobClassNames, String logFileName) {
@@ -379,7 +382,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       }
     }
   }
-  /*
+
   public static void HydraTask_verifyResults(){
     if(DerbyTestUtils.hasDerbyServer)
       SnappyDMLOpsUtil.HydraTask_verifyResults();
@@ -390,16 +393,37 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   public void verifyResults(){
     String query = "select * from ";
     try {
+      String queryResultDirPath;
+      try {
+        queryResultDirPath = new File(".").getCanonicalPath() + File.separator + "queryResults";
+        File queryResultDir = new File(queryResultDirPath);
+        if (!queryResultDir.exists())
+          queryResultDir.mkdirs();
+      } catch (IOException ie) {
+        throw new TestException ("Got exception while creating directory for query results.");
+      }
       Connection conn = getLocatorConnection();
 
-      ResultSet rs = conn.createStatement().execute(query + tableName);
+      ResultSet rs = conn.createStatement().executeQuery(query + " persoon");
+      StructTypeImpl snappySti = ResultSetHelper.getStructType(rs);
+      List<Struct> snappyList = ResultSetHelper.asList(rs, snappySti, false);
+      String streamTableFile = queryResultDirPath + File.separator + "persoon_" + getMyTid() + ".out";
+      SnappyDMLOpsUtil.listToFile(snappyList, streamTableFile);
+      snappyList.clear();
+      rs.close();
 
-      ResultSet rs_tmp = conn.createStatement().execute(query + "temp_" + tableName);
+      ResultSet rs_tmp = conn.createStatement().executeQuery(query + " temp_persoon");
+      StructTypeImpl rs_tmpSti = ResultSetHelper.getStructType(rs_tmp);
+      List<Struct> rsTmpList = ResultSetHelper.asList(rs_tmp, rs_tmpSti, false);
+      String tmpTableFile = queryResultDirPath + File.separator + "tmp_tab" + getMyTid() + ".out";
+      SnappyDMLOpsUtil.listToFile(rsTmpList, tmpTableFile);
+      rsTmpList.clear();
+      rs.close();
     } catch (SQLException se) {
 
     }
   }
-  */
+
 
   public static void HydraTask_executeSnappyStreamingApp() {
     snappyAdAnalyticsTest.executeSnappyStreamingApp(SnappyPrms.getSnappyStreamingJobClassNames(),
