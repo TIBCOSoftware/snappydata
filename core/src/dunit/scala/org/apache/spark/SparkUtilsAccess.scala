@@ -46,10 +46,10 @@ object SparkUtilsAccess {
   }
 
   def createJarFile(files: Seq[File], jarName: String, recreate: Boolean = false): String = {
-    var jarFile = new File(destDir, s"$jarName.jar")
+    var jarFile = new File(destDir, jarName)
     if (jarFile.exists() && recreate) {
       jarFile.delete()
-      jarFile = new File(destDir, s"$jarName.jar")
+      jarFile = new File(destDir, jarName)
     }
     TestUtils.createJar(files, jarFile)
     jarFile.getPath
