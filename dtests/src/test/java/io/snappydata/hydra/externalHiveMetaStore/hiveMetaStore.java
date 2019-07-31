@@ -119,13 +119,6 @@ public class hiveMetaStore extends SnappyTest
         try {
 
             boolean isHiveDB = false;
-            SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-            String logFile = getCurrentDirPath() + "/resultdir";
-            String beelineFile, snappyFile;
-            File queryResultDir = new File(logFile);
-            if (!queryResultDir.exists())
-                queryResultDir.mkdirs();
-
             metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
             metaStore.snappyConnection.createStatement().execute(dropTableStmt + "hiveDB.hive_regions");
             metaStore.snappyConnection.createStatement().execute("drop schema if exists hiveDB");
@@ -138,23 +131,10 @@ public class hiveMetaStore extends SnappyTest
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_regions", "10", "app.staging_regions"));
             metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery("select * from app.snappy_regions");
             ResultSet rs = metaStore.snappyConnection.createStatement().executeQuery("select * from hiveDB.hive_regions where RegionDescription <> 'RegionDescription'");
-            StructTypeImpl beelineSti = ResultSetHelper.getStructType(rs);
-            StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.snappyRS);
-            List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(rs, beelineSti, false);
-            List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
-            metaStore.snappyRS.close();
-            rs.close();
-            beelineFile = logFile + File.separator + "beelineQuery_" + "Q1" + ".out";
-            snappyFile = logFile + File.separator + "snappyQuery_" + "Q1" + ".out";
-            testInstance.listToFile(snappyList, snappyFile);
-            testInstance.listToFile(beelineList, beelineFile);
-            String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + "Q1" + "_"+ System.currentTimeMillis());
-            snappyList.clear();
-            beelineList.clear();
-            if (msg.length() > 0) {
-                throw new util.TestException("Validation failed : " + msg);
-            }
+            validationRoutine("/createdropschemaresultdir", metaStore.snappyRS, rs, "1");
             metaStore.snappyConnection.createStatement().execute(dropTableStmt + "hiveDB.hive_regions");
+            metaStore.snappyConnection.createStatement().execute(dropTableStmt + "app.staging_regions");
+            metaStore.snappyConnection.createStatement().execute(dropTableStmt + "app.snappy_regions");
             metaStore.snappyConnection.createStatement().execute("drop database if exists hiveDB");
             rs = metaStore.snappyConnection.createStatement().executeQuery("show schemas");
             while(rs.next()) {
@@ -232,39 +212,15 @@ public class hiveMetaStore extends SnappyTest
 
     public static void HydraTask_QueryBeelineTblsFromSnappy() {
         try {
-            SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-            String logFile = getCurrentDirPath() + "/resultdir";
-            String beelineFile, snappyFile;
-            File queryResultDir = new File(logFile);
-            if (!queryResultDir.exists())
-                queryResultDir.mkdirs();
-
             metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
             Log.getLogWriter().info("Pointing to external hive meta store");
             metaStore.snappyST = metaStore.snappyConnection.createStatement();
             Log.getLogWriter().info("create statement from snappy");
             metaStore.snappyRS = metaStore.metaStore.snappyST.executeQuery(showTblsDefault);
-            Log.getLogWriter().info("execute show tables in default");
-            Log.getLogWriter().info("---------------------------------------------------------------------------------------------------------------");
             for(int index =0 ; index < snappyQueries.length;index++) {
                 metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery(snappyQueries[index]);
                 metaStore.rs = metaStore.beelineConnection.createStatement().executeQuery(beelineQueries[index]);
-                StructTypeImpl beelineSti = ResultSetHelper.getStructType(metaStore.rs);
-                StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.snappyRS);
-                List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(metaStore.rs, beelineSti, false);
-                List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
-                metaStore.snappyRS.close();
-                metaStore.rs.close();
-                beelineFile = logFile + File.separator + "beelineQuery_" + index + ".out";
-                snappyFile = logFile + File.separator + "snappyQuery_" + index + ".out";
-                testInstance.listToFile(snappyList, snappyFile);
-                testInstance.listToFile(beelineList, beelineFile);
-                String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index + "_"+ System.currentTimeMillis());
-                snappyList.clear();
-                beelineList.clear();
-                if (msg.length() > 0) {
-                    throw new util.TestException("Validation failed : " + msg);
-                }
+                validationRoutine("/QueryValidationresultdir", metaStore.rs, metaStore.snappyRS, String.valueOf(index));
             }
             Log.getLogWriter().info("Queries on Beeline tables from Snappy executed successfully.");
         } catch(SQLException se) {
@@ -274,33 +230,11 @@ public class hiveMetaStore extends SnappyTest
 
     public static void HydraTask_JoinBetweenHiveAndSnappy() {
         try {
-            SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
             ResultSet verificationRS = null;
-
-            String logFile = getCurrentDirPath() + "/joinresultdir";
-            String beelineFile, snappyFile;
-            File queryResultDir = new File(logFile);
-            if (!queryResultDir.exists())
-                queryResultDir.mkdirs();
             for(int index =0 ; index < joinQueries.length;index++) {
                 metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery(joinQueries[index]);
                 verificationRS = metaStore.snappyConnection.createStatement().executeQuery(beelineJoinQueries[index]);
-                StructTypeImpl beelineSti = ResultSetHelper.getStructType(verificationRS);
-                StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.snappyRS);
-                List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(verificationRS, beelineSti, false);
-                List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
-                metaStore.snappyRS.close();
-                verificationRS.close();
-                beelineFile = logFile + File.separator + "beelinejoinQuery_" + index + ".out";
-                snappyFile = logFile + File.separator + "snappyjoinQuery_" + index + ".out";
-                testInstance.listToFile(snappyList, snappyFile);
-                testInstance.listToFile(beelineList, beelineFile);
-                String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index);
-                snappyList.clear();
-                beelineList.clear();
-                if (msg.length() > 0) {
-                    throw new util.TestException("Validation failed : " + msg);
-                }
+                validationRoutine("/joinresultdir", metaStore.snappyRS, verificationRS, String.valueOf(index));
             }
             Log.getLogWriter().info("Join operation between Hive and Snappy Successful.");
         } catch(SQLException se) {
@@ -423,12 +357,34 @@ public class hiveMetaStore extends SnappyTest
         return "load data local inpath '" + dataPath + "' overwrite into table " + tblName;
     }
 
-    private static void validationRoutine(String dir) {
-        SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
-        String logFile = getCurrentDirPath() + dir;
-        String beelineFile, snappyFile;
-        File queryResultDir = new File(logFile);
-        if (!queryResultDir.exists())
-            queryResultDir.mkdirs();
+    private static void validationRoutine(String dir, ResultSet rs1, ResultSet rs2, String index) {
+        try {
+                SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+                String logFile = getCurrentDirPath() + dir;
+                String beelineFile, snappyFile;
+                File queryResultDir = new File(logFile);
+                if (!queryResultDir.exists())
+                    queryResultDir.mkdirs();
+
+                StructTypeImpl beelineSti = ResultSetHelper.getStructType(rs1);
+                StructTypeImpl snappySti = ResultSetHelper.getStructType(rs2);
+                List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(rs1, beelineSti, false);
+                List<Struct> snappyList = ResultSetHelper.asList(rs2, snappySti, false);
+                rs1.close();
+                rs2.close();
+                beelineFile = logFile + File.separator + "beelineQuery_" + index + ".out";
+                snappyFile = logFile + File.separator + "snappyQuery_" + index + ".out";
+                testInstance.listToFile(snappyList, snappyFile);
+                testInstance.listToFile(beelineList, beelineFile);
+                String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + index + "_" + System.currentTimeMillis());
+                snappyList.clear();
+                beelineList.clear();
+                if (msg.length() > 0) {
+                    throw new util.TestException("Validation failed : " + msg);
+                }
+                testInstance = null;
+            }catch (SQLException se) {
+                throw new TestException("Validation : Exception in Validation", se);
+            }
     }
  }
