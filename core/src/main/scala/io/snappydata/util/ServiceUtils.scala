@@ -82,7 +82,7 @@ object ServiceUtils {
       // change hive temporary files location to be inside working directory
       // to fix issues with concurrent queries trying to access/write same directories
       if (forInit) {
-        Utils.deletePath(Paths.get(HiveClientUtil.HIVE_TMPDIR))
+        ClientSharedUtils.deletePath(Paths.get(HiveClientUtil.HIVE_TMPDIR), false, false)
         Files.createDirectories(Paths.get(HiveClientUtil.HIVE_TMPDIR))
       }
       // set as system properties so that these can be overridden by

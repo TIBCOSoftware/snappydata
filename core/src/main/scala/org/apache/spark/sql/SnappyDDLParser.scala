@@ -30,7 +30,6 @@ import shapeless.{::, HNil}
 import org.apache.spark.sql.SnappyParserConsts.plusOrMinus
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTableType, FunctionResource, FunctionResourceType}
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.catalyst.plans.QueryPlan
 import org.apache.spark.sql.catalyst.plans.logical._
 import org.apache.spark.sql.catalyst.{FunctionIdentifier, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
@@ -184,6 +183,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def PATH: Rule0 = rule { keyword(Consts.PATH) }
   final def PERCENT: Rule0 = rule { keyword(Consts.PERCENT) }
   final def POLICY: Rule0 = rule { keyword(Consts.POLICY) }
+  final def PRIMARY: Rule0 = rule { keyword(Consts.PRIMARY) }
   final def PURGE: Rule0 = rule { keyword(Consts.PURGE) }
   final def PUT: Rule0 = rule { keyword(Consts.PUT) }
   final def REFRESH: Rule0 = rule { keyword(Consts.REFRESH) }
@@ -253,12 +253,13 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def WEEK: Rule0 = rule { intervalUnit(Consts.WEEK) }
   final def YEAR: Rule0 = rule { intervalUnit(Consts.YEAR) }
 
-  // cube, rollup, grouping sets etc
+  // additional analytics: cube, rollup, grouping sets, pivot etc
   final def CUBE: Rule0 = rule { keyword(Consts.CUBE) }
   final def ROLLUP: Rule0 = rule { keyword(Consts.ROLLUP) }
   final def GROUPING: Rule0 = rule { keyword(Consts.GROUPING) }
   final def SETS: Rule0 = rule { keyword(Consts.SETS) }
   final def LATERAL: Rule0 = rule { keyword(Consts.LATERAL) }
+  final def PIVOT: Rule0 = rule { keyword(Consts.PIVOT) }
 
   /** spark parser used for hive DDLs that are not relevant to SnappyData's builtin sources */
   protected final lazy val sparkParser: SparkSqlParser =
@@ -665,7 +666,7 @@ abstract class SnappyDDLParser(session: SnappySession)
     ALTER ~ TABLE ~ tableIdentifier ~ (
         (ADD ~ push(true) | DROP ~ push(false)) ~ (
             // other store ALTER statements which don't effect the snappydata catalog
-            capture((CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
+            capture((PRIMARY | CONSTRAINT | CHECK | FOREIGN | UNIQUE) ~ ANY. +) ~ EOI ~>
                 ((table: TableIdentifier, isAdd: Boolean, s: String) =>
                   AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} " +
                     s"${if (isAdd) "ADD" else "DROP"} $s")) |
@@ -788,11 +789,9 @@ abstract class SnappyDDLParser(session: SnappySession)
     (GRANT | REVOKE | (CREATE | DROP) ~ (DISKSTORE | TRIGGER) |
         (ch('{').? ~ ws ~ (CALL | EXECUTE))) ~ ANY.* ~>
         /* dummy table because we will pass sql to gemfire layer so we only need to have sql */
-        (() => DMLExternalTable(TableIdentifier(JdbcExtendedUtils.DUMMY_TABLE_NAME,
-          Some(JdbcExtendedUtils.SYSIBM_SCHEMA)),
-          LogicalRelation(new execution.row.DefaultSource().createRelation(session.sqlContext,
-            Map(SnappyExternalCatalog.DBTABLE_PROPERTY -> JdbcExtendedUtils
-                .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))
+        (() => DMLExternalTable(LogicalRelation(new execution.row.DefaultSource().createRelation(
+          session.sqlContext, Map(SnappyExternalCatalog.DBTABLE_PROPERTY -> JdbcExtendedUtils
+              .DUMMY_TABLE_QUALIFIED_NAME))), input.sliceString(0, input.length)))
   }
 
   /**
@@ -1010,14 +1009,8 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def newInstance(): SnappyDDLParser
 }
 
-case class DMLExternalTable(
-    tableName: TableIdentifier,
-    query: LogicalPlan,
-    command: String)
-    extends LeafNode with Command {
-  
-  override def innerChildren: Seq[QueryPlan[_]] = Seq(query)
+case class DMLExternalTable(child: LogicalPlan, command: String) extends UnaryNode {
 
-  override lazy val resolved: Boolean = query.resolved
+  override lazy val resolved: Boolean = child.resolved
   override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }

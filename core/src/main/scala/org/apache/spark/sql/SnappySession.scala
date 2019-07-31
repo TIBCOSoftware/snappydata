@@ -1668,10 +1668,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private def constructDropSQL(indexName: String,
       ifExists: Boolean): String = {
-
-    val ifExistsClause = if (ifExists) "IF EXISTS" else ""
-
-    s"DROP INDEX $ifExistsClause $indexName"
+    val ifExistsClause = if (ifExists) " IF EXISTS" else ""
+    s"DROP INDEX$ifExistsClause ${JdbcExtendedUtils.quotedName(indexName)}"
   }
 
   /**
@@ -1691,7 +1689,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     val indexIdent = getIndexTable(indexName)
     // Since the index does not exist in catalog, it may be a row table index.
     if (!sessionCatalog.tableExists(indexIdent)) {
-      dropRowStoreIndex(indexName.unquotedString, ifExists)
+      dropRowStoreIndex(sessionCatalog.resolveTableIdentifier(indexName).unquotedString, ifExists)
     } else {
       sessionCatalog.resolveRelation(indexIdent) match {
         case LogicalRelation(ir: IndexColumnFormatRelation, _, _) =>
@@ -1700,6 +1698,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           sessionCatalog.resolveRelation(baseTableIdent) match {
             case LogicalRelation(cr: ColumnFormatRelation, _, _) =>
               cr.dropIndex(indexIdent, baseTableIdent, ifExists)
+            case _ => throw new AnalysisException(
+              s"No index ${indexName.unquotedString} on ${baseTableIdent.unquotedString}")
           }
 
         case _ => if (!ifExists) {

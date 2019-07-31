@@ -136,33 +136,33 @@ If `IN schemaName` is specified, only the indexes in the specified schema are di
 
 ```pre
 snappy> show indexes in app;
-TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
----------------------------------------------------------------------------- 
-AIRLINES            |AIRLINE             |false |3   |A   |NULL    |NULL
-CITIES              |CITY_ID             |false |3   |A   |NULL    |NULL
-CITIES              |COUNTRY_ISO_CODE    |true  |3   |A   |NULL    |NULL
-COUNTRIES           |COUNTRY_ISO_CODE    |false |3   |A   |NULL    |NULL
-COUNTRIES           |COUNTRY             |false |3   |A   |NULL    |NULL
-FLIGHTAVAILABILITY  |FLIGHT_ID           |false |3   |A   |NULL    |NULL
-FLIGHTAVAILABILITY  |SEGMENT_NUMBER      |false |3   |A   |NULL    |NULL
-FLIGHTAVAILABILITY  |FLIGHT_DATE         |false |3   |A   |NULL    |NULL
-FLIGHTAVAILABILITY  |FLIGHT_ID           |true  |3   |A   |NULL    |NULL
-FLIGHTAVAILABILITY  |SEGMENT_NUMBER      |true  |3   |A   |NULL    |NULL
-FLIGHTS             |FLIGHT_ID           |false |3   |A   |NULL    |NULL
-FLIGHTS             |SEGMENT_NUMBER      |false |3   |A   |NULL    |NULL
-FLIGHTS             |DEST_AIRPORT        |true  |3   |A   |NULL    |NULL
-FLIGHTS             |ORIG_AIRPORT        |true  |3   |A   |NULL    |NULL
-MAPS                |MAP_ID              |false |3   |A   |NULL    |NULL
-MAPS                |MAP_NAME            |false |3   |A   |NULL    |NULL
+TABLE_NAME          |INDEX_NAME|COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
+------------------------------------------------------------------------------------
+AIRLINES            |AR_IDX1   |AIRLINE             |false |3   |A   |NULL    |NULL
+CITIES              |CT_IDX1   |CITY_ID             |false |3   |A   |NULL    |NULL
+CITIES              |CT_IDX2   |COUNTRY_ISO_CODE    |true  |3   |A   |NULL    |NULL
+COUNTRIES           |CR_IDX1   |COUNTRY_ISO_CODE    |false |3   |A   |NULL    |NULL
+COUNTRIES           |CR_IDX1   |COUNTRY             |false |3   |A   |NULL    |NULL
+FLIGHTAVAILABILITY  |FA_IDX1   |FLIGHT_ID           |false |3   |A   |NULL    |NULL
+FLIGHTAVAILABILITY  |FA_IDX1   |SEGMENT_NUMBER      |false |3   |A   |NULL    |NULL
+FLIGHTAVAILABILITY  |FA_IDX1   |FLIGHT_DATE         |false |3   |A   |NULL    |NULL
+FLIGHTAVAILABILITY  |FA_IDX2   |FLIGHT_ID           |true  |3   |A   |NULL    |NULL
+FLIGHTAVAILABILITY  |FA_IDX2   |SEGMENT_NUMBER      |true  |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX1   |FLIGHT_ID           |false |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX1   |SEGMENT_NUMBER      |false |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX2   |DEST_AIRPORT        |true  |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX2   |ORIG_AIRPORT        |true  |3   |A   |NULL    |NULL
+MAPS                |M_IDX1    |MAP_ID              |false |3   |A   |NULL    |NULL
+MAPS                |M_IDX2    |MAP_NAME            |false |3   |A   |NULL    |NULL
 
 16 rows selected
 snappy> show indexes from flights;
-TABLE_NAME          |COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
----------------------------------------------------------------------------- 
-FLIGHTS             |FLIGHT_ID           |false |3   |A   |NULL    |NULL
-FLIGHTS             |SEGMENT_NUMBER      |false |3   |A   |NULL    |NULL
-FLIGHTS             |DEST_AIRPORT        |true  |3   |A   |NULL    |NULL
-FLIGHTS             |ORIG_AIRPORT        |true  |3   |A   |NULL    |NULL
+TABLE_NAME          |INDEX_NAME|COLUMN_NAME         |NON_U&|TYPE|ASC&|CARDINA&|PAGES
+------------------------------------------------------------------------------------
+FLIGHTS             |FL_IDX1   |FLIGHT_ID           |false |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX1   |SEGMENT_NUMBER      |false |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX2   |DEST_AIRPORT        |true  |3   |A   |NULL    |NULL
+FLIGHTS             |FL_IDX2   |ORIG_AIRPORT        |true  |3   |A   |NULL    |NULL
 
 4 rows selected
 ```
