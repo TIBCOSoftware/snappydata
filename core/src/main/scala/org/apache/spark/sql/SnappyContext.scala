@@ -146,34 +146,8 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
     * @param defaultValue
     */
   def alterTable(tableName: String, isAddColumn: Boolean,
-      column: StructField, defaultValue: Option[String] = None): Unit = {
-    snappySession.alterTable(tableName, isAddColumn, column, defaultValue, "")
-  }
-
-  /**
-   * alter table adds/drops provided column, only supprted for row tables.
-   * For adding a column isAddColumn should be true, else it will be drop column
-   *
-   * @param tableName
-   * @param isAddColumn
-   * @param column
-   * @param referentialAction value can be either be CASCADE or RESTRICT
-   */
-  def alterTable(tableName: String, isAddColumn: Boolean,
-      column: StructField, referentialAction: String): Unit = {
-    snappySession.alterTable(tableName, isAddColumn, column, None, referentialAction)
-  }
-  /**
-    * alter table adds/drops provided column, only supprted for row tables.
-    * For adding a column isAddColumn should be true, else it will be drop column
-    * @param tableIdent
-    * @param isAddColumn
-    * @param column
-    * @param defaultValue
-    */
-  private[sql] def alterTable(tableIdent: TableIdentifier, isAddColumn: Boolean,
-      column: StructField, defaultValue: Option[String]): Unit = {
-    snappySession.alterTable(tableIdent, isAddColumn, column, defaultValue)
+      column: StructField, extensions: String = ""): Unit = {
+    snappySession.alterTable(tableName, isAddColumn, column, extensions)
   }
 
   /**
