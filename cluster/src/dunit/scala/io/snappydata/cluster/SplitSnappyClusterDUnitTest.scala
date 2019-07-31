@@ -263,56 +263,51 @@ class SplitSnappyClusterDUnitTest(s: String)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyUDFInSplitMode",
       startArgs :+ Int.box(locatorClientPort))
+    val sns = new SnappySession(sc)
+    assert(sns.sql("list jars").count() == 0, "Some jars/packages are not cleaned up!")
   }
 
-  // frequently fails in precheckin
-  def DISABLED_testDeployPackageNameFormat(): Unit = {
+  def testDeployPackageNameFormat(): Unit = {
     val sns = new SnappySession(sc)
-    try {
-      val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
-      sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
-      sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
-          "connector_2.11:2.2.2'")
-      sns.sql("deploy package app.mongo-spark_v1.1  'org.mongodb.spark:mongo-spark-" +
-          "connector_2.11:2.2.2'")
-      sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
-          "-connector_2.11:2.2.2'")
-      sns.sql(
-        s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
-            "-spark-connector_2.11:2.2.2'")
-      sns.sql(
-        s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
-            "-spark-connector_2.11:2.2.2'")
-      sns.sql(
-        s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
-            "-spark-connector_2.11:2.2.2'")
-      assert(sns.sql("list packages").count() == 7)
+    assert(sns.sql("list packages").count() == 0, "Previous tests did not clean up!")
+    val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
+    sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo_spark")
+    sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
+        "connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo-spark_v1.0")
+    sns.sql("deploy package app.mongo-spark_v1.1  'org.mongodb.spark:mongo-spark-" +
+        "connector_2.11:2.2.2'")
+    sns.sql("undeploy  app.mongo-spark_v1.1")
+    sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
+        "-connector_2.11:2.2.2'")
+    sns.sql("undeploy  testsch.mongo-spark_v1.2")
+    sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
+          "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""undeploy  "testsch"."mongo-spark_v1.3" """)
+    sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
+          "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""undeploy  testsch."mongo-spark_v1.4" """)
+    sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
+          "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""undeploy "testsch".mongo-spark_v1.5 """)
+    assert(sns.sql("list packages").count() == 0)
 
-      sns.sql(s"""deploy jar avro-v_1.0 '$jarPath'""")
-      sns.sql(s"""deploy jar app.avro-v_1.1 '$jarPath'""")
-      sns.sql(s"""deploy jar testsch.avro-v_1.2 '$jarPath'""")
-      sns.sql(s"""deploy jar "app".avro-v_1.3 '$jarPath'""")
-      sns.sql(s"""deploy jar "testsch"."avro-v_1.4" '$jarPath'""")
-      sns.sql(s"""deploy jar testsch."avro-v_1.5" '$jarPath'""")
-      assert(sns.sql("list packages").count() == 13)
-    }
-    finally {
-      sns.sql("undeploy  mongo_spark")
-      sns.sql("undeploy  mongo-spark_v1.0")
-      sns.sql("undeploy  app.mongo-spark_v1.1")
-      sns.sql("undeploy  testsch.mongo-spark_v1.2")
-      sns.sql(s"""undeploy  "testsch"."mongo-spark_v1.3" """)
-      sns.sql(s"""undeploy  testsch."mongo-spark_v1.4" """)
-      sns.sql(s"""undeploy "testsch".mongo-spark_v1.5 """)
+    sns.sql(s"deploy jar avro-v_1.0 '$jarPath'")
+    sns.sql("undeploy  avro-v_1.0 ")
+    sns.sql(s"deploy jar app.avro-v_1.1 '$jarPath'")
+    sns.sql("undeploy  app.avro-v_1.1")
+    sns.sql(s"deploy jar testsch.avro-v_1.2 '$jarPath'")
+    sns.sql("undeploy  testsch.avro-v_1.2")
+    sns.sql(s"""deploy jar "app".avro-v_1.3 '$jarPath'""")
+    sns.sql(s"""undeploy "app".avro-v_1.3 """)
+    sns.sql(s"""deploy jar "testsch"."avro-v_1.4" '$jarPath'""")
+    sns.sql(s"""undeploy "testsch"."avro-v_1.4" """)
+    sns.sql(s"""deploy jar testsch."avro-v_1.5" '$jarPath'""")
+    sns.sql(s"""undeploy testsch."avro-v_1.5" """)
 
-      sns.sql("undeploy  avro-v_1.0 ")
-      sns.sql("undeploy  app.avro-v_1.1")
-      sns.sql("undeploy  testsch.avro-v_1.2")
-      sns.sql(s"""undeploy "app".avro-v_1.3 """)
-      sns.sql(s"""undeploy "testsch"."avro-v_1.4" """)
-      sns.sql(s"""undeploy testsch."avro-v_1.5" """)
-      assert(sns.sql("list packages").count() == 0)
-    }
+    assert(sns.sql("list packages").count() == 0)
+
     import org.scalatest.Assertions._
     val thrown = intercept[Exception] {
       sns.sql("deploy package \"testsch\".mongo-###park_v1.5" +
@@ -323,35 +318,29 @@ class SplitSnappyClusterDUnitTest(s: String)
     // scalastyle:on
   }
 
-  // always fails in precheckin
-  def DISABLED_testDeployPackageDuplicateName(): Unit = {
+  def testDeployPackageDuplicateName(): Unit = {
     val sns = new SnappySession(sc)
-    try {
-      sns.sql("deploy package mongo-spark_v.1.5" +
-          " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    assert(sns.sql("list packages").count() == 0, "Previous tests did not clean up!")
+    sns.sql("deploy package mongo-spark_v.1.5" +
+        " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo-spark_v.1.5")
 
-      sns.sql("deploy package mongo-spark_v.1.5_dup" +
-          "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("deploy package mongo-spark_v.1.5_dup" +
+        "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo-spark_v.1.5_dup")
 
-      assert(sns.sql("list packages").count() == 2)
+    sns.sql("deploy package akka-v1 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
 
-      sns.sql("deploy package akka-v1 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
-
-      Try(sns.sql("deploy package akka-v1 'com.datastax.spark:" +
-          "spark-cassandra-connector_2.11:2.3.2'")) match {
-        case Success(_) => throw new AssertionError(
-          "Deploy command should have failed because of the duplicate alias.")
-        case Failure(error) => assert(error.getMessage == "Name 'akka-v1' specified in context" +
-            " 'of deploying jars/packages' is not unique.")
-      }
-      assert(sns.sql("list packages").count() == 3)
+    Try(sns.sql("deploy package akka-v1 'com.datastax.spark:" +
+        "spark-cassandra-connector_2.11:2.3.2'")) match {
+      case Success(_) => throw new AssertionError(
+        "Deploy command should have failed because of the duplicate alias.")
+      case Failure(error) =>
+        assert(error.getMessage.contains("Name 'akka-v1' specified in" +
+          " context 'of deploying jars/packages' is not unique."))
     }
-    finally {
-      sns.sql("undeploy  mongo-spark_v.1.5")
-      sns.sql("undeploy  mongo-spark_v.1.5_dup")
-      sns.sql("undeploy  akka-v1")
-      assert(sns.sql("list packages").count() == 0)
-    }
+    sns.sql("undeploy  akka-v1")
+    assert(sns.sql("list packages").count() == 0)
   }
 
   override def testUpdateDeleteOnColumnTables(): Unit = {

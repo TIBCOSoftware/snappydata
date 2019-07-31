@@ -27,7 +27,6 @@ import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
 
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.SparkUI
 import org.apache.spark.{SparkContext, SparkEnv}
@@ -40,39 +39,6 @@ object SnappyUtils {
   def getSnappyStoreContextLoader(parent: ClassLoader): ClassLoader = parent match {
     case _: SnappyContextLoader => parent // no double wrap
     case _ => new SnappyContextLoader(parent)
-  }
-
-  // FIXME Unused method, remove.
-  def removeJobJar(sc: SparkContext): Unit = {
-    def getName(path: String): String = new File(path).getName
-
-    val jobJarToRemove = sc.getLocalProperty(Constant.CHANGEABLE_JAR_NAME)
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
-    if (keyToRemove.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      // @TODO This is a temp workaround to fix SNAP-1133. sc.addedJar
-      // should be directly be accessible from here.
-      // May be due to scala version mismatch.
-      if (callbacks != null) {
-        callbacks.removeAddedJar(sc, keyToRemove.head)
-      }
-    }
-  }
-
-  // FIXME Unused method, remove.
-  def removeJobJar(sc: SparkContext, jarName: String): Unit = {
-    def getName(path: String): String = new File(path).getName
-
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(jarName))
-    if (keyToRemove.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      // @TODO This is a temp workaround to fix SNAP-1133. sc.addedJar
-      // should be directly be accessible from here.
-      // May be due to scala version mismatch.
-      if (callbacks != null) {
-        callbacks.removeAddedJar(sc, keyToRemove.head)
-      }
-    }
   }
 
   def setSessionDependencies(sparkContext: SparkContext,
