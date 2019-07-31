@@ -217,7 +217,7 @@ class RowFormatRelation(
     })
   }
 
-  override protected def constructSQL(indexName: String,
+  override protected def constructCreateIndexSQL(indexName: String,
       baseTable: String,
       indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): String = {

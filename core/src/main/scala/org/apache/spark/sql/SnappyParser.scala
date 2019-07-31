@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.util.function.BiConsumer
-import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -228,10 +227,8 @@ class SnappyParser(session: SnappySession)
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
     booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
-    NULL ~> (() => Literal(null, NullType)) | // no tokenization for nulls
-    (ch('X') | ch('x')) ~ ws ~ stringLiteral ~> ((s: String) =>
-      newTokenizedLiteral(DatatypeConverter.parseHexBinary(
-        if ((s.length & 0x1) == 1) "0" + s else s), BinaryType))
+    hexLiteral ~> ((b: Array[Byte]) => newTokenizedLiteral(b, BinaryType)) |
+    NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
   protected final def paramLiteralQuestionMark: Rule1[Expression] = rule {
@@ -352,6 +349,10 @@ class SnappyParser(session: SnappySession)
         case Some(n) => Alias(e, n)()
       }
     })
+  }
+
+  final def namedExpressionSeq: Rule1[Seq[Expression]] = rule {
+    namedExpression + commaSep
   }
 
   final def parseDataType: Rule1[DataType] = rule {
@@ -863,13 +864,22 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def relations: Rule1[LogicalPlan] = rule {
-    (relation + commaSep) ~ lateralView.* ~> ((joins: Seq[LogicalPlan], views: Any) => {
+    (relation + commaSep) ~ lateralView.* ~ pivot.? ~> ((joins: Seq[LogicalPlan],
+        v: Any, createPivot: Any) => {
       val from = if (joins.size == 1) joins.head
       else joins.tail.foldLeft(joins.head) {
         case (lhs, rel) => Join(lhs, rel, Inner, None)
       }
-      views.asInstanceOf[Seq[LogicalPlan => LogicalPlan]].foldLeft(from) {
-        case (child, view) => view(child)
+      val views = v.asInstanceOf[Seq[LogicalPlan => LogicalPlan]]
+      createPivot.asInstanceOf[Option[LogicalPlan => LogicalPlan]] match {
+        case None => views.foldLeft(from) {
+          case (child, view) => view(child)
+        }
+        case Some(f) =>
+          if (views.nonEmpty) {
+            throw new ParseException("LATERAL cannot be used together with PIVOT in FROM clause")
+          }
+          f(from)
       }
     })
   }
@@ -1011,40 +1021,47 @@ class SnappyParser(session: SnappySession)
     primary
   }
 
+  protected final def named(e: Expression): NamedExpression = e match {
+    case ne: NamedExpression => ne
+    case _ => UnresolvedAlias(e)
+  }
+
   protected def select: Rule1[LogicalPlan] = rule {
     SELECT ~ (DISTINCT ~ push(true)).? ~
-    TOKENIZE_BEGIN ~ (namedExpression + commaSep) ~ TOKENIZE_END ~
+    TOKENIZE_BEGIN ~ namedExpressionSeq ~ TOKENIZE_END ~
     (FROM ~ relations).? ~
     TOKENIZE_BEGIN ~ (WHERE ~ expression).? ~
     groupBy.? ~
     (HAVING ~ expression).? ~
-    queryOrganization ~ TOKENIZE_END ~> { (d: Any, p: Any, f: Any, w: Any, g: Any, h: Any,
-        q: LogicalPlan => LogicalPlan) =>
+    queryOrganization ~ TOKENIZE_END ~> { (d: Any, p: Seq[Expression], f: Any, w: Any,
+        g: Any, h: Any, q: LogicalPlan => LogicalPlan) =>
       val base = f match {
         case Some(plan) => plan.asInstanceOf[LogicalPlan]
         case _ => if (_fromRelations.isEmpty) OneRowRelation else _fromRelations.top
       }
-      val withFilter = w match {
-        case Some(expr) => Filter(expr.asInstanceOf[Expression], base)
-        case _ => base
+      val withFilter = (child: LogicalPlan) => w match {
+        case Some(expr) => Filter(expr.asInstanceOf[Expression], child)
+        case _ => child
       }
-      val expressions = p.asInstanceOf[Seq[Expression]].map {
-        case ne: NamedExpression => ne
-        case e => UnresolvedAlias(e)
-      }
+      val expressions = p.map(named)
       val gr = g.asInstanceOf[Option[(Seq[Expression], Seq[Seq[Expression]], String)]]
       val withProjection = gr match {
         case Some(x) => x._3 match {
           // group by cols with rollup
-          case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), expressions, withFilter)
+          case "ROLLUP" => Aggregate(Seq(Rollup(x._1)), expressions, withFilter(base))
           // group by cols with cube
-          case "CUBE" => Aggregate(Seq(Cube(x._1)), expressions, withFilter)
+          case "CUBE" => Aggregate(Seq(Cube(x._1)), expressions, withFilter(base))
           // group by cols with grouping sets()()
-          case "GROUPINGSETS" => extractGroupingSet(withFilter, expressions, x._1, x._2)
+          case "GROUPINGSETS" => extractGroupingSet(withFilter(base), expressions, x._1, x._2)
+          // pivot with group by cols
+          case _ if base.isInstanceOf[Pivot] =>
+            val newPlan = withFilter(base.asInstanceOf[Pivot].copy(groupByExprs = x._1.map(named)))
+            if (p.length == 1 && p.head.isInstanceOf[UnresolvedStar]) newPlan
+            else Project(expressions, newPlan)
           // just "group by cols"
-          case _ => Aggregate(x._1, expressions, withFilter)
+          case _ => Aggregate(x._1, expressions, withFilter(base))
         }
-        case _ => Project(expressions, withFilter)
+        case _ => Project(expressions, withFilter(base))
       }
       val withDistinct = d match {
         case None => withProjection
@@ -1123,6 +1140,20 @@ class SnappyParser(session: SnappySession)
         })
   }
 
+  protected final def pivot: Rule1[LogicalPlan => LogicalPlan] = rule {
+    PIVOT ~ '(' ~ ws ~ namedExpressionSeq ~ FOR ~ (identifierList | identifier) ~ IN ~
+        '(' ~ ws ~ push(tokenize) ~ TOKENIZE_END ~ (literal + commaSep) ~ ')' ~ ws ~ ')' ~ ws ~>
+        ((aggregates: Seq[Expression], ids: Any, tokenized: Boolean,
+            values: Seq[Expression]) => (child: LogicalPlan) => {
+          tokenize = tokenized
+          val pivotColumn = ids match {
+            case id: String => UnresolvedAttribute.quoted(id)
+            case _ => CreateStruct(ids.asInstanceOf[Seq[String]].map(UnresolvedAttribute.quoted))
+          }
+          Pivot(Nil, pivotColumn, values.map(_.asInstanceOf[Literal]), aggregates, child)
+        })
+  }
+
   protected final def insert: Rule1[LogicalPlan] = rule {
     INSERT ~ ((OVERWRITE ~ push(true)) | (INTO ~ push(false))) ~
     TABLE.? ~ relationFactor ~ subSelectQuery ~> ((o: Boolean, r: LogicalPlan,
@@ -1173,7 +1204,7 @@ class SnappyParser(session: SnappySession)
 
   protected def dmlOperation: Rule1[LogicalPlan] = rule {
     capture(INSERT ~ INTO) ~ tableIdentifier ~
-        capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(r,
+        capture(ANY.*) ~> ((c: String, r: TableIdentifier, s: String) => DMLExternalTable(
       UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s"))
   }
 
@@ -1195,8 +1226,7 @@ class SnappyParser(session: SnappySession)
             PutIntoValuesColumnTable(db, tableName, colNames, valueExpr1.head)
           }
           else {
-            DMLExternalTable(r,
-              UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
+            DMLExternalTable(UnresolvedRelation(r), s"$c ${quotedUppercaseId(r)} $s")
           }
         })
   }

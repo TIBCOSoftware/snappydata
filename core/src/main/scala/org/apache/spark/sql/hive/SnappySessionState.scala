@@ -29,7 +29,7 @@ import io.snappydata.Property.HashAggregateSize
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateSubqueryAliases, EliminateUnions, NoSuchTableException, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateUnions, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute}
 import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -114,7 +114,6 @@ class SnappySessionState(val snappySession: SnappySession)
         new HiveConditionalRule(_.catalog.OrcConversions, this) ::
         AnalyzeCreateTable(snappySession) ::
         new PreprocessTable(this) ::
-        ResolveRelationsExtended ::
         ResolveAliasInGroupBy ::
         new FindDataSourceTable(snappySession) ::
         DataSourceAnalysis(conf) ::
@@ -318,29 +317,6 @@ class SnappySessionState(val snappySession: SnappySession)
     new ConcurrentHashMap[LogicalPlan, QueryExecution](4, 0.7f, 1)
 
   /**
-   * Replaces [[UnresolvedRelation]]s with concrete relations from the catalog.
-   */
-  object ResolveRelationsExtended extends Rule[LogicalPlan] with PredicateHelper {
-    private def getTable(u: UnresolvedRelation): LogicalPlan = {
-      try {
-        catalog.lookupRelation(u.tableIdentifier, u.alias)
-      } catch {
-        case _: TableNotFoundException | _: NoSuchTableException =>
-          u.failAnalysis(s"Table not found: ${u.tableIdentifier.unquotedString}")
-      }
-    }
-
-    def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
-      case i@PutIntoTable(u: UnresolvedRelation, _) =>
-        i.copy(table = EliminateSubqueryAliases(getTable(u)))
-      case d@DeleteFromTable(u: UnresolvedRelation, _) =>
-        d.copy(table = EliminateSubqueryAliases(getTable(u)))
-      case d@DMLExternalTable(_, u: UnresolvedRelation, _) =>
-        d.copy(query = EliminateSubqueryAliases(getTable(u)))
-    }
-  }
-
-  /**
    * Orders the join keys as per the  underlying partitioning keys ordering of the table.
    */
   object OrderJoinConditions extends Rule[LogicalPlan] with JoinQueryPlanning {
@@ -411,6 +387,10 @@ class SnappySessionState(val snappySession: SnappySession)
 
   object ResolveAliasInGroupBy extends Rule[LogicalPlan] {
     def apply(plan: LogicalPlan): LogicalPlan = plan resolveOperators {
+      // pivot with '*' projection messes up references for some reason
+      // in older versions of Spark
+      case Project(projectList, p: Pivot)
+        if projectList.length == 1 && projectList.head.isInstanceOf[Star] => p
       case p if !p.childrenResolved => p
       case Aggregate(groups, aggs, child) if aggs.forall(_.resolved) &&
           groups.exists(_.isInstanceOf[UnresolvedAttribute]) =>
@@ -423,11 +403,20 @@ class SnappySessionState(val snappySession: SnappySession)
           case x => x
         }
         Aggregate(newGroups, aggs, child)
+
+      // add implicit grouping columns to pivot
+      case p@Pivot(groupBy, pivotColumn, _, aggregates, child)
+        if groupBy.isEmpty && pivotColumn.resolved && aggregates.forall(_.resolved) =>
+        val pivotColAndAggRefs = pivotColumn.references ++ AttributeSet(aggregates)
+        val groupByExprs = child.output.filterNot(pivotColAndAggRefs.contains)
+        p.copy(groupByExprs = groupByExprs)
+
       case o => o
     }
   }
 
   object RowLevelSecurity extends Rule[LogicalPlan] {
+    // noinspection ScalaUnnecessaryParentheses
     // Y combinator
     val conditionEvaluator: (Expression => Boolean) => Expression => Boolean =
       (f: Expression => Boolean) =>
@@ -440,8 +429,10 @@ class SnappySessionState(val snappySession: SnappySession)
             })
 
 
-    def rlsConditionChecker(f: (Expression => Boolean) => Expression => Boolean):
-    Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
+
+    
+    def rlsConditionChecker(f: (Expression => Boolean) =>
+        Expression => Boolean): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       val memStore = GemFireStore.getBootingInstance
@@ -560,8 +551,7 @@ class SnappySessionState(val snappySession: SnappySession)
             // if this is a row table, then fallback to direct execution
             mutable match {
               case _: UpdatableRelation if currentKey ne null =>
-                return (Nil, DMLExternalTable(snappySession.tableIdentifier(
-                  mutable.table), lr, currentKey.sqlText), lr)
+                return (Nil, DMLExternalTable(lr, currentKey.sqlText), lr)
               case _ =>
                 throw new AnalysisException(
                   s"Empty key columns for update/delete on $mutable")
@@ -596,9 +586,6 @@ class SnappySessionState(val snappySession: SnappySession)
     }
 
     def apply(plan: LogicalPlan): LogicalPlan = plan transform {
-      case c: DMLExternalTable if !c.query.resolved =>
-        c.copy(query = analyzeQuery(c.query))
-
       case u@Update(table, child, keyColumns, updateCols, updateExprs)
         if keyColumns.isEmpty && u.resolved && child.resolved =>
         // add the key columns to the plan
@@ -638,8 +625,8 @@ class SnappySessionState(val snappySession: SnappySession)
                 // allowing assignment of null value
                 case _: NullType => true
                 // allowing assignment to a string type column for all datatypes
-                case dt if attr.dataType.isInstanceOf[StringType] => true
-                case dt => false
+                case _ if attr.dataType.isInstanceOf[StringType] => true
+                case _ => false
               }
 
               // avoid unnecessary copy+cast when inserting DECIMAL types into column table
@@ -678,12 +665,6 @@ class SnappySessionState(val snappySession: SnappySession)
         ColumnTableBulkOps.transformDeletePlan(session, d)
       case p@PutIntoTable(table, child) if table.resolved && child.resolved =>
         ColumnTableBulkOps.transformPutPlan(session, p)
-    }
-
-    private def analyzeQuery(query: LogicalPlan): LogicalPlan = {
-      val qe = executePlan(query)
-      qe.assertAnalyzed()
-      qe.analyzed
     }
   }
 
@@ -904,11 +885,11 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
     override def apply(plan: LogicalPlan): LogicalPlan = {
       plan resolveExpressions {
         case e if !e.childrenResolved => e
-        case p @ BinaryComparison(left @ StringType(), right @ QuestionMark(pos))
+        case p@BinaryComparison(left@StringType(), right@QuestionMark(_))
           if right.dataType == NullType =>
           p.makeCopy(Array(left,
             ParamLiteral(right.value, StringType, right.pos, execId = -1, tokenized = true)))
-        case p @ BinaryComparison(left @ QuestionMark(pos), right @ StringType())
+        case p@BinaryComparison(left@QuestionMark(_), right@StringType())
           if left.dataType == NullType =>
           p.makeCopy(Array(
             ParamLiteral(left.value, StringType, left.pos, execId = -1, tokenized = true),
