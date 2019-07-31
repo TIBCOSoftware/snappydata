@@ -261,8 +261,8 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
   }
 
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
     try {
-      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
       val sc = session.sparkContext
       val key = session.currentKey
       val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
@@ -301,7 +301,7 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     }
     finally {
       logDebug(" Unlocking the table in execute of ExecutePlan ")
-      sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
+      session.clearWriteLockOnTable()
     }
   }
 
