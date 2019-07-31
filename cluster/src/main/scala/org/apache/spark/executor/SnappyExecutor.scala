@@ -87,6 +87,8 @@ class SnappyExecutor(
         if (!ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, appName)) {
           logInfo(s"Creating ClassLoader for $appName" +
               s" with dependencies $appDependencies")
+          var includeInGlobalCmdRegion = true
+          if (appDependencies.contains("__SNAPPY_JOB_URL_")) includeInGlobalCmdRegion = false
           urls = appDependencies.map(name => {
             val localName = name.split("/").last
             var fetch = true
@@ -104,13 +106,15 @@ class SnappyExecutor(
               fetch = udfName.equalsIgnoreCase(appName) ||
                   !ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, udfName)
             }
-            if (fetch) {
+            if (fetch && !name.equalsIgnoreCase("__SNAPPY_JOB_URL_")) {
               logInfo(s"Fetching file $name for App[$appName]")
               Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
                 env.securityManager, hadoopConf, -1L, useCache = !isLocal)
               val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
-              Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName,
-                name)
+              if (includeInGlobalCmdRegion) {
+                Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + appName,
+                  name)
+              }
               url // points to the jar in executor's work directory
             } else {
               null
