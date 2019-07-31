@@ -26,15 +26,13 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
-
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
-import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
+import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
@@ -352,6 +350,23 @@ class SplitSnappyClusterDUnitTest(s: String)
       sns.sql("undeploy  akka-v1")
       assert(sns.sql("list packages").count() == 0)
     }
+  }
+
+  override def testConcurrentOpsOnColumnTables(): Unit = {
+    // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
+    val session = new SnappySession(sc)
+    ConcurrentOpsTests.testSimpleLockInsert(session)
+    ConcurrentOpsTests.testSimpleLockUpdate(session)
+    ConcurrentOpsTests.testSimpleLockDeleteFrom(session)
+    ConcurrentOpsTests.testSimpleLockPutInto(session)
+
+    ConcurrentOpsTests.testConcurrentUpdate(session)
+    ConcurrentOpsTests.testConcurrentPutInto(session)
+    ConcurrentOpsTests.testConcurrentDelete(session)
+    ConcurrentOpsTests.testConcurrentPutIntoUpdate(session)
+    ConcurrentOpsTests.testAllOpsConcurrent(session)
+    ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(session)
+    ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(session)
   }
 
   override def testUpdateDeleteOnColumnTables(): Unit = {

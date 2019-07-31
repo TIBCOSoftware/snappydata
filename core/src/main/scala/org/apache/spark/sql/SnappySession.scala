@@ -559,7 +559,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             logDebug(s" Going to take lock on server for table $table," +
                 s" current Thread ${Thread.currentThread().getId}")
             val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
-            ps.setString(1, "BULKWRITE_" + table)
+            ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + table)
             val rs = ps.executeQuery()
             rs.next()
             locked = rs.getBoolean(1)
@@ -582,7 +582,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case _ =>
         logDebug(s"Taking lock in " +
             s" ${Thread.currentThread().getId} ")
-        val regionLock = PartitionedRegion.getRegionLock("BULKWRITE_" + table,
+        val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
         regionLock.lock()
         regionLock
@@ -601,7 +601,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         try {
           logDebug(s"releasing lock on the server. ${id.table}")
           val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
-          ps.setString(1, "BULKWRITE_" + id.table)
+          ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + id.table)
           val rs = ps.executeQuery()
           rs.next()
           unlocked = rs.getBoolean(1)
@@ -1997,6 +1997,7 @@ object SnappySession extends Logging {
   private[sql] val PUTINTO_LOCK = "putinto_lock"
   private[sql] val CACHED_PUTINTO_LOGICAL_PLAN = "cached_putinto_logical_plan"
   private[sql] val BULKWRITE_LOCK = "bulkwrite_lock"
+  private[sql] val WRITE_LOCK_PREFIX = "BULKWRITE_"
 
 
   private val unresolvedStarRegex =
