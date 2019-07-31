@@ -240,6 +240,63 @@ public class hiveMetaStore extends SnappyTest
         }
     }
 
+    public static void HydraTask_CreateAndDropSchemaFromSnappy() {
+        try {
+
+            boolean isHiveDB = false;
+            SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+            String logFile = getCurrentDirPath() + "/resultdir";
+            String beelineFile, snappyFile;
+            File queryResultDir = new File(logFile);
+            if (!queryResultDir.exists())
+                queryResultDir.mkdirs();
+
+            metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
+            metaStore.snappyConnection.createStatement().execute("drop table if exists hiveDB.hive_regions");
+            metaStore.snappyConnection.createStatement().execute("drop schema if exists hiveDB");
+            metaStore.snappyConnection.createStatement().execute(dropStageRegions);
+            metaStore.snappyConnection.createStatement().execute(dropSnappyRegions);
+            metaStore.snappyConnection.createStatement().execute("create database hiveDB");
+            metaStore.snappyConnection.createStatement().execute("create table hiveDB.hive_regions(RegionID int,RegionDescription string) row format delimited fields terminated by ','");
+            metaStore.snappyConnection.createStatement().execute("load data local inpath '/home/cbhatt/north_wind/regions.csv' overwrite into table hiveDB.hive_regions");
+            metaStore.snappyConnection.createStatement().execute(createSnappyRegions);
+            metaStore.snappyConnection.createStatement().execute(loadSnappyRegions);
+            metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery("select * from app.snappy_regions");
+            ResultSet rs = metaStore.snappyConnection.createStatement().executeQuery("select * from hiveDB.hive_regions where RegionDescription <> 'RegionDescription'");
+            StructTypeImpl beelineSti = ResultSetHelper.getStructType(rs);
+            StructTypeImpl snappySti = ResultSetHelper.getStructType(metaStore.snappyRS);
+            List<com.gemstone.gemfire.cache.query.Struct> beelineList = ResultSetHelper.asList(rs, beelineSti, false);
+            List<Struct> snappyList = ResultSetHelper.asList(metaStore.snappyRS, snappySti, false);
+            metaStore.snappyRS.close();
+            rs.close();
+            beelineFile = logFile + File.separator + "beelineQuery_" + "Q1" + ".out";
+            snappyFile = logFile + File.separator + "snappyQuery_" + "Q1" + ".out";
+            testInstance.listToFile(snappyList, snappyFile);
+            testInstance.listToFile(beelineList, beelineFile);
+            String msg = testInstance.compareFiles(logFile, beelineFile, snappyFile, false, "query_" + "Q1" + "_"+ System.currentTimeMillis());
+            snappyList.clear();
+            beelineList.clear();
+            if (msg.length() > 0) {
+                throw new util.TestException("Validation failed : " + msg);
+            }
+            metaStore.snappyConnection.createStatement().execute("drop table if exists hiveDB.hive_regions");
+            metaStore.snappyConnection.createStatement().execute("drop database if exists hiveDB");
+            rs = metaStore.snappyConnection.createStatement().executeQuery("show schemas");
+            while(rs.next()) {
+                String databaseName =  rs.getString(1);
+                Log.getLogWriter().info("Schema name : " + databaseName);
+                if(databaseName.equals("hiveDB"))
+                    isHiveDB = true;
+            }
+            if(isHiveDB == true)
+                Log.getLogWriter().info("Schema hiveDB is present.");
+            else
+                Log.getLogWriter().info("Schema hiveDB dropped successfully.");
+        }catch(SQLException se) {
+            throw new TestException("Snappy : Exception in Drop Schema Task", se);
+        }
+    }
+
 
     public static void HydraTask_CreateTableAndLoadDataFromBeeline() {
         try {
