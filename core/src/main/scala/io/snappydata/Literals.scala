@@ -18,6 +18,8 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
@@ -282,7 +284,7 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
     s"The max capacity of value byte array in ByteBufferHashMap. " +
       s"Default value is ${Integer.MAX_VALUE}",
-    Some(((Integer.MAX_VALUE - 7) >>> 3) << 3))
+    Some(((Integer.MAX_VALUE -DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD - 7) >>> 3) << 3))
 
   val initialCapacityOfSHABBMap: SQLValue[Int] = SQLVal[Int](
     s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",

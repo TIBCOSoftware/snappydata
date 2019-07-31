@@ -20,6 +20,7 @@ package io.snappydata.collection
 import java.nio.ByteBuffer
 
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.shared.{BufferAllocator, BufferSizeLimitExceededException}
 
 import org.apache.spark.TaskContext
@@ -65,7 +66,8 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected var keyData: ByteBufferData = null,
     protected var valueData: ByteBufferData = null,
     protected var valueDataPosition: Long = 0L,
-    val approxMaxCapacity: Int = ((Integer.MAX_VALUE - 7) >>> 3) << 3) {
+    val approxMaxCapacity: Int = ((Integer.MAX_VALUE - DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
+      - 7) >>> 3) << 3) {
   val taskContext: TaskContext = TaskContext.get()
   private var maxSizeReached: Boolean = false
   private[this] val consumer = if ((taskContext ne null) && !GemFireCacheImpl.hasNewOffHeap) {
