@@ -27,17 +27,15 @@ import com.gemstone.gemfire.internal.DSFIDFactory.GfxdDSFID
 import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.lru.Sizeable
 import com.gemstone.gemfire.internal.cache.persistence.DiskRegionView
-import com.gemstone.gemfire.internal.cache.store.SerializedDiskBuffer
+import com.gemstone.gemfire.internal.cache.store.{ColumnBatchKey, SerializedDiskBuffer}
 import com.gemstone.gemfire.internal.shared._
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.gemstone.gemfire.internal.size.ReflectionSingleObjectSizer.REFERENCE_SIZE
 import com.gemstone.gemfire.internal.{ByteBufferDataInput, DSCODE, DSFIDFactory, DataSerializableFixedID, HeapDataOutputStream}
-import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
-import com.pivotal.gemfirexd.internal.engine.store.{GemFireContainer, RegionKey}
-import com.pivotal.gemfirexd.internal.engine.{GfxdDataSerializable, GfxdSerializable, Misc}
+import com.pivotal.gemfirexd.internal.engine.store.RegionKey
+import com.pivotal.gemfirexd.internal.engine.{GfxdSerializable, Misc}
 import com.pivotal.gemfirexd.internal.iapi.types.{DataValueDescriptor, SQLInteger, SQLLongint}
 import com.pivotal.gemfirexd.internal.impl.sql.compile.TableName
-import com.pivotal.gemfirexd.internal.snappy.ColumnBatchKey
 
 import org.apache.spark.memory.MemoryManagerCallback.{allocateExecutionMemory, memoryManager, releaseExecutionMemory}
 import org.apache.spark.sql.collection.SharedUtils
@@ -99,46 +97,37 @@ object ColumnFormatEntry {
 final class ColumnFormatKey(private[columnar] var uuid: Long,
     private[columnar] var partitionId: Int,
     private[columnar] var columnIndex: Int)
-    extends GfxdDataSerializable with ColumnBatchKey with RegionKey with Serializable {
+    extends ColumnBatchKey with GfxdSerializable with RegionKey with Serializable {
 
   // to be used only by deserialization
   def this() = this(-1L, -1, -1)
 
-  override def getNumColumnsInTable(columnTableName: String): Int = {
-    val bufferTable = GemFireContainer.getRowBufferTableName(columnTableName)
-    GemFireXDUtils.getGemFireContainer(bufferTable, true).getNumColumns - 1
-  }
-
   override def getColumnBatchRowCount(bucketRegion: BucketRegion,
-      re: AbstractRegionEntry, numColumnsInTable: Int): Int = {
-    val currentBucketRegion = bucketRegion.getHostedBucketRegion
-    if ((columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+      value: SerializedDiskBuffer): Int = {
+    if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
         columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX ||
-        columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) &&
-        !re.isDestroyedOrRemoved) {
-      val statsOrDeleteVal = re.getValue(currentBucketRegion)
-      if (statsOrDeleteVal ne null) {
-        val statsOrDelete = statsOrDeleteVal.asInstanceOf[ColumnFormatValue]
-            .getValueRetain(FetchRequest.DECOMPRESS)
-        val buffer = statsOrDelete.getBuffer
-        try {
-          if (buffer.remaining() > 0) {
-            if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
-                columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
-              val numColumns = ColumnStatsSchema.numStatsColumns(numColumnsInTable)
-              val unsafeRow = SharedUtils.toUnsafeRow(buffer, numColumns)
-              unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
-            } else {
-              val allocator = ColumnEncoding.getAllocator(buffer)
-              // decrement by deleted row count
-              -ColumnEncoding.readInt(allocator.baseObject(buffer),
-                allocator.baseOffset(buffer) + buffer.position() + 8)
-            }
-          } else 0
-        } finally {
-          statsOrDelete.release()
-        }
-      } else 0
+        columnIndex == ColumnFormatEntry.DELETE_MASK_COL_INDEX) {
+      val statsOrDelete = value.asInstanceOf[ColumnFormatValue]
+          .getValueRetain(FetchRequest.DECOMPRESS)
+      val buffer = statsOrDelete.getBuffer
+      try {
+        if (buffer.remaining() > 0) {
+          if (columnIndex == ColumnFormatEntry.STATROW_COL_INDEX ||
+              columnIndex == ColumnFormatEntry.DELTA_STATROW_COL_INDEX) {
+            val numColumns = ColumnStatsSchema.numStatsColumns(
+              bucketRegion.getPartitionedRegion.getNumColumns)
+            val unsafeRow = SharedUtils.toUnsafeRow(buffer, numColumns)
+            unsafeRow.getInt(ColumnStatsSchema.COUNT_INDEX_IN_SCHEMA)
+          } else {
+            val allocator = ColumnEncoding.getAllocator(buffer)
+            // decrement by deleted row count
+            -ColumnEncoding.readInt(allocator.baseObject(buffer),
+              allocator.baseOffset(buffer) + buffer.position() + 8)
+          }
+        } else 0
+      } finally {
+        statsOrDelete.release()
+      }
     } else 0
   }
 
@@ -159,6 +148,8 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
     case _ => false
   }
 
+  override def getDSFID: Int = DataSerializableFixedID.GFXD_TYPE
+
   override def getGfxdID: Byte = GfxdSerializable.COLUMN_FORMAT_KEY
 
   override def toData(out: DataOutput): Unit = {
@@ -172,6 +163,8 @@ final class ColumnFormatKey(private[columnar] var uuid: Long,
     partitionId = in.readInt()
     columnIndex = in.readInt()
   }
+
+  override def getSerializationVersions: Array[Version] = null
 
   override def getSizeInBytes: Int = {
     alignedSize(Sizeable.PER_OBJECT_OVERHEAD +
@@ -483,7 +476,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
     if (this.refCount > 1 && isInRegion(context)) {
       // update the statistics before changing self
       val newVal = copy(newBuffer, isCompressed, changeOwnerToStorage = false)
-      context.updateMemoryStats(this, newVal)
+      context.updateMemoryStats(this, newVal, this.entry)
     }
     this.columnBuffer = newBuffer
     this.decompressionState = state

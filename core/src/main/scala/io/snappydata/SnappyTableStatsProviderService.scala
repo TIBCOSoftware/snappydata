@@ -20,7 +20,6 @@
 package io.snappydata
 
 import java.util.concurrent.TimeUnit
-import java.util.function.BiFunction
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -32,12 +31,11 @@ import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
 import com.pivotal.gemfirexd.internal.engine.sql.execute.MemberStatisticsMessage
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
 import com.pivotal.gemfirexd.internal.engine.ui._
 import io.snappydata.Constant._
 import io.snappydata.sql.catalog.CatalogObjectType
@@ -45,7 +43,6 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.SparkContext
 import org.apache.spark.sql.collection.Utils
-import org.apache.spark.sql.execution.columnar.impl.{ColumnFormatKey, ColumnFormatRelation, ColumnFormatValue, RemoteEntriesIterator}
 import org.apache.spark.sql.{SnappyContext, ThinClientConnectorMode}
 
 /*
@@ -275,56 +272,22 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
     }
   }
 
-  type PRIterator = PartitionedRegion#PRLocalScanIterator
-
-  /**
-   * Allows pulling stats rows efficiently if required. For the corner case
-   * of bucket moving away while iterating other buckets.
-   */
-  private val createRemoteIterator = new BiFunction[java.lang.Integer, PRIterator,
-      java.util.Iterator[RegionEntry]] {
-    override def apply(bucketId: Integer,
-        iter: PRIterator): java.util.Iterator[RegionEntry] = {
-      new RemoteEntriesIterator(bucketId, Array.emptyIntArray,
-        iter.getPartitionedRegion, null)
-    }
-  }
-
   def publishColumnTableRowCountStats(): Unit = {
     val regions = Misc.getGemFireCache.getApplicationRegions.asScala
     for (region <- regions) {
       if (region.getDataPolicy.withPartitioning()) {
-        val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
         val pr = region.asInstanceOf[PartitionedRegion]
-        val container = pr.getUserAttribute.asInstanceOf[GemFireContainer]
-        if (ColumnFormatRelation.isColumnTable(table) &&
-            pr.getLocalMaxMemory > 0) {
-          var numColumnsInTable = -1
+        if (pr.isInternalColumnTable && pr.getLocalMaxMemory > 0) {
           // Resetting PR numRows in cached batch as this will be calculated every time.
           var rowsInColumnBatch = 0L
           var offHeapSize = 0L
-          if (container ne null) {
-            // TODO: SW: this should avoid iteration and use BucketRegion to get the sizes
-            val itr = new pr.PRLocalScanIterator(false /* primaryOnly */ , null /* no TX */ ,
-              null /* not required since includeValues is false */ ,
-              createRemoteIterator, false /* forUpdate */ , false /* includeValues */)
-            // using direct region operations
-            while (itr.hasNext) {
-              val re = itr.next().asInstanceOf[AbstractRegionEntry]
-              val key = re.getRawKey.asInstanceOf[ColumnFormatKey]
-              val bucketRegion = itr.getHostedBucketRegion
-              if (bucketRegion.getBucketAdvisor.isPrimary) {
-                if (numColumnsInTable < 0) {
-                  numColumnsInTable = key.getNumColumnsInTable(table)
-                }
-                rowsInColumnBatch += key.getColumnBatchRowCount(bucketRegion, re,
-                  numColumnsInTable)
-              }
-              re._getValue() match {
-                case v: ColumnFormatValue => offHeapSize += v.getOffHeapSizeInBytes
-                case _ =>
-              }
+          val buckets = pr.getDataStore.getAllLocalBucketRegions.iterator()
+          while (buckets.hasNext) {
+            val bucket = buckets.next()
+            if (bucket.getBucketAdvisor.isPrimary) {
+              rowsInColumnBatch += bucket.getNumRowsInColumnTable
             }
+            offHeapSize += bucket.getDirectBytesSizeInMemory
           }
           val stats = pr.getPrStats
           stats.setPRNumRowsInColumnBatches(rowsInColumnBatch)

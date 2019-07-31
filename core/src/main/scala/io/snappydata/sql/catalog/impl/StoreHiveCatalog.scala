@@ -284,7 +284,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
             }
             // exclude policies also from the list of hive tables
             val metaData = new ExternalTableMetaData(table.identifier.table,
-              table.database, tableType.toString, null, -1,
+              table.database, tableType.toString, null, table.schema.length, -1,
               -1, null, null, null, null,
               tblDataSourcePath, driverClass)
             metaData.provider = table.provider match {
@@ -387,8 +387,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           }
           new ExternalTableMetaData(qualifiedName, schema, tableType.toString,
             ExternalStoreUtils.getExternalStoreOnExecutor(parameters, partitions, qualifiedName,
-              schema), columnBatchSize, columnMaxDeltaRows, compressionCodec, baseTable, dmls,
-            dependentRelations, tblDataSourcePath, driverClass).asInstanceOf[R]
+              schema), schema.length, columnBatchSize, columnMaxDeltaRows, compressionCodec,
+            baseTable, dmls, dependentRelations, tblDataSourcePath, driverClass).asInstanceOf[R]
       }
 
       case GET_METADATA =>

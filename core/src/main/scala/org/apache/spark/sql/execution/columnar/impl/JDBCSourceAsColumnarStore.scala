@@ -271,7 +271,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     connectionType match {
       case ConnectionType.Embedded =>
         val region = Misc.getRegionForTable[ColumnFormatKey, ColumnFormatValue](
-          columnTableName, true)
+          columnTableName, true).asInstanceOf[PartitionedRegion]
         val key = new ColumnFormatKey(batchId, partitionId,
           ColumnFormatEntry.DELETE_MASK_COL_INDEX)
 
