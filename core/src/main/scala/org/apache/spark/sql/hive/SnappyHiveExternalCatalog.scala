@@ -37,7 +37,6 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
-import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hive.metastore.api.NoSuchObjectException
 import org.apache.hadoop.hive.ql.metadata.Hive
@@ -60,6 +59,7 @@ import org.apache.spark.sql.hive.client.HiveClientImpl
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
+import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
 import org.apache.spark.sql.types.LongType
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
@@ -505,13 +505,26 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         case None => table.copy(identifier = tableIdent, viewText = viewText,
           viewOriginalText = viewOriginalText)
       }
+    } else if (CatalogObjectType.isPolicy(table)) {
+      // explicitly change table name in policy properties to lower-case
+      // to deal with older releases that store the name in upper-case
+      table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+        properties = table.properties.updated(PolicyProperties.targetTable,
+          JdbcExtendedUtils.toLowerCase(table.properties(PolicyProperties.targetTable))))
     } else table.provider match {
-      // add dbtable property which is not present in old releases
-      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) &&
-          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
-        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
-            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
+      case Some(provider) if SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider) =>
+        // add dbtable property which is not present in old releases
+        val storageFormat =
+          if (table.storage.properties.contains(DBTABLE_PROPERTY)) table.storage
+          else {
+            table.storage.copy(properties = table.storage.properties +
+                (DBTABLE_PROPERTY -> tableIdent.unquotedString))
+          }
+        // schema is "normalized" to deal with upgrade from previous
+        // releases that store column names in upper-case (SNAP-3090)
+        table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+          storage = storageFormat)
       case _ => table.copy(identifier = tableIdent)
     }
     // explicitly add weightage column to sample tables for old catalog data
@@ -838,8 +851,6 @@ object SnappyHiveExternalCatalog {
       log4jLogger.setLevel(Level.ERROR)
     }
     try {
-      // delete the hive scratch directory if it exists
-      FileUtils.deleteDirectory(new java.io.File("./hive"))
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
     } finally {
       logger.setLevel(previousLevel)

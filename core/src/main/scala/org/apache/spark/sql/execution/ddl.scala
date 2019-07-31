@@ -24,6 +24,7 @@ import java.util.Map.Entry
 import java.util.function.Consumer
 
 import scala.collection.mutable.ArrayBuffer
+
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
@@ -32,8 +33,9 @@ import com.pivotal.gemfirexd.internal.impl.jdbc.Util
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Property
 import io.snappydata.util.ServiceUtils
+
 import org.apache.spark.SparkContext
-import org.apache.spark.deploy.{SparkSubmit, SparkSubmitUtils}
+import org.apache.spark.deploy.SparkSubmitUtils
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -152,11 +154,11 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
 }
 
 case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
-    addColumn: StructField, defaultValue: Option[String]) extends RunnableCommand {
+    addColumn: StructField, extensions: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
-    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
+    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, extensions)
     Nil
   }
 }
@@ -171,20 +173,14 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
   }
 }
 
-case class AlterTableDropColumnCommand(
-    tableIdent: TableIdentifier, column: String,
-    referentialAction: Option[Boolean]) extends RunnableCommand {
+case class AlterTableDropColumnCommand(tableIdent: TableIdentifier, column: String,
+    extensions: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
-    val refActionString = referentialAction match {
-      case None => ""
-      case Some(true) => "cascade"
-      case Some(false) => "restrict"
-    }
     // drop column doesn't need anything apart from name so fill dummy values
     snappySession.alterTable(tableIdent, isAddColumn = false,
-      StructField(column, NullType), defaultValue = None, refActionString)
+      StructField(column, NullType), extensions)
     Nil
   }
 }
@@ -616,7 +612,7 @@ case class UnDeployCommand(alias: String) extends RunnableCommand {
       cmndsSet.forEach(new Consumer[Entry[String, String]] {
         override def accept(t: Entry[String, String]): Unit = {
           val alias1 = t.getKey
-          if(alias == alias1) {
+          if (alias == alias1) {
             value = t.getValue
           }
         }

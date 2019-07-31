@@ -54,6 +54,7 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.util.LocalDirectoryCleanupUtil
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
 class LeadImpl extends ServerImpl with Lead
@@ -187,8 +188,7 @@ class LeadImpl extends ServerImpl with Lead
 
       conf.setAll(bootProperties.asScala)
       // set spark ui port to 5050 that is snappy's default
-      conf.set("spark.ui.port",
-        bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
+      conf.setIfMissing("spark.ui.port", LeadImpl.SPARKUI_PORT.toString)
 
       // wait for log service to initialize so that Spark also uses the same
       while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
@@ -363,6 +363,7 @@ class LeadImpl extends ServerImpl with Lead
 
     status() match {
       case State.RUNNING =>
+        LocalDirectoryCleanupUtil.clean()
         bootProperties.putAll(storeProps)
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
@@ -378,6 +379,8 @@ class LeadImpl extends ServerImpl with Lead
         startStatus match {
           case true =>
             logInfo("Primary lead lock acquired.")
+
+            LocalDirectoryCleanupUtil.save()
           // let go.
           case false =>
             if (!_directApiInvoked) {
