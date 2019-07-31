@@ -16,6 +16,7 @@
  */
 package io.snappydata.util
 
+import java.nio.file.{Files, Paths}
 import java.util.Properties
 import java.util.regex.Pattern
 
@@ -30,9 +31,10 @@ import _root_.com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDU
 import io.snappydata.{Constant, Property, ServerManager, SnappyTableStatsProviderService}
 
 import org.apache.spark.memory.MemoryMode
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.hive.HiveClientUtil
 import org.apache.spark.sql.{SnappyContext, SparkSession, ThinClientConnectorMode}
 import org.apache.spark.{SparkContext, SparkEnv}
-import org.apache.spark.sql.collection.Utils
 
 /**
  * Common utility methods for store services.
@@ -42,7 +44,7 @@ object ServiceUtils {
   val LOCATOR_URL_PATTERN: Pattern = Pattern.compile("(.+:[0-9]+)|(.+\\[[0-9]+\\])")
 
   private[snappydata] def getStoreProperties(
-      confProps: Seq[(String, String)]): Properties = {
+      confProps: Seq[(String, String)], forInit: Boolean = false): Properties = {
     val storeProps = new Properties()
     confProps.foreach {
       case (Property.Locators(), v) =>
@@ -62,44 +64,44 @@ object ServiceUtils {
           k.startsWith(Constant.JOBSERVER_PROPERTY_PREFIX) => storeProps.setProperty(k, v)
       case _ => // ignore rest
     }
-    setCommonBootDefaults(storeProps, forLocator = false)
+    setCommonBootDefaults(storeProps, forLocator = false, forInit)
   }
 
   private[snappydata] def setCommonBootDefaults(props: Properties,
-      forLocator: Boolean): Properties = {
+      forLocator: Boolean, forInit: Boolean = true): Properties = {
     val storeProps = if (props ne null) props else new Properties()
     if (!forLocator) {
       // set default recovery delay to 2 minutes (SNAP-1541)
-      if (storeProps.getProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP) == null) {
-        storeProps.setProperty(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
-      }
+      storeProps.putIfAbsent(GfxdConstants.DEFAULT_STARTUP_RECOVERY_DELAY_PROP, "120000")
       // try hard to maintain executor and node locality
-      if (storeProps.getProperty("spark.locality.wait.process") == null) {
-        storeProps.setProperty("spark.locality.wait.process", "20s")
-      }
-      if (storeProps.getProperty("spark.locality.wait") == null) {
-        storeProps.setProperty("spark.locality.wait", "10s")
-      }
+      storeProps.putIfAbsent("spark.locality.wait.process", "20s")
+      storeProps.putIfAbsent("spark.locality.wait", "10s")
       // default value for spark.sql.files.maxPartitionBytes in snappy is 32mb
-      if (storeProps.getProperty("spark.sql.files.maxPartitionBytes") == null) {
-        storeProps.setProperty("spark.sql.files.maxPartitionBytes", "33554432")
-      }
+      storeProps.putIfAbsent("spark.sql.files.maxPartitionBytes", "33554432")
 
+      // change hive temporary files location to be inside working directory
+      // to fix issues with concurrent queries trying to access/write same directories
+      if (forInit) {
+        ClientSharedUtils.deletePath(Paths.get(HiveClientUtil.HIVE_TMPDIR), false, false)
+        Files.createDirectories(Paths.get(HiveClientUtil.HIVE_TMPDIR))
+      }
+      // set as system properties so that these can be overridden by
+      // hive-site.xml if required
+      val sysProps = System.getProperties
+      for ((hiveVar, dirName) <- HiveClientUtil.HIVE_DEFAULT_SETTINGS) {
+        sysProps.putIfAbsent(hiveVar.varname, dirName)
+      }
     }
     // set default member-timeout higher for GC pauses (SNAP-1777)
-    if (storeProps.getProperty(DistributionConfig.MEMBER_TIMEOUT_NAME) == null) {
-      storeProps.setProperty(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
-    }
+    storeProps.putIfAbsent(DistributionConfig.MEMBER_TIMEOUT_NAME, "30000")
     // set network partition detection by default
-    if (storeProps.getProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME) == null) {
-      storeProps.setProperty(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
-    }
+    storeProps.putIfAbsent(ENABLE_NETWORK_PARTITION_DETECTION_NAME, "true")
     storeProps
   }
 
   def invokeStartFabricServer(sc: SparkContext,
       hostData: Boolean): Unit = {
-    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll)
+    val properties = getStoreProperties(Utils.getInternalSparkConf(sc).getAll, forInit = true)
     // overriding the host-data property based on the provided flag
     if (!hostData) {
       properties.setProperty("host-data", "false")

@@ -414,7 +414,7 @@ class TokenizationTest
       assert(cacheMap.size() == 1)
 
       query = s"select * from $table where b = 1"
-      var res2 = newSession.sql(query).collect()
+      newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
       cacheMap.clear()

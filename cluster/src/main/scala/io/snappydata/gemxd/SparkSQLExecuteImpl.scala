@@ -75,7 +75,7 @@ class SparkSQLExecuteImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  session.setCurrentSchema(schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = false, pvs)
 
@@ -288,7 +288,11 @@ object SparkSQLExecuteImpl {
       if (dotIdx > 0) {
         val tableName = fn.substring(0, dotIdx)
         val fullTableName = if (tableName.indexOf('.') > 0) tableName
-        else session.getCurrentSchema + '.' + tableName
+        else {
+          // JDBC spec allows returning empty string for getSchemaName so the code
+          // should do the same instead of returning current schema which can be incorrect
+          "." + tableName
+        }
         (fullTableName, a.nullable)
       } else {
         ("", a.nullable)
