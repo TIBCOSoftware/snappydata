@@ -6,7 +6,7 @@ import java.io.{File, FileOutputStream, PrintWriter}
 import org.apache.spark.sql.{SQLContext, SnappyContext}
 import org.apache.spark.{SparkConf, SparkContext}
 
-object SnappyStreamingSinkApp {
+object SnappyStreamingSinkAppWithAggregate {
   def main(args: Array[String]) {
     val conf = new SparkConf().
         setAppName("ValidateCTQueriesApp Application_" + System.currentTimeMillis())

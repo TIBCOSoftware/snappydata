@@ -17,7 +17,7 @@
 package io.snappydata.hydra.streaming_sink
 
 import java.io.{File, FileOutputStream, PrintWriter}
-import java.sql.{Connection, PreparedStatement, SQLException, Statement, Timestamp}
+import java.sql.{Connection, SQLException, Statement, Timestamp}
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit.DAYS
 import java.util.Properties
@@ -33,8 +33,7 @@ object StringMessageProducer {
 
   var hasDerby: Boolean = false
   var isConflationTest: Boolean = false
-  val pw: PrintWriter = new PrintWriter(new FileOutputStream(new File("generatorAndPublisher.out"),
-    true));
+  var pw: PrintWriter = null
 
   def properties(brokers: String): Properties = {
     val props = new Properties()
@@ -49,6 +48,8 @@ object StringMessageProducer {
   }
 
   def generateAndPublish(args: Array[String]) {
+    val fileName = "generatorAndPublisher_" + System.currentTimeMillis() + ".out"
+    pw = new PrintWriter(new FileOutputStream(new File(fileName), true));
     val eventCount: Int = args {0}.toInt
     val topic: String = args {1}
     val startRange: Int = args {2}.toInt
@@ -142,7 +143,7 @@ extends Runnable {
         val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
         val birthtime: Timestamp = new Timestamp(System.currentTimeMillis())
         if (StringMessageProducer.isConflationTest) {
-          id = random.nextInt(500)
+          id = random.nextInt(5000)
         }
         val row: String = s"$id,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob," +
             s"$birthtime," +
@@ -166,7 +167,11 @@ extends Runnable {
     if (hasDerby) {
       derbyTestUtils.closeDiscConnection(conn, true)
     } else {
-      if (stmt != null) stmt.executeBatch()
+      if (stmt != null) {
+        StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Executing " +
+            "remaining batch .. ")
+        stmt.executeBatch()
+      }
       conn.close()
     }
     StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Done producing " +
@@ -188,8 +193,9 @@ extends Runnable {
     if (stmt == null) stmt = conn.createStatement()
     stmt.addBatch(query)
     batchSize = batchSize + 1
-    if (batchSize == 10000) {
-      StringMessageProducer.pw.println("Executing batch .. ")
+    if (batchSize == 30000) {
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Executing " +
+          "batch .. ")
       stmt.executeBatch()
       batchSize = 0
       stmt = null
