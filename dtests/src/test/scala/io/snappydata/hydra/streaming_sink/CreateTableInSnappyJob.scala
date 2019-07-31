@@ -60,18 +60,26 @@ class CreateTableInSnappyJob extends SnappySQLJob{
         s"address varchar(40), " +
         s"country varchar(10), " +
         s"phone varchar(12), " +
-        s"dateOfBirth varchar(15), " +
+        s"dateOfBirth date, " +
+        s"birthTime timestamp, " +
         s"age int, " +
         s"status varchar(10), " +
         s"email varchar(30), " +
         s"education varchar(20), " +
-        s"occupation varchar(15) " +
+        s"gender varchar(12)," +
+        s"weight double," +
+        s"height double," +
+        s"bloodGrp varchar(3)," +
+        s"occupation varchar(15), " +
+        s"hasChildren boolean," +
+        s"numChild int," +
+        s"hasSiblings boolean" +
         s" $primaryKey" +
         s") using $provider $options"
     pw.println(s"Creating table $s")
     pw.flush()
     snc.sql(s)
-    pw.println("created table.")
+    pw.println("Created table.")
     pw.flush()
   }
 
