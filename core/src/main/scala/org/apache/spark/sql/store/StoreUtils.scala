@@ -442,10 +442,13 @@ object StoreUtils {
           v.equalsIgnoreCase("synchronous")) {
         sb.append(s"$GEM_PERSISTENT SYNCHRONOUS ")
       } else if (v.equalsIgnoreCase("none")) {
+        if (isShadowTable) {
+          throw Utils.analysisException(s"Column tables do not support $PERSISTENCE = none")
+        }
         isPersistent = false
         sb
       } else {
-        throw Utils.analysisException(s"Invalid value for option " +
+        throw Utils.analysisException("Invalid value for option " +
             s"$PERSISTENCE = $v (expected one of: sync, async, none, " +
             s"synchronous, asynchronous)")
       }
