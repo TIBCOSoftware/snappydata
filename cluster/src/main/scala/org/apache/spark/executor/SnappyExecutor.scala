@@ -88,7 +88,9 @@ class SnappyExecutor(
           logInfo(s"Creating ClassLoader for $appName" +
               s" with dependencies $appDependencies")
           var includeInGlobalCmdRegion = true
-          if (appDependencies.contains("__SNAPPY_JOB_URL_")) includeInGlobalCmdRegion = false
+          if (appDependencies.contains(io.snappydata.Constant.SNAPPY_JOB_URL)) {
+            includeInGlobalCmdRegion = false
+          }
           urls = appDependencies.map(name => {
             val localName = name.split("/").last
             var fetch = true
@@ -106,7 +108,7 @@ class SnappyExecutor(
               fetch = udfName.equalsIgnoreCase(appName) ||
                   !ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, udfName)
             }
-            if (fetch && !name.equalsIgnoreCase("__SNAPPY_JOB_URL_")) {
+            if (fetch && !name.equalsIgnoreCase(io.snappydata.Constant.SNAPPY_JOB_URL)) {
               logInfo(s"Fetching file $name for App[$appName]")
               Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
                 env.securityManager, hadoopConf, -1L, useCache = !isLocal)

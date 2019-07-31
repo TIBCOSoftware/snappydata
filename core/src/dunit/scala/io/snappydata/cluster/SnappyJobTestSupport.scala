@@ -133,7 +133,7 @@ trait SnappyJobTestSupport extends Logging {
         }
         if (consoleLog.contains("FINISHED")) logInfo(s"Job $jobId completed. $consoleLog")
         else if (!consoleLog.contains("RUNNING")) {
-          throw new Exception("Job failied with result:" + consoleLog)
+          throw new Exception("Job failed with result:" + consoleLog)
         }
         consoleLog.contains("FINISHED")
       }

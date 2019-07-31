@@ -89,7 +89,7 @@ object SnappyUtils {
     })
     var localProperty = ""
     if (!addAllJars) {
-      localProperty = (Seq(appName, DateTime.now, "__SNAPPY_JOB_URL_") ++ sparkJars.filterNot(
+      localProperty = (Seq(appName, DateTime.now, Constant.SNAPPY_JOB_URL) ++ sparkJars.filterNot(
         _.isEmpty).toSeq).mkString(",")
     } else {
       localProperty = (Seq(appName, DateTime.now) ++ sparkJars.filterNot(
