@@ -347,6 +347,7 @@ public class SnappyTest implements Serializable {
         while (locPort < 0 || locPort > 65535);
         nodeLogDir = HostHelper.getLocalHost() + " -dir=" + dirPath + clientPort + port +
             locPortString + locPort + SnappyPrms.getTimeStatistics() + SnappyPrms.getLogLevel() +
+            " -Dgemfire.DISALLOW_RESERVE_SPACE=true " +
             " " + SnappyPrms.getLocatorLauncherProps();
         SnappyBB.getBB().getSharedMap().put("locatorHost" + "_" + RemoteTestModule.getMyVmid(),
             HostHelper.getLocalHost());
@@ -384,6 +385,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             SnappyPrms.getGCOptions(dirPath) + " " +
+            " -Dgemfire.DISALLOW_RESERVE_SPACE=true " +
             SnappyPrms.getServerLauncherProps() +
             " -classpath=" + getStoreTestsJar();
         Log.getLogWriter().info("Generated peer server endpoint: " + endpoint);
@@ -415,6 +417,7 @@ public class SnappyTest implements Serializable {
             " -J-Dgemfire.CacheServerLauncher.SHUTDOWN_WAIT_TIME_MS=50000" +
             SnappyPrms.getFlightRecorderOptions(dirPath) +
             SnappyPrms.getGCOptions(dirPath) + " " +
+            " -Dgemfire.DISALLOW_RESERVE_SPACE=true " +
             SnappyPrms.getLeaderLauncherProps() +
             " -spark.driver.extraClassPath=" + getStoreTestsJar() +
             " -spark.executor.extraClassPath=" + getStoreTestsJar();

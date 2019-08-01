@@ -104,6 +104,10 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static Long uniqueColumnName;
 
 
+  public static Long isAggregate;
+
+  public  static Long aggType;
+
   public static String[] getTableNames() {
     Long key = tablesList;
     Vector tables = TestConfig.tasktab().vecAt(key, TestConfig.tab().vecAt(key, new HydraVector()));
@@ -346,6 +350,16 @@ public class SnappySchemaPrms extends SnappyPrms {
   public static boolean getLoadDataInParts(){
     Long key = loadDataInParts;
     return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+  }
+
+  public static boolean isAggregate(){
+    Long key = isAggregate;
+    return TestConfig.tasktab().booleanAt(key, TestConfig.tab().booleanAt(key, false));
+  }
+
+  public static String getAggregateType(){
+    Long key = aggType;
+    return TestConfig.tasktab().stringAt(key, TestConfig.tab().stringAt(key, ""));
   }
 
   public static boolean hasCsvData(){
