@@ -143,7 +143,7 @@ extends Runnable {
         val dob: LocalDate = randomDate(LocalDate.of(1915, 1, 1), LocalDate.of(2000, 1, 1))
         val birthtime: Timestamp = new Timestamp(System.currentTimeMillis())
         if (StringMessageProducer.isConflationTest) {
-          id = random.nextInt(5000)
+          id = random.nextInt(500)
         }
         val row: String = s"$id,fName$i,mName$i,lName$i,$title,$address,$country,$phone,$dob," +
             s"$birthtime," +

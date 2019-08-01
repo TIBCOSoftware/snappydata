@@ -47,6 +47,7 @@ import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.streaming_sink.StringMessageProducer;
 import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
+import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import org.apache.commons.io.FileUtils;
 import sql.sqlutil.ResultSetHelper;
 import util.TestException;
@@ -389,7 +390,6 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     else snappyAdAnalyticsTest.verifyResults();
   }
 
-
   public void verifyResults(){
     String query = "select * from ";
     try {
@@ -403,24 +403,55 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         throw new TestException ("Got exception while creating directory for query results.");
       }
       Connection conn = getLocatorConnection();
-
+      ResultSet rs_tmp = null;
       ResultSet rs = conn.createStatement().executeQuery(query + " persoon");
       StructTypeImpl snappySti = ResultSetHelper.getStructType(rs);
       List<Struct> snappyList = ResultSetHelper.asList(rs, snappySti, false);
+      int stream_tableCnt = snappyList.size();
       String streamTableFile = queryResultDirPath + File.separator + "persoon_" + getMyTid() + ".out";
       SnappyDMLOpsUtil.listToFile(snappyList, streamTableFile);
       snappyList.clear();
       rs.close();
 
-      ResultSet rs_tmp = conn.createStatement().executeQuery(query + " temp_persoon");
+      if(SnappySchemaPrms.isAggregate()) {
+        String aggType = SnappySchemaPrms.getAggregateType();
+        switch (aggType.toUpperCase()) {
+          case "JOIN":
+            query = "select * from temp_persoon as tp, persoon_details as pd where pd.id=tp.id";
+            break;
+          case "AVG":
+            query = "select id, avg(age), avg(numChild) from temp_persoon group_by id";
+            break;
+          case "SUM":
+            query = "select id, sum(age), sum(numChild) from temp_persoon group_by id";
+            break;
+          case "COUNT":
+            query = "select age, count(*) from temp_persoon group_by age";
+            break;
+        }
+      } else {
+        query = query + "temp_persoon";
+      }
+      rs_tmp = conn.createStatement().executeQuery(query + " temp_persoon");
       StructTypeImpl rs_tmpSti = ResultSetHelper.getStructType(rs_tmp);
       List<Struct> rsTmpList = ResultSetHelper.asList(rs_tmp, rs_tmpSti, false);
+      int snappyTableCnt = rsTmpList.size();
       String tmpTableFile = queryResultDirPath + File.separator + "tmp_tab" + getMyTid() + ".out";
       SnappyDMLOpsUtil.listToFile(rsTmpList, tmpTableFile);
+      if(stream_tableCnt != snappyTableCnt)
+        throw new TestException("Number of rows in snappy and streaming table different. Please " +
+            "check the result at :" + queryResultDirPath);
       rsTmpList.clear();
       rs.close();
+      SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+      String errMsg = testInstance.compareFiles(queryResultDirPath, streamTableFile, tmpTableFile,
+          false, "streaming");
+      if(errMsg.length()> 0 ){
+        throw new TestException("Got exception while validating results");
+      }
     } catch (SQLException se) {
-
+      Log.getLogWriter().info("Got exception while verifying results");
+      throw new TestException("Got Exception while verifying results.", se);
     }
   }
 
@@ -494,7 +525,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static void HydraTask_executeSQLScriptsWithSleep() {
-    try { Thread.sleep(30000); } catch (InterruptedException ie) {}
+    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
     HydraTask_executeSQLScripts();
   }
 
@@ -517,17 +548,21 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     HydraTask_executeSnappyStreamingJob();
   }
 
+  /*
+  Task for restarting the streaming in smart connector mode.
+   */
   public static void HydraTask_restartStreamingApp() {
-    HydraTask_stopStreamingJob();
+    HydraTask_closeStreamingApp();
     try { Thread.sleep(60000); } catch (InterruptedException ie) {}
     HydraTask_executeSnappyStreamingApp();
     try { Thread.sleep(30000); } catch (InterruptedException ie) {}
   }
 
+  /*
+  Task for restarting the leadVM
+   */
   public static void HydraTask_restartLeadVMWithStreamingApp(){
     HydraTask_cycleLeadVM();
-    // try { Thread.sleep(60000); } catch (InterruptedException ie) {}
-    // HydraTask_executeSnappyStreamingApp();
   }
 
   public static void HydraTask_restartSnappyClusterForStreamingApp(){

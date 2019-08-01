@@ -54,7 +54,7 @@ class CreateTableForSumJob extends SnappySQLJob{
     val s = s"create table $tableName (" +
         s"id long, " +
         s"sum_age long, " +
-        s"sum_numChild long, " +
+        s"sum_numChild long " +
         s" $primaryKey" +
         s") using $provider $options"
     pw.println(s"Creating table $s")

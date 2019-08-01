@@ -70,70 +70,6 @@ object StructuredStreamingTestUtil {
         })
   }
 
-  def structFields_persoon_avg(withEventTypeColumn: Boolean = true): List[StructField] = {
-    StructField("id", LongType, nullable = false) ::
-        StructField("avg_age", DoubleType, nullable = true) ::
-        StructField("avg_numChild", DoubleType, nullable = true) ::
-        (if (withEventTypeColumn) {
-          StructField("_eventType", IntegerType, nullable = false) :: Nil
-        } else {
-          Nil
-        })
-  }
-
-  def structFields_persoon_sum(withEventTypeColumn: Boolean = true): List[StructField] = {
-    StructField("id", LongType, nullable = false) ::
-        StructField("sum_age", StringType, nullable = true) ::
-        StructField("sum_numChild", StringType, nullable = true) ::
-        (if (withEventTypeColumn) {
-          StructField("_eventType", IntegerType, nullable = false) :: Nil
-        } else {
-          Nil
-        })
-  }
-
-  def structFields_persoon_count(withEventTypeColumn: Boolean = true): List[StructField] = {
-    StructField("age", IntegerType, nullable = false) ::
-        StructField("count", IntegerType, nullable = true) ::
-        (if (withEventTypeColumn) {
-          StructField("_eventType", IntegerType, nullable = false) :: Nil
-        } else {
-          Nil
-        })
-  }
-
-  def structFields_persoon_join(withEventTypeColumn: Boolean = true): List[StructField] = {
-    StructField("id", LongType, nullable = false) ::
-        StructField("firstName", StringType, nullable = true) ::
-        StructField("middleName", StringType, nullable = true) ::
-        StructField("lastName", StringType, nullable = true) ::
-        StructField("title", StringType, nullable = true) ::
-        StructField("address", StringType, nullable = true) ::
-        StructField("country", StringType, nullable = true) ::
-        StructField("phone", StringType, nullable = true) ::
-        StructField("dateOfBirth", StringType, nullable = true) ::
-        StructField("birthTime", StringType, nullable = true) ::
-        StructField("age", IntegerType, nullable = true) ::
-        StructField("status", StringType, nullable = true) ::
-        StructField("email", StringType, nullable = true) ::
-        StructField("education", StringType, nullable = true) ::
-        StructField("gender", StringType, nullable = true)::
-        StructField("weight", DoubleType, nullable = true)::
-        StructField("height", DoubleType, nullable = true)::
-        StructField("bloodGrp", StringType, nullable = true)::
-        StructField("occupation", StringType, nullable = true)::
-        StructField("hasChildren", BooleanType, nullable = true)::
-        StructField("numChild", IntegerType, nullable = true)::
-        StructField("hasSiblings", BooleanType, nullable = true)::
-        StructField("pd_id", LongType, nullable = true)::
-        StructField("language", BooleanType, nullable = true)::
-        (if (withEventTypeColumn) {
-          StructField("_eventType", IntegerType, nullable = false) :: Nil
-        } else {
-          Nil
-        })
-  }
-
   def getStreamingDF(snc: SnappySession, broker: String, topic: String) : DataFrame = {
     return snc
         .readStream
@@ -148,10 +84,6 @@ object StructuredStreamingTestUtil {
     tableName match {
       case "persoon" => return StructType(structFields_persoon())
       case "persoon_genCol" => return StructType(structFields_persoon_genCol())
-      case "persoon_avg" => return StructType(structFields_persoon_avg())
-      case "persoon_sum" => return StructType(structFields_persoon_sum())
-      case "persoon_count" => return StructType(structFields_persoon_count())
-      case "persoon_join" => return StructType(structFields_persoon_join())
     }
   }
 
@@ -208,18 +140,16 @@ object StructuredStreamingTestUtil {
     val streamingDF = getStreamingDF(snc, broker, topic)
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
+    pw.println("checkpoint dir is : " + checkpointDirectory)
 
     val schema = getSchema(tableName)
     implicit val encoder = RowEncoder(schema)
     import snc.implicits._
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
         .as[String]
-        .map(s => {
-          s.split(",")
-        })
+        .map(_.split(","))
         .map(r => {
-          println("creating row: " + r.mkString(","))
-          val row = if (r.length == 23) {
+          if (r.length == 23) {
             Row(r(0).toLong, r(1), r(2), r(3), r(4), r(5), r(6), r(7), r(8),
               r(9), r(10).toInt, r(11), r(12), r(13), r(14), r(15).toDouble,
               r(16).toDouble, r(17), r(18), r(19).toBoolean, r(20).toInt, r(21).toBoolean,
@@ -229,8 +159,6 @@ object StructuredStreamingTestUtil {
               r(9), r(10).toInt, r(11), r(12), r(13), r(14), r(15).toDouble,
               r(16).toDouble, r(17), r(18), r(19).toBoolean, r(20).toInt, r(21).toBoolean)
           }
-          println("creating row ... done" + r.mkString(","))
-          row
         }).writeStream
         .format("snappysink")
         .queryName(s"Query_$tid")
@@ -258,7 +186,7 @@ object StructuredStreamingTestUtil {
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
 
-    val schema = getSchema(tableName + "_sum")
+    val schema = getSchema(tableName)
     implicit val encoder = RowEncoder(schema)
     import snc.implicits._
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
@@ -305,7 +233,7 @@ object StructuredStreamingTestUtil {
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
 
-    val schema = getSchema(tableName + "_avg")
+    val schema = getSchema(tableName)
     implicit val encoder = RowEncoder(schema)
     import snc.implicits._
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
@@ -352,7 +280,7 @@ object StructuredStreamingTestUtil {
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
 
-    val schema = getSchema(tableName + "_count")
+    val schema = getSchema(tableName)
     implicit val encoder = RowEncoder(schema)
     import snc.implicits._
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
@@ -399,7 +327,7 @@ object StructuredStreamingTestUtil {
     val checkpointDirectory: String = (new File(".")).getCanonicalPath +
         File.separator + "checkpointDirectory_" + tid
 
-    val schema = getSchema(tableName + "_join")
+    val schema = getSchema(tableName)
     implicit val encoder = RowEncoder(schema)
     import snc.implicits._
     val streamWriter = streamingDF.selectExpr("CAST(value AS STRING)")
