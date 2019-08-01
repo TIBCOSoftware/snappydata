@@ -240,18 +240,15 @@ class CassandraSnappyDUnitTest(val s: String)
         " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
         " spark.cassandra.read.timeout_ms '10000')")
     stmt1.execute("select * from customer2")
-    var rs = stmt1.getResultSet
-    assert(getCount(rs) == 3)
+    assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 1)
+    assert(getCount(stmt1.getResultSet) == 1)
 
     stmt1.execute("undeploy cassandrajar")
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 0)
+    assert(getCount(stmt1.getResultSet) == 0)
 
     stmt1.execute("drop table if exists customer2")
     try {
@@ -273,25 +270,21 @@ class CassandraSnappyDUnitTest(val s: String)
     stmt1.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
         " repos 'http://clojars.org/repo/'")
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 3)
+    assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("undeploy mssql")
     stmt1.execute("undeploy cassandrajar")
     stmt1.execute("undeploy googlegsonandavro")
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 0)
+    assert(getCount(stmt1.getResultSet) == 0)
 
     val jarPath = s"$snappyProductDir/jars/hadoop-client-2.7.7.jar"
     stmt1.execute(s"""deploy jar avro-v_1.0 '$jarPath'""")
     stmt1.execute("list jars")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 1)
+    assert(getCount(stmt1.getResultSet) == 1)
     stmt1.execute("undeploy  avro-v_1.0 ")
     stmt1.execute("list jars")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 0)
+    assert(getCount(stmt1.getResultSet) == 0)
   }
   
   def snap_2772BugTest_deployJar_createExternalTable(): Unit = {
@@ -304,17 +297,14 @@ class CassandraSnappyDUnitTest(val s: String)
         " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
         " spark.cassandra.read.timeout_ms '10000')")
     stmt1.execute("select * from customer3")
-    var rs = stmt1.getResultSet
-    assert(getCount(rs) == 3)
+    assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 1)
+    assert(getCount(stmt1.getResultSet) == 1)
 
     stmt1.execute("undeploy cassJar")
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 0)
+    assert(getCount(stmt1.getResultSet) == 0)
 
     stmt1.execute("drop table if exists customer3")
     try {
@@ -340,18 +330,15 @@ class CassandraSnappyDUnitTest(val s: String)
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
           "--conf spark.cassandra.connection.host=localhost")
     stmt1.execute("select * from customer")
-    var rs = stmt1.getResultSet
-    assert(getCount(rs) == 3)
+    assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 1)
+    assert(getCount(stmt1.getResultSet) == 1)
 
     stmt1.execute("undeploy cassJar")
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 0)
+    assert(getCount(stmt1.getResultSet) == 0)
 
     stmt1.execute("drop table if exists customer")
     try {
@@ -374,17 +361,14 @@ class CassandraSnappyDUnitTest(val s: String)
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
       "--conf spark.cassandra.connection.host=localhost")
     stmt1.execute("select * from customer")
-    var rs = stmt1.getResultSet
-    assert(getCount(rs) == 3)
+    assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 1)
+    assert(getCount(stmt1.getResultSet) == 1)
     stmt1.execute("undeploy cassandraJar")
 
     stmt1.execute("list packages")
-    rs = stmt1.getResultSet
-    assert(getCount(rs) == 0)
+    assert(getCount(stmt1.getResultSet) == 0)
     stmt1.execute("drop table if exists customer")
     try {
       submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,

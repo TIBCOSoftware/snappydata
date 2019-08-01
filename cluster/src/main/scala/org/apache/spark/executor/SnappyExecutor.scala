@@ -87,10 +87,8 @@ class SnappyExecutor(
         if (!ContextJarUtils.checkItemExists(ContextJarUtils.droppedFunctionsKey, appName)) {
           logInfo(s"Creating ClassLoader for $appName" +
               s" with dependencies $appDependencies")
-          var includeInGlobalCmdRegion = true
-          if (appDependencies.contains(io.snappydata.Constant.SNAPPY_JOB_URL)) {
-            includeInGlobalCmdRegion = false
-          }
+          val includeInGlobalCmdRegion =
+            !appDependencies.contains(io.snappydata.Constant.SNAPPY_JOB_URL)
           urls = appDependencies.map(name => {
             val localName = name.split("/").last
             var fetch = true
