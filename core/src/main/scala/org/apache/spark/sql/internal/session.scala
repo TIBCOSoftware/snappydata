@@ -209,6 +209,21 @@ class SnappyConf(@transient val session: SnappySession)
       case _ => key
     }
 
+    case Constant.CPUS_PER_TASK_PROP => value match {
+      case Some(intVal) =>
+        val intStr = intVal.toString
+        val numCpus = intStr.toInt
+        if (numCpus < 1) {
+          throw new IllegalArgumentException(s"Value for ${Constant.CPUS_PER_TASK_PROP} " +
+              s"should be >= 1 but was $intVal")
+        }
+        session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, intStr)
+        key
+      case _ =>
+        session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, null)
+        key
+    }
+
     case _ if key.startsWith("spark.sql.aqp.") =>
       session.clearPlanCache()
       key
