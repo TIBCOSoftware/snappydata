@@ -87,8 +87,15 @@ object SnappyUtils {
     val sparkJars = dependentJars.map(url => {
       Try(sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))).getOrElse("")
     })
-    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.filterNot(
-      _.isEmpty).toSeq).mkString(",")
+    var localProperty = ""
+    if (!addAllJars) {
+      localProperty = (Seq(appName, DateTime.now, Constant.SNAPPY_JOB_URL) ++ sparkJars.filterNot(
+        _.isEmpty).toSeq).mkString(",")
+    } else {
+      localProperty = (Seq(appName, DateTime.now) ++ sparkJars.filterNot(
+        _.isEmpty).toSeq).mkString(",")
+    }
+
     sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
   }
 
