@@ -85,12 +85,12 @@ case class SnappyHashAggregateExec(
       groupingExpressions.exists(_.dataType match {
       case StringType => true
       case _ => false
-    }) && !Property.TestUseBBMapInSHAFor1StringGrouBy.get(
+    }) && !Property.UseOptimizedHashAggregateForSingleKey.get(
       sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf))
 
     aggregateBufferAttributes.forall(attr =>
       TypeUtilities.isFixedWidth(attr.dataType)) &&
-      !Property.TestDisableByteBufferMapInSHA.get(
+      Property.UseOptimzedHashAggregate.get(
         sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
       !groupingExpressions.isEmpty &&
       groupingExpressions.forall(_.dataType.

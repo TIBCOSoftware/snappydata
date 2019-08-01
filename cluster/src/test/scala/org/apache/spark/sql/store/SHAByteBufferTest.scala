@@ -51,7 +51,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     super.newSparkConf((conf: SparkConf) => {
       conf.set("spark.sql.codegen.maxFields", "110")
       conf.set("spark.sql.codegen.fallback", "false")
-      conf.set("snappydata.sql.useBBMapInSHAFor1StringGroupBy", "true")
+      conf.set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true")
       conf
     })
   }
@@ -1228,7 +1228,7 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     insertPs.executeBatch()
 
     val snc2 = snc.newSession()
-    snc2.setConf("snappydata.sql.disableBBMapInSHA", "true")
+    snc2.setConf("snappydata.sql.optimizedHashAggregate", "false")
 
     val query1 = "select cast(avg( distinct price) as decimal (30, 20)) as " +
       "avg_distinct_price from securities "

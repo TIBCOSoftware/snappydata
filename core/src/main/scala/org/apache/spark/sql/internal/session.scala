@@ -99,8 +99,8 @@ class SnappyConf(@transient val session: SnappySession)
          Property.HashAggregateSize.name |
          Property.ForceLinkPartitionsToBuckets.name |
          Property.ForceLinkPartitionsToBuckets.name |
-         Property.TestDisableByteBufferMapInSHA.name |
-         Property.TestUseBBMapInSHAFor1StringGrouBy.name |
+         Property.UseOptimzedHashAggregate.name |
+         Property.UseOptimizedHashAggregateForSingleKey.name |
          Property.TestExplodeComplexDataTypeInSHA.name =>
       session.clearPlanCache()
       key

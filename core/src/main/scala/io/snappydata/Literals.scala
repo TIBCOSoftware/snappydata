@@ -270,13 +270,13 @@ object Property extends Enumeration {
     "Explodes the Struct or Array Field in Group By Keys even if the struct object is " +
       "UnsafeRow or UnsafeArrayData", Some(false))
 
-  val TestDisableByteBufferMapInSHA: SQLValue[Boolean] = SQLVal[Boolean](
-    s"${Constant.PROPERTY_PREFIX}sql.disableBBMapInSHA",
-    "disables the use of ByteBufferMap based SnappyHashAggregateExec",
-    Some(false))
+  val UseOptimzedHashAggregate: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.optimizedHashAggregate",
+    "Enables the use of ByteBufferMap based SnappyHashAggregateExec",
+    Some(true))
 
-  val TestUseBBMapInSHAFor1StringGrouBy: SQLValue[Boolean] = SQLVal[Boolean](
-    s"${Constant.PROPERTY_PREFIX}sql.useBBMapInSHAFor1StringGroupBy",
+  val UseOptimizedHashAggregateForSingleKey: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.useOptimizedHashAggregateForSingleKey",
     "use ByteBufferMap based SnappyHashAggregateExec even for single string group by",
     Some(false))
 
