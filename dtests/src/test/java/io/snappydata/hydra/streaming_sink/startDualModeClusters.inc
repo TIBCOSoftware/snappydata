@@ -116,6 +116,12 @@ INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest
     io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
     threadGroups = snappyThreads;
 
+TASK  taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_executeSQLScriptsWithSleep
+    io.snappydata.hydra.cluster.SnappyPrms-logFileName = sqlScriptResults_0.log
+    io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = query_snappyTemp_table.sql
+    threadGroups = snappyStoreThreads
+    maxThreads = 1;
+
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-largeDataSet = true;
 
 //INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/startDerby.inc;

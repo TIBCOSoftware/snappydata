@@ -54,7 +54,7 @@ class CreateTableForAvgJob extends SnappySQLJob{
     val s = s"create table $tableName (" +
         s"id long, " +
         s"avg_age decimal(10,4), " +
-        s"avg_numChild decimal(10,4), " +
+        s"avg_numChild decimal(10,4) " +
         s" $primaryKey" +
         s") using $provider $options"
     pw.println(s"Creating table $s")

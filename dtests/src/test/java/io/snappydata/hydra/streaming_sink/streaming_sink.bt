@@ -1,61 +1,61 @@
 io/snappydata/hydra/streaming_sink/streaming_sink.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkForConflation.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkForGenericColNames.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkForUpdate.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkForDelete.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkForUpdateAndDelete.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkWithMultipleWriters.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkWithRestartStreaming.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkWithLeadHA.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
@@ -76,21 +76,21 @@ io/snappydata/hydra/streaming_sink/streaming_sinkWithLocatorHA.conf
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkWithClusterRestart.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkWithRebalance.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"
   opType=4 isRowTable=false isPartitioned=true withKeyColumn=true
 
 io/snappydata/hydra/streaming_sink/streaming_sinkWithAddNewNodeRebalance.conf
-  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   kafkaDir="/export/shared/QA_DATA/kafka_2.11-0.10.2.2"

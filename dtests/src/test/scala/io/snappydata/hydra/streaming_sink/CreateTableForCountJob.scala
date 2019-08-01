@@ -53,7 +53,7 @@ class CreateTableForCountJob extends SnappySQLJob{
     options = options + ")"
     val s = s"create table $tableName (" +
         s"age long, " +
-        s"count long, " +
+        s"count long " +
         s" $primaryKey" +
         s") using $provider $options"
     pw.println(s"Creating table $s")

@@ -34,12 +34,17 @@ totalThreads = 1
 totalVMs     = 1
 clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${B}\",${${B}Hosts}, true)" ncf;
 
+THREADGROUP workerThreads
+totalThreads = fcn "(${${D}Hosts} * ${${D}VMsPerHost} *  ${${D}ThreadsPerVM}) " ncf
+totalVMs     = fcn "(${${D}Hosts} * ${${D}VMsPerHost})" ncf
+clientNames  = fcn "hydra.TestConfigFcns.generateNames(\"${D}\",${${D}Hosts}, true)" ncf;
+
 INITTASK     taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_initializeSnappyTest
 runMode = always
-threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads,leadThread;
+threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads,leadThread,workerThreads;
 
 INITTASK    taskClass   = util.StopStartVMs  taskMethod = StopStart_initTask
-threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads,leadThread;
+threadGroups = snappyThreads, locatorThreads, snappyStoreThreads, leadThreads,leadThread,workerThreads;
 
 INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_initializeSnappyAdAnalyticsTest
 runMode = always
@@ -110,3 +115,9 @@ INITTASK     taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest
 io.snappydata.hydra.cluster.SnappyPrms-appPropsForJobServer = "500000,streamingSinkTopic,0,0"
 io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
 threadGroups = snappyThreads;
+
+TASK  taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest taskMethod  = HydraTask_executeSQLScriptsWithSleep
+    io.snappydata.hydra.cluster.SnappyPrms-logFileName = sqlScriptResults_0.log
+    io.snappydata.hydra.cluster.SnappyPrms-sqlScriptNames = query_snappyTemp_table.sql
+    threadGroups = snappyStoreThreads
+    maxThreads = 1;
