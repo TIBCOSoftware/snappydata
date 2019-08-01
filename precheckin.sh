@@ -30,6 +30,9 @@ stty echo
 echo ""
 echo ""
 
+read -p "Enter your email Id for build status notification : " useremail
+echo ""
+
 read -p "Snapydata repo branch (master - jenkins-ci): " snappydataBranch
 echo ""
 
@@ -57,13 +60,14 @@ if [ $version = "o" ]
 then
   curl -X POST -G "$Protocol://$JenkinsServerIP:$JenkinsPort/job/tibco-computedb-ci/buildWithParameters"  \
   --data-urlencode "username=$jenkinsUserName" \
+  --data-urlencode "useremail=$useremail" \
+  --user $jenkinsUserName:$jenkinsUserPassword \
   --data-urlencode "snappybranch=$snappydataBranch" \
   --data-urlencode "sparkbranch=$sparkBranch" \
   --data-urlencode "snappystorebranch=$storeBranch" \
   --data-urlencode "sparkjobserverbranch=$JobServerBranch" \
   --data-urlencode "aqpbranch=$aqpBranch" \
   --data-urlencode "target=$target" \
-  --user $jenkinsUserName:$jenkinsUserPassword \
   -H 'Jenkins-Crumb':$crumb
   echo "Tibco ComputeDB OSS Job submitted to the Jenkins server.  For more information you can check @ $Protocol://$JenkinsServerIP:$JenkinsPort/job"
   echo ""
@@ -71,13 +75,14 @@ elif [ $version = "e" ]
 then
   curl -X POST -G "$Protocol://$JenkinsServerIP:$JenkinsPort/job/tibco-computedb-ci-enterprise/buildWithParameters" \
   --data-urlencode "username=$jenkinsUserName" \
+  --data-urlencode "useremail=$useremail" \
+  --user $jenkinsUserName:$jenkinsUserPassword \
   --data-urlencode "snappybranch=$snappydataBranch" \
   --data-urlencode "sparkbranch=$sparkBranch" \
   --data-urlencode "snappystorebranch=$storeBranch" \
   --data-urlencode "sparkjobserverbranch=$JobServerBranch" \
   --data-urlencode "aqpbranch=$aqpBranch" \
   --data-urlencode "target=$target" \
-  --user $jenkinsUserName:$jenkinsUserPassword \
   -H 'Jenkins-Crumb':$crumb
   echo "Tibco ComputeDB Enterprise Job submitted to the Jenkins server. For more information you can check @ $Protocol://$JenkinsServerIP:$JenkinsPort/job"
   echo ""

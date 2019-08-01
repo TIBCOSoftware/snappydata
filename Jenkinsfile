@@ -1,95 +1,99 @@
-properties([
-  parameters([
-      string(defaultValue: 'product', description: '', name: 'buildtarget', trim: false),
-      string(defaultValue: 'anonymous', description: '', name: 'username', trim: false),
-      string(defaultValue: 'master', description: '', name: 'snappybranch', trim: false),
-      string(defaultValue: 'snappy/branch-2.1', description: 'spark repository branch name.', name: 'sparkbranch', trim: false),
-      string(defaultValue: 'snappy/master', description: 'store repository branch name. ', name: 'snappystorebranch', trim: false),
-      string(defaultValue: 'snappydata', description: 'store repository branch name. ', name: 'sparkjobserverbranch', trim: false)
-  ])
-])
-
 node {
+    try {
 
-		stage('Checkout'){
-    	checkout([
-    		$class: 'GitSCM',
-    		branches: [[name: "${snappybranch}"]],
-    		doGenerateSubmoduleConfigurations: false,
-    		extensions: [],
-    		submoduleCfg: [],
-    		userRemoteConfigs: [
-    			[url: 'https://github.com/SnappyDataInc/snappydata.git']
-    		]
-    	])
+        emailext attachLog: true, body: '$PROJECT_NAME - Build Reference # $BUILD_NUMBER. Build logs can be find at /var/logs/jenkins/log/oss/$BUILD_NUMBER ',
+		    compressLog: true, recipientProviders: [developers()],
+		    subject: '$PROJECT_NAME - Build Ref. Number : $BUILD_NUMBER - Status : Started! - User : ${jenkinsUserName}', to: '${useremail}'
 
-    	parallel (
-    		"checkout spark": {
-    			dir('spark') {
-    				checkout([
-    					$class: 'GitSCM',
-    					branches: [[name: "${sparkbranch}"]],
-    					doGenerateSubmoduleConfigurations: false,
-    					extensions: [],
-    					submoduleCfg: [],
-    					userRemoteConfigs: [
-    						[url: 'https://github.com/SnappyDataInc/spark.git']
-    					]
-    				])
-    			}
-    		},
+		stage('Checkout') {
+			checkout([
+				$class: 'GitSCM',
+				branches: [
+					[name: "${snappybranch}"]
+				],
+				doGenerateSubmoduleConfigurations: false,
+				extensions: [],
+				submoduleCfg: [],
+				userRemoteConfigs: [
+					[url: 'https://github.com/SnappyDataInc/snappydata.git']
+				]
+			])
 
-    		"checkout spark-jobserver": {
-    			dir('spark-jobserver') {
-    				checkout([
-    					$class: 'GitSCM',
-    					branches: [[name: "${sparkjobserverbranch}"]],
-    					doGenerateSubmoduleConfigurations: false,
-    					extensions: [],
-    					submoduleCfg: [],
-    					userRemoteConfigs: [
-    						[url: 'https://github.com/SnappyDataInc/spark-jobserver.git']
-    					]
-    				])
-    			}
-    		},
+			parallel(
+				"checkout spark": {
+					dir('spark') {
+						checkout([
+							$class: 'GitSCM',
+							branches: [
+								[name: "${sparkbranch}"]
+							],
+							doGenerateSubmoduleConfigurations: false,
+							extensions: [],
+							submoduleCfg: [],
+							userRemoteConfigs: [
+								[url: 'https://github.com/SnappyDataInc/spark.git']
+							]
+						])
+					}
+				},
 
-    		"checkout snappy-store": {
-    			dir('store') {
-    				checkout([
-    					$class: 'GitSCM',
-    					branches: [[name: "${snappystorebranch}"]],
-    					doGenerateSubmoduleConfigurations: false,
-    					extensions: [],
-    					submoduleCfg: [],
-    					userRemoteConfigs: [
-    						[url: 'https://github.com/SnappyDataInc/snappy-store.git']
-    					]
-    				])
-    			}
-    		}
-    	)
+				"checkout spark-jobserver": {
+					dir('spark-jobserver') {
+						checkout([
+							$class: 'GitSCM',
+							branches: [
+								[name: "${sparkjobserverbranch}"]
+							],
+							doGenerateSubmoduleConfigurations: false,
+							extensions: [],
+							submoduleCfg: [],
+							userRemoteConfigs: [
+								[url: 'https://github.com/SnappyDataInc/spark-jobserver.git']
+							]
+						])
+					}
+				},
+
+				"checkout snappy-store": {
+					dir('store') {
+						checkout([
+							$class: 'GitSCM',
+							branches: [
+								[name: "${snappystorebranch}"]
+							],
+							doGenerateSubmoduleConfigurations: false,
+							extensions: [],
+							submoduleCfg: [],
+							userRemoteConfigs: [
+								[url: 'https://github.com/SnappyDataInc/snappy-store.git']
+							]
+						])
+					}
+				}
+			)
+		}
+
+		stage('Build') {
+			script {
+				sh "./gradlew cleanAll"
+			}
+		}
+
+		stage('Test') {
+			script {
+				sh "./gradlew ${target}"
+			}
+		}
+
+		stage('Copy') {
+			fileOperations([folderCreateOperation('/var/log/jenkins/log/oss/$BUILD_NUMBER')])
+			fileOperations([folderCopyOperation(destinationFolderPath: '/var/log/jenkins/log/oss/$BUILD_NUMBER', sourceFolderPath: '/var/lib/jenkins/workspace/tibco-computedb-ci/build-artifacts')])
+		}
+    } finally {
+	    emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
+		compressLog: true, recipientProviders: [developers()],
+		subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: '${useremail}'
     }
-
-    stage('Build'){
-        script {
-            sh './gradlew cleanAll'
-        }
-    }
-
-    stage('Test'){
-        script {
-            sh './gradlew ${buildtarget}'
-        }
-    }
-
-    stage('Copy'){
-        fileOperations([folderCopyOperation(destinationFolderPath: '/home/ubuntu/build-backups/', sourceFolderPath: '/var/lib/jenkins/workspace/tibco-computedb-ci/build-artifacts')])
-    }
-
-    emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
-    compressLog: true, recipientProviders: [developers()],
-    subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: 'psurale@tibco.com'
 
 }
 

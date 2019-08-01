@@ -1,23 +1,16 @@
-properties([
-  parameters([
-      string(defaultValue: 'product', description: '', name: 'buildtarget', trim: false),
-      string(defaultValue: 'anonymous', description: '', name: 'username', trim: false),
-      string(defaultValue: 'master', description: '', name: 'snappybranch', trim: false),
-      string(defaultValue: 'snappy/branch-2.1', description: 'spark repository branch name.', name: 'sparkbranch', trim: false),
-      string(defaultValue: 'snappy/master', description: 'store repository branch name. ', name: 'snappystorebranch', trim: false),
-			string(defaultValue: 'snappydata', description: 'store repository branch name. ', name: 'sparkjobserverbranch', trim: false),
-      string(defaultValue: '*/master', description: 'store repository branch name. ', name: 'aqpbranch', trim: false)
-  ])
-])
-
 node {
+  try {
 
-  stage('Checkout') {
-		checkout([
-			$class: 'GitSCM',
-			branches: [
-				[name: "${params.snappybranch}"]
-			],
+    emailext attachLog: true, body: '$PROJECT_NAME - Build Reference # $BUILD_NUMBER \n Build logs can be find at /var/log/jenkins/log/enterprise/$BUILD_NUMBER ',
+    compressLog: true, recipientProviders: [developers()],
+    subject: '$PROJECT_NAME - Build Ref. Number : $BUILD_NUMBER - Status : Started! - User : ${jenkinsUserName}', to: '${useremail}'
+
+    stage('Checkout') {
+		  checkout([
+			   $class: 'GitSCM',
+			      branches: [
+				        [name: "${params.snappybranch}"]
+			      ],
 			doGenerateSubmoduleConfigurations: false,
 			extensions: [],
 			submoduleCfg: [],
@@ -123,17 +116,15 @@ node {
 		}
 	}
 
-	stage('Copy') {
-		fileOperations([fileCopyOperation(
-			excludes: '',
-			flattenFiles: false,
-			includes: './build-artifacts/**',
-			targetLocation: "/home/ubuntu/"
-		)])
-	}
+  stage('Copy') {
+    fileOperations([folderCreateOperation('/var/log/jenkins/log/oss/$BUILD_NUMBER')])
+    fileOperations([folderCopyOperation(destinationFolderPath: '/var/log/jenkins/log/enterprise/$BUILD_NUMBER', sourceFolderPath: '/var/lib/jenkins/workspace/tibco-computedb-ci/build-artifacts')])
+  }
 
-	emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
-	compressLog: true, recipientProviders: [developers()],
-	subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: 'psurale@tibco.com'
+  } finally {
+	    emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
+	    compressLog: true, recipientProviders: [developers()],
+	    subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: '${useremail}'
+  }
 }
 
