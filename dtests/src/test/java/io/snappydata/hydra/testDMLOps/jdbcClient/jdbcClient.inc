@@ -20,7 +20,7 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_saveTableMetaDataToBB
 	threadGroups = snappyThreads;
 
-INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_initializeDMLThreads
+INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_registerDMLThreads
 	threadGroups = snappyStoreThreads;
 
 //Load some data in the data, before starting any operations.
