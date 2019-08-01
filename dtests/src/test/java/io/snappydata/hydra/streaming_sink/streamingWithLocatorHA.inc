@@ -9,7 +9,7 @@ INITTASK    taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  =  
 
 TASK       taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = HydraTask_cycleLocatorVms
            startInterval = 60
-           threadGroups = snappyThreads
+           threadGroups = leadThread
            io.snappydata.hydra.cluster.SnappyPrms-sleepTimeSecsBeforeRestart = 60
            maxTimesToRun = 1;
 
