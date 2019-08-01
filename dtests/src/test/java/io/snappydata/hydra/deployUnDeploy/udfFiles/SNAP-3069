@@ -1,0 +1,63 @@
+create function default.subject as io.snappydata.hydra.MySubject returns string using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/subject1.jar';
+CREATE FUNCTION default.ID AS io.snappydata.hydra.ThreadID RETURNS Integer USING JAR '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/GetID1.jar';
+create table if not exists default.Student(id int, name String, subject String, tid Int) using column;
+insert into default.Student select id, concat('TIBCO_',id),default.subject(id%10),default.ID(Array('5','7','11','13','6')) from range(10000);
+insert into default.Student select id, concat('TIBCO_',id),default.subject(id%10),5 from range(10000);
+select * from Student order by id DESC;
+drop table Student;
+drop function default.subject;
+drop function default.ID;
+
+
+
+
+
+create function subject as io.snappydata.hydra.MySubject returns string using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/subject1.jar';
+CREATE FUNCTION ID AS io.snappydata.hydra.ThreadID RETURNS Integer USING JAR '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/GetID1.jar';
+create table if not exists Student(id int, name String, subject String, tid Int) using column;
+insert into default.Student select id, concat('TIBCO_',id),default.subject(id%10),default.ID(Array('5','7','11','13','6')) from range(10000);
+insert into default.Student select id, concat('TIBCO_',id),default.subject(id%10),5 from range(10000);
+select * from Student order by id DESC;
+drop table Student;
+drop function default.subject;
+drop function default.ID;
+
+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+create function myudf3 as io.snappydata.hydra.MyUDF3 returns integer using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/myudf3.jar';
+select myudf3(25,25);
+drop function myudf3;
+
+
+create function myudf4 as io.snappydata.hydra.MyUDF4 returns float using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/myudf4.jar';
+select myudf4(30);
+drop function myudf4;
+
+create function myudf5 as io.snappydata.hydra.MyUDF5 returns string using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/myudf5.jar';
+select myudf5('snappydata');
+drop function myudf5;
+
+create function myudf6 as io.snappydata.hydra.MyUDF6 returns integer using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/myudf6.jar';
+select myudf6(1.5d,2.7d,4.1d,5.6d);
+drop function myudf6;
+
+
+create function myudf7 as io.snappydata.hydra.MyUDF7 returns integer using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/myudf7.jar';
+select myudf7(25,27);
+drop function myudf7;
+
+
+create table if not exists Student(id int,name string,subject string,division int,total int,percentage float,surname string,roundoff int,maximum int);
+insert into table Student select id,concat('TIBCO_',id),subject(id%10),default.ID(Array('5','7','11','13','6')),myudf3(25,25),myudf4(30),myudf5('snappydata'),myudf6(1.5d,2.7d,4.1d,5.6d),myudf7(25,27) from range(1000);
+select * from Student;
+drop table Student;
+
+
+
+SNAP-3062:
+create function subject as io.snappydata.hydr.MyUDF8 returns string using jar '/home/cbhatt/TestWork/out/artifacts/TestWork_jar/subject1.jar';
+select subject(3L);
+drop function subject;
+
+
+

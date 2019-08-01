@@ -1,0 +1,41 @@
+ io/snappydata/hydra/deployUnDeploy/createDropExecuteUDF.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  packagePath="io.snappydata.hydra.deployUnDeploy.udfFiles"
+  jarPath="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+
+io/snappydata/hydra/deployUnDeploy/createDropUDFEmbeddedMode.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  packagePath="io.snappydata.hydra.deployUnDeploy.udfFiles"
+  jarPath="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+
+ io/snappydata/hydra/deployUnDeploy/createDropUDFSmartConnMode.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  packagePath="io.snappydata.hydra.deployUnDeploy.udfFiles"
+  jarPath="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+
+  io/snappydata/hydra/deployUnDeploy/createFromEmbeddedModeDropFromSmartMode.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  packagePath="io.snappydata.hydra.deployUnDeploy.udfFiles"
+  jarPath="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+
+ io/snappydata/hydra/deployUnDeploy/createFromSmartModeDropFromEmbeddedMode.conf
+  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=2 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=2
+  C=locator locatorHosts=1  locatorVMsPerHost=1 locatorThreadsPerVM=1
+  D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
+  packagePath="io.snappydata.hydra.deployUnDeploy.udfFiles"
+  jarPath="$GEMFIRE/../../../dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
+
+
