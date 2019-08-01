@@ -159,9 +159,9 @@ public class MiscTest extends SnappyTest {
     //insert records
     String sql = "";
     Log.getLogWriter().info("Inserting data into the tables ... ");
-    ArrayList<String> insertStmts = SnappySchemaPrms.getInsertStmts();
-    for (int i = 0; i < insertStmts.size(); i++) {
-      sql = insertStmts.get(i);
+    String[] insertStmts = SnappySchemaPrms.getInsertStmts();
+    for (int i = 0; i < insertStmts.length; i++) {
+      sql = insertStmts[i];
       try {
         conn.createStatement().execute(sql);
       } catch (SQLException se) {
