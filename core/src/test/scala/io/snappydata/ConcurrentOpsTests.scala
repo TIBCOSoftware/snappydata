@@ -42,7 +42,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "BUCKETS '1')")
 
     val rdd = session.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
+      (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
     dataDF.write.insertInto(tableName)
 
@@ -50,7 +50,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       override def run(): Unit = {
         val snc = new SnappySession(session.sparkContext)
         val rdd = session.sparkContext.parallelize(
-          (1 to 200000).map(i => TestData(i, i.toString)))
+          (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
         import org.apache.spark.sql.snappy._
@@ -76,7 +76,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "BUCKETS '1')")
 
     val rdd = session.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
+      (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
     dataDF.write.insertInto(tableName)
     session.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
@@ -85,7 +85,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       override def run(): Unit = {
         val snc = new SnappySession(session.sparkContext)
         val rdd = session.sparkContext.parallelize(
-          (1 to 200000).map(i => TestData(i, i.toString)))
+          (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
         snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
@@ -108,7 +108,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "BUCKETS '1')")
 
     val rdd = session.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
+      (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
     import org.apache.spark.sql.snappy._
     dataDF.write.putInto(tableName)
@@ -119,7 +119,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       override def run(): Unit = {
         val snc = new SnappySession(session.sparkContext)
         val rdd = session.sparkContext.parallelize(
-          (1 to 200000).map(i => TestData(i, i.toString)))
+          (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
         import org.apache.spark.sql.snappy._
@@ -143,7 +143,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "BUCKETS '1')")
 
     val rdd = session.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
+      (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
     import org.apache.spark.sql.snappy._
     dataDF.write.putInto(tableName)
@@ -152,7 +152,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       override def run(): Unit = {
         val snc = new SnappySession(session.sparkContext)
         val rdd = session.sparkContext.parallelize(
-          (1 to 200000).map(i => TestData(i, i.toString)))
+          (1 to 2000).map(i => TestData(i, i.toString)))
 
         val dataDF = snc.createDataFrame(rdd)
         import org.apache.spark.sql.snappy._
@@ -179,14 +179,14 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val doPut = () => Future {
       val newSnc = new SnappySession(snc.sparkContext)
       val rdd = newSnc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
 
       val dataDF = newSnc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(tableName)
       val result = newSnc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
-      assert(r2.length == 200000)
+      assert(r2.length == 2000)
     }
 
     val putTasks = Array.fill(10)(doPut())
@@ -197,7 +197,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
     val result = snc.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
-    assert(r2.length == 200000)
+    assert(r2.length == 2000)
 
     logInfo("Successful")
 
@@ -215,19 +215,19 @@ object ConcurrentOpsTests extends Assertions with Logging {
       "BUCKETS '1')")
 
     val rdd = session.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
+      (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
     dataDF.write.insertInto(tableName)
     val result = session.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
-    assert(r2.length == 200000)
+    assert(r2.length == 2000)
 
     import scala.concurrent.ExecutionContext.Implicits.global
 
     val doUpdate = () => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
 
       snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
     }
@@ -236,7 +236,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
     putTasks.foreach(Await.result(_, Duration.Inf))
 
     val r3 = result.collect
-    assert(r3.length == 200000)
+    assert(r3.length == 2000)
 
     logInfo("Successful")
   }
@@ -254,12 +254,12 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
 
     val rdd = session.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
+      (1 to 2000).map(i => TestData(i, i.toString)))
     val dataDF = session.createDataFrame(rdd)
     dataDF.write.insertInto(tableName)
     val result = session.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
-    assert(r2.length == 200000)
+    assert(r2.length == 2000)
 
     import scala.concurrent.ExecutionContext.Implicits.global
     val doDelete = () => Future {
@@ -295,14 +295,14 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val doPut = () => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
       logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
-      assert(r2.length == 200000)
+      assert(r2.length == 2000)
     }
 
     val doUpdate = () => Future {
@@ -317,7 +317,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
     val result = session.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
-    assert(r2.length == 200000)
+    assert(r2.length == 2000)
 
     logInfo("Successful")
   }
@@ -339,25 +339,25 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val doInsert = () => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
-      assert(r2.length % 200000 == 0)
+      assert(r2.length % 2000 == 0)
     }
 
     val doPut = () => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
-      assert(r2.length % 200000 == 0)
+      assert(r2.length % 2000 == 0)
     }
 
     val doUpdate = () => Future {
@@ -365,7 +365,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
-      assert(r2.length % 200000 == 0)
+      assert(r2.length % 2000 == 0)
     }
 
     val doDelete = () => Future {
@@ -373,7 +373,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
       snc.sql("delete FROM " + tableName)
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
-      assert(r2.length % 200000 == 0)
+      assert(r2.length % 2000 == 0)
     }
 
     val insertTasks = Array.fill(5)(doInsert())
@@ -388,7 +388,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
     val result = session.sql("SELECT * FROM " + tableName)
     val r2 = result.collect
-    assert(r2.length % 200000 == 0)
+    assert(r2.length % 2000 == 0)
 
     logInfo("Successful")
   }
@@ -440,7 +440,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val doPut = (table: String) => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(table)
@@ -460,7 +460,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
     Seq(tableName, tableName2, tableName3, tableName4).foreach(table => {
       val result = session.sql("SELECT * FROM " + table).collect()
-      assert(result.length == 200000)
+      assert(result.length == 2000)
     })
     logInfo("Successful")
   }
@@ -511,13 +511,13 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val doPut = (table: String) => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = session.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
       dataDF.write.putInto(table)
       val result = snc.sql("SELECT * FROM " + table)
       val r2 = result.collect
-      assert(r2.length == 200000)
+      assert(r2.length == 2000)
     }
 
     Seq(tableName, tableName2, tableName3, tableName4).foreach(doPut(_))
@@ -527,17 +527,17 @@ object ConcurrentOpsTests extends Assertions with Logging {
     val doDelete = (table: String, maxKey: Int) => Future {
       val snc = new SnappySession(session.sparkContext)
       val rdd = session.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
+        (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
-      dataDF.filter(s"key1 < $maxKey").write.deleteFrom(table)
+      dataDF.filter(s"key1 <= $maxKey").write.deleteFrom(table)
     }
 
 
-    val delTasks = Array.fill(5)(doDelete(tableName, counter.addAndGet(50000)))
-    val delTasks2 = Array.fill(5)(doDelete(tableName2, counter.addAndGet(50000)))
-    val delTasks3 = Array.fill(5)(doDelete(tableName3, counter.addAndGet(50000)))
-    val delTasks4 = Array.fill(5)(doDelete(tableName4, counter.addAndGet(50000)))
+    val delTasks = Array.fill(5)(doDelete(tableName, counter.addAndGet(500)))
+    val delTasks2 = Array.fill(5)(doDelete(tableName2, counter.addAndGet(500)))
+    val delTasks3 = Array.fill(5)(doDelete(tableName3, counter.addAndGet(500)))
+    val delTasks4 = Array.fill(5)(doDelete(tableName4, counter.addAndGet(500)))
 
 
     delTasks.foreach(Await.result(_, Duration.Inf))
