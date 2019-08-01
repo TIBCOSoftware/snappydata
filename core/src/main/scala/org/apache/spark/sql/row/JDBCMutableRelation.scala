@@ -374,28 +374,17 @@ abstract case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String],
-      referentialAction: String): Unit = {
+      isAddColumn: Boolean, column: StructField, extensions: String): Unit = {
     val conn = connFactory()
     try {
       val columnName = JdbcExtendedUtils.toUpperCase(column.name)
       val sql = if (isAddColumn) {
-        val defaultColumnValue = defaultValue match {
-          case Some(v) =>
-            val defaultString = column.dataType match {
-              case StringType | DateType | TimestampType => s" default '$v'"
-              case _ => s" default $v"
-            }
-            defaultString
-          case None => ""
-        }
-
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
            | add column "$columnName"
-           |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
+           |  ${getDataType(column)}$nullable $extensions""".stripMargin
       } else {
-        s"""alter table ${quotedName(table)} drop column "$columnName" $referentialAction"""
+        s"""alter table ${quotedName(table)} drop column "$columnName" $extensions"""
       }
       if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
