@@ -16,6 +16,8 @@
  */
 package org.apache.spark.sql.sources
 
+import scala.reflect.{ClassTag, classTag}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression}
@@ -30,8 +32,16 @@ import org.apache.spark.sql.types.{DataType, LongType}
  * Support for DML and other operations on external tables.
  */
 object StoreStrategy extends Strategy {
-  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
 
+  private def findLogicalRelation[T: ClassTag](table: LogicalPlan): Option[LogicalRelation] = {
+    table.find(_.isInstanceOf[LogicalRelation]) match {
+      case s@Some(lr) if classTag[T].runtimeClass.isInstance(
+        lr.asInstanceOf[LogicalRelation].relation) => s.asInstanceOf[Option[LogicalRelation]]
+      case _ => None
+    }
+  }
+
+  def apply(plan: LogicalPlan): Seq[SparkPlan] = plan match {
     case p: EncoderPlan[_] =>
       val plan = p.asInstanceOf[EncoderPlan[Any]]
       EncoderScanExec(plan.rdd.asInstanceOf[RDD[Any]],
@@ -42,28 +52,41 @@ object StoreStrategy extends Strategy {
       val preAction = if (overwrite.enabled) () => p.truncate() else () => ()
       ExecutePlan(p.getInsertPlan(l, planLater(query)), preAction) :: Nil
 
-    case d@DMLExternalTable(child, cmd) => child.find(_.isInstanceOf[LogicalRelation]) match {
-      case Some(storeRelation: LogicalRelation) =>
-        ExecutedCommandExec(ExternalTableDMLCmd(storeRelation, cmd, d.output)) :: Nil
+    case d@DMLExternalTable(table, cmd) => findLogicalRelation[BaseRelation](table) match {
+      case Some(l) => ExecutedCommandExec(ExternalTableDMLCmd(l, cmd, d.output)) :: Nil
       case _ => Nil
     }
 
-    case PutIntoTable(l@LogicalRelation(p: RowPutRelation, _, _), query, _) =>
-      ExecutePlan(p.getPutPlan(l, planLater(query))) :: Nil
+    case PutIntoTable(table, query, _) => findLogicalRelation[RowPutRelation](table) match {
+      case Some(l) => ExecutePlan(l.relation.asInstanceOf[RowPutRelation].getPutPlan(
+        l, planLater(query))) :: Nil
+      case _ => Nil
+    }
 
-    case PutIntoColumnTable(LogicalRelation(p: BulkPutRelation, _, _), left, right) =>
-      ExecutePlan(p.getPutPlan(planLater(left), planLater(right))) :: Nil
+    case PutIntoColumnTable(t, left, right) => findLogicalRelation[BulkPutRelation](t) match {
+      case Some(l) => ExecutePlan(l.relation.asInstanceOf[BulkPutRelation].getPutPlan(
+        planLater(left), planLater(right))) :: Nil
+      case _ => Nil
+    }
 
-    case Update(l@LogicalRelation(u: MutableRelation, _, _), child,
-    keyColumns, updateColumns, updateExpressions) =>
-      ExecutePlan(u.getUpdatePlan(l, planLater(child), updateColumns,
-        updateExpressions, keyColumns)) :: Nil
+    case Update(table, child, keyColumns, updateColumns, updateExpressions) =>
+      findLogicalRelation[MutableRelation](table) match {
+        case Some(l) => ExecutePlan(l.relation.asInstanceOf[MutableRelation].getUpdatePlan(
+          l, planLater(child), updateColumns, updateExpressions, keyColumns)) :: Nil
+        case _ => Nil
+      }
 
-    case Delete(l@LogicalRelation(d: MutableRelation, _, _), child, keyColumns) =>
-      ExecutePlan(d.getDeletePlan(l, planLater(child), keyColumns)) :: Nil
+    case Delete(table, child, keyColumns) => findLogicalRelation[MutableRelation](table) match {
+      case Some(l) => ExecutePlan(l.relation.asInstanceOf[MutableRelation].getDeletePlan(
+        l, planLater(child), keyColumns)) :: Nil
+      case _ => Nil
+    }
 
-    case DeleteFromTable(l@LogicalRelation(d: DeletableRelation, _, _), query) =>
-      ExecutePlan(d.getDeletePlan(l, planLater(query), query.output)) :: Nil
+    case DeleteFromTable(table, query) => findLogicalRelation[DeletableRelation](table) match {
+      case Some(l) => ExecutePlan(l.relation.asInstanceOf[DeletableRelation].getDeletePlan(
+        l, planLater(query), query.output)) :: Nil
+      case _ => Nil
+    }
 
     case r: RunnableCommand => ExecutedCommandExec(r) :: Nil
 

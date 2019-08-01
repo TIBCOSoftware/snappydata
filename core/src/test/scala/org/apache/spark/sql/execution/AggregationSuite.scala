@@ -85,6 +85,23 @@ class AggregationSuite extends SnappyFunSuite {
   }
 
   test("support for PIVOT in SQL parser") {
+    /*
+     * The data file below was created using this scala code:
+     *
+     * val lower = Array(4, 8, 15, 25, 28, 26, 18, 20, 21, 22, 16, 6)
+     * val upper = Array(20, 24, 32, 38, 44, 45, 38, 36, 35, 38, 32, 26)
+     * val pw = new java.io.PrintWriter("dayAvgTemp.txt")
+     * for (year <- 2015 to 2019) {
+     *   for (month <- 1 to 12) {
+     *     for (day <- 1 to 28) {
+     *       val temp = scala.util.Random.nextInt(upper(month - 1) - lower(month - 1) + 1) +
+     *           lower(month - 1)
+     *       pw.println(s"$year-${month.formatted("%02d")}-${day.formatted("%02d")},$temp")
+     *     }
+     *   }
+     * }
+     * pw.close()
+     */
     val snappy = snc.snappySession
     snappy.sql("create table dayAvgTemp (day date, temp int)")
     val data = getClass.getResource("/dayAvgTemp.txt").getPath

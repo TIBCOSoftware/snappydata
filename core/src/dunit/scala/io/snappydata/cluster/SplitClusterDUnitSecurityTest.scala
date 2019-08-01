@@ -927,7 +927,7 @@ class SplitClusterDUnitSecurityTest(s: String)
         "               return (s.length() - 1000); " +
         "} }"
     val file1 = SparkUtilsAccess.createUDFClass("StringLengthUDF1", udf1Source)
-    val jar1 = SparkUtilsAccess.createJarFile(Seq(file1), "user1udf", true)
+    val jar1 = SparkUtilsAccess.createJarFile(Seq(file1), "user1udf.jar", true)
 
     val udf2Source = "public class StringLengthUDF2 implements " +
         "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
@@ -1111,7 +1111,7 @@ class SplitClusterDUnitSecurityTest(s: String)
         "               return (s.length() * 1000); " +
         "} }"
     val file1New = SparkUtilsAccess.createUDFClass("StringLengthUDF1", udf1SourceNew)
-    val jar1New = SparkUtilsAccess.createJarFile(Seq(file1New), "user1udf", true)
+    val jar1New = SparkUtilsAccess.createJarFile(Seq(file1New), "user1udf.jar", true)
 
     stmt1 = user1Conn.createStatement()
     executeSQL(stmt1, s"DROP FUNCTION myUDF")
@@ -1150,7 +1150,7 @@ class SplitClusterDUnitSecurityTest(s: String)
   }
 
   // fails with: Stream '/jars/gemfire1.strlen-stringlengthudf.jar' was not found.
-  def DISABLED_testUDFWithQueries(): Unit = {
+  def testUDFWithQueries(): Unit = {
     // Build a jar with UDF
     val udf1Source = "public class StringLengthUDF implements " +
         "org.apache.spark.sql.api.java.UDF1<String,Integer> {" +
@@ -1158,7 +1158,7 @@ class SplitClusterDUnitSecurityTest(s: String)
         "               return (s.length() + 100); " +
         "} }"
     var classfile = SparkUtilsAccess.createUDFClass("StringLengthUDF", udf1Source)
-    val jar1 = SparkUtilsAccess.createJarFile(Seq(classfile), "stringlengthudf", true)
+    val jar1 = SparkUtilsAccess.createJarFile(Seq(classfile), "stringlengthudf.jar", true)
 
     val udf2Source = "public class StringifyIntUDF implements " +
         "org.apache.spark.sql.api.java.UDF1<Integer,String> {" +

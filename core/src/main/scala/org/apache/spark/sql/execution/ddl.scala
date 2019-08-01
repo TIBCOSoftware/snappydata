@@ -152,11 +152,11 @@ case class TruncateManagedTableCommand(ifExists: Boolean,
 }
 
 case class AlterTableAddColumnCommand(tableIdent: TableIdentifier,
-    addColumn: StructField, defaultValue: Option[String]) extends RunnableCommand {
+    addColumn: StructField, extensions: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
-    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, defaultValue)
+    snappySession.alterTable(tableIdent, isAddColumn = true, addColumn, extensions)
     Nil
   }
 }
@@ -171,20 +171,14 @@ case class AlterTableToggleRowLevelSecurityCommand(tableIdent: TableIdentifier,
   }
 }
 
-case class AlterTableDropColumnCommand(
-    tableIdent: TableIdentifier, column: String,
-    referentialAction: Option[Boolean]) extends RunnableCommand {
+case class AlterTableDropColumnCommand(tableIdent: TableIdentifier, column: String,
+    extensions: String) extends RunnableCommand {
 
   override def run(session: SparkSession): Seq[Row] = {
     val snappySession = session.asInstanceOf[SnappySession]
-    val refActionString = referentialAction match {
-      case None => ""
-      case Some(true) => "cascade"
-      case Some(false) => "restrict"
-    }
     // drop column doesn't need anything apart from name so fill dummy values
     snappySession.alterTable(tableIdent, isAddColumn = false,
-      StructField(column, NullType), defaultValue = None, refActionString)
+      StructField(column, NullType), extensions)
     Nil
   }
 }

@@ -126,7 +126,6 @@ abstract class SnappyDDLParser(session: SnappySession)
   final def CONSTRAINT: Rule0 = rule { keyword(Consts.CONSTRAINT) }
   final def CROSS: Rule0 = rule { keyword(Consts.CROSS) }
   final def CURRENT_USER: Rule0 = rule { keyword(Consts.CURRENT_USER) }
-  final def DEFAULT: Rule0 = rule { keyword(Consts.DEFAULT) }
   final def DEPLOY: Rule0 = rule { keyword(Consts.DEPLOY) }
   final def DATABASE: Rule0 = rule { keyword(Consts.DATABASE) }
   final def DATABASES: Rule0 = rule { keyword(Consts.DATABASES) }
@@ -356,20 +355,6 @@ abstract class SnappyDDLParser(session: SnappySession)
     capture(plusOrMinus.? ~ Consts.numeric. + ~ (Consts.exponent ~
         plusOrMinus.? ~ CharPredicate.Digit. +).? ~ Consts.numericSuffix.? ~
         Consts.numericSuffix.?) ~ delimiter ~> ((s: String) => s)
-  }
-
-  protected final def defaultLiteral: Rule1[Option[String]] = rule {
-    stringLiteral ~> ((s: String) => Option(s)) |
-    numericLiteral ~> ((s: String) => Option(s)) |
-    booleanLiteral ~> ((b: Boolean) => Option(b.toString)) |
-    NULL ~> (() => None)
-  }
-
-  protected final def defaultVal: Rule1[Option[String]] = rule {
-    (DEFAULT ~ defaultLiteral ~ ws).?  ~> ((value: Any) => value match {
-        case Some(v) => v.asInstanceOf[Option[String]]
-        case None => None
-      })
   }
 
   protected final def policyFor: Rule1[String] = rule {
@@ -673,10 +658,8 @@ abstract class SnappyDDLParser(session: SnappySession)
             COLUMNS ~ ANY. + ~> ((_: TableIdentifier, _: Boolean) =>
               sparkParser.parsePlan(input.sliceString(0, input.length)))
         ) |
-        ADD ~ COLUMN.? ~ column ~ defaultVal ~ EOI ~> AlterTableAddColumnCommand |
-        DROP ~ COLUMN.? ~ identifier ~ (CASCADE ~ push(true) | RESTRICT ~ push(false)).? ~ EOI ~>
-            ((table: TableIdentifier, col: String, refAction: Any) =>
-              AlterTableDropColumnCommand(table, col, refAction.asInstanceOf[Option[Boolean]])) |
+        ADD ~ COLUMN.? ~ column ~ capture(ANY.*) ~ EOI ~> AlterTableAddColumnCommand |
+        DROP ~ COLUMN.? ~ identifier ~ capture(ANY.*) ~ EOI ~> AlterTableDropColumnCommand |
         // other store ALTER statements which don't effect the snappydata catalog
         capture((ALTER | SET) ~ ANY. +) ~ EOI ~> ((table: TableIdentifier, s: String) =>
           AlterTableMiscCommand(table, s"ALTER TABLE ${quotedUppercaseId(table)} $s"))
@@ -1010,6 +993,7 @@ abstract class SnappyDDLParser(session: SnappySession)
 }
 
 case class DMLExternalTable(child: LogicalPlan, command: String) extends UnaryNode {
+
   override lazy val resolved: Boolean = child.resolved
   override lazy val output: Seq[Attribute] = AttributeReference("count", IntegerType)() :: Nil
 }
