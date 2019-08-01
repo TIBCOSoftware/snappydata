@@ -18,13 +18,14 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
-
 import scala.util.control.NonFatal
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl, LocalRegion, PartitionedRegion}
+
+import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
@@ -236,7 +237,7 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    withTableWriteLock() {() =>
+    withTableWriteLock() { () =>
       ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
         updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
@@ -276,7 +277,7 @@ abstract class BaseColumnFormatRelation(
     val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
       case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(a) => null // Do nothing as putInto will release lock
+      case _ => null // Do nothing as putInto will release lock
     }
     if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     try {
@@ -301,7 +302,7 @@ abstract class BaseColumnFormatRelation(
       }
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context. in InsertRows")
+      logDebug(s"Added the $lock object to the context. in InsertRows")
       if (lock != null) {
         snc.releaseLock(lock)
       }
@@ -320,7 +321,7 @@ abstract class BaseColumnFormatRelation(
       f()
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context.")
+      logDebug(s"Added the $lock object to the context.")
       if (lock != null) {
         snc.addContextObject(
           SnappySession.BULKWRITE_LOCK, lock)
@@ -710,11 +711,6 @@ object ColumnFormatRelation extends Logging with StoreCallback {
       table, null, session, forSpark = false)
     schema + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
         tableName + Constant.SHADOW_TABLE_SUFFIX
-  }
-
-  final def isColumnTable(tableName: String): Boolean = {
-    tableName.contains(Constant.SHADOW_SCHEMA_NAME_WITH_PREFIX) &&
-        tableName.endsWith(Constant.SHADOW_TABLE_SUFFIX)
   }
 
   def getIndexUpdateStruct(indexEntry: ExternalTableMetaData,

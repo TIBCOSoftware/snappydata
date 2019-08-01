@@ -27,10 +27,8 @@ import com.gemstone.gemfire.internal.cache._
 import com.gemstone.gemfire.internal.cache.control.InternalResourceManager
 import com.gemstone.gemfire.internal.cache.control.InternalResourceManager.ResourceType
 import com.gemstone.gemfire.internal.i18n.LocalizedStrings
-import com.pivotal.gemfirexd.internal.engine.Misc
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
 
 class SnappyStorageEvictor extends Logging {
@@ -126,12 +124,11 @@ class SnappyStorageEvictor extends Logging {
       offHeap: Boolean, hasOffHeap: Boolean): Boolean = {
     val hasLRU = (region.getEvictionAttributes.getAlgorithm.isLRUHeap
       && (region.getDataStore != null)
-      && !region.getAttributes.getEnableOffHeapMemory && !region.isRowBuffer())
+      && !region.getAttributes.getEnableOffHeapMemory && !region.isRowBuffer)
     if (hasOffHeap) {
       // when off-heap is enabled then all column tables use off-heap
-      val regionPath = Misc.getFullTableNameFromRegionPath(region.getFullPath)
-      if (offHeap) hasLRU && ColumnFormatRelation.isColumnTable(regionPath)
-      else hasLRU && !ColumnFormatRelation.isColumnTable(regionPath)
+      if (offHeap) hasLRU && region.isInternalColumnTable
+      else hasLRU && !region.isInternalColumnTable
     } else {
       assert(!offHeap,
         "unexpected invocation for hasOffHeap=false and offHeap=true")
