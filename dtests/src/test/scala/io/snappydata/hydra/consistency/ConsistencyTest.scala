@@ -118,8 +118,15 @@ class ConsistencyTest {
         val rowAf: Row = dfAft_list.get(i)
         for (j <- 0 until schema.length) {
           val colName: String = schema(j)
-          val before_result: Double = rowBf.getDouble(j)
-          val after_result: Double = rowAf.getDouble(j)
+          var before_result: Double = 0.0
+          var after_result: Double = 0.0
+          if(colName.startsWith("COUNT")){
+            before_result = rowBf.getLong(j)
+            after_result = rowAf.getLong(j)
+          } else {
+            before_result = rowBf.getDouble(j)
+            after_result = rowAf.getDouble(j)
+          }
           pw.println(s"${printTime} $colName in table $tableName before $op start: $before_result" +
               s" and $colName after $op start : $after_result")
           DMLOp.getOperation(op) match {

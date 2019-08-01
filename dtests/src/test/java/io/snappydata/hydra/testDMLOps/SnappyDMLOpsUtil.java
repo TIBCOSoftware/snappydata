@@ -699,7 +699,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           int rand = new Random().nextInt(dmlTable.length);
           String tableName = dmlTable[rand].toUpperCase();
           int numInserts = 100;
-          performInsertUsingBatch(tableName, rand, numInserts, false);
+          performInsertUsingBatch(tableName, rand, numInserts, true);
         }
         else
           performInsert();
@@ -823,6 +823,10 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           String clazz = oTypes[i].getSimpleClassName();
           switch (clazz) {
             case "Date":
+              Date dt = new Date(System.currentTimeMillis());
+              snappyPS.setDate(replaceQuestion, dt);
+              if (hasDerbyServer) derbyPS.setDate(replaceQuestion, dt);
+              break;
             case "String":
               snappyPS.setString(replaceQuestion, fieldNames[i] + j);
               if (hasDerbyServer) derbyPS.setString(replaceQuestion, fieldNames[i] + j);
@@ -873,6 +877,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
       snappyPS.executeBatch();
       snappyPS.close();
+      if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
       if (hasDerbyServer) {
         derbyPS.executeBatch();
         derbyPS.close();
@@ -954,17 +959,17 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
       if (testUniqueKeys)
-        addTidToQuery(stmt, tid);
+        stmt = addTidToQuery(stmt, tid);
+      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       if (stmt.toUpperCase().contains("SELECT"))
         getAndExecuteSelect(conn, stmt, false);
-      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
-        if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn, stmt, true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
+        if (stmt.toUpperCase().contains("SELECT"))
+          getAndExecuteSelect(dConn, stmt, true);
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
         if (numRows != derbyRows) {
@@ -1003,17 +1008,17 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) addTidToQuery(stmt, tid);
+      if (testUniqueKeys) stmt = addTidToQuery(stmt, tid);
+      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       if (stmt.toUpperCase().contains("SELECT"))
         getAndExecuteSelect(conn, stmt, false);
-      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
       Log.getLogWriter().info("Deleted " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
-        if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn, stmt, true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
+        if (stmt.toUpperCase().contains("SELECT"))
+          getAndExecuteSelect(dConn, stmt, true);
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
         if (numRows != derbyRows) {
@@ -1246,7 +1251,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     try {
       conn = getLocatorConnection();
       dConn = derbyTestUtils.getDerbyConnection();
-      if (useTid) addTidToQuery(selectStmt, getMyTid());
+      if (useTid) selectStmt = addTidToQuery(selectStmt, getMyTid());
       if (orderByClause.length() > 0)
         selectStmt = selectStmt + " " + orderByClause;
       Log.getLogWriter().info("Verifying results for " + table + " using " + selectStmt);
@@ -1581,7 +1586,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) addTidToQuery(stmt, tid);
+      if (testUniqueKeys) stmt = addTidToQuery(stmt, tid);
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
@@ -1624,8 +1629,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) addTidToQuery(stmt, tid);
-
+      if (testUniqueKeys) stmt = addTidToQuery(stmt, tid);
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";

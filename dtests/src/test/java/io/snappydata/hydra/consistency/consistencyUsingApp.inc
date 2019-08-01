@@ -1,6 +1,6 @@
 INCLUDE $JTESTS/io/snappydata/hydra/connectionPool/connPool.inc;
 
-INCLUDE $JTESTS/io/snappydata/hydra/consistency/schema_nonJDBC.inc;
+INCLUDE $JTESTS/io/snappydata/hydra/consistency/columnTableExtnSingleBucket_NonJDBC.inc;
 
 INCLUDE $JTESTS/io/snappydata/hydra/northwind/startDualModeCluster.conf;
 
@@ -26,7 +26,7 @@ INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest
 
 //Load some data in the data, before starting any operations.
 INITTASK     taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest taskMethod  = HydraTask_populateTables
-  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =1000000
+  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =5000000
   threadGroups = snappyThreads;
 
 //task for verifying the populated data.
@@ -38,7 +38,7 @@ TASK        taskClass   = io.snappydata.hydra.consistency.SnappyConsistencyTest 
   io.snappydata.hydra.cluster.SnappyPrms-sparkJobClassNames = io.snappydata.hydra.consistency.ValidateConsistencyWithDMLOpsApp
   io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
   io.snappydata.hydra.cluster.SnappyPrms-hasDynamicAppProps = true
-  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =100
+  io.snappydata.hydra.testDMLOps.SnappySchemaPrms-batchSize =1000
   threadGroups = snappyStoreThreads;
 
 //task for running select queries at the end of test
@@ -49,7 +49,7 @@ INCLUDE $JTESTS/io/snappydata/hydra/northwind/stopDualModeCluster.conf;
 
 //INCLUDE $JTESTS/io/snappydata/hydra/testDMLOps/stopDerby.inc;
 
-hydra.Prms-totalTaskTimeSec           = 600;
+hydra.Prms-totalTaskTimeSec           = 450;
 hydra.Prms-maxResultWaitSec           = 900;
 hydra.Prms-maxCloseTaskResultWaitSec  = 900;
 

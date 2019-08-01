@@ -220,6 +220,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
             operation.equals("INSERT")? operation + "ED":
             operation.equals("PUTINTO")?"UPDATED":operation +"D"
                 + " " + numRows + " rows.");
+        waitForBarrier(tid + "",2);
       }
       conn.close();
     } catch (SQLException se) {
@@ -269,12 +270,15 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
     try {
       conn = getLocatorConnection();
       Log.getLogWriter().info("Executing query :" + query);
-      ResultSet beforeDMLRS = conn.createStatement().executeQuery(query);
+      ResultSet rs_beforeDML = conn.createStatement().executeQuery(query);
       waitForBarrier(tid + "", 2);
-      ResultSet afterDMLRS = conn.createStatement().executeQuery(query);
+      ResultSet rs_duringDML = conn.createStatement().executeQuery(query);
+      waitForBarrier(tid + "" , 2);
+      // for consistency, after dml we should see all ops
+      ResultSet rs_afterDML = conn.createStatement().executeQuery(query);
       conn.close();
       Log.getLogWriter().info("Verifying the results for atomicity..");
-      if (verifyAtomicity(beforeDMLRS, afterDMLRS, dmlOp, tableName, batchSize)) {
+      if (verifyAtomicity(rs_beforeDML, rs_duringDML, dmlOp, tableName, batchSize)) {
         Log.getLogWriter().info("Test failed to get atomic data during " + dmlOp + ".");
         throw new TestException("Test failed to get atomic data during " + dmlOp + ".");
       }
@@ -294,7 +298,7 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
       String tableName,
    int batchSize) {
     boolean atomicityCheckFailed = false;
-    int before_result = 0, after_result = 0;
+    double before_result = 0, after_result = 0;
     int defaultValue;
     try {
       ResultSetMetaData rsmd = beforeDMLRS.getMetaData();
@@ -305,8 +309,13 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
         int rowCount = 0;
         for(int i = 1 ; i<= queryColCnt ; i++) {
           String colName = rsmd.getColumnLabel(i);
-          before_result = beforeDMLRS.getInt(i);
-          after_result = afterDMLRS.getInt(i);
+          if(colName.toUpperCase().startsWith("COUNT")) {
+            before_result = beforeDMLRS.getInt(i);
+            after_result = afterDMLRS.getInt(i);
+          } else {
+            before_result = beforeDMLRS.getDouble(i);
+            after_result = afterDMLRS.getDouble(i);
+          }
           Log.getLogWriter().info(colName + " in table " + tableName + " before " + op +
               " start: " + before_result + " and " + colName + " after " + op + " start : " +
               after_result);
@@ -314,19 +323,19 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
             case INSERT:
               defaultValue = 1;
               if (colName.toUpperCase().startsWith("COUNT")) {
-                rowCount = before_result;
-                int expectedRs = after_result - before_result;
+                rowCount = (int)before_result;
+                double expectedRs = after_result - before_result;
                 if (!(expectedRs == 0 || expectedRs == batchSize)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                int expectedRs =
+                double expectedRs =
                     ((before_result * rowCount) + (defaultValue * batchSize))/(rowCount+batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                int expectedRs = before_result + (defaultValue * batchSize);
+                double expectedRs = before_result + (defaultValue * batchSize);
                 if (!(after_result == before_result || after_result == expectedRs))
                   atomicityCheckFailed = true;
               }
@@ -334,17 +343,17 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
             case UPDATE:
               defaultValue = 1;
               if (colName.toUpperCase().startsWith("COUNT")) {
-                int expectedRs = after_result - before_result;
+                double expectedRs = after_result - before_result;
                 if (!(expectedRs == 0)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                int expectedRs = before_result + defaultValue;
+                double expectedRs = before_result + defaultValue;
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                int expectedRs = before_result + (defaultValue * batchSize);
+                double expectedRs = before_result + (defaultValue * batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
@@ -352,34 +361,34 @@ public class SnappyConsistencyTest extends SnappyDMLOpsUtil {
             case DELETE:
               defaultValue = 0;
               if (colName.toUpperCase().startsWith("COUNT")) {
-                int expectedRs = after_result - before_result;
+                double expectedRs = after_result - before_result;
                 if (!(expectedRs % before_result == 0))
                   atomicityCheckFailed = true;
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                int expectedRs = after_result - before_result;
+                double expectedRs = after_result - before_result;
                 if (!(expectedRs % before_result == 0))
                   atomicityCheckFailed = true;
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                  int expectedRs = after_result - before_result;
+                  double expectedRs = after_result - before_result;
                   if (!(expectedRs % before_result == 0))
                     atomicityCheckFailed = true;
               }break;
             case PUTINTO:
               defaultValue = 1;
               if (colName.toUpperCase().startsWith("COUNT")) {
-                rowCount = before_result;
-                int expectedRs = after_result - before_result;
+                rowCount = (int)before_result;
+                double expectedRs = after_result - before_result;
                 if (!(expectedRs % batchSize == 0)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("AVG")) {
-                int expectedRs =
+                double expectedRs =
                     ((before_result * rowCount) + (defaultValue * batchSize))/(rowCount+batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }
               } else if (colName.toUpperCase().startsWith("SUM")) {
-                int expectedRs = before_result + (defaultValue * batchSize);
+                double expectedRs = before_result + (defaultValue * batchSize);
                 if (!(after_result == before_result || after_result == expectedRs)) {
                   atomicityCheckFailed = true;
                 }

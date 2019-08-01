@@ -1,9 +1,9 @@
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createSchemas = "create schema app";
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-createTablesStatements =
-"create table app.table1 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), tid int)"
-"create table app.table2 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), tid int)"
-"create table app.table3 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), tid int)"
+"create table app.table1 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), disabled boolean, dis_time timestamp, tid int)"
+"create table app.table2 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), disabled boolean, dis_time date, tid int)"
+"create table app.table3 (id int, name varchar(20),code int, code1 double, code2 bigint, code3 varchar(30), waitTime long, tid int)"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-uniqueColumnName =
@@ -25,9 +25,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-dmlTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmts =
-"insert into table1 values(?,?,?,?,?,?,?)"
-"insert into table2 values(?,?,?,?,?,?,?)"
-"insert into table3 values(?,?,?,?,?,?,?)"
+"insert into table1 values(?,?,?,?,?,?,?,?,?)"
+"insert into table2 values(?,?,?,?,?,?,?,?,?)"
+"insert into table3 values(?,?,?,?,?,?,?,?)"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertTables =
@@ -37,9 +37,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertTables =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterInsertSelects =
-"select count(*), avg(code), sum(code), cast(sum(code1) as double), cast(avg(code1) as double) from table1"
-"select count(*), avg(code), sum(code), cast(sum(code2) as double), cast(avg(code2) as double) from table2"
-"select count(*), avg(code), sum(code), cast(sum(code2) as double), cast(avg(code2) as double) from table3"
+"select count(*), avg(code), sum(code), cast(sum(code1) as double) as sum_code1, cast(avg(code1) as double) as avg_code1 from table1"
+"select count(*), avg(code), sum(code), cast(sum(code2) as double) as sum_code2, cast(avg(code2) as double) as avg_code2 from table2"
+"select count(*), avg(code), sum(code), cast(sum(code2) as double) as sum_code1, cast(avg(code2) as double) as avg_code1 from table3"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
@@ -49,9 +49,9 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterUpdateSelects =
-"select count(*), avg(code), sum(code), cast(sum(code1) as double), cast(avg(code1) as double) from table1"
-"select count(*), avg(code), sum(code), cast(sum(code2) as double), cast(avg(code2) as double) from table2"
-"select count(*), avg(code), sum(code), cast(sum(code2) as double), cast(avg(code2) as double) from table3"
+"select count(*), avg(code), sum(code), cast(sum(code1) as double) as sum_code1, cast(avg(code1) as double) as avg_code1 from table1"
+"select count(*), avg(code), sum(code), cast(sum(code2) as double) as sum_code2, cast(avg(code2) as double) as avg_code2 from table2"
+"select count(*), avg(code), sum(code), cast(sum(code2) as double) as sum_code1, cast(avg(code2) as double) as avg_code1 from table3"
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-updateTables =
@@ -85,8 +85,8 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-putIntoStmts =
 ;
 
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-afterPutIntoSelects =
-"select count(*), avg(code), sum(code), cast(sum(code1) as double), cast(avg(code1) as double) from table1"
-"select count(*), avg(code), sum(code), cast(sum(code2) as double), cast(avg(code2) as double) from table2"
-"select count(*), avg(code), sum(code), cast(sum(code2) as double), cast(avg(code2) as double) from table3"
+"select count(*), avg(code), sum(code), cast(sum(code1) as double) as sum_code1, cast(avg(code1) as double) as avg_code1 from table1"
+"select count(*), avg(code), sum(code), cast(sum(code2) as double) as sum_code2, cast(avg(code2) as double) as avg_code2 from table2"
+"select count(*), avg(code), sum(code), cast(sum(code2) as double) as sum_code1, cast(avg(code2) as double) as avg_code1 from table3"
 ;
 
