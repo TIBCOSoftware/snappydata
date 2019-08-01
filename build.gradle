@@ -684,7 +684,7 @@ gradle.taskGraph.whenReady { graph ->
           if (dunitSingle == null || dunitSingle.length() == 0) {
             def dunitTests = testClassesDirs.asFileTree.matching {
               includes = [ '**/*DUnitTest.class', '**/*DUnit.class' ]
-              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class',
+              excludes = [ '**/*Suite.class', '**/*DUnitSecurityTest.class', '**/NCJ*DUnit.class', '**/*HDFS*DUnit*.class',
                   '**/BackwardCompatabilityPart*DUnit.class', '**/*Perf*DUnit.class', '**/ListAggDUnit.class',
                   '**/SingleHop*TransactionDUnit.class', '**/*Parallel*AsyncEvent*DUnit.class', '**/pivotal/gemfirexd/wan/**/*DUnit.class' ]
             }

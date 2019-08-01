@@ -112,7 +112,7 @@ public class DerbyTestUtils {
         resetDerbyConnection.set(false);
       }
     } catch (NullPointerException npe) {
-      // /in case of sub threads
+      Log.getLogWriter().info("Caught NPE..." + npe.getMessage());
     } catch (Exception e) {
       throw new TestException("Exception while getting derby connection " + " : " + e.getMessage());
     }
