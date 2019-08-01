@@ -126,7 +126,7 @@ class SnappySessionState(val snappySession: SnappySession)
 
 
   def getExtendedCheckRules: Seq[LogicalPlan => Unit] = {
-    Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, catalog)), PrePutCheck)
+    Seq(ConditionalPreWriteCheck(datasources.PreWriteCheck(conf, wrapperCatalog)), PrePutCheck)
   }
 
   override lazy val analyzer: Analyzer = new SnappyAnalyzer(this) {
@@ -679,6 +679,18 @@ class SnappySessionState(val snappySession: SnappySession)
       functionRegistry,
       conf,
       newHadoopConf())
+  }
+
+  lazy val wrapperCatalog: SessionCatalogWrapper = {
+    new SessionCatalogWrapper(
+      snappySession.sharedState.getExternalCatalogInstance(snappySession),
+      snappySession,
+      snappySession.sharedState.globalTempViewManager,
+      functionResourceLoader,
+      functionRegistry,
+      conf,
+      newHadoopConf(),
+      catalog)
   }
 
   protected[sql] def queryPreparations(
