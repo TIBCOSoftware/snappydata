@@ -228,7 +228,7 @@ object SnappyTestUtils {
     val actualFile = snappyFile.listFiles.filter(_.getName.endsWith(".csv"))
     val expectedLineSet = Source.fromFile(expectedFile.iterator.next()).getLines()
     val actualLineSet = Source.fromFile(actualFile.iterator.next()).getLines
-   while (expectedLineSet.hasNext && actualLineSet.hasNext) {
+    while (expectedLineSet.hasNext && actualLineSet.hasNext) {
       val expectedLine = expectedLineSet.next()
       val actualLine = actualLineSet.next()
       if (!actualLine.equals(expectedLine)) {
@@ -312,4 +312,3 @@ object SnappyTestUtils {
     pw.flush()
   }
 }
-
