@@ -29,7 +29,7 @@ import io.snappydata.Property.HashAggregateSize
 import org.apache.spark.Partition
 import org.apache.spark.sql.catalyst.analysis
 import org.apache.spark.sql.catalyst.analysis.TypeCoercion.{PromoteStrings, numericPrecedence}
-import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateUnions, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation, UnresolvedTableValuedFunction}
+import org.apache.spark.sql.catalyst.analysis.{Analyzer, CleanupAliases, EliminateSubqueryAliases, EliminateUnions, ResolveCreateNamedStruct, ResolveInlineTables, ResolveTableValuedFunctions, Star, SubstituteUnresolvedOrdinals, TimeWindowing, TypeCoercion, UnresolvedAttribute, UnresolvedRelation, UnresolvedTableValuedFunction}
 import org.apache.spark.sql.catalyst.expressions.{And, BinaryArithmetic, EqualTo, In, ScalarSubquery, _}
 import org.apache.spark.sql.catalyst.optimizer.{Optimizer, ReorderJoin}
 import org.apache.spark.sql.catalyst.planning.ExtractEquiJoinKeys
@@ -596,12 +596,13 @@ class SnappySessionState(val snappySession: SnappySession)
         if args.nonEmpty && args.forall(_.isInstanceOf[Attribute]) =>
         val tableId = session.tableIdentifier(name)
         val columnNames = args.map(_.asInstanceOf[Attribute].name)
-        session.sessionCatalog.resolveRelation(tableId) match {
+        val table = session.sessionCatalog.resolveRelationWithAlias(tableId)
+        EliminateSubqueryAliases(table) match {
           case lr: LogicalRelation if lr.relation.isInstanceOf[JDBCMutableRelation] =>
             val cols = columnNames.map(JdbcExtendedUtils.quotedName(_)).mkString(", ")
             val cmd = s"$op ${JdbcExtendedUtils.quotedName(name)}($cols) $childStr"
             plan -> DMLExternalTable(child, cmd)
-          case table =>
+          case _ =>
             // search for columnNames in table output
             val output = table.output
             val childOutput = child.output
@@ -627,7 +628,7 @@ class SnappySessionState(val snappySession: SnappySession)
                 projection(i) = Alias(Literal(null, attr.dataType), attr.name)()
               }
             }
-            UnresolvedRelation(tableId) -> Project(projection.toSeq, child)
+            table -> Project(projection.toSeq, child)
         }
       case _ => plan -> child
     }
