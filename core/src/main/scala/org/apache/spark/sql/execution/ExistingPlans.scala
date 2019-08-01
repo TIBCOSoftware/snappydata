@@ -305,7 +305,13 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     sideEffectResult.take(limit)
 
   override protected def doExecute(): RDD[InternalRow] = {
-    sqlContext.sparkContext.parallelize(sideEffectResult, 1)
+    try {
+      sqlContext.sparkContext.parallelize(sideEffectResult, 1)
+    }
+    finally {
+      logDebug(" Unlocking the table in doExecute of ExecutePlan ")
+      sqlContext.sparkSession.asInstanceOf[SnappySession].clearWriteLockOnTable()
+    }
   }
 }
 

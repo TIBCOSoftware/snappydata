@@ -144,14 +144,13 @@ case class SnappyStoreSink(snappySession: SnappySession,
     val message = s"queryName must be specified for ${SnappyContext.SNAPPY_SINK_NAME}."
     val queryName = snappySession.sessionCatalog
         .formatName(parameters.getOrElse(QUERY_NAME, throw new IllegalStateException(message)))
-    val possibleDuplicate = updateStateTable(queryName, batchId)
     val hashAggregateSizeIsDefault = HashAggregateSize.get(snappySession.sessionState.conf)
         .equals(HashAggregateSize.defaultValue.get)
     if (hashAggregateSizeIsDefault) {
       HashAggregateSize.set(snappySession.sessionState.conf, "10m")
     }
     try {
-      processBatchWithRetries(batchId, data, possibleDuplicate,
+      processBatchWithRetries(batchId, data, queryName,
         parameters.getOrElse(ATTEMPTS, "10").toInt)
     } finally {
       if (hashAggregateSizeIsDefault) {
@@ -160,9 +159,10 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
-  private def processBatchWithRetries(batchId: Long, data: Dataset[Row], possibleDuplicate: Boolean,
+  private def processBatchWithRetries(batchId: Long, data: Dataset[Row], queryName: String,
       totalAttempts: Int = 10, attempt: Int = 0): Unit = {
     try {
+      val possibleDuplicate = isPossibleDuplicate(queryName, batchId)
       sinkCallback.process(snappySession, parameters, batchId, convert(data), possibleDuplicate)
     } catch {
       case ex: Exception if attempt >= totalAttempts - 1 || !isRetriableException(ex) => throw ex
@@ -171,7 +171,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
         logWarning(s"Encountered a retriable exception. Will retry processing batch after" +
             s" $sleepTime millis. Attempts left: ${totalAttempts - (attempt + 1)}", ex)
         Thread.sleep(sleepTime)
-        processBatchWithRetries(batchId, data, possibleDuplicate = true, totalAttempts, attempt + 1)
+        processBatchWithRetries(batchId, data, queryName, totalAttempts, attempt + 1)
     }
   }
 
@@ -187,7 +187,7 @@ case class SnappyStoreSink(snappySession: SnappySession,
     }
   }
 
-  private def updateStateTable(queryName: String, batchId: Long): Boolean = {
+  private def isPossibleDuplicate(queryName: String, batchId: Long): Boolean = {
     val stateTableSchema = parameters.get(STATE_TABLE_SCHEMA)
     val updated = snappySession.sql(s"update ${stateTable(stateTableSchema)} " +
         s"set $BATCH_ID_COLUMN=$batchId where $QUERY_ID_COLUMN='$queryName' " +
