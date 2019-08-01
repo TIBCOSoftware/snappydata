@@ -522,7 +522,7 @@ object ConcurrentOpsTests extends Assertions with Logging {
 
     Seq(tableName, tableName2, tableName3, tableName4).foreach(doPut(_))
 
-    val counter = new AtomicInteger(0)
+    var counter = new AtomicInteger(0)
 
     val doDelete = (table: String, maxKey: Int) => Future {
       val snc = new SnappySession(session.sparkContext)
@@ -530,13 +530,21 @@ object ConcurrentOpsTests extends Assertions with Logging {
         (1 to 2000).map(i => TestData(i, i.toString)))
       val dataDF = snc.createDataFrame(rdd)
       import org.apache.spark.sql.snappy._
+      logInfo(s"SKSK for table $table the count is " + dataDF.filter(s"key1 <= $maxKey").count())
       dataDF.filter(s"key1 <= $maxKey").write.deleteFrom(table)
+
+      val result = snc.sql("SELECT * FROM " + table)
+      val r2 = result.collect
+      logInfo(s"SKSK The size of $table is ${r2.length}")
     }
 
 
     val delTasks = Array.fill(5)(doDelete(tableName, counter.addAndGet(500)))
+    counter = new AtomicInteger(0)
     val delTasks2 = Array.fill(5)(doDelete(tableName2, counter.addAndGet(500)))
+    counter = new AtomicInteger(0)
     val delTasks3 = Array.fill(5)(doDelete(tableName3, counter.addAndGet(500)))
+    counter = new AtomicInteger(0)
     val delTasks4 = Array.fill(5)(doDelete(tableName4, counter.addAndGet(500)))
 
 
