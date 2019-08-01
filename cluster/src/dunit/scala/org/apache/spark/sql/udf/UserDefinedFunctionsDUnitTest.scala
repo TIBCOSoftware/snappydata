@@ -259,6 +259,7 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     row.foreach(r => assert(r(0) == 8))
 
     snSession.sql("drop function intudf2")
+    assert(snSession.sql("list jars").count() == 0, "Some UDFs still not dropped!")
   }
 }
 
