@@ -257,6 +257,8 @@ class UserDefinedFunctionsDUnitTest(val s: String)
     row = snSession.sql("select intudf2(description) from col_table").collect()
     // row.foreach(r => println(r))
     row.foreach(r => assert(r(0) == 8))
+
+    snSession.sql("drop function intudf2")
   }
 }
 

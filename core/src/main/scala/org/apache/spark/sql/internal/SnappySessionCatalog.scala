@@ -1048,12 +1048,8 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     checkSchemaPermission(schemaName, name.funcName, defaultUser = null)
 
     val qualifiedName = name.copy(database = Some(schemaName))
-    ContextJarUtils.getDriverJar(qualifiedName.unquotedString) match {
-      case Some(_) =>
-        ContextJarUtils.removeFunctionArtifacts(externalCatalog, Option(this),
-          qualifiedName.database.get, qualifiedName.funcName, isEmbeddedMode)
-      case _ =>
-    }
+    ContextJarUtils.removeFunctionArtifacts(externalCatalog, Option(this),
+      qualifiedName.database.get, qualifiedName.funcName, isEmbeddedMode, ignoreIfNotExists)
     super.dropFunction(name, ignoreIfNotExists)
   }
 

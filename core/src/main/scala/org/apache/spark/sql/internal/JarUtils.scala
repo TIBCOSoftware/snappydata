@@ -113,21 +113,25 @@ object ContextJarUtils extends Logging {
 
   def removeFunctionArtifacts(externalCatalog: SnappyExternalCatalog,
       sessionCatalog: Option[SnappySessionCatalog], schemaName: String, functionName: String,
-      isEmbeddedMode: Boolean): Unit = {
+      isEmbeddedMode: Boolean, ignoreIfNotExists: Boolean = false): Unit = {
     val identifier = FunctionIdentifier(functionName, Some(schemaName))
     removeDriverJar(identifier.unquotedString)
 
-    val catalogFunction = try {
-      externalCatalog.getFunction(schemaName, identifier.funcName)
+    try {
+      val catalogFunction = externalCatalog.getFunction(schemaName, identifier.funcName)
+      catalogFunction.resources.foreach { r =>
+        deleteFile(catalogFunction.identifier.toString(), r.uri, isEmbeddedMode)
+      }
     } catch {
-      case _: AnalysisException =>
-        sessionCatalog match {
-          case Some(ssc) => ssc.failFunctionLookup(functionName)
-          case None => throw new NoSuchFunctionException(schemaName, identifier.funcName)
+      case e: AnalysisException =>
+        if (!ignoreIfNotExists) {
+          sessionCatalog match {
+            case Some(ssc) => ssc.failFunctionLookup(functionName)
+            case None => throw new NoSuchFunctionException(schemaName, identifier.funcName)
+          }
+        } else { // Log, just in case.
+          logDebug(s"Function ${identifier.funcName} possibly not found: $e")
         }
-    }
-    catalogFunction.resources.foreach { r =>
-      deleteFile(catalogFunction.identifier.toString(), r.uri, isEmbeddedMode)
     }
   }
 

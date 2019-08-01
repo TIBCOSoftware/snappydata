@@ -251,7 +251,18 @@ class SplitSnappyClusterDUnitTest(s: String)
     doTestUDF(skewNetworkServers)
   }
 
+  private def functionCheck(sns: SnappySession, msg: String): Unit = {
+    val jars = sns.sql("list jars")
+    if (jars.count() > 0) {
+      var str = msg
+      jars.collect().foreach(x => str += s"$x,")
+      assert(false, str)
+    }
+  }
+
   def doTestUDF(skewServerDistribution: Boolean): Unit = {
+    val sns = new SnappySession(sc)
+    functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
     testObject.createUDFInEmbeddedMode()
 
     // StandAlone Spark Cluster Operations
@@ -263,13 +274,12 @@ class SplitSnappyClusterDUnitTest(s: String)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyUDFInSplitMode",
       startArgs :+ Int.box(locatorClientPort))
-    val sns = new SnappySession(sc)
-    assert(sns.sql("list jars").count() == 0, "Some jars/packages are not cleaned up!")
+    functionCheck(sns, "Some jars/packages are not cleaned up! ")
   }
 
   def testDeployPackageNameFormat(): Unit = {
     val sns = new SnappySession(sc)
-    assert(sns.sql("list packages").count() == 0, "Previous tests did not clean up!")
+    functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
     val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
     sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
     sns.sql("undeploy  mongo_spark")
@@ -320,7 +330,7 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testDeployPackageDuplicateName(): Unit = {
     val sns = new SnappySession(sc)
-    assert(sns.sql("list packages").count() == 0, "Previous tests did not clean up!")
+    functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
     sns.sql("deploy package mongo-spark_v.1.5" +
         " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
     sns.sql("undeploy  mongo-spark_v.1.5")
@@ -340,7 +350,7 @@ class SplitSnappyClusterDUnitTest(s: String)
           " context 'of deploying jars/packages' is not unique."))
     }
     sns.sql("undeploy  akka-v1")
-    assert(sns.sql("list packages").count() == 0)
+    functionCheck(sns, "Some jars/packages are not cleaned up! ")
   }
 
   override def testUpdateDeleteOnColumnTables(): Unit = {
