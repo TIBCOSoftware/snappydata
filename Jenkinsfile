@@ -3,7 +3,7 @@ node {
 
         emailext attachLog: true, body: '$PROJECT_NAME - Build Reference # $BUILD_NUMBER. Build logs can be find at /var/logs/jenkins/log/oss/$BUILD_NUMBER ',
 		    compressLog: true, recipientProviders: [developers()],
-		    subject: '$PROJECT_NAME - Build Ref. Number : $BUILD_NUMBER - Status : Started! - User : ${jenkinsUserName}', to: '${useremail}'
+		    subject: '$PROJECT_NAME - Build Ref. Number : $BUILD_NUMBER - Status : Started! - User : $jenkinsUserName', to: '$useremail'
 
 		stage('Checkout') {
 			checkout([
@@ -92,7 +92,7 @@ node {
     } finally {
 	    emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
 		compressLog: true, recipientProviders: [developers()],
-		subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: '${useremail}'
+		subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: '$useremail'
     }
 
 }
