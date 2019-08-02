@@ -34,6 +34,21 @@ if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
+SERVERS_STATUS_FILE="$SNAPPY_HOME/work/serversstatus"
+if [ -f "${SERVERS_STATUS_FILE}" ]; then
+  rm $SERVERS_STATUS_FILE
+fi
+
+CAN_START_LEAD=0
+function checkIfOkayToStartLeads() {
+  while  read -r line || [[ -n "$line" ]]; do
+    read exitstatus <<< $line
+    if [ "x$exitstatus" = "x0" -o "x$exitstatus" = "x10" ]; then
+      CAN_START_LEAD=1
+    fi
+  done < $SERVERS_STATUS_FILE
+}
+
 BACKGROUND=-bg
 clustermode=
 CONF_DIR_ARG=
@@ -80,5 +95,13 @@ export SKIP_CONF_COPY
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
+  checkIfOkayToStartLeads
+  if [ "$CAN_START_LEAD" = "1" ]; then
+    "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
+  else
+    echo "Cannot start lead components. At least one server should be"
+    echo "in running state. Please check server logs."
+    echo "Try running snappy-status-all script to check servers status"
+    echo "Try starting lead once at least one server comes in running state."
+  fi
 fi
