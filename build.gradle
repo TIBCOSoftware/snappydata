@@ -1495,7 +1495,7 @@ task docs(type: ScalaDoc) {
 }
 
 task buildSqlFuncDocs(type: Exec) {
-  if (file("${rootProject.projectDir}/build-artifacts/scala-2.11/snappy/jars").exists()) {
+  if (!file("${rootProject.projectDir}/build-artifacts/scala-2.11/snappy/jars").exists()) {
     dependsOn product
   }
   //on linux
@@ -1503,8 +1503,7 @@ task buildSqlFuncDocs(type: Exec) {
 }
 
 task publishDocs(type:Exec) {
-  dependsOn docs
-  dependsOn buildSqlFuncDocs
+  dependsOn docs, buildSqlFuncDocs
   //on linux
   commandLine './publish-site.sh'
 }
