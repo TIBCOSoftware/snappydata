@@ -195,4 +195,25 @@ abstract case class JDBCAppendableRelation(
   }
 
   private[sql] def externalColumnTableName: String
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case r: JDBCAppendableRelation => {
+        (this eq r) || (
+          r.canEqual(this)
+            && hashCode() == r.hashCode()
+            && r.schemaName.equalsIgnoreCase(schemaName)
+            && r.tableName.equalsIgnoreCase(tableName))
+      }
+      case _ => false
+    }
+  }
+
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[JDBCAppendableRelation]
+  }
+
+  override def hashCode(): Int = {
+    schemaName.toUpperCase.concat(tableName.toUpperCase).hashCode
+  }
 }

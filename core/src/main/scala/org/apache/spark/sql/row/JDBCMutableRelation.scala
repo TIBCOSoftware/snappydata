@@ -407,4 +407,25 @@ abstract case class JDBCMutableRelation(
       conn.close()
     }
   }
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case mutable: JDBCMutableRelation => {
+        (this eq mutable) || (
+          mutable.canEqual(this)
+            && hashCode() == mutable.hashCode()
+            && mutable.schemaName.equalsIgnoreCase(schemaName)
+            && mutable.tableName .equalsIgnoreCase(tableName))
+      }
+      case _ => false
+      }
+  }
+
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[JDBCMutableRelation]
+  }
+
+  override def hashCode(): Int = {
+    schemaName.toUpperCase.concat(tableName.toUpperCase).hashCode
+  }
 }

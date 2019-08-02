@@ -515,21 +515,6 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
     case c@CreateTable(tableDesc, mode, queryOpt) if DDLUtils.isDatasourceTable(tableDesc) =>
       val tableIdent = state.catalog.resolveTableIdentifier(tableDesc.identifier)
       val provider = tableDesc.provider.get
-      if (mode == SaveMode.Overwrite && queryOpt.isDefined && queryOpt.get.resolved) {
-        EliminateSubqueryAliases(queryOpt.get) match {
-          case plan: LogicalPlan =>
-            val srcRelationNames = plan.collect {
-              case LogicalRelation(src: MutableRelation, _, _) => src.table
-            }
-            // we store table as Uppercase in relation
-            if (srcRelationNames.contains(tableIdent.unquotedString.toUpperCase)) {
-              throw new AnalysisException(
-                s"Cannot overwrite table ${tableDesc.identifier} that is also being read from")
-            }
-          case _ =>
-        }
-      }
-
       val isBuiltin = SnappyContext.isBuiltInProvider(provider) ||
           CatalogObjectType.isGemFireProvider(provider)
       // treat saveAsTable with mode=Append as insertInto for builtin tables and "normal" cases
@@ -579,23 +564,6 @@ private[sql] final class PreprocessTable(state: SnappySessionState) extends Rule
               "SELECT clause of the INSERT INTO/OVERWRITE statement " +
               "generates the same number of columns as its schema.")
       }
-
-    case i@InsertIntoTable(l@LogicalRelation(r: MutableRelation,
-    _, _), _, child, overwrite, _) if l.resolved && child.resolved && overwrite.enabled => {
-        EliminateSubqueryAliases(child) match {
-          case plan: LogicalPlan =>
-            val srcRelationNames = plan.collect {
-              case LogicalRelation(src: MutableRelation, _, _) => src.table.toUpperCase
-            }
-            // we store table as Uppercase in relation
-            if (srcRelationNames.contains(r.table.toUpperCase)) {
-              throw new AnalysisException(
-                s"Cannot overwrite table ${r.table} that is also being read from")
-            }
-          case _ =>
-        }
-      i
-    }
 
     // Check for PUT
     // Need to eliminate subqueries here. Unlike InsertIntoTable whose

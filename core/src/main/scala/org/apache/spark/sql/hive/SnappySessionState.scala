@@ -683,7 +683,7 @@ class SnappySessionState(val snappySession: SnappySession)
 
   lazy val wrapperCatalog: SessionCatalogWrapper = {
     new SessionCatalogWrapper(
-      snappySession.sharedState.getExternalCatalogInstance(snappySession),
+      catalog.externalCatalog,
       snappySession,
       snappySession.sharedState.globalTempViewManager,
       functionResourceLoader,
