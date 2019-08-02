@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.deployUnDeploy
+package io.snappydata.hydra.deployPkgUDF
 
 import java.io.PrintWriter
 import com.typesafe.config.Config
@@ -60,10 +60,7 @@ object CreateDropUDFSnappyJob extends SnappySQLJob {
     }
 
     def createFunction(udfs: Array[String], returnTyp: Array[String], jarPath: String): Unit = {
-      val pkg = "io.snappydata.hydra.deployUnDeploy.udfFiles"
-     // val jarPath = "/home/supriya/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/" +
-     //     "snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-
+      val pkg = "io.snappydata.hydra.deployPkgUDF.udfFiles"
       for (i <- 0 to udfs.length - 1) {
         val udfAlias = udfs(i).toString.toLowerCase
         val createFuncStr = "CREATE FUNCTION " + udfAlias + " as " + pkg + "." +

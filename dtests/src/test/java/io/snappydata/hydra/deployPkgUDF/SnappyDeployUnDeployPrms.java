@@ -1,4 +1,4 @@
-package io.snappydata.hydra.deployUnDeploy;
+package io.snappydata.hydra.deployPkgUDF;
 
 import java.util.Vector;
 
@@ -12,7 +12,15 @@ public class SnappyDeployUnDeployPrms extends SnappyPrms {
    */
   public static Long udfName;
 
+  /**
+   * String value to determine the return type of the udf function .
+   */
   public static Long returnType;
+
+  /**
+   * Boolean value to determine if the 'list jar' query returns empty results.
+   */
+  public static Long isListEmpty;
 
   /**
    * Boolean value to determine if exception is expected or not.
@@ -33,6 +41,12 @@ public class SnappyDeployUnDeployPrms extends SnappyPrms {
     Long key = isExpectedExecption;
     return tasktab().booleanAt(key, tab().booleanAt(key, false));
   }
+
+  public static boolean getIsListEmpty() {
+    Long key = isListEmpty;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
 
   static {
     SnappyPrms.setValues(SnappyDeployUnDeployPrms.class);

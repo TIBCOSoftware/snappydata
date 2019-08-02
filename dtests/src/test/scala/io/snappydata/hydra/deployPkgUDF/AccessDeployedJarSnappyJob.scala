@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.deployUnDeploy
+package io.snappydata.hydra.deployPkgUDF
 
 import com.typesafe.config.Config
 
@@ -26,7 +26,7 @@ object AccessDeployedJarSnappyJob extends SnappySQLJob {
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
     val isException: Boolean = jobConfig.getBoolean("isException")
-    val ExpectedCnt: Integer = jobConfig.getInteger("ExpectedCnt")
+    val expectedRowCnt: Integer = jobConfig.getInt("expectedRowCnt")
     try {
       val df = snSession.read.format("org.apache.spark.sql.cassandra").
           options(Map("table" -> "customer", "keyspace" -> "test")).load
@@ -34,12 +34,12 @@ object AccessDeployedJarSnappyJob extends SnappySQLJob {
       val showDF = snSession.sql("select * from CUSTOMERSNAPPY_JOB")
       println("Number of rows = " + showDF.count())
       val actualCnt = showDF.count()
-      if (actualCnt == ExpectedCnt) {
-        println(s"The counts match actualCnt = $actualCnt and expectedCnt = $ExpectedCnt")
+      if (actualCnt == expectedRowCnt) {
+        println(s"The counts match actualCnt = $actualCnt and expectedCnt = $expectedRowCnt")
       }
       else {
         println("The counts donot match")
-        println(s"The counts match actualCnt = $actualCnt and expectedCnt = $ExpectedCnt")
+        println(s"The counts match actualCnt = $actualCnt and expectedCnt = $expectedRowCnt")
       }
     }
     catch {

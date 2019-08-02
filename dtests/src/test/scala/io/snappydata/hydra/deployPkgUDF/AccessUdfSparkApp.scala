@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.deployUnDeploy
+package io.snappydata.hydra.deployPkgUDF
 
 import java.io.{File, FileOutputStream, PrintWriter}
 import com.typesafe.config.Config

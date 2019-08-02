@@ -1,4 +1,4 @@
-package io.snappydata.hydra.deployUnDeploy.udfFiles;
+package io.snappydata.hydra.deployPkgUDF.udfFiles;
 
 import org.apache.spark.sql.api.java.UDF4;
 

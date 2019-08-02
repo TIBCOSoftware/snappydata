@@ -1,9 +1,8 @@
-package io.snappydata.hydra.deployUnDeploy;
+package io.snappydata.hydra.deployPkgUDF;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.util.Vector;
 
 import hydra.Log;
@@ -21,14 +20,14 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
   public SnappyDeployUnDeployTest() {
   }
 
-  public static void HydraTask_closeCassandraCluster() {
+  public static void HydraTask_stopCassandraCluster() {
     if (snappyDeployUnDeployTest == null) {
       snappyDeployUnDeployTest = new SnappyDeployUnDeployTest();
     }
-    snappyDeployUnDeployTest.closeCassandraCluster();
+    snappyDeployUnDeployTest.stopCassandraCluster();
   }
 
-  public void closeCassandraCluster() {
+  public void stopCassandraCluster() {
     try {
       String cmd = "pkill -f CassandraDaemon";
       String dest = getCurrentDirPath() + File.separator + "cassandraClusterStop.log";
@@ -78,6 +77,8 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
 
     String pkgName = "com.datastax.spark:spark-cassandra-connector_2.11:2.0.7";
     String pkgPath = SnappyPrms.getDataLocationList().get(0).toString();
+    File pkgDir = new File(pkgPath);
+    if (!pkgDir.exists()) pkgDir.mkdir();
     try {
       Connection conn = getLocatorConnection();
       String deployStr = "deploy package " + jarAlias + " '" + pkgName + "' path '" + pkgPath + "' ";
@@ -129,12 +130,10 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
   }
 
   public void createFunction() {
-    String pkg = "io.snappydata.hydra.deployUnDeploy.udfFiles";
+    String pkg = "io.snappydata.hydra.deployPkgUDF.udfFiles";
     Vector udfs = SnappyDeployUnDeployPrms.getUdfName();
     Vector returnTyp = SnappyDeployUnDeployPrms.getReturnType();
     String jarPath = TestConfig.tab().stringAt(SnappyPrms.snappyPocJarPath, null);
-    //"/home/supriya/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar";
-
     try {
       Connection conn = getLocatorConnection();
       for (int i = 0; i <= udfs.size() - 1; i++) {
@@ -264,13 +263,39 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
     }
   }
 
-  public void listUDFS(Connection conn) {
+  public static void HydraTask_listUDFS() {
+    if (snappyDeployUnDeployTest == null) {
+      snappyDeployUnDeployTest = new SnappyDeployUnDeployTest();
+    }
+    snappyDeployUnDeployTest.listUDFS();
+  }
+
+
+  public void listUDFS() {
+    Connection conn = null;
+    Boolean isListEmpty = SnappyDeployUnDeployPrms.getIsListEmpty();
     try {
-      String cmd = " list jars";
+      conn = getLocatorConnection();
+      String cmd = "list jars";
       ResultSet rs = conn.createStatement().executeQuery(cmd);
-
+      if (isListEmpty) {
+        if (!rs.next()) { //resultSet should be empty
+          Log.getLogWriter().info("SUCCESS:The result set is empty");
+        } else {
+          Log.getLogWriter().info("Inside else reattempting drop command as list is not empty.");
+          dropFunction();
+          throw new TestException("FAILURE:The list jars query should have returned empty results.");
+        }
+      } else {
+        if (rs.next()) { //resultSet should not be empty
+          while (rs.next())
+            Log.getLogWriter().info("The registered ufds are " + rs.getString(1));
+        } else {
+          throw new TestException("The list jars query should not be empty");
+        }
+      }
     } catch (Exception ex) {
-
+      throw new TestException("Exception while listing jars " + ex.getMessage());
     }
   }
 

@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.deployUnDeploy
+package io.snappydata.hydra.deployPkgUDF
 
 import java.io.PrintWriter
 import com.typesafe.config.Config
@@ -37,7 +37,7 @@ object CreateDropUDFSparkApp {
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 
-    val pw = new PrintWriter("SnappyJobOutPut.out")
+    val pw = new PrintWriter("CreateDropUDFSparkApp.out")
     Try {
       val udf1 = args(0)
       val udf2 = args(1)
@@ -63,17 +63,14 @@ object CreateDropUDFSparkApp {
     }
     match {
       case Success(v) => pw.close()
-        s"See ${getCurrentDirectory}/SnappyJobOutPut.out"
+        s"See ${getCurrentDirectory}/CreateDropUDFSparkApp.out"
       case Failure(e) => pw.close();
         throw e;
     }
 
     def createFunction(udfs: Array[String], returnTyp: Array[String], jarPath: String): Unit = {
-      val pkg = "io.snappydata.hydra.deployUnDeploy.udfFiles"
-      // val jarPath = "/home/supriya/snappy/snappydata/dtests/build-artifacts/scala-2.11/libs/" +
-       //   "snappydata-store-scala-tests-0.1.0-SNAPSHOT-tests.jar"
-
-      for (i <- 0 to udfs.length - 1) {
+      val pkg = "io.snappydata.hydra.deployPkgUDF.udfFiles"
+       for (i <- 0 to udfs.length - 1) {
         val udfAlias = udfs(i).toString.toLowerCase
         val createFuncStr = "CREATE FUNCTION " + udfAlias + " as " + pkg + "." +
             udfs(i) + " returns " + returnTyp(i) + " using jar " + "'" + jarPath + "'"

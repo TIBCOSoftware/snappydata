@@ -14,7 +14,7 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-package io.snappydata.hydra.deployUnDeploy
+package io.snappydata.hydra.deployPkgUDF
 
 import java.io.PrintWriter
 import com.typesafe.config.Config
@@ -26,6 +26,7 @@ object AccessUdfSnappyJob extends SnappySQLJob {
   // println(" Inside CreateAndLoadSnappyJob")
 
   override def runSnappyJob(snSession: SnappySession, jobConfig: Config): Any = {
+    println("Running AccessUdfSnappyJob")
     val snc = snSession.sqlContext
     val udf1: String = jobConfig.getString("udf1")
     val udf2: String = jobConfig.getString("udf2")
@@ -47,7 +48,7 @@ object AccessUdfSnappyJob extends SnappySQLJob {
       for (i <- 0 to udfs.length - 1) {
         val udfName = udfs(i)
         var selectStmt = ""
-        println("The udf is " + udfName)
+        println("The udf is " + udfName + " with isException = " + isException)
         udfName match {
           case "MyUDF3" => selectStmt = s"select myudf3($argNum,$argNum)"
             println("The select stmt for " + udfName + " is " + selectStmt)
