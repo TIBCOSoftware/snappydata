@@ -25,8 +25,6 @@ trait ToolsCallback {
 
   def updateUI(sc: SparkContext): Unit
 
-  def removeAddedJar(sc: SparkContext, jarName: String): Unit
-
   /**
    * Callback to spark Utils to fetch file
    * Download a file or directory to target directory. Supports fetching the file in a variety of
