@@ -319,7 +319,7 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       if (lock != null) {
-        logDebug(s"Added the ${lock} object to the context.")
+        logDebug(s"Added the ${lock} object to the context for $table")
         snc.addContextObject(
           SnappySession.BULKWRITE_LOCK, lock)
       }

@@ -300,7 +300,8 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
       result
     }
     finally {
-      logDebug(" Unlocking the table in execute of ExecutePlan ")
+      logDebug(s" Unlocking the table in execute of ExecutePlan:" +
+        s" ${child.treeString(false)}")
       session.clearWriteLockOnTable()
     }
   }
