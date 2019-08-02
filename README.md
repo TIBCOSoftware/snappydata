@@ -70,10 +70,6 @@ SnappyData artifacts are hosted in Maven Central. You can add a Maven dependency
 
 ```
 groupId: io.snappydata
-artifactId: snappydata-core_2.11
-version: 1.1.0
-
-groupId: io.snappydata
 artifactId: snappydata-cluster_2.11
 version: 1.1.0
 ```

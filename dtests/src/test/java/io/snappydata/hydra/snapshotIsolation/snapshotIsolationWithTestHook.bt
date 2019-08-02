@@ -1,12 +1,20 @@
 io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClientWithTestHook_ReplicatedRow.conf
-  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
   derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClientWithTestHook_PartitionedRow.conf
-  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
   B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
   C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
-  redundantCopies=0,1,2
+  redundantCopies=1
   derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+
+io/snappydata/hydra/snapshotIsolation/testInsertWithSelectJDBCClientWithTestHook_ColumnTable.conf
+  A=snappyStore snappyStoreHosts=2 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=2
+  B=lead leadHosts=1 leadVMsPerHost=1 leadThreadsPerVM=1
+  C=locator locatorHosts=1 locatorVMsPerHost=1 locatorThreadsPerVM=1
+  redundantCopies=1
+  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
+

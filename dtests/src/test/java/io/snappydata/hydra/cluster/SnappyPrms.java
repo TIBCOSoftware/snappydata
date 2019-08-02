@@ -17,6 +17,7 @@
 package io.snappydata.hydra.cluster;
 
 import org.apache.commons.lang.StringUtils;
+
 import java.util.Vector;
 
 import hydra.BasePrms;
@@ -249,6 +250,11 @@ public class SnappyPrms extends BasePrms {
   public static Long isUserConfTest;
 
   /**
+   * (boolean) - whether to run the CPP script in hydra.
+   */
+  public static Long isCppTest;
+
+  /**
    * (boolean) - whether TPCH schema is used in test for running the queries concurrently.
    */
   public static Long isTPCHSchema;
@@ -388,6 +394,13 @@ public class SnappyPrms extends BasePrms {
    * (VectosetValues of Strings) A list of values for snappy-job.
    */
   public static Long appPropsForJobServer;
+
+  /**
+   * Parameter used to get the user list of queries to execute concurrently using
+   * jdbc clients.
+   * (VectorsetValues of Strings) A list of values queries.
+   */
+  public static Long queryList;
 
   /**
    * Parameter used to get the user list of pointLookUP queries to execute concurrently using
@@ -541,6 +554,11 @@ public class SnappyPrms extends BasePrms {
   public static Long kafkaDir;
 
   /**
+   * (String) path for kafka log directory
+   */
+  public static Long kafkaLogDir;
+
+  /**
    * (String) snappy-poc jar path
    */
   public static Long snappyPocJarPath;
@@ -674,6 +692,25 @@ public class SnappyPrms extends BasePrms {
    */
   public static Long numRowsList;
 
+  /**
+   * (int)Number of stack dumps to be taken for each thread of locators, servers, leads
+   */
+  public static Long numOfStackDumpItr;
+
+  public static int getNumOfStackDumpItrs(){
+    Long key = numOfStackDumpItr;
+    return tasktab().intAt(key, tab().intAt(key, 3));
+  }
+
+  /**
+   * (int)Sleep time in secs between 2 thread dumps.
+   */
+  public static Long sleepBtwnStackDump;
+
+  public static int getSleepBtwnStackDumps(){
+    Long key = sleepBtwnStackDump;
+    return tasktab().intAt(key, tab().intAt(key, 5));
+  }
 
   public static String getCredentialFile() {
     Long key = credentialFile;
@@ -806,6 +843,11 @@ public class SnappyPrms extends BasePrms {
   public static String getCommaSepAPPProps() {
     Long key = appPropsForJobServer;
     return BasePrms.tasktab().stringAt(key, BasePrms.tab().stringAt(key, null));
+  }
+
+  public static Vector getQueryList() {
+    Long key = queryList;
+    return BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));
   }
 
   public static Vector getPointLookUpQueryList() {

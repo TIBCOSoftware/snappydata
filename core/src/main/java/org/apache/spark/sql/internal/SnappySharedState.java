@@ -62,7 +62,8 @@ public final class SnappySharedState extends SharedState {
    */
   private final boolean initialized;
 
-  private static final String CATALOG_IMPLEMENTATION = "spark.sql.catalogImplementation";
+  private static final String CATALOG_IMPLEMENTATION =
+      StaticSQLConf.CATALOG_IMPLEMENTATION().key();
 
   /**
    * Simple extension to CacheManager to enable clearing cached plan on cache create/drop.
@@ -167,7 +168,7 @@ public final class SnappySharedState extends SharedState {
    */
   public SnappyExternalCatalog getExternalCatalogInstance(SnappySession session) {
     if (!this.initialized) {
-      throw new IllegalStateException("getExternalCatalogInstance unexpected invocation " +
+      throw new IllegalStateException("getExternalCatalogInstance: unexpected invocation " +
           "from within SnappySharedState constructor");
     } else if (this.embedCatalog != null) {
       return this.embedCatalog;
