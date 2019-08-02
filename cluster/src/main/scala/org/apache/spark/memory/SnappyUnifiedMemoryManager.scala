@@ -700,7 +700,7 @@ class SnappyUnifiedMemoryManager private[memory](
       }
     } finally {
       if (storagePoolAdjustedSize > 0L) {
-        offHeapStorageMemoryPool.decrementPoolSize(storagePoolAdjustedSize)
+        offHeapStorageMemoryPool.incrementPoolSize(storagePoolAdjustedSize)
       }
     }
   }
