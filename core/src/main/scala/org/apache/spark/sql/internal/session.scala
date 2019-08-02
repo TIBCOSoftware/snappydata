@@ -61,8 +61,9 @@ class SnappyConf(@transient val session: SnappySession)
 
   /**
    * Records the number of shuffle partitions to be used determined on runtime
-   * from available cores on the system. A value <= 0 indicates that it was set
-   * explicitly by user and should not use a dynamic value.
+   * from available cores on the system. A value < 0 indicates that it was set
+   * explicitly by user and should not use a dynamic value. A value of 0 indicates
+   * that current plan execution did not touch it so reset need not touch it.
    */
   @volatile private[this] var dynamicShufflePartitions: Int = _
 
@@ -71,7 +72,7 @@ class SnappyConf(@transient val session: SnappySession)
    * on executorCores/physicalCores. This will be -1 if set explicitly
    * on the session so that it doesn't get reset at the end of task execution.
    */
-  @volatile private[this] var dynamicCpusPerTask: Int = 1
+  @volatile private[this] var dynamicCpusPerTask: Int = _
 
   SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
     case Some(d) if (session ne null) && super.numShufflePartitions == d =>
@@ -229,7 +230,7 @@ class SnappyConf(@transient val session: SnappySession)
         key
       case _ =>
         session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, null)
-        dynamicCpusPerTask = 1
+        dynamicCpusPerTask = 0
         key
     }
 
@@ -254,7 +255,7 @@ class SnappyConf(@transient val session: SnappySession)
 
   private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
 
-  private[sql] def refreshDefaults(): Unit = synchronized {
+  private[sql] def resetDefaults(): Unit = synchronized {
     if (session ne null) {
       if (executionShufflePartitions != -1) {
         executionShufflePartitions = 0
@@ -262,7 +263,7 @@ class SnappyConf(@transient val session: SnappySession)
       if (dynamicShufflePartitions != -1) {
         dynamicShufflePartitions = coreCountForShuffle
       }
-      if (dynamicCpusPerTask != -1) {
+      if (dynamicCpusPerTask > 0) {
         unsetConf(Constant.CPUS_PER_TASK_PROP)
       }
     }
@@ -277,10 +278,11 @@ class SnappyConf(@transient val session: SnappySession)
 
   private[sql] def setDynamicCpusPerTask(): Unit = synchronized {
     if (dynamicCpusPerTask != -1) {
-      dynamicCpusPerTask = math.max(1, math.ceil(session.sparkContext.defaultParallelism.toDouble /
+      val cpusPerTask = math.max(1, math.ceil(session.sparkContext.defaultParallelism.toDouble /
           SnappyContext.totalPhysicalCoreCount.get().toDouble).toInt)
-      setConfString(Constant.CPUS_PER_TASK_PROP, dynamicCpusPerTask.toString)
-      logDebug(s"Set dynamic ${Constant.CPUS_PER_TASK_PROP} to $dynamicCpusPerTask")
+      setConfString(Constant.CPUS_PER_TASK_PROP, cpusPerTask.toString)
+      dynamicCpusPerTask = cpusPerTask
+      logDebug(s"Set dynamic ${Constant.CPUS_PER_TASK_PROP} to $cpusPerTask")
     }
   }
 
