@@ -25,13 +25,14 @@ import java.util.function.BiFunction
 import scala.collection.JavaConverters._
 import scala.collection.mutable
 import scala.language.implicitConversions
+import scala.util.control.Breaks._
 import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.CancelException
 import com.gemstone.gemfire.cache.execute.FunctionService
 import com.gemstone.gemfire.i18n.LogWriterI18n
 import com.gemstone.gemfire.internal.SystemTimer
-import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, LocalRegion, PartitionedRegion, RegionEntry}
+import com.gemstone.gemfire.internal.cache.{AbstractRegionEntry, PartitionedRegion, RegionEntry}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.GfxdListResultCollector.ListResultCollectorValue
 import com.pivotal.gemfirexd.internal.engine.distributed.{GfxdListResultCollector, GfxdMessage}
@@ -202,9 +203,13 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
         log.debug(e.getMessage, e)
     }
 
-    val hiveTables = Misc.getMemStore.getExternalCatalog.getCatalogTables.asScala
+    // handle the case of a rare race condition where external catalog is still being initialized
+    val hiveTables = Misc.getMemStore.getExternalCatalog match {
+      case null => Nil
+      case catalog => catalog.getCatalogTables.asScala
+    }
 
-    val externalTables: mutable.Buffer[SnappyExternalTableStats] = {
+    val externalTables: Seq[SnappyExternalTableStats] = {
       try {
         // External Tables
         hiveTables.collect {
@@ -227,6 +232,27 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
       val tableTypes = hiveTables.map(ht =>
         Utils.toUpperCase(s"${ht.schema}.${ht.entityName}") -> ht.tableType).toMap
       val regionStats = result.flatMap(_.getRegionStats.asScala).map(rs => {
+        val tableRegion = Misc.getRegionForTable(rs.getTableName, false)
+        if (tableRegion != null && tableRegion.isInstanceOf[PartitionedRegion]) {
+          val tablePrRegion = tableRegion.asInstanceOf[PartitionedRegion]
+          val PrRegRedProvider = tablePrRegion.getRedundancyProvider
+          if (PrRegRedProvider != null) {
+            rs.setRedundancyImpaired(PrRegRedProvider.isRedundancyImpaired)
+            rs.setRedundancy(tablePrRegion.getRedundantCopies)
+          }
+
+          val numBuckets = tablePrRegion.getPartitionAttributes.getTotalNumBuckets
+          breakable {
+            for (i <- 0 until numBuckets) {
+              val idm = tablePrRegion.getNodeForBucketRead(i)
+              if (idm == null) {
+                rs.setAnyBucketLost(true)
+                break
+              }
+            }
+          }
+        }
+
         try tableTypes.get(Utils.toUpperCase(rs.getTableName)) match {
           case Some(t) if CatalogObjectType.isColumnTable(CatalogObjectType.withName(
             Utils.toUpperCase(t))) => rs.setColumnTable(true)
@@ -265,10 +291,8 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
   }
 
   def publishColumnTableRowCountStats(): Unit = {
-    def asSerializable[C](c: C) = c.asInstanceOf[C with Serializable]
-
-    val regions = asSerializable(Misc.getGemFireCache.getApplicationRegions.asScala)
-    for (region: LocalRegion <- regions) {
+    val regions = Misc.getGemFireCache.getApplicationRegions.asScala
+    for (region <- regions) {
       if (region.getDataPolicy.withPartitioning()) {
         val table = Misc.getFullTableNameFromRegionPath(region.getFullPath)
         val pr = region.asInstanceOf[PartitionedRegion]
@@ -280,9 +304,7 @@ object SnappyEmbeddedTableStatsProviderService extends TableStatsProviderService
           var rowsInColumnBatch = 0L
           var offHeapSize = 0L
           if (container ne null) {
-            // TODO: this should use a transactional iterator to get a consistent
-            // snapshot (also pass the same transaction to getNumColumnsInTable
-            //   for reading value and delete count)
+            // TODO: SW: this should avoid iteration and use BucketRegion to get the sizes
             val itr = new pr.PRLocalScanIterator(false /* primaryOnly */ , null /* no TX */ ,
               null /* not required since includeValues is false */ ,
               createRemoteIterator, false /* forUpdate */ , false /* includeValues */)

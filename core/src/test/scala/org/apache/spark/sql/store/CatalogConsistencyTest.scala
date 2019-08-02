@@ -19,6 +19,7 @@ package org.apache.spark.sql.store
 
 import java.sql.{Connection, DriverManager, SQLException}
 
+import com.pivotal.gemfirexd.internal.impl.jdbc.EmbedSQLException
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
@@ -324,5 +325,28 @@ class CatalogConsistencyTest
     val r = result.collect
     assert(r.length == 5)
 
+  }
+
+  test("REMOVE_METASTORE_ENTRY procedure should drop table from catalog") {
+    snc.sql("create table app.rowtable1 (c1 integer, c2 string, c3 float)")
+    snc.sql("insert into app.rowtable1 values (11, '11', 1.1)")
+
+    try {
+      snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'false');")
+    } catch {
+      case e: EmbedSQLException =>
+        assert(e.getMessage.contains("Table retrieved successfully"))
+    }
+
+    snc.sql("call sys.REMOVE_METASTORE_ENTRY('app.rowtable1', 'true');")
+
+    intercept[TableNotFoundException] {
+      snc.snappySession.sessionCatalog.lookupRelation(
+        snc.snappySession.tableIdentifier("rowtable1"))
+    }
+    val result = snc.sql("show tables")
+    assert(result.collect.length == 0)
+    val routeQueryDisabledConn = getConnection(routeQuery = false)
+    routeQueryDisabledConn.createStatement().execute("drop table if exists rowtable1")
   }
 }

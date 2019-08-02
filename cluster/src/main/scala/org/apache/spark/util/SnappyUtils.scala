@@ -25,11 +25,11 @@ import _root_.io.snappydata.Constant
 import com.pivotal.gemfirexd.internal.engine.Misc
 import org.joda.time.DateTime
 import spark.jobserver.util.ContextURLClassLoader
+
 import org.apache.spark.deploy.SparkHadoopUtil
-import org.apache.spark.sql.collection.ToolsCallbackInit
+import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.ui.SparkUI
 import org.apache.spark.{SparkContext, SparkEnv}
-
 import scala.util.Try
 
 object SnappyUtils {
@@ -41,47 +41,27 @@ object SnappyUtils {
     case _ => new SnappyContextLoader(parent)
   }
 
-  def removeJobJar(sc: SparkContext): Unit = {
-    def getName(path: String): String = new File(path).getName
-
-    val jobJarToRemove = sc.getLocalProperty(Constant.CHANGEABLE_JAR_NAME)
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(jobJarToRemove))
-    if (keyToRemove.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      // @TODO This is a temp workaround to fix SNAP-1133. sc.addedJar
-      // should be directly be accessible from here.
-      // May be due to scala version mismatch.
-      if (callbacks != null) {
-        callbacks.removeAddedJar(sc, keyToRemove.head)
-      }
-    }
-  }
-
-  def removeJobJar(sc: SparkContext, jarName: String): Unit = {
-    def getName(path: String): String = new File(path).getName
-
-    val keyToRemove = sc.listJars().filter(getName(_) == getName(jarName))
-    if (keyToRemove.nonEmpty) {
-      val callbacks = ToolsCallbackInit.toolsCallback
-      // @TODO This is a temp workaround to fix SNAP-1133. sc.addedJar
-      // should be directly be accessible from here.
-      // May be due to scala version mismatch.
-      if (callbacks != null) {
-        callbacks.removeAddedJar(sc, keyToRemove.head)
-      }
-    }
-  }
-
   def setSessionDependencies(sparkContext: SparkContext,
       appName: String,
-      classLoader: ClassLoader): Unit = {
+      classLoader: ClassLoader, addAllJars: Boolean = false): Unit = {
     assert(classOf[URLClassLoader].isAssignableFrom(classLoader.getClass))
-    val dependentJars = classLoader.asInstanceOf[URLClassLoader].getURLs
+    val dependentJars = if (addAllJars) {
+      ContextJarUtils.getDriverJarURLs()
+    } else {
+      classLoader.asInstanceOf[URLClassLoader].getURLs
+    }
     val sparkJars = dependentJars.map(url => {
       Try(sparkContext.env.rpcEnv.fileServer.addJar(new File(url.toURI))).getOrElse("")
     })
-    val localProperty = (Seq(appName, DateTime.now) ++ sparkJars.filterNot(
-      _.isEmpty).toSeq).mkString(",")
+    var localProperty = ""
+    if (!addAllJars) {
+      localProperty = (Seq(appName, DateTime.now, Constant.SNAPPY_JOB_URL) ++ sparkJars.filterNot(
+        _.isEmpty).toSeq).mkString(",")
+    } else {
+      localProperty = (Seq(appName, DateTime.now) ++ sparkJars.filterNot(
+        _.isEmpty).toSeq).mkString(",")
+    }
+
     sparkContext.setLocalProperty(Constant.CHANGEABLE_JAR_NAME, localProperty)
   }
 

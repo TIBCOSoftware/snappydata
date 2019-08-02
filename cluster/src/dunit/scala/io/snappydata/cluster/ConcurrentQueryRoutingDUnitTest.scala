@@ -28,16 +28,18 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
   def columnTableRouting(thr: Int, iter: Int, serverHostPort: Int): Int = {
-    val tableName = s"order_line_col_${thr}_${iter}"
+    val tableName = s"order_line_col_${thr}_$iter"
 
-    // scalastyle:off println
-    println(s"ConcurrentQueryRoutingDUnitTest.columnTableRouting-${thr}-${iter}:" +
+    logInfo(s"ConcurrentQueryRoutingDUnitTest.columnTableRouting-$thr-$iter:" +
         s"network server started at $serverHostPort")
-    // scalastyle:on println
-    ConcurrentQueryRoutingDUnitTest.columnTableRouting(tableName, serverHostPort)
-    // scalastyle:off println
-    println(s"ConcurrentQueryRoutingDUnitTest.columnTableRouting-${thr}-${iter} done")
-    // scalastyle:on println
+    try {
+      ConcurrentQueryRoutingDUnitTest.columnTableRouting(tableName, serverHostPort)
+    } catch {
+      case e: Exception =>
+        logError(s"columnTableRouting failure in $thr-$iter", e)
+        throw e
+    }
+    logInfo(s"ConcurrentQueryRoutingDUnitTest.columnTableRouting-$thr-$iter done")
     1
   }
 
@@ -54,7 +56,7 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
     println(s"ConcurrentQueryRoutingDUnitTest.rowTableRouting-${thr}-${iter} done")
     // scalastyle:on println
     1
-  }*/
+  } */
 
   def testConcurrency(): Unit = {
     val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
@@ -67,7 +69,6 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
       })
     }
     })
-    colThread1.start()
 
     var thrCount2: Integer = 0
     val colThread2 = new Thread(new Runnable {def run() {
@@ -76,7 +77,6 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
       })
     }
     })
-    colThread2.start()
 
     var thrCount3: Integer = 0
     val rowThread1 = new Thread(new Runnable {def run() {
@@ -85,7 +85,6 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
       })
     }
     })
-    rowThread1.start()
 
     var thrCount4: Integer = 0
     val rowThread2 = new Thread(new Runnable {def run() {
@@ -94,6 +93,10 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
       })
     }
     })
+
+    colThread1.start()
+    colThread2.start()
+    rowThread1.start()
     rowThread2.start()
 
     colThread1.join(5 * 60 * 1000)
@@ -130,7 +133,8 @@ class ConcurrentQueryRoutingDUnitTest(val s: String)
       s"ConcurrentQueryRoutingDUnitTest.testConcurrency:" +
           s" rowTableRoutingCompleted-2=$thrCount4")
 
-    Array(vm0,vm1,vm2).foreach(_.invoke(classOf[ClusterManagerTestBase], "validateNoActiveSnapshotTX"))
+    Array(vm0, vm1, vm2).foreach(_.invoke(classOf[ClusterManagerTestBase],
+      "validateNoActiveSnapshotTX"))
   }
 }
 

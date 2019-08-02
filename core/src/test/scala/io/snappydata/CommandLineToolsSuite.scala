@@ -18,11 +18,8 @@
 package io.snappydata
 
 import java.io._
-import java.sql.{Connection, DriverManager}
 
-import org.apache.commons.io.output.TeeOutputStream
-import org.apache.spark.sql.collection.Utils
-
+import scala.language.{implicitConversions, postfixOps}
 import scala.sys.process._
 
 class CommandLineToolsSuite extends SnappyTestRunner {
@@ -30,6 +27,9 @@ class CommandLineToolsSuite extends SnappyTestRunner {
   override def servers: String = s"$localHostName\n"
 
   override def clusterSuccessString: String = "Distributed system now has 3 members"
+
+  private val snappyProductDir = System.getenv("SNAPPY_HOME")
+  private val snappyNativeTestDir = s"$snappyProductDir/../../../store/native/tests"
 
   // scalastyle:off println
   test("backup restore") {
@@ -53,20 +53,20 @@ class CommandLineToolsSuite extends SnappyTestRunner {
 
       // online backup command
       val backupcommand = s"$snappyHome/bin/snappy backup $backupDir -locators=localhost:10334"
-      val (out, err) = executeCommand(backupcommand)
+      val (out, _) = executeCommand(backupcommand)
 
       if (!out.contains("successful")) {
         throw new Exception(s"Could not take successful backup")
       }
       stopCluster()
 
-      val (out1, err1) = executeCommand(s"rm -rf $snappyHome/work")
+      val (_, err1) = executeCommand(s"rm -rf $snappyHome/work")
 
       if (err1 != null && err1.length > 0) {
         throw new Exception(s"Failed to remove work dir")
       }
       // Find all the restore scripts
-      val (out3, err3) = executeCommand(s"find ${backupDir} -name restore.sh")
+      val (out3, _) = executeCommand(s"find $backupDir -name restore.sh")
 
       val restoreCmnds = out3.split("\n")
       assert(restoreCmnds.length == 2, "expected 2 restore commands")
@@ -85,7 +85,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       while (rs1.next()) {
         cnt = cnt + 1
         val v1 = rs1.getInt(1)
-        val v2 = rs1.getInt(2)
+        rs1.getInt(2)
         assert(v1 === 1 || v1 === 2 || v1 === 5 || v1 === 6)
       }
       assert(cnt === 4)
@@ -96,7 +96,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       while (rs2.next()) {
         cnt = cnt + 1
         val v1 = rs2.getInt(1)
-        val v2 = rs2.getInt(2)
+        rs2.getInt(2)
         assert(v1 === 1 || v1 === 2 || v1 === 5 || v1 === 6)
       }
       assert(cnt === 4)
@@ -108,13 +108,13 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       // online incremental backup command
       val incre_backupcommand = s"$snappyHome/bin/snappy" +
           s" backup -baseline=$backupDir $backupDir -locators=localhost:10334"
-      val (out4, err4) = executeCommand(incre_backupcommand)
+      val (out4, _) = executeCommand(incre_backupcommand)
 
       if (!out4.contains("successful")) {
         throw new Exception(s"Could not take successful backup")
       }
       stopCluster()
-      val (out5, err5) = executeCommand(s"rm -rf $snappyHome/work")
+      val (_, err5) = executeCommand(s"rm -rf $snappyHome/work")
       if (err5 != null && err5.length > 0) {
         throw new Exception(s"Failed to remove work dir")
       }
@@ -138,7 +138,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
 
       debugWriter.println(s"lastBackDir abs path = ${lastbackDir.getAbsolutePath}")
 
-      val (out6, err6) = executeCommand(s"find ${lastbackDir.getAbsolutePath} -iname restore.sh")
+      val (out6, _) = executeCommand(s"find ${lastbackDir.getAbsolutePath} -iname restore.sh")
 
       val restoreCmnds2 = out6.split("\n")
       assert(restoreCmnds2.length == 2, "expected 2 restore commands")
@@ -161,7 +161,7 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       while (rs11.next()) {
         cnt = cnt + 1
         val v1 = rs11.getInt(1)
-        val v2 = rs11.getInt(2)
+        rs11.getInt(2)
         assert(v1 === 1 || v1 === 2 || v1 === 5 || v1 === 6 || v1 === 100 || v1 === 200)
       }
       assert(cnt === 6)
@@ -172,13 +172,141 @@ class CommandLineToolsSuite extends SnappyTestRunner {
       while (rs22.next()) {
         cnt = cnt + 1
         val v1 = rs22.getInt(1)
-        val v2 = rs22.getInt(2)
+        rs22.getInt(2)
         assert(v1 === 1 || v1 === 2 || v1 === 5 || v1 === 6 || v1 === 100 || v1 === 200)
       }
       assert(cnt === 6)
     } finally {
       debugWriter.close()
       executeCommand(s"rm -rf $snappyHome/backup*")
+    }
+  }
+
+  test("-dir option with old locator launch script") {
+    try {
+      var consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir not specified: $consoleOutput")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443 -client-port=2000 -dir=").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified with a value")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443 -client-port=2000 -dir= " +
+          "/does/not/exist").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir does not exist $consoleOutput")
+
+      "mkdir ./SNAP-2631-work-locator".!!
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-locator.sh start -peer-discovery-port=10443 -client-port=2000 " +
+          "-dir=./SNAP-2631-work-locator").!!
+      assert(consoleOutput.contains("running"), s"Locator launch failed: $consoleOutput")
+
+    } finally {
+      (snappyProductDir +
+          "/sbin/snappy-locator.sh stop -dir=./SNAP-2631-work-locator").!!
+      "rm -r ./SNAP-2631-work-locator".!!
+    }
+  }
+
+  test("-dir option with old server launch script") {
+    try {
+      var consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir not specified: $consoleOutput")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001 -dir=").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified with a value")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001 -dir= " +
+          "/does/not/exist").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir does not exist $consoleOutput")
+
+      "mkdir ./SNAP-2631-work-server".!!
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-server.sh start -locators=localhost:10334 -client-port=2001  " +
+          "-dir=./SNAP-2631-work-server").!!
+      assert(consoleOutput.contains("running"), s"Server launch failed: $consoleOutput")
+
+    } finally {
+      (snappyProductDir +
+          "/sbin/snappy-server.sh stop -dir=./SNAP-2631-work-server").!!
+      "rm -r ./SNAP-2631-work-server".!!
+    }
+  }
+
+  test("-dir option with old lead launch script") {
+    try {
+      var consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002" +
+          " -dir=").!!
+      assert(consoleOutput.contains("ERROR"),
+        "Option -dir not specified with a value")
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002 -dir= " +
+          "/does/not/exist").!!
+      assert(consoleOutput.contains("ERROR"),
+        s"Option -dir does not exist $consoleOutput")
+
+      "mkdir ./SNAP-2631-work-lead".!!
+
+      consoleOutput = (snappyProductDir +
+          "/sbin/snappy-lead.sh start -locators=localhost:10334 -client-port=2002 " +
+          "-dir=./SNAP-2631-work-lead").!!
+
+      assert(consoleOutput.contains("standby"),
+        s"lead launch failed: $consoleOutput")
+
+    } finally {
+      (snappyProductDir +
+          "/sbin/snappy-lead.sh stop -dir=./SNAP-2631-work-lead").!!
+      "rm -r ./SNAP-2631-work-lead".!!
+    }
+  }
+
+  test("test_run_command") {
+    val out = new StringBuilder
+    val code = (snappyProductDir +
+        "/bin/snappy run file='somefile.sql'").!(ProcessLogger(s => out.append(s)))
+    assert(code != 0)
+    assert(!out.toString().contains("[-locators=<addresses>]"),
+      s"-locators option still displayed in run command's usage text!")
+  }
+
+  ignore("ODBC_FailOverTest_NEWSERVER"){
+    try {
+      var scriptPath = s"$snappyNativeTestDir/failoverTest_NewServer.sh"
+      var consoleOutput = s"$scriptPath $snappyProductDir $snappyNativeTestDir".!!
+      assert(consoleOutput.contains("Test executed successfully"),
+        s"FailOver failed $consoleOutput")
+    } finally {
+
+    }
+  }
+
+  ignore("ODBC_FailOverTest_NONE"){
+    try {
+      var scriptPath = s"$snappyNativeTestDir/failoverTest_None.sh"
+      var consoleOutput = s"$scriptPath $snappyProductDir $snappyNativeTestDir".!!
+      assert(consoleOutput.contains("Test executed successfully, no failover tried"),
+        s"There failover tried but failed $consoleOutput")
+    } finally {
+
     }
   }
 }

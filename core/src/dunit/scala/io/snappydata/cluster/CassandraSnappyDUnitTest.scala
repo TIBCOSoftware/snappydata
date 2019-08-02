@@ -18,31 +18,44 @@ package io.snappydata.cluster
 
 import java.io._
 import java.nio.file.{Files, Paths}
+import java.sql.{Connection, DriverManager, ResultSet, SQLException}
 import java.util
 
+import scala.language.postfixOps
+import scala.sys.process._
+import io.snappydata.Constant
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 import org.apache.commons.io.FileUtils
 import org.apache.commons.io.filefilter.{IOFileFilter, TrueFileFilter, WildcardFileFilter}
 import org.apache.spark.Logging
 
-import scala.language.postfixOps
-import scala.sys.process._
-
 class CassandraSnappyDUnitTest(val s: String)
     extends DistributedTestBase(s) with SnappyJobTestSupport with Logging {
   // scalastyle:off println
 
-  val snappyProductDir = System.getenv("SNAPPY_HOME")
+  def getConnection(netPort: Int): Connection =
+    DriverManager.getConnection(s"${Constant.DEFAULT_THIN_CLIENT_URL}localhost:$netPort")
+
+  override val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
 
-  val downloadLoc = s"$snappyProductDir/../distributions"
+  lazy val downloadLoc = {
+    val path = if (System.getenv().containsKey("GRADLE_USER_HOME")) {
+      Paths.get(System.getenv("GRADLE_USER_HOME"), "cassandraDist")
+    } else {
+      Paths.get(System.getenv("HOME"), ".gradle", "cassandraDist")
+    }
+    Files.createDirectories(path)
+    path.toString
+  }
 
   val userHome = System.getProperty("user.home")
 
   val currDir = System.getProperty("user.dir")
 
   var cassandraClusterLoc = ""
+  var cassandraConnectorJarLoc = ""
 
   private val commandOutput = "command-output.txt"
 
@@ -69,19 +82,34 @@ class CassandraSnappyDUnitTest(val s: String)
 
     logInfo((snappyProductDir + "/sbin/snappy-start-all.sh").!!)
     Thread.sleep(10000)
+    logInfo("Download Location : " + downloadLoc)
 
-    val jarLoc = getLoc(downloadLoc)
-    if(jarLoc.nonEmpty) {
-      cassandraClusterLoc = jarLoc.head
+    val cassandraJarLoc = getLoc(downloadLoc)
+    cassandraConnectorJarLoc =
+      getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", downloadLoc)
+    if(cassandraJarLoc.nonEmpty && cassandraConnectorJarLoc != null) {
+      cassandraClusterLoc = cassandraJarLoc.head
     } else {
       ("curl -OL http://www-us.apache.org/dist/cassandra/" +
           s"2.1.21/apache-cassandra-2.1.21-bin.tar.gz").!!
+      ("curl -OL https://repo1.maven.org/maven2/com/datastax/spark/" +
+          "spark-cassandra-connector_2.11/2.0.7/" +
+          "spark-cassandra-connector_2.11-2.0.7.jar").!!
       val jarLoc = getUserAppJarLocation("apache-cassandra-2.1.21-bin.tar.gz", currDir)
+      val connectorJarLoc =
+        getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", currDir)
       ("tar xvf " + jarLoc).!!
-      var loc = getLoc(currDir).head
-      s"mv $loc $downloadLoc".!!
+      val loc = getLoc(currDir).head
+      if (downloadLoc.nonEmpty) {
+        s"rm -rf $downloadLoc/*"
+      }
+      s"cp -r $loc $downloadLoc".!!
+      s"mv $connectorJarLoc $downloadLoc".!!
       cassandraClusterLoc = s"$downloadLoc/apache-cassandra-2.1.21"
+      cassandraConnectorJarLoc = s"$downloadLoc/spark-cassandra-connector_2.11-2.0.7.jar"
     }
+    logInfo("CassandraClusterLocation : " + cassandraClusterLoc +
+        " CassandraConnectorJarLoc : " + cassandraConnectorJarLoc)
     (cassandraClusterLoc + "/bin/cassandra").!!
     logInfo("Cassandra cluster started")
   }
@@ -124,13 +152,13 @@ class CassandraSnappyDUnitTest(val s: String)
         import scala.collection.JavaConverters._
         for (file1: File <- files.asScala) {
           if (!file1.getAbsolutePath.contains("/work/") ||
-              !file1.getAbsolutePath.contains("/scala-2.10/")) {
+              !file1.getAbsolutePath.contains("/scala-2.11/")) {
             userAppJarPath = file1.getAbsolutePath
           }
         }
       }
       catch {
-        case e: Exception =>
+        case _: Exception =>
           logInfo("Unable to find " + jarName + " jar at " + jarPath + " location.")
       }
       userAppJarPath
@@ -157,13 +185,29 @@ class CassandraSnappyDUnitTest(val s: String)
     }
   }
 
+  def getCount(rs: ResultSet): Int = {
+    var count = 0
+    if (rs ne null) {
+      while (rs.next()) {
+        count += 1
+      }
+      rs.close()
+    }
+    count
+  }
+
   def testDeployPackageWithCassandra(): Unit = {
+    (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
+    snap_2772BugTest_deployPkg_createExternalTable()
+    snap_2772BugTest_deployJar_createExternalTable()
+    snap_2772BugTest_deployJar_snappyJob()
+    snap_2772BugTest_deployPkg_snappyJob()
     snappyJobTest()
     externalTableCreateTest()
   }
 
   def snappyJobTest(): Unit = {
-    (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
+    logInfo("Running snappyJobTest")
     submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
       "--packages com.datastax.spark:spark-cassandra-connector_2.11:2.4.1" +
           " --conf spark.cassandra.connection.host=localhost")
@@ -171,18 +215,168 @@ class CassandraSnappyDUnitTest(val s: String)
   }
 
   def externalTableCreateTest(): Unit = {
-    (cassandraClusterLoc + s"/bin/cqlsh -f $scriptPath/cassandra_script1").!!
-    logInfo("deploy package and create external table from cassandra table")
+    logInfo("Running externalTableCreateTest")
     SnappyShell("CreateExternalTable",
       Seq(s"connect client 'localhost:$netPort';",
-        "deploy package cassandraJar 'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'" +
-            s" path '$userHome/.ivy2';",
+        "deploy package cassandraJar 'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7';",
         "drop table if exists customer2;",
         "create external table customer2 using org.apache.spark.sql.cassandra" +
             " options (table 'customer', keyspace 'test'," +
             " spark.cassandra.input.fetch.size_in_rows '200000'," +
             " spark.cassandra.read.timeout_ms '10000');",
         "select * from customer2;",
+        "undeploy cassandraJar;",
         "exit;"))
+  }
+
+  def snap_2772BugTest_deployPkg_createExternalTable(): Unit = {
+    logInfo("Running snap_2772BugTest_deployPkg_createExternalTable")
+    val user1Conn = getConnection(netPort)
+    val stmt1 = user1Conn.createStatement()
+    stmt1.execute("deploy package cassandraJar " +
+        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+    stmt1.execute("drop table if exists customer2")
+    stmt1.execute("create external table customer2 using org.apache.spark.sql.cassandra options" +
+        " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
+        " spark.cassandra.read.timeout_ms '10000')")
+    stmt1.execute("select * from customer2")
+    assert(getCount(stmt1.getResultSet) == 3)
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+
+    stmt1.execute("undeploy cassandrajar")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+
+    stmt1.execute("drop table if exists customer2")
+    try {
+      stmt1.execute("create external table customer2 using org.apache.spark.sql.cassandra options" +
+          " (table 'customer', keyspace 'test', " +
+          "spark.cassandra.input.fetch.size_in_rows '200000'," +
+          " spark.cassandra.read.timeout_ms '10000')")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case sqle: SQLException if (sqle.getSQLState == "42000") &&
+          sqle.getMessage.contains("Failed to find " +
+              "data source: org.apache.spark.sql.cassandra") => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
+    stmt1.execute("deploy package cassandraJar " +
+        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+    stmt1.execute("deploy package GoogleGSONAndAvro " +
+        "'com.google.code.gson:gson:2.8.5,com.databricks:spark-avro_2.11:4.0.0'")
+    stmt1.execute("deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        " repos 'http://clojars.org/repo/'")
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 3)
+
+    stmt1.execute("undeploy mssql")
+    stmt1.execute("undeploy cassandrajar")
+    stmt1.execute("undeploy googlegsonandavro")
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+
+    val jarPath = s"$snappyProductDir/jars/hadoop-client-2.7.7.jar"
+    stmt1.execute(s"""deploy jar avro-v_1.0 '$jarPath'""")
+    stmt1.execute("list jars")
+    assert(getCount(stmt1.getResultSet) == 1)
+    stmt1.execute("undeploy  avro-v_1.0 ")
+    stmt1.execute("list jars")
+    assert(getCount(stmt1.getResultSet) == 0)
+  }
+  
+  def snap_2772BugTest_deployJar_createExternalTable(): Unit = {
+    logInfo("Running snap_2772BugTest_deployJar_createExternalTable")
+    val user1Conn = getConnection(netPort)
+    val stmt1 = user1Conn.createStatement()
+    stmt1.execute(s"deploy jar cassJar '$cassandraConnectorJarLoc'")
+    stmt1.execute("drop table if exists customer3")
+    stmt1.execute("create external table customer3 using org.apache.spark.sql.cassandra options" +
+        " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
+        " spark.cassandra.read.timeout_ms '10000')")
+    stmt1.execute("select * from customer3")
+    assert(getCount(stmt1.getResultSet) == 3)
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+
+    stmt1.execute("undeploy cassJar")
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+
+    stmt1.execute("drop table if exists customer3")
+    try {
+      stmt1.execute("create external table customer3 using org.apache.spark.sql.cassandra options" +
+          " (table 'customer', keyspace 'test', " +
+          "spark.cassandra.input.fetch.size_in_rows '200000'," +
+          " spark.cassandra.read.timeout_ms '10000')")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case sqle: SQLException if (sqle.getSQLState == "42000") &&
+          sqle.getMessage.contains("Failed to find " +
+              "data source: org.apache.spark.sql.cassandra") => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
+  }
+
+  def snap_2772BugTest_deployJar_snappyJob(): Unit = {
+    logInfo("Running snap_2772BugTest_deployJar_snappyJob")
+    val user1Conn = getConnection(netPort)
+    val stmt1 = user1Conn.createStatement()
+    stmt1.execute(s"deploy jar cassJar '$cassandraConnectorJarLoc'")
+    stmt1.execute("drop table if exists customer")
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
+          "--conf spark.cassandra.connection.host=localhost")
+    stmt1.execute("select * from customer")
+    assert(getCount(stmt1.getResultSet) == 3)
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+
+    stmt1.execute("undeploy cassJar")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+
+    stmt1.execute("drop table if exists customer")
+    try {
+      submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
+        "--conf spark.cassandra.connection.host=localhost")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case e: Exception if e.getMessage.contains("Job failed with result:") => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
+  }
+
+  def snap_2772BugTest_deployPkg_snappyJob(): Unit = {
+    logInfo("Running snap_2772BugTest_deployPkg_snappyJob")
+    val user1Conn = getConnection(netPort)
+    val stmt1 = user1Conn.createStatement()
+    stmt1.execute("deploy package cassandraJar " +
+        "'com.datastax.spark:spark-cassandra-connector_2.11:2.0.7'")
+    stmt1.execute("drop table if exists customer")
+    submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
+      "--conf spark.cassandra.connection.host=localhost")
+    stmt1.execute("select * from customer")
+    assert(getCount(stmt1.getResultSet) == 3)
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+    stmt1.execute("undeploy cassandraJar")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+    stmt1.execute("drop table if exists customer")
+    try {
+      submitAndWaitForCompletion("io.snappydata.cluster.jobs.CassandraSnappyConnectionJob" ,
+        "--conf spark.cassandra.connection.host=localhost")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case e: Exception if e.getMessage.contains("Job failed with result:") => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
   }
 }

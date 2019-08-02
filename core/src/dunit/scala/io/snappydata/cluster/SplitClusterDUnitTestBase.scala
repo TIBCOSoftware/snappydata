@@ -26,16 +26,14 @@ import scala.collection.mutable.ArrayBuffer
 import scala.language.postfixOps
 import scala.util.Random
 import scala.util.control.NonFatal
-
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property.PlanCaching
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import io.snappydata.test.util.TestException
 import io.snappydata.util.TestUtils
-import io.snappydata.{ColumnUpdateDeleteTests, Constant, SnappyFunSuite}
+import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Constant, SnappyFunSuite}
 import org.junit.Assert
-
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.collection.{Utils, WrappedInternalRow}
 import org.apache.spark.sql.store.{MetadataTest, StoreUtils}
@@ -198,6 +196,31 @@ trait SplitClusterDUnitTestBase extends Logging {
   def testTableFormChanges(): Unit = {
     doTestTableFormChanges(skewNetworkServers)
   }
+
+  def testConcurrentOpsOnColumnTables(): Unit = {
+    val testObject = this.testObject
+    val netPort = this.locatorClientPort
+    // check update/delete in the connector mode
+    vm3.invoke(new SerializableRunnable() {
+      override def run(): Unit = {
+        val snc = testObject.getSnappyContextForConnector(netPort)
+        val session = snc.snappySession
+        ConcurrentOpsTests.testSimpleLockInsert(session)
+        ConcurrentOpsTests.testSimpleLockUpdate(session)
+        ConcurrentOpsTests.testSimpleLockDeleteFrom(session)
+        ConcurrentOpsTests.testSimpleLockPutInto(session)
+
+        ConcurrentOpsTests.testConcurrentUpdate(session)
+        ConcurrentOpsTests.testConcurrentPutInto(session)
+        ConcurrentOpsTests.testConcurrentDelete(session)
+        ConcurrentOpsTests.testConcurrentPutIntoUpdate(session)
+        ConcurrentOpsTests.testAllOpsConcurrent(session)
+        ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(session)
+        ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(session)
+      }
+    })
+  }
+
 
   def testUpdateDeleteOnColumnTables(): Unit = {
     val testObject = this.testObject
@@ -370,6 +393,7 @@ trait SplitClusterDUnitTestObject extends Logging {
 //      val connectionURL = "jdbc:snappydata://localhost:" + locatorClientPort + "/"
       val connectionURL = s"localhost:$locatorClientPort"
       logInfo(s"Starting spark job using spark://$hostName:7077, connectionURL=$connectionURL")
+
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
@@ -423,7 +447,7 @@ trait SplitClusterDUnitTestObject extends Logging {
       case ThinClientConnectorMode(_, _) =>
         // test index create op
         if ("row".equalsIgnoreCase(tableType)) {
-          snc.createIndex("tableName" + "_index", tableName, Map("COL1" -> None),
+          snc.createIndex("tableName" + "_index", tableName, Seq("COL1" -> None),
             Map.empty[String, String])
         }
       case _ =>

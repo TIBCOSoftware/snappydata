@@ -52,7 +52,6 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
   override def prettyName: String = "current_user"
 }
 
-
 case class LdapGroupsOfCurrentUser() extends LeafExpression
     with CodegenFallback {
   override def foldable: Boolean = true
@@ -68,7 +67,7 @@ case class LdapGroupsOfCurrentUser() extends LeafExpression
 
     owner = IdUtil.getUserAuthorizationId(
       if (owner.isEmpty) Constant.DEFAULT_SCHEMA
-      else snappySession.sessionState.catalog.formatName(owner))
+      else snappySession.sessionCatalog.formatName(owner))
 
     val array = ExternalStoreUtils.getLdapGroupsForUser(owner).map(UTF8String.fromString)
     ArrayData.toArrayData(array)

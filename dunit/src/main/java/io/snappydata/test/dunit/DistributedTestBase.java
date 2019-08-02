@@ -122,6 +122,8 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
 
     public static void setUp() {
       // nothing; actual setup done in static initializer
+      // May be just use this to set certain system properties in tests, like below.
+      System.setProperty("gemfire.DISALLOW_RESERVE_SPACE", "true");
     }
 
     public static String getBaseDir() {
