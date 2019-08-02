@@ -17,7 +17,6 @@
 package org.apache.spark.sql
 
 import java.util.function.BiConsumer
-import javax.xml.bind.DatatypeConverter
 
 import scala.collection.mutable
 import scala.language.implicitConversions
@@ -228,10 +227,8 @@ class SnappyParser(session: SnappySession)
     stringLiteral ~> ((s: String) => newTokenizedLiteral(UTF8String.fromString(s), StringType)) |
     numericLiteral ~> ((s: String) => toNumericLiteral(s)) |
     booleanLiteral ~> ((b: Boolean) => newTokenizedLiteral(b, BooleanType)) |
-    NULL ~> (() => Literal(null, NullType)) | // no tokenization for nulls
-    (ch('X') | ch('x')) ~ ws ~ stringLiteral ~> ((s: String) =>
-      newTokenizedLiteral(DatatypeConverter.parseHexBinary(
-        if ((s.length & 0x1) == 1) "0" + s else s), BinaryType))
+    hexLiteral ~> ((b: Array[Byte]) => newTokenizedLiteral(b, BinaryType)) |
+    NULL ~> (() => Literal(null, NullType)) // no tokenization for nulls
   }
 
   protected final def paramLiteralQuestionMark: Rule1[Expression] = rule {

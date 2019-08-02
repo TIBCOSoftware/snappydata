@@ -18,10 +18,11 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+
 import scala.collection.JavaConverters._
-
 import io.snappydata.SnappyTableStatsProviderService
-
+import kafka.client.ClientUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
@@ -374,28 +375,17 @@ abstract case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String],
-      referentialAction: String): Unit = {
+      isAddColumn: Boolean, column: StructField, extensions: String): Unit = {
     val conn = connFactory()
     try {
       val columnName = JdbcExtendedUtils.toUpperCase(column.name)
       val sql = if (isAddColumn) {
-        val defaultColumnValue = defaultValue match {
-          case Some(v) =>
-            val defaultString = column.dataType match {
-              case StringType | DateType | TimestampType => s" default '$v'"
-              case _ => s" default $v"
-            }
-            defaultString
-          case None => ""
-        }
-
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
            | add column "$columnName"
-           |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
+           |  ${getDataType(column)}$nullable $extensions""".stripMargin
       } else {
-        s"""alter table ${quotedName(table)} drop column "$columnName" $referentialAction"""
+        s"""alter table ${quotedName(table)} drop column "$columnName" $extensions"""
       }
       if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -417,5 +407,26 @@ abstract case class JDBCMutableRelation(
       conn.commit()
       conn.close()
     }
+  }
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case mutable: JDBCMutableRelation => {
+        (this eq mutable) || (
+          hashCode() == mutable.hashCode()
+            && mutable.schemaName.equalsIgnoreCase(schemaName)
+            && mutable.tableName.equalsIgnoreCase(tableName))
+      }
+      case _ => false
+    }
+  }
+
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[JDBCMutableRelation]
+  }
+
+  override def hashCode(): Int = {
+    ClientResolverUtils.addIntToHash(JdbcExtendedUtils.toUpperCase(schemaName).hashCode,
+      JdbcExtendedUtils.toUpperCase(tableName).hashCode)
   }
 }

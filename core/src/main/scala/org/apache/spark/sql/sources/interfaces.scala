@@ -289,12 +289,11 @@ trait AlterableRelation {
    * @param tableIdent  Table identifier
    * @param isAddColumn True if column is to be added else it is to be dropped
    * @param column      Column to be added or dropped
-   * @param defaultValue Default value in case a value is not provided while inserting
-   * @param referentialAction Referential Action (cascade or restrict or empty)
+   * @param extensions  Any additional clauses accepted by underlying table storage
+   *                    like DEFAULT value or column constraints
    */
   def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String],
-      referentialAction: String): Unit
+      isAddColumn: Boolean, column: StructField, extensions: String): Unit
 }
 
 trait RowLevelSecurityRelation {

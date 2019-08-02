@@ -126,6 +126,7 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void addNewNode() {
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+    if(snappyPath.isEmpty()) snappyPath = productConfDirPath;
     Boolean isNewNodeFirst = SnappyCDCPrms.getIsNewNodeFirst();
     String nodeType = SnappyCDCPrms.getNodeType();
     String dirPath = SnappyCDCPrms.getDataLocation();
@@ -138,7 +139,8 @@ public class SnappyCDCTest extends SnappyTest {
     String nodeName = String.valueOf(hostList.get(0));
 
     if (nodeType.equalsIgnoreCase("servers"))
-      nodeInfo = nodeName + " -dir=" + dirPath + "/" + nodeName + " -heap-size=5g -memory-size=5g ";
+      nodeInfo = nodeName + " -dir=" + dirPath + File.separator + nodeName + " -heap-size=5g " +
+          "-memory-size=5g ";
     else
       nodeInfo = nodeName + " -dir=" + dirPath + "/lead";
 
