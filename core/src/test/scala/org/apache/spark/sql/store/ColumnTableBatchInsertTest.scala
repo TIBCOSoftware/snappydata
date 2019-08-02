@@ -16,17 +16,13 @@
  */
 package org.apache.spark.sql.store
 
-import java.util.concurrent.atomic.AtomicInteger
+import io.snappydata.core.{Data, TestData}
+import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
+import org.apache.spark.sql._
+import org.apache.spark.{Logging, SparkContext}
+import org.scalatest.{Assertions, BeforeAndAfter}
 
 import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
-import io.snappydata.core.{Data, TestData}
-import org.scalatest.{Assertions, BeforeAndAfter}
-import org.apache.spark.scheduler.{SparkListener, SparkListenerJobEnd, SparkListenerJobStart}
-import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
-import org.apache.spark.{Logging, SparkContext}
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
@@ -68,6 +64,87 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     assert(r2.length == 5)
     logInfo("Successful")
   }
+
+  test("test the overwrite table after reading itself") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+    snc.sql(s"CREATE TABLE $tableName2(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING row " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tableName)
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    dataDF.write.insertInto(tableName2)
+    val rowresult = snc.sql("SELECT * FROM " + tableName2)
+
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    // SQL overwrites.
+    try {
+      snc.sql(s"insert overwrite $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      snc.sql(s"insert into $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+  }
+
 
   test("test the shadow table creation heavy insert") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
