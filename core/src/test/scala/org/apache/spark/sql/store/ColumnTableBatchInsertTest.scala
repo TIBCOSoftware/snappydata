@@ -69,7 +69,6 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
   test("test the overwrite table after reading itself") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
-    val rowTable = "rowTable"
 
     snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
       "USING column " +
@@ -77,7 +76,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       "(" +
       "PARTITION_BY 'Col1'," +
       "BUCKETS '1')")
-    snc.sql(s"CREATE TABLE $rowTable(Col1 INT ,Col2 INT, Col3 INT) " +
+    snc.sql(s"CREATE TABLE $tableName2(Col1 INT ,Col2 INT, Col3 INT) " +
       "USING row " +
       "options " +
       "(" +
@@ -108,11 +107,11 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       case t: Throwable => fail("Unexpected Exception ", t)
     }
 
-    dataDF.write.insertInto(rowTable)
-    val rowresult = snc.sql("SELECT * FROM " + rowTable)
+    dataDF.write.insertInto(tableName2)
+    val rowresult = snc.sql("SELECT * FROM " + tableName2)
 
     try {
-      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(rowTable)
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
       fail("Expected AnalysisException while overwriting table which is also being read from")
     }
     catch {
@@ -120,7 +119,7 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
       case t: Throwable => fail("Unexpected Exception ", t)
     }
     try {
-      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(rowTable)
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
       fail("Expected AnalysisException while overwriting table which is also being read from")
     }
     catch {
