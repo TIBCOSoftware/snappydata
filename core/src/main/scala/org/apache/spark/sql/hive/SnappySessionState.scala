@@ -689,7 +689,7 @@ class SnappySessionState(val snappySession: SnappySession)
       functionResourceLoader,
       functionRegistry,
       conf,
-      newHadoopConf(),
+      catalog.hadoopConf,
       catalog)
   }
 

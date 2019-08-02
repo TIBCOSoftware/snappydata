@@ -69,18 +69,26 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
 
   test("test the overwrite table after reading itself") {
     snc.sql(s"DROP TABLE IF EXISTS $tableName")
-    val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+    val rowTable = "rowTable"
+
+    snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
       "USING column " +
       "options " +
       "(" +
       "PARTITION_BY 'Col1'," +
       "BUCKETS '1')")
+    snc.sql(s"CREATE TABLE $rowTable(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING row " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+
     val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
     val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
     val dataDF = snc.createDataFrame(rdd)
 
     dataDF.write.insertInto(tableName)
-
     val result = snc.sql("SELECT * FROM " + tableName)
 
     try {
@@ -97,6 +105,44 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     }
     catch {
       case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    dataDF.write.insertInto(rowTable)
+    val rowresult = snc.sql("SELECT * FROM " + rowTable)
+
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(rowTable)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(rowTable)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    // SQL overwrites.
+    try {
+      snc.sql(s"insert overwrite $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      snc.sql(s"insert into $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
       case t: Throwable => fail("Unexpected Exception ", t)
     }
 

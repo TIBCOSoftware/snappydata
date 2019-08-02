@@ -18,10 +18,11 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+
 import scala.collection.JavaConverters._
-
 import io.snappydata.SnappyTableStatsProviderService
-
+import kafka.client.ClientUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
@@ -412,13 +413,12 @@ abstract case class JDBCMutableRelation(
     that match {
       case mutable: JDBCMutableRelation => {
         (this eq mutable) || (
-          mutable.canEqual(this)
-            && hashCode() == mutable.hashCode()
+          hashCode() == mutable.hashCode()
             && mutable.schemaName.equalsIgnoreCase(schemaName)
-            && mutable.tableName .equalsIgnoreCase(tableName))
+            && mutable.tableName.equalsIgnoreCase(tableName))
       }
       case _ => false
-      }
+    }
   }
 
   override def canEqual(that: Any): Boolean = {
@@ -426,6 +426,7 @@ abstract case class JDBCMutableRelation(
   }
 
   override def hashCode(): Int = {
-    schemaName.toUpperCase.concat(tableName.toUpperCase).hashCode
+    ClientResolverUtils.addIntToHash(JdbcExtendedUtils.toUpperCase(schemaName).hashCode,
+      JdbcExtendedUtils.toUpperCase(tableName).hashCode)
   }
 }
