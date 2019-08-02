@@ -66,6 +66,13 @@ class SnappyConf(@transient val session: SnappySession)
    */
   @volatile private[this] var dynamicShufflePartitions: Int = _
 
+  /**
+   * Set if a task implicitly sets the "spark.task.cpus" property based
+   * on executorCores/physicalCores. This will be -1 if set explicitly
+   * on the session so that it doesn't get reset at the end of task execution.
+   */
+  @volatile private[this] var dynamicCpusPerTask: Int = 1
+
   SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
     case Some(d) if (session ne null) && super.numShufflePartitions == d =>
       dynamicShufflePartitions = coreCountForShuffle
@@ -86,7 +93,7 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   private def coreCountForShuffle: Int = {
-    val count = SnappyContext.totalCoreCount.get()
+    val count = SnappyContext.totalPhysicalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
     else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
   }
@@ -218,9 +225,11 @@ class SnappyConf(@transient val session: SnappySession)
               s"should be >= 1 but was $intVal")
         }
         session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, intStr)
+        dynamicCpusPerTask = -1
         key
       case _ =>
         session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, null)
+        dynamicCpusPerTask = 1
         key
     }
 
@@ -245,7 +254,7 @@ class SnappyConf(@transient val session: SnappySession)
 
   private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
 
-  private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
+  private[sql] def refreshDefaults(): Unit = synchronized {
     if (session ne null) {
       if (executionShufflePartitions != -1) {
         executionShufflePartitions = 0
@@ -253,12 +262,25 @@ class SnappyConf(@transient val session: SnappySession)
       if (dynamicShufflePartitions != -1) {
         dynamicShufflePartitions = coreCountForShuffle
       }
+      if (dynamicCpusPerTask != -1) {
+        unsetConf(Constant.CPUS_PER_TASK_PROP)
+      }
     }
   }
 
   private[sql] def setExecutionShufflePartitions(n: Int): Unit = synchronized {
     if (executionShufflePartitions != -1 && session != null) {
       executionShufflePartitions = math.max(n, executionShufflePartitions)
+      logDebug(s"Set execution shuffle partitions to $executionShufflePartitions")
+    }
+  }
+
+  private[sql] def setDynamicCpusPerTask(): Unit = synchronized {
+    if (dynamicCpusPerTask != -1) {
+      dynamicCpusPerTask = math.max(1, math.ceil(session.sparkContext.defaultParallelism.toDouble /
+          SnappyContext.totalPhysicalCoreCount.get().toDouble).toInt)
+      setConfString(Constant.CPUS_PER_TASK_PROP, dynamicCpusPerTask.toString)
+      logDebug(s"Set dynamic ${Constant.CPUS_PER_TASK_PROP} to $dynamicCpusPerTask")
     }
   }
 

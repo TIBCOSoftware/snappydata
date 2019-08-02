@@ -854,7 +854,7 @@ object SnappyContext extends Logging {
 
   private[this] val storeToBlockMap: ConcurrentHashMap[String, BlockAndExecutorId] =
     new ConcurrentHashMap[String, BlockAndExecutorId](16, 0.7f, 1)
-  private[spark] val totalCoreCount = new AtomicInteger(0)
+  private[spark] val totalPhysicalCoreCount = new AtomicInteger(0)
 
   def getBlockId(executorId: String): Option[BlockAndExecutorId] = {
     storeToBlockMap.get(executorId) match {
@@ -872,14 +872,14 @@ object SnappyContext extends Logging {
     storeToBlockMap.put(executorId, id) match {
       case null =>
         if (id.blockId == null || !id.blockId.isDriver) {
-          totalCoreCount.addAndGet(id.numProcessors)
+          totalPhysicalCoreCount.addAndGet(id.numProcessors)
         }
       case oldId =>
         if (id.blockId == null || !id.blockId.isDriver) {
-          totalCoreCount.addAndGet(id.numProcessors)
+          totalPhysicalCoreCount.addAndGet(id.numProcessors)
         }
         if (oldId.blockId == null || !oldId.blockId.isDriver) {
-          totalCoreCount.addAndGet(-oldId.numProcessors)
+          totalPhysicalCoreCount.addAndGet(-oldId.numProcessors)
         }
     }
     SnappySession.clearAllCache(onlyQueryPlanCache = true)
@@ -891,7 +891,7 @@ object SnappyContext extends Logging {
       case null => None
       case id =>
         if (id.blockId == null || !id.blockId.isDriver) {
-          totalCoreCount.addAndGet(-id.numProcessors)
+          totalPhysicalCoreCount.addAndGet(-id.numProcessors)
         }
         SnappySession.clearAllCache(onlyQueryPlanCache = true)
         Some(id)
@@ -908,7 +908,7 @@ object SnappyContext extends Logging {
 
   private[spark] def clearBlockIds(): Unit = {
     storeToBlockMap.clear()
-    totalCoreCount.set(0)
+    totalPhysicalCoreCount.set(0)
     SnappySession.clearAllCache()
   }
 
@@ -941,7 +941,7 @@ object SnappyContext extends Logging {
         SparkEnv.get.blockManager.blockManagerId,
         numCores, numCores)
       storeToBlockMap.put(cache.getMyId.canonicalString(), blockId)
-      totalCoreCount.set(blockId.numProcessors)
+      totalPhysicalCoreCount.set(blockId.numProcessors)
       SnappySession.clearAllCache(onlyQueryPlanCache = true)
     }
   }
