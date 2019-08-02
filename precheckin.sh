@@ -34,21 +34,50 @@ read -p "Enter your email Id for build status notification : " useremail
 echo ""
 
 read -p "Snapydata repo branch (master - jenkins-ci): " snappydataBranch
+if [ -z "$snappydataBranch" ]
+then
+      snappydataBranch=jenkins-ci
+fi
 echo ""
 
 read -p "Spark repo branch (master - snappy/branch-2.1): " sparkBranch
+if [ -z "$sparkBranch" ]
+then
+      sparkBranch=snappy/branch-2.1
+fi
 echo ""
 
 read -p "Store repo branch (master - snappy/master): " storeBranch
+if [ -z "$storeBranch" ]
+then
+      storeBranch=snappy/master
+fi
 echo ""
 
-read -p "AQP repo branch (master - */master): " aqpBranch
+#Skip the AQP option if its OSS build.
+if [ "$version" = "$enterprise" ]
+then
+  read -p "AQP repo branch (master - */master): " aqpBranch
+  if [ -z "$aqpBranch" ]
+  then
+        aqpBranch=*/master
+  fi
+fi
 echo ""
 
 read -p "JobServer repo branch (master - snappydata): " JobServerBranch
+if [ -z "$JobServerBranch" ]
+then
+      JobServerBranch=snappydata
+fi
 echo ""
 
-read -p "precheckin target (e.g precheckin -Pstore -PSpark): " target
+
+read -p "precheckin target. you can pass additional targets like -Pstore -PSpark (default - precheckin): " target
+if [ -z "$target" ]
+then
+      target=clean
+fi
 echo ""
 
 # Sending a crumb request

@@ -1,9 +1,9 @@
 node {
     try {
 
-        emailext attachLog: true, body: '$PROJECT_NAME - Build Reference # $BUILD_NUMBER. Build logs can be find at /var/logs/jenkins/log/oss/$BUILD_NUMBER ',
-		    compressLog: true, recipientProviders: [developers()],
-		    subject: '$PROJECT_NAME - Build Ref. Number : $BUILD_NUMBER - Status : Started! - User : $username', to: '$useremail'
+        emailext attachLog: true, body: "Build : # $BUILD_NUMBER. \n\n Log location : /var/logs/jenkins/log/oss/$BUILD_NUMBER \n Scheduled By : $username \n Brach Information : snappydata - ${snappybranch}, Spark - ${sparkbranch}, spark-jobserver - ${sparkjobserverbranch}, snappy-store - ${snappystorebranch} ",
+		compressLog: true, recipientProviders: [developers()],
+		subject: '[Jenkins] Build # $BUILD_NUMBER is Started', to: '$useremail'
 
 		stage('Checkout') {
 			checkout([
@@ -90,9 +90,9 @@ node {
 			fileOperations([folderCopyOperation(destinationFolderPath: '/var/log/jenkins/log/oss/$BUILD_NUMBER', sourceFolderPath: '/var/lib/jenkins/workspace/tibco-computedb-ci/build-artifacts')])
 		}
     } finally {
-	    emailext attachLog: true, body: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS: \n Check console output at $BUILD_URL to view the results.',
-		  compressLog: true, recipientProviders: [developers()],
-		  subject: '$PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: '$useremail'
+	    emailext attachLog: true, body: ' Project Name : $PROJECT_NAME \n Build : # $BUILD_NUMBER. \n Log location : /var/logs/jenkins/log/oss/$BUILD_NUMBER \n Scheduled By : $username      \n Brach Information : snappydata - ${snappybranch}, Spark - ${sparkbranch}, spark-jobserver - ${sparkjobserverbranch}, snappy-store - ${snappystorebranch}  \n Check console output at $BUILD_URL to view the results.',
+	    compressLog: true, recipientProviders: [developers()],
+		subject: '[Jenkins] $PROJECT_NAME - Build # $BUILD_NUMBER - $BUILD_STATUS!', to: '$useremail'
     }
 
 }
