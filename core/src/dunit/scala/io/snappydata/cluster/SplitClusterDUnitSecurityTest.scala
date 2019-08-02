@@ -197,6 +197,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     }
   }
 
+  override def testConcurrentOpsOnColumnTables(): Unit = {}
+
   override def testColumnTableCreation(): Unit = {}
 
   override def testRowTableCreation(): Unit = {}
