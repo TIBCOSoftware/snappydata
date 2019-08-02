@@ -65,7 +65,7 @@ class OpLogFormatRelation(
     val versionMap = RecoveryService.getVersionMap()
     val tableColIdsMap = RecoveryService.getTableColumnIds()
 
-    (new OpLogRdd(snappySession, fqtn, tableName, schema,
+    (new OpLogRdd(snappySession, fqtn.toUpperCase(), tableName.toUpperCase(), schema,
       provider, projection, filters, (filters eq null) || filters.length == 0,
       prunePartitions, tableSchemas, versionMap, tableColIdsMap), projection)
   }
