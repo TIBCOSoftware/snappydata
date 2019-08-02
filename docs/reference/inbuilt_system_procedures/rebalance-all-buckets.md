@@ -23,5 +23,7 @@ For efficiency, when starting multiple members, trigger the rebalance a single t
 ```pre
 snappy> call sys.rebalance_all_buckets();
 ```
+**Also see:**
 
+*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
 
