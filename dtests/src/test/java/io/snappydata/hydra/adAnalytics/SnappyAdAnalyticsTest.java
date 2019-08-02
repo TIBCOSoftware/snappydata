@@ -417,13 +417,13 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         String aggType = SnappySchemaPrms.getAggregateType();
         switch (aggType.toUpperCase()) {
           case "JOIN":
-            query = "select tp.*, pd.language from temp_persoon as tp, persoon_details as pd where pd.id=tp.id";
+            query = "select tp.*,pd.language from temp_person tp,  person_details pd where tp.id=pd.id";
             break;
           case "AVG":
-            query = "select id, avg(age), avg(numChild) from temp_persoon group by id";
+            query = "select id, avg(age) as avg_age, avg(numChild) as avg_numchild from temp_persoon group by id";
             break;
           case "SUM":
-            query = "select id, sum(age), sum(numChild) from temp_persoon group by id";
+            query = "select id, sum(age) as sum_age, sum(numChild) as sum_numchild from temp_persoon group by id";
             break;
           case "COUNT":
             query = "select age, count(*) from temp_persoon group by age";
