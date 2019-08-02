@@ -7,10 +7,12 @@ import hydra.Log;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import io.snappydata.test.util.TestException;
+import org.datanucleus.store.rdbms.query.AbstractRDBMSQueryResult;
 import sql.sqlutil.ResultSetHelper;
 
 import java.io.File;
 import java.sql.*;
+import java.util.ArrayList;
 import java.util.List;
 
 public class hiveMetaStore extends SnappyTest
@@ -29,6 +31,7 @@ public class hiveMetaStore extends SnappyTest
     static String showTblsDefault = "show tables in default";
     static String dropTableStmt = "drop table if exists ";
     static String createDB = "create database ";
+    static String dataPath = "/home/cbhatt/NW_1GB/NW_1GB/";
     static String[] snappyQueries = {
             "SELECT FirstName, LastName FROM default.hive_employees ORDER BY LastName",
             "SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM default.hive_orders WHERE Freight >= 500",
@@ -126,8 +129,8 @@ public class hiveMetaStore extends SnappyTest
             metaStore.snappyConnection.createStatement().execute(dropTableStmt + "app.snappy_regions");
             metaStore.snappyConnection.createStatement().execute(createDB +  "hiveDB");
             metaStore.snappyConnection.createStatement().execute(createHiveTables("hiveDB.hive_regions(RegionID int,RegionDescription string)"));
-            metaStore.snappyConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/regions.csv", "hiveDB.hive_regions"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:////home/cbhatt/north_wind/regions.csv" ));
+            metaStore.snappyConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "regions.csv", "hiveDB.hive_regions"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:///" + dataPath + "regions.csv" ));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_regions", "10", "app.staging_regions"));
             metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery("select * from app.snappy_regions");
             ResultSet rs = metaStore.snappyConnection.createStatement().executeQuery("select * from hiveDB.hive_regions where RegionDescription <> 'RegionDescription'");
@@ -155,27 +158,27 @@ public class hiveMetaStore extends SnappyTest
     public static void HydraTask_CreateTableAndLoadDataFromBeeline() {
         try {
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_regions(RegionID int,RegionDescription string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/regions.csv", "hive_regions"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "regions.csv", "hive_regions"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_categories(CategoryID int,CategoryName string,Description string,Picture string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/categories.csv", "hive_categories"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "categories.csv", "hive_categories"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_shippers(ShipperID int ,CompanyName string ,Phone string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/shippers.csv", "hive_shippers"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "shippers.csv", "hive_shippers"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_employees(EmployeeID int,LastName string,FirstName string,Title string,TitleOfCourtesy string,BirthDate timestamp,HireDate timestamp,Address string,City string,Region string,PostalCode string,Country string,HomePhone string,Extension string,Photo string,Notes string,ReportsTo int,PhotoPath string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/employees.csv", "hive_employees"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "employees.csv", "hive_employees"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_customers(CustomerID string,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/customers.csv", "hive_customers"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "customers.csv", "hive_customers"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_orders(OrderID int,CustomerID string,EmployeeID int,OrderDate timestamp,RequiredDate timestamp,ShippedDate timestamp,ShipVia int,Freight double,ShipName string,ShipAddress string,ShipCity string,ShipRegion string,ShipPostalCode string,ShipCountry string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/orders.csv", "hive_orders"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "orders.csv", "hive_orders"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_order_details(OrderID int,ProductID int,UnitPrice double,Quantity smallint,Discount double)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/order_details.csv", "hive_order_details"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath +  "order_details.csv", "hive_order_details"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_products(ProductID int,ProductName string,SupplierID int,CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint,UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/products.csv", "hive_products"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "products.csv", "hive_products"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_suppliers(SupplierID int,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string,HomePage string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/suppliers.csv", "hive_suppliers"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "suppliers.csv", "hive_suppliers"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_territories(TerritoryID string,TerritoryDescription string,RegionID string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/territories.csv", "hive_territories"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "territories.csv", "hive_territories"));
             metaStore.beelineConnection.createStatement().execute(createHiveTables("hive_employee_territories(EmployeeID int,TerritoryID string)"));
-            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls("/home/cbhatt/north_wind/employee_territories.csv", "hive_employee_territories"));
+            metaStore.beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "employee_territories.csv", "hive_employee_territories"));
         } catch(SQLException se) {
             throw new TestException("Beeline : Exception in creating table and loading data",se);
         }
@@ -183,30 +186,55 @@ public class hiveMetaStore extends SnappyTest
 
     public static void HydraTask_CreateTableAndLoadDataFromSnappy() {
         try {
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:////home/cbhatt/north_wind/regions.csv" ));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:///" + dataPath +  "regions.csv" ));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_regions", "10", "app.staging_regions"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_categories", "file:////home/cbhatt/north_wind/categories.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_categories", "file:///" + dataPath + "categories.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_categories", "10", "app.staging_categories"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_shippers", "file:////home/cbhatt/north_wind/shippers.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_shippers", "file:///" + dataPath + "shippers.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_shippers", "10", "app.staging_shippers"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employees", "file:////home/cbhatt/north_wind/employees.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employees", "file:///" + dataPath + "employees.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_employees", "10", "app.staging_employees"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_customers", "file:////home/cbhatt/north_wind/customers.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_customers", "file:///" + dataPath + "customers.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_customers", "10", "app.staging_customers"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_orders", "file:////home/cbhatt/north_wind/orders.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_orders", "file:///" + dataPath + "orders.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_orders", "10", "app.staging_orders"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_order_details", "file:////home/cbhatt/north_wind/order_details.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_order_details", "file:///" + dataPath + "order_details.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_order_details", "10", "app.staging_order_details"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_products", "file:////home/cbhatt/north_wind/products.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_products", "file:///" + dataPath + "products.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_products", "10", "app.staging_products"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_suppliers", "file:////home/cbhatt/north_wind/suppliers.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_suppliers", "file:///" + dataPath + "suppliers.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_suppliers", "10", "app.staging_suppliers"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_territories", "file:////home/cbhatt/north_wind/territories.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_territories", "file:///" + dataPath + "territories.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_territories", "10", "app.staging_territories"));
-            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employee_territories", "file:////home/cbhatt/north_wind/employee_territories.csv"));
+            metaStore.snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employee_territories", "file:///" + dataPath + "employee_territories.csv"));
             metaStore.snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_employee_territories", "10", "app.staging_employee_territories"));
         } catch (SQLException se) {
             throw new TestException("Snappy : Exception in creating table and loading data");
+        }
+    }
+
+    public static void HydraTask_CreateExternalTblFromBeelineAndPerformOpsFromSnappy() {
+        try {
+            String createExternalTblquery = "create external table if not exists extHiveReg(RegionID int,RegionDescription string) row format delimited fields terminated by ',' location '/user/hive/support'";
+            String snappy = "";
+            String beeLine = "  ";
+            metaStore.snappyConnection.createStatement().execute(setexternalHiveCatalog);
+            metaStore.beelineConnection.createStatement().execute(dropTableStmt + "extHiveReg");
+            metaStore.beelineConnection.createStatement().execute(createExternalTblquery);
+            metaStore.rs = metaStore.beelineConnection.createStatement().executeQuery("select * from extHiveReg where RegionDescription <> 'RegionDescription'");
+            metaStore.snappyRS = metaStore.snappyConnection.createStatement().executeQuery("select * from default.extHiveReg where RegionDescription <> 'RegionDescription'");
+            while(metaStore.snappyRS.next() && metaStore.rs.next()){
+                snappy = metaStore.snappyRS.getString(1) + "," + metaStore.snappyRS.getString(2);
+                beeLine = metaStore.rs.getString(1) + "," + metaStore.rs.getString(2);
+            }
+            //validationRoutine("/ExternalTblDir", metaStore.rs, metaStore.snappyRS, "1");
+            metaStore.snappyConnection.createStatement().execute(dropTableStmt + "default.extHiveReg");
+            if(snappy.equals(beeLine))
+                Log.getLogWriter().info("Creating External Table from Beeline, access it from Snappy and drop the external table from Snappy is successful.");
+            else
+                Log.getLogWriter().info("Creating External Table from Beeline, access it from Snappy and drop the external table from Snappy is  not OK");
+        } catch (SQLException se) {
+            throw new TestException("External Table : Exception in External Table Opertaion", se);
         }
     }
 
