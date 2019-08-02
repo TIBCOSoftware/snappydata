@@ -1,5 +1,5 @@
 INCLUDE $JTESTS/hydraconfig/hydraparams1.inc;
-INCLUDE $JTESTS/hydraconfig/topology_3.inc;
+INCLUDE $JTESTS/hydraconfig/topology_4.inc;
 
 hydra.GemFirePrms-names = gemfire1;
 hydra.ClientPrms-gemfireNames = gemfire1;
