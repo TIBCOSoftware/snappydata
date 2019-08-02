@@ -76,9 +76,6 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     })
   }
 
-  override def removeAddedJar(sc: SparkContext, jarName: String): Unit =
-    sc.removeAddedJar(jarName)
-
   /**
    * Callback to spark Utils to fetch file
    */

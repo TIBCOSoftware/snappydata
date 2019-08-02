@@ -49,6 +49,7 @@ import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
@@ -680,14 +681,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val functionObj = request.getCatalogFunction
       val schema = functionObj.getSchemaName
       checkSchemaPermission(schema, functionObj.getFunctionName, user)
-      externalCatalog.createFunction(schema,
-        ConnectorExternalCatalog.convertToCatalogFunction(functionObj))
+      val catalogFunction = ConnectorExternalCatalog.convertToCatalogFunction(functionObj)
+      externalCatalog.createFunction(schema, catalogFunction)
+      ContextJarUtils.addFunctionArtifacts(catalogFunction, schema)
 
     case snappydataConstants.CATALOG_DROP_FUNCTION =>
       assert(request.getNamesSize == 2, "DROP FUNCTION: unexpected names = " + request.getNames)
       val schema = request.getNames.get(0)
       val function = request.getNames.get(1)
       checkSchemaPermission(schema, function, user)
+      ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema, function, true)
       externalCatalog.dropFunction(schema, function)
 
     case snappydataConstants.CATALOG_RENAME_FUNCTION =>
