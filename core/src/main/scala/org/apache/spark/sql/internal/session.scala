@@ -222,7 +222,21 @@ class SnappyConf(@transient val session: SnappySession)
     case Constant.FILES_MAX_PARTITIONS =>
       value match {
         case _: Some[_] => useDefaultFilesMaxPartitions = false
-        case _ => useDefaultFilesMaxPartitions = true; setDefaultFilesMaxPartitions()
+        case _ =>
+          useDefaultFilesMaxPartitions = true
+          setDefaultFilesMaxPartitions()
+      }
+      key
+
+    case SQLConf.FILES_MAX_PARTITION_BYTES.key =>
+      value match {
+        case _: Some[_] => if (useDefaultFilesMaxPartitions) {
+          unsetConfKey(Constant.FILES_MAX_PARTITIONS, doKeyUpdateActions = false)
+          useDefaultFilesMaxPartitions = false
+        }
+        case _ =>
+          useDefaultFilesMaxPartitions = true
+          setDefaultFilesMaxPartitions(checkMaxBytes = false)
       }
       key
 
@@ -265,13 +279,19 @@ class SnappyConf(@transient val session: SnappySession)
     }
   }
 
-  private def setDefaultFilesMaxPartitions(): Unit = {
+  private def setDefaultFilesMaxPartitions(checkMaxBytes: Boolean = true): Unit = {
     if ((session ne null) && useDefaultFilesMaxPartitions) {
-      setConfString(Constant.FILES_MAX_PARTITIONS, math.min(
-        SnappyContext.totalPhysicalCoreCount.get(),
-        session.sparkContext.defaultParallelism).toString)
-      // would be reset by keyUpdateActions to set it back
-      useDefaultFilesMaxPartitions = true
+      // when checkMaxBytes=true then only set if maxPartitionBytes is not set
+      // else if checkMaxBytes=false (called when maxPartitionBytes is cleared)
+      //   then check for any existing maxPartitions settings
+      if ((checkMaxBytes && !contains(SQLConf.FILES_MAX_PARTITION_BYTES.key)) ||
+          (!checkMaxBytes && !contains(Constant.FILES_MAX_PARTITIONS))) {
+        setConfStringVal(Constant.FILES_MAX_PARTITIONS, math.min(
+          SnappyContext.totalPhysicalCoreCount.get(),
+          session.sparkContext.defaultParallelism).toString, doKeyUpdateActions = false)
+      } else {
+        useDefaultFilesMaxPartitions = false
+      }
     }
   }
 
@@ -286,8 +306,11 @@ class SnappyConf(@transient val session: SnappySession)
 
   def activeSchedulerPool: String = schedulerPool
 
-  override def setConfString(key: String, value: String): Unit = {
-    val rkey = keyUpdateActions(key, Some(value), doSet = true)
+  override def setConfString(key: String, value: String): Unit =
+    setConfStringVal(key, value, doKeyUpdateActions = true)
+
+  private def setConfStringVal(key: String, value: String, doKeyUpdateActions: Boolean): Unit = {
+    val rkey = if (doKeyUpdateActions) keyUpdateActions(key, Some(value), doSet = true) else key
     super.setConfString(rkey, value)
     if (session.enableHiveSupport) hiveConf.setConfString(rkey, value)
   }
@@ -308,8 +331,11 @@ class SnappyConf(@transient val session: SnappySession)
     if (session.enableHiveSupport) hiveConf.setConf(props)
   }
 
-  override def unsetConf(key: String): Unit = {
-    val rkey = keyUpdateActions(key, None, doSet = false)
+  override def unsetConf(key: String): Unit =
+    unsetConfKey(key, doKeyUpdateActions = true)
+
+  private def unsetConfKey(key: String, doKeyUpdateActions: Boolean): Unit = {
+    val rkey = if (doKeyUpdateActions) keyUpdateActions(key, None, doSet = false) else key
     super.unsetConf(rkey)
     if (session.enableHiveSupport) hiveConf.unsetConf(rkey)
   }
