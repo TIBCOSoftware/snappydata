@@ -31,11 +31,11 @@ import com.pivotal.gemfirexd.internal.shared.common.StoredFormatIds
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQLExecute}
 
-import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
 import org.apache.spark.sql.execution.PutIntoValuesColumnTable
+import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
 
@@ -59,18 +59,13 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema)
+  session.setCurrentSchema(schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 
   private[this] val analyzedPlan: LogicalPlan = {
-    var aplan = session.prepareSQL(sql)
-    val questionMarkCounter = session.snappyParser.questionMarkCounter
-    val paramLiterals = new mutable.HashSet[ParamLiteral]()
-    SparkSQLPrepareImpl.allParamLiterals(aplan, paramLiterals)
-    if (paramLiterals.size != questionMarkCounter) {
-      aplan = session.prepareSQL(sql, true)
-    }
+    val aplan = session.prepareSQL(sql)
+//    println(aplan)
     aplan
   }
 
@@ -130,6 +125,7 @@ class SparkSQLPrepareImpl(val sql: String,
         types(index + 2) = sqlType._3
         types(index + 3) = if (paramLiteralsAtPrepare(i).value.asInstanceOf[Boolean]) 1 else 0
       })
+      session.setPreparedParamsTypeInfo(types)
       DataSerializer.writeIntArray(types, hdos)
     } else {
       DataSerializer.writeIntArray(Array[Int](0), hdos)
@@ -183,6 +179,7 @@ object SparkSQLPrepareImpl{
     branches.foreach {
       case (_, QuestionMark(pos)) =>
         addParamLiteral(pos, datatype, nullable, result)
+      case _ =>
     }
     elseValue match {
       case Some(QuestionMark(pos)) =>
@@ -260,16 +257,5 @@ object SparkSQLPrepareImpl{
       case p@PredicateSubquery(query, x, y, z) => p.copy(handleSubQuery(query, f), x, y, z)
       case s@ScalarSubquery(query, x, y) => s.copy(handleSubQuery(query, f), x, y)
     }
-  }
-}
-
-object QuestionMark {
-  def unapply(p: ParamLiteral): Option[Int] = {
-    if (p.pos == 0 && p.dataType == NullType) {
-      p.value match {
-        case r: Row => Some(r.getInt(0))
-        case _ => None
-      }
-    } else None
   }
 }

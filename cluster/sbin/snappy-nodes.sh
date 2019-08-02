@@ -138,7 +138,7 @@ else
 fi
 
 MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
-
+isStart=
 
 function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
@@ -243,6 +243,10 @@ function execute() {
       -*) postArgs="$postArgs $arg"
     esac
   done
+  #copy the conf files into other node before starting the launch processs
+  if [[ -n "$isStart" && $SKIP_CONF_COPY -eq 0 ]]; then
+    copyConf "$@"    
+  fi
   if [ "$host" != "localhost" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
@@ -337,13 +341,44 @@ function getNumLeadsOnHost() {
   fi
   echo $numLeadsOnHost
 }
+# function for copying all the configuration files into the other nodes/members of the cluster
+function copyConf() {
+  currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+  currentNodeHostName=$(uname -n)
+
+  if [[ "$host" != "$currentNodeIpAddr" && "$host" != "localhost" && "$host" != $currentNodeHostName ]] ; then
+  #loop to get the all the files avaliable in Conf directory
+    for entry in "${SPARK_CONF_DIR}"/*; do
+      if [ -f "$entry" ];then
+        #${file%.*} to get the filename without the extension and ${file##*.} to get the extension alone
+	fileName=$(basename $entry)
+ 	template=".template"
+	#check the extension, interested in files those doesn't have template extension
+	if [[ ! "$fileName" = @(*.template) ]]; then	       	
+	  if ! ssh $host "test -e $entry"; then #"File does not exist."	  
+            scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
+	  else
+	      backupDir="backup"
+	      if [[ ! -z $(ssh $host "cat $entry" | diff - "$entry") ]] ; then
+		backupFileName=${fileName}_${START_ALL_TIMESTAMP}
+		echo "INFO: Copied $filename from this host to $host. Moved the original $filename on $host to $backupFileName."
+                (ssh "$host" "{ if [ ! -d \"${SPARK_CONF_DIR}/$backupDir\" ]; then  mkdir \"${SPARK_CONF_DIR}/$backupDir\"; fi; } ")
+		ssh $host "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"		    
+		scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR} 
+	      fi  
+            #fi												
+	  fi        				
+	fi # end of if, check extension
+      fi # end of if to get each file
+    done  #end of for loop
+  fi # end of if 	
+}
 
 if [ -n "${HOSTLIST}" ]; then
   declare -a arr
   declare -a hosts
   declare -a counts
   isStartOrStatus=
-
   while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     arr[${#arr[@]}]="$slave"
@@ -370,6 +405,9 @@ if [ -n "${HOSTLIST}" ]; then
 
   if echo $"${@// /\\ }" | grep -wq "start\|status"; then
     isStartOrStatus=1
+  fi
+  if echo $"${@// /\\ }" | grep -wq "start"; then
+    isStart=1
   fi
   for slave in "${arr[@]}"; do
     if [ -n "$isStartOrStatus" ]; then

@@ -18,6 +18,7 @@
 package org.apache.spark.sql.hive
 
 import java.lang.reflect.InvocationTargetException
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -36,10 +37,9 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
-import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException
 import org.apache.hadoop.hive.ql.metadata.Hive
-import org.apache.http.annotation.GuardedBy
 import org.apache.log4j.{Level, LogManager}
 
 import org.apache.spark.SparkConf
@@ -59,7 +59,7 @@ import org.apache.spark.sql.hive.client.HiveClientImpl
 import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA_STRING_LENGTH_THRESHOLD, WAREHOUSE_PATH}
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
+import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase, normalizeSchema}
 import org.apache.spark.sql.types.LongType
 import org.apache.spark.sql.{AnalysisException, _}
 import org.apache.spark.{SparkConf, SparkException}
@@ -81,12 +81,21 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
         logDebug(s"Looking up data source for ${name._1}.${name._2}")
-        withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
-          name._1, name._2)) match {
-          case None =>
-            nonExistentTables.put(name, java.lang.Boolean.TRUE)
-            throw new TableNotFoundException(name._1, name._2)
-          case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+        try {
+          withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
+            name._1, name._2)) match {
+            case None =>
+              nonExistentTables.put(name, java.lang.Boolean.TRUE)
+              throw new TableNotFoundException(name._1, name._2)
+            case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+          }
+        } catch {
+          case _: NullPointerException =>
+            // dropTableUnsafe() searches for below exception message. check before changing.
+            throw new AnalysisException(
+              s"Table ${name._1}.${name._2} might be inconsistent in hive catalog. " +
+                  "Use system procedure SYS.REMOVE_METASTORE_ENTRY to remove inconsistency. " +
+                  "Refer to troubleshooting section of documentation for more details")
         }
       }
     }
@@ -208,7 +217,12 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (schema == SYS_SCHEMA) {
       throw new AnalysisException(s"$schema is a system preserved database/schema")
     }
-    withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    try {
+      withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
   }
 
   // Special in-built SYS schema does not have hive catalog entry so the methods below
@@ -219,7 +233,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       if (schema == SYS_SCHEMA) systemSchemaDefinition
       else withHiveExceptionHandling(super.getDatabase(schema).copy(name = schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
     }
   }
 
@@ -241,7 +256,17 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       withHiveExceptionHandling(super.setCurrentDatabase(schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    try {
+      withHiveExceptionHandling(super.alterDatabase(schemaDefinition))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schemaDefinition.name)
     }
   }
 
@@ -375,6 +400,28 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(refreshRelations)
   }
 
+  def dropTableUnsafe(schema: String, table: String, forceDrop: Boolean): Unit = {
+    try {
+      super.getTable(schema, table)
+      // no exception raised while getting catalogTable
+      if (forceDrop) {
+        // parameter to force drop entry from metastore is set
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
+      } else {
+        // AnalysisException not thrown while getting table. suspecting that wrong table
+        // name is passed. throwing exception as a precaution.
+        throw new AnalysisException("Table retrieved successfully. To " +
+            "continue to drop this table change FORCE_DROP argument in procedure to true")
+      }
+    } catch {
+      case a: AnalysisException if a.message.contains("might be inconsistent in hive catalog") =>
+        // exception is expected as table might be inconsistent. continuing to drop
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
+    }
+  }
+
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
       purge: Boolean): Unit = {
     val tableDefinition = getTableOption(schema, table) match {
@@ -467,13 +514,26 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         case None => table.copy(identifier = tableIdent, viewText = viewText,
           viewOriginalText = viewOriginalText)
       }
+    } else if (CatalogObjectType.isPolicy(table)) {
+      // explicitly change table name in policy properties to lower-case
+      // to deal with older releases that store the name in upper-case
+      table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+        properties = table.properties.updated(PolicyProperties.targetTable,
+          JdbcExtendedUtils.toLowerCase(table.properties(PolicyProperties.targetTable))))
     } else table.provider match {
-      // add dbtable property which is not present in old releases
-      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) &&
-          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
-        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
-            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
+      case Some(provider) if SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider) =>
+        // add dbtable property which is not present in old releases
+        val storageFormat =
+          if (table.storage.properties.contains(DBTABLE_PROPERTY)) table.storage
+          else {
+            table.storage.copy(properties = table.storage.properties +
+                (DBTABLE_PROPERTY -> tableIdent.unquotedString))
+          }
+        // schema is "normalized" to deal with upgrade from previous
+        // releases that store column names in upper-case (SNAP-3090)
+        table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+          storage = storageFormat)
       case _ => table.copy(identifier = tableIdent)
     }
     // explicitly add weightage column to sample tables for old catalog data
@@ -800,8 +860,6 @@ object SnappyHiveExternalCatalog {
       log4jLogger.setLevel(Level.ERROR)
     }
     try {
-      // delete the hive scratch directory if it exists
-      FileUtils.deleteDirectory(new java.io.File("./hive"))
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
     } finally {
       logger.setLevel(previousLevel)

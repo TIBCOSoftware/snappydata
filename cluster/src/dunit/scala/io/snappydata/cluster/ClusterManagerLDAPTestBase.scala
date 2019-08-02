@@ -31,11 +31,13 @@ import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 object ClusterManagerLDAPTestBase {
   val securityProperties: Properties = new Properties()
   val thriftPort = AvailablePortHelper.getRandomAvailableUDPPort
+  var admin: String = ""
 }
 
 abstract class ClusterManagerLDAPTestBase(s: String, val adminUser: String = "gemfire10")
     extends ClusterManagerTestBase(s) with Serializable {
 
+  ClusterManagerLDAPTestBase.admin = adminUser
   // start embedded thrift server on lead
   bootProps.setProperty("snappydata.hiveServer.enabled", "true")
   bootProps.setProperty("hive.server2.thrift.bind.host", "localhost")

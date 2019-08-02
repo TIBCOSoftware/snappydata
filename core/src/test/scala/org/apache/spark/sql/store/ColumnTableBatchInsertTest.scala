@@ -16,25 +16,30 @@
  */
 package org.apache.spark.sql.store
 
-import scala.collection.mutable
-
-import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
+import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
+import org.apache.spark.sql._
+import org.apache.spark.{Logging, SparkContext}
 import org.scalatest.{Assertions, BeforeAndAfter}
 
-import org.apache.spark.sql.{Dataset, Row, SaveMode}
-import org.apache.spark.{Logging, SparkContext}
+import scala.collection.mutable
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
     with BeforeAndAfter {
 
   val tableName: String = "ColumnTable"
+  val tableName2: String = "ColumnTable2"
+  val tableName3: String = "ColumnTable3"
+  val tableName4: String = "ColumnTable4"
+
   val props = Map.empty[String, String]
 
   after {
-    snc.dropTable(tableName, true)
-    snc.dropTable("ColumnTable2", true)
+    snc.dropTable(tableName, ifExists = true)
+    snc.dropTable(tableName2, ifExists = true)
+    snc.dropTable(tableName3, ifExists = true)
+    snc.dropTable(tableName4, ifExists = true)
   }
 
   test ("1891: test") {
@@ -65,6 +70,87 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     assert(r2.length == 5)
     logInfo("Successful")
   }
+
+  test("test the overwrite table after reading itself") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+    snc.sql(s"CREATE TABLE $tableName2(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING row " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tableName)
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    dataDF.write.insertInto(tableName2)
+    val rowresult = snc.sql("SELECT * FROM " + tableName2)
+
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    // SQL overwrites.
+    try {
+      snc.sql(s"insert overwrite $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      snc.sql(s"insert into $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+  }
+
 
   test("test the shadow table creation heavy insert") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
@@ -105,6 +191,51 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     val r2 = result.collect
     assert(r2.length == 20)
     logInfo("Successful")
+  }
+
+  test("test the concurrent putInto") {
+    ConcurrentOpsTests.testConcurrentPutInto(snc.snappySession)
+  }
+
+  test("test the concurrent update") {
+    ConcurrentOpsTests.testConcurrentUpdate(snc.snappySession)
+  }
+
+  test("test the concurrent deleteFrom") {
+    ConcurrentOpsTests.testConcurrentDelete(snc.snappySession)
+  }
+
+
+  test("test the concurrent putInto/update") {
+   ConcurrentOpsTests.testConcurrentPutIntoUpdate(snc.snappySession)
+  }
+
+  test("test the concurrent insert/putInto/update/deleteFrom") {
+    ConcurrentOpsTests.testAllOpsConcurrent(snc.snappySession)
+  }
+
+  test("test the concurrent putInto in multiple Column tables") {
+    ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(snc.snappySession)
+  }
+
+  test("simple write lock insert") {
+    ConcurrentOpsTests.testSimpleLockInsert(snc.snappySession)
+  }
+
+  test("simple write lock deleteFrom") {
+    ConcurrentOpsTests.testSimpleLockDeleteFrom(snc.snappySession)
+  }
+
+  test("simple write lock update") {
+    ConcurrentOpsTests.testSimpleLockUpdate(snc.snappySession)
+  }
+
+  test("simple write lock PutInto") {
+    ConcurrentOpsTests.testSimpleLockPutInto(snc.snappySession)
+  }
+
+  test("test the concurrent deleteFrom in multiple Column tables") {
+    ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(snc.snappySession)
   }
 
 
