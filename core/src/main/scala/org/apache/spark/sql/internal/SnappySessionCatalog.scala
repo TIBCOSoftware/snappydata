@@ -1216,3 +1216,25 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
   }
 }
+
+final class SessionCatalogWrapper(externalCatalog: SnappyExternalCatalog,
+                                  snappySession: SnappySession,
+                                  globalTempViewManager: GlobalTempViewManager,
+                                  functionResourceLoader: FunctionResourceLoader,
+                                  functionRegistry: FunctionRegistry,
+                                  sqlConf: SQLConf,
+                                  hadoopConf: Configuration,
+                                  catalog: SnappySessionCatalog)
+  extends SnappySessionCatalog(
+    externalCatalog,
+    snappySession,
+    globalTempViewManager,
+    functionResourceLoader,
+    functionRegistry,
+    sqlConf,
+    hadoopConf) {
+
+  override def lookupRelation(name: TableIdentifier, alias: Option[String]): LogicalPlan = {
+    catalog.resolveRelationWithAlias(name)
+  }
+}
