@@ -18,6 +18,8 @@
 package org.apache.spark.sql.sources
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
+import scala.collection.mutable.ArrayBuffer
 
 import io.snappydata.QueryHint._
 
@@ -32,8 +34,6 @@ import org.apache.spark.sql.execution.PartitionedDataSourceScan
 import org.apache.spark.sql.execution.columnar.impl.{BaseColumnFormatRelation, ColumnFormatRelation, IndexColumnFormatRelation}
 import org.apache.spark.sql.execution.datasources.LogicalRelation
 import org.apache.spark.sql.sources.Entity.{INDEX_RELATION, TABLE}
-import scala.collection.mutable
-import scala.collection.mutable.ArrayBuffer
 
 
 /**
