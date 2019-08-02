@@ -418,15 +418,15 @@ class SnappySessionState(val snappySession: SnappySession)
   object RowLevelSecurity extends Rule[LogicalPlan] {
     // noinspection ScalaUnnecessaryParentheses
     // Y combinator
-    val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
-      (f: (Expression => Boolean)) =>
-        (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
-            (exp match {
-              case And(left, _) => f(left)
-              case EqualTo(l: Literal, r: Literal) =>
-                l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
-              case _ => false
-            })
+    val conditionEvaluator: (Expression => Boolean) =>
+        (Expression => Boolean) = (f: (Expression => Boolean)) =>
+      (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
+          (exp match {
+            case And(left, _) => f(left)
+            case EqualTo(l: Literal, r: Literal) =>
+              l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
+            case _ => false
+          })
 
 
     // noinspection ScalaUnnecessaryParentheses
@@ -681,7 +681,7 @@ class SnappySessionState(val snappySession: SnappySession)
       newHadoopConf())
   }
 
-  lazy val wrapperCatalog: SessionCatalogWrapper = {
+  protected lazy val wrapperCatalog: SessionCatalogWrapper = {
     new SessionCatalogWrapper(
       catalog.externalCatalog,
       snappySession,
@@ -837,7 +837,7 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
           TimeWindowing ::
           ResolveInlineTables ::
           TypeCoercion.typeCoercionRules ++
-              extendedResolutionRules : _*),
+              extendedResolutionRules: _*),
     Batch("Nondeterministic", Once,
       PullOutNondeterministic),
     Batch("UDF", Once,
