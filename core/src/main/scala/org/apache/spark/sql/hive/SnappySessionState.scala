@@ -737,7 +737,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   private[spark] def clearExecutionData(): Unit = {
-    conf.refreshNumShufflePartitions()
+    conf.refreshDefaults()
     leaderPartitions.clear()
     snappySession.clearContext()
   }

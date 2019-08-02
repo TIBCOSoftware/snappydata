@@ -104,6 +104,10 @@ object Constant {
   // System property for minimum size of buffer to consider for compression.
   val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
 
+  // Property for setting max partitions to use for file scans which is honoured only
+  // by embedded mode cluster.
+  val FILES_MAX_PARTITIONS: String = "spark.sql.files.maxPartitions"
+
   val LOW_LATENCY_POOL: String = "lowlatency"
 
   val CHAR_TYPE_BASE_PROP = "base"

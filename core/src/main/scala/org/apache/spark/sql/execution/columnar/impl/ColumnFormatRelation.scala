@@ -18,13 +18,14 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
-
 import scala.util.control.NonFatal
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl, LocalRegion, PartitionedRegion}
+
+import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
@@ -276,7 +277,7 @@ abstract class BaseColumnFormatRelation(
     val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
       case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(a) => null // Do nothing as putInto will release lock
+      case Some(_) => null // Do nothing as putInto will release lock
     }
     if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     try {
@@ -301,7 +302,7 @@ abstract class BaseColumnFormatRelation(
       }
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context. in InsertRows")
+      logDebug(s"Added the $lock object to the context. in InsertRows")
       if (lock != null) {
         snc.releaseLock(lock)
       }
@@ -320,7 +321,7 @@ abstract class BaseColumnFormatRelation(
       f()
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context.")
+      logDebug(s"Added the $lock object to the context.")
       if (lock != null) {
         snc.addContextObject(
           SnappySession.BULKWRITE_LOCK, lock)

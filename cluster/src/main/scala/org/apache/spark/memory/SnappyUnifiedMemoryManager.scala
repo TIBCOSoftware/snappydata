@@ -543,8 +543,10 @@ class SnappyUnifiedMemoryManager private[memory](
       blockId: BlockId,
       numBytes: Long,
       memoryMode: MemoryMode,
-      shouldEvict: Boolean): Boolean = {
-    synchronized {
+      shouldEvict: Boolean): Boolean = synchronized {
+    // used for temporarily adjusting for ByteBuffer.allocateDirect usage
+    var storagePoolAdjustedSize = 0L
+    try {
       if (!shouldEvict) {
         SnappyUnifiedMemoryManager.
           invokeListenersOnPositiveMemoryIncreaseDueToEviction(objectName, numBytes)
@@ -557,6 +559,7 @@ class SnappyUnifiedMemoryManager private[memory](
       var maxMemory = 0L
       var maxStorageSize = 0L
       var minEviction = 0L
+      var memoryFree = 0L
       memoryMode match {
         case MemoryMode.ON_HEAP =>
           executionPool = onHeapExecutionMemoryPool
@@ -564,12 +567,21 @@ class SnappyUnifiedMemoryManager private[memory](
           maxMemory = maxOnHeapStorageMemory
           maxStorageSize = maxHeapStorageSize
           minEviction = getMinHeapEviction(numBytes)
+          memoryFree = storageMemoryPool.memoryFree
         case MemoryMode.OFF_HEAP =>
           executionPool = offHeapExecutionMemoryPool
           storageMemoryPool = offHeapStorageMemoryPool
           maxMemory = maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed
           maxStorageSize = maxOffHeapStorageSize
           minEviction = getMinOffHeapEviction(numBytes)
+          memoryFree = storageMemoryPool.memoryFree
+          // don't adjust below 32K of storage memory
+          val adjustedSize = math.min(memoryFree, UnsafeHolder.getDirectReservedMemory) - 32768
+          if (adjustedSize > 0 && adjustedSize < storageMemoryPool.poolSize) {
+            storageMemoryPool.decrementPoolSize(adjustedSize)
+            memoryFree -= adjustedSize
+            storagePoolAdjustedSize = adjustedSize
+          }
       }
 
       val storagePool = storageMemoryPool
@@ -583,7 +595,7 @@ class SnappyUnifiedMemoryManager private[memory](
         // Hence taking 30% of initial storage pool size. Once retry of LowMemoryException is
         // stopped it would be much cleaner.
         numBytes < math.min(0.3 * maxStorageSize,
-          math.max(maxPartResultSize, storagePool.memoryFree))
+          math.max(maxPartResultSize, memoryFree))
       } else shouldEvict
 
       if (numBytes > maxMemory) {
@@ -598,7 +610,7 @@ class SnappyUnifiedMemoryManager private[memory](
       // will try clearing references before calling with shouldEvict=true again
       val offHeap = memoryMode eq MemoryMode.OFF_HEAP
       val offHeapNoEvict = !doEvict && offHeap
-      if (numBytes > storagePool.memoryFree && !offHeapNoEvict) {
+      if (numBytes > memoryFree && !offHeapNoEvict) {
         // There is not enough free memory in the storage pool, so try to borrow free memory from
         // the execution pool.
         val memoryBorrowedFromExecution = Math.min(executionPool.memoryFree, numBytes)
@@ -685,6 +697,10 @@ class SnappyUnifiedMemoryManager private[memory](
       } else {
         memoryForObject.addToValue(new MemoryOwner(objectName, memoryMode), numBytes)
         enoughMemory
+      }
+    } finally {
+      if (storagePoolAdjustedSize > 0L) {
+        offHeapStorageMemoryPool.decrementPoolSize(storagePoolAdjustedSize)
       }
     }
   }

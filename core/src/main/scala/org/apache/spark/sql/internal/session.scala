@@ -66,6 +66,16 @@ class SnappyConf(@transient val session: SnappySession)
    */
   @volatile private[this] var dynamicShufflePartitions: Int = _
 
+  /**
+   * The default value for spark.sql.files.maxPartitions is set to actual physical
+   * cores in the system to reduce overhap temporary heap usage. For parquet/ORC
+   * readers it amount to block-size per partition which is 128M by default.
+   * This is set to false when explicitly set on session else the default is used.
+   */
+  @volatile private[this] var useDefaultFilesMaxPartitions: Boolean = true
+
+  setDefaultFilesMaxPartitions()
+
   SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
     case Some(d) if (session ne null) && super.numShufflePartitions == d =>
       dynamicShufflePartitions = coreCountForShuffle
@@ -86,7 +96,7 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   private def coreCountForShuffle: Int = {
-    val count = SnappyContext.totalCoreCount.get()
+    val count = SnappyContext.totalPhysicalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
     else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
   }
@@ -209,6 +219,13 @@ class SnappyConf(@transient val session: SnappySession)
       case _ => key
     }
 
+    case Constant.FILES_MAX_PARTITIONS =>
+      value match {
+        case _: Some[_] => useDefaultFilesMaxPartitions = false
+        case _ => useDefaultFilesMaxPartitions = true; setDefaultFilesMaxPartitions()
+      }
+      key
+
     case _ if key.startsWith("spark.sql.aqp.") =>
       session.clearPlanCache()
       key
@@ -230,7 +247,7 @@ class SnappyConf(@transient val session: SnappySession)
 
   private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
 
-  private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
+  private[sql] def refreshDefaults(): Unit = synchronized {
     if (session ne null) {
       if (executionShufflePartitions != -1) {
         executionShufflePartitions = 0
@@ -238,12 +255,23 @@ class SnappyConf(@transient val session: SnappySession)
       if (dynamicShufflePartitions != -1) {
         dynamicShufflePartitions = coreCountForShuffle
       }
+      setDefaultFilesMaxPartitions()
     }
   }
 
   private[sql] def setExecutionShufflePartitions(n: Int): Unit = synchronized {
     if (executionShufflePartitions != -1 && session != null) {
       executionShufflePartitions = math.max(n, executionShufflePartitions)
+    }
+  }
+
+  private def setDefaultFilesMaxPartitions(): Unit = {
+    if ((session ne null) && useDefaultFilesMaxPartitions) {
+      setConfString(Constant.FILES_MAX_PARTITIONS, math.min(
+        SnappyContext.totalPhysicalCoreCount.get(),
+        session.sparkContext.defaultParallelism).toString)
+      // would be reset by keyUpdateActions to set it back
+      useDefaultFilesMaxPartitions = true
     }
   }
 
