@@ -15,13 +15,7 @@ These columns are used to identify a row uniquely. PUT INTO is available by SQL 
 ### Syntax
 
 ```
-PUT INTO <TABLENAME> SELECT V1, V2, V3,......,Vn;
-
-PUT INTO <schema name>.<table name2> SELECT * from <schema name>.<table name1>;
-
-PUT INTO <schema name>.<table name2> SELECT * from <schema name>.<table name1> WHERE <column name>='<Value>'
-
-PUT INTO <schema name>.<table name2> SELECT from <schema name>.<table name1> WHERE <column name>='<Value>'
+PUT INTO <schema name>.<table name> VALUES (V1, V2,... ,Vn);
 
 ```
 
@@ -30,19 +24,10 @@ PUT INTO <schema name>.<table name2> SELECT from <schema name>.<table name1> WHE
 **For SQL**
 
 ```pre
-// Insert into another table using a select statement for column tables with key columns
-
-PUT INTO TRADE.CUSTOMERS SELECT '1','2','hello';
-
-PUT INTO TRADE.NEWCUSTOMERS SELECT * from CUSTOMERS;
-
-PUT INTO TRADE.NEWCUSTOMERS SELECT * from CUSTOMERS WHERE C_NAME='User 1';
-
-PUT INTO TRADE.NEWCUSTOMERS SELECT from CUSTOMERS WHERE C_NAME='User 1';
+PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'SnappyData', 1);
+PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'SnappyData', 1);
 
 ```
-!!! Warning
-	**PUT INTO VALUES (V1, V2,...Vn)** syntax do not work for column tables. Instead use **PUT INTO SELECT V1, V2,...,Vn**.
 
 **For API**
 
