@@ -24,7 +24,6 @@ import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.SystemFailure
 import com.pivotal.gemfirexd.Attribute
-import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.CatalogObjectType.getTableType
@@ -1042,14 +1041,6 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
   }
 
-  private def removeFromFuncJars(funcDefinition: CatalogFunction,
-      qualifiedName: FunctionIdentifier): Unit = {
-    ContextJarUtils.removeDriverJar(qualifiedName.unquotedString)
-    funcDefinition.resources.foreach { r =>
-      ContextJarUtils.deleteFile(funcDefinition.identifier.toString(), r.uri, isEmbeddedMode)
-    }
-  }
-
   override def dropFunction(name: FunctionIdentifier, ignoreIfNotExists: Boolean): Unit = {
     // If the name itself is not qualified, add the current database to it.
     val schemaName = getSchemaName(name)
@@ -1057,17 +1048,13 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     checkSchemaPermission(schemaName, name.funcName, defaultUser = null)
 
     val qualifiedName = name.copy(database = Some(schemaName))
-    ContextJarUtils.getDriverJar(qualifiedName.unquotedString) match {
-      case Some(_) =>
-        val catalogFunction = try {
-          externalCatalog.getFunction(schemaName, qualifiedName.funcName)
-        } catch {
-          case _: AnalysisException => failFunctionLookup(qualifiedName.funcName)
-        }
-        removeFromFuncJars(catalogFunction, qualifiedName)
-      case _ =>
-    }
+    ContextJarUtils.removeFunctionArtifacts(externalCatalog, Option(this),
+      qualifiedName.database.get, qualifiedName.funcName, isEmbeddedMode, ignoreIfNotExists)
     super.dropFunction(name, ignoreIfNotExists)
+  }
+
+  override def failFunctionLookup(name: String): Nothing = {
+    super.failFunctionLookup(name)
   }
 
   override def createFunction(funcDefinition: CatalogFunction, ignoreIfExists: Boolean): Unit = {
@@ -1079,14 +1066,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     super.createFunction(funcDefinition, ignoreIfExists)
 
     if (isEmbeddedMode) {
-      val k = funcDefinition.identifier.copy(database = Some(schemaName)).toString
-      // resources has just one jar
-      val jarPath = if (funcDefinition.resources.isEmpty) "" else funcDefinition.resources.head.uri
-      Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + k,
-        jarPath)
-      // Remove from the list in (__FUNC__DROPPED__, dropped-udf-list)
-      ContextJarUtils.removeFromTheListInCmdRegion(ContextJarUtils.droppedFunctionsKey,
-        k + ContextJarUtils.DELIMITER)
+      ContextJarUtils.addFunctionArtifacts(funcDefinition, schemaName)
     }
   }
 
@@ -1214,5 +1194,27 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     } finally {
       skipDefaultSchemas = false
     }
+  }
+}
+
+final class SessionCatalogWrapper(externalCatalog: SnappyExternalCatalog,
+                                  snappySession: SnappySession,
+                                  globalTempViewManager: GlobalTempViewManager,
+                                  functionResourceLoader: FunctionResourceLoader,
+                                  functionRegistry: FunctionRegistry,
+                                  sqlConf: SQLConf,
+                                  hadoopConf: Configuration,
+                                  catalog: SnappySessionCatalog)
+  extends SnappySessionCatalog(
+    externalCatalog,
+    snappySession,
+    globalTempViewManager,
+    functionResourceLoader,
+    functionRegistry,
+    sqlConf,
+    hadoopConf) {
+
+  override def lookupRelation(name: TableIdentifier, alias: Option[String]): LogicalPlan = {
+    catalog.resolveRelationWithAlias(name)
   }
 }
