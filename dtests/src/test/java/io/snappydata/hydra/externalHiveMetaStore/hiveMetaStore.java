@@ -4,6 +4,7 @@ package io.snappydata.hydra.externalHiveMetaStore;
 import com.gemstone.gemfire.cache.query.Struct;
 import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.Log;
+import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
 import io.snappydata.test.util.TestException;
@@ -12,19 +13,16 @@ import sql.sqlutil.ResultSetHelper;
 import java.io.File;
 import java.sql.*;
 import java.util.List;
+import java.util.Vector;
 
 public class hiveMetaStore extends SnappyTest
 {
-//    Connection beelineConnection = null;
-
-
     static String setexternalHiveCatalog = "set spark.sql.catalogImplementation=hive";
     static String setexternalInBuiltCatalog = "set spark.sql.catalogImplementation=in-memory";
     static String showTblsApp = "show tables in app";
     static String showTblsDefault = "show tables in default";
     static String dropTableStmt = "drop table if exists ";
     static String createDB = "create database ";
-    static String dataPath = "/home/cbhatt/NW_1GB/NW_1GB/";
     static String[] snappyQueries = {
             "SELECT FirstName, LastName FROM default.hive_employees ORDER BY LastName",
             "SELECT OrderID, Freight, Freight * 1.1 AS FreightTotal FROM default.hive_orders WHERE Freight >= 500",
@@ -76,18 +74,9 @@ public class hiveMetaStore extends SnappyTest
     }
 
     public static void HydraTask_DropAllTheTables() {
-        Connection snappyConnection = connectToSnappy();
-        Connection beelineConnection = connectToBeeline();
-        try {
-            snappyConnection.createStatement().execute(setexternalHiveCatalog);
-            DropSnappyTables(snappyConnection);
-            DropBeelineTablesFromSnappy(snappyConnection);
-            snappyConnection.close();
-            beelineConnection.close();
-            Log.getLogWriter().info("Drop All the tabels - OK");
-        } catch (SQLException se) {
-            throw new TestException("Snapppy :  Exception in dropping all tables ", se);
-        }
+          DropBeelineTablesFromSnappy(); //snappyConnection);
+          DropSnappyTables(); //snappyConnection);
+          Log.getLogWriter().info("Drop All the tabels - OK");
     }
 
     public static void HydraTask_InsertData_AlterTableFromSnappy() {
@@ -118,6 +107,8 @@ public class hiveMetaStore extends SnappyTest
     public static void HydraTask_CreateAndDropSchemaFromSnappy() {
         try {
             boolean isHiveDB = false;
+            Vector dataPath = SnappyPrms.getDataLocationList();
+            Log.getLogWriter().info("Path : " + dataPath.firstElement());
             Connection beelineConnection = connectToBeeline();
             Connection snappyConnection = connectToSnappy();
             snappyConnection.createStatement().execute(setexternalHiveCatalog);
@@ -127,8 +118,8 @@ public class hiveMetaStore extends SnappyTest
             snappyConnection.createStatement().execute(dropTableStmt + "app.snappy_regions");
             snappyConnection.createStatement().execute(createDB +  "hiveDB");
             snappyConnection.createStatement().execute(createHiveTables("hiveDB.hive_regions(RegionID int,RegionDescription string)"));
-            snappyConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "regions.csv", "hiveDB.hive_regions"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:///" + dataPath + "regions.csv" ));
+            snappyConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "regions.csv", "hiveDB.hive_regions"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:///" + dataPath.firstElement() + "regions.csv" ));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_regions", "10", "app.staging_regions"));
             ResultSet rs1 = snappyConnection.createStatement().executeQuery("select * from app.snappy_regions");
             ResultSet rs2 = snappyConnection.createStatement().executeQuery("select * from hiveDB.hive_regions where RegionDescription <> 'RegionDescription'");
@@ -160,29 +151,30 @@ public class hiveMetaStore extends SnappyTest
 
     public static void HydraTask_CreateTableAndLoadDataFromBeeline() {
         try {
+            Vector dataPath = SnappyPrms.getDataLocationList();
             Connection beelineConnection = connectToBeeline();
             beelineConnection.createStatement().execute(createHiveTables("hive_regions(RegionID int,RegionDescription string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "regions.csv", "hive_regions"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "regions.csv", "hive_regions"));
             beelineConnection.createStatement().execute(createHiveTables("hive_categories(CategoryID int,CategoryName string,Description string,Picture string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "categories.csv", "hive_categories"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "categories.csv", "hive_categories"));
             beelineConnection.createStatement().execute(createHiveTables("hive_shippers(ShipperID int ,CompanyName string ,Phone string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "shippers.csv", "hive_shippers"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "shippers.csv", "hive_shippers"));
             beelineConnection.createStatement().execute(createHiveTables("hive_employees(EmployeeID int,LastName string,FirstName string,Title string,TitleOfCourtesy string,BirthDate timestamp,HireDate timestamp,Address string,City string,Region string,PostalCode string,Country string,HomePhone string,Extension string,Photo string,Notes string,ReportsTo int,PhotoPath string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "employees.csv", "hive_employees"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "employees.csv", "hive_employees"));
             beelineConnection.createStatement().execute(createHiveTables("hive_customers(CustomerID string,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "customers.csv", "hive_customers"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "customers.csv", "hive_customers"));
             beelineConnection.createStatement().execute(createHiveTables("hive_orders(OrderID int,CustomerID string,EmployeeID int,OrderDate timestamp,RequiredDate timestamp,ShippedDate timestamp,ShipVia int,Freight double,ShipName string,ShipAddress string,ShipCity string,ShipRegion string,ShipPostalCode string,ShipCountry string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "orders.csv", "hive_orders"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "orders.csv", "hive_orders"));
             beelineConnection.createStatement().execute(createHiveTables("hive_order_details(OrderID int,ProductID int,UnitPrice double,Quantity smallint,Discount double)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath +  "order_details.csv", "hive_order_details"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() +  "order-details.csv", "hive_order_details"));
             beelineConnection.createStatement().execute(createHiveTables("hive_products(ProductID int,ProductName string,SupplierID int,CategoryID int,QuantityPerUnit string,UnitPrice double,UnitsInStock smallint,UnitsOnOrder smallint,ReorderLevel smallint,Discontinued smallint)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "products.csv", "hive_products"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "products.csv", "hive_products"));
             beelineConnection.createStatement().execute(createHiveTables("hive_suppliers(SupplierID int,CompanyName string,ContactName string,ContactTitle string,Address string,City string,Region string,PostalCode string,Country string,Phone string,Fax string,HomePage string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "suppliers.csv", "hive_suppliers"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "suppliers.csv", "hive_suppliers"));
             beelineConnection.createStatement().execute(createHiveTables("hive_territories(TerritoryID string,TerritoryDescription string,RegionID string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "territories.csv", "hive_territories"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "territories.csv", "hive_territories"));
             beelineConnection.createStatement().execute(createHiveTables("hive_employee_territories(EmployeeID int,TerritoryID string)"));
-            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath + "employee_territories.csv", "hive_employee_territories"));
+            beelineConnection.createStatement().execute(loadDataToHiveTbls(dataPath.firstElement() + "employee-territories.csv", "hive_employee_territories"));
             beelineConnection.close();
             Log.getLogWriter().info("Create and Load the data from Beeline - OK");
         } catch(SQLException se) {
@@ -192,28 +184,29 @@ public class hiveMetaStore extends SnappyTest
 
     public static void HydraTask_CreateTableAndLoadDataFromSnappy() {
         try {
+            Vector dataPath = SnappyPrms.getDataLocationList();
             Connection snappyConnection = connectToSnappy();
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:///" + dataPath +  "regions.csv" ));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_regions", "file:///" + dataPath.firstElement() +  "regions.csv" ));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_regions", "10", "app.staging_regions"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_categories", "file:///" + dataPath + "categories.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_categories", "file:///" + dataPath.firstElement() + "categories.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_categories", "10", "app.staging_categories"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_shippers", "file:///" + dataPath + "shippers.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_shippers", "file:///" + dataPath.firstElement() + "shippers.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_shippers", "10", "app.staging_shippers"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employees", "file:///" + dataPath + "employees.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employees", "file:///" + dataPath.firstElement() + "employees.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_employees", "10", "app.staging_employees"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_customers", "file:///" + dataPath + "customers.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_customers", "file:///" + dataPath.firstElement() + "customers.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_customers", "10", "app.staging_customers"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_orders", "file:///" + dataPath + "orders.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_orders", "file:///" + dataPath.firstElement() + "orders.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_orders", "10", "app.staging_orders"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_order_details", "file:///" + dataPath + "order_details.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_order_details", "file:///" + dataPath.firstElement() + "order-details.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_order_details", "10", "app.staging_order_details"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_products", "file:///" + dataPath + "products.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_products", "file:///" + dataPath.firstElement() + "products.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_products", "10", "app.staging_products"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_suppliers", "file:///" + dataPath + "suppliers.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_suppliers", "file:///" + dataPath.firstElement() + "suppliers.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_suppliers", "10", "app.staging_suppliers"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_territories", "file:///" + dataPath + "territories.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_territories", "file:///" + dataPath.firstElement() + "territories.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_territories", "10", "app.staging_territories"));
-            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employee_territories", "file:///" + dataPath + "employee_territories.csv"));
+            snappyConnection.createStatement().execute(createExternalSnappyTbl("app.staging_employee_territories", "file:///" + dataPath.firstElement() + "employee-territories.csv"));
             snappyConnection.createStatement().execute(createSnappyTblAndLoadData("app.snappy_employee_territories", "10", "app.staging_employee_territories"));
             snappyConnection.close();
             Log.getLogWriter().info("Create and load the data from Snappy - OK");
@@ -226,10 +219,10 @@ public class hiveMetaStore extends SnappyTest
         try {
             Connection beelineConnection = connectToBeeline();
             Connection snappyConnection = connectToSnappy();
+            snappyConnection.createStatement().execute(setexternalHiveCatalog);
             String createExternalTblquery = "create external table if not exists extHiveReg(RegionID int,RegionDescription string) row format delimited fields terminated by ',' location '/user/hive/support'";
             String snappy = "";
             String beeLine = "  ";
-            snappyConnection.createStatement().execute(setexternalHiveCatalog);
             beelineConnection.createStatement().execute(dropTableStmt + "extHiveReg");
             beelineConnection.createStatement().execute(createExternalTblquery);
             ResultSet rs1 = beelineConnection.createStatement().executeQuery("select * from extHiveReg where RegionDescription <> 'RegionDescription'");
@@ -303,8 +296,9 @@ public class hiveMetaStore extends SnappyTest
         }
     }
 
-    public static void DropSnappyTables(Connection snappyConnection) {
+    public static void DropSnappyTables() {
         try {
+            Connection snappyConnection = connectToSnappy();
             snappyConnection.createStatement().execute(dropTableStmt + "app.staging_regions");
             snappyConnection.createStatement().execute(dropTableStmt + "app.snappy_regions");
             snappyConnection.createStatement().execute(dropTableStmt + "app.staging_categories");
@@ -327,13 +321,17 @@ public class hiveMetaStore extends SnappyTest
             snappyConnection.createStatement().execute(dropTableStmt + "app.snappy_territories");
             snappyConnection.createStatement().execute(dropTableStmt + "app.staging_employee_territories");
             snappyConnection.createStatement().execute(dropTableStmt + "app.snappy_employee_territories");
+            snappyConnection.close();
         } catch(SQLException se) {
             throw new TestException("Snappy : Exception in dropping staging and Snappy Tables", se);
         }
     }
 
-    public static void DropBeelineTablesFromSnappy(Connection snappyConnection) {
+    public static void DropBeelineTablesFromSnappy() {
         try {
+            Connection beelineConnection = connectToBeeline();
+            Connection snappyConnection = connectToSnappy();
+            snappyConnection.createStatement().execute(setexternalHiveCatalog);
             snappyConnection.createStatement().execute(dropTableStmt + "default.hive_regions");
             snappyConnection.createStatement().execute(dropTableStmt + "default.hive_categories");
             snappyConnection.createStatement().execute(dropTableStmt + "default.hive_shippers");
@@ -345,6 +343,8 @@ public class hiveMetaStore extends SnappyTest
             snappyConnection.createStatement().execute(dropTableStmt + "default.hive_suppliers");
             snappyConnection.createStatement().execute(dropTableStmt + "default.hive_territories");
             snappyConnection.createStatement().execute(dropTableStmt + "default.hive_employee_territories");
+            beelineConnection.close();
+            snappyConnection.close();
         } catch(SQLException se) {
             throw new TestException("Snappy : Exception in dropping beeline tables", se);
         }
