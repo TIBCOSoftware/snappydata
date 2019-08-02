@@ -16,17 +16,13 @@
  */
 package org.apache.spark.sql.store
 
-import scala.collection.mutable
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, Future}
-
-import io.snappydata.SnappyFunSuite
 import io.snappydata.core.{Data, TestData}
+import io.snappydata.{ConcurrentOpsTests, SnappyFunSuite}
+import org.apache.spark.sql._
+import org.apache.spark.{Logging, SparkContext}
 import org.scalatest.{Assertions, BeforeAndAfter}
 
-import org.apache.spark.scheduler.{SparkListener, SparkListenerJobEnd, SparkListenerJobStart}
-import org.apache.spark.sql.{Dataset, Row, SaveMode, SnappySession}
-import org.apache.spark.{Logging, SparkContext}
+import scala.collection.mutable
 
 class ColumnTableBatchInsertTest extends SnappyFunSuite
     with Logging
@@ -68,6 +64,87 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
     assert(r2.length == 5)
     logInfo("Successful")
   }
+
+  test("test the overwrite table after reading itself") {
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+
+    snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+    snc.sql(s"CREATE TABLE $tableName2(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING row " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tableName)
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    dataDF.write.insertInto(tableName2)
+    val rowresult = snc.sql("SELECT * FROM " + tableName2)
+
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      rowresult.write.format("row").mode(SaveMode.Overwrite).saveAsTable(tableName2)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+    // SQL overwrites.
+    try {
+      snc.sql(s"insert overwrite $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      snc.sql(s"insert into $tableName select * from $tableName")
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot insert overwrite"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+  }
+
 
   test("test the shadow table creation heavy insert") {
     // snc.sql(s"DROP TABLE IF EXISTS $tableName")
@@ -111,403 +188,48 @@ class ColumnTableBatchInsertTest extends SnappyFunSuite
   }
 
   test("test the concurrent putInto") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val doPut = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(tableName)
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length == 200000)
-    }
-
-    snc.sparkContext.addSparkListener(new BasicJobCounter)
-
-    val putTasks = Array.fill(10)(doPut())
-    putTasks.foreach(Await.result(_, Duration.Inf))
-
-    val putTasks2 = Array.fill(5)(doPut())
-    putTasks2.foreach(Await.result(_, Duration.Inf))
-
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r2 = result.collect
-    assert(r2.length == 200000)
-
-    logInfo("Successful")
-  }
-
-  private class BasicJobCounter extends SparkListener {
-    var count = 0
-
-    override def onJobStart(job: SparkListenerJobStart): Unit = {
-      this.synchronized {
-        assert(count == 0)
-        logInfo(s"SK The concurrent job count in jobstart is $count , job is $job")
-        count += 1
-      }
-    }
-
-    override def onJobEnd(job: SparkListenerJobEnd): Unit = {
-      this.synchronized {
-        count -= 1
-        logInfo(s"SK The concurrent job counton jobend is $count , job is $job")
-      }
-    }
+    ConcurrentOpsTests.testConcurrentPutInto(snc.snappySession)
   }
 
   test("test the concurrent update") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    val rdd = snc.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
-    val dataDF = snc.createDataFrame(rdd)
-    dataDF.write.insertInto(tableName)
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r2 = result.collect
-    assert(r2.length == 200000)
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    val doUpdate = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-    }
-
-    sc.addSparkListener(new BasicJobCounter)
-
-    val putTasks = Array.fill(10)(doUpdate())
-    putTasks.foreach(Await.result(_, Duration.Inf))
-
-    val r3 = result.collect
-    assert(r3.length == 200000)
-
-    logInfo("Successful")
+    ConcurrentOpsTests.testConcurrentUpdate(snc.snappySession)
   }
 
   test("test the concurrent deleteFrom") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-
-    val rdd = snc.sparkContext.parallelize(
-      (1 to 200000).map(i => TestData(i, i.toString)))
-    val dataDF = snc.createDataFrame(rdd)
-    dataDF.write.insertInto(tableName)
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r2 = result.collect
-    assert(r2.length == 200000)
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val doDelete = () => Future {
-      val snc = new SnappySession(sc)
-      snc.sql("delete FROM " + tableName)
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length == 0)
-    }
-    sc.addSparkListener(new BasicJobCounter)
-
-    val putTasks = Array.fill(10)(doDelete())
-    putTasks.foreach(Await.result(_, Duration.Inf))
-
-    val r3 = snc.sql("SELECT * FROM " + tableName).collect()
-    assert(r3.length == 0)
-
-    logInfo("Successful")
+    ConcurrentOpsTests.testConcurrentDelete(snc.snappySession)
   }
 
 
   test("test the concurrent putInto/update") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val doPut = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(tableName)
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length == 200000)
-    }
-
-    val doUpdate = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-    }
-
-    sc.addSparkListener(new BasicJobCounter)
-    val putTasks = Array.fill(5)(doPut())
-    val putTasks2 = Array.fill(5)(doUpdate())
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    putTasks2.foreach(Await.result(_, Duration.Inf))
-
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r2 = result.collect
-    assert(r2.length == 200000)
-
-    logInfo("Successful")
+   ConcurrentOpsTests.testConcurrentPutIntoUpdate(snc.snappySession)
   }
 
   test("test the concurrent insert/putInto/update/deleteFrom") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    val df = snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-
-    val doInsert = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(tableName)
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length % 200000 == 0)
-    }
-
-    val doPut = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(tableName)
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length % 200000 == 0)
-    }
-
-    val doUpdate = () => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length % 200000 == 0)
-    }
-
-    val doDelete = () => Future {
-      snc.sql("delete FROM " + tableName)
-      val result = snc.sql("SELECT * FROM " + tableName)
-      val r2 = result.collect
-      assert(r2.length % 200000 == 0)
-    }
-
-    sc.addSparkListener(new BasicJobCounter)
-
-    val insertTasks = Array.fill(5)(doInsert())
-    val putTasks = Array.fill(5)(doPut())
-    val updateTasks = Array.fill(5)(doUpdate())
-    val deleteTasks = Array.fill(5)(doDelete())
-
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    insertTasks.foreach(Await.result(_, Duration.Inf))
-    deleteTasks.foreach(Await.result(_, Duration.Inf))
-    updateTasks.foreach(Await.result(_, Duration.Inf))
-
-    val result = snc.sql("SELECT * FROM " + tableName)
-    val r2 = result.collect
-    assert(r2.length % 200000 == 0)
-
-    logInfo("Successful")
+    ConcurrentOpsTests.testAllOpsConcurrent(snc.snappySession)
   }
 
   test("test the concurrent putInto in multiple Column tables") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
-
-    snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    snc.sql(s"CREATE TABLE $tableName2(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    snc.sql(s"CREATE TABLE $tableName3(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    snc.sql(s"CREATE TABLE $tableName4(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val doPut = (table: String) => Future {
-      val snc = new SnappySession(sc)
-      val rdd = snc.sparkContext.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(table)
-      val result = snc.sql("SELECT * FROM " + table)
-      val r2 = result.collect
-      assert(r2.length == 200000)
-    }
-
-
-    val putTasks = Array.fill(5)(doPut(tableName))
-    val putTasks2 = Array.fill(5)(doPut(tableName2))
-    val putTasks3 = Array.fill(5)(doPut(tableName3))
-    val putTasks4 = Array.fill(5)(doPut(tableName4))
-
-
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    putTasks2.foreach(Await.result(_, Duration.Inf))
-    putTasks3.foreach(Await.result(_, Duration.Inf))
-    putTasks4.foreach(Await.result(_, Duration.Inf))
-
-    Seq(tableName, tableName2, tableName3, tableName4).foreach(table => {
-      val result = snc.sql("SELECT * FROM " + table).collect()
-      assert(result.length == 200000)
-    })
-    logInfo("Successful")
+    ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(snc.snappySession)
   }
 
-  // disabled since this hangs in BaseColumnFormatRelation.withTableWriteLock
-  ignore("test the concurrent deleteFrom in multiple Column tables") {
-    // snc.sql(s"DROP TABLE IF EXISTS $tableName")
+  test("simple write lock insert") {
+    ConcurrentOpsTests.testSimpleLockInsert(snc.snappySession)
+  }
 
-    snc.sql(s"CREATE TABLE $tableName(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
+  test("simple write lock deleteFrom") {
+    ConcurrentOpsTests.testSimpleLockDeleteFrom(snc.snappySession)
+  }
 
-    snc.sql(s"CREATE TABLE $tableName2(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
+  test("simple write lock update") {
+    ConcurrentOpsTests.testSimpleLockUpdate(snc.snappySession)
+  }
 
-    snc.sql(s"CREATE TABLE $tableName3(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
+  test("simple write lock PutInto") {
+    ConcurrentOpsTests.testSimpleLockPutInto(snc.snappySession)
+  }
 
-    snc.sql(s"CREATE TABLE $tableName4(Key1 INT ,Value STRING) " +
-      "USING column " +
-      "options " +
-      "(" +
-      "PARTITION_BY 'Key1'," +
-      "KEY_COLUMNS 'Key1'," +
-      "BUCKETS '1')")
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    val doPut = (table: String) => Future {
-      val rdd = sc.parallelize(
-        (1 to 200000).map(i => TestData(i, i.toString)))
-      logInfo(s"SKKS The total parallelism is ${rdd.getNumPartitions}")
-      val dataDF = snc.createDataFrame(rdd)
-      import org.apache.spark.sql.snappy._
-      dataDF.write.putInto(table)
-      val result = snc.sql("SELECT * FROM " + table)
-      val r2 = result.collect
-      assert(r2.length == 200000)
-    }
-
-
-    val putTasks = Array.fill(5)(doPut(tableName))
-    val putTasks2 = Array.fill(5)(doPut(tableName2))
-    val putTasks3 = Array.fill(5)(doPut(tableName3))
-    val putTasks4 = Array.fill(5)(doPut(tableName4))
-
-
-    putTasks.foreach(Await.result(_, Duration.Inf))
-    putTasks2.foreach(Await.result(_, Duration.Inf))
-    putTasks3.foreach(Await.result(_, Duration.Inf))
-    putTasks4.foreach(Await.result(_, Duration.Inf))
-
-    Seq(tableName, tableName2, tableName3, tableName4).foreach(table => {
-      val result = snc.sql("SELECT * FROM " + table).collect()
-      assert(result.length == 200000)
-    })
-    logInfo("Successful")
+  test("test the concurrent deleteFrom in multiple Column tables") {
+    ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(snc.snappySession)
   }
 
 
