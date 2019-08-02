@@ -77,29 +77,36 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
 
     String pkgName = "com.datastax.spark:spark-cassandra-connector_2.11:2.0.7";
     String pkgPath = SnappyPrms.getDataLocationList().get(0).toString();
+    Connection conn = null;
     File pkgDir = new File(pkgPath);
     if (!pkgDir.exists()) pkgDir.mkdir();
     try {
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       String deployStr = "deploy package " + jarAlias + " '" + pkgName + "' path '" + pkgPath + "' ";
       Log.getLogWriter().info("The deployStr is " + deployStr);
       conn.createStatement().execute(deployStr);
     } catch (Exception ex) {
       throw new TestException("Exception while deploying jar " + ex.getMessage());
+    } finally {
+      closeConnection(conn);
     }
   }
 
   public void deployJar() {
     String jarName = "com.datastax.spark_spark-cassandra-connector_2.11-2.0.7.jar";
     String jarPath = SnappyPrms.getDataLocationList().get(0).toString() + "/" + jarName;
+    Connection conn = null;
     try {
       //deploy package kafkaSource 'org.apache.spark:spark-sql-kafka-0-10_2.11:2.2.1' path '/home/smahajan/Downloads';
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       String deployStr = "deploy jar " + jarAlias + " '" + jarPath + "'";
       Log.getLogWriter().info("The deployStr is " + deployStr);
       conn.createStatement().execute(deployStr);
     } catch (Exception ex) {
       throw new TestException("Exception while deploying jar " + ex.getMessage());
+    }
+    finally {
+      closeConnection(conn);
     }
   }
 
@@ -111,14 +118,18 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
   }
 
   public void unDeployPkg() {
+    Connection conn = null;
     try {
       //undeploy packageAlias;
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       String unDeployStr = "undeploy " + jarAlias;
       Log.getLogWriter().info("The deployStr is " + unDeployStr);
       conn.createStatement().execute(unDeployStr);
     } catch (Exception ex) {
       throw new TestException("Exception while undeploying jar " + ex.getMessage());
+    }
+    finally {
+      closeConnection(conn);
     }
   }
 
@@ -134,8 +145,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
     Vector udfs = SnappyDeployUnDeployPrms.getUdfName();
     Vector returnTyp = SnappyDeployUnDeployPrms.getReturnType();
     String jarPath = TestConfig.tab().stringAt(SnappyPrms.snappyPocJarPath, null);
+    Connection conn = null;
     try {
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       for (int i = 0; i <= udfs.size() - 1; i++) {
         String udfAlias = udfs.get(i).toString().toLowerCase();
         String createFunc = "CREATE FUNCTION " + udfAlias + " as " + pkg + "." + udfs.get(i) +
@@ -145,6 +157,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
       }
     } catch (Exception ex) {
       throw new TestException("Exception while creating function with udfs " + ex.getMessage());
+    }
+    finally {
+      closeConnection(conn);
     }
   }
 
@@ -159,8 +174,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
     Vector udfs = SnappyDeployUnDeployPrms.getUdfName();
     Boolean isExpExpected = SnappyDeployUnDeployPrms.getIsExpectedExecption();
     sleepForMs(10);
+    Connection conn = null;
     try {
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       int argNum = 25;
       String argStr = "snappydata";
       String selectStr = "";
@@ -193,6 +209,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
         Log.getLogWriter().info("The exception is expected " + ex.getMessage());
       else
         throw new TestException("Exception while executing function with udfs " + ex.getMessage());
+    }
+    finally {
+      closeConnection(conn);
     }
   }
 
@@ -249,8 +268,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
   }
 
   public void dropFunction() {
+    Connection conn = null;
     try {
-      Connection conn = getLocatorConnection();
+      conn = getLocatorConnection();
       Vector udfs = SnappyDeployUnDeployPrms.getUdfName();
       for (int i = 0; i <= udfs.size() - 1; i++) {
         String udfAlias = udfs.get(i).toString().toLowerCase();
@@ -260,6 +280,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
       }
     } catch (Exception ex) {
       throw new TestException("Exception while dropping function" + ex.getMessage());
+    }
+    finally {
+      closeConnection(conn);
     }
   }
 
@@ -296,6 +319,9 @@ public class SnappyDeployUnDeployTest extends SnappyTest {
       }
     } catch (Exception ex) {
       throw new TestException("Exception while listing jars " + ex.getMessage());
+    }
+    finally {
+      closeConnection(conn);
     }
   }
 
