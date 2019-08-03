@@ -1493,11 +1493,19 @@ task docs(type: ScalaDoc) {
   })
   destinationDir = file("${rootProject.buildDir}/docs")
 }
+
+task buildSqlFuncDocs(type: Exec) {
+  dependsOn product
+  // on linux
+  commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
+}
+
 task publishDocs(type:Exec) {
-  dependsOn docs
-  //on linux
+  dependsOn docs, buildSqlFuncDocs
+  // on linux
   commandLine './publish-site.sh'
 }
+
 
 // It runs test script from product dir. Hence if running the target individually make sure
 // to run product target first
