@@ -278,8 +278,17 @@ class SnappyConf(@transient val session: SnappySession)
 
   private[sql] def setDynamicCpusPerTask(): Unit = synchronized {
     if (dynamicCpusPerTask != -1) {
-      val cpusPerTask = math.max(1, math.ceil(session.sparkContext.defaultParallelism.toDouble /
-          SnappyContext.totalPhysicalCoreCount.get().toDouble).toInt)
+      val sparkCores = session.sparkContext.defaultParallelism.toDouble
+      // calculate minimum required heap assuming a block size of 128M
+      val minRequiredHeap = 128.0 * 1024.0 * 1024.0 * sparkCores * 1.2
+      val totalUsableHeap = SnappyContext.foldLeftBlockIds(0L)(_ + _.usableHeapBytes)
+      // select bigger among (required heap / available) and (logical cores / physical)
+      val cpusPerTask0 = math.max(minRequiredHeap / totalUsableHeap,
+        sparkCores / SnappyContext.totalPhysicalCoreCount.get())
+      // keep a reasonable upper-limit so tasks can at least be scheduled:
+      //   used below is average logical cores / 2
+      val cpusPerTask = math.min(sparkCores.toInt / (2 * SnappyContext.numExecutors),
+        math.max(1, math.ceil(cpusPerTask0).toInt))
       setConfString(Constant.CPUS_PER_TASK_PROP, cpusPerTask.toString)
       dynamicCpusPerTask = cpusPerTask
       logDebug(s"Set dynamic ${Constant.CPUS_PER_TASK_PROP} to $cpusPerTask")
