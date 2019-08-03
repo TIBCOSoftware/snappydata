@@ -394,25 +394,31 @@ class SnappyUnifiedMemoryManager private[memory](
     assertInvariants()
     assert(numBytes >= 0)
     val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+
+    if (!offHeap && numBytes >= 8192 && SnappyMemoryUtils.isCriticalUp) {
+      logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
+          s"No memory allocated to thread ${Thread.currentThread()}")
+      return 0L
+    }
+
     // use vars instead of tuple to avoid Tuple5 creation and Long boxing/unboxing
     var executionMemoryPool: ExecutionMemoryPool = null
     var storageMemoryPool: StorageMemoryPool = null
     var regionSize = 0L
     var maxMemoryBytes = 0L
     var minEvictionBytes = 0L
-    memoryMode match {
-      case MemoryMode.ON_HEAP =>
-        executionMemoryPool = onHeapExecutionMemoryPool
-        storageMemoryPool = onHeapStorageMemoryPool
-        regionSize = onHeapStorageRegionSize
-        maxMemoryBytes = maxHeapMemory
-        minEvictionBytes = getMinHeapEviction(numBytes)
-      case MemoryMode.OFF_HEAP =>
-        executionMemoryPool = offHeapExecutionMemoryPool
-        storageMemoryPool = offHeapStorageMemoryPool
-        regionSize = offHeapStorageMemory
-        maxMemoryBytes = maxOffHeapMemory
-        minEvictionBytes = getMinOffHeapEviction(numBytes)
+    if (offHeap) {
+      executionMemoryPool = offHeapExecutionMemoryPool
+      storageMemoryPool = offHeapStorageMemoryPool
+      regionSize = offHeapStorageMemory
+      maxMemoryBytes = maxOffHeapMemory
+      minEvictionBytes = getMinOffHeapEviction(numBytes)
+    } else {
+      executionMemoryPool = onHeapExecutionMemoryPool
+      storageMemoryPool = onHeapStorageMemoryPool
+      regionSize = onHeapStorageRegionSize
+      maxMemoryBytes = maxHeapMemory
+      minEvictionBytes = getMinHeapEviction(numBytes)
     }
 
     val executionPool = executionMemoryPool
@@ -430,7 +436,7 @@ class SnappyUnifiedMemoryManager private[memory](
     def maybeGrowExecutionPool(extraMemoryNeeded: Long): Unit = {
       if (extraMemoryNeeded > 0) {
 
-        if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
+        if (!offHeap && SnappyMemoryUtils.isCriticalUp) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return
@@ -553,6 +559,14 @@ class SnappyUnifiedMemoryManager private[memory](
       }
       assertInvariants()
       assert(numBytes >= 0)
+      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
+
+      if (!offHeap && numBytes >= 8192 && SnappyMemoryUtils.isCriticalUp) {
+        logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
+            s"No memory allocated to thread ${Thread.currentThread()}")
+        return false
+      }
+
       // use vars instead of tuple to avoid Tuple5 creation and Long boxing/unboxing
       var executionPool: ExecutionMemoryPool = null
       var storageMemoryPool: StorageMemoryPool = null
@@ -560,28 +574,27 @@ class SnappyUnifiedMemoryManager private[memory](
       var maxStorageSize = 0L
       var minEviction = 0L
       var memoryFree = 0L
-      memoryMode match {
-        case MemoryMode.ON_HEAP =>
-          executionPool = onHeapExecutionMemoryPool
-          storageMemoryPool = onHeapStorageMemoryPool
-          maxMemory = maxOnHeapStorageMemory
-          maxStorageSize = maxHeapStorageSize
-          minEviction = getMinHeapEviction(numBytes)
-          memoryFree = storageMemoryPool.memoryFree
-        case MemoryMode.OFF_HEAP =>
-          executionPool = offHeapExecutionMemoryPool
-          storageMemoryPool = offHeapStorageMemoryPool
-          maxMemory = maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed
-          maxStorageSize = maxOffHeapStorageSize
-          minEviction = getMinOffHeapEviction(numBytes)
-          memoryFree = storageMemoryPool.memoryFree
-          // don't adjust below 32K of storage memory
-          val adjustedSize = math.min(memoryFree, UnsafeHolder.getDirectReservedMemory) - 32768
-          if (adjustedSize > 0 && adjustedSize < storageMemoryPool.poolSize) {
-            storageMemoryPool.decrementPoolSize(adjustedSize)
-            memoryFree -= adjustedSize
-            storagePoolAdjustedSize = adjustedSize
-          }
+      if (offHeap) {
+        executionPool = offHeapExecutionMemoryPool
+        storageMemoryPool = offHeapStorageMemoryPool
+        maxMemory = maxOffHeapMemory - offHeapExecutionMemoryPool.memoryUsed
+        maxStorageSize = maxOffHeapStorageSize
+        minEviction = getMinOffHeapEviction(numBytes)
+        memoryFree = storageMemoryPool.memoryFree
+        // don't adjust below 32K of storage memory
+        val adjustedSize = math.min(memoryFree, UnsafeHolder.getDirectReservedMemory) - 32768
+        if (adjustedSize > 0 && adjustedSize < storageMemoryPool.poolSize) {
+          storageMemoryPool.decrementPoolSize(adjustedSize)
+          memoryFree -= adjustedSize
+          storagePoolAdjustedSize = adjustedSize
+        }
+      } else {
+        executionPool = onHeapExecutionMemoryPool
+        storageMemoryPool = onHeapStorageMemoryPool
+        maxMemory = maxOnHeapStorageMemory
+        maxStorageSize = maxHeapStorageSize
+        minEviction = getMinHeapEviction(numBytes)
+        memoryFree = storageMemoryPool.memoryFree
       }
 
       val storagePool = storageMemoryPool
@@ -608,7 +621,6 @@ class SnappyUnifiedMemoryManager private[memory](
       }
       // don't borrow from execution for off-heap if shouldEvict=false since it
       // will try clearing references before calling with shouldEvict=true again
-      val offHeap = memoryMode eq MemoryMode.OFF_HEAP
       val offHeapNoEvict = !doEvict && offHeap
       if (numBytes > memoryFree && !offHeapNoEvict) {
         // There is not enough free memory in the storage pool, so try to borrow free memory from
@@ -645,7 +657,7 @@ class SnappyUnifiedMemoryManager private[memory](
         // return immediately for OFF_HEAP with shouldEvict=false
         if (offHeapNoEvict) return false
 
-        if (!offHeap && SnappyMemoryUtils.isCriticalUp()) {
+        if (!offHeap && SnappyMemoryUtils.isCriticalUp) {
           logWarning(s"CRTICAL_UP event raised due to critical heap memory usage. " +
             s"No memory allocated to thread ${Thread.currentThread()}")
           return false
