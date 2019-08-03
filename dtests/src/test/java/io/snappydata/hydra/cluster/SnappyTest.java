@@ -3245,8 +3245,12 @@ public class SnappyTest implements Serializable {
     boolean checkHang = new File(currDir, "hang.txt").exists();
     { // record SparkSubmit processes if left
       Vector<String> hostNamesList = BasePrms.tab().vecAt(HostPrms.hostNames, null);
-      if (hostNamesList == null || hostNamesList.isEmpty())
+      if (hostNamesList == null) {
+        hostNamesList = new Vector<>(1);
+      }
+      if (hostNamesList.isEmpty()) {
         hostNamesList.add("localhost");
+      }
       for (int i = 0; i < hostNamesList.size(); i++)
         recordSnappyProcessIDinNukeRun("SparkSubmit", hostNamesList.get(i));
 
