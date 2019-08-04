@@ -278,7 +278,6 @@ abstract class BaseColumnFormatRelation(
       case None => snc.grabLock(table, schemaName, connProperties)
       case Some(a) => null // Do nothing as putInto will release lock
     }
-    if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     try {
       if (numRows > (batchSize * numBuckets)) {
         ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
@@ -301,8 +300,8 @@ abstract class BaseColumnFormatRelation(
       }
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context. in InsertRows")
       if (lock != null) {
+        logDebug(s"Releasing the ${lock} object in InsertRows")
         snc.releaseLock(lock)
       }
     }
@@ -315,13 +314,12 @@ abstract class BaseColumnFormatRelation(
       case None => snc.grabLock(table, schemaName, connProperties)
       case Some(_) => null // Do nothing as putInto will release lock
     }
-    if ((lock != null) && lock.isInstanceOf[RegionLock]) lock.asInstanceOf[RegionLock].lock()
     try {
       f()
     }
     finally {
-      logDebug(s"Added the ${lock} object to the context.")
       if (lock != null) {
+        logDebug(s"Added the ${lock} object to the context for $table")
         snc.addContextObject(
           SnappySession.BULKWRITE_LOCK, lock)
       }
