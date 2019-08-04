@@ -17,9 +17,10 @@
 package org.apache.spark.sql
 
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property
 import io.snappydata.cluster.ClusterManagerTestBase
-import io.snappydata.test.dunit.AvailablePortHelper
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableCallable}
 import io.snappydata.util.TestUtils
 import org.scalatest.Assertions
 
@@ -28,7 +29,7 @@ import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd, SparkLis
 
 case class TestRecord(col1: Int, col2: Int, col3: Int)
 
-class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
+class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
     with Assertions with Logging {
 
   def _testColumnBatchSkipping(): Unit = {
@@ -293,8 +294,15 @@ class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
     val stmt = conn.createStatement()
 
     val sparkCores = TestUtils.defaultCores * 3 // three executors
-    val implicitCpusToTasks = math.max(1, math.ceil(TestUtils.defaultCores.toDouble /
-        Runtime.getRuntime.availableProcessors()))
+    val usableHeap = vm1.invoke(new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        Long.box(Misc.getGemFireCache.getResourceManager.getHeapMonitor
+            .getThresholds.getCriticalThresholdBytes)
+      }
+    }).asInstanceOf[java.lang.Long].longValue()
+    val implicitCpusToTasks = math.max(1, math.ceil(math.max(
+      128.0 * 1024.0 * 1024.0 * TestUtils.defaultCores / usableHeap,
+      TestUtils.defaultCores.toDouble / Runtime.getRuntime.availableProcessors())).toInt)
     val buckets = math.max(128, sparkCores)
     val targetDataFile = "airlineParquet"
 

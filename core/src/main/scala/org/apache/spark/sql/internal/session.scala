@@ -287,8 +287,8 @@ class SnappyConf(@transient val session: SnappySession)
         sparkCores / SnappyContext.totalPhysicalCoreCount.get())
       // keep a reasonable upper-limit so tasks can at least be scheduled:
       //   used below is average logical cores / 2
-      val cpusPerTask = math.min(sparkCores.toInt / (2 * SnappyContext.numExecutors),
-        math.max(1, math.ceil(cpusPerTask0).toInt))
+      val cpusPerTask = math.max(1, math.ceil(math.min(sparkCores /
+          (2 * SnappyContext.numExecutors), cpusPerTask0)).toInt)
       setConfString(Constant.CPUS_PER_TASK_PROP, cpusPerTask.toString)
       dynamicCpusPerTask = cpusPerTask
       logDebug(s"Set dynamic ${Constant.CPUS_PER_TASK_PROP} to $cpusPerTask")
