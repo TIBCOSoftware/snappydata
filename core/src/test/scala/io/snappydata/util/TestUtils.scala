@@ -27,6 +27,8 @@ object TestUtils extends Logging {
   // factor of 2 like in product by default
   val defaultCores: Int = math.min(8, Runtime.getRuntime.availableProcessors()) * 2
 
+  def defaultCoresForSmartConnector: String = (defaultCores / 2).toString
+
   def dropAllSchemas(session: SnappySession): Unit = {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
