@@ -25,12 +25,15 @@ import scala.collection.JavaConverters._
 import scala.collection.mutable
 
 import com.pivotal.gemfirexd.internal.engine.Misc
+import io.snappydata.sql.catalog.SnappyExternalCatalog
 
 import org.apache.spark.Logging
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.catalyst.FunctionIdentifier
+import org.apache.spark.sql.catalyst.analysis.NoSuchFunctionException
+import org.apache.spark.sql.catalyst.catalog.CatalogFunction
 import org.apache.spark.sql.collection.ToolsCallbackInit
 import org.apache.spark.sql.execution.RefreshMetadata
-import org.apache.spark.util.MutableURLClassLoader
+import org.apache.spark.sql.{AnalysisException, SnappyContext}
 
 /**
   * An utility class to store jar file reference with their individual class loaders.
@@ -84,8 +87,6 @@ object ContextJarUtils extends Logging {
   }
 
   def deleteFile(prefix: String, path: String, isEmbedded: Boolean): Unit = {
-    def getName(path: String): String = new File(path).getName
-
     val callbacks = ToolsCallbackInit.toolsCallback
     if (callbacks != null) {
       val localName = path.split("/").last
@@ -108,6 +109,39 @@ object ContextJarUtils extends Logging {
         }
       }
     }
+  }
+
+  def removeFunctionArtifacts(externalCatalog: SnappyExternalCatalog,
+      sessionCatalog: Option[SnappySessionCatalog], schemaName: String, functionName: String,
+      isEmbeddedMode: Boolean, ignoreIfNotExists: Boolean = false): Unit = {
+    val identifier = FunctionIdentifier(functionName, Some(schemaName))
+    removeDriverJar(identifier.unquotedString)
+
+    try {
+      val catalogFunction = externalCatalog.getFunction(schemaName, identifier.funcName)
+      catalogFunction.resources.foreach { r =>
+        deleteFile(catalogFunction.identifier.toString(), r.uri, isEmbeddedMode)
+      }
+    } catch {
+      case e: AnalysisException =>
+        if (!ignoreIfNotExists) {
+          sessionCatalog match {
+            case Some(ssc) => ssc.failFunctionLookup(functionName)
+            case None => throw new NoSuchFunctionException(schemaName, identifier.funcName)
+          }
+        } else { // Log, just in case.
+          logDebug(s"Function ${identifier.funcName} possibly not found: $e")
+        }
+    }
+  }
+
+  def addFunctionArtifacts(funcDefinition: CatalogFunction, schemaName: String): Unit = {
+    val k = funcDefinition.identifier.copy(database = Some(schemaName)).toString
+    // resources has just one jar
+    val jarPath = if (funcDefinition.resources.isEmpty) "" else funcDefinition.resources.head.uri
+    Misc.getMemStore.getGlobalCmdRgn.put(ContextJarUtils.functionKeyPrefix + k, jarPath)
+    // Remove from the list in (__FUNC__DROPPED__, dropped-udf-list)
+    removeFromTheListInCmdRegion(ContextJarUtils.droppedFunctionsKey, k + ContextJarUtils.DELIMITER)
   }
 
   private def sparkContext = SnappyContext.globalSparkContext
