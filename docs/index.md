@@ -147,12 +147,12 @@ For instance, each time an aggregation is run on a large Cassandra table, it nec
 ### The SnappyData Approach
 
 ##### Snappy Architecture
-![SnappyData Architecture](docs/Images/SnappyArchitecture.png)
 
-At SnappyData, we take a very different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. </br>
+![SnappyData Architecture](./Images/SnappyArchitecture.png)
+
+At SnappyData, there is a different approach. SnappyData fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. </br>
 The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
-
-Essentially, we turn Spark into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries. Or, it is an in-memory scale out Hybrid Database that can execute Spark code, SQL, or even Objects.
+Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries or it is an in-memory scale out Hybrid Database that can execute Spark code, SQL, or even Objects.
 
 
 ## Streaming Example - Ad Analytics
