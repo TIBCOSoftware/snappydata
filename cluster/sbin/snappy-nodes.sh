@@ -344,11 +344,9 @@ function getNumLeadsOnHost() {
 # function for copying all the configuration files into the other nodes/members of the cluster
 function copyConf() {
   if [[ "$OSTYPE" == "darwin"* ]]; then
-       #ipCommand="ifconfig | grep 'inet'"
-      set -- ifconfig | grep inet
+     set -- ifconfig | grep inet
   else 
-       ipCommand="ip addr"
-       set -- "ip addr"
+     set -- "ip addr"
   fi
   set -- "$@" "| grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
   currentNodeIpAddr=$("$@") 
