@@ -38,7 +38,7 @@ import com.pivotal.gemfirexd.internal.iapi.types.TypeId
 import com.pivotal.gemfirexd.internal.iapi.{types => stypes}
 import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatIds}
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-import io.snappydata.{Constant, Property, SnappyDataFunctions, SnappyTableStatsProviderService}
+import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
 
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
@@ -125,7 +125,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[spark] def snappyContextFunctions = sessionState.contextFunctions
 
   SnappyContext.initGlobalSnappyContext(sparkContext, this)
-  SnappyDataFunctions.registerSnappyFunctions(sessionState.functionRegistry)
   snappyContextFunctions.registerSnappyFunctions(this)
 
   /**
