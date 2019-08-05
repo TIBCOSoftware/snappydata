@@ -163,13 +163,11 @@ class QuickLauncher extends LauncherBase {
 
     // Complain if a cache server is already running in the specified working directory.
     // See bug 32574.
-    String msg = verifyAndClearStatus();
-    if (msg != null) {
-      final Status status = getStatus();
-      System.err.println(msg);
+    int state = verifyAndClearStatus();
+    if (state != 0) {
       // Returning a status of 10 would indicate the startup scripts to know that an
       // instance was already running and in healthy state.
-      if (status.state == Status.RUNNING) {
+      if (state == Status.RUNNING) {
         return 10;
       }
       // else this will indicate that an instance was there but not in running state.

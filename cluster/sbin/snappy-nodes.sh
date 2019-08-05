@@ -280,7 +280,7 @@ function execute() {
     fi
   fi
 
-  childPids+=($LAST_PID)
+  childPids[$LAST_PID]="$host"
   df=${dirfolder}
   if [ -z "${df}" ]; then
     df=$(echo ${dirparam} | cut -d'=' -f2)
@@ -454,14 +454,14 @@ fi
 
 if [ "$isServerStart" ]; then
   # server status file
-  SERVERS_STATUS_FILE="$SNAPPY_HOME/work/serversstatus"
+  SERVERS_STATUS_FILE="$SNAPPY_HOME/work/members-status.txt"
   if [ -f $SERVERS_STATUS_FILE ]; then
     rm $SERVERS_STATUS_FILE
   fi
   touch $SERVERS_STATUS_FILE
-  for pid in "${childPids[@]}"; do
+  for pid in "${!childPids[@]}"; do
     wait $pid
-    echo $? >> $SERVERS_STATUS_FILE
+    echo "$? ${childPids[${pid}]}" >> $SERVERS_STATUS_FILE
   done
 else
   wait
