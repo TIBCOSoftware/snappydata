@@ -170,7 +170,10 @@ extends Runnable {
       if (stmt != null) {
         StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Executing " +
             "remaining batch .. ")
+        StringMessageProducer.pw.flush()
         stmt.executeBatch()
+        StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Executed " +
+            "batch.")
       }
       conn.close()
     }
@@ -193,10 +196,13 @@ extends Runnable {
     if (stmt == null) stmt = conn.createStatement()
     stmt.addBatch(query)
     batchSize = batchSize + 1
-    if (batchSize == 30000) {
+    if (batchSize == 5000) {
       StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Executing " +
           "batch .. ")
+      StringMessageProducer.pw.flush()
       stmt.executeBatch()
+      StringMessageProducer.pw.println(StringMessageProducer.getCurrTimeAsString + "Executed " +
+          "batch.")
       batchSize = 0
       stmt = null
     }
