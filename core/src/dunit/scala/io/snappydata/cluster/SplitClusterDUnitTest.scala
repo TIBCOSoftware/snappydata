@@ -787,7 +787,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     // stop any existing SparkContext, to make sure cpu core available for this test
     if (vm eq null) stopSpark()
-    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark", Array[AnyRef](null))
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark")
 
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),
