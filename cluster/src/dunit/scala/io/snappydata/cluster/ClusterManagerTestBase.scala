@@ -33,7 +33,7 @@ import io.snappydata.test.dunit._
 import io.snappydata.util.TestUtils
 import org.slf4j.LoggerFactory
 
-import org.apache.spark.sql.SnappyContext
+import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.{Logging, SparkContext}
@@ -195,9 +195,9 @@ abstract class ClusterManagerTestBase(s: String)
   override def tearDown2(): Unit = {
     super.tearDown2()
     GemFireXDUtils.IS_TEST_MODE = false
-    cleanupTestData(getClass.getName, getName)
+    cleanupTestData(getClass.getName, getName, this)
     Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "cleanupTestData",
-      Array[AnyRef](getClass.getName, getName)))
+      Array[AnyRef](getClass.getName, getName, null)))
     if (stopNetServersInTearDown) {
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
@@ -220,6 +220,8 @@ abstract class ClusterManagerTestBase(s: String)
       }
     })
   }
+
+  protected def initSessionForCleanup(session: SnappySession): Unit = {}
 
   def getANetConnection(netPort: Int,
       useGemXDURL: Boolean = false,
@@ -307,22 +309,24 @@ object ClusterManagerTestBase extends Logging {
       netPort, null)
   }
 
-  def cleanupTestData(testClass: String, testName: String): Unit = {
+  def cleanupTestData(testClass: String, testName: String, inst: ClusterManagerTestBase): Unit = {
     // cleanup metastore
     if (Misc.getMemStoreBootingNoThrow eq null) return
     val snc = SnappyContext()
     if (snc != null) {
-      TestUtils.resetAllFunctions(snc.snappySession)
-      TestUtils.dropAllSchemas(snc.snappySession)
+      val session = snc.snappySession
+      if (inst ne null) inst.initSessionForCleanup(session)
+      TestUtils.resetAllFunctions(session)
+      TestUtils.dropAllSchemas(session)
     }
     if (testName != null) {
       logInfo("\n\n\n  ENDING TEST " + testClass + '.' + testName + "\n\n")
     }
   }
 
-  def stopSpark(): Unit = {
+  def stopSpark(inst: ClusterManagerTestBase = null): Unit = {
     // cleanup metastore
-    cleanupTestData(null, null)
+    cleanupTestData(null, null, inst)
     val service = ServiceManager.currentFabricServiceInstance
     if (service != null) {
       service.stop(null)

@@ -33,15 +33,24 @@ abstract class PolicyTestBase extends SnappyFunSuite
 
   protected val sysUser = "gemfire10"
 
-  override def beforeAll(): Unit = {
-    super.beforeAll()
-    stopAll()
+  protected def systemUser: String = sysUser
 
-    System.setProperty(Property.SNAPPY_ENABLE_RLS, "true")
-    GemFireStore.ALLOW_RLS_WITHOUT_SECURITY = true
+  protected def setupAdminSessionCredentials(): Unit = {
+    val session = this.snc.snappySession
+    session.conf.set(Attribute.USERNAME_ATTR, systemUser)
+    session.conf.set(Attribute.PASSWORD_ATTR, systemUser)
   }
 
-  protected def newLDAPSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+  override def beforeAll(): Unit = {
+    stopAll()
+    System.setProperty(Property.SNAPPY_ENABLE_RLS, "true")
+    GemFireStore.ALLOW_RLS_WITHOUT_SECURITY = true
+
+    setupAdminSessionCredentials()
+    super.beforeAll()
+  }
+
+  protected def newLDAPSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     val ldapProperties = SecurityTestUtils.startLdapServerAndGetBootProperties(0, 0, sysUser,
       getClass.getResource("/auth.ldif").getPath)
     for (k <- List(Attribute.AUTH_PROVIDER, AUTH_LDAP_SERVER, AUTH_LDAP_SEARCH_BASE)) {
@@ -66,6 +75,7 @@ abstract class PolicyTestBase extends SnappyFunSuite
 
   override def afterAll(): Unit = {
     try {
+      setupAdminSessionCredentials()
       super.afterAll()
       stopAll()
 
