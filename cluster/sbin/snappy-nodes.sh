@@ -343,7 +343,16 @@ function getNumLeadsOnHost() {
 }
 # function for copying all the configuration files into the other nodes/members of the cluster
 function copyConf() {
-  currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+       #ipCommand="ifconfig | grep 'inet'"
+      set -- ifconfig | grep inet
+  else 
+       ipCommand="ip addr"
+       set -- "ip addr"
+  fi
+  set -- "$@" "| grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/'"
+  currentNodeIpAddr=$("$@") 
+  #currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
   currentNodeHostName=$(uname -n)
 
   if [[ "$host" != "$currentNodeIpAddr" && "$host" != "localhost" && "$host" != $currentNodeHostName ]] ; then
@@ -354,7 +363,7 @@ function copyConf() {
 	fileName=$(basename $entry)
  	template=".template"
 	#check the extension, interested in files those doesn't have template extension
-	if [[ ! "$fileName" = @(*.template) ]]; then	       	
+	if [[ ! "$fileName" = "@(*.template)" ]]; then	       	
 	  if ! ssh $host "test -e $entry"; then #"File does not exist."	  
             scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
 	  else
