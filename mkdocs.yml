@@ -249,6 +249,7 @@ pages:
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
         - 'ack-wait-threshold': 'reference/configuration_parameters/ack-wait-threshold.md'
+        - 'allow-explicit-commit': 'reference/configuration_parameters/allow-explicit-commit.md'
         - 'archive-disk-space-limit': 'reference/configuration_parameters/archive-disk-space-limit.md'
         - 'archive-file-size-limit': 'reference/configuration_parameters/archive-file-size-limit.md'
         - 'bind-address': 'reference/configuration_parameters/bind-address.md'
