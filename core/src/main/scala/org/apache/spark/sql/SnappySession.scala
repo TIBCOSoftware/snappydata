@@ -1432,7 +1432,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     try {
       dropTable(policyIdent, ifExists, isView = false)
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException if !ifExists =>
+      case _: NoSuchTableException if !ifExists =>
         throw new PolicyNotFoundException(policyIdent.database.getOrElse(getCurrentSchema),
           policyIdent.table)
     }
@@ -1499,14 +1499,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   /**
    * Set current schema for the session.
    *
-   * @param schemaName        schema name which goes in the catalog
+   * @param schema            schema name which goes in the catalog
    * @param createIfNotExists create the schema if it does not exist
    */
-  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
+  def setCurrentSchema(schema: String, createIfNotExists: Boolean = false): Unit = {
+    val schemaName = sessionCatalog.formatDatabaseName(schema)
     if (createIfNotExists) {
       sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
     }
-    sessionCatalog.setCurrentDatabase(schemaName)
+    sessionCatalog.setCurrentSchema(schemaName)
   }
 
   def getCurrentSchema: String = sessionCatalog.getCurrentSchema
