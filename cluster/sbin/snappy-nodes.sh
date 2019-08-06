@@ -339,11 +339,8 @@ function getNumLeadsOnHost() {
 }
 
 function scpConf() {
- 
- currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
- currentNodeHostName=$(uname -n)
-
- if [[ "$host" != "$currentNodeIpAddr" && "$host" != "localhost" && "$host" != $currentNodeHostName ]] ; then
+ var=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+ if [[ "$host" != "$var" && "$host" != "localhost" ]] ; then
   	#loop to get the all the files avaliable in Conf directory
 	for entry in "${SPARK_CONF_DIR}"/*
 	do
@@ -354,21 +351,14 @@ function scpConf() {
    	    template=".template"
 	    #check the extension, interested in files those doesn't have template extension
 	    if [[ ! "$fileName" = @(*.template) ]]; then	       	
-		if ! ssh $host "test -e $entry"; then #"File does not exist."	  
-		  scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
+		if ! ssh $host "test -e $entry"; then #"File does not exist." 		  
+		  scp -i ~/.ssh/id_rsa.pub ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
 		else
-		  #file exits but before replacing with new one, create a backup file and warn user about it then replace
-      		  # except locators,leads and servers file has to replace all the time			 
-		  if [[ "$fileName" == "locators" || "$fileName" == "servers" || "$fileName" == "leads"  ]]; then
-		    scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR} 
-		  else
-	          	if [[ ! -z $(ssh $host "cat $entry" | diff - "$entry") ]] ; then
-				backupFileName=${fileName%.*}_`date +%Y_%m_%d_%H_%M_%S`.${fileName#*.}
-				echo "###### As $fileName differ from the $fileName present on $host, creating a backup file with the name $backupFileName before replacing #######"
-				ssh $host "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupFileName"		    
-		    		scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR} 
-		    	fi  
-          fi												
+		  #file exits but do not override/copy..since user might have different configuration setting for different node.
+      		  # except			 
+		  if [[ "$fileName" == "locators" || "$fileName" == "servers" || "$fileName" == "leads"  ]]; then		 
+		  scp -i ~/.ssh/id_rsa.pub ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}   
+	          fi								
 		fi        				
 	    fi # end of if, check extension
 	  fi # end of if to get each file
@@ -429,11 +419,7 @@ if [ -n "${HOSTLIST}" ]; then
       execute "$@"
       if [ -n "$isStart" ]; then
     	count=$(echo $MEMBERS_FILE | grep -o -i "$host" "$MEMBERS_FILE" | wc -l)
-	# checking count is 2, since in a single line of member.txt, there will be two matches of ip address/hostname of a component.
-	# entry happpens in member file sequentially. So for example, if on some node 1, both server and lead is running, then by that time lead will start,
-	# member file will have already an entry for ipaddress/hostname of that node 1 after starting the server  
-	# it kind of cross checking if component with same ipaddress already present in member file or not.
-	if [ $count -eq 2 ]; then
+	if [ $count -eq 2 ]; then  # 2 ,since in a single line there wiil be two match of ip address
     	scpConf "$@"
   	fi
       fi
