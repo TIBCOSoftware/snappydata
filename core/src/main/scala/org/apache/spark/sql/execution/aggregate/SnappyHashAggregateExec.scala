@@ -965,7 +965,7 @@ case class SnappyHashAggregateExec(
       byteBufferAccessor.numBytesForNullAggBits, false)
     val outputCode = generateResultCodeForSHAMap(ctx, keysExpr, aggsExpr, localIterValueOffsetTerm)
     val numOutput = metricTerm(ctx, "numOutputRows")
-
+    val localNumRowsIterated = ctx.freshName("localNumRowsIterated")
     // The child could change `copyResult` to true, but we had already
     // consumed all the rows, so `copyResult` should be reset to `false`.
     ctx.copyResult = false
@@ -1020,14 +1020,17 @@ case class SnappyHashAggregateExec(
         long $endIterValueOffset = $hashMapTerm.valueDataSize() + $valueDataTerm.baseOffset();
         long $localIterValueOffsetTerm = $iterValueOffsetTerm;
         ${byteBufferAccessor.declareNullVarsForAggBuffer(aggregateBufferVars)}
+        int $localNumRowsIterated = 0;
         while ($localIterValueOffsetTerm != $endIterValueOffset) {
-          $numOutput.${metricAdd("1")};
+          ++$localNumRowsIterated;
           $readKeyLengthCode
           // skip the key length
           $localIterValueOffsetTerm += 4;
           long $localIterValueStartOffsetTerm = $localIterValueOffsetTerm;
           $outputCode
           if (shouldStop()) {
+       |    $numOutput.${metricAdd(String.valueOf(localNumRowsIterated))};
+            $localNumRowsIterated = 0;
             $iterValueOffsetTerm = $localIterValueOffsetTerm;
             return;
           }
@@ -1036,6 +1039,8 @@ case class SnappyHashAggregateExec(
 
         if ($localIterValueOffsetTerm == $endIterValueOffset) {
           // Not releasing memory here as it will be freed by the task completion listener
+           $numOutput.${metricAdd(String.valueOf(localNumRowsIterated))};
+           $localNumRowsIterated = 0;
           //$hashMapTerm.release();
           $hashMapTerm = null;
         }
