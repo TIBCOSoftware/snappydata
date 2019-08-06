@@ -138,7 +138,7 @@ else
 fi
 
 MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
-isStart=
+
 
 function execute() {
   dirparam="$(echo $args | sed -n 's/^.*\(-dir=[^ ]*\).*$/\1/p')"
@@ -243,14 +243,6 @@ function execute() {
       -*) postArgs="$postArgs $arg"
     esac
   done
-  #copy the conf files into other node before starting the launch processs
-  if [ -n "$isStart" ]; then
-   #check $host is present in memberArr or not. If not then copy else do not copy
-    if [[ ! " ${memberArray[@]} " =~ " ${host} " ]]; then
-      memberArray+=($host)
-      scpConf "$@"    
-    fi    
-  fi
   if [ "$host" != "localhost" ]; then
     if [ "$dirfolder" != "" ]; then
       # Create the directory for the snappy component if the folder is a default folder
@@ -347,35 +339,41 @@ function getNumLeadsOnHost() {
 }
 
 function scpConf() {
-  currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
-  currentNodeHostName=$(uname -n)
+ 
+ currentNodeIpAddr=$(ip addr | grep 'state UP' -A2 | head -n3 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
+ currentNodeHostName=$(uname -n)
 
-  if [[ "$host" != "$currentNodeIpAddr" && "$host" != "localhost" && "$host" != $currentNodeHostName ]] ; then
-  #loop to get the all the files avaliable in Conf directory
-    for entry in "${SPARK_CONF_DIR}"/*; do
-      if [ -f "$entry" ];then
-        #${file%.*} to get the filename without the extension and ${file##*.} to get the extension alone
-	fileName=$(basename $entry)
- 	template=".template"
-	#check the extension, interested in files those doesn't have template extension
-	if [[ ! "$fileName" = @(*.template) ]]; then	       	
-	  if ! ssh $host "test -e $entry"; then #"File does not exist."	  
-            scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
-	  else
-	      backupDir="backup"
-	      if [[ ! -z $(ssh $host "cat $entry" | diff - "$entry") ]] ; then
-		backupFileName=${fileName}_`date +%Y_%m_%d_%H_%M_%S`
-		echo "INFO: Copied $filename from this host to $host. Moved the original $filename on $host to $backupFileName."
-                (ssh "$host" "{ if [ ! -d \"${SPARK_CONF_DIR}/$backupDir\" ]; then  mkdir \"${SPARK_CONF_DIR}/$backupDir\"; fi; } ")
-		ssh $host "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"		    
-		scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR} 
-	      fi  
-            #fi												
-	  fi        				
-	fi # end of if, check extension
-      fi # end of if to get each file
-    done  #end of for loop
-  fi # end of if 	
+ if [[ "$host" != "$currentNodeIpAddr" && "$host" != "localhost" && "$host" != $currentNodeHostName ]] ; then
+  	#loop to get the all the files avaliable in Conf directory
+	for entry in "${SPARK_CONF_DIR}"/*
+	do
+	  if [ -f "$entry" ];then
+	    #${file%.*} to get the filename without the extension and ${file##*.} to get the extension alone
+	    fileName=$(basename $entry)
+	    #echo "fileName:  $fileName"
+   	    template=".template"
+	    #check the extension, interested in files those doesn't have template extension
+	    if [[ ! "$fileName" = @(*.template) ]]; then	       	
+		if ! ssh $host "test -e $entry"; then #"File does not exist."	  
+		  scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
+		else
+		  #file exits but before replacing with new one, create a backup file and warn user about it then replace
+      		  # except locators,leads and servers file has to replace all the time			 
+		  if [[ "$fileName" == "locators" || "$fileName" == "servers" || "$fileName" == "leads"  ]]; then
+		    scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR} 
+		  else
+	          	if [[ ! -z $(ssh $host "cat $entry" | diff - "$entry") ]] ; then
+				backupFileName=${fileName%.*}_`date +%Y_%m_%d_%H_%M_%S`.${fileName#*.}
+				echo "###### As $fileName differ from the $fileName present on $host, creating a backup file with the name $backupFileName before replacing #######"
+				ssh $host "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupFileName"		    
+		    		scp ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR} 
+		    	fi  
+          fi												
+		fi        				
+	    fi # end of if, check extension
+	  fi # end of if to get each file
+	done  #end of for loop
+ fi # end of if 	
 }
 
 if [ -n "${HOSTLIST}" ]; then
@@ -383,6 +381,7 @@ if [ -n "${HOSTLIST}" ]; then
   declare -a hosts
   declare -a counts
   isStartOrStatus=
+  isStart=
   count=0
   while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
@@ -428,6 +427,16 @@ if [ -n "${HOSTLIST}" ]; then
         args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
       fi
       execute "$@"
+      if [ -n "$isStart" ]; then
+    	count=$(echo $MEMBERS_FILE | grep -o -i "$host" "$MEMBERS_FILE" | wc -l)
+	# checking count is 2, since in a single line of member.txt, there will be two matches of ip address/hostname of a component.
+	# entry happpens in member file sequentially. So for example, if on some node 1, both server and lead is running, then by that time lead will start,
+	# member file will have already an entry for ipaddress/hostname of that node 1 after starting the server  
+	# it kind of cross checking if component with same ipaddress already present in member file or not.
+	if [ $count -eq 2 ]; then
+    	scpConf "$@"
+  	fi
+      fi
     fi
     ((index++))
   done
