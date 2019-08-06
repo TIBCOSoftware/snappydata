@@ -107,19 +107,16 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
-    catalog.createSchema(schema, ifNotExists, authId, createInExternalHive = true)
+    catalog.createSchema(schema, ifNotExists, authId)
     Nil
   }
 }
 
-case class DropSchemaOrDbCommand(schemaName: String, ifExists: Boolean, cascade: Boolean,
-    isDb: Boolean) extends RunnableCommand {
+case class DropSchemaCommand(schemaName: String, ignoreIfNotExists: Boolean,
+    cascade: Boolean) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    val catalog = session.sessionCatalog
-    val schema = catalog.formatDatabaseName(schemaName)
-    // drop from catalog first to cascade drop all objects if required
-    catalog.dropDatabase(schema, ifExists, cascade)
+    session.sessionCatalog.dropSchema(schemaName, ignoreIfNotExists, cascade)
     Nil
   }
 }
