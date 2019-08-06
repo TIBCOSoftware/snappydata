@@ -15,39 +15,39 @@ SnappyData enables complex processing on large data sets in sub-second timeframe
 
 <!---<TODO> - we could shorten the description of each capability and retain the description in the new concepts chapter later.--->
 
-*	**Easily discover and catalog big data sets**
+*	**Easily discover and catalog big data sets:**
 	You can connect and discover datasets in SQL DBs, Hadoop, NoSQL stores, file systems, or even cloud data stores such as S3 by using SQL, infer schemas automatically and register them in a secure catalog. A wide variety of data formats are supported out of the box such as JSON, CSV, text, Objects, Parquet, ORC, SQL, XML, and more.
 
-*	**Rich connectivity**
+*	**Rich connectivity:**
 	SnappyData is built with Apache Spark inside. Therefore, any data store that has a Spark connector can be accessed using SQL or by using the Spark RDD/Dataset API. Virtually all modern data stores do have Spark connector. see [SparkPackages](https://spark-packages.org/)). You can also dynamically deploy connectors to a running SnappyData cluster.
 
-*	**Virtual or in-memory data**
+*	**Virtual or in-memory data:**
 	You can decide which datasets need to be provisioned into distributed memory or left at the source. When the data is left at source, after being modeled as a virtual/external tables, the analytic query processing is parallelized, and the query fragments are pushed down wherever possible and executed at high speed.
 When speed is essential, applications can selectively copy the external data into memory using a single SQL command.
 
-*	**In-memory Columnar + Row store** 
+*	**In-memory Columnar + Row store:** 
 	You can choose in-memory data to be stored in any of the following forms:
     *	**Columnar**: The form that is compressed and designed for scanning/aggregating large data sets.
     *	**Row store**: The form that has an extremely fast key access or highly selective access.
 	The columnar store is automatically indexed using a skipping index. Applications can explicitly add indexes for the row store.
 
-*	**High performance** 
+*	**High performance:** 
 	When data is loaded, the engine parallelizes all the accesses by carefully taking into account the available distributed cores, the available memory, and whether the source data can be partitioned to deliver extremely high-speed loading. Therefore, unlike a traditional warehouse, you can bring up SnappyData whenever required, load, process, and tear it down. Query processing uses code generation and vectorization techniques to shift the processing to the modern-day multi-core processor and L1/L2/L3 caches to the possible extent.
 
-*	**Flexible rich data transformations** 
+*	**Flexible rich data transformations:** 
 	External data sets when discovered automatically through schema inference will have the schema of the source. Users can cleanse, blend, reshape data using a SQL function library (Spark SQL+) or even submit Apache Spark jobs and use custom logic. The entire rich Spark API is at your disposal. This logic can be written in SQL, Java, Scala, or even Python.*
 
-*	**Prepares data for data science** 
+*	**Prepares data for data science:** 
 	Through the use of Spark API for statistics and machine learning, raw or curated datasets can be easily prepared for machine learning. You can understand the statistical characteristics such as correlation, independence of different variables and so on. You can generate distributed feature vectors from your data that is by using processes such as one-hot encoder, binarizer, and a range of functions built into the Spark ML library. These features can be stored back into column tables and shared across a group of users with security and avoid dumping copies to disk, which is slow and error-prone.
  
-*	**Stream ingestion and liveness** 
+*	**Stream ingestion and liveness:** 
 	While it is common to see query service engines today, most resort to periodic refreshing of data sets from the source as the managed data cannot be mutated — for example query engines such as Presto, HDFS formats like parquet, etc. Moreover, when updates can be applied pre-processing, re-shaping of the data is not necessarily simple. 
     In SnappyData, operational systems can feed data updates through Kafka to SnappyData. The incoming data can be CDC events (insert, updates, or deletes) and can be easily ingested into respective in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply smart logic to reduce incoming streams, apply transformations, etc. by using APIS for Spark structured streaming.* 
 
-*	**Approximate Query Processing(AQP)** 
+*	**Approximate Query Processing(AQP):** 
 	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In SnappyData, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart.
 
-*	**Access from anywhere** 
+*	**Access from anywhere:** 
 	You can use JDBC, ODBC, REST, or any of the Spark APIs. The product is fully compatible with Spark 2.1.1. SnappyData natively supports modern visualization tools such as TIBCO Spotfire, Tableau, and Qlikview.
 
 
