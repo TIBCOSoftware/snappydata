@@ -300,6 +300,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
+    - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
