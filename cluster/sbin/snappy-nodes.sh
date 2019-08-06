@@ -338,41 +338,12 @@ function getNumLeadsOnHost() {
   echo $numLeadsOnHost
 }
 
-function scpConf() {
- var=$(ip addr | grep 'state UP' -A2 | tail -n1 | awk '{print $2}' | cut -f1  -d'/')
- if [[ "$host" != "$var" && "$host" != "localhost" ]] ; then
-  	#loop to get the all the files avaliable in Conf directory
-	for entry in "${SPARK_CONF_DIR}"/*
-	do
-	  if [ -f "$entry" ];then
-	    #${file%.*} to get the filename without the extension and ${file##*.} to get the extension alone
-	    fileName=$(basename $entry)
-	    #echo "fileName:  $fileName"
-   	    template=".template"
-	    #check the extension, interested in files those doesn't have template extension
-	    if [[ ! "$fileName" = @(*.template) ]]; then	       	
-		if ! ssh $host "test -e $entry"; then #"File does not exist." 		  
-		  scp -i ~/.ssh/id_rsa.pub ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}
-		else
-		  #file exits but do not override/copy..since user might have different configuration setting for different node.
-      		  # except			 
-		  if [[ "$fileName" == "locators" || "$fileName" == "servers" || "$fileName" == "leads"  ]]; then		 
-		  scp -i ~/.ssh/id_rsa.pub ${SPARK_CONF_DIR}/$fileName  $host:${SPARK_CONF_DIR}   
-	          fi								
-		fi        				
-	    fi # end of if, check extension
-	  fi # end of if to get each file
-	done  #end of for loop
- fi # end of if 	
-}
-
 if [ -n "${HOSTLIST}" ]; then
   declare -a arr
   declare -a hosts
   declare -a counts
   isStartOrStatus=
-  isStart=
-  count=0
+
   while read slave || [[ -n "${slave}" ]]; do
     [[ -z "$(echo $slave | grep ^[^#])" ]] && continue
     arr[${#arr[@]}]="$slave"
@@ -400,9 +371,6 @@ if [ -n "${HOSTLIST}" ]; then
   if echo $"${@// /\\ }" | grep -wq "start\|status"; then
     isStartOrStatus=1
   fi
-  if echo $"${@// /\\ }" | grep -wq "start"; then
-    isStart=1
-  fi
   for slave in "${arr[@]}"; do
     if [ -n "$isStartOrStatus" ]; then
       host="$(echo "$slave "| tr -s ' ' | cut -d ' ' -f1)"
@@ -417,12 +385,6 @@ if [ -n "${HOSTLIST}" ]; then
         args="$args -J-Dsnappydata.numLeadsOnHost=$(getNumLeadsOnHost "$host")"
       fi
       execute "$@"
-      if [ -n "$isStart" ]; then
-    	count=$(echo $MEMBERS_FILE | grep -o -i "$host" "$MEMBERS_FILE" | wc -l)
-	if [ $count -eq 2 ]; then  # 2 ,since in a single line there wiil be two match of ip address
-    	scpConf "$@"
-  	fi
-      fi
     fi
     ((index++))
   done
