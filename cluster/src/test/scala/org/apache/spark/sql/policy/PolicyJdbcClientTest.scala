@@ -36,6 +36,8 @@ class PolicyJdbcClientTest extends PolicyTestBase {
   val rowTableName: String = s"$tableOwner.RowTable"
   var ownerSession: SnappySession = _
 
+  override protected def systemUser: String = tableOwner
+
   override def beforeAll(): Unit = {
     super.beforeAll()
     val seq = for (i <- 0 until numElements) yield {

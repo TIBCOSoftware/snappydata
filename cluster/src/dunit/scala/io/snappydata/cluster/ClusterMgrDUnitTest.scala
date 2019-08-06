@@ -52,7 +52,7 @@ class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logg
       vm3.invoke(getClass, "startSparkJob")
       vm3.invoke(getClass, "startGemJob")
     } finally {
-      vm3.invoke(getClass, "stopSpark")
+      vm3.invoke(getClass, "stopSpark", Array[AnyRef](null))
       ClusterManagerTestBase.startSnappyLead(ClusterManagerTestBase.locatorPort, bootProps)
     }
   }

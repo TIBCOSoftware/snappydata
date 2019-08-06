@@ -86,7 +86,7 @@ class RestrictTableCreationPolicyTest extends PolicyTestBase {
     dataDF.write.insertInto(rowTableName)
   }
 
-  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+  protected override def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     newLDAPSparkConf(addOn)
   }
 

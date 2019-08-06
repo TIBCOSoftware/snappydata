@@ -30,6 +30,7 @@ object TestUtils extends Logging {
     val sc = SnappyContext.globalSparkContext
     if (sc != null && !sc.isStopped) {
       val catalog = session.sessionCatalog
+      catalog.setCurrentDatabase(catalog.defaultSchemaName)
       val skipSchemas = Seq(catalog.defaultSchemaName, "default", "sys", "sysibm")
       val userSchemas = catalog.listDatabases().filterNot(skipSchemas.contains)
       if (userSchemas.nonEmpty) {
