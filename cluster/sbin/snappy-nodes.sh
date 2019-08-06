@@ -280,6 +280,7 @@ function execute() {
     fi
   fi
 
+  childPids[$LAST_PID]="$host"
   df=${dirfolder}
   if [ -z "${df}" ]; then
     df=$(echo ${dirparam} | cut -d'=' -f2)
@@ -297,6 +298,8 @@ index=1
 isServerStart=
 declare -a leadHosts
 declare -a leadCounts
+declare -a childPids
+
 if [ "$componentType" = "server" -a -n "$(echo $"${@// /\\ }" | grep -w start)" ]; then
   isServerStart=1
 fi
@@ -448,4 +451,18 @@ else
   fi
   execute "$@"
 fi
-wait
+
+if [ "$isServerStart" ]; then
+  # server status file
+  SERVERS_STATUS_FILE="$SNAPPY_HOME/work/members-status.txt"
+  if [ -f $SERVERS_STATUS_FILE ]; then
+    rm $SERVERS_STATUS_FILE
+  fi
+  touch $SERVERS_STATUS_FILE
+  for pid in "${!childPids[@]}"; do
+    wait $pid
+    echo "$? ${childPids[${pid}]}" >> $SERVERS_STATUS_FILE
+  done
+else
+  wait
+fi
