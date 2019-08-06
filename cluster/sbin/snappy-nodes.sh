@@ -244,7 +244,7 @@ function execute() {
     esac
   done
   #copy the conf files into other node before starting the launch processs
-  if [[ -n "$isStart" && $SKIP_CONF_COPY -eq 0 ]]; then
+  if [[ -n "$isStart" && $NO_COPYCONF -eq 0 ]]; then
     copyConf "$@"    
   fi
   if [ "$host" != "localhost" ]; then
@@ -360,7 +360,7 @@ function copyConf() {
 	  else
 	      backupDir="backup"
 	      if [[ ! -z $(ssh $host "cat $entry" | diff - "$entry") ]] ; then
-		backupFileName=${fileName}_${START_ALL_TIMESTAMP}
+		backupFileName=${fileName}_${TIME_STAMP_OF_START}
 		echo "INFO: Copied $filename from this host to $host. Moved the original $filename on $host to $backupFileName."
                 (ssh "$host" "{ if [ ! -d \"${SPARK_CONF_DIR}/$backupDir\" ]; then  mkdir \"${SPARK_CONF_DIR}/$backupDir\"; fi; } ")
 		ssh $host "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"		    
