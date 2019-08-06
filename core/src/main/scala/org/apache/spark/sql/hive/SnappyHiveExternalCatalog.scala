@@ -552,7 +552,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       Some(getTable(schema, table))
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => None
+      case _: NoSuchTableException => None
     }
   }
 
@@ -640,7 +640,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       getTable(schema, table) ne null
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => false
+      case _: NoSuchTableException => false
     }
   }
 
