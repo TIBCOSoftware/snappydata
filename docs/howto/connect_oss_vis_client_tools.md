@@ -167,5 +167,7 @@ jdbc jar: https://mvnrepository.com/artifact/io.snappydata/snappydata-jdbc_2.11/
             show tables;
 
 
+!!!Note
+	When connecting to SnappyData, if a SQL client tool sets JDBC autocommit to false and transaction isolation level such as read committed or repeatable read is used,  the unsupported operations such as those on column table will produce an error - **Operations on column tables are not supported when query routing is disabled or autocommit is false.**   In such cases, connection property **allow-explicit-commit=true** can be used in the connection URL to avoid this error. Refer to configuration parameters section <add a link to the section> for details on this property. For example,  JDBC URL: **jdbc:snappydata://locatoHostName:1527/allow-explicit-commit=true** 
 
 
