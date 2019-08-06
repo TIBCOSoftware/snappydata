@@ -19,20 +19,30 @@ package org.apache.spark.sql.policy
 
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
-import io.snappydata.Constant
+import io.snappydata.{Constant, SnappyDataFunctions}
 
 import org.apache.spark.sql.catalyst.InternalRow
-import org.apache.spark.sql.catalyst.expressions.LeafExpression
 import org.apache.spark.sql.catalyst.expressions.codegen.CodegenFallback
+import org.apache.spark.sql.catalyst.expressions.{ExpressionDescription, LeafExpression}
 import org.apache.spark.sql.catalyst.util.ArrayData
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
-import org.apache.spark.sql.types.{ArrayType, DataType, StringType}
+import org.apache.spark.sql.types.{DataType, StringType}
 import org.apache.spark.sql.{SnappySession, SparkSession}
 import org.apache.spark.unsafe.types.UTF8String
 
 /**
+ * Get the current user that owns the session executing the function.
+ *
  * There is no code generation since this expression should get constant folded by the optimizer.
  */
+@ExpressionDescription(
+  usage = "_FUNC_() - Returns the name of the user that owns the session executing the " +
+      "current SQL statement.",
+  extended = """
+    Examples:
+      > SELECT _FUNC_();
+       USER1
+  """)
 case class CurrentUser() extends LeafExpression with CodegenFallback {
 
   override def foldable: Boolean = true
@@ -52,13 +62,24 @@ case class CurrentUser() extends LeafExpression with CodegenFallback {
   override def prettyName: String = "current_user"
 }
 
-case class LdapGroupsOfCurrentUser() extends LeafExpression
-    with CodegenFallback {
+/**
+ * Get the LDAP groups of the current user executing the function.
+ */
+@ExpressionDescription(
+  usage = "_FUNC_() - Returns all the ldap groups as an ARRAY to which the user " +
+      "who is executing the current SQL statement belongs.",
+  extended = """
+    Examples:
+      > SELECT array_contains(_FUNC_(), 'GROUP1');
+       true
+  """)
+case class LdapGroupsOfCurrentUser() extends LeafExpression with CodegenFallback {
+
   override def foldable: Boolean = true
 
   override def nullable: Boolean = false
 
-  override def dataType: DataType = LdapGroupsOfCurrentUser.dataType
+  override def dataType: DataType = SnappyDataFunctions.stringArrayType
 
   override def eval(input: InternalRow): Any = {
     val snappySession = SparkSession.getActiveSession.getOrElse(
@@ -74,8 +95,4 @@ case class LdapGroupsOfCurrentUser() extends LeafExpression
   }
 
   override def prettyName: String = "current_user_ldap_groups"
-}
-
-object LdapGroupsOfCurrentUser {
-  val dataType: DataType = ArrayType(StringType)
 }
