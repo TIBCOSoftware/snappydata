@@ -56,8 +56,8 @@ mkdocs build --clean
 # Copy the generated scala docs inside the site folder. 
 mkdir -p site/apidocs
 cp -R build-artifacts/scala-2.11/docs/* site/apidocs/
-mkdir -p site/funcRefs
-cp -R spark/sql/site/* site/funcRefs/
+mkdir -p site/sql_functions
+cp -R spark/sql/site/* site/sql_functions/
 
 #mkdocs gh-deploy
 

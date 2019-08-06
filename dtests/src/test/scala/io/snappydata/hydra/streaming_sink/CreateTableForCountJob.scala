@@ -43,10 +43,10 @@ class CreateTableForCountJob extends SnappySQLJob{
     def provider = if (isRowTable) "row" else "column"
     var options: String = "options( PERSISTENT 'sync'"
     if (!isRowTable && withKeyColumn) {
-      options = options + ",redundancy '1',key_columns 'id'"
+      options = options + ", key_columns 'age'"
     }
     if (isPartitioned) {
-      options = options + ",partition_by 'id', redundancy '1'"
+      options = options + ", partition_by 'age', redundancy '1'"
     }
     def primaryKey = if (isRowTable && withKeyColumn) ", primary key (id)"
     else ""

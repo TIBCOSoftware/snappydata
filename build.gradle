@@ -1496,7 +1496,7 @@ task docs(type: ScalaDoc) {
 
 task buildSqlFuncDocs(type: Exec) {
   dependsOn product
-  // on linux
+  //on linux
   commandLine "${rootProject.projectDir}/spark/sql/create-docs.sh"
 }
 

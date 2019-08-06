@@ -62,6 +62,11 @@ class SnappyStoreSinkProviderSecuritySuite extends SnappyFunSuite
   }
 
   override def afterAll() {
+    // setup session credentials for cleanup
+    val session = this.snc.snappySession
+    session.conf.set(Attribute.USERNAME_ATTR, sysUser)
+    session.conf.set(Attribute.PASSWORD_ATTR, sysUser)
+
     super.afterAll()
     this.stopAll()
     if (kafkaTestUtils != null) {

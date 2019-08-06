@@ -43,6 +43,7 @@ import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
 import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -1356,9 +1357,8 @@ case class LocalMode(override val sc: SparkContext,
   override val description: String = "Local mode"
 }
 
-class TableNotFoundException(schema: String, table: String, cause: Option[Throwable] = None)
-    extends AnalysisException(s"Table or view '$table' not found in schema '$schema'",
-      cause = cause)
+class TableNotFoundException(schema: String, table: String)
+    extends NoSuchTableException(schema, table)
 
 class PolicyNotFoundException(schema: String, name: String, cause: Option[Throwable] = None)
     extends AnalysisException(s"Policy '$name' not found in schema '$schema'", cause = cause)
