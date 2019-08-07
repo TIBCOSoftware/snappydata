@@ -372,6 +372,11 @@ class SnappyUnifiedMemoryManager private[memory](
     UnsafeHolder.releasePendingReferences()
   }
 
+  /**
+   * Check if CRITICAL_UP is raised, then try explicit GC invocation and check again.
+   * Returns false if CRITICAL_UP is still true and current memory acquisition should
+   * be failed else returns true.
+   */
   private def handleHeapCriticalUp(numBytes: Long, minEviction: Long): Boolean = {
     if (SnappyMemoryUtils.isCriticalUp) {
       if (evictor.evictRegionData(minEviction, offHeap = false) == 0L) {

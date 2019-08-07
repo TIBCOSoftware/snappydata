@@ -1502,7 +1502,7 @@ task buildSqlFuncDocs(type: Exec) {
 
 task publishDocs(type:Exec) {
   dependsOn docs, buildSqlFuncDocs
-  // on linux
+  //on linux
   commandLine './publish-site.sh'
 }
 
