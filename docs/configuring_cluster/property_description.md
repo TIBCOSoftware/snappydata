@@ -2,6 +2,9 @@
 
 The following list of commonly used properties can be set to configure the cluster.  These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
 
+!!! Tip
+	For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. -J is NOT required for -D and -XX options.
+
 |Property|Description|Components</br>|
 |-|-|-|
 |-bind-address|IP address on which the member is bound. The default behavior is to bind to all local addresses.|Server</br>Lead</br>Locator|
