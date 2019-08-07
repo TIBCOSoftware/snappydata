@@ -234,7 +234,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         connectionType match {
           case ConnectionType.Embedded =>
             val rgn = Misc.getRegionForTable(
-              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+              JdbcExtendedUtils.toUpperCase(tableName), true).
+              asInstanceOf[LocalRegion]
             try {
               Misc.getGemFireCache.getCacheTransactionManager.rollback()
             } finally {
@@ -243,7 +244,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                 ds.releaseDiskStoreReadLock()
               }
             }
-
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
