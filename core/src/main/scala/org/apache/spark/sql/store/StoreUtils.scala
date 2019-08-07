@@ -333,8 +333,8 @@ object StoreUtils {
           case _ if v.trim().equalsIgnoreCase(PRIMARY_KEY) => ""
           case _ =>
             val schemaFields = Utils.schemaFields(schema)
-            // Use a new parser instance since parser may itself invoke DataSource.resolveRelation
-            val parser = session.snappyParser.newInstance()
+            // Use a new parser since parser may itself invoke DataSource.resolveRelation
+            val parser = session.snappyParserStateless
             val cols = parser.parseSQLOnly(v, parser.parseIdentifiers.run())
             val prunedSchema = ExternalStoreUtils.pruneSchema(schemaFields,
               cols, columnType = "partition")
@@ -496,8 +496,8 @@ object StoreUtils {
       schema: StructType, parameters: CaseInsensitiveMutableHashMap[String]): Seq[String] = {
     // parse the PARTITION_BY and KEYCOLUMNS and store the parsed result back in parameters
 
-    // Use a new parser instance since parser may itself invoke DataSource.resolveRelation.
-    val parser = session.snappyParser.newInstance()
+    // Use a new parser since parser may itself invoke DataSource.resolveRelation.
+    val parser = session.snappyParserStateless
     val keyColumns = parameters.get(KEY_COLUMNS) match {
       case None => Nil
       case Some(k) =>

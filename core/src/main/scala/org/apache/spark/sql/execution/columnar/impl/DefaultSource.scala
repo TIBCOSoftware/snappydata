@@ -49,7 +49,7 @@ final class DefaultSource extends ExternalSchemaRelationProvider with SchemaRela
     case Some(s) =>
       // Parse locally using SnappyParser that supports complex types unlike store parser.
       // Use a new parser because DataSource.resolveRelation can be invoked by parser itself.
-      val parser = session.snappyParser.newInstance()
+      val parser = session.snappyParserStateless
       parser.parseSQLOnly(s, parser.tableSchemaOpt.run()).map(StructType(_))
   }
 
