@@ -94,22 +94,24 @@ class SparkSQLPrepareImpl(val sql: String,
     val questionMarkCounter = session.snappyParser.questionMarkCounter
     if (questionMarkCounter > 0) {
       val paramLiterals = new mutable.HashSet[ParamLiteral]()
-      analyzedPlan.foreach {
-        case LocalRelation(output, data) => data.foreach { row =>
-          for (i <- output.indices) {
-            val attr = output(i)
-            row.get(i, attr.dataType) match {
-              case QuestionMark(pos) => SparkSQLPrepareImpl.addParamLiteral(
-                pos, attr.dataType, attr.nullable, paramLiterals)
-              case _ =>
-            }
-          }
-        }
-        case _ =>
-      }
       SparkSQLPrepareImpl.allParamLiterals(analyzedPlan, paramLiterals)
       if (paramLiterals.size != questionMarkCounter) {
         SparkSQLPrepareImpl.remainingParamLiterals(analyzedPlan, paramLiterals)
+      }
+      if (paramLiterals.size != questionMarkCounter) {
+        analyzedPlan.foreach {
+          case LocalRelation(output, data) => data.foreach { row =>
+            for (i <- output.indices) {
+              val attr = output(i)
+              row.get(i, attr.dataType) match {
+                case QuestionMark(pos) => SparkSQLPrepareImpl.addParamLiteral(
+                  pos, attr.dataType, attr.nullable, paramLiterals)
+                case _ =>
+              }
+            }
+          }
+          case _ =>
+        }
       }
       val paramLiteralsAtPrepare = paramLiterals.toArray.sortBy(_.pos)
       val paramCount = paramLiteralsAtPrepare.length

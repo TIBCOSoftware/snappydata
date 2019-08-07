@@ -235,6 +235,7 @@ class SnappyParser(session: SnappySession)
       _questionMarkCounter += 1
       if (_isPreparePhase) {
         ParamLiteral(Row(_questionMarkCounter), NullType, 0, execId = -1, tokenized = true)
+            .markFoldable(!tokenize)
       } else {
         assert(_parameterValueSet.isDefined,
           "For Prepared Statement, Parameter constants are not provided")
@@ -673,11 +674,9 @@ class SnappyParser(session: SnappySession)
   }
 
   protected final def inlineTable: Rule1[LogicalPlan] = rule {
-    VALUES ~ push(tokenize) ~ push(canTokenize) ~ DISABLE_TOKENIZE ~
-    (expression + commaSep) ~ alias.? ~ identifierList.? ~>
-        ((tokenized: Boolean, canTokenized: Boolean,
+    VALUES ~ push(tokenize) ~ TOKENIZE_END ~ (expression + commaSep) ~
+        alias.? ~ identifierList.? ~> ((tokenized: Boolean,
         valuesExpr: Seq[Expression], alias: Any, identifiers: Any) => {
-          canTokenize = canTokenized
           tokenize = tokenized
           val rows = valuesExpr.map {
             // e.g. values (1), (2), (3)
