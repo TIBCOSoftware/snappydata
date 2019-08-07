@@ -129,7 +129,7 @@ class SnappySinkProviderDUnitTest(s: String)
           s" AUTHORIZATION ldapgroup:${ldapGroup};")
       statement.close()
     } finally {
-      connection.close()
+      if (connection ne null) connection.close()
     }
   }
 
