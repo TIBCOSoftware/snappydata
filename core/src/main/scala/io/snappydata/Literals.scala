@@ -18,6 +18,8 @@ package io.snappydata
 
 import scala.reflect.ClassTag
 
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
@@ -262,6 +264,32 @@ object Property extends Enumeration {
       "The putInto inner join would be cached if the result of " +
           "join with incoming Dataset is of size less " +
           "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
+
+  val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
+    "Explodes the Struct or Array Field in Group By Keys even if the struct object is " +
+      "UnsafeRow or UnsafeArrayData", Some(false))
+
+  val UseOptimzedHashAggregate: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.optimizedHashAggregate",
+    "Enables the use of ByteBufferMap based SnappyHashAggregateExec",
+    Some(true))
+
+  val UseOptimizedHashAggregateForSingleKey: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.useOptimizedHashAggregateForSingleKey",
+    "use ByteBufferMap based SnappyHashAggregateExec even for single string group by",
+    Some(false))
+
+  val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
+    s"The max capacity of value byte array in ByteBufferHashMap. " +
+      s"Default value is ${Integer.MAX_VALUE}",
+    Some(((Integer.MAX_VALUE -DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD - 7) >>> 3) << 3))
+
+  val initialCapacityOfSHABBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",
+    s"The initial capacity of SHAMap. " +
+      s"Default value is 8192", Some(8192))
 }
 
 // extractors for properties
