@@ -1282,36 +1282,25 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.sql("drop table if exists test1")
     snc.sql("drop table if exists test2")
     snc.sql("drop table if exists test3")
-    snc.sql("create table test1 (col1 int, col2 Decimal(7,2)) using column")
-    snc.sql("create table test2 (col1 int, col2 Decimal(7,2)) using column")
-    snc.sql("create table test3 (col1 int, col2 Decimal(7,2)) using column")
+    snc.sql("create table test1 (col1 int, col2 int, col3 Decimal(7,2)) using column")
+
     val conn = getSqlConnection
-    val ps1 = conn.prepareStatement("insert into test1 values (?,?)")
-    val ps2 = conn.prepareStatement("insert into test2 values (?,?)")
-    val ps3 = conn.prepareStatement("insert into test3 values (?,?)")
-    for(i <- 0 until 100) {
+    val ps1 = conn.prepareStatement("insert into test1 values (?,?, ?)")
+   for(i <- 0 until 500) {
       ps1.setInt(1, i % 5)
-      ps2.setInt(1, i % 5)
-      ps3.setInt(1, i % 5)
+      ps1.setInt(2, i % 10)
       val bd = new BigDecimal(174.576d * i)
-      ps1.setBigDecimal(2, bd)
-      ps2.setBigDecimal(2, bd)
-      ps3.setBigDecimal(2, bd)
+      ps1.setBigDecimal(3, bd)
       ps1.addBatch
-      ps2.addBatch
-      ps3.addBatch
     }
 
     ps1.executeBatch
-    ps2.executeBatch
-    ps3.executeBatch
 
-    snc.sql(s" select Cast(sum(col2) as Decimal(15,4)), col1 from test1 group by col1 union " +
-      s"select Cast(sum(col2) as Decimal(15,4)), col1 from test2 group by col1 union " +
-      s"select Cast(sum(col2) as Decimal(15,4)), col1 from test3 group by col1 ").collect
+
+    snc.sql(s" select 'asif' as name, col1, col2, Cast(sum(col3) as Decimal(15,4)) from test1" +
+      s" group by name, col1, col2 ").collect
     snc.dropTable("test1")
-    snc.dropTable("test2")
-    snc.dropTable("test3")
+
   }
 
   ignore("SNAP-3077 test if default max capacity nearing Integer.MAX_VALUE is reached." +

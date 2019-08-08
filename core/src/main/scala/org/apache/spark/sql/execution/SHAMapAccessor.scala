@@ -185,12 +185,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
                 val len = ctx.freshName("len")
                 s"""
                    |${classOf[java.math.MathContext].getName} $mathContextTerm =
-                   |(${classOf[java.math.MathContext].getName}) $mathCtxCacheTerm.
-                   |get(${dt.asInstanceOf[DecimalType].precision});
+                   |$mathCtxCacheTerm[${dt.asInstanceOf[DecimalType].precision - 1}];
+
                    |if ($mathContextTerm == null) {
                       |$mathContextTerm = new ${classOf[java.math.MathContext].getName}(
                       |${dt.asInstanceOf[DecimalType].precision});
-                      $mathCtxCacheTerm.put(${dt.asInstanceOf[DecimalType].precision}, $mathContextTerm);
+                      |$mathCtxCacheTerm[${dt.asInstanceOf[DecimalType].precision - 1}] = $mathContextTerm;
                    |}
                    |byte[] $tempByteArrayTerm = new byte[${dt.asInstanceOf[DecimalType].
                   defaultSize}];

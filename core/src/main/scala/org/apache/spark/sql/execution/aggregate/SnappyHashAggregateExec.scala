@@ -867,9 +867,9 @@ case class SnappyHashAggregateExec(
         case _ => false
       }))) {
       val term = ctx.freshName("matchCtxCache")
-      ctx.addMutableState(classOf[java.util.Map[Integer, java.math.MathContext]].getName,
+      ctx.addMutableState(s"${classOf[java.math.MathContext].getName}[]" ,
         term, s"$term = " +
-          s"new ${classOf[java.util.HashMap[Integer, java.math.MathContext]].getName}();")
+          s"new ${classOf[java.math.MathContext].getName}[${DecimalType.MAX_PRECISION}];")
       term
     } else {
       ""
@@ -942,23 +942,19 @@ case class SnappyHashAggregateExec(
 
     ctx.addNewFunction(setBBMap,
       s"""private boolean $setBBMap()  {
-         |  if ($overflowHashMapsTerm == null) {
-         |    return $hashMapTerm != null;
-            } else {
-              if ($hashMapTerm != null) {
+           |if ($hashMapTerm != null) {
+             |return true;
+           |} else {
+             |if ($overflowMapIter.hasNext()) {
+               |$hashMapTerm = ($hashSetClassName)$overflowMapIter.next();
+               |$bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
+               |Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
+               |$iterValueOffsetTerm = $valueDataTerm.baseOffset();
                  return true;
-              } else {
-                 if ($overflowMapIter.hasNext()) {
-                   $hashMapTerm = ($hashSetClassName)$overflowMapIter.next();
-                   $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
-                   Object $vdBaseObjectTerm = $valueDataTerm.baseObject();
-                   $iterValueOffsetTerm = $valueDataTerm.baseOffset();
-                   return true;
-                 } else {
-                   return false;
-                 }
-              }
-            }
+             |} else {
+                 return false;
+             |}
+           |}
          |}""".stripMargin)
 
     // generate code for output
@@ -1000,6 +996,16 @@ case class SnappyHashAggregateExec(
         if ($overflowHashMapsTerm != null) {
           $overflowMapIter = $overflowHashMapsTerm.iterator();
           $hashMapTerm = ($hashSetClassName)$overflowMapIter.next();
+        } else {
+          // add the single hashmap case to the list to fix the issue SNAP-3132
+          // where the single hashmap gets GCed due to setting of null at the end
+          // of loop, causing the TPCHD query to crash the server as the string positions
+          // referenced in the map are no longer valid. Adding it in the list will
+          // prevent single hashmap from being gced
+          $overflowHashMapsTerm = ${classOf[java.util.Collections].getName}.<$hashSetClassName>singletonList(
+          $hashMapTerm);
+          $overflowMapIter = $overflowHashMapsTerm.iterator();
+          $overflowMapIter.next();
         }
         $bbDataClass  $valueDataTerm = $hashMapTerm.getValueData();
         Object $vdBaseObjectTerm = $valueDataTerm.baseObject();

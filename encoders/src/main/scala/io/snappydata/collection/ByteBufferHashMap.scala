@@ -306,7 +306,7 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
       if (consumer ne null) {
         consumer.freeMemory(_maxMemory)
       }
-      this.release()
+     // this.release()
     }
   }
 }
