@@ -16,6 +16,7 @@
  */
 package org.apache.spark.sql.types
 
+import java.math.MathContext
 import java.util.Properties
 
 import scala.reflect.runtime.universe._
@@ -128,4 +129,7 @@ object TypeUtilities {
       case _ => false
     }
   }
+
+  val mathContextCache: Array[MathContext] = Array.tabulate[MathContext](
+    DecimalType.MAX_PRECISION)(i => new MathContext(i + 1))
 }

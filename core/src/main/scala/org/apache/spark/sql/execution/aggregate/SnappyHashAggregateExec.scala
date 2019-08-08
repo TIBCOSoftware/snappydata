@@ -861,19 +861,7 @@ case class SnappyHashAggregateExec(
        SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes -
       (if (skipLenForAttrib != -1) 4 else 0)
 
-    val mathCtxCacheTerm = if ((groupingExpressions ++ aggregateExpressions).exists(_.dataType.
-      existsRecursively(dt => dt match {
-        case _: DecimalType => true
-        case _ => false
-      }))) {
-      val term = ctx.freshName("matchCtxCache")
-      ctx.addMutableState(s"${classOf[java.math.MathContext].getName}[]" ,
-        term, s"$term = " +
-          s"new ${classOf[java.math.MathContext].getName}[${DecimalType.MAX_PRECISION}];")
-      term
-    } else {
-      ""
-    }
+
     byteBufferAccessor = SHAMapAccessor(session, ctx, groupingExpressions,
       aggregateBufferAttributesForGroup, "ByteBuffer", hashMapTerm, overflowHashMapsTerm,
       keyValSize, valueOffsetTerm, numKeyBytesTerm, numValueBytes,
@@ -884,7 +872,7 @@ case class SnappyHashAggregateExec(
       skipLenForAttrib, codeForLenOfSkippedTerm, valueDataCapacityTerm,
       if (cacheStoredAggNullBits) Some(storedAggNullBitsTerm) else None,
       if (cacheStoredKeyNullBits) Some(storedKeyNullBitsTerm) else None,
-      aggregateBufferVars, keyHolderCapacityTerm, mathCtxCacheTerm)
+      aggregateBufferVars, keyHolderCapacityTerm)
 
     val maxMemory = ctx.freshName("maxMemory")
     val peakMemory = metricTerm(ctx, "peakMemory")

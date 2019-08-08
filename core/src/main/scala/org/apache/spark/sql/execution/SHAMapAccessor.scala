@@ -24,6 +24,7 @@ import com.gemstone.gemfire.internal.shared.{BufferSizeLimitExceededException, C
 import io.snappydata.Property
 import io.snappydata.collection.{ByteBufferData, SHAMap}
 
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.SnappySession
 import org.apache.spark.sql.catalyst.InternalRow
@@ -49,8 +50,7 @@ case class SHAMapAccessor(@transient session: SnappySession,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
   valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
   storedKeyNullBitsTerm: Option[String],
-  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
-  mathCtxCacheTerm: String)
+  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String)
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -80,6 +80,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val plaformClass = classOf[Platform].getName
     val decimalClass = classOf[Decimal].getName
     val bigDecimalObjectClass = s"$decimalClass$$.MODULE$$"
+    val typeUtiltiesObjectClass =
+      s"${org.apache.spark.sql.types.TypeUtilities.getClass.getName}.MODULE$$"
     val bigDecimalClass = classOf[java.math.BigDecimal].getName
     val bigIntegerClass = classOf[java.math.BigInteger].getName
     val byteBufferClass = classOf[ByteBuffer].getName
@@ -181,24 +183,17 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    ${dt.asInstanceOf[DecimalType].scale});""".stripMargin
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
-                val mathContextTerm = ctx.freshName("mathContextTerm")
+
                 val len = ctx.freshName("len")
                 s"""
-                   |${classOf[java.math.MathContext].getName} $mathContextTerm =
-                   |$mathCtxCacheTerm[${dt.asInstanceOf[DecimalType].precision - 1}];
-
-                   |if ($mathContextTerm == null) {
-                      |$mathContextTerm = new ${classOf[java.math.MathContext].getName}(
-                      |${dt.asInstanceOf[DecimalType].precision});
-                      |$mathCtxCacheTerm[${dt.asInstanceOf[DecimalType].precision - 1}] = $mathContextTerm;
-                   |}
                    |byte[] $tempByteArrayTerm = new byte[${dt.asInstanceOf[DecimalType].
                   defaultSize}];
                    |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
                    |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $tempByteArrayTerm.length);
                    |$varName = $bigDecimalObjectClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
-                   |${dt.asInstanceOf[DecimalType].scale}, $mathContextTerm));
+                   |${dt.asInstanceOf[DecimalType].scale},
+                   | $typeUtiltiesObjectClass.mathContextCache()[${dt.asInstanceOf[DecimalType].precision - 1}]));
                    """.stripMargin
               }
 
