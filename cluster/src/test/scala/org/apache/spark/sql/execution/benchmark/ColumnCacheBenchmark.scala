@@ -53,11 +53,16 @@ class ColumnCacheBenchmark extends SnappyFunSuite {
   override def beforeAll(): Unit = {
     super.beforeAll()
     stopAll()
+    // this is to allow codegenfallback plan to be used
+    System.clearProperty("spark.testing")
+    System.clearProperty("SPARK_TESTING")
   }
 
   override def afterAll(): Unit = {
     super.afterAll()
     stopAll()
+    System.setProperty("spark.testing", "true")
+    System.setProperty("SPARK_TESTING", "true")
   }
 
   override protected def newSparkConf(

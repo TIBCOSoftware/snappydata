@@ -56,6 +56,10 @@ class SplitSnappyClusterDUnitTest(s: String)
   override val stopNetServersInTearDown = false
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
+  sysProps.remove("spark.testing")
+  System.clearProperty("spark.testing")
+  sysProps.remove("SPARK_TESTING")
+  System.clearProperty("SPARK_TESTING")
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -531,7 +535,6 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   private def insertDataAfterStaleCatalog(tableType: String) = {
     val snc = SnappyContext(sc)
-
     logInfo(s"insertDataAfterStaleCatalog: invoked for $tableType table")
     if (tableType == "COLUMN") {
       snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
@@ -577,7 +580,6 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testDeleteAfterStaleCatalog(): Unit = {
     val snc = SnappyContext(sc)
-
     snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t6 values('1', '1')")
@@ -613,7 +615,6 @@ class SplitSnappyClusterDUnitTest(s: String)
 
   def testUpdateAfterStaleCatalog(): Unit = {
     val snc = SnappyContext(sc)
-
     snc.sql(s"CREATE TABLE T7(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t7 values('1', '1')")

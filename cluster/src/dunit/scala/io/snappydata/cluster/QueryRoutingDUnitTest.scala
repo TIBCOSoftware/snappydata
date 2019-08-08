@@ -47,6 +47,11 @@ import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext,
 class QueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
 
+  sysProps.remove("spark.testing")
+  System.clearProperty("spark.testing")
+  sysProps.remove("SPARK_TESTING")
+  System.clearProperty("SPARK_TESTING")
+
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
   override def tearDown2(): Unit = {

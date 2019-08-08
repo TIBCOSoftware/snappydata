@@ -38,6 +38,11 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 class ExecutionEngineArbiterDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging with ExecutionEngineArbiterTestBase {
 
+  sysProps.remove("spark.testing")
+  System.clearProperty("spark.testing")
+  sysProps.remove("SPARK_TESTING")
+  System.clearProperty("SPARK_TESTING")
+
   override def tearDown2(): Unit = {
     // reset the chunk size on lead node
     // setDMLMaxChunkSize(default_chunk_size)
@@ -714,7 +719,7 @@ trait ExecutionEngineArbiterTestBase {
     createTables_SNAP1507(snc, "COLUMN")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://" + startNetServer)
-
+    val s = conn.createStatement()
     val query = "select T1_COL1, T1_COL2, T1_COL3, T1_COL4, T1_COL5, T1_COL6, T1_COL7," +
         " T1_COL8 from TABLE1 as tab1 where exists (select * from " +
         "TABLE2 as tab2 where exists (select * from " +

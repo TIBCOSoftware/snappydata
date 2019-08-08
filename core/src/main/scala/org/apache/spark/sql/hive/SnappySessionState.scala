@@ -424,8 +424,8 @@ class SnappySessionState(val snappySession: SnappySession)
   object RowLevelSecurity extends Rule[LogicalPlan] {
     // noinspection ScalaUnnecessaryParentheses
     // Y combinator
-    val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
-      (f: (Expression => Boolean)) =>
+    val conditionEvaluator: (Expression => Boolean) => Expression => Boolean =
+      (f: Expression => Boolean) =>
         (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
             (exp match {
               case And(left, _) => f(left)
@@ -437,7 +437,7 @@ class SnappySessionState(val snappySession: SnappySession)
 
     // noinspection ScalaUnnecessaryParentheses
     def rlsConditionChecker(f: (Expression => Boolean) =>
-        (Expression => Boolean)): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
+        Expression => Boolean): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       val memStore = GemFireStore.getBootingInstance

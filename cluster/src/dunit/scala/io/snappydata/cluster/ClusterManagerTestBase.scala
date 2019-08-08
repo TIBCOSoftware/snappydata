@@ -86,7 +86,8 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
 
   sysProps.setProperty("gemfire.DISALLOW_RESERVE_SPACE", "true")
-
+  sysProps.setProperty("spark.testing", "true")
+  sysProps.setProperty("SPARK_TESTING", "true")
   var host: Host = _
   var vm0: VM = _
   var vm1: VM = _
@@ -202,7 +203,6 @@ abstract class ClusterManagerTestBase(s: String)
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
-    
     bootProps.clear()
   }
 
