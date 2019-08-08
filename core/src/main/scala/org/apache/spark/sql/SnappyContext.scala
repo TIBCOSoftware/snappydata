@@ -1097,14 +1097,17 @@ object SnappyContext extends Logging {
                   deployCmds.foreach(s => logDebug(s"$s"))
                 }
                 if (nonEmpty) deployCmds.foreach(d => {
-                  val cmdFields = d.split('|')
-                  if (cmdFields.length > 1) {
+                  val cmdFields = d.split('|') // split() removes empty elements
+                  if (d.contains('|')) {
                     val coordinate = cmdFields(0)
-                    val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-                    val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
+                    val repos = if (cmdFields.length > 1 && !cmdFields(1).isEmpty) {
+                      Some(cmdFields(1))
+                    } else None
+                    val cache = if (cmdFields.length > 2 && !cmdFields(2).isEmpty) {
+                      Some(cmdFields(2))
+                    } else None
                     DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
-                  }
-                  else {
+                  } else {
                     // Jars we have
                     DeployJarCommand(null, cmdFields(0), restart = true).run(session)
                   }
