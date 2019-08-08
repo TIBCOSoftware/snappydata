@@ -153,18 +153,16 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
       key
 
-    case CATALOG_IMPLEMENTATION.key if session.initialized =>
-      val oldValue = session.enableHiveSupport
+    case CATALOG_IMPLEMENTATION.key if !session.hiveInitializing =>
       val newValue = value match {
         case Some(v) => session.isHiveSupportEnabled(v.toString)
         case None => CATALOG_IMPLEMENTATION.defaultValueString == "hive"
       }
-      // initialize hive session upfront else it runs into recursion trying
-      // to copy conf to the session
+      // initialize hive session upfront
       if (newValue) {
-        session.initialized = false
+        session.hiveInitializing = true
         assert(session.sessionState.hiveSession ne null)
-        session.initialized = true
+        session.hiveInitializing = false
       }
       session.enableHiveSupport = newValue
       key
