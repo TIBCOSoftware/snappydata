@@ -53,14 +53,12 @@ final class DictionaryMap(_initialCapacity: Int, _loadFactor: Double,
       key.hashCode())
   }
 
-  override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
-    valueStartOffset: Int): Int = {
+  override protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
     // get the dictionary index from the key bytes
     Platform.getInt(mapKeyObject, mapKeyOffset + 8)
   }
 
-  override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long,
-    valueStartOffset: Int): Int = {
+  override protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
     val newIndex = size
     // write the dictionary index in the key bytes
     Platform.putInt(mapKeyObject, mapKeyOffset + 8, newIndex)

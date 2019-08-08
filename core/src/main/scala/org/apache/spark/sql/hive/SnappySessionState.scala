@@ -419,8 +419,8 @@ class SnappySessionState(val snappySession: SnappySession)
   object RowLevelSecurity extends Rule[LogicalPlan] {
     // noinspection ScalaUnnecessaryParentheses
     // Y combinator
-    val conditionEvaluator: (Expression => Boolean) => Expression => Boolean =
-      (f: Expression => Boolean) =>
+    val conditionEvaluator: (Expression => Boolean) => (Expression => Boolean) =
+      (f: (Expression => Boolean)) =>
         (exp: Expression) => exp.eq(PolicyProperties.rlsAppliedCondition) ||
             (exp match {
               case And(left, _) => f(left)
@@ -428,9 +428,10 @@ class SnappySessionState(val snappySession: SnappySession)
                 l.value == r.value && l.value == PolicyProperties.rlsConditionStringUtf8
               case _ => false
             })
-    
+
+    // noinspection ScalaUnnecessaryParentheses
     def rlsConditionChecker(f: (Expression => Boolean) =>
-        Expression => Boolean): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
+        (Expression => Boolean)): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
 
     def apply(plan: LogicalPlan): LogicalPlan = {
       val memStore = GemFireStore.getBootingInstance
@@ -774,7 +775,6 @@ class SnappySessionState(val snappySession: SnappySession)
   def getTablePartitions(region: CacheDistributionAdvisee): Array[Partition] =
     StoreUtils.getPartitionsReplicatedTable(snappySession, region)
 }
-
 
 class HiveConditionalRule(rule: HiveSessionState => Rule[LogicalPlan], state: SnappySessionState)
     extends Rule[LogicalPlan] {

@@ -19,12 +19,8 @@ package io.snappydata.collection
 
 import java.nio.ByteBuffer
 
-import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
-import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
-import com.gemstone.gemfire.internal.shared.{BufferAllocator, BufferSizeLimitExceededException}
+import com.gemstone.gemfire.internal.shared.BufferAllocator
 
-import org.apache.spark.TaskContext
-import org.apache.spark.memory.{MemoryConsumer, TaskMemoryManager}
 import org.apache.spark.sql.collection.SharedUtils
 import org.apache.spark.sql.execution.columnar.encoding.ColumnEncoding
 import org.apache.spark.unsafe.Platform
@@ -65,45 +61,27 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     protected val allocator: BufferAllocator,
     protected var keyData: ByteBufferData = null,
     protected var valueData: ByteBufferData = null,
-    protected var valueDataPosition: Long = 0L,
-    val approxMaxCapacity: Int = ((Integer.MAX_VALUE - DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD
-      - 7) >>> 3) << 3) {
-  val taskContext: TaskContext = TaskContext.get()
-  private var maxSizeReached: Boolean = false
-  private[this] val consumer = if ((taskContext ne null) && !GemFireCacheImpl.hasNewOffHeap) {
-    new ByteBufferHashMapMemoryConsumer(SharedUtils.taskMemoryManager(taskContext))
-  } else null
+    protected var valueDataPosition: Long = 0L) {
 
-  if ((taskContext ne null)) {
-    freeMemoryOnTaskCompletion()
-  }
   // round to word size adding 8 bytes for header (offset + hashcode)
   private val fixedKeySize = ((keySize + 15) >>> 3) << 3
   private var _capacity = SharedUtils.nextPowerOf2(initialCapacity)
-
   private var _size = 0
   private var growThreshold = (loadFactor * _capacity).toInt
 
   private var mask = _capacity - 1
-  private[this] var _maxMemory: Long = _
+
   if (keyData eq null) {
     val buffer = allocator.allocate(_capacity * fixedKeySize, "HASHMAP")
     // clear the key data
     allocator.clearPostAllocate(buffer, 0)
     keyData = new ByteBufferData(buffer, allocator)
-    acquireMemory(keyData.capacity)
-    _maxMemory += keyData.capacity
   }
   if (valueData eq null) {
-    require(_capacity * valueSize < approxMaxCapacity)
     valueData = new ByteBufferData(allocator.allocate(_capacity * valueSize,
       "HASHMAP"), allocator)
     valueDataPosition = valueData.baseOffset
-    acquireMemory(valueData.capacity)
-    _maxMemory += valueData.capacity
   }
-
-
 
   final def getKeyData: ByteBufferData = this.keyData
 
@@ -114,7 +92,6 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
   final def valueDataSize: Long = valueDataPosition - valueData.baseOffset
 
   final def capacity: Int = _capacity
-  def maxMemory: Long = _maxMemory
 
   /**
    * Insert raw bytes with given hash code into the map if not present.
@@ -151,31 +128,20 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
       if (mapKey != 0L) {
         // first compare the hash codes followed by "equalsSize" that will
         // include the check for 4 bytes of numKeyBytes itself
-        val valueStartOffset = (mapKey >>> 32L).toInt - 4
-        if (hash == mapKey.toInt && valueData.equalsSize(valueStartOffset,
+        if (hash == mapKey.toInt && valueData.equalsSize((mapKey >>> 32L).toInt - 4,
           baseObject, baseOffset, numKeyBytes)) {
-          return handleExisting(mapKeyObject, mapKeyOffset, valueStartOffset + 4)
+          return handleExisting(mapKeyObject, mapKeyOffset)
         } else {
           // quadratic probing (increase delta)
           pos = (pos + delta) & mask
           delta += 1
         }
       } else {
-        if (maxSizeReached) {
-          throw ByteBufferHashMap.bsle
-        }
         // insert into the map and rehash if required
         val relativeOffset = newInsert(baseObject, baseOffset, numKeyBytes, numBytes)
         Platform.putLong(mapKeyObject, mapKeyOffset,
           (relativeOffset << 32L) | (hash & 0xffffffffL))
-        try {
-          return handleNew(mapKeyObject, mapKeyOffset, relativeOffset)
-        } catch {
-          case bsle: BufferSizeLimitExceededException =>
-            maxSizeReached = true
-            Platform.putLong(mapKeyObject, mapKeyOffset, 0L)
-            throw bsle
-        }
+        return handleNew(mapKeyObject, mapKeyOffset)
       }
     }
     0 // not expected to reach
@@ -187,30 +153,21 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     valueData.reset(clearMemory = false)
     valueDataPosition = valueData.baseOffset
     _size = 0
-    this.maxSizeReached = false
   }
 
   final def release(): Unit = {
-    // The fields could be null, if the ByteBufferData could not be
-    // created due to insufficient memory
-    if (keyData ne null ) {
-      keyData.release(allocator)
-    }
-    if (valueData ne null) {
-      valueData.release(allocator)
-    }
+    keyData.release(allocator)
+    valueData.release(allocator)
     keyData = null
     valueData = null
-    this.maxSizeReached = false
   }
 
-  protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long,
-    valueStartOffset: Int): Int = {
+  protected def handleExisting(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
     // 0 indicates existing
     0
   }
 
-  protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long, valueStartOffset: Int): Int = {
+  protected def handleNew(mapKeyObject: AnyRef, mapKeyOffset: Long): Int = {
     handleNewInsert()
     // 1 indicates new insert
     1
@@ -222,11 +179,8 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     var position = valueDataPosition
     val dataSize = position - valueData.baseOffset
     if (position + numBytes + 4 > valueData.endPosition) {
-      val oldCapacity = valueData.capacity
-      valueData = valueData.resize(numBytes + 4, allocator, approxMaxCapacity)
+      valueData = valueData.resize(numBytes + 4, allocator)
       position = valueData.baseOffset + dataSize
-      acquireMemory(valueData.capacity - oldCapacity)
-      _maxMemory += valueData.capacity - oldCapacity
     }
     val valueBaseObject = valueData.baseObject
     // write the key size followed by the full key+value bytes
@@ -249,15 +203,13 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     val fixedKeySize = this.fixedKeySize
     val newCapacity = SharedUtils.checkCapacity(_capacity << 1)
     val newKeyBuffer = allocator.allocate(newCapacity * fixedKeySize, "HASHMAP")
-
     // clear the key data
     allocator.clearPostAllocate(newKeyBuffer, 0)
     val newKeyData = new ByteBufferData(newKeyBuffer, allocator)
     val newKeyObject = newKeyData.baseObject
     val newKeyBaseOffset = newKeyData.baseOffset
     val newMask = newCapacity - 1
-    acquireMemory(newKeyData.capacity - this.keyData.capacity)
-    _maxMemory += newKeyData.capacity - this.keyData.capacity
+
     val keyData = this.keyData
     val keyObject = keyData.baseObject
     var keyOffset = keyData.baseOffset
@@ -294,21 +246,6 @@ class ByteBufferHashMap(initialCapacity: Int, val loadFactor: Double,
     keyData.release(allocator)
     this.keyData = newKeyData
   }
-
-  private def acquireMemory(required: Long): Unit = {
-    if (consumer ne null) {
-      consumer.acquireMemory(required)
-    }
-  }
-
-  private def freeMemoryOnTaskCompletion(): Unit = {
-    taskContext.addTaskCompletionListener { _ =>
-      if (consumer ne null) {
-        consumer.freeMemory(_maxMemory)
-      }
-      this.release()
-    }
-  }
 }
 
 final class ByteBufferData private(val buffer: ByteBuffer,
@@ -342,13 +279,7 @@ final class ByteBufferData private(val buffer: ByteBuffer,
         .arrayEquals(baseObject, offset + 4, oBase, oBaseOffset, size)
   }
 
-  def resize(required: Int, allocator: BufferAllocator, maxCapacity: Int): ByteBufferData = {
-    val currentUsed = this.buffer.limit;
-    val currentCapacity = this.buffer.capacity;
-    if (currentCapacity > maxCapacity || maxCapacity - currentUsed < required ) {
-      throw new BufferSizeLimitExceededException(currentUsed, required, maxCapacity);
-    }
-    // the expand will not full respect max capacity , but that is ok , ...
+  def resize(required: Int, allocator: BufferAllocator): ByteBufferData = {
     val buffer = allocator.expand(this.buffer, required, "HASHMAP")
     val baseOffset = allocator.baseOffset(buffer)
     new ByteBufferData(buffer, allocator.baseObject(buffer), baseOffset,
@@ -372,14 +303,4 @@ final class ByteBufferData private(val buffer: ByteBuffer,
   def release(allocator: BufferAllocator): Unit = {
     allocator.release(buffer)
   }
-}
-
-object ByteBufferHashMap {
-  val bsle = new BufferSizeLimitExceededException("ByteBufferData capacity reached to max")
-}
-
-
-final class ByteBufferHashMapMemoryConsumer(taskMemoryManager: TaskMemoryManager)
-  extends MemoryConsumer(taskMemoryManager) {
-  override def spill(size: Long, trigger: MemoryConsumer): Long = 0L
 }
