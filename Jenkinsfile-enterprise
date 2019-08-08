@@ -15,10 +15,7 @@ node {
 			extensions: [],
 			submoduleCfg: [],
 			userRemoteConfigs: [
-				[
-          credentialsId: 'a6ad258a-6c79-4d3d-ad34-2b7f58cae36b',
-        	url: 'https://github.com/SnappyDataInc/snappydata.git'
-				]
+				[ url: 'https://github.com/SnappyDataInc/snappydata.git' ]
 			]
 		])
 
@@ -34,10 +31,7 @@ node {
 						extensions: [],
 						submoduleCfg: [],
 						userRemoteConfigs: [
-							[
-                credentialsId: 'a6ad258a-6c79-4d3d-ad34-2b7f58cae36b',
-              	url: 'https://github.com/SnappyDataInc/spark.git'
-							]
+							[	url: 'https://github.com/SnappyDataInc/spark.git' ]
 						]
 					])
 				}
@@ -54,10 +48,7 @@ node {
 						extensions: [],
 						submoduleCfg: [],
 						userRemoteConfigs: [
-							[
-                  credentialsId: 'a6ad258a-6c79-4d3d-ad34-2b7f58cae36b',
-              		url: 'https://github.com/SnappyDataInc/spark-jobserver.git'
-							]
+							[	url: 'https://github.com/SnappyDataInc/spark-jobserver.git' ]
 						]
 					])
 				}
@@ -74,10 +65,7 @@ node {
 						extensions: [],
 						submoduleCfg: [],
 						userRemoteConfigs: [
-							[
-                credentialsId: 'a6ad258a-6c79-4d3d-ad34-2b7f58cae36b',
-              	url: 'https://github.com/SnappyDataInc/snappy-store.git'
-							]
+							[ url: 'https://github.com/SnappyDataInc/snappy-store.git' ]
 						]
 					])
 				}
@@ -118,7 +106,7 @@ node {
 
   stage('Copy') {
     fileOperations([folderCreateOperation('/var/log/jenkins/log/oss/$BUILD_NUMBER')])
-    fileOperations([folderCopyOperation(destinationFolderPath: '/var/log/jenkins/log/enterprise/$BUILD_NUMBER', sourceFolderPath: '/var/lib/jenkins/workspace/tibco-computedb-ci/build-artifacts')])
+    fileOperations([folderCopyOperation(destinationFolderPath: '/var/log/jenkins/log/enterprise/$BUILD_NUMBER', sourceFolderPath: '/var/lib/jenkins/workspace/$PROJECT_NAME/build-artifacts')])
   }
 
   } finally {
