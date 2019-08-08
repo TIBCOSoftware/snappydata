@@ -16,14 +16,12 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import java.lang.reflect.Method
 import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
-import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
@@ -46,7 +44,6 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
-import org.apache.spark
 
 import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
@@ -583,36 +580,6 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       } else userId
     } else userId
-  }
-
-  private lazy val samplerClass = {
-    val samplerClassName = "org.apache.spark.sql.execution.StratifiedSampler$"
-    spark.util.Utils.classForName(samplerClassName)
-  }
-
-  private lazy val removeSamplerMethod: Method = {
-    // Iterating over the method list to find the `removeSampler` method because when loaded
-    // using reflection, the type of the second parameter of this method is `boolean`
-    // (and not `scala.Boolean`). Unable to figure out a way to load this method using
-    // `java.lang.Class.getMethod` method.
-    samplerClass.getMethods.filter(m => {
-      val paramTypes = m.getParameterTypes
-      if (m.getName.equals("removeSampler") && m.getParameterCount == 2 &&
-          paramTypes(0).equals(classOf[String]) && paramTypes(1).getName.equals("boolean")) {
-        true
-      } else false
-    }).head
-  }
-
-  override def removeSampler(sampleTableName: String): Unit = {
-    try {
-      val instance = samplerClass.getField("MODULE$").get(null)
-      removeSamplerMethod.invoke(instance, sampleTableName, Boolean.box(false))
-    }
-    catch {
-      case NonFatal(e) => logWarning("Failed to load AQP class" +
-          " org.apache.spark.sql.execution.StratifiedSampler.", e)
-    }
   }
 }
 
