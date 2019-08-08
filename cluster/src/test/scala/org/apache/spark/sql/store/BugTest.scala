@@ -35,7 +35,6 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
-
 class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   override def beforeAll(): Unit = {
