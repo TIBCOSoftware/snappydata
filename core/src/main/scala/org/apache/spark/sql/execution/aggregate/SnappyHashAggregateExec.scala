@@ -861,23 +861,6 @@ case class SnappyHashAggregateExec(
        SHAMapAccessor.sizeForNullBits(numBytesForNullKeyBits)  + numValueBytes -
       (if (skipLenForAttrib != -1) 4 else 0)
 
-
-
-    val mathCtxCacheTerm = if ((groupingExpressions ++ aggregateExpressions).exists(_.dataType.
-      existsRecursively(dt => dt match {
-        case _: DecimalType => true
-        case _ => false
-      }))) {
-      val term = ctx.freshName("matchCtxCache")
-      ctx.addMutableState(classOf[java.util.Map[Integer, java.math.MathContext]].getName,
-        term, s"$term = " +
-          s"new ${classOf[java.util.HashMap[Integer, java.math.MathContext]].getName}();")
-      term
-    } else {
-      ""
-    }
-
-
     val mathCtxCacheTerm = if ((groupingExpressions ++ aggregateExpressions).exists(_.dataType.
       existsRecursively(dt => dt match {
         case _: DecimalType => true
