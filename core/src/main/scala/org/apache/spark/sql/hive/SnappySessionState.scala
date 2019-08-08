@@ -79,10 +79,16 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   private[sql] lazy val hiveSession: SparkSession = {
+    // disable enableHiveSupport during initialization to avoid calls into SnappyConf
+    val oldValue = snappySession.enableHiveSupport
+    snappySession.enableHiveSupport = false
+    snappySession.hiveInitializing = true
     val session = SnappyContext.newHiveSession()
     val hiveConf = session.sessionState.conf
     conf.foreach(hiveConf.setConfString)
     hiveConf.setConfString(StaticSQLConf.CATALOG_IMPLEMENTATION.key, "hive")
+    snappySession.enableHiveSupport = oldValue
+    snappySession.hiveInitializing = false
     session
   }
 
