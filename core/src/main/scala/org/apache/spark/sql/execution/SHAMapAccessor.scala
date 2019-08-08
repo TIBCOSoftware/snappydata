@@ -49,7 +49,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
   skipLenForAttribIndex: Int, codeForLenOfSkippedTerm: String,
   valueDataCapacityTerm: String, storedAggNullBitsTerm: Option[String],
   storedKeyNullBitsTerm: Option[String],
-  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String)
+  aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
+  mathCtxCacheTerm: String)
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -180,16 +181,24 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    ${dt.asInstanceOf[DecimalType].scale});""".stripMargin
               } else {
                 val tempByteArrayTerm = ctx.freshName("tempByteArray")
+                val mathContextTerm = ctx.freshName("mathContextTerm")
                 val len = ctx.freshName("len")
                 s"""
-                   |byte[] $tempByteArrayTerm = new byte[${dt.asInstanceOf[DecimalType].defaultSize}];
+                   |${classOf[java.math.MathContext].getName} $mathContextTerm =
+                   |(${classOf[java.math.MathContext].getName}) $mathCtxCacheTerm.
+                   |get(${dt.asInstanceOf[DecimalType].precision});
+                   |if ($mathContextTerm == null) {
+                      |$mathContextTerm = new ${classOf[java.math.MathContext].getName}(
+                      |${dt.asInstanceOf[DecimalType].precision});
+                      $mathCtxCacheTerm.put(${dt.asInstanceOf[DecimalType].precision}, $mathContextTerm);
+                   |}
+                   |byte[] $tempByteArrayTerm = new byte[${dt.asInstanceOf[DecimalType].
+                  defaultSize}];
                    |$plaformClass.copyMemory($vdBaseObjectTerm, $currentValueOffsetTerm,
                    |$tempByteArrayTerm, ${Platform.BYTE_ARRAY_OFFSET} , $tempByteArrayTerm.length);
                    |$varName = $bigDecimalObjectClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
-                   |${dt.asInstanceOf[DecimalType].scale}),
-                   |${dt.asInstanceOf[DecimalType].precision},
-                   |${dt.asInstanceOf[DecimalType].scale});
+                   |${dt.asInstanceOf[DecimalType].scale}, $mathContextTerm));
                    """.stripMargin
               }
 
@@ -294,7 +303,8 @@ case class SHAMapAccessor(@transient session: SnappySession,
                  ${
                    getBufferVars(st.map(_.dataType), keyVarNamesWithStructFlags.unzip._1,
                    currentValueOffsetTerm, true, nullBitSetTermForStruct,
-                   numNullKeyBytesForStruct, false, nestingLevel + 1).map(_.code).mkString("\n")
+                   numNullKeyBytesForStruct, false, nestingLevel + 1).
+                     map(_.code).mkString("\n")
                  }
                 //add child Internal Rows to parent struct's object array
                 ${
