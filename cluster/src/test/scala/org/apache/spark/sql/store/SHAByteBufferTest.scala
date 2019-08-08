@@ -1314,7 +1314,6 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.dropTable("test3")
   }
 
-
   ignore("SNAP-3077 test if default max capacity nearing Integer.MAX_VALUE is reached." +
     " Disabled due to heap requirements being more than 16G") {
     snc

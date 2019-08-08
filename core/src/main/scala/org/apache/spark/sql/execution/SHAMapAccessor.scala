@@ -51,7 +51,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
   storedKeyNullBitsTerm: Option[String],
   aggregateBufferVars: Seq[String], keyHolderCapacityTerm: String,
   mathCtxCacheTerm: String)
-
   extends CodegenSupport {
 
   private val alwaysExplode = Property.TestExplodeComplexDataTypeInSHA.
@@ -200,7 +199,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    |$varName = $bigDecimalObjectClass.apply(new $bigDecimalClass(
                    |new $bigIntegerClass($tempByteArrayTerm),
                    |${dt.asInstanceOf[DecimalType].scale}, $mathContextTerm));
-
                    """.stripMargin
               }
 
@@ -307,7 +305,6 @@ case class SHAMapAccessor(@transient session: SnappySession,
                    currentValueOffsetTerm, true, nullBitSetTermForStruct,
                    numNullKeyBytesForStruct, false, nestingLevel + 1).
                      map(_.code).mkString("\n")
-
                  }
                 //add child Internal Rows to parent struct's object array
                 ${
