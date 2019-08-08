@@ -97,11 +97,7 @@ class SnappyConf(@transient val session: SnappySession)
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
          Property.HashAggregateSize.name |
-         Property.ForceLinkPartitionsToBuckets.name |
-         Property.ForceLinkPartitionsToBuckets.name |
-         Property.UseOptimzedHashAggregate.name |
-         Property.UseOptimizedHashAggregateForSingleKey.name |
-         Property.TestExplodeComplexDataTypeInSHA.name =>
+         Property.ForceLinkPartitionsToBuckets.name =>
       session.clearPlanCache()
       key
     case SQLConf.SHUFFLE_PARTITIONS.key =>
