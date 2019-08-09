@@ -26,7 +26,10 @@ import org.apache.spark.sql.collection.Utils
 
 class ConcurrentQueryRoutingDUnitTest(val s: String)
     extends ClusterManagerTestBase(s) with Logging {
-
+  sysProps.remove("spark.testing")
+  System.clearProperty("spark.testing")
+  sysProps.remove("SPARK_TESTING")
+  System.clearProperty("SPARK_TESTING")
   def columnTableRouting(thr: Int, iter: Int, serverHostPort: Int): Int = {
     val tableName = s"order_line_col_${thr}_$iter"
 
