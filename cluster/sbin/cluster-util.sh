@@ -27,17 +27,42 @@ sbin="$(dirname "$(absPath "$0")")"
 . "$sbin/spark-config.sh"
 
 SNAPPY_DIR="$SNAPPY_HOME"
-echo "SNAPPY_HOME= $SNAPPY_HOME"
+bold=$(tput bold)
+normal=$(tput sgr0)
+space=
 usage() {
-  # echo "Usage: cluster-util.sh [--snappydir <path-of-snappy-product>] [--run <cmd-to-run-on-all-servers>]"
-  echo "Usage: cluster-util.sh [locator|server|lead|all] [--run <cmd-to-run-on-all-servers>]"
+  echo "${bold}Usage: ${normal}cluster-util.sh -onlocator|-onserver|-onlead|-onall [-f|--force] --run  -copyconf | <cmd-to-run-on-selected-nodes>"
+  echo
+  echo "${bold}Discription${normal}"
+  echo
+  echo -e ' \t '"This is exprimental utility for basically syncup cluster's member configuration files and along with this "
+  echo -e ' \t '"execute user command on selected member type"
+  echo 
+  echo -e ' \t '"-onlocator|-onserver|-onlead|-onall"   
+  echo -e ' \t ''\t'"Member type on which command will get execute"
+  echo
+  echo -e ' \t '"-f|--force"
+  echo -e ' \t ''\t'"For skiping the confirmation before executing the input command"
+  echo
+  echo -e ' \t '"-copyconf"
+  echo -e ' \t ''\t'"Copy log4j.properties, snappy-env.sh, spark-env.sh configuration files on the selected member type of cluster."
+  echo -e ' \t ''\t'"If these file already present in selected member then will only copy if there are some diff between these files"
+  echo -e ' \t ''\t'"but create the backup file before copy"
+  echo -e ' \t '"<cmd-to-run-on-selected-nodes>"
+  echo -e ' \t ''\t'"Command"
+  echo
   exit 1
 }
 
-componentType=$1
+COMPONENT_TYPE=$1
 shift
 
-echo "Input component type: $componentType"
+# Whether to apply the operation forcefully.
+ISFORCE=0
+if [ "$1" = "-f" -o "$1" = "--force" ]; then
+  ISFORCE=1
+  shift
+fi
 
 if [[ "$#" < "2" ]]; then
   usage
@@ -49,9 +74,11 @@ do
     --run)
       RUN="true"
       shift
+      break
       ;;
     -*)
       echo "ERROR: Unknown option: $1" >&2
+      echo
       usage
       ;;
     *) # End of options
@@ -59,6 +86,15 @@ do
       ;;
   esac
 done
+
+#whether user wants to perform copy configuration files operation only
+COPY_CONF=0
+SPARK_CONF_DIR=
+if [ "$1" = "-copyconf" ]; then
+  COPY_CONF=1
+  SPARK_CONF_DIR=$SNAPPY_HOME/conf/
+  shift
+fi
 
 if [[ ! -d ${SNAPPY_DIR} ]]; then
   echo "${SNAPPY_DIR} does not exist. Exiting ..."
@@ -88,51 +124,108 @@ LOCATOR_LIST=`awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' $SNAPPY_DIR/conf/l
 
 MEMBER_LIST=
 MEMBER_TYPE=
-case $componentType in
+case $COMPONENT_TYPE in
 
-  (locator)
+  (-onlocator)
     MEMBER_LIST=$LOCATOR_LIST
     MEMBER_TYPE="locator"
     ;;
 
-  (server)
+  (-onserver)
     MEMBER_LIST=$SERVER_LIST
     MEMBER_TYPE="server"
     ;;
-  (lead)
+  (-onlead)
     MEMBER_LIST=$LEAD_LIST
     MEMBER_TYPE="lead"
     ;;
-  (all)
+  (-onall)
     MEMBER_LIST="all"
+    MEMBER_TYPE="all"
     ;;
 esac
 
+function execute() {
+  echo
+  echo "--------- Executing $@ on $MEMBER_TYPE $node ----------"
+  echo 
+  if [[ $COPY_CONF = 1 ]]; then
+    executeCopyCommand "$@"
+  else
+    executeCommand "$@"
+  fi
+}
+
+START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
+
+function copyConf() { 
+  for entry in "${SPARK_CONF_DIR}"/*; do
+      if [ -f "$entry" ];then
+	fileName=$(basename $entry)
+ 	template=".template"
+	#skip file with .template extension
+	if [[ ! "$fileName" = @(*.template) ]]; then
+	  if [[ $fileName == "log4j.properties" || $fileName == "snappy-env.sh" || $fileName == "spark-env.sh" ]];then 	       	
+	    if ! ssh $node "test -e $entry"; then #"File does not exist."	  
+	      scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
+	    else
+	      backupDir="backup"
+	      if [[ ! -z $(ssh $node "cat $entry" | diff - "$entry") ]] ; then
+		backupFileName=${fileName}_${START_ALL_TIMESTAMP}
+		echo "INFO: Copied $filename from this host to $node. Moved the original $filename on $node to $backupFileName."
+		(ssh "$node" "{ if [ ! -d \"${SPARK_CONF_DIR}/$backupDir\" ]; then  mkdir \"${SPARK_CONF_DIR}/$backupDir\"; fi; } ")
+		ssh $node "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"		    
+		scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR} 
+	      fi
+	    fi
+	  fi # end of if, check the conf file name      				
+	fi # end of if, check extension
+      fi # end of if to get each file
+  done  #end of for loop
+}
+
+function executeCopyCommand() {
+  if [[ $ISFORCE -eq 0 ]];then
+    read -p "Are you sure to run $@ on $MEMBER_TYPE $node (y/n)?" userinput
+    echo 
+    if [[ $userinput == "y" || $userinput == "yes" || $userinput == "Y" || $userinput == "YES" ]]; then
+      copyConf "$@"
+    fi
+  else
+    copyConf "$@"
+  fi
+}
+
 function executeCommand() {
-  echo "################### Executing $@ on $node ###################"
-  read -p "Are you sure to run $@ on $MEMBER_TYPE $node (y/n)?" userinput
-  if [[ $userinput == "y" || $userinput == "yes" || $userinput == "Y" || $userinput == "YES" ]]; then
-    ssh $node $@
+  
+  if [[ $ISFORCE -eq 0 ]];then
+    read -p "Are you sure to run $@ on $MEMBER_TYPE $node (y/n)?" userinput
+    echo 
+    if [[ $userinput == "y" || $userinput == "yes" || $userinput == "Y" || $userinput == "YES" ]]; then
+      ssh $node "$@ | column"
+    fi
+  else
+    ssh $node "$@ | column"
   fi
 }
 
 if [[ $RUN = "true" ]]; then
   if [[ $MEMBER_LIST != "all" ]]; then
     for node in $MEMBER_LIST; do
-      executeCommand "$@"
+      execute "$@"
     done
   else
     for node in $SERVER_LIST; do
       MEMBER_TYPE="server"
-      executeCommand "$@"
+      execute "$@"
     done
     for node in $LEAD_LIST; do
       MEMBER_TYPE="lead"
-      executeCommand "$@"
+      execute "$@"
     done
     for node in $LOCATOR_LIST; do
       MEMBER_TYPE="locator"
-      executeCommand "$@"
+      execute "$@"
     done
   fi
 fi
