@@ -21,7 +21,7 @@ import java.sql.{ResultSet, Statement}
 
 import scala.io.Source
 
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.TaskContext
@@ -32,7 +32,8 @@ import org.apache.spark.sql.execution.joins._
 import org.apache.spark.sql.execution.row.RowTableScan
 import org.apache.spark.sql.execution.{FilterExec, ProjectExec}
 
-class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class NorthWindDUnitTest(s: String) extends ClusterManagerTestBase(s)
+  with DisableSparkTestingFlag {
 
   override val locatorNetPort: Int = AvailablePortHelper.getRandomAvailableTCPPort
   protected val productDir: String = SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_HOME")

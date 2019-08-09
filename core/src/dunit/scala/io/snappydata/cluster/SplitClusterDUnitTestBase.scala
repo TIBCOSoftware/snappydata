@@ -412,7 +412,7 @@ trait SplitClusterDUnitTestObject extends Logging {
         logInfo(s"Getting context with $user credentials")
       }
     }
-      System.clearProperty("spark.testing")
+
       val sc = SparkContext.getOrCreate(conf)
 //      sc.setLogLevel("DEBUG")
 //      Logger.getLogger("org").setLevel(Level.DEBUG)

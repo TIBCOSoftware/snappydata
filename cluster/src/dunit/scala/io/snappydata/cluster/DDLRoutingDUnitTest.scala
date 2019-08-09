@@ -26,7 +26,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.store.ViewTest
 import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession}
 
-class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
+class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s)
+  with DisableSparkTestingFlag {
 
   private def getANetConnection(netPort: Int): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"

@@ -27,7 +27,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 
 class SetIsolationDUnitTest (val s: String)
-    extends ClusterManagerTestBase(s) with Logging {
+    extends ClusterManagerTestBase(s) with Logging with DisableSparkTestingFlag {
 
   private def createTables(conn: Connection): Unit = {
     val stmt = conn.createStatement()

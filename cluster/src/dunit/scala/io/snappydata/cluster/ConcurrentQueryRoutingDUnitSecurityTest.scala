@@ -24,7 +24,7 @@ import io.snappydata.test.dunit.AvailablePortHelper
 import org.apache.spark.Logging
 
 class ConcurrentQueryRoutingDUnitSecurityTest(val s: String)
-    extends ClusterManagerLDAPTestBase(s) with Logging {
+    extends ClusterManagerLDAPTestBase(s) with Logging with DisableSparkTestingFlag {
 
   def columnTableRouting(thr: Int, iter: Int, jdbcUser1: String, jdbcUser2: String,
       serverHostPort: Int): Int = {

@@ -18,7 +18,7 @@ package io.snappydata.externalstore
 
 import java.sql.{Connection, DriverManager, SQLException}
 
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
@@ -28,7 +28,8 @@ import org.apache.spark.sql.{AnalysisException, SaveMode, SnappyContext, TableNo
 /**
  * Some basic tests to detect catalog inconsistency and repair it
  */
-class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class CatalogConsistencyDUnitTest(s: String) extends ClusterManagerTestBase(s)
+  with DisableSparkTestingFlag {
 
   private def getClientConnection(netPort: Int,
       routeQuery: Boolean = true): Connection = {

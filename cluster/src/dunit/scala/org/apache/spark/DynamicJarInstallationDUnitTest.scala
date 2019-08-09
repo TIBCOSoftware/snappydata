@@ -21,8 +21,9 @@ package org.apache.spark
 import java.io.File
 import java.net.URL
 import java.sql.{Connection, DriverManager}
+
 import _root_.io.snappydata.Constant
-import _root_.io.snappydata.cluster.ClusterManagerTestBase
+import _root_.io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
 import org.joda.time.DateTime
 
 import org.apache.spark.sql.SnappyContext
@@ -30,7 +31,7 @@ import org.apache.spark.sql.collection.{Utils => Utility}
 import org.apache.spark.util.Utils
 
 class DynamicJarInstallationDUnitTest(val s: String)
-    extends ClusterManagerTestBase(s) {
+    extends ClusterManagerTestBase(s) with DisableSparkTestingFlag {
 
   val currentLocatorPort = ClusterManagerTestBase.locPort
 

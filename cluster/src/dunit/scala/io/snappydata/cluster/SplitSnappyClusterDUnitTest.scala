@@ -49,15 +49,14 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
 class SplitSnappyClusterDUnitTest(s: String)
-    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase with Serializable {
+    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase
+      with Serializable with DisableSparkTestingFlag {
 
   override val locatorNetPort: Int = testObject.locatorNetPort
 
   override val stopNetServersInTearDown = false
 
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
-  sysProps.remove("spark.testing")
-  System.clearProperty("spark.testing")
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -71,7 +70,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     super.beforeClass()
     startNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
-    vm3.invoke(ClearProperty)
+    Array(vm2, vm1, vm0).foreach(_.invoke(ClearSparkTestingProperty))
   }
 
   override def afterClass(): Unit = {
@@ -1468,6 +1467,3 @@ object SplitSnappyClusterDUnitTest
   }
 }
 
-object ClearProperty extends Runnable with Serializable {
-  override def run(): Unit = System.clearProperty("spark.testing")
-}

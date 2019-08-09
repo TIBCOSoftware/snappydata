@@ -36,10 +36,8 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
   * Tests for query routing from JDBC client driver.
   */
 class ExecutionEngineArbiterDUnitTest(val s: String)
-    extends ClusterManagerTestBase(s) with Logging with ExecutionEngineArbiterTestBase {
-
-  sysProps.remove("spark.testing")
-  System.clearProperty("spark.testing")
+    extends ClusterManagerTestBase(s) with Logging with ExecutionEngineArbiterTestBase
+    with DisableSparkTestingFlag {
 
   override def tearDown2(): Unit = {
     // reset the chunk size on lead node
@@ -98,6 +96,7 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
   // make sure that the query with more one level of
   // nested subquery is routed to to spark engine
   def test_SNAP1507(): Unit = {
+    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(ClearSparkTestingProperty))
     nestedSubQuery(SnappyContext())
   }
 

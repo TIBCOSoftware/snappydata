@@ -18,7 +18,7 @@ package org.apache.spark.memory
 
 import java.util.Properties
 
-import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
+import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag, ExecutorInitiator}
 import io.snappydata.test.dunit.{DistributedTestBase, SerializableRunnable}
 import org.eclipse.collections.api.block.procedure.primitive.ObjectLongProcedure
 
@@ -27,7 +27,8 @@ import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.collection.Utils
 
 
-class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class MemoryManagerRestartDUnitTest(s: String) extends ClusterManagerTestBase(s)
+  with DisableSparkTestingFlag{
 
   self =>
 

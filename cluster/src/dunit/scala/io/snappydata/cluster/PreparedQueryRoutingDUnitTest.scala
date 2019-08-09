@@ -33,7 +33,7 @@ import scala.util.Random
  * Tests for query routing from JDBC client driver.
  */
 class PreparedQueryRoutingDUnitTest(val s: String)
-    extends ClusterManagerTestBase(s) with Logging {
+    extends ClusterManagerTestBase(s) with Logging with DisableSparkTestingFlag {
 
   // set default batch size for this test
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE

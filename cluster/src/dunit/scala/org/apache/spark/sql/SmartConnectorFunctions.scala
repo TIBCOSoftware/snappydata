@@ -42,7 +42,6 @@ object SmartConnectorFunctions {
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
 
-    System.clearProperty("spark.testing")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 
@@ -57,7 +56,6 @@ object SmartConnectorFunctions {
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
-    System.clearProperty("spark.testing")
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 
@@ -79,7 +77,7 @@ object SmartConnectorFunctions {
         .set("spark.executor.extraClassPath",
           SmartConnectorFunctions.getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
-    System.clearProperty("spark.testing")
+
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     snc.snappySession.externalCatalog.invalidateAll()
@@ -110,7 +108,7 @@ object SmartConnectorFunctions {
       .set("snappydata.connection", s"localhost:$locatorNetPort")
       .set("driver-memory", "2G")
       .set("executor-memory", "2G")
-    System.clearProperty("spark.testing")
+
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
     snc

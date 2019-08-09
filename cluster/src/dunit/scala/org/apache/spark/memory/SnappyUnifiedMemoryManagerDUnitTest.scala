@@ -24,7 +24,7 @@ import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, Loca
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
 import io.snappydata.test.dunit.{SerializableRunnable, VM}
 import org.eclipse.collections.api.block.procedure.primitive.ObjectLongProcedure
 
@@ -71,7 +71,8 @@ class WaitAssert(val error: Int, clazz: Class[_]) {
   def exceptionString(): String = excString
 }
 
-class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class SnappyUnifiedMemoryManagerDUnitTest(s: String) extends ClusterManagerTestBase(s)
+ with DisableSparkTestingFlag {
 
   val col_table = "app.col_table"
   val rr_table = "app.rr_table"

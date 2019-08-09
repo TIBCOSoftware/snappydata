@@ -16,11 +16,12 @@
  */
 package io.snappydata.externalstore
 
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
 
 import org.apache.spark.sql.SaveMode
 
-class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class RowTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
+  with DisableSparkTestingFlag {
 
   def testTableCreation(): Unit = {
     startSparkJob()

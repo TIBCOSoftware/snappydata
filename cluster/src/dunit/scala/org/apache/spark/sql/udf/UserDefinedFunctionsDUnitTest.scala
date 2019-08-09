@@ -23,7 +23,7 @@ import scala.sys.process._
 import scala.util.control.NonFatal
 import scala.util.{Failure, Success, Try}
 
-import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
 import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase}
 
 import org.apache.spark.{SparkUtilsAccess, TestUtils}
@@ -34,7 +34,7 @@ import org.apache.spark.sql.{SnappyContext, SnappySession}
 case class OrderData(ref: Int, description: String, amount: Long)
 
 class UserDefinedFunctionsDUnitTest(val s: String)
-    extends ClusterManagerTestBase(s) {
+    extends ClusterManagerTestBase(s) with DisableSparkTestingFlag {
 
   def testDriverHA(): Unit = {
     // Stop the lead node
