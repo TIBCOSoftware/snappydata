@@ -80,6 +80,12 @@ class SplitSnappyClusterDUnitTest(s: String)
     super.afterClass()
   }
 
+
+  override def testRowTableCreation(): Unit = {
+    Array(vm2, vm1, vm0).foreach(_.invoke(ClearSparkTestingProperty))
+    super.doTestRowTableCreation()
+  }
+
   def testCreateTablesFromOtherTables(): Unit = {
     // stop a network server to test remote fetch
     vm0.invoke(classOf[ClusterManagerTestBase], "stopNetworkServers")
