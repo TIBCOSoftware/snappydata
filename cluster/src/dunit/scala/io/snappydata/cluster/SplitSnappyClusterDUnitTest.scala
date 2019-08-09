@@ -58,8 +58,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   val currentLocatorPort: Int = ClusterManagerTestBase.locPort
   sysProps.remove("spark.testing")
   System.clearProperty("spark.testing")
-  sysProps.remove("SPARK_TESTING")
-  System.clearProperty("SPARK_TESTING")
 
   override protected val sparkProductDir: String =
     testObject.getEnvironmentVariable("SNAPPY_HOME")
@@ -73,6 +71,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     super.beforeClass()
     startNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
+    vm3.invoke(ClearProperty)
   }
 
   override def afterClass(): Unit = {
@@ -1467,4 +1466,8 @@ object SplitSnappyClusterDUnitTest
       waitTillTheBatchIsPickedForProcessing(snc, batchId, queryName, retries - 1)
     }
   }
+}
+
+object ClearProperty extends Runnable with Serializable {
+  override def run(): Unit = System.clearProperty("spark.testing")
 }

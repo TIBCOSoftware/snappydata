@@ -28,10 +28,6 @@ import org.apache.spark.sql.collection.Utils
 class QueryRoutingDUnitSecurityTest(val s: String)
     extends ClusterManagerLDAPTestBase(s) with Logging {
 
-  sysProps.remove("spark.testing")
-  System.clearProperty("spark.testing")
-  sysProps.remove("SPARK_TESTING")
-  System.clearProperty("SPARK_TESTING")
   def testColumnTableRouting(): Unit = {
     val jdbcUser1 = "gemfire1"
     val jdbcUser2 = "gemfire2"

@@ -28,10 +28,6 @@ import org.apache.spark.sql.{Dataset, Row, SnappyContext, SnappySession}
 
 class DDLRoutingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
-  sysProps.remove("spark.testing")
-  System.clearProperty("spark.testing")
-  sysProps.remove("SPARK_TESTING")
-  System.clearProperty("SPARK_TESTING")
   private def getANetConnection(netPort: Int): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance

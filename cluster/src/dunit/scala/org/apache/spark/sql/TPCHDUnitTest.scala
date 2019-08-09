@@ -34,8 +34,7 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
   // this is to allow codegenfallback plan to be used
   sysProps.remove("spark.testing")
   System.clearProperty("spark.testing")
-  sysProps.remove("SPARK_TESTING")
-  System.clearProperty("SPARK_TESTING")
+
   override val locatorNetPort: Int = TPCHUtils.locatorNetPort
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",
     "10", "11", "12", "13", "14", "15", "16", "17", "18", "19",

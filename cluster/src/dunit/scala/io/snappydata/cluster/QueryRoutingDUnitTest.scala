@@ -49,8 +49,6 @@ class QueryRoutingDUnitTest(val s: String)
 
   sysProps.remove("spark.testing")
   System.clearProperty("spark.testing")
-  sysProps.remove("SPARK_TESTING")
-  System.clearProperty("SPARK_TESTING")
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 

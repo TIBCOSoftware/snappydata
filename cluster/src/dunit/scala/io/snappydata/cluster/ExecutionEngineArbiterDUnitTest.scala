@@ -40,8 +40,6 @@ class ExecutionEngineArbiterDUnitTest(val s: String)
 
   sysProps.remove("spark.testing")
   System.clearProperty("spark.testing")
-  sysProps.remove("SPARK_TESTING")
-  System.clearProperty("SPARK_TESTING")
 
   override def tearDown2(): Unit = {
     // reset the chunk size on lead node
