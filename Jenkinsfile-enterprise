@@ -12,7 +12,7 @@ node {
 				        [name: "${params.snappybranch}"]
 			      ],
 			doGenerateSubmoduleConfigurations: false,
-			extensions: [],
+			extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 			submoduleCfg: [],
 			userRemoteConfigs: [
 				[ url: 'https://github.com/SnappyDataInc/snappydata.git' ]
@@ -28,7 +28,7 @@ node {
 							[name: "${params.sparkbranch}"]
 						],
 						doGenerateSubmoduleConfigurations: false,
-						extensions: [],
+						extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 						submoduleCfg: [],
 						userRemoteConfigs: [
 							[	url: 'https://github.com/SnappyDataInc/spark.git' ]
@@ -45,7 +45,7 @@ node {
 							[name: "${params.sparkjobserverbranch}"]
 						],
 						doGenerateSubmoduleConfigurations: false,
-						extensions: [],
+						extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 						submoduleCfg: [],
 						userRemoteConfigs: [
 							[	url: 'https://github.com/SnappyDataInc/spark-jobserver.git' ]
@@ -62,7 +62,7 @@ node {
 							[name: "${params.snappystorebranch}"]
 						],
 						doGenerateSubmoduleConfigurations: false,
-						extensions: [],
+						extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 						submoduleCfg: [],
 						userRemoteConfigs: [
 							[ url: 'https://github.com/SnappyDataInc/snappy-store.git' ]
@@ -78,7 +78,7 @@ node {
               $class: 'GitSCM',
               branches: [[name: "${params.aqpbranch}"]],
               doGenerateSubmoduleConfigurations: false,
-              extensions: [[$class: 'CleanBeforeCheckout']],
+              extensions: [[$class: 'CleanBeforeCheckout'], [$class: 'LocalBranch', localBranch: "**"]],
               submoduleCfg: [],
               userRemoteConfigs: [
                 [
@@ -97,7 +97,7 @@ node {
               $class: 'GitSCM',
               branches: [[name: "${params.snappyconnectorsbranch}"]],
               doGenerateSubmoduleConfigurations: false,
-              extensions: [[$class: 'CleanBeforeCheckout']],
+              extensions: [[$class: 'CleanBeforeCheckout'], [$class: 'LocalBranch', localBranch: "**"]],
               submoduleCfg: [],
               userRemoteConfigs: [
                 [

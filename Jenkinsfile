@@ -12,7 +12,7 @@ node {
 					[name: "${snappybranch}"]
 				],
 				doGenerateSubmoduleConfigurations: false,
-				extensions: [],
+				extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 				submoduleCfg: [],
 				userRemoteConfigs: [
 					[url: 'https://github.com/SnappyDataInc/snappydata.git']
@@ -28,7 +28,7 @@ node {
 								[name: "${sparkbranch}"]
 							],
 							doGenerateSubmoduleConfigurations: false,
-							extensions: [],
+							extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 							submoduleCfg: [],
 							userRemoteConfigs: [
 								[url: 'https://github.com/SnappyDataInc/spark.git']
@@ -45,7 +45,7 @@ node {
 								[name: "${sparkjobserverbranch}"]
 							],
 							doGenerateSubmoduleConfigurations: false,
-							extensions: [],
+							extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 							submoduleCfg: [],
 							userRemoteConfigs: [
 								[url: 'https://github.com/SnappyDataInc/spark-jobserver.git']
@@ -62,7 +62,7 @@ node {
 								[name: "${snappystorebranch}"]
 							],
 							doGenerateSubmoduleConfigurations: false,
-							extensions: [],
+							extensions: [[$class: 'CleanBeforeCheckout'],[$class: 'LocalBranch', localBranch: "**"]],
 							submoduleCfg: [],
 							userRemoteConfigs: [
 								[url: 'https://github.com/SnappyDataInc/snappy-store.git']
