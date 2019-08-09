@@ -19,26 +19,24 @@
 
 package org.apache.spark.ui
 
-import java.text.SimpleDateFormat
-import java.util.Date
+import java.util.Calendar
 import javax.servlet.http.HttpServletRequest
 
-import scala.collection.mutable
 import scala.xml.Node
-
-import com.pivotal.gemfirexd.internal.engine.ui.{SnappyExternalTableStats, SnappyRegionStats}
-import io.snappydata.SnappyTableStatsProviderService
 
 import org.apache.spark.internal.Logging
 
 private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
     extends WebUIPage("") with Logging {
 
+  private val startDate = Calendar.getInstance().getTime()
+
   override def render(request: HttpServletRequest): Seq[Node] = {
 
     val pageHeaderText: String = SnappyDashboardPage.pageHeaderText
 
     // Generate Pages HTML
+    val dataNode = createHiddenDataNode
     val pageTitleNode = createPageTitleNode(pageHeaderText)
 
     val clusterStatsDetails = {
@@ -85,8 +83,8 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
                               UIUtils.prependBaseUri("/static/snappydata/snappy-dashboard.js")
                             }></script>
 
-    val pageContent = jsScripts ++ pageTitleNode ++ clusterStatsDetails ++ membersStatsDetails ++
-                      tablesStatsDetails ++ extTablesStatsDetails
+    val pageContent = jsScripts ++ dataNode ++ pageTitleNode ++ clusterStatsDetails ++
+                      membersStatsDetails ++ tablesStatsDetails ++ extTablesStatsDetails
 
     UIUtils.headerSparkPage(pageHeaderText, pageContent, parent, Some(500),
       useDataTables = true, isSnappyPage = true)
@@ -119,6 +117,18 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </h3>
       </div>
     </div>
+    <div id="dateContainer">
+      <div id="clusterDateDetails">
+        <div style="float: left;">
+          <div class="startedonlabel">Started On:</div>
+          <div id="clusterStartDate"></div>
+        </div>
+        <div style="float: right;">
+          <div class="uptimelabel">Uptime:</div>
+          <div id="clusterUptime"></div>
+        </div>
+      </div>
+    </div>
     <div id="CPUCoresContainer">
       <div id="CPUCoresDetails">
         <div id="TotalCoresHolder">
@@ -141,6 +151,11 @@ private[ui] class SnappyDashboardPage (parent: SnappyDashboardTab)
         </h4>
       </div>
     </div>
+  }
+
+  private def createHiddenDataNode: Seq[Node] = {
+    <div id="hiddenData" style="display: none;"
+         data-clusterstarttime={startDate.getTime.toString}></div>
   }
 
   private def clusterStats(): Seq[Node] = {
