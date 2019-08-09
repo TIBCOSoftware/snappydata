@@ -82,8 +82,27 @@ node {
               submoduleCfg: [],
               userRemoteConfigs: [
                 [
-                  credentialsId: '1ea55eab-c2f5-46e6-a804-53ceb02aebda',
+                  credentialsId: 'TibcoComputeDB',
                   url: 'https://github.com/SnappyDataInc/snappy-aqp'
+                ]
+             ]
+          ])
+				}
+			},
+
+      "checkout snappy-connectors": {
+				dir('snappy-connectors') {
+          checkout(
+            [
+              $class: 'GitSCM',
+              branches: [[name: "${params.snappyconnectorsbranch}"]],
+              doGenerateSubmoduleConfigurations: false,
+              extensions: [[$class: 'CleanBeforeCheckout']],
+              submoduleCfg: [],
+              userRemoteConfigs: [
+                [
+                  credentialsId: 'TibcoComputeDB',
+                  url: 'https://github.com/SnappyDataInc/snappy-connectors.git'
                 ]
              ]
           ])
