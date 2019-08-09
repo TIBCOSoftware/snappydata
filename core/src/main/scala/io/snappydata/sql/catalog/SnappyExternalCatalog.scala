@@ -341,6 +341,12 @@ object SnappyExternalCatalog {
       Utils.analysisException(s"Schema or database '$schema' not found")
     } else Utils.analysisException(s"Schema '$schema' not found")
   }
+
+  def objectExistsException(tableIdentifier: TableIdentifier,
+      objectType: CatalogObjectType.Type): AnalysisException = {
+    Utils.analysisException(s"Object with name '${tableIdentifier.table}' (requested type = " +
+        s"$objectType) already exists in schema/database '${tableIdentifier.database}'")
+  }
 }
 
 object CatalogObjectType extends Enumeration {
@@ -397,5 +403,10 @@ object CatalogObjectType extends Enumeration {
 
   def isPolicy(table: CatalogTable): Boolean = {
     table.properties.contains(PolicyProperties.policyApplyTo)
+  }
+
+  def isTableOrView(tableType: CatalogObjectType.Type): Boolean = tableType match {
+    case Index | Policy => false
+    case _ => true
   }
 }
