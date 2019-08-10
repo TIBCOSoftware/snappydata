@@ -264,9 +264,10 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   /**
    * Lookup relation and resolve to a LogicalRelation if not a temporary view.
    */
-  final def resolveRelationWithAlias(tableIdent: TableIdentifier): LogicalPlan = {
+  final def resolveRelationWithAlias(tableIdent: TableIdentifier,
+      alias: Option[String] = None): LogicalPlan = {
     // resolve the relation right away with alias around
-    new FindDataSourceTable(snappySession)(lookupRelation(tableIdent))
+    new FindDataSourceTable(snappySession)(lookupRelation(tableIdent, alias))
   }
 
   /**
@@ -1240,6 +1241,6 @@ final class SessionCatalogWrapper(externalCatalog: SnappyExternalCatalog,
     hadoopConf) {
 
   override def lookupRelation(name: TableIdentifier, alias: Option[String]): LogicalPlan = {
-    catalog.resolveRelationWithAlias(name)
+    catalog.resolveRelationWithAlias(name, alias)
   }
 }

@@ -720,16 +720,6 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
 }
 
 /**
- * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
- */
-object OptimizeSortPlans extends Rule[SparkPlan] {
-  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
-    case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
-      join.copy(right = SnappySortExec(sort, child))
-  }
-}
-
-/**
  * Rule to collapse the partial and final aggregates if the grouping keys
  * match or are superset of the child distribution. Also introduces exchange
  * when inserting into a partitioned table if number of partitions don't match.
