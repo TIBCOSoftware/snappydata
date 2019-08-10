@@ -810,7 +810,7 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
       case _: StreamPlan => plan
       case _: CollectAggregateExec => CodegenSparkFallback(plan, session)
       case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) ||
-       session.sessionState.conf.contains("snappydata.connection") =>
+       session.sparkContext.conf.contains("snappydata.connection") =>
         CodegenSparkFallback(plan, session)
       case _ => plan
     }
