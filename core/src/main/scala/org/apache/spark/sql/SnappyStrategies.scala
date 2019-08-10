@@ -809,8 +809,8 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
       case _: CollectAggregateExec => CodegenSparkFallback(plan, session)
-      case _ if !org.apache.spark.util.Utils.isTesting ||
-        session.conf.contains("snappydata.connection") => CodegenSparkFallback(plan, session)
+      case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) =>
+        CodegenSparkFallback(plan, session)
       case _ => plan
     }
   }

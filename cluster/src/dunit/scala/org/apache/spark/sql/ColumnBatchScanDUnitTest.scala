@@ -18,12 +18,11 @@ package org.apache.spark.sql
 
 
 import io.snappydata.Property
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 
 case class TestRecord(col1: Int, col2: Int, col3: Int)
 
-class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s)
-  with DisableSparkTestingFlag {
+class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def _testColumnBatchSkipping(): Unit = {
 

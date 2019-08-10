@@ -27,7 +27,7 @@ import org.apache.spark.sql.{Row, SnappyContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
 class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging
-  with DisableSparkTestingFlag {
+{
 
   import ClusterMgrDUnitTest._
 

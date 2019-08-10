@@ -35,7 +35,7 @@ import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s)
-  with DisableSparkTestingFlag {
+{
 
   val table = "test.test_table"
 

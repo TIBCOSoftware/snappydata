@@ -26,7 +26,7 @@ import org.apache.spark.Logging
 import org.apache.spark.sql.collection.Utils
 
 class QueryRoutingDUnitSecurityTest(val s: String)
-    extends ClusterManagerLDAPTestBase(s) with Logging with DisableSparkTestingFlag {
+    extends ClusterManagerLDAPTestBase(s) with Logging {
 
   def testColumnTableRouting(): Unit = {
     val jdbcUser1 = "gemfire1"

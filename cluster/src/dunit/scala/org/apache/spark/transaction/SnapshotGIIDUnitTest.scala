@@ -20,15 +20,14 @@ import java.util.Properties
 
 import com.gemstone.gemfire.internal.cache.{BucketRegion, GemFireCacheImpl, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.SerializableRunnable
 
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
 case class Data(col1: Int, col2: Int, col3: Int)
 
-class SnapshotGIIDUnitTest(s: String) extends ClusterManagerTestBase(s)
-  with DisableSparkTestingFlag {
+class SnapshotGIIDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testColumnTableGII(): Unit = {
 

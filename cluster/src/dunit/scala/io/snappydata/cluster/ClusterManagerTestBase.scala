@@ -86,7 +86,6 @@ abstract class ClusterManagerTestBase(s: String)
   sysProps.setProperty("gemfire.DISALLOW_CLUSTER_RESTART_CHECK", "true")
 
   sysProps.setProperty("gemfire.DISALLOW_RESERVE_SPACE", "true")
-  sysProps.setProperty("spark.testing", "true")
 
   var host: Host = _
   var vm0: VM = _
@@ -394,8 +393,4 @@ object ClusterManagerTestBase extends Logging {
       }
     }
   }
-}
-
-object ClearSparkTestingProperty extends Runnable with Serializable {
-  override def run(): Unit = System.clearProperty("spark.testing")
 }

@@ -32,7 +32,7 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
  * depending upon the query hint.
  */
 class StringAsVarcharDUnitTest(val s: String)
-    extends ClusterManagerTestBase(s) with Logging with DisableSparkTestingFlag {
+    extends ClusterManagerTestBase(s) with Logging {
 
   val colTab1 = "colTab1"
   val rowTab1 = "rowTab1"

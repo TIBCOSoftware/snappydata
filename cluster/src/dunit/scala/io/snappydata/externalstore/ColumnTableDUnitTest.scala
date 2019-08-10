@@ -23,7 +23,7 @@ import scala.util.Random
 
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.{SerializableCallable, SerializableRunnable}
 import org.apache.commons.io.FileUtils
 
@@ -35,8 +35,7 @@ import org.apache.spark.sql.{Row, SaveMode, SnappyContext}
  * Some basic column table tests.
  */
 // noinspection ZeroIndexToHead
-class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
-  with DisableSparkTestingFlag {
+class ColumnTableDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   private val currentLocatorPort = ClusterManagerTestBase.locPort
 

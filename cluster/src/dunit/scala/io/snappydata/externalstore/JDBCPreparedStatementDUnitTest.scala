@@ -18,7 +18,7 @@ package io.snappydata.externalstore
 
 import java.sql.PreparedStatement
 
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 import org.junit.Assert.assertEquals
 
@@ -28,7 +28,7 @@ import org.apache.spark.Logging
 // scalastyle:off println
 
 class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s)
-    with Logging with DisableSparkTestingFlag {
+    with Logging {
 
   val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
 

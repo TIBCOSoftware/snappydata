@@ -24,13 +24,13 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer}
 import io.snappydata.benchmark.TPCH_Queries.createQuery
 import io.snappydata.benchmark.snappy.tpch.QueryExecutor
 import io.snappydata.benchmark.{TPCHColumnPartitionedTable, TPCHReplicatedTable, TPCH_Queries}
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
 import org.apache.spark.{Logging, SparkContext}
 
 class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
-    with Logging with DisableSparkTestingFlag {
+    with Logging {
 
   override val locatorNetPort: Int = TPCHUtils.locatorNetPort
   val queries = Array("1", "2", "3", "4", "5", "6", "7", "8", "9",

@@ -18,11 +18,10 @@ package io.snappydata.streaming
 
 import java.sql.{Connection, DriverManager}
 
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
 
-class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s)
-  with DisableSparkTestingFlag {
+class StreamingDUnitTest(val s: String) extends ClusterManagerTestBase(s) {
 
   override def tearDown2(): Unit = {
     super.tearDown2()

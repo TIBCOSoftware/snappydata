@@ -19,15 +19,14 @@ package io.snappydata.externalstore
 
 import scala.util.Random
 
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag, ExecutorInitiator}
+import io.snappydata.cluster.{ClusterManagerTestBase, ExecutorInitiator}
 import io.snappydata.test.dunit.DistributedTestBase
 import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
 
 import org.apache.spark.Logging
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
-class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging
-  with DisableSparkTestingFlag{
+class ExecutorMessageDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging {
 
   val tableName = "ExecutorMessageDUnitTest_table"
 

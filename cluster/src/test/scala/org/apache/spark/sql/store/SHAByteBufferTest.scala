@@ -50,8 +50,9 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
     System.setProperty("spark.testing", "true")
     super.newSparkConf((conf: SparkConf) => {
       conf.set("spark.sql.codegen.maxFields", "110")
-      conf.set("spark.sql.codegen.fallback", "false")
-      conf.set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true")
+      .set("spark.sql.codegen.fallback", "false")
+      .set("snappydata.sql.useOptimizedHashAggregateForSingleKey", "true")
+      .set(Property.TestDisableCodeGenFlag.name , "true")
       conf
     })
   }

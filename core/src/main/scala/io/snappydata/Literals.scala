@@ -290,6 +290,11 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",
     s"The initial capacity of SHAMap. " +
       s"Default value is 8192", Some(8192))
+
+  val TestDisableCodeGenFlag: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.disableCodegenFallback",
+    s"The test flag if set to true will throw Exception instead of creating CodegenSparkFallback " +
+      s"Default value is false", Some(false))
 }
 
 // extractors for properties

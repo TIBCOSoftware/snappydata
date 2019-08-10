@@ -50,7 +50,7 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  */
 class SplitSnappyClusterDUnitTest(s: String)
     extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase
-      with Serializable with DisableSparkTestingFlag {
+      with Serializable {
 
   override val locatorNetPort: Int = testObject.locatorNetPort
 
@@ -70,20 +70,13 @@ class SplitSnappyClusterDUnitTest(s: String)
     super.beforeClass()
     startNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "startSparkCluster", sparkProductDir)
-    Array(vm2, vm1, vm0).foreach(_.invoke(ClearSparkTestingProperty))
   }
 
   override def afterClass(): Unit = {
-    Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+    Array(vm2, vm1, vm0, vm3).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
     super.afterClass()
-  }
-
-
-  override def testRowTableCreation(): Unit = {
-    Array(vm2, vm1, vm0).foreach(_.invoke(ClearSparkTestingProperty))
-    super.doTestRowTableCreation()
   }
 
   def testCreateTablesFromOtherTables(): Unit = {
@@ -396,7 +389,6 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testStaleCatalog(): Unit = {
-
     val snc = SnappyContext(sc)
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")

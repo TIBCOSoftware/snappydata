@@ -16,15 +16,14 @@
  */
 package org.apache.spark.jdbc
 
-import io.snappydata.cluster.{ClusterManagerTestBase, DisableSparkTestingFlag}
+import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.core.Data
 
 import org.apache.spark.TaskContext
 import org.apache.spark.sql.SnappyContext
 
 
-class ConnectionConfDUnitTest(s: String) extends ClusterManagerTestBase(s)
-  with DisableSparkTestingFlag {
+class ConnectionConfDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
   def testSimpleConnection(): Unit = {
     val snc = SnappyContext(sc)

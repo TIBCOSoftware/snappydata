@@ -45,7 +45,7 @@ import org.apache.spark.sql.{IndexTest, SaveMode, SingleNodeTest, SnappyContext,
  * Tests for query routing from JDBC client driver.
  */
 class QueryRoutingDUnitTest(val s: String)
-    extends ClusterManagerTestBase(s) with Logging with DisableSparkTestingFlag {
+    extends ClusterManagerTestBase(s) with Logging {
 
   private val default_chunk_size = GemFireXDUtils.DML_MAX_CHUNK_SIZE
 
@@ -452,7 +452,6 @@ class QueryRoutingDUnitTest(val s: String)
   }
 
   def testSystablesQueries(): Unit = {
-    Array(vm0, vm1, vm2, vm3).foreach(_.invoke(ClearSparkTestingProperty))
     val netPort1 = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort1)
 
