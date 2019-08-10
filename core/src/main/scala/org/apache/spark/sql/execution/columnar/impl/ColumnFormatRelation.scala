@@ -18,13 +18,13 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
-
 import scala.util.control.NonFatal
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl, LocalRegion, PartitionedRegion}
+
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
@@ -75,9 +75,9 @@ abstract class BaseColumnFormatRelation(
     _relationInfo: (RelationInfo, Option[LocalRegion]))
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
-    with PartitionedDataSourceScan
-    with RowInsertableRelation
-    with MutableRelation {
+        with PartitionedDataSourceScan
+        with RowInsertableRelation
+        with MutableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[${Utils.toLowerCase(table)}]"
 
@@ -236,7 +236,7 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    withTableWriteLock() {() =>
+    withTableWriteLock() { () =>
       ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
         updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
@@ -276,7 +276,7 @@ abstract class BaseColumnFormatRelation(
     val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
       case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(a) => null // Do nothing as putInto will release lock
+      case Some(_) => null // Do nothing as putInto will release lock
     }
     try {
       if (numRows > (batchSize * numBuckets)) {
@@ -301,7 +301,7 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       if (lock != null) {
-        logDebug(s"Releasing the ${lock} object in InsertRows")
+        logDebug(s"Releasing the $lock object in InsertRows")
         snc.releaseLock(lock)
       }
     }
@@ -319,7 +319,7 @@ abstract class BaseColumnFormatRelation(
     }
     finally {
       if (lock != null) {
-        logDebug(s"Added the ${lock} object to the context for $table")
+        logDebug(s"Added the $lock object to the context for $table")
         snc.addContextObject(
           SnappySession.BULKWRITE_LOCK, lock)
       }
