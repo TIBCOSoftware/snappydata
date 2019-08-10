@@ -402,6 +402,7 @@ trait SplitClusterDUnitTestObject extends Logging {
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
+      .set(io.snappydata.Property.TestDisableCodeGenFlag.name, "false")
 
     if (props != null) {
       val user = props.getProperty(Attribute.USERNAME_ATTR, "")
