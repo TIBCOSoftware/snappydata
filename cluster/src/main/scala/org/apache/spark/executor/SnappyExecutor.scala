@@ -16,17 +16,19 @@
  */
 package org.apache.spark.executor
 
-import java.io.{File, IOException}
-import java.net.{URI, URL}
+import java.io.File
+import java.net.URL
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.mutable
+
 import com.gemstone.gemfire.internal.tcp.ConnectionTable
 import com.gemstone.gemfire.{CancelException, SystemFailure}
 import com.google.common.cache.{CacheBuilder, CacheLoader}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
+
 import org.apache.spark.deploy.SparkHadoopUtil
 import org.apache.spark.serializer.KryoSerializerPool
 import org.apache.spark.sql.internal.ContextJarUtils
@@ -44,8 +46,8 @@ class SnappyExecutor(
 
   {
     // set a thread-factory for the thread pool for cleanup
-    val threadGroup = Thread.currentThread().getThreadGroup
-    val threadFactory = new ThreadFactory {
+    val threadGroup: ThreadGroup = Thread.currentThread().getThreadGroup
+    val threadFactory: ThreadFactory = new ThreadFactory {
 
       private val threadNum = new AtomicInteger(0)
 
@@ -78,7 +80,7 @@ class SnappyExecutor(
   private val classLoaderCache = {
     val loader = new CacheLoader[ClassLoaderKey, SnappyMutableURLClassLoader]() {
       override def load(key: ClassLoaderKey): SnappyMutableURLClassLoader = {
-        val appName = key.appName  // appName = "schemaname.functionname"
+        val appName = key.appName // appName = "schemaname.functionname"
         val appNameAndJars = key.appNameAndJars
         lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
         val appDependencies = appNameAndJars.drop(2).toSeq
@@ -188,13 +190,17 @@ class SnappyExecutor(
     }
   }
 
+  override protected def handleNonDefaultCpusPerTask(init: Boolean): Unit = {
+    SystemFailure.setSkipOOMEForThread(init)
+  }
+
   def updateMainLoader(jars: Array[String]): Unit = {
     synchronized {
       lazy val hadoopConf = SparkHadoopUtil.get.newConfiguration(conf)
       jars.foreach(name => {
         val localName = name.split("/").last
         Utils.fetchFile(name, new File(SparkFiles.getRootDirectory()), conf,
-          env.securityManager, hadoopConf, -1L, true)
+          env.securityManager, hadoopConf, -1L, useCache = true)
         val url = new File(SparkFiles.getRootDirectory(), localName).toURI.toURL
         urlClassLoader.addURL(url)
       })
@@ -223,7 +229,7 @@ class SnappyExecutor(
     }
   }
 
-  def getLocalDir(): String = {
+  def getLocalDir: String = {
     Utils.getLocalDir(conf)
   }
 }
@@ -266,11 +272,11 @@ private class SnappyUncaughtExceptionHandler(
 
       // We may have been called from a shutdown hook, there is no need to do anything
       if (!ShutdownHookManager.inShutdown()) {
-        if (exception.isInstanceOf[OutOfMemoryError]) {
-          executorBackend.exitExecutor(SparkExitCode.OOM, "Out of Memory", exception)
-        } else {
-          executorBackend.exitExecutor(
-            SparkExitCode.UNCAUGHT_EXCEPTION, errMsg, exception)
+        exception match {
+          case err: Error if SystemFailure.isJVMFailureError(err) =>
+            executorBackend.exitExecutor(SparkExitCode.OOM, "Out of Memory", exception)
+          case _ =>
+            executorBackend.exitExecutor(SparkExitCode.UNCAUGHT_EXCEPTION, errMsg, exception)
         }
       }
     } catch {
@@ -285,4 +291,3 @@ private class SnappyUncaughtExceptionHandler(
     }
   }
 }
-
