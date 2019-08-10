@@ -39,10 +39,11 @@ import org.apache.spark.sql.catalyst.rules.Rule
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution._
 import org.apache.spark.sql.execution.columnar.impl.IndexColumnFormatRelation
-import org.apache.spark.sql.execution.command.RunnableCommand
+import org.apache.spark.sql.execution.command.{ExecutedCommandExec, RunnableCommand}
 import org.apache.spark.sql.execution.datasources._
 import org.apache.spark.sql.execution.exchange.{EnsureRequirements, ReuseExchange}
 import org.apache.spark.sql.execution.sources.{PhysicalScan, StoreDataSourceStrategy}
+import org.apache.spark.sql.hive.execution.{CreateHiveTableAsSelectCommand, HiveTableScanExec, InsertIntoHiveTable}
 import org.apache.spark.sql.internal._
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources._
@@ -434,7 +435,6 @@ class SnappySessionState(val snappySession: SnappySession)
               case _ => false
             })
 
-
     // noinspection ScalaUnnecessaryParentheses
     def rlsConditionChecker(f: (Expression => Boolean) =>
         (Expression => Boolean)): Expression => Boolean = f(rlsConditionChecker(f))(_: Expression)
@@ -687,7 +687,7 @@ class SnappySessionState(val snappySession: SnappySession)
       newHadoopConf())
   }
 
-  lazy val wrapperCatalog: SessionCatalogWrapper = {
+  protected lazy val wrapperCatalog: SessionCatalogWrapper = {
     new SessionCatalogWrapper(
       catalog.externalCatalog,
       snappySession,
@@ -704,7 +704,7 @@ class SnappySessionState(val snappySession: SnappySession)
     python.ExtractPythonUDFs,
     TokenizeSubqueries(snappySession),
     EnsureRequirements(conf),
-    OptimizeSortPlans,
+    OptimizeSortAndFilePlans(conf),
     CollapseCollocatedPlans(snappySession),
     CollapseCodegenStages(conf),
     InsertCachedPlanFallback(snappySession, topLevel),
@@ -755,7 +755,7 @@ class SnappySessionState(val snappySession: SnappySession)
   }
 
   private[spark] def clearExecutionData(): Unit = {
-    conf.refreshNumShufflePartitions()
+    conf.resetDefaults()
     leaderPartitions.clear()
     snappySession.clearContext()
   }
@@ -843,7 +843,7 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
           TimeWindowing ::
           ResolveInlineTables ::
           TypeCoercion.typeCoercionRules ++
-              extendedResolutionRules : _*),
+              extendedResolutionRules: _*),
     Batch("Nondeterministic", Once,
       PullOutNondeterministic),
     Batch("UDF", Once,
@@ -912,6 +912,22 @@ class SnappyAnalyzer(sessionState: SnappySessionState)
             right))
       }
     }
+  }
+}
+
+/**
+ * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
+ * Also sets the "spark.task.cpus" property implicitly for file scans/writes.
+ */
+case class OptimizeSortAndFilePlans(conf: SnappyConf) extends Rule[SparkPlan] {
+  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
+    case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
+      join.copy(right = SnappySortExec(sort, child))
+    case s@(_: FileSourceScanExec | _: HiveTableScanExec | _: InsertIntoHiveTable |
+            ExecutedCommandExec(_: InsertIntoHadoopFsRelationCommand |
+                                _: CreateHiveTableAsSelectCommand)) =>
+      conf.setDynamicCpusPerTask()
+      s
   }
 }
 
