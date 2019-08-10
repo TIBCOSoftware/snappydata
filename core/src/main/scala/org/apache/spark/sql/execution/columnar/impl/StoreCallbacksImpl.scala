@@ -585,33 +585,18 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     } else userId
   }
 
-  private lazy val samplerClass = {
-    val samplerClassName = "org.apache.spark.sql.execution.StratifiedSampler$"
-    spark.util.Utils.classForName(samplerClassName)
-  }
-
   private lazy val removeSamplerMethod: Method = {
-    // Iterating over the method list to find the `removeSampler` method because when loaded
-    // using reflection, the type of the second parameter of this method is `boolean`
-    // (and not `scala.Boolean`). Unable to figure out a way to load this method using
-    // `java.lang.Class.getMethod` method.
-    samplerClass.getMethods.filter(m => {
-      val paramTypes = m.getParameterTypes
-      if (m.getName.equals("removeSampler") && m.getParameterCount == 2 &&
-          paramTypes(0).equals(classOf[String]) && paramTypes(1).getName.equals("boolean")) {
-        true
-      } else false
-    }).head
+    val samplerClassName = "org.apache.spark.sql.execution.StratifiedSampler"
+    val samplerClass = spark.util.Utils.classForName(samplerClassName)
+    samplerClass.getMethod("removeSampler", classOf[String], classOf[Boolean])
   }
 
   override def removeSampler(sampleTableName: String): Unit = {
     try {
-      val instance = samplerClass.getField("MODULE$").get(null)
-      removeSamplerMethod.invoke(instance, sampleTableName, Boolean.box(false))
+      removeSamplerMethod.invoke(null, sampleTableName, Boolean.box(false))
     }
     catch {
-      case NonFatal(e) => logWarning("Failed to load AQP class" +
-          " org.apache.spark.sql.execution.StratifiedSampler.", e)
+      case NonFatal(e) => logWarning("Failure while removing sampler:", e)
     }
   }
 }
