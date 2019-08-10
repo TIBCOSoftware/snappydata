@@ -61,10 +61,18 @@ class SnappyConf(@transient val session: SnappySession)
 
   /**
    * Records the number of shuffle partitions to be used determined on runtime
-   * from available cores on the system. A value <= 0 indicates that it was set
-   * explicitly by user and should not use a dynamic value.
+   * from available cores on the system. A value < 0 indicates that it was set
+   * explicitly by user and should not use a dynamic value. A value of 0 indicates
+   * that current plan execution did not touch it so reset need not touch it.
    */
   @volatile private[this] var dynamicShufflePartitions: Int = _
+
+  /**
+   * Set if a task implicitly sets the "spark.task.cpus" property based
+   * on executorCores/physicalCores. This will be -1 if set explicitly
+   * on the session so that it doesn't get reset at the end of task execution.
+   */
+  @volatile private[this] var dynamicCpusPerTask: Int = _
 
   SQLConf.SHUFFLE_PARTITIONS.defaultValue match {
     case Some(d) if (session ne null) && super.numShufflePartitions == d =>
@@ -86,7 +94,7 @@ class SnappyConf(@transient val session: SnappySession)
   }
 
   private def coreCountForShuffle: Int = {
-    val count = SnappyContext.totalCoreCount.get()
+    val count = SnappyContext.totalPhysicalCoreCount.get()
     if (count > 0 || (session eq null)) math.min(super.numShufflePartitions, count)
     else math.min(super.numShufflePartitions, session.sparkContext.defaultParallelism)
   }
@@ -97,11 +105,7 @@ class SnappyConf(@transient val session: SnappySession)
     case SQLConf.AUTO_BROADCASTJOIN_THRESHOLD.key |
          Property.HashJoinSize.name |
          Property.HashAggregateSize.name |
-         Property.ForceLinkPartitionsToBuckets.name |
-         Property.ForceLinkPartitionsToBuckets.name |
-         Property.UseOptimzedHashAggregate.name |
-         Property.UseOptimizedHashAggregateForSingleKey.name |
-         Property.TestExplodeComplexDataTypeInSHA.name =>
+         Property.ForceLinkPartitionsToBuckets.name =>
       session.clearPlanCache()
       key
     case SQLConf.SHUFFLE_PARTITIONS.key =>
@@ -157,18 +161,16 @@ class SnappyConf(@transient val session: SnappySession)
       session.clearPlanCache()
       key
 
-    case CATALOG_IMPLEMENTATION.key if session.initialized =>
-      val oldValue = session.enableHiveSupport
+    case CATALOG_IMPLEMENTATION.key if !session.hiveInitializing =>
       val newValue = value match {
         case Some(v) => session.isHiveSupportEnabled(v.toString)
         case None => CATALOG_IMPLEMENTATION.defaultValueString == "hive"
       }
-      // initialize hive session upfront else it runs into recursion trying
-      // to copy conf to the session
+      // initialize hive session upfront
       if (newValue) {
-        session.initialized = false
+        session.hiveInitializing = true
         assert(session.sessionState.hiveSession ne null)
-        session.initialized = true
+        session.hiveInitializing = false
       }
       session.enableHiveSupport = newValue
       key
@@ -204,6 +206,23 @@ class SnappyConf(@transient val session: SnappySession)
       case _ => key
     }
 
+    case Constant.CPUS_PER_TASK_PROP => value match {
+      case Some(intVal) =>
+        val intStr = intVal.toString
+        val numCpus = intStr.toInt
+        if (numCpus < 1) {
+          throw new IllegalArgumentException(s"Value for ${Constant.CPUS_PER_TASK_PROP} " +
+              s"should be >= 1 but was $intVal")
+        }
+        session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, intStr)
+        dynamicCpusPerTask = -1
+        key
+      case _ =>
+        session.sparkContext.setLocalProperty(Constant.CPUS_PER_TASK_PROP, null)
+        dynamicCpusPerTask = 0
+        key
+    }
+
     case _ if key.startsWith("spark.sql.aqp.") =>
       session.clearPlanCache()
       key
@@ -225,7 +244,7 @@ class SnappyConf(@transient val session: SnappySession)
 
   private def hiveConf: SQLConf = session.sessionState.hiveSession.sessionState.conf
 
-  private[sql] def refreshNumShufflePartitions(): Unit = synchronized {
+  private[sql] def resetDefaults(): Unit = synchronized {
     if (session ne null) {
       if (executionShufflePartitions != -1) {
         executionShufflePartitions = 0
@@ -233,12 +252,35 @@ class SnappyConf(@transient val session: SnappySession)
       if (dynamicShufflePartitions != -1) {
         dynamicShufflePartitions = coreCountForShuffle
       }
+      if (dynamicCpusPerTask > 0) {
+        unsetConf(Constant.CPUS_PER_TASK_PROP)
+      }
     }
   }
 
   private[sql] def setExecutionShufflePartitions(n: Int): Unit = synchronized {
     if (executionShufflePartitions != -1 && session != null) {
       executionShufflePartitions = math.max(n, executionShufflePartitions)
+      logDebug(s"Set execution shuffle partitions to $executionShufflePartitions")
+    }
+  }
+
+  private[sql] def setDynamicCpusPerTask(): Unit = synchronized {
+    if (dynamicCpusPerTask != -1) {
+      val sparkCores = session.sparkContext.defaultParallelism.toDouble
+      // calculate minimum required heap assuming a block size of 128M
+      val minRequiredHeap = 128.0 * 1024.0 * 1024.0 * sparkCores * 1.2
+      val totalUsableHeap = SnappyContext.foldLeftBlockIds(0L)(_ + _.usableHeapBytes)
+      // select bigger among (required heap / available) and (logical cores / physical)
+      val cpusPerTask0 = math.max(minRequiredHeap / totalUsableHeap,
+        sparkCores / SnappyContext.totalPhysicalCoreCount.get())
+      // keep a reasonable upper-limit so tasks can at least be scheduled:
+      //   used below is average logical cores / 2
+      val cpusPerTask = math.max(1, math.ceil(math.min(sparkCores /
+          (2 * SnappyContext.numExecutors), cpusPerTask0)).toInt)
+      setConfString(Constant.CPUS_PER_TASK_PROP, cpusPerTask.toString)
+      dynamicCpusPerTask = cpusPerTask
+      logDebug(s"Set dynamic ${Constant.CPUS_PER_TASK_PROP} to $cpusPerTask")
     }
   }
 
