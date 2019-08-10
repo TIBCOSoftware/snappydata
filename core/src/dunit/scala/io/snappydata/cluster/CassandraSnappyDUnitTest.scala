@@ -41,6 +41,7 @@ class CassandraSnappyDUnitTest(val s: String)
   override val snappyProductDir = System.getenv("SNAPPY_HOME")
 
   val scriptPath = s"$snappyProductDir/../../../cluster/src/test/resources/scripts"
+  val downloadPath = s"$snappyProductDir/../../../dist"
 
   lazy val downloadLoc = {
     val path = if (System.getenv().containsKey("GRADLE_USER_HOME")) {
@@ -58,6 +59,7 @@ class CassandraSnappyDUnitTest(val s: String)
 
   var cassandraClusterLoc = ""
   var cassandraConnectorJarLoc = ""
+  var sparkXmlJarPath = ""
 
   private val commandOutput = "command-output.txt"
 
@@ -86,10 +88,15 @@ class CassandraSnappyDUnitTest(val s: String)
     Thread.sleep(10000)
     logInfo("Download Location : " + downloadLoc)
 
+    logInfo(s"Creating $downloadPath")
+    new File(downloadPath).mkdir()
+    new File(snappyProductDir, "books.xml").createNewFile()
+    sparkXmlJarPath = downloadURI("https://repo1.maven.org/maven2/com/databricks/" +
+        "spark-xml_2.11/0.5.0/spark-xml_2.11-0.5.0.jar")
     val cassandraJarLoc = getLoc(downloadLoc)
     cassandraConnectorJarLoc =
       getUserAppJarLocation("spark-cassandra-connector_2.11-2.0.7.jar", downloadLoc)
-    if(cassandraJarLoc.nonEmpty && cassandraConnectorJarLoc != null) {
+    if (cassandraJarLoc.nonEmpty && cassandraConnectorJarLoc != null) {
       cassandraClusterLoc = cassandraJarLoc.head
     } else {
       ("curl -OL http://www-us.apache.org/dist/cassandra/" +
@@ -139,6 +146,22 @@ class CassandraSnappyDUnitTest(val s: String)
     val res = cmd.lineStream_!.toList
     logInfo("Cassandra folder location : " + res)
     res
+  }
+
+  private def downloadURI(url: String): String = {
+    val jarName = url.split("/").last
+    val jar = new File(downloadPath, jarName)
+    if (!jar.exists()) {
+      logInfo(s"Downloading $url ...")
+      s"curl -OL $url".!!
+      val cmd = s"find $currDir -name $jarName"
+      logInfo(s"Executing $cmd")
+      val tempPath = cmd.lineStream_!.toList
+      val tempJar = new File(tempPath.head)
+      assert(tempJar.exists(), s"Did not find $jarName at $tempPath")
+      assert(tempJar.renameTo(jar), s"Could not move $jarName to $downloadPath")
+    }
+    jar.getAbsolutePath
   }
 
   protected def getUserAppJarLocation(jarName: String, jarPath: String) = {
@@ -307,6 +330,7 @@ class CassandraSnappyDUnitTest(val s: String)
   def doTestDeployJarWithExternalTable(): Unit = {
     logInfo("Running testDeployJarWithExternalTable")
     stmt1.execute(s"deploy jar cassJar '$cassandraConnectorJarLoc'")
+    stmt1.execute(s"deploy jar xmlJar '$sparkXmlJarPath'")
     stmt1.execute("drop table if exists customer3")
     stmt1.execute("create external table customer3 using org.apache.spark.sql.cassandra options" +
         " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
@@ -315,7 +339,16 @@ class CassandraSnappyDUnitTest(val s: String)
     assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
-    assert(getCount(stmt1.getResultSet) == 1)
+    assert(getCount(stmt1.getResultSet) == 2)
+
+    stmt1.execute("create external table books using com.databricks.spark.xml options" +
+        s" (path '$snappyProductDir/books.xml')")
+
+    // Move xml jar and verify the deploy fails upon restart.
+    val xmlPath = new File(sparkXmlJarPath)
+    val tempXmlPath = new File(s"$xmlPath.bak")
+    assert(xmlPath.renameTo(tempXmlPath),
+        s"Could not move ${xmlPath.getName} to ${tempXmlPath.getName}")
 
     logInfo("Restarting the cluster for " +
         "CassandraSnappyDUnitTest.doTestDeployJarWithExternalTable()")
@@ -326,10 +359,10 @@ class CassandraSnappyDUnitTest(val s: String)
     stmt1 = user1Conn.createStatement()
     stmt1.execute("drop table if exists customer3")
 
-    stmt1.execute("create external table customer3 using org.apache.spark.sql.cassandra options" +
+    stmt1.execute("create external table customer4 using org.apache.spark.sql.cassandra options" +
         " (table 'customer', keyspace 'test', spark.cassandra.input.fetch.size_in_rows '200000'," +
         " spark.cassandra.read.timeout_ms '10000')")
-    stmt1.execute("select * from customer3")
+    stmt1.execute("select * from customer4")
     assert(getCount(stmt1.getResultSet) == 3)
 
     stmt1.execute("list packages")
@@ -339,9 +372,12 @@ class CassandraSnappyDUnitTest(val s: String)
     stmt1.execute("list packages")
     assert(getCount(stmt1.getResultSet) == 0)
 
-    stmt1.execute("drop table if exists customer3")
+    assert(tempXmlPath.renameTo(xmlPath),
+      s"Could not move ${tempXmlPath.getName} to ${xmlPath.getName}")
+
+    stmt1.execute("drop table if exists customer4")
     try {
-      stmt1.execute("create external table customer3 using org.apache.spark.sql.cassandra options" +
+      stmt1.execute("create external table customer5 using org.apache.spark.sql.cassandra options" +
           " (table 'customer', keyspace 'test', " +
           "spark.cassandra.input.fetch.size_in_rows '200000'," +
           " spark.cassandra.read.timeout_ms '10000')")
@@ -351,6 +387,15 @@ class CassandraSnappyDUnitTest(val s: String)
           sqle.getMessage.contains("Failed to find " +
               "data source: org.apache.spark.sql.cassandra") => // expected
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
+
+    try {
+      stmt1.execute("create external table books2 using com.databricks.spark.xml options" +
+          s" (path '$snappyProductDir/books.xml')")
+      assert(false, "External table on xml should have failed.")
+    } catch {
+      case sqle: SQLException if (sqle.getSQLState == "42000") => // expected
+      case t: Throwable => throw t
     }
   }
 

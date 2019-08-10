@@ -203,10 +203,10 @@ class SnappyExecutor(
 
   def removeJarsFromExecutorLoader(jars: Array[String]): Unit = {
     synchronized {
-      var updatedURLs = urlClassLoader.getURLs().toBuffer
+      val updatedURLs = urlClassLoader.getURLs().toBuffer
       jars.foreach(name => {
         val localName = name.split("/").last
-        var jarFile = new File(SparkFiles.getRootDirectory(), localName)
+        val jarFile = new File(SparkFiles.getRootDirectory(), localName)
         if (jarFile.exists()) {
           jarFile.delete()
           logDebug(s"Deleted jarFile $jarFile")

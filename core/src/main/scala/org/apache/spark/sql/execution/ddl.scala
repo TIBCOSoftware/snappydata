@@ -514,13 +514,8 @@ case class DeployCommand(
         if (restart) {
           logWarning(s"Following mvn coordinate" +
               s" could not be resolved during restart: $coordinates", ex)
-          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
-            throw ex
-          }
-          Nil
-        } else {
-          throw ex
         }
+        throw ex
     }
   }
 }
@@ -537,8 +532,7 @@ case class DeployJarCommand(
       if (unavailableUris.nonEmpty) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
-        if (restart && lang.Boolean.parseBoolean(
-          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+        if (restart) {
           throw new IllegalStateException(
             s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
         }
