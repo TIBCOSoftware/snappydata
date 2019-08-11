@@ -36,7 +36,8 @@ import org.apache.spark.sql.{SaveMode, SnappyContext}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 
-class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s) with Logging {
+class ValidateMVCCDUnitTest(val s: String) extends ClusterManagerTestBase(s)
+  with Logging {
 
   // set default batch size for this test
   bootProps.setProperty(io.snappydata.Property.ColumnBatchSize.name, "100")

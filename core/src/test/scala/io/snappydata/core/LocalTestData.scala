@@ -19,6 +19,8 @@ package io.snappydata.core
 import scala.reflect.io.Path
 import scala.util.Random
 
+import io.snappydata.Property
+
 import org.apache.spark.SparkConf
 
 /**
@@ -85,6 +87,7 @@ object LocalSparkConf {
         .setIfMissing("spark.master", "local[4]")
         .setIfMissing("spark.memory.debugFill", "true")
         .set("snappydata.sql.planCaching", random.nextBoolean().toString)
+        .set(Property.TestDisableCodeGenFlag.name , "true")
         .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)
