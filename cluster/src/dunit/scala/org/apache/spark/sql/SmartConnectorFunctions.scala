@@ -56,7 +56,6 @@ object SmartConnectorFunctions {
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", s"localhost:$locatorNetPort")
-
     val sc = SparkContext.getOrCreate(conf)
     val snc = SnappyContext(sc)
 

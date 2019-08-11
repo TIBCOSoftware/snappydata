@@ -202,7 +202,6 @@ abstract class ClusterManagerTestBase(s: String)
       Array(vm3, vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
       stopNetworkServers()
     }
-    
     bootProps.clear()
   }
 

@@ -22,7 +22,7 @@ import java.time.{ZoneId, ZonedDateTime}
 import scala.util.Random
 
 import com.typesafe.config.Config
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.scalatest.Assertions
 
 import org.apache.spark.memory.SnappyUnifiedMemoryManager
@@ -285,6 +285,7 @@ object TAQTest extends Logging with Assertions {
         .set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
         .set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
         .set("snappydata.sql.planCaching", random.nextBoolean().toString)
+
     if (addOn != null) {
       addOn(conf)
     }
