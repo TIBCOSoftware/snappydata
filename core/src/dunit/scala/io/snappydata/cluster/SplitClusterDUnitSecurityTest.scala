@@ -36,7 +36,7 @@ import org.apache.commons.io.FileUtils
 
 import org.apache.spark.SparkUtilsAccess
 import org.apache.spark.sql.types.{IntegerType, StructField}
-import org.apache.spark.sql.{ParseException, Row, SnappyContext, SnappySession, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, ParseException, Row, SnappyContext, SnappySession}
 
 class SplitClusterDUnitSecurityTest(s: String)
     extends DistributedTestBase(s)
@@ -382,9 +382,9 @@ class SplitClusterDUnitSecurityTest(s: String)
   private def assertTableDeleted(func: () => Unit, t: String): Unit = {
     try {
       func()
-      assert(false, s"Failed to drop $t")
+      assert(assertion = false, s"Failed to drop $t")
     } catch {
-      case te: TableNotFoundException =>
+      case _: AnalysisException =>
     }
   }
 
@@ -456,7 +456,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     // All DMLs from another user should fail
     def assertFailure(sql: () => Unit, s: String): Unit = {
-      val states = Seq("42502", "42500")
+      val states = Seq("42502", "42500", "does not have INSERT permission on table")
       assertFailures(sql, s, states)
     }
 

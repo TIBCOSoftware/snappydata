@@ -26,13 +26,15 @@ import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
 import scala.util.{Failure, Success, Try}
+
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
-import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
+import io.snappydata.test.dunit.{AvailablePortHelper, DistributedTestBase, SerializableRunnable}
 import io.snappydata.util.TestUtils
 import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
@@ -254,7 +256,7 @@ class SplitSnappyClusterDUnitTest(s: String)
     if (jars.count() > 0) {
       var str = msg
       jars.collect().foreach(x => str += s"$x,")
-      assert(false, str)
+      assert(assertion = false, str)
     }
   }
 
@@ -400,12 +402,12 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     try {
       // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 0 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing putInto as expected.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "waiting for putInto from smart connector"
+
+        override def done(): Boolean = snc.table("T5").count() > 0
+      }, 60000, 500, true)
 
       // perform DDL
       snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
@@ -435,12 +437,12 @@ class SplitSnappyClusterDUnitTest(s: String)
         startArgs :+ Int.box(locatorClientPort) :+ testTempDirectory)
     }
     try {
-      var attempts = 0
-      while (!Files.exists(Paths.get(testTempDirectory, "file0")) && attempts < 15) {
-        Thread.sleep(4000)
-        attempts += 1
-      }
-      assert(attempts < 14, "No data ingested by streaming application.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "no data ingested by streaming application"
+
+        override def done(): Boolean = Files.exists(Paths.get(testTempDirectory, "file0"))
+      }, 60000, 500, true)
 
       // perform DDL leading to stale catalog in smart connector application
       snc.sql(s"CREATE TABLE SYNC_TABLE(COL1 STRING) " + s"USING column")
@@ -470,12 +472,12 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     try {
       // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing putInto as expected.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "waiting for putInto from smart connector"
+
+        override def done(): Boolean = snc.table("T5").count() != 3
+      }, 60000, 500, true)
 
       // perform DDL
       snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) " +
@@ -504,12 +506,12 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     try {
       // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing putInto as expected.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "waiting for putInto from smart connector"
+
+        override def done(): Boolean = snc.table("T5").count() != 3
+      }, 60000, 500, true)
 
       // rebalance the buckets
       snc.sql(s"CALL SYS.REBALANCE_ALL_BUCKETS()")
@@ -551,12 +553,12 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     try {
       // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T5").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing insert as expected.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "waiting for insertInto from smart connector"
+
+        override def done(): Boolean = snc.table("T5").count() != 3
+      }, 60000, 500, true)
 
       logInfo("testInsertQueryAfterStaleCatalog dropping table t5")
       // drop the table and create a table with same name and different schema
@@ -592,12 +594,12 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     try {
       // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T6").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing delete as expected.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "waiting for delete from smart connector"
+
+        override def done(): Boolean = snc.table("T6").count() != 3
+      }, 60000, 500, true)
 
       logInfo("testDeleteAfterStaleCatalog dropping table t6")
       snc.sql("drop table t6")
@@ -628,12 +630,12 @@ class SplitSnappyClusterDUnitTest(s: String)
 
     try {
       // wait till the smart connector job perform at-least one putInto operation
-      var count = 0
-      while (snc.table("T7").count() == 3 && count < 10) {
-        Thread.sleep(4000)
-        count += 1
-      }
-      assert(count != 10, "Smart connector application not performing delete as expected.")
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
+
+        override def description(): String = "waiting for delete from smart connector"
+
+        override def done(): Boolean = snc.table("T7").count() != 3
+      }, 60000, 500, true)
 
       snc.sql(s"CREATE TABLE T8(COL1 DATE, COL2 DATE) USING column OPTIONS" +
           s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
@@ -665,7 +667,7 @@ object SplitSnappyClusterDUnitTest
           s"cached Hive catalog")
     } catch {
       // expected exception
-      case _: org.apache.spark.sql.TableNotFoundException =>
+      case _: AnalysisException =>
     }
   }
 
@@ -1289,7 +1291,7 @@ object SplitSnappyClusterDUnitTest
     Thread.sleep(6000)
     try {
       for (_ <- 1 to 20) {
-        Thread.sleep(500)
+        Thread.sleep(200)
         logInfo("calling dataFrame.write.insertInto(\"T5\")")
         logInfo("2. schema is = " + snc.table("T5").schema)
         dataFrame2.write.insertInto("T5")
@@ -1315,9 +1317,8 @@ object SplitSnappyClusterDUnitTest
         success = true
       } catch {
         // if table is not created yet on embedded cluster,
-        // TableNotFoundException can be seen; retry in
-        // such a case
-        case t: TableNotFoundException =>
+        // table may not be found ; retry in such a case
+        case t: AnalysisException =>
           retryCount = retryCount + 1
           if (retryCount == maxRetryAttempts) {
             throw t
@@ -1338,7 +1339,7 @@ object SplitSnappyClusterDUnitTest
     Thread.sleep(6000)
     try {
       for (_ <- 1 to 20) {
-        Thread.sleep(500)
+        Thread.sleep(200)
         snc.sql("delete from t6 where col1 like '2%'")
       }
       Assert.fail("Should have thrown CatalogStaleException.")
@@ -1362,7 +1363,7 @@ object SplitSnappyClusterDUnitTest
     Thread.sleep(6000)
     try {
       for (_ <- 1 to 20) {
-        Thread.sleep(500)
+        Thread.sleep(200)
         snc.sql("update t7 set col2 = '22' where col1 = '2'")
       }
       Assert.fail("Should have thrown CatalogStaleException.")
@@ -1424,13 +1425,12 @@ object SplitSnappyClusterDUnitTest
       }
 
       // wait till DDL is fired on snappy cluster which will lead to stale smart-connector catalog
-      var attempts = 0
-      while (!Files.exists(Paths.get(testTempDir, "file1")) && attempts < 15) {
-        Thread.sleep(4000)
-        attempts += 1
-      }
+      DistributedTestBase.waitForCriterion(new DistributedTestBase.WaitCriterion {
 
-      assert(attempts < 14, "Waiting for stale catalog timed out")
+        override def description(): String = "waiting for stale catalog timed out"
+
+        override def done(): Boolean = Files.exists(Paths.get(testTempDir, "file1"))
+      }, 60000, 500, true)
 
       // produce second batch of data
       val dataBatch2 = Seq(Seq(3, "name3", 20))

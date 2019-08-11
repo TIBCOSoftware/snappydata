@@ -28,7 +28,7 @@ import org.scalatest.Assertions
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnPartitionResolver
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Dataset, Row, TableNotFoundException}
+import org.apache.spark.sql.{AnalysisException, Dataset, Row}
 
 /**
  * Tests for meta-data queries using Spark SQL.
@@ -446,7 +446,7 @@ object MetadataTest extends Assertions {
       rs = executeSQL("show columns in sysTables from app").collect()
       fail("Expected error due to non-existent table")
     } catch {
-      case _: TableNotFoundException => // expected
+      case _: AnalysisException => // expected
       case se: SQLException if se.getSQLState == "42000" => // expected
     }
     try {
