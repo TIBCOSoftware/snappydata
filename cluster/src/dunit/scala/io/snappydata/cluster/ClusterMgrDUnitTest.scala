@@ -26,7 +26,8 @@ import com.gemstone.gemfire.cache.LowMemoryException
 import org.apache.spark.sql.{Row, SnappyContext}
 import org.apache.spark.{Logging, SparkConf, SparkContext}
 
-class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging {
+class ClusterMgrDUnitTest(s: String) extends ClusterManagerTestBase(s) with Logging
+{
 
   import ClusterMgrDUnitTest._
 
