@@ -16,7 +16,7 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.{DriverManager, SQLException}
+import java.sql.DriverManager
 
 import scala.util.{Failure, Success, Try}
 
@@ -182,8 +182,11 @@ class ColumnTableTest
         "using column options()")
     try {
       snc.sql("insert into coltab values (1, 2)")
+      fail("expected insert to fail")
     } catch {
-      case ex: SQLException => assert("42802".equals(ex.getSQLState))
+      // check expected exception message
+      case ae: AnalysisException if ae.getMessage.contains(
+        "the number of columns are different: need 1 columns, but query has 2 columns.") =>
     }
     snc.sql("drop table coltab")
   }
