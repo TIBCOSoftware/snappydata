@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,39 +15,37 @@
  * LICENSE file.
  */
 
-package org.apache.spark.examples.snappydata
+package org.apache.spark.examples.snappydata.structuredstreaming
 
 import org.apache.log4j.{Level, Logger}
+
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
-
 import scala.language.postfixOps
+import scala.reflect.io.Path
 
 /**
- * An example showing usage of structured streaming with SnappyData
+ * An example showing CDC usage with SnappyData streaming sink.<br>
  *
- * <p></p>
- * To run the example in local mode go to your SnappyData product distribution
- * directory and type following command on the command prompt
- * <pre>
- * bin/run-example snappydata.StructuredStreamingExample
- * </pre>
- * <p></p>
  * To run this on your local machine, you need to first run a Netcat server <br>
  * `$ nc -lk 9999`
  * <p>
  * Sample input data:
- * {{{
- * device1,45
- * device2,67
- * device3,35
- * }}}
- * For more details on streaming with SnappyData refer to:
- * http://snappydatainc.github.io/snappydata/programming_guide
- * /stream_processing_using_sql/#stream-processing-using-sql
+ * <pre>
+ * 1,user1,23,0
+ * 2,user2,45,0
+ * 1,user1,23,2
+ * 2,user2,46,1
+ * </pre>
+ *
+ * To run the example in local mode go to your SnappyData product distribution
+ * directory and execute the following command:
+ * <p>
+ * `bin/run-example snappydata.structuredstreaming.CDCExample`
+ * <br><br>
  *
  */
-object StructuredStreamingExample {
+object CDCExample{
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
@@ -55,15 +53,18 @@ object StructuredStreamingExample {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     println("Initializing a SnappySesion")
+    val checkpointDirectory = "/tmp/StructuredStreamingCDCExample"
     val spark: SparkSession = SparkSession
-        .builder
+        .builder()
         .appName(getClass.getSimpleName)
         .master("local[*]")
-        .getOrCreate
+        .getOrCreate()
 
     import spark.implicits._
-
     val snappy = new SnappySession(spark.sparkContext)
+
+
+    snappy.sql("create table users (id long , name varchar(40), age int) using column options(key_columns 'id')")
 
     // Create DataFrame representing the stream of input lines from connection to host:port
     val socketDF = snappy
@@ -73,27 +74,35 @@ object StructuredStreamingExample {
         .option("port", 9999)
         .load()
 
-    // Creating a typed DeviceData from raw string received on socket.
+    // Creating a typed User from raw string received on socket.
     val structDF = socketDF.as[String].map(s => {
       val fields = s.split(",")
-      DeviceData(fields(0), fields(1).toInt)
+      User(fields(0).toLong, fields(1), fields(2).toInt, fields(3).toInt)
     })
 
-    // A simple streaming query to filter signal value and show the output on console.
+    // A simple streaming query to filter users by their age and load the data in users table
     val streamingQuery = structDF
-        .filter(_.signal > 10)
+        .filter( _.age >= 12)
         .writeStream
-        .format("console")
+        .format("snappysink")
         .outputMode("append")
+        .queryName("users")       // must be unique across the Snappydata cluster
         .trigger(ProcessingTime("1 seconds"))
-        .start
+        .option("tableName", "users")
+        .option("checkpointLocation", checkpointDirectory)
+        .start()
 
     streamingQuery.awaitTermination(timeoutMs = 15000)
+    snappy.sql("select * from users").show()
+
+    snappy.sql("drop table users")
+
+    // CAUTION: recursively deleting directory
+    Path(checkpointDirectory).deleteRecursively()
 
     println("Exiting")
     System.exit(0)
   }
-
-  case class DeviceData(device: String, signal: Int)
 }
 
+case class User(is: Long, name: String, age: Int, _eventType: Int)
