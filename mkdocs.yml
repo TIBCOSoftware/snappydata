@@ -207,6 +207,7 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+    - 'SQL General Limitations': 'reference/sql_general_limitations.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
@@ -303,6 +304,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
+    - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
     - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'SnappyData Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
