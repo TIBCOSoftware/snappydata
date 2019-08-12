@@ -35,6 +35,8 @@ The following topics are covered in this section:
 
 On the top-right side of the SnappyData Monitoring Console page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
+On the top of the dashboard, the date and time details about when the cluster is started are displayed. The period till when the cluster is running is also shown.
+
 ![](../Images/MonitoringUI/SnappyData-UI-About-Box1.png)
 
 <a id="dashboard"></a>
@@ -114,7 +116,9 @@ The following columns are displayed in this section:
 |**In-Memory Size**    |    Displays the heap memory used by data table to store its data. If less than **Total Size** then the data is overflowing to disk.   |
 |**Spill-to-Disk Size**|Displays size of data overflown to disk|
 |     **Total Size**   |     Displays the collective physical memory and disk overflow space used by the data table to store its data.   |
-|      **Buckets**  |  Displays the total number of buckets in the data table.|
+|      **Buckets**  |  Displays the total number of buckets in the data table. If a number displayed in red here, it indicates that some of the buckets are offline.|
+|      **Redundancy**  |  Displays the number of redundant copies.  </br>Redundancy value **0** indicates that redundant copies are not configured. </br>Redundancy value **1** indicates that one redundant copy is configured. </br>Redundancy value **NA** indicates that redundancy is not applicable.|
+|      **Redundancy Status**  |  Displays whether redundancy criteria is satisfied or broken. </br>Redundancy status **Satisfied** indicates that all the configured redundant copies are available. </br> Redundancy status **Broken** indicates that some of the redundant copies are not available. </br> Redundancy status **NA** indicates that redundancy is not applicable.|
 
 ### External Tables
 The **External Tables** section lists all the external tables present in the cluster along with their various statistical details. The displayed details are automatically refreshed after every five seconds.
@@ -163,7 +167,7 @@ The usage trends of the member are represented in the following graphs:
 <a id="memberlogs"></a>
 ### Member Logs
 
-In the Member Details page, you can view the logs generated for a single member in the cluster. 
+In the Member Details page, you can view the logs generated for a single member in the cluster.
 
 ![MemberLogs](../Images/monitoring_memberdetails_logs.png)
 
