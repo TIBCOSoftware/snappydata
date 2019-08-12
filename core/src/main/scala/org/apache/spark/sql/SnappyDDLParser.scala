@@ -21,6 +21,7 @@ import java.io.File
 
 import scala.util.Try
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.iapi.sql.dictionary.SchemaDescriptor
 import com.pivotal.gemfirexd.internal.iapi.util.IdUtil
 import io.snappydata.sql.catalog.SnappyExternalCatalog
@@ -368,6 +369,10 @@ abstract class SnappyDDLParser(session: SparkSession)
 
   protected final def beforeDDLEnd: Rule0 = rule {
     noneOf("uUoOaA-;/")
+  }
+
+  protected final def isNotRecoveryMode: Rule0 = rule {
+    MATCH ~> (() => test(!Misc.getGemFireCache.isSnappyRecoveryMode))
   }
 
   protected final def ddlEnd: Rule1[TableEnd] = rule {
@@ -812,11 +817,11 @@ abstract class SnappyDDLParser(session: SparkSession)
   }
 
   protected def ddl: Rule1[LogicalPlan] = rule {
-    createTable | describe | refreshTable | dropTable | truncateTable |
+    describe | isNotRecoveryMode ~ (createTable | refreshTable | dropTable | truncateTable |
     createView | createTempViewUsing | dropView | alterView | createSchema | dropSchema |
     alterTableToggleRowLevelSecurity |createPolicy | dropPolicy|
     alterTable | createStream | streamContext |
-    createIndex | dropIndex | createFunction | dropFunction | passThrough
+    createIndex | dropIndex | createFunction | dropFunction | passThrough)
   }
 
   protected def query: Rule1[LogicalPlan]

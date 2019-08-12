@@ -217,7 +217,9 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
-    if (schema.equalsIgnoreCase(SYS_SCHEMA)) throw new AnalysisException(s"$schema is a system reserved schema")
+    if (schema.equalsIgnoreCase(SYS_SCHEMA)) {
+      throw new AnalysisException(s"$schema is a system reserved schema")
+    }
     withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
   }
 
@@ -364,7 +366,14 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     }
 
     try {
-      withHiveExceptionHandling(super.createTable(catalogTable, ifExists))
+      val catalogTable_ = if (catalogTable.properties.contains("schemaJson")) {
+        // schemaJson is already added during preprocessed queue replay and hence we skip in lead
+        catalogTable
+      } else {
+        catalogTable.copy(properties =
+            catalogTable.properties ++ Map(s"schemaJson" -> s"${catalogTable.schema.json}"))
+      }
+      withHiveExceptionHandling(super.createTable(catalogTable_, ifExists))
     } catch {
       case _: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
@@ -430,7 +439,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         val newProps = JdbcExtendedUtils.addSplitProperty(catalogTable.schema.json,
           SnappyExternalCatalog.TABLE_SCHEMA, oldRawDefinition.properties, maxLen)
         withHiveExceptionHandling(client.alterTable(oldRawDefinition.copy(
-          schema = catalogTable.schema, properties = newProps.toMap)))
+          schema = catalogTable.schema, properties = catalogTable.properties ++ newProps.toMap)))
 
         registerCatalogSchemaChange(schemaName -> tableName :: Nil)
         return

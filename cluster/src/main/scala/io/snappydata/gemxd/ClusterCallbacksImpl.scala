@@ -17,8 +17,12 @@
 package io.snappydata.gemxd
 
 import java.io.InputStream
+import java.io.{BufferedWriter, File, FileWriter, InputStream, PrintWriter}
 import java.lang
 import java.util.{Iterator => JIterator}
+
+import scala.collection.mutable.ArrayBuffer
+import scala.util.Try
 
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.gemstone.gemfire.internal.cache.GemFireCacheImpl
@@ -30,6 +34,7 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.ValueRow
 import com.pivotal.gemfirexd.internal.snappy.{CallbackFactoryProvider, ClusterCallbacks, LeadNodeExecutionContext, SparkSQLExecute}
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.LeadImpl
+import io.snappydata.recovery.RecoveryService
 import io.snappydata.{ServiceManager, SnappyEmbeddedTableStatsProviderService}
 
 import org.apache.spark.Logging
@@ -134,7 +139,7 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
   }
 
   override def recoverData(connId: lang.Long, exportUri: String,
-      formatType: String, tableNames: String): Unit = {
+      formatType: String, tableNames: String, ignoreError: lang.Boolean): Unit = {
 
     // todo: make sure tableNames are fully qualified... how?
     val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
@@ -155,12 +160,45 @@ object ClusterCallbacksImpl extends ClusterCallbacks with Logging {
     }
       logDebug(s"Using connection ID: $connId\n Export path:" +
           s" $exportUri\n Format Type: $formatType\n Table names: $tableNames")
-
-      tablesArr.foreach(table => {
+    val filePath = if (exportUri.endsWith(File.separator)) {
+      exportUri.substring(0, exportUri.length - 1) +
+          s"_${System.currentTimeMillis()}" + File.separator
+    } else {
+      exportUri + s"_${System.currentTimeMillis()}" + File.separator
+    }
+    tablesArr.foreach(f = table => {
+      Try {
         val tableData = session.sql(s"select * from $table;")
         logDebug(s"Querying table $table.")
-        tableData.write.mode(SaveMode.Overwrite).format(formatType).save(exportUri + table.toUpperCase)
-      })
+        tableData.write.mode(SaveMode.Overwrite).format(formatType)
+            .save(filePath + File.separator + table.toUpperCase)
+      } match {
+        case scala.util.Success(value) =>
+        case scala.util.Failure(exception) => {
+          if (!ignoreError) {
+            logInfo(s"Error recovering table: $table.")
+            throw new Exception(exception)
+          }
+        }
+      }
+
+    })
+  }
+
+  override def recoverDDLs(connId: lang.Long, exportUri: String): Unit = {
+    val session = SnappySessionPerConnection.getSnappySessionForConnection(connId)
+    val filePath = if (exportUri.endsWith(File.separator)) {
+      exportUri.substring(0, exportUri.length - 1) +
+          s"_${System.currentTimeMillis()}" + File.separator
+    } else {
+      exportUri + s"_${System.currentTimeMillis()}" + File.separator
+    }
+    val arrBuf: ArrayBuffer[String] = ArrayBuffer.empty
+
+    RecoveryService.getAllDDLs().foreach(ddl => {
+      arrBuf.append(ddl + ";\n")
+    })
+    session.sparkContext.parallelize((arrBuf), 1).saveAsTextFile(filePath)
   }
 
   override def setLeadClassLoader(): Unit = {

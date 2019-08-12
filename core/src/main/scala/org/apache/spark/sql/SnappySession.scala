@@ -1249,20 +1249,61 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             sessionCatalog.resolveTableIdentifier(tableIdentifier(b)).unquotedString
       }
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(s) => s
+      case None => {
+        userSpecifiedSchema match {
+          case Some(schema) => s"create table ${resolvedName.table} (${getDDLSchema(schema)})"
+          case None => ""
+        }
+      }
+    }
     val tableDesc = CatalogTable(
       identifier = resolvedName,
       tableType = CatalogTableType.EXTERNAL,
       storage = DataSource.buildStorageFormatFromOptions(fullOptions),
       schema = schema,
-      provider = Some(provider))
+      provider = Some(provider),
+      properties = Map((s"orgSqlText_${System.currentTimeMillis()}" -> orgSqlText))
+//      partitionColumnNames = partitionColumns,
+//      bucketSpec = bucketSpec
+    )
     val plan = CreateTable(tableDesc, mode, query.map(MarkerForCreateTableAsSelect))
     sessionState.executePlan(plan).toRdd
+    plan.schema
     val df = table(resolvedName)
     val relation = df.queryExecution.analyzed.collectFirst {
       case l: LogicalRelation => l.relation
     }
     snappyContextFunctions.postRelationCreation(relation, this)
     df
+  }
+
+  def getDDLSchema(schema: StructType): String = {
+    schema.fields.map(f => s"${f.name} ${getSQLType(f.dataType)}").mkString(", ")
+  }
+
+  def getSQLType(dataType: DataType): String = {
+    dataType match {
+      case IntegerType => "integer"
+      case LongType => "long"
+      case StringType => "string"
+      case FloatType => "float"
+      case DoubleType => "double"
+      case DateType => "date"
+      case TimestampType => "timestamp"
+      case BooleanType => "boolean"
+      case ByteType => "byte"
+      case ShortType => "short"
+      case BinaryType => "binary"
+      case v: VarcharType => s"varchar(${v.length})"
+      case a: ArrayType => s"array<${a.elementType}>"
+      case m: MapType => s"map<${m.keyType}, ${m.valueType}>"
+      case s: StructType => {
+        val structFields = s.fields.map(f => s" ${f.name}:${f.dataType} ").mkString(",")
+        s"struct<${structFields}>"
+      }
+    }
   }
 
   private[sql] def addBaseTableOption(baseTable: Option[TableIdentifier],
@@ -1341,11 +1382,22 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     if (sessionCatalog.isTemporaryTable(tableIdent)) {
       throw new AnalysisException("ALTER TABLE not supported for temporary tables")
     }
+    val orgSqlText = getContextObject[String]("orgSqlText") match {
+      case Some(str) => str
+      case None => {
+        if (isAddColumn) {
+          s"alter table ${tableIdent.table} add column ${column.name} ${getSQLType(column.dataType)}"
+        } else {
+          s"alter table ${tableIdent.table} drop column ${column.name}"
+        }
+      }
+    }
     sessionCatalog.resolveRelation(tableIdent) match {
       case LogicalRelation(ar: AlterableRelation, _, _) =>
         ar.alterTable(tableIdent, isAddColumn, column, defaultValue)
         val metadata = sessionCatalog.getTableMetadata(tableIdent)
-        sessionCatalog.alterTable(metadata.copy(schema = ar.schema))
+        sessionCatalog.alterTable(metadata.copy(schema = ar.schema,
+          properties = metadata.properties + (s"altTxt_${System.currentTimeMillis()}" -> orgSqlText)))
       case _ =>
         throw new AnalysisException(s"ALTER TABLE not supported for ${tableIdent.unquotedString}")
     }
@@ -2077,6 +2129,7 @@ object SnappySession extends Logging {
       session.currentKey = key
       try {
         val execution = session.executePlan(plan)
+        session.addContextObject[String]("orgSqlText", sqlText)
         cachedDF = evaluatePlan(execution, session, sqlShortText, sqlText, paramLiterals, paramsId)
         // put in cache if the DF has to be cached
         if (planCaching && cachedDF.isCached) {

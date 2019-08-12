@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
-import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Constant
 import io.snappydata.sql.catalog.SnappyExternalCatalog
 import org.apache.spark.Logging
