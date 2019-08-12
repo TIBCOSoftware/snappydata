@@ -17,6 +17,8 @@
 package io.snappydata.test.dunit;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.Serializable;
 import java.io.StringWriter;
@@ -28,7 +30,6 @@ import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Method;
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.security.PrivilegedAction;
 import java.text.DecimalFormat;
 import java.util.HashMap;
@@ -55,6 +56,7 @@ import junit.framework.TestCase;
 import org.apache.log4j.Level;
 import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
+import org.apache.log4j.PropertyConfigurator;
 import org.junit.internal.MethodSorter;
 
 /**
@@ -646,8 +648,18 @@ public abstract class DistributedTestBase extends TestCase implements java.io.Se
     return (globalLogger = newGlobalLogger());
   }
 
-  private Logger newLogWriter() {
-    Logger logger = LogManager.getLogger(getClass());
+  private static synchronized Logger newLogWriter() {
+    Logger logger = LogManager.getLogger("DUnitTest");
+    try {
+      Properties props = new Properties();
+      // fallback to defaults
+      try (InputStream in = DistributedTestBase.class.getResourceAsStream(
+          "/test-log4j.properties")) {
+        props.load(in);
+      }
+      new PropertyConfigurator().doConfigure(props, logger.getLoggerRepository());
+    } catch (IOException ignored) {
+    }
     logger.setLevel(getLevel(DUnitLauncher.LOG_LEVEL));
     return logger;
   }

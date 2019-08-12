@@ -36,7 +36,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchFunctionException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchFunctionException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
@@ -558,6 +558,17 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     table.provider match {
       case Some(DDLUtils.HIVE_PROVIDER) =>
         if (snappySession.enableHiveSupport) {
+
+          // check for existing table else for hive table it could create in both catalogs
+          if (!ignoreIfExists && super.tableExists(table.identifier)) {
+            val objectType = CatalogObjectType.getTableType(table)
+            if (CatalogObjectType.isTableOrView(objectType)) {
+              throw new TableAlreadyExistsException(db = schemaName, table = tableName)
+            } else {
+              throw SnappyExternalCatalog.objectExistsException(table.identifier, objectType)
+            }
+          }
+
           // resolve table fully as per current schema in this session
           hiveSessionCatalog.createTable(resolveCatalogTable(table, schemaName), ignoreIfExists)
         } else {
