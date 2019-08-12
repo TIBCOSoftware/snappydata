@@ -149,7 +149,8 @@ class SnappySinkProviderDUnitTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
-    Files.move(Paths.get(snappyProductDir, "work"), Paths.get(snappyProductDir, "work-SnappySinkProviderDUnitTest"))
+    Files.move(Paths.get(snappyProductDir, "work"), Paths.get(snappyProductDir,
+      "work-SnappySinkProviderDUnitTest"))
   }
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")

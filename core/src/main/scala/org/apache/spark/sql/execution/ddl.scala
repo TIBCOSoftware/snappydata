@@ -536,9 +536,7 @@ case class DeployJarCommand(
           throw new IllegalStateException(
             s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
         }
-        if (!restart) {
-          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
-        }
+        throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
       }
       val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))

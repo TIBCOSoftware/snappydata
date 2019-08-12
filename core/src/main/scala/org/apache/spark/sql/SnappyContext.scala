@@ -1151,8 +1151,13 @@ object SnappyContext extends Logging {
       val mutable = new ArrayBuffer[String]()
       mutable += "__REMOVE_FILES_ONLY__"
       jars.foreach(e => mutable += e)
-      RefreshMetadata.executeOnAll(globalSparkContext, RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER,
-        mutable.toArray)
+      try {
+        RefreshMetadata.executeOnAll(globalSparkContext,
+          RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, mutable.toArray)
+      } catch {
+        case e: Throwable => logWarning(s"Could not delete jar files of '$k'. You may need to" +
+            s" delete it manually. $e")
+      }
     }
     if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "false"))) {
       throw e
