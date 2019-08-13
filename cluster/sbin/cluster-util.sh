@@ -165,7 +165,7 @@ function copyConf() {
             echo "INFO:Copying $filename from this host to $node. Moved the original $filename on $node to $backupFileName."    
 	    scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
 	  fi
-	fi
+        fi
       fi # end of if, check the conf file name		
     fi # end of if to get each file
   done  #end of for loop
