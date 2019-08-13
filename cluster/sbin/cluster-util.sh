@@ -151,23 +151,23 @@ START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
 
 function copyConf() { 
   for entry in "${SPARK_CONF_DIR}"/*; do
-      if [ -f "$entry" ];then
-	fileName=$(basename $entry)
-        if [[ $fileName == "log4j.properties" || $fileName == "snappy-env.sh" || $fileName == "spark-env.sh" ]];then 	       	
-	  if ! ssh $node "test -e $entry"; then #"File does not exist."	  
+    if [ -f "$entry" ];then
+      fileName=$(basename $entry)
+      if [[ $fileName == "log4j.properties" || $fileName == "snappy-env.sh" || $fileName == "spark-env.sh" ]]; then  	
+	if ! ssh $node "test -e $entry"; then #"File does not exist."
+	  scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
+	else
+	  backupDir="backup"
+	  if [[ ! -z $(ssh $node "cat $entry" | diff - "$entry") ]] ; then
+	    backupFileName=${fileName}_${START_ALL_TIMESTAMP}
+	    (ssh "$node" "mkdir -p \"${SPARK_CONF_DIR}/$backupDir\" ")
+	    ssh $node "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"
+            echo "INFO:Copying $filename from this host to $node. Moved the original $filename on $node to $backupFileName."    
 	    scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
-	  else
-	    backupDir="backup"
-	    if [[ ! -z $(ssh $node "cat $entry" | diff - "$entry") ]] ; then
-	      backupFileName=${fileName}_${START_ALL_TIMESTAMP}
-	      (ssh "$node" "mkdir -p \"${SPARK_CONF_DIR}/$backupDir\" ")
-	      ssh $node "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"		    
-	      scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR} 
-              echo "INFO: Copying $filename from this host to $node. Moved the original $filename on $node to $backupFileName."
-	    fi
 	  fi
-	fi # end of if, check the conf file name      					
-      fi # end of if to get each file
+	fi
+      fi # end of if, check the conf file name		
+    fi # end of if to get each file
   done  #end of for loop
 }
 
@@ -176,7 +176,7 @@ function executeCommand() {
   echo "--------- Executing $@ on $MEMBER_TYPE $node ----------"
   echo 
   if [[ $ISFORCE -eq 0 ]];then
-    read -p "Are you sure to run $@ on $MEMBER_TYPE $node (y/n)?" userinput
+    read -p "Are you sure to run $@ on $MEMBER_TYPE $node (y/n)? " userinput
     echo 
     if [[ $userinput == "y" || $userinput == "yes" || $userinput == "Y" || $userinput == "YES" ]]; then
       if [[ $COPY_CONF = 1 ]]; then
