@@ -33,7 +33,7 @@ space=
 usage() {
   echo "${bold}Usage: ${normal}cluster-util.sh -on-locators|-on-servers|-on-leads|-on-all [-y] --run  -copyconf | <cmd-to-run-on-selected-nodes>"
   echo
-  echo "${bold}Discription${normal}"
+  echo "${bold}Description${normal}"
   echo
   echo -e ' \t '"This is an experimental utility to execute a given command on selected members of the cluster."
   echo -e ' \t '"The script relies on the entries you specify in locators, servers and leads files in conf directory to identify the members of the cluster."
