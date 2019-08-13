@@ -16,8 +16,6 @@
  */
 package org.apache.spark.examples.snappydata.structuredstreaming
 
-import scala.reflect.io.Path
-
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.internal.Logging
@@ -25,18 +23,25 @@ import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
 
 /**
- * An example of structured streaming depicting JSON file processing with
- * Snappy sink.
+ * An example of structured streaming depicting JSON file processing with Snappy sink.
  *
- * This example reads input data from `people` directory available under resources.
- * Alternatively you can change the `inputDirectory` va
+ * Usage: JSONFileSourceExampleWithSnappySink [checkpoint directory] [input directory]
  *
- * To run the example in local mode go to your SnappyData product distribution
- * directory and type following command on the command prompt
- * <pre>
- * bin/run-example snappydata.structuredstreaming.JSONFileSourceExampleWithSnappySink
- * </pre>
+ *    [checkpoint directory] Optional argument providing checkpoint directory where the
+ *                           state of the steaming query will be stored. Note that this
+ *                           directory needs to be deleted manually to reset the state
+ *                           of the streaming query.
+ *                           Default: `JSONFileSourceExampleWithSnappySink` directory
+ *                          in working directory.
+ *    [input directory] Optional argument pointing to input directory path where incoming
+ *                      JSON files should be dumped to get picked up for processing.
+ *                      Default: `people` directory under resources
+ *
+ * Example:
+ *    $ bin/run-example snappydata.structuredstreaming.JSONFileSourceExampleWithSnappySink \
+ *    "checkpoint_dir" "JSON_input_dir"
  */
+// scalastyle:off println
 object JSONFileSourceExampleWithSnappySink extends Logging {
 
   def main(args: Array[String]) {
@@ -44,9 +49,10 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
+    val checkpointDirectory = if (args.length >= 1) args(0)
+    else "JSONFileSourceExampleWithSnappySink"
     // input directory where input JSON files are being dumped.
-    val inputDirectory = "quickstart/src/main/resources/people"
-    val checkpointDirectory = "JSONFileSourceExampleWithSnappySink"
+    val inputDirectory = if (args.length >= 2) args(1) else "quickstart/src/main/resources/people"
     println("Initializing a SnappySesion")
     val spark: SparkSession = SparkSession
         .builder()
@@ -87,9 +93,6 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
       snappy.sql("select * from people").show()
     } finally {
       snappy.sql("drop table if exists people")
-
-      // CAUTION: recursively deleting directory
-      Path(checkpointDirectory).deleteRecursively()
     }
     println("Exiting")
     System.exit(0)
