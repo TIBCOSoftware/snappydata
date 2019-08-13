@@ -41,6 +41,14 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
   }
 
   override protected def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
+    /**
+     * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+     * and Property.UseOptimizedHashAggregateForSingleKey.name
+     * They are meant to suppress CodegenFallback Plan so that optimized
+     * byte buffer code path is tested & prevented from false passing.
+     * If your test needs CodegenFallback, then override the newConf function
+     * & clear the flag from the conf of the test locally.
+     */
     val conf = new SparkConf()
     conf.setIfMissing("spark.master", "local[*]")
         .setAppName(getClass.getName)

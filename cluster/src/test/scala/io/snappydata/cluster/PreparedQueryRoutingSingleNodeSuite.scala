@@ -38,6 +38,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       * Change of 'n' will influence results if they are dependent on weights - derived
       * from hidden column in sample table.
       */
+    /**
+     * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+     * and Property.UseOptimizedHashAggregateForSingleKey.name
+     * They are meant to suppress CodegenFallback Plan so that optimized
+     * byte buffer code path is tested & prevented from false passing.
+     * If your test needs CodegenFallback, then override the newConf function
+     * & clear the flag from the conf of the test locally.
+     */
     new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
         .setMaster("local[6]").
       set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
