@@ -117,11 +117,11 @@ if [[ ! -e $SNAPPY_DIR/conf/locators ]]; then
   exit 2
 fi
 
-SERVER_LIST=`awk '!/^ *#/ && !/^[[:space:]]*$/ && !/^ *-/ { print$1; }' $SNAPPY_DIR/conf/servers`
+SERVER_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_DIR/conf/servers | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }')
 
-LEAD_LIST=`awk '!/^ *#/ && !/^[[:space:]]*$/ && !/^ *-/ { print$1; }' $SNAPPY_DIR/conf/leads`
+LEAD_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_DIR/conf/leads | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }')
 
-LOCATOR_LIST=`awk '!/^ *#/ && !/^[[:space:]]*$/ && !/^ *-/ { print$1; }' $SNAPPY_DIR/conf/locators`
+LOCATOR_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_DIR/conf/locators | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }')
 
 MEMBER_LIST=
 MEMBER_TYPE=
