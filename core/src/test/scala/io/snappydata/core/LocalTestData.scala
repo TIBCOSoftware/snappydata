@@ -88,6 +88,7 @@ object LocalSparkConf {
         .setIfMissing("spark.memory.debugFill", "true")
         .set("snappydata.sql.planCaching", random.nextBoolean().toString)
         .set(Property.TestDisableCodeGenFlag.name , "true")
+        .set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
         .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)
