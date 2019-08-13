@@ -256,6 +256,8 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   private def collectRDD(sc: SparkContext, rdd: RDD[InternalRow]): Array[InternalRow] = {
     // direct RDD collect causes NPE in new Array due to (missing?) ClassTag for some reason
+    // sc.runJob(new SmartConnectorColumnRDD(), (iter: Iterator[InternalRow]) => iter.toArray[InternalRow])
+
     val rows = sc.runJob(rdd, (iter: Iterator[InternalRow]) => iter.toArray[InternalRow])
     Array.concat(rows: _*)
   }
@@ -306,13 +308,33 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
     }
   }
 
-  override def executeCollect(): Array[InternalRow] = sideEffectResult
+  override def executeCollect(): Array[InternalRow] = try {
+    sideEffectResult
+  } finally {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    logDebug(s" Unlocking the table in executeCollect of ExecutePlan:" +
+      s" ${child.treeString(false)}")
+    session.clearWriteLockOnTable()
+  }
 
-  override def executeTake(limit: Int): Array[InternalRow] =
+  override def executeTake(limit: Int): Array[InternalRow] = try {
     sideEffectResult.take(limit)
+  } finally {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    logDebug(s" Unlocking the table in executeTake of ExecutePlan:" +
+      s" ${child.treeString(false)}")
+    session.clearWriteLockOnTable()
+  }
 
-  override protected def doExecute(): RDD[InternalRow] = {
+
+  override protected def doExecute(): RDD[InternalRow] = try {
     sqlContext.sparkContext.parallelize(sideEffectResult, 1)
+  }
+  finally {
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    logDebug(s" Unlocking the table in doExecute of ExecutePlan:" +
+      s" ${child.treeString(false)}")
+    session.clearWriteLockOnTable()
   }
 }
 

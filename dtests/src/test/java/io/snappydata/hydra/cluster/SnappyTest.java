@@ -2342,14 +2342,32 @@ public class SnappyTest implements Serializable {
             throw new TestException("dml props for thread " + getMyTid() + " is null)");
           userAppArgs = userAppArgs + " " + dmlProps;
         }
+        String log4jFileName =
+            getCurrentDirPath() + File.separator + "log4j_" + getMyTid() + ".properties";
+        Log.getLogWriter().info("log4j path :" + log4jFileName);
+        File log4jFile = new File(log4jFileName);
+        FileWriter fw = new FileWriter(log4jFile);
+        fw.write("log4j.rootCategory=DEBUG, file\n");
+        fw.write("log4j.appender.file=org.apache.log4j.RollingFileAppender\n");
+        fw.write("log4j.appender.file.append=true\n");
+        fw.write("log4j.appender.file.file=" + dest +"\n");
+        fw.write("log4j.appender.file.MaxFileSize=1GB\n");
+        fw.write("log4j.appender.file.MaxBackupIndex=10000\n");
+        fw.write("log4j.appender.file.layout=io.snappydata.log4j.PatternLayout\n");
+        fw.write("log4j.appender.file.layout.ConversionPattern=%d{yy/MM/dd HH:mm:ss.SSS zzz} %t %p %c{1}: %m%n\n");
+        fw.close();
         if (SnappyCDCPrms.getIsCDC()) {
           command = setCDCSparkAppCmds(userAppArgs, commonArgs, snappyJobScript, userJob, masterHost, masterPort, logFile);
         } else {
           command = snappyJobScript + " --class " + userJob +
               " --master spark://" + masterHost + ":" + masterPort + " " +
-              SnappyPrms.getExecutorMemory() + " " +
-              SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
-              userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
+              //" --deploy-mode cluster " +
+                  SnappyPrms.getExecutorMemory() + " " +
+                  SnappyPrms.getSparkSubmitExtraPrms() + " " +
+                  " --driver-java-options -Dlog4j.configuration=file://" + log4jFileName + " " +
+                  " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " " +
+                  commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
+                  userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         }
         Log.getLogWriter().info("spark-submit command is : " + command);
         pb = new ProcessBuilder("/bin/bash", "-c", command);

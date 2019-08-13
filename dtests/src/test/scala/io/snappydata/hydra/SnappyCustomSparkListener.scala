@@ -16,9 +16,14 @@
  */
 package io.snappydata.hydra
 
-import org.apache.spark.scheduler._
+import java.lang.reflect.{Constructor, Method}
 
-class SnappyCustomSparkListener extends SparkListener {
+import org.apache.spark.scheduler._
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.{Logging, SparkContext}
+
+class SnappyCustomSparkListener extends SparkListener with Logging {
+
   override def onJobStart(jobStart: SparkListenerJobStart) {
     // scalastyle:off println
     println(s"Job started with ${jobStart.stageInfos.size} stages: $jobStart")
@@ -41,5 +46,30 @@ class SnappyCustomSparkListener extends SparkListener {
       stageCompleted
           .stageInfo.numTasks
     } tasks.")
+  }
+
+  override def onExecutorAdded(added: SparkListenerExecutorAdded): Unit = {
+    try {
+      logInfo(s"Listener: onExecutorAdded: added $added")
+      val sncClass = Utils.classForName(
+        "org.apache.spark.sql.SnappySession")
+
+      val constructor: Constructor[_] = sncClass
+        .getConstructor(classOf[SparkContext])
+      val snc = constructor.newInstance(SparkContext.getOrCreate())
+      logInfo(s"Listener : onExecutorAdded: The snc after loading $snc")
+
+      val method: Method = sncClass.getMethod(
+        "executorAdded", classOf[scala.Boolean])
+
+      logInfo(s"Listener: onExecutorAdded method $method")
+
+      method.invoke(snc, Boolean.box(true))
+
+    } catch {
+      case _: ClassNotFoundException => {
+        logInfo(s"Listener: onExecutorAdded: Did not find SNC")
+      }
+    }
   }
 }

@@ -26,7 +26,6 @@ import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
-
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
@@ -40,10 +39,10 @@ import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatId
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
-
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
+import org.apache.spark.sql.SnappySession.logInfo
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
@@ -538,7 +537,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
+
+
   private[sql] def clearWriteLockOnTable(): Unit = {
+    logInfo(s"cleanWriteLockOnTable for app ${sqlContext.sparkContext.appName}",
+      new Throwable("ClearWrite"))
     contextObjects.remove(SnappySession.BULKWRITE_LOCK) match {
       case null =>
       case lock => releaseLock(lock)
@@ -547,6 +550,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def grabLock(table: String, schemaName: String,
       connProperties: ConnectionProperties): Any = {
+    /*if (disableTableLock) {
+      return null
+    }*/
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
         val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
@@ -556,14 +562,18 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         do {
           try {
             logDebug(s" Going to take lock on server for table $table," +
-                s" current Thread ${Thread.currentThread().getId}")
+                s" current Thread ${Thread.currentThread().getId} and " +
+              s"app ${sqlContext.sparkContext.appName}")
+
             val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
             ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + table)
             val rs = ps.executeQuery()
             rs.next()
             locked = rs.getBoolean(1)
             ps.close()
-            logDebug("Took lock on server. ")
+            logDebug(s"Took lock on server. for string " +
+              s"${SnappySession.WRITE_LOCK_PREFIX + table} and " +
+              s"app ${sqlContext.sparkContext.appName}")
           }
           catch {
             case e: Throwable =>
@@ -580,7 +590,8 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         (conn, new TableIdentifier(table, Some(schemaName)))
       case _ =>
         logDebug(s"Taking lock in " +
-            s" ${Thread.currentThread().getId} ")
+            s" ${Thread.currentThread().getId} and " +
+          s"app ${sqlContext.sparkContext.appName}")
         val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
         regionLock.lock()
@@ -589,16 +600,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def releaseLock(lock: Any): Unit = {
+    logInfo(s"Releasing the lock : $lock")
     lock match {
       case lock: RegionLock =>
         if (lock != null) {
-          logInfo(s"Going to unlock the lock object bulkOp $lock ")
+          logInfo(s"Going to unlock the lock object bulkOp $lock and " +
+            s"app ${sqlContext.sparkContext.appName}")
           lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
         }
       case (conn: Connection, id: TableIdentifier) =>
         var unlocked = false
         try {
-          logDebug(s"releasing lock on the server. ${id.table}")
+          logDebug(s"Going to unlock the lock on the server. ${id.table} for " +
+            s"app ${sqlContext.sparkContext.appName}")
           val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
           ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + id.table)
           val rs = ps.executeQuery()
@@ -1967,6 +1981,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
+
+
+  def executorAdded(assigned: Boolean): Unit = {
+    println(s"SNC: executorAdded invoked in object $assigned")
+    logInfo(s"SNC: executorAdded invoked in object $assigned")
+    SnappySession.executorAssigned = assigned
+  }
+
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -1987,6 +2009,7 @@ private class FinalizeSession(session: SnappySession)
   override protected def clearThis(): Unit = {
     sessionId = SnappySession.INVALID_ID
   }
+
 }
 
 object SnappySession extends Logging {
@@ -1999,6 +2022,7 @@ object SnappySession extends Logging {
   private[sql] val BULKWRITE_LOCK = "bulkwrite_lock"
   private[sql] val WRITE_LOCK_PREFIX = "BULKWRITE_"
 
+  private[sql] val DISABLE_TABLE_WRITE_LOCK = "DISABLE_TABLE_WRITE_LOCK"
 
   private val unresolvedStarRegex =
     """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
@@ -2009,6 +2033,14 @@ object SnappySession extends Logging {
     GemFireCacheImpl.setGFXDSystem(true)
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
     GemFireVersion.isEnterpriseEdition
+  }
+
+  var executorAssigned = false
+
+  def executorAdded(assigned: Boolean): Unit = {
+    logInfo(s"SNC: executorAdded invoked in static $assigned")
+    logInfo(s"SNC: executorAdded invoked in static  $assigned")
+    executorAssigned = assigned
   }
 
   private lazy val aqpSessionStateClass: Option[Class[_]] = {

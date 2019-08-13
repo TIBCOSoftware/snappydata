@@ -23,13 +23,14 @@ INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskM
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_registerDMLThreads
 	threadGroups = snappyStoreThreads;
 
+/*
 //Load some data in the data, before starting any operations.
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_populateTablesUsingSysProc
   io.snappydata.hydra.cluster.SnappyPrms-jobClassNames = io.snappydata.hydra.testDMLOps.ConvertCsvToParquetAndLoadTablesJob
   io.snappydata.hydra.cluster.SnappyPrms-hasDynamicAppProps = true
   io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
   threadGroups = snappyThreads;
-
+*/
 /*
 // load data using batch insert
 INITTASK     taskClass   = io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil taskMethod  = HydraTask_populateTables
