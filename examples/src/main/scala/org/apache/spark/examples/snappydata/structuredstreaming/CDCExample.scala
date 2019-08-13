@@ -45,6 +45,7 @@ import scala.reflect.io.Path
  * <br><br>
  *
  */
+// scalastyle:off println
 object CDCExample{
 
   def main(args: Array[String]) {
@@ -52,7 +53,7 @@ object CDCExample{
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    println("Initializing a SnappySesion")
+    println("Initializing a SnappySession")
     val checkpointDirectory = "/tmp/StructuredStreamingCDCExample"
     val spark: SparkSession = SparkSession
         .builder()
@@ -64,7 +65,8 @@ object CDCExample{
     val snappy = new SnappySession(spark.sparkContext)
 
 
-    snappy.sql("create table users (id long , name varchar(40), age int) using column options(key_columns 'id')")
+    snappy.sql("create table users (id long , name varchar(40), age int) using" +
+        " column options(key_columns 'id')")
 
     // Create DataFrame representing the stream of input lines from connection to host:port
     val socketDF = snappy

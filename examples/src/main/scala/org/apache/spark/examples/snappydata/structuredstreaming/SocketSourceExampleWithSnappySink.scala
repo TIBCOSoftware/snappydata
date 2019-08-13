@@ -42,6 +42,7 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
  * </pre>
  *
  */
+// scalastyle:off println
 object SocketSourceExampleWithSnappySink extends Logging {
 
   def main(args: Array[String]) {
@@ -49,8 +50,7 @@ object SocketSourceExampleWithSnappySink extends Logging {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    println("Initializing a SnappySesion")
-
+    println("Initializing SnappySession ... ")
     val checkpointDirectory = "/tmp/StructuredStreamingWithSnappySink"
     val spark: SparkSession = SparkSession
         .builder()
@@ -60,7 +60,7 @@ object SocketSourceExampleWithSnappySink extends Logging {
 
     import spark.implicits._
     val snappy = new SnappySession(spark.sparkContext)
-
+    println("Initializing SnappySession ... Done.")
     try {
       snappy.sql("create table devices (device varchar(30) , signal int)")
 

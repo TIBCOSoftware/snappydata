@@ -25,15 +25,20 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
 /**
  * An example of structured streaming depicting JSON file processing with Snappy sink.
  *
- * Usage: JSONFileSourceExampleWithSnappySink [checkpoint directory] [input directory]
+ * Example input data:
  *
- *    [checkpoint directory] Optional argument providing checkpoint directory where the
+ * {"name":"Yin", "age":31, "address":{"city":"Columbus","state":"Ohio", "district" :"Cincinnati"}}
+ * {"name":"Michael", "age":38, "address":{"city":"San Jose", "state":"California", "lane" :"15"}}
+ *
+ * Usage: JSONFileSourceExampleWithSnappySink [checkpoint-directory] [input-directory]
+ *
+ *    [checkpoint-directory] Optional argument providing checkpoint directory where the
  *                           state of the steaming query will be stored. Note that this
  *                           directory needs to be deleted manually to reset the state
  *                           of the streaming query.
  *                           Default: `JSONFileSourceExampleWithSnappySink` directory
- *                          in working directory.
- *    [input directory] Optional argument pointing to input directory path where incoming
+ *                           in working directory.
+ *    [input-directory] Optional argument pointing to input directory path where incoming
  *                      JSON files should be dumped to get picked up for processing.
  *                      Default: `people` directory under resources
  *
@@ -50,17 +55,17 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     val checkpointDirectory = if (args.length >= 1) args(0)
-    else "JSONFileSourceExampleWithSnappySink"
+    else getClass.getSimpleName
     // input directory where input JSON files are being dumped.
     val inputDirectory = if (args.length >= 2) args(1) else "quickstart/src/main/resources/people"
-    println("Initializing a SnappySesion")
+    println("Initializing SnappySession ...")
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)
         .master("local[*]")
         .getOrCreate()
     val snappy = new SnappySession(spark.sparkContext)
-
+    println("Initializing SnappySession ... Done.")
     try {
       snappy.sql("create table people (name string , lane string," +
           " city string, district string, state string)")
@@ -77,7 +82,7 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
           .select("name", "address.*")
           .writeStream
           .format("snappysink")
-          .queryName("people")  // must be unique across a snappydata cluster
+          .queryName(getClass.getSimpleName)  // must be unique across a snappydata cluster
           .trigger(ProcessingTime("1 seconds"))
           .option("tableName", "people")
           .option("checkpointLocation", checkpointDirectory)
@@ -87,7 +92,7 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
       // Following line will make streaming query terminate after 15 seconds.
       // This can be replaced by streamingQuery.awaitTermination() to keep the streaming query
       // running.
-      streamingQuery.awaitTermination( 15000)
+      streamingQuery.processAllAvailable()
 
       println("Data loaded in table:")
       snappy.sql("select * from people").show()

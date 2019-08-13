@@ -45,6 +45,7 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
  * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
+// scalastyle:off println
 object SocketSourceExample {
 
   def main(args: Array[String]) {
@@ -52,13 +53,13 @@ object SocketSourceExample {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    println("Initializing a SnappySesion")
+    println("Initializing SnappySession ... ")
     val spark: SparkSession = SparkSession
-        .builder
+        .builder()
         .appName(getClass.getSimpleName)
         .master("local[*]")
-        .getOrCreate
-
+        .getOrCreate()
+    println("Initializing SnappySession ... Done.")
     import spark.implicits._
 
     val snappy = new SnappySession(spark.sparkContext)
@@ -84,7 +85,7 @@ object SocketSourceExample {
         .format("console")
         .outputMode("append")
         .trigger(ProcessingTime("1 seconds"))
-        .start
+        .start()
 
     streamingQuery.awaitTermination(15000)
 
