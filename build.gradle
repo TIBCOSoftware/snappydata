@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.0'
+  version = '1.1.0-HF-2'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -151,7 +151,7 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.3'
+    snappyStoreVersion = '1.6.3-HF-2'
     snappydataVersion = version
     pulseVersion = '1.5.1'
     zeppelinInterpreterVersion = '0.7.3.5'
