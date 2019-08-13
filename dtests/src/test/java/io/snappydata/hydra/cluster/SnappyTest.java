@@ -576,19 +576,11 @@ public class SnappyTest implements Serializable {
     ResultSet rs;
     Connection conn ;
     try {
-<<<<<<< HEAD
       if (isSecurityEnabled)
        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
       else
         conn = getLocatorConnection();
       rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
-||||||| merged common ancestors
-      Connection conn = getLocatorConnection();
-      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
-=======
-      Connection conn = getLocatorConnection();
-      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead'");
->>>>>>> master
       while (rs.next()) {
         Log.getLogWriter().info("Checking the Lead node status...");
         if (rs.getString("STATUS").equals("RUNNING")) {
