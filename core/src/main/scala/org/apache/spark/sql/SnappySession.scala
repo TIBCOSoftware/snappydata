@@ -42,7 +42,7 @@ import org.eclipse.collections.impl.map.mutable.UnifiedMap
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.sql.SnappySession.logInfo
+import org.apache.spark.scheduler.{SparkListener, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
@@ -550,11 +550,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
   private[sql] def grabLock(table: String, schemaName: String,
       connProperties: ConnectionProperties): Any = {
-    /*if (disableTableLock) {
-      return null
-    }*/
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
+        while (!SnappySession.executorAssigned) {
+          Thread.sleep(100)
+          logInfo(s"WithTablein while loop WriteLock ${SnappySession.executorAssigned}")
+        }
         val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
           connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
         var locked = false
@@ -1983,12 +1984,21 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
 
-  def executorAdded(assigned: Boolean): Unit = {
-    println(s"SNC: executorAdded invoked in object $assigned")
-    logInfo(s"SNC: executorAdded invoked in object $assigned")
-    SnappySession.executorAssigned = assigned
+  SnappyContext.getClusterMode(_sc) match {
+    case ThinClientConnectorMode(_, _) => {
+      _sc.listenerBus.addListener(new AppSparkListener)
+    }
+    case _ => // Nothing to do
   }
+}
 
+// A listener to let the session know if at least one executor has been
+// added to this application.
+private class AppSparkListener extends SparkListener with Logging {
+  override def onExecutorAdded(execList: SparkListenerExecutorAdded): Unit = {
+    logInfo(s"AppSparkListener: onExecutorAdded: added $execList")
+    SnappySession.executorAssigned = true
+  }
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -2036,12 +2046,6 @@ object SnappySession extends Logging {
   }
 
   var executorAssigned = false
-
-  def executorAdded(assigned: Boolean): Unit = {
-    logInfo(s"SNC: executorAdded invoked in static $assigned")
-    logInfo(s"SNC: executorAdded invoked in static  $assigned")
-    executorAssigned = assigned
-  }
 
   private lazy val aqpSessionStateClass: Option[Class[_]] = {
     if (isEnterpriseEdition) {

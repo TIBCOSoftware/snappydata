@@ -310,10 +310,6 @@ abstract class BaseColumnFormatRelation(
   def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     logInfo(s"WithTable WriteLock ${SnappySession.executorAssigned}")
-    while (!SnappySession.executorAssigned) {
-      Thread.sleep(100)
-      logInfo(s"WithTablein while loop WriteLock ${SnappySession.executorAssigned}")
-    }
 
     val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {

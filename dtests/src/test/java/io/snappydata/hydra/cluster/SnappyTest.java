@@ -2365,7 +2365,7 @@ public class SnappyTest implements Serializable {
                   SnappyPrms.getExecutorMemory() + " " +
                   SnappyPrms.getSparkSubmitExtraPrms() + " " +
                   " --driver-java-options -Dlog4j.configuration=file://" + log4jFileName + " " +
-                  " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " " +
+                  //" --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener" + " " +
                   commonArgs + " " + snappyTest.getUserAppJarLocation(userAppJar, jarPath) + " " +
                   userAppArgs + " " + primaryLocatorHost + ":" + primaryLocatorPort;
         }
