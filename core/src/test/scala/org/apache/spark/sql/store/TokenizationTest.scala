@@ -156,9 +156,9 @@ class TokenizationTest
         s"GROUP BY ROLLUP (channel, id) ORDER BY channel, id LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -176,9 +176,9 @@ class TokenizationTest
         s"i_class, i_item_id, i_item_desc, revenueratio LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -414,7 +414,7 @@ class TokenizationTest
       assert(cacheMap.size() == 1)
 
       query = s"select * from $table where b = 1"
-      var res2 = newSession.sql(query).collect()
+      newSession.sql(query).collect()
       assert(cacheMap.size() == 1)
 
       cacheMap.clear()

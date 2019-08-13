@@ -25,6 +25,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -33,9 +34,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Vector;
 
+import com.gemstone.gemfire.cache.query.Struct;
+import com.gemstone.gemfire.cache.query.internal.types.StructTypeImpl;
 import hydra.BasePrms;
 import hydra.HostPrms;
-import hydra.HydraVector;
 import hydra.Log;
 import hydra.RemoteTestModule;
 import hydra.TestConfig;
@@ -44,7 +46,10 @@ import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
 import io.snappydata.hydra.streaming_sink.StringMessageProducer;
 import io.snappydata.hydra.testDMLOps.DerbyTestUtils;
+import io.snappydata.hydra.testDMLOps.SnappyDMLOpsUtil;
+import io.snappydata.hydra.testDMLOps.SnappySchemaPrms;
 import org.apache.commons.io.FileUtils;
+import sql.sqlutil.ResultSetHelper;
 import util.TestException;
 
 public class SnappyAdAnalyticsTest extends SnappyTest {
@@ -74,7 +79,8 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static String[] getNames(Long key) {
-    Vector vec = BasePrms.tasktab().vecAt(key, BasePrms.tab().vecAt(key, new HydraVector()));;
+    Vector vec = BasePrms.tab().vecAt(key, null);
+    if(vec == null) return null;
     String[] strArr = new String[vec.size()];
     for (int i = 0; i < vec.size(); i++) {
       strArr[i] = (String)vec.elementAt(i); //get what tables are in the tests
@@ -105,7 +111,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         hostnames[j] = "localhost";
     } else {
       int j = 0;
-      for (int i = 0; i < vmHostNames.length; i++) {
+      for (int i = 0; i < vmNames.length; i++) {
         if (SnappyTest.isUserConfTest || vmNames[i].startsWith("snappyStore")) {
           hostnames[j] = vmHostNames[i];
           Log.getLogWriter().info("Host name is " + hostnames[j]);
@@ -169,12 +175,12 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       if(!zookeeperHost.equals("localhost"))
         command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + zookeeperHost;
       command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
+      Log.getLogWriter().info("Executing command : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun("QuorumPeerMain");
 
       Log.getLogWriter().info("Started Kafka zookeeper");
-
       //Store zookeeper host and port on blackboard
       updateBlackboard(myPropFile, "clientPort");
     } catch (IOException e) {
@@ -217,8 +223,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   protected void startKafkaBroker() {
     String command = "";
-    int numServers = 0 ;
-    numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
     Log.getLogWriter().info("Test will start " + numServers + " kafka brokers.");
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-start.sh");
     String orgPropFilePath = snappyTest.getScriptLocation(kafkaDir + sep + "config/server.properties");
@@ -247,6 +252,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
         if(!hostname.equals("localhost"))
           command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
         command = "nohup " + command + " " + script + " " + myPropFilePath + " > " + logFile + " &";
+        Log.getLogWriter().info("Executing command : " + command);
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
 
@@ -310,10 +316,10 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       String topic = (String)topics.elementAt(i);
       String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-topics.sh");
       String command = script + " --create --zookeeper " + zookeeperHost + ":" + zookeeperPort +
-          " --partition 8 --topic " + topic + " --replication-factor=1 " ;
-
+          " --partition 8 --topic " + topic + " --replication-factor=1";
       String dest = kafkaLogDir + sep + "startTopic-" + topic + ".log";
       File logFile = new File(dest);
+      Log.getLogWriter().info("Executing command : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       Log.getLogWriter().info("Started Kafka topic: " + topic);
@@ -322,7 +328,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   public static void HydraTask_executeSnappyStreamingJob() {
     snappyAdAnalyticsTest.executeSnappyStreamingJob(SnappyPrms.getSnappyStreamingJobClassNames(),
-        "snappyStreamingJobTaskResult_" + System.currentTimeMillis() + ".log");
+        "snappyStreamingJobResult_" + System.currentTimeMillis() + ".log");
   }
 
   protected void executeSnappyStreamingJob(Vector jobClassNames, String logFileName) {
@@ -349,9 +355,11 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
       Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
       String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
           " --app-name " + appName + " --class " + userJob + " --app-jar " + userJarPath +
-          APP_PROPS + " --stream ";
+          APP_PROPS;
+      //if(!useStreamingSink)
+      //  snappyJobCommand += " --stream ";
       String dest = getCurrentDirPath() + File.separator + logFileName;
-      Log.getLogWriter().info("Executing cmd:" + snappyJobCommand);
+      Log.getLogWriter().info("Executing command:" + snappyJobCommand);
       logFile = new File(dest);
       pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
       snappyTest.executeProcess(pb, logFile);
@@ -365,6 +373,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           throw new TestException("Failed to start the streaming job. Please check the logs.");
       } else {
         Log.getLogWriter().info("JobID is : " + jobID);
+        SnappyBB.getBB().getSharedMap().put(appName, jobID);
         for (int j = 0; j < 3; j++) {
           if (!getJobStatus(jobID)) {
             throw new TestException("Got Exception while executing streaming job. Please check " +
@@ -372,6 +381,126 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           }
         }
       }
+    }
+  }
+
+  public static void HydraTask_verifyResults(){
+    if(DerbyTestUtils.hasDerbyServer)
+      SnappyDMLOpsUtil.HydraTask_verifyResults();
+    else snappyAdAnalyticsTest.verifyResults();
+  }
+
+  public void verifyResults(){
+    String query = "select * from ";
+    try {
+      String queryResultDirPath;
+      try {
+        queryResultDirPath = new File(".").getCanonicalPath() + File.separator + "queryResults";
+        File queryResultDir = new File(queryResultDirPath);
+        if (!queryResultDir.exists())
+          queryResultDir.mkdirs();
+      } catch (IOException ie) {
+        throw new TestException ("Got exception while creating directory for query results.");
+      }
+      Connection conn = getLocatorConnection();
+      ResultSet rs_tmp = null;
+      ResultSet rs = conn.createStatement().executeQuery(query + " persoon");
+      StructTypeImpl snappySti = ResultSetHelper.getStructType(rs);
+      List<Struct> snappyList = ResultSetHelper.asList(rs, snappySti, false);
+      int stream_tableCnt = snappyList.size();
+      String streamTableFile = queryResultDirPath + File.separator + "persoon_" + getMyTid() + ".out";
+      SnappyDMLOpsUtil.listToFile(snappyList, streamTableFile);
+      snappyList.clear();
+      rs.close();
+
+      if(SnappySchemaPrms.isAggregate()) {
+        String aggType = SnappySchemaPrms.getAggregateType();
+        switch (aggType.toUpperCase()) {
+          case "JOIN":
+            query = "select tp.*,pd.language from temp_person tp,  person_details pd where tp.id=pd.id";
+            break;
+          case "AVG":
+            query = "select id, avg(age) as avg_age, avg(numChild) as avg_numchild from temp_persoon group by id";
+            break;
+          case "SUM":
+            query = "select id, sum(age) as sum_age, sum(numChild) as sum_numchild from temp_persoon group by id";
+            break;
+          case "COUNT":
+            query = "select age, count(*) from temp_persoon group by age";
+            break;
+        }
+      } else {
+        query = query + "temp_persoon";
+      }
+      rs_tmp = conn.createStatement().executeQuery(query);
+      StructTypeImpl rs_tmpSti = ResultSetHelper.getStructType(rs_tmp);
+      List<Struct> rsTmpList = ResultSetHelper.asList(rs_tmp, rs_tmpSti, false);
+      int snappyTableCnt = rsTmpList.size();
+      String tmpTableFile = queryResultDirPath + File.separator + "tmp_tab" + getMyTid() + ".out";
+      SnappyDMLOpsUtil.listToFile(rsTmpList, tmpTableFile);
+      if(stream_tableCnt != snappyTableCnt)
+        throw new TestException("Number of rows in snappy and streaming table different. Please " +
+            "check the result at :" + queryResultDirPath);
+      rsTmpList.clear();
+      rs.close();
+      SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
+      String errMsg = testInstance.compareFiles(queryResultDirPath, streamTableFile, tmpTableFile,
+          false, "streaming");
+      if(errMsg.length()> 0 ){
+        throw new TestException("Got exception while validating results");
+      }
+    } catch (SQLException se) {
+      Log.getLogWriter().info("Got exception while verifying results");
+      throw new TestException("Got Exception while verifying results.", se);
+    }
+  }
+
+
+  public static void HydraTask_executeSnappyStreamingApp() {
+    snappyAdAnalyticsTest.executeSnappyStreamingApp(SnappyPrms.getSnappyStreamingJobClassNames(),
+        "snappyStreamingAppResult_" + System.currentTimeMillis() + ".log");
+  }
+
+  protected void executeSnappyStreamingApp(Vector jobClassNames, String logFileName) {
+    String snappyJobScript = getScriptLocation("spark-submit");
+    String APP_PROPS = "";
+    ProcessBuilder pb = null;
+    File logFile = null;
+    String userJarPath = SnappyPrms.getUserAppJar();
+    verifyDataForJobExecution(jobClassNames, userJarPath);
+    String brokerList = null;
+
+    String masterHost = getSparkMasterHost();
+    String masterPort = MASTER_PORT;
+    String command = null;
+    String primaryLocatorHost = getPrimaryLocatorHost();
+    String primaryLocatorPort = getPrimaryLocatorPort();
+    String userAppArgs = SnappyPrms.getUserAppArgs();
+    userAppJar = SnappyPrms.getUserAppJar();
+    String commonArgs = " --conf spark.executor.extraJavaOptions=-XX:+HeapDumpOnOutOfMemoryError" +
+        " --conf spark.extraListeners=io.snappydata.hydra.SnappyCustomSparkListener " +
+        " --conf snappydata.connection=" + primaryLocatorHost + ":" + primaryLocatorPort;
+    for (int i = 0; i < jobClassNames.size(); i++) {
+      String userJob = (String)jobClassNames.elementAt(i);
+      brokerList = (String)SnappyBB.getBB().getSharedMap().get("brokerList");
+      String appName = SnappyPrms.getUserAppName();
+      Log.getLogWriter().info("APP PROPS :" + APP_PROPS);
+      command = snappyJobScript + " --class " + userJob +
+          " --master spark://" + masterHost + ":" + masterPort + " " +
+          "--name " + appName + " " +
+          SnappyPrms.getExecutorMemory() + " " +
+          SnappyPrms.getSparkSubmitExtraPrms() + " " + commonArgs + " " +
+          snappyTest.getUserAppJarLocation(userAppJar, jarPath) +
+          " " + getMyTid() + " " + brokerList + " " + userAppArgs + " ";
+      command = "nohup " + command + " > " + logFileName + " & ";
+      String dest = getCurrentDirPath() + File.separator + logFileName;
+      logFile = new File(dest);
+      Log.getLogWriter().info("spark-submit command is : " + command);
+      pb = new ProcessBuilder("/bin/bash", "-c", command);
+      snappyTest.executeProcess(pb, logFile);
+      //wait for 2 min until the streaming query starts.
+      sleepForMs(120);
+      return;
     }
   }
 
@@ -396,10 +525,9 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   public static void HydraTask_executeSQLScriptsWithSleep() {
-    try { Thread.sleep(30000); } catch (InterruptedException ie) {}
+    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
     HydraTask_executeSQLScripts();
   }
-
 
   public static void HydraTask_restartStreaming() {
     HydraTask_stopStreamingJob();
@@ -418,6 +546,29 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
     HydraTask_stopSnappyCluster();
     HydraTask_startSnappyCluster();
     HydraTask_executeSnappyStreamingJob();
+  }
+
+  /*
+  Task for restarting the streaming in smart connector mode.
+   */
+  public static void HydraTask_restartStreamingApp() {
+    HydraTask_closeStreamingApp();
+    try { Thread.sleep(60000); } catch (InterruptedException ie) {}
+    HydraTask_executeSnappyStreamingApp();
+    try { Thread.sleep(30000); } catch (InterruptedException ie) {}
+  }
+
+  /*
+  Task for restarting the leadVM
+   */
+  public static void HydraTask_restartLeadVMWithStreamingApp(){
+    HydraTask_cycleLeadVM();
+  }
+
+  public static void HydraTask_restartSnappyClusterForStreamingApp(){
+    HydraTask_stopSnappyCluster();
+    HydraTask_startSnappyCluster();
+    HydraTask_executeSnappyStreamingApp();
   }
 
   public boolean getJobStatus(String jobID){
@@ -489,7 +640,7 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
           "jars/* " +  processName + " " + APP_PROPS + " > " + logFile;
       if(SnappyPrms.executeInBackGround())
         command = "nohup " + command + " & ";
-      Log.getLogWriter().info("Executing cmd : " + command);
+      Log.getLogWriter().info("Executing command : " + command);
       pb = new ProcessBuilder("/bin/bash", "-c", command);
       snappyTest.executeProcess(pb, logFile);
       recordSnappyProcessIDinNukeRun(processName);
@@ -574,19 +725,28 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
   }
 
   protected void stopKafkaBroker() {
+    getHostNames();
     File log = null;
     ProcessBuilder pb = null;
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/kafka-server-stop.sh");
-    String dest = kafkaLogDir + sep + "stopKafkaServer.log";
-    File logFile = new File(dest);
-    pb = new ProcessBuilder("/bin/bash", "-c", script);
-    snappyTest.executeProcess(pb, logFile);
+    int numServers = (int)SnappyBB.getBB().getSharedCounters().read(SnappyBB.numServers);
+    for (int i = 1; i <= numServers; i++) {
+      String dest = kafkaLogDir + sep + "broker" + i + sep + "stopKafkaServer.log";
+      File logFile = new File(dest);
+      String hostname = hostnames[i-1];
+      String command = "";
+      if(!hostname.equals("localhost"))
+        command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
+      command = command + "  " + script;
+      Log.getLogWriter().info("Executing command : " + command);
+      pb = new ProcessBuilder("/bin/bash", "-c", command);
+      snappyTest.executeProcess(pb, logFile);
+    }
     Log.getLogWriter().info("Stopped Kafka servers");
-
   }
 
   /**
-   * Stop kafka brokers.
+   * Stop kafka zookeeper.
    */
 
   public static synchronized void HydraTask_StopKafkaZookeeper() {
@@ -599,40 +759,66 @@ public class SnappyAdAnalyticsTest extends SnappyTest {
 
   protected void stopKafkaZookeeper() {
     File log = null;
+    String command = "";
     ProcessBuilder pb = null;
     String script = snappyTest.getScriptLocation(kafkaDir + sep + "bin/zookeeper-server-stop.sh");
     String dest = kafkaLogDir + sep + "stopZookeeper.log";
     File logFile = new File(dest);
-    pb = new ProcessBuilder("/bin/bash", "-c", script);
+    String hostname = (String)SnappyBB.getBB().getSharedMap().get("zookeeperHost");
+    if(!hostname.equals("localhost"))
+      command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostname;
+    command = command + " " + script;
+    Log.getLogWriter().info("Executing command : " + command);
+    pb = new ProcessBuilder("/bin/bash", "-c", command);
     snappyTest.executeProcess(pb, logFile);
     Log.getLogWriter().info("Stopped Kafka zookeeper");
   }
 
   public static void HydraTask_stopStreamingJob() {
-    Vector jobClassNames = SnappyPrms.getSnappyJobClassNames();
-    if(jobClassNames == null){
-      jobClassNames = SnappyPrms.getSnappyStreamingJobClassNames();
-    }
-    snappyAdAnalyticsTest.stopSnappyStreamingJob(jobClassNames);
+    snappyAdAnalyticsTest.stopSnappyStreamingJob();
   }
 
-  protected void stopSnappyStreamingJob(Vector jobClassNames) {
+  protected void stopSnappyStreamingJob() {
     String snappyJobScript = getScriptLocation("snappy-job.sh");
     ProcessBuilder pb = null;
+    File logFile = null;
+    leadHost = getLeadHost();
+    String appName = SnappyPrms.getUserAppName();
+    String leadPort = (String)SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
+    String jobID = (String) SnappyBB.getBB().getSharedMap().get(appName);
+    String snappyCmd = snappyJobScript + " stop --job-id " + jobID + " --lead " + leadHost + ":" + leadPort;
+    Log.getLogWriter().info("Executing command :" + snappyCmd);
+    String dest = getCurrentDirPath() + File.separator + "stopStreamingJobResult_" + jobID + ".log";
+    logFile = new File(dest);
+    pb = new ProcessBuilder("/bin/bash", "-c", snappyCmd);
+    snappyTest.executeProcess(pb, logFile);
+    //check status after stop
+    snappyCmd = snappyJobScript + " status --job-id " + jobID + " --lead " + leadHost + ":" + leadPort;
+    dest = getCurrentDirPath() + File.separator + "statusStreamingJob_" + jobID +".log";
+    logFile = new File(dest);
+    pb = new ProcessBuilder("/bin/bash", "-c", snappyCmd);
+    snappyTest.executeProcess(pb, logFile);
+  }
+
+  public static void HydraTask_closeStreamingApp() {
+    String curlCmd = null;
+    ProcessBuilder pb = null;
+    String appName = SnappyPrms.getUserAppName();
+    String logFileName = "sparkStreamingStopResult_" + System.currentTimeMillis() + ".log";
     File log = null;
     File logFile = null;
-    String userJarPath = getUserAppJarLocation(SnappyPrms.getUserAppJar(), jarPath);
-    verifyDataForJobExecution(jobClassNames, userJarPath);
-    leadHost = getLeadHost();
-    String leadPort = (String)SnappyBB.getBB().getSharedMap().get("primaryLeadPort");
-    String userJob = (String)jobClassNames.elementAt(0);
-    String snappyJobCommand = snappyJobScript + " submit --lead " + leadHost + ":" + leadPort +
-        " --app-name AdAnalytics --class " + userJob + " --app-jar " + userJarPath;
-    Log.getLogWriter().info("Executing cmd :" + snappyJobCommand);
-    String dest = getCurrentDirPath() + File.separator + "stopSnappyStreamingJobTaskResult.log";
-    logFile = new File(dest);
-    pb = new ProcessBuilder("/bin/bash", "-c", snappyJobCommand);
-    snappyTest.executeProcess(pb, logFile);
+    try {
+      String hostName = getSparkMasterHost();
+      curlCmd = "curl -d \"name=" + appName + "&terminate=true\" -X POST http://" + hostName + ":8080/app/killByName/";
+      Log.getLogWriter().info("The curlCmd  is " + curlCmd);
+      pb = new ProcessBuilder("/bin/bash", "-c", curlCmd);
+      log = new File(".");
+      String dest = log.getCanonicalPath() + File.separator + logFileName;
+      logFile = new File(dest);
+      snappyTest.executeProcess(pb, logFile);
+    } catch (Exception ex) {
+      Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() " + ex.getMessage());
+    }
   }
 
 }

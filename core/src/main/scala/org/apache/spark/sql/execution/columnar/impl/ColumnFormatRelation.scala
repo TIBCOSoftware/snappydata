@@ -20,14 +20,14 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
 import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
@@ -75,9 +75,9 @@ abstract class BaseColumnFormatRelation(
     _relationInfo: (RelationInfo, Option[LocalRegion]))
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
-    with PartitionedDataSourceScan
-    with RowInsertableRelation
-    with MutableRelation {
+        with PartitionedDataSourceScan
+        with RowInsertableRelation
+        with MutableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[${Utils.toLowerCase(table)}]"
 
@@ -208,8 +208,10 @@ abstract class BaseColumnFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
-      this, externalColumnTableName)
+    withTableWriteLock() { () =>
+      new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
+        this, externalColumnTableName)
+    }
   }
 
   override def getKeyColumns: Seq[String] = {
@@ -234,9 +236,11 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    withTableWriteLock() { () =>
+      ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
+        updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    }
   }
 
   /**
@@ -245,9 +249,11 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      this, keyColumns, connProperties, onExecutor = false)
+    withTableWriteLock() { () =>
+      ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
+        this, keyColumns, connProperties, onExecutor = false)
+    }
   }
 
   /**
@@ -265,22 +271,57 @@ abstract class BaseColumnFormatRelation(
     val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert directly into column store for large number of rows
-    if (numRows > (batchSize * numBuckets)) {
-      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        resolvedName, putInto = false)
-    } else {
-      // insert into the row buffer
-      val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP)
-      try {
-        val stmt = connection.prepareStatement(rowInsertStr)
-        val result = CodeGeneration.executeUpdate(table, stmt,
-          rows, numRows > 1, batchSize, schema.fields, dialect)
-        stmt.close()
-        result
-      } finally {
-        connection.commit()
-        connection.close()
+
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+      SnappySession.PUTINTO_LOCK) match {
+      case None => snc.grabLock(table, schemaName, connProperties)
+      case Some(_) => null // Do nothing as putInto will release lock
+    }
+    try {
+      if (numRows > (batchSize * numBuckets)) {
+        ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+          resolvedName, putInto = false)
+      } else {
+        // insert into the row buffer
+        val connection = ConnectionPool.getPoolConnection(table, dialect,
+          connProperties.poolProps, connProps, connProperties.hikariCP)
+        try {
+          val stmt = connection.prepareStatement(rowInsertStr)
+
+          val result = CodeGeneration.executeUpdate(table, stmt,
+            rows, numRows > 1, batchSize, schema.fields, dialect)
+          stmt.close()
+          result
+        } finally {
+          connection.commit()
+          connection.close()
+        }
+      }
+    }
+    finally {
+      if (lock != null) {
+        logDebug(s"Releasing the $lock object in InsertRows")
+        snc.releaseLock(lock)
+      }
+    }
+  }
+
+  def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+      SnappySession.PUTINTO_LOCK) match {
+      case None => snc.grabLock(table, schemaName, connProperties)
+      case Some(_) => null // Do nothing as putInto will release lock
+    }
+    try {
+      f()
+    }
+    finally {
+      if (lock != null) {
+        logDebug(s"Added the $lock object to the context for $table")
+        snc.addContextObject(
+          SnappySession.BULKWRITE_LOCK, lock)
       }
     }
   }
@@ -487,7 +528,7 @@ class ColumnFormatRelation(
   private def createIndexTable(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
       tableRelation: BaseColumnFormatRelation,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): DataFrame = {
 
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -497,8 +538,21 @@ class ColumnFormatRelation(
         "CREATE INDEX on column tables is an experimental unsupported feature")
     }
     val parameters = new CaseInsensitiveMutableHashMap(options)
+    // no index_type support for column indexes
+    parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
+      case None =>
+      case Some(t) => throw new UnsupportedOperationException(
+        s"CREATE INDEX of type '$t' is not supported for column tables")
+    }
     val parser = session.snappyParser
-    val indexCols = indexColumns.keys.map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+    val indexCols = indexColumns.map { p =>
+      p._2 match {
+        case Some(Descending) => throw new UnsupportedOperationException(s"Cannot create index " +
+            s"'${indexIdent.unquotedString}' with DESC sort specification for column ${p._1}")
+        case _ =>
+      }
+      parser.parseSQLOnly(p._1, parser.parseIdentifier.run())
+    }
     val catalog = session.sessionCatalog
     val baseTable = catalog.resolveTableIdentifier(tableIdent).unquotedString
     val indexTblName = session.getIndexTable(indexIdent).unquotedString
@@ -541,7 +595,7 @@ class ColumnFormatRelation(
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]

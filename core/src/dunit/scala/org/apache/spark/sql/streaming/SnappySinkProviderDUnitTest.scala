@@ -129,7 +129,7 @@ class SnappySinkProviderDUnitTest(s: String)
           s" AUTHORIZATION ldapgroup:${ldapGroup};")
       statement.close()
     } finally {
-      connection.close()
+      if (connection ne null) connection.close()
     }
   }
 
@@ -466,7 +466,7 @@ object SnappySinkProviderDUnitTest extends Logging {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.cores", TestUtils.defaultCores.toString)
+        .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)

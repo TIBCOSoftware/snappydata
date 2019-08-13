@@ -76,7 +76,8 @@ object ExternalStoreUtils {
         // reduce defaults for localhost-only cluster too
         case Some(s) if s.startsWith("localhost:") || s.startsWith("localhost[") ||
             s.startsWith("127.0.0.1") || s.startsWith("::1[") =>
-          val result = math.min(32, math.max(SnappyContext.totalCoreCount.get() << 1, 8)).toString
+          val result = math.min(32,
+            math.max(SnappyContext.totalPhysicalCoreCount.get() << 1, 8)).toString
           (result, result)
         case _ => ("128", "64")
       }
@@ -221,13 +222,13 @@ object ExternalStoreUtils {
 
   def getLdapGroupsForUser(userId: String): Array[String] = {
     val auth = Misc.getMemStoreBooting.getDatabase.getAuthenticationService.
-      asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
+        asInstanceOf[AuthenticationServiceBase].getAuthenticationScheme
 
     auth match {
       case x: LDAPAuthenticationSchemeImpl => x.getLdapGroupsOfUser(userId).
-        toArray[String](Array.empty)
+          toArray[String](Array.empty)
       case _ => throw new NameNotFoundException("Require LDAP authentication scheme for " +
-        "LDAP group support but is " + auth)
+          "LDAP group support but is " + auth)
     }
   }
 
@@ -767,8 +768,7 @@ object ExternalStoreUtils {
           case _ =>
         }
       } catch {
-        case sqle: SQLException =>
-        // ignored
+        case _: SQLException => // ignored
       }
       finally {
         clientStmt.foreach(s => s.close())

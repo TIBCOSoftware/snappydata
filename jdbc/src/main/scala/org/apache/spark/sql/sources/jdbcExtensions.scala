@@ -212,9 +212,9 @@ object JdbcExtendedUtils extends Logging {
     val tableName = if (dotIndex > 0) table.substring(dotIndex + 1) else table
     // hive meta-store is case-insensitive so convert to upper-case for snappy-store
     if (forSpark) {
-      (toLowerCase(if (!schemaName.isEmpty) schemaName else schemaName), toLowerCase(tableName))
+      (if (schemaName.isEmpty) "" else toLowerCase(schemaName)) -> toLowerCase(tableName)
     }
-    else (toUpperCase(if (!schemaName.isEmpty) schemaName else schemaName), toUpperCase(tableName))
+    else (if (schemaName.isEmpty) "" else toUpperCase(schemaName)) -> toUpperCase(tableName)
   }
 
   private def getTableMetadataResultSet(schemaName: String, tableName: String,

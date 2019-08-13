@@ -106,6 +106,16 @@ object Constant {
 
   val LOW_LATENCY_POOL: String = "lowlatency"
 
+  /**
+   * Enable per-session setting for CPUs required per task for the jobs
+   * in the session. Unlike Spark's system-wide setting, this will only
+   * pretend to require those many CPUs for scheduler though backend will
+   * not mark those many CPUs as busy. The net effect is that lesser number
+   * of tasks will be scheduled for the jobs on session and remaining executor
+   * cores will still be available for other tasks.
+   */
+  val CPUS_PER_TASK_PROP: String = "spark.task.cpus"
+
   val CHAR_TYPE_BASE_PROP = "base"
 
   val CHAR_TYPE_SIZE_PROP = "size"
@@ -140,6 +150,8 @@ object Constant {
   val STRING_AS_CLOB_PROP = "spark.sql.stringAsClob"
 
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
+
+  val SNAPPY_JOB_URL = "__SNAPPY_JOB_URL_"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 

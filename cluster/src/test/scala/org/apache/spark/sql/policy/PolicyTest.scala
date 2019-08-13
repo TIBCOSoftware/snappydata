@@ -36,6 +36,8 @@ class PolicyTest extends PolicyTestBase {
   val rowTableName: String = s"$tableOwner.RowTable"
   var ownerContext: SnappyContext = _
 
+  override protected def systemUser: String = tableOwner
+
   protected override def newSparkConf(addOn: SparkConf => SparkConf): SparkConf = {
     val conf = new org.apache.spark.SparkConf()
         .setAppName("PolicyTest")

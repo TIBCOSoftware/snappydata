@@ -19,13 +19,12 @@ package org.apache.spark.sql.execution
 import scala.collection.mutable.ArrayBuffer
 
 import com.gemstone.gemfire.internal.cache.LocalRegion
-
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.{RDD, ZippedPartitionsBaseRDD}
 import org.apache.spark.sql.catalyst.errors.attachTree
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, _}
-import org.apache.spark.sql.catalyst.plans.physical.{ClusteredDistribution, Distribution, HashPartitioning, Partitioning, SinglePartition}
+import org.apache.spark.sql.catalyst.plans.physical._
 import org.apache.spark.sql.catalyst.util.{ArrayData, MapData}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, InternalRow, TableIdentifier}
 import org.apache.spark.sql.collection.Utils
@@ -38,6 +37,7 @@ import org.apache.spark.sql.sources.{BaseRelation, PrunedUnsafeFilteredScan, Sam
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{AnalysisException, CachedDataFrame, SnappySession}
 import org.apache.spark.unsafe.types.{CalendarInterval, UTF8String}
+
 
 
 /**
@@ -262,41 +262,48 @@ case class ExecutePlan(child: SparkPlan, preAction: () => Unit = () => ())
 
   protected[sql] lazy val sideEffectResult: Array[InternalRow] = {
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val sc = session.sparkContext
-    val key = session.currentKey
-    val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
-    val (result, shuffleIds) = if (oldExecutionId eq null) {
-      val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
-        val callSite = sqlContext.sparkContext.getCallSite()
-        (callSite.shortForm, callSite.longForm, treeString(verbose = true),
+    try {
+      val sc = session.sparkContext
+      val key = session.currentKey
+      val oldExecutionId = sc.getLocalProperty(SQLExecution.EXECUTION_ID_KEY)
+      val (result, shuffleIds) = if (oldExecutionId eq null) {
+        val (queryStringShortForm, queryStr, queryExecStr, planInfo) = if (key eq null) {
+          val callSite = sqlContext.sparkContext.getCallSite()
+          (callSite.shortForm, callSite.longForm, treeString(verbose = true),
             PartitionedPhysicalScan.getSparkPlanInfo(this))
-      } else {
-        val paramLiterals = key.currentLiterals
-        val paramsId = key.currentParamsId
-        (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
-          treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
+        } else {
+          val paramLiterals = key.currentLiterals
+          val paramsId = key.currentParamsId
+          (key.sqlText, key.sqlText, SnappySession.replaceParamLiterals(
+            treeString(verbose = true), paramLiterals, paramsId), PartitionedPhysicalScan
             .getSparkPlanInfo(this, paramLiterals, paramsId))
-      }
-      CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
-        queryStr, queryExecStr, planInfo) {
+        }
+        CachedDataFrame.withNewExecutionId(session, queryStringShortForm,
+          queryStr, queryExecStr, planInfo) {
+          preAction()
+          val rdd = child.execute()
+          val shuffleIds = SnappySession.findShuffleDependencies(rdd)
+          (collectRDD(sc, rdd), shuffleIds)
+        }._1
+      } else {
         preAction()
         val rdd = child.execute()
         val shuffleIds = SnappySession.findShuffleDependencies(rdd)
         (collectRDD(sc, rdd), shuffleIds)
-      }._1
-    } else {
-      preAction()
-      val rdd = child.execute()
-      val shuffleIds = SnappySession.findShuffleDependencies(rdd)
-      (collectRDD(sc, rdd), shuffleIds)
-    }
-    if (shuffleIds.nonEmpty) {
-      sc.cleaner match {
-        case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
-        case None =>
       }
+      if (shuffleIds.nonEmpty) {
+        sc.cleaner match {
+          case Some(c) => shuffleIds.foreach(c.doCleanupShuffle(_, blocking = false))
+          case None =>
+        }
+      }
+      result
     }
-    result
+    finally {
+      logDebug(s" Unlocking the table in execute of ExecutePlan:" +
+        s" ${child.treeString(false)}")
+      session.clearWriteLockOnTable()
+    }
   }
 
   override def executeCollect(): Array[InternalRow] = sideEffectResult

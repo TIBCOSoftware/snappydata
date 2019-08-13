@@ -1,23 +1,16 @@
-/*io/snappydata/hydra/security/startLdapServer.conf
-  A=snappyStore snappyStoreHosts=1 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=1
-  ldapScriptPath="$GEMFIRE/../../../store/ldap-test-server"*/
-
 io/snappydata/hydra/testDMLOps/embeddedMode/testUpdateInJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
-/*
 io/snappydata/hydra/testDMLOps/embeddedMode/testDeleteInJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
   B=lead leadHosts=2 leadVMsPerHost=1 leadThreadsPerVM=2
   C=locator locatorHosts=2 locatorVMsPerHost=1 locatorThreadsPerVM=1
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
-  derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
 
 io/snappydata/hydra/testDMLOps/embeddedMode/testDMLOpsInJob.conf
   A=snappyStore snappyStoreHosts=3 snappyStoreVMsPerHost=1 snappyStoreThreadsPerVM=4
@@ -26,4 +19,3 @@ io/snappydata/hydra/testDMLOps/embeddedMode/testDMLOpsInJob.conf
   D=worker workerHosts=1 workerVMsPerHost=1 workerThreadsPerVM=1
   persistenceMode="sync" redundantCopies=1
   derbyDataLocation="$GEMFIRE/../../../tests/common/src/main/resources/northwind_derby"
-*/

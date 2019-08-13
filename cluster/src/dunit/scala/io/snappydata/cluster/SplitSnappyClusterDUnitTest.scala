@@ -16,7 +16,7 @@
  */
 package io.snappydata.cluster
 
-import java.io.{File, PrintWriter}
+import java.io.PrintWriter
 import java.net.InetAddress
 import java.nio.file.{Files, Paths}
 import java.util.Properties
@@ -25,41 +25,32 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.postfixOps
 import scala.reflect.io.Path
-import scala.util.Try
-
+import scala.util.{Failure, Success, Try}
 import com.gemstone.gemfire.internal.cache.PartitionedRegion
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.core.{TestData, TestData2}
 import io.snappydata.test.dunit.{AvailablePortHelper, SerializableRunnable}
 import io.snappydata.util.TestUtils
-import io.snappydata.{ColumnUpdateDeleteTests, Property, SnappyTableStatsProviderService}
+import io.snappydata.{ColumnUpdateDeleteTests, ConcurrentOpsTests, Property, SnappyTableStatsProviderService}
 import org.junit.Assert
-
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
+import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.execution.CatalogStaleException
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.kafka010.KafkaTestUtils
 import org.apache.spark.sql.store.{SnappyJoinSuite, StoreUtils}
-import org.apache.spark.sql.streaming.{ProcessingTime, SnappyStoreSinkProvider}
+import org.apache.spark.sql.streaming.ProcessingTime
+import org.apache.spark.sql.types.{DateType, StringType, StructField, StructType}
 import org.apache.spark.sql.udf.UserDefinedFunctionsDUnitTest
 import org.apache.spark.{Logging, SparkConf, SparkContext}
-import io.snappydata.cluster.SplitSnappyClusterDUnitTest.sc
-import io.snappydata.test.dunit.DistributedTestBase.WaitCriterion
-import org.apache.commons.io.FileUtils
-
-import org.apache.spark.sql.catalyst.encoders.RowEncoder
-import org.apache.spark.sql.kafka010.KafkaTestUtils
-import org.apache.spark.sql.streaming.ProcessingTime
-import org.apache.spark.sql.streaming.SnappySinkProviderDUnitTest.{TestSinkCallback, checkpointDirectory, kafkaTestUtils, ldapGroup, snc, tableName, waitTillTheBatchIsPickedForProcessing}
-import org.apache.spark.sql.types.{DateType, IntegerType, LongType, StringType, StructField, StructType}
 
 /**
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
 class SplitSnappyClusterDUnitTest(s: String)
-    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase with Serializable {
+    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase
+      with Serializable {
 
   override val locatorNetPort: Int = testObject.locatorNetPort
 
@@ -82,7 +73,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   override def afterClass(): Unit = {
-    Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+    Array(vm2, vm1, vm0, vm3).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
     super.afterClass()
@@ -259,7 +250,18 @@ class SplitSnappyClusterDUnitTest(s: String)
     doTestUDF(skewNetworkServers)
   }
 
+  private def functionCheck(sns: SnappySession, msg: String): Unit = {
+    val jars = sns.sql("list jars")
+    if (jars.count() > 0) {
+      var str = msg
+      jars.collect().foreach(x => str += s"$x,")
+      assert(false, str)
+    }
+  }
+
   def doTestUDF(skewServerDistribution: Boolean): Unit = {
+    val sns = new SnappySession(sc)
+    functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
     testObject.createUDFInEmbeddedMode()
 
     // StandAlone Spark Cluster Operations
@@ -271,59 +273,100 @@ class SplitSnappyClusterDUnitTest(s: String)
     // StandAlone Spark Cluster Operations
     vm3.invoke(getClass, "verifyUDFInSplitMode",
       startArgs :+ Int.box(locatorClientPort))
+    functionCheck(sns, "Some jars/packages are not cleaned up! ")
   }
 
   def testDeployPackageNameFormat(): Unit = {
     val sns = new SnappySession(sc)
-    try {
-      val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
-      sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
-      sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
-          "connector_2.11:2.2.2'")
-      sns.sql("deploy package app.mongo-spark_v1.1  'org.mongodb.spark:mongo-spark-" +
-          "connector_2.11:2.2.2'")
-      sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
-          "-connector_2.11:2.2.2'")
-      sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
-            "-spark-connector_2.11:2.2.2'")
-      sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
-            "-spark-connector_2.11:2.2.2'")
-      sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
-            "-spark-connector_2.11:2.2.2'")
-      assert(sns.sql("list packages").count() == 7)
+    functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
+    val jarPath = s"$sparkProductDir/jars/hadoop-client-2.7.7.jar"
+    sns.sql("deploy package  mongo_spark 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo_spark")
+    sns.sql("deploy package mongo-spark_v1.0  'org.mongodb.spark:mongo-spark-" +
+        "connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo-spark_v1.0")
+    sns.sql("deploy package app.mongo-spark_v1.1  'org.mongodb.spark:mongo-spark-" +
+        "connector_2.11:2.2.2'")
+    sns.sql("undeploy  app.mongo-spark_v1.1")
+    sns.sql("deploy package testsch.mongo-spark_v1.2  'org.mongodb.spark:mongo-spark" +
+        "-connector_2.11:2.2.2'")
+    sns.sql("undeploy  testsch.mongo-spark_v1.2")
+    sns.sql(s"""deploy package "testsch"."mongo-spark_v1.3"  'org.mongodb.spark:mongo""" +
+          "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""undeploy  "testsch"."mongo-spark_v1.3" """)
+    sns.sql(s"""deploy package testsch."mongo-spark_v1.4"  'org.mongodb.spark:mongo""" +
+          "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""undeploy  testsch."mongo-spark_v1.4" """)
+    sns.sql(s"""deploy package "testsch".mongo-spark_v1.5  'org.mongodb.spark:mongo""" +
+          "-spark-connector_2.11:2.2.2'")
+    sns.sql(s"""undeploy "testsch".mongo-spark_v1.5 """)
+    assert(sns.sql("list packages").count() == 0)
 
-      sns.sql(s"""deploy jar avro-v_1.0 '$jarPath'""")
-      sns.sql(s"""deploy jar app.avro-v_1.1 '$jarPath'""")
-      sns.sql(s"""deploy jar testsch.avro-v_1.2 '$jarPath'""")
-      sns.sql(s"""deploy jar "app".avro-v_1.3 '$jarPath'""")
-      sns.sql(s"""deploy jar "testsch"."avro-v_1.4" '$jarPath'""")
-      sns.sql(s"""deploy jar testsch."avro-v_1.5" '$jarPath'""")
-      assert(sns.sql("list packages").count() == 13)
-    }
-    finally {
-      sns.sql("undeploy  mongo_spark")
-      sns.sql("undeploy  mongo-spark_v1.0")
-      sns.sql("undeploy  app.mongo-spark_v1.1")
-      sns.sql("undeploy  testsch.mongo-spark_v1.2")
-      sns.sql(s"""undeploy  "testsch"."mongo-spark_v1.3" """)
-      sns.sql(s"""undeploy  testsch."mongo-spark_v1.4" """)
-      sns.sql(s"""undeploy "testsch".mongo-spark_v1.5 """)
+    sns.sql(s"deploy jar avro-v_1.0 '$jarPath'")
+    sns.sql("undeploy  avro-v_1.0 ")
+    sns.sql(s"deploy jar app.avro-v_1.1 '$jarPath'")
+    sns.sql("undeploy  app.avro-v_1.1")
+    sns.sql(s"deploy jar testsch.avro-v_1.2 '$jarPath'")
+    sns.sql("undeploy  testsch.avro-v_1.2")
+    sns.sql(s"""deploy jar "app".avro-v_1.3 '$jarPath'""")
+    sns.sql(s"""undeploy "app".avro-v_1.3 """)
+    sns.sql(s"""deploy jar "testsch"."avro-v_1.4" '$jarPath'""")
+    sns.sql(s"""undeploy "testsch"."avro-v_1.4" """)
+    sns.sql(s"""deploy jar testsch."avro-v_1.5" '$jarPath'""")
+    sns.sql(s"""undeploy testsch."avro-v_1.5" """)
 
-      sns.sql("undeploy  avro-v_1.0 ")
-      sns.sql("undeploy  app.avro-v_1.1")
-      sns.sql("undeploy  testsch.avro-v_1.2")
-      sns.sql(s"""undeploy "app".avro-v_1.3 """)
-      sns.sql(s"""undeploy "testsch"."avro-v_1.4" """)
-      sns.sql(s"""undeploy testsch."avro-v_1.5" """)
-      assert(sns.sql("list packages").count() == 0)
-    }
+    assert(sns.sql("list packages").count() == 0)
+
     import org.scalatest.Assertions._
     val thrown = intercept[Exception] {
       sns.sql("deploy package \"testsch\".mongo-###park_v1.5" +
           "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2")
     }
+    // scalastyle:off
     assert(thrown.getMessage === s"""Invalid input \"mongo-#\", expected packageIdentifierPart or stringLiteral (line 1, column 26):\ndeploy package \"testsch\".mongo-###park_v1.5  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2\n                         ^;""")
+    // scalastyle:on
+  }
 
+  def testDeployPackageDuplicateName(): Unit = {
+    val sns = new SnappySession(sc)
+    functionCheck(sns, "Jars/packages/UDFs not cleaned up from previous tests! ")
+    sns.sql("deploy package mongo-spark_v.1.5" +
+        " 'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo-spark_v.1.5")
+
+    sns.sql("deploy package mongo-spark_v.1.5_dup" +
+        "  'org.mongodb.spark:mongo-spark-connector_2.11:2.2.2'")
+    sns.sql("undeploy  mongo-spark_v.1.5_dup")
+
+    sns.sql("deploy package akka-v1 'com.typesafe.akka:akka-actor_2.11:2.5.8'")
+
+    Try(sns.sql("deploy package akka-v1 'com.datastax.spark:" +
+        "spark-cassandra-connector_2.11:2.3.2'")) match {
+      case Success(_) => throw new AssertionError(
+        "Deploy command should have failed because of the duplicate alias.")
+      case Failure(error) =>
+        assert(error.getMessage.contains("Name 'akka-v1' specified in" +
+          " context 'of deploying jars/packages' is not unique."))
+    }
+    sns.sql("undeploy  akka-v1")
+    functionCheck(sns, "Some jars/packages are not cleaned up! ")
+  }
+
+  override def testConcurrentOpsOnColumnTables(): Unit = {
+    // check in embedded mode (connector mode tested in SplitClusterDUnitTest)
+    val session = new SnappySession(sc)
+    ConcurrentOpsTests.testSimpleLockInsert(session)
+    ConcurrentOpsTests.testSimpleLockUpdate(session)
+    ConcurrentOpsTests.testSimpleLockDeleteFrom(session)
+    ConcurrentOpsTests.testSimpleLockPutInto(session)
+
+    ConcurrentOpsTests.testConcurrentUpdate(session)
+    ConcurrentOpsTests.testConcurrentPutInto(session)
+    ConcurrentOpsTests.testConcurrentDelete(session)
+    ConcurrentOpsTests.testConcurrentPutIntoUpdate(session)
+    ConcurrentOpsTests.testAllOpsConcurrent(session)
+    ConcurrentOpsTests.testConcurrentDeleteFromMultipleTables(session)
+    ConcurrentOpsTests.testConcurrentPutIntoMultipleTables(session)
   }
 
   override def testUpdateDeleteOnColumnTables(): Unit = {
@@ -346,8 +389,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testStaleCatalog(): Unit = {
-
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
 
@@ -377,15 +420,18 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testStaleCatalogRetryForStreamingSink(): Unit = {
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     import scala.concurrent.ExecutionContext.Implicits.global
     val testTempDirectory = "/tmp/SplitSnappyClusterDUnitTest"
-    def cleanUp = {
+
+    def cleanUp(): Unit = {
       snc.sql("drop table if exists SYNC_TABLE")
       snc.sql("drop table if exists USERS")
       Path(testTempDirectory).deleteRecursively()
     }
-    cleanUp
+
+    cleanUp()
     val future = Future {
       vm3.invoke(getClass, "doTestStaleCatalogRetryForStreamingSink",
         startArgs :+ Int.box(locatorClientPort) :+ testTempDirectory)
@@ -402,16 +448,18 @@ class SplitSnappyClusterDUnitTest(s: String)
       snc.sql(s"CREATE TABLE SYNC_TABLE(COL1 STRING) " + s"USING column")
 
       new PrintWriter(s"$testTempDirectory/file1") {
-        write("dummydata"); close()
+        write("dummydata")
+        close()
       }
       Await.result(future, Duration(2, "min"))
     } finally {
-      cleanUp
+      cleanUp()
     }
   }
 
   def testSNAP3024(): Unit = {
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t5 values('1', '1')")
@@ -443,6 +491,40 @@ class SplitSnappyClusterDUnitTest(s: String)
     }
   }
 
+  def testSmartConnectorAfterBucketRebalance(): Unit = {
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
+    snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
+        s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
+    snc.sql("insert into t5 values('1', '1')")
+    snc.sql("insert into t5 values('2', '2')")
+    snc.sql("insert into t5 values('3', '3')")
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    val future = Future {
+      vm3.invoke(getClass,
+        "doTestSmartConnectorForBucketRebalance", startArgs :+ Int.box(locatorClientPort))
+    }
+
+    try {
+      // wait till the smart connector job perform at-least one putInto operation
+      var count = 0
+      while (snc.table("T5").count() == 3 && count < 10) {
+        Thread.sleep(4000)
+        count += 1
+      }
+      assert(count != 10, "Smart connector application not performing putInto as expected.")
+
+      // rebalance the buckets
+      snc.sql(s"CALL SYS.REBALANCE_ALL_BUCKETS()")
+
+      Await.result(future, scala.concurrent.duration.Duration.apply(3, "min"))
+    } finally {
+      snc.sql("drop table if exists T6")
+      snc.sql("drop table if exists T5")
+    }
+  }
+
   def testInsertIntoRowTableAfterStaleCatalog(): Unit = {
     insertDataAfterStaleCatalog("ROW")
   }
@@ -452,8 +534,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   private def insertDataAfterStaleCatalog(tableType: String) = {
-    val snc = SnappyContext(sc)
-
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     logInfo(s"insertDataAfterStaleCatalog: invoked for $tableType table")
     if (tableType == "COLUMN") {
       snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
@@ -498,8 +580,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testDeleteAfterStaleCatalog(): Unit = {
-    val snc = SnappyContext(sc)
-
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t6 values('1', '1')")
@@ -534,8 +616,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testUpdateAfterStaleCatalog(): Unit = {
-    val snc = SnappyContext(sc)
-
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T7(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t7 values('1', '1')")
@@ -837,14 +919,14 @@ object SplitSnappyClusterDUnitTest
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.cores", TestUtils.defaultCores.toString)
+        .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
         .set("spark.sql.autoBroadcastJoinThreshold", "-1")
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
-
+        .set(Property.TestDisableCodeGenFlag.name, "false")
     logInfo("Spark conf:" + conf.getAll.toString)
 
     val sc = SparkContext.getOrCreate(conf)
@@ -1141,7 +1223,7 @@ object SplitSnappyClusterDUnitTest
     import org.apache.spark.sql.snappy._
     try {
       Thread.sleep(2000)
-      for (i <- 1 to 10) {
+      for (_ <- 1 to 10) {
         dataFrame.write.putInto("T5")
       }
       Assert.fail("Should have thrown CatalogStaleException.")
@@ -1155,6 +1237,10 @@ object SplitSnappyClusterDUnitTest
   def doTestStaleCatalogForSNAP3024(locatorPort: Int,
       prop: Properties,
       locatorClientPort: Int): Unit = {
+    performSmartConnectorOps(locatorClientPort)
+  }
+
+  private def performSmartConnectorOps(locatorClientPort: Int): Unit = {
     val snc: SnappyContext = getSnappyContextForConnector(locatorClientPort)
 
     snc.sql("select * from t5").collect()
@@ -1169,14 +1255,20 @@ object SplitSnappyClusterDUnitTest
         .add(StructField("col1", StringType))
         .add(StructField("col2", StringType))
     val dataFrame = snc.createDataFrame(rdd, schema)
-    import org.apache.spark.sql.snappy._
 
     dataFrame.write.insertInto("T5")
+    // wait for the embedded mode to change the catalog or rebalance buckets
     Thread.sleep(6000)
     // should not throw an exception
-    for (i <- 1 to 5) {
+    for (_ <- 1 to 5) {
       snc.sql("select * from t5").collect()
     }
+  }
+
+  def doTestSmartConnectorForBucketRebalance(locatorPort: Int,
+      prop: Properties,
+      locatorClientPort: Int): Unit = {
+    performSmartConnectorOps(locatorClientPort)
   }
 
   def doTestInsertAfterStaleCatalog(locatorPort: Int,
@@ -1200,7 +1292,7 @@ object SplitSnappyClusterDUnitTest
     logInfo("doTestInsertAfterStaleCatalog: Waiting 6 seconds to allow schema change")
     Thread.sleep(6000)
     try {
-      for (i <- 1 to 20) {
+      for (_ <- 1 to 20) {
         Thread.sleep(500)
         logInfo("calling dataFrame.write.insertInto(\"T5\")")
         logInfo("2. schema is = " + snc.table("T5").schema)
@@ -1221,7 +1313,7 @@ object SplitSnappyClusterDUnitTest
   def retryOperation[T](maxRetryAttempts: Int)(f: => T): Unit = {
     var retryCount = 0
     var success = false
-    while(!success) {
+    while (!success) {
       try {
         f
         success = true
@@ -1249,7 +1341,7 @@ object SplitSnappyClusterDUnitTest
     logInfo("doTestDeleteAfterStaleCatalog: Waiting 6 seconds to allow schema change")
     Thread.sleep(6000)
     try {
-      for (i <- 1 to 20) {
+      for (_ <- 1 to 20) {
         Thread.sleep(500)
         snc.sql("delete from t6 where col1 like '2%'")
       }
@@ -1273,7 +1365,7 @@ object SplitSnappyClusterDUnitTest
     logInfo("doTestUpdateAfterStaleCatalog: Waiting 6 seconds to allow schema change")
     Thread.sleep(6000)
     try {
-      for (i <- 1 to 20) {
+      for (_ <- 1 to 20) {
         Thread.sleep(500)
         snc.sql("update t7 set col2 = '22' where col1 = '2'")
       }
@@ -1309,7 +1401,7 @@ object SplitSnappyClusterDUnitTest
           .option("startingOffsets", "earliest")
           .load()
 
-      implicit val encoder = RowEncoder(snc.table(tableName).schema)
+      implicit val encoder: ExpressionEncoder[Row] = RowEncoder(snc.table(tableName).schema)
       val session = snc.sparkSession
       import session.implicits._
       val streamingQuery = streamingDF.selectExpr("CAST(value AS STRING)")
@@ -1379,3 +1471,4 @@ object SplitSnappyClusterDUnitTest
     }
   }
 }
+

@@ -37,22 +37,22 @@ trait SnappyJobTestSupport extends Logging {
    * For secure cluster scenarios this value should be extended with config file containing
    * credentials.
    */
-  val jobConfigFile : String = null
+  val jobConfigFile: String = null
 
   private lazy val snappyJobScript = s"$snappyProductDir/bin/snappy-job.sh"
 
   /**
    * Submits a snappy job and wait for time specified by `waitTimeMillis` parameter before failing.
    *
-   * @param classFullName   fully qualified name of the job class
-   * @param jobCmdAffix     additional configs needs to be passed while submitting the job
-   * @param waitTimeMillis  expected job execution time in miliseconds. If the execution time
-   *                        exceeds specified time, the method will throw exception.
+   * @param classFullName  fully qualified name of the job class
+   * @param jobCmdAffix    additional configs needs to be passed while submitting the job
+   * @param waitTimeMillis expected job execution time in miliseconds. If the execution time
+   *                       exceeds specified time, the method will throw exception.
    */
   def submitAndWaitForCompletion(classFullName: String, jobCmdAffix: String = "",
       waitTimeMillis: Int = 60000): Unit = {
     val consoleLog: String = submitJob(classFullName, jobCmdAffix)
-    logInfo(consoleLog)
+    logInfo("Job submission response:" + consoleLog)
     val jobId = getJobId(consoleLog)
     assert(consoleLog.contains("STARTED"), "Job not started")
 
@@ -79,7 +79,7 @@ trait SnappyJobTestSupport extends Logging {
    * Submits a snappy job
    *
    * @param classFullName fully qualified name of the job class
-   * @param jobCmdAffix additional configs needs to be passed while submitting the job
+   * @param jobCmdAffix   additional configs needs to be passed while submitting the job
    * @return job submission result
    */
   def submitJob(classFullName: String, jobCmdAffix: String): String = {
@@ -94,7 +94,7 @@ trait SnappyJobTestSupport extends Logging {
     val jobSubmissionCommand = s"$snappyJobScript submit --app-name $className" +
         s" --class $packageStr.$className" +
         s" --app-jar ${getJobJar(className, packageStr.replaceAll("\\.", "/") + "/")}"
-    if(jobConfigFile != null){
+    if (jobConfigFile != null) {
       jobSubmissionCommand + s" --passfile $jobConfigFile"
     } else jobSubmissionCommand
   }
@@ -102,6 +102,7 @@ trait SnappyJobTestSupport extends Logging {
   private def getJobJar(className: String, packageStr: String = ""): String = {
     val dir = new File(s"$snappyProductDir/../../../cluster/build-artifacts/scala-2.11/classes/"
         + s"scala/test/$packageStr")
+
     assert(dir.exists() && dir.isDirectory, s"snappy-cluster scala tests not compiled. Directory " +
         s"not found: $dir")
     val jar = TestPackageUtils.createJarFile(dir.listFiles, Some(packageStr))
@@ -109,35 +110,41 @@ trait SnappyJobTestSupport extends Logging {
     jar
   }
 
+  private val jobId = "jobId"
+
   /**
    * Extracts job id from the job submission response
+   *
    * @param str job submission response
    * @return id of the job
    */
   def getJobId(str: String): String = {
+    assert(str.contains(jobId), "Something went wrong while submitting the job." +
+        s" Job submission response: $str")
     // todo: use some JSON parser to fetch job id instead of doing string processing
-    val idx = str.indexOf("jobId")
+    val idx = str.indexOf(jobId)
     str.substring(idx + 9, idx + 45)
   }
-
 
   private def getWaitCriterion(jobId: String): WaitCriterion = {
     new WaitCriterion {
       var consoleLog = ""
-      override def done() = {
+
+      override def done(): Boolean = {
         val jobStatusCommand = s"$snappyJobScript status --job-id $jobId"
-        consoleLog = if (jobConfigFile != null){
+        consoleLog = if (jobConfigFile != null) {
           (jobStatusCommand + s" --passfile $jobConfigFile").!!
         } else {
           jobStatusCommand.!!
         }
         if (consoleLog.contains("FINISHED")) logInfo(s"Job $jobId completed. $consoleLog")
         else if (!consoleLog.contains("RUNNING")) {
-          throw new Exception("Job failied with result:" + consoleLog)
+          throw new Exception("Job failed with result:" + consoleLog)
         }
         consoleLog.contains("FINISHED")
       }
-      override def description() = {
+
+      override def description(): String = {
         logInfo(consoleLog)
         s"Job $jobId did not complete in time."
       }
