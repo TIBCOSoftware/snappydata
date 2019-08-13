@@ -28,31 +28,31 @@ import org.apache.spark.sql.{SnappySession, SparkSession}
  * using snappy sink.
  *
  * Example input data:
- * key: {"country" : "USA"}, value: {"name":"Adam", "age":21, "address":{"city":"Columbus","state":"Ohio"}}
- * key: {"country" : "England"}, value: {"name":"John", "age":44, "address":{"city":"London"}}
- * key: {"country" : "USA"}, value: {"name":"Carol", "age":37, "address":{"city":"San Diego", "state":"California"}}
  *
- * Usage: JSONKafkaSourceExampleWithSnappySink <kafka-brokers> <topics> [checkpoint-directory]
+ * Key: USA, Value: Yin,31,Columbus,Ohio
+ * Key: USA, Value: John,44,"San Jose",California
+ *
+ * Usage: CSVKafkaSourceExampleWithSnappySink <kafka-brokers> <topics> [checkpoint-directory]
  *
  *    <kafka-brokers> Compulsory argument providing comma separate list of kafka brokers
  *    <topics> Compulsory argument providing comma separated list of kafka topics to subscribe
  *    [checkpoint-directory] Optional argument providing checkpoint directory where the state of
  *                           the steaming query will be stored. Note that this directory needs to
  *                           be deleted manually to reset the state of the streaming query.
- *                           Default: `JSONKafkaSourceExampleWithSnappySink` directory under
+ *                           Default: `CSVKafkaSourceExampleWithSnappySink` directory under
  *                           working directory.
  *
  * Example:
- *    $ bin/run-example snappydata.structuredstreaming.JSONKafkaSourceExampleWithSnappySink \
+ *    $ bin/run-example snappydata.structuredstreaming.CSVKafkaSourceExampleWithSnappySink \
  *    "broker-1:9092,broker-2:9092" "topic1,topic2" "checkpoint_dir"
  */
 // scalastyle:off println
-object JSONKafkaSourceExampleWithSnappySink extends Logging {
+object CSVKafkaSourceExampleWithSnappySink extends Logging {
 
   def main(args: Array[String]) {
 
     if (args.length < 2) {
-      println("Usage: JSONKafkaSourceExampleWithSnappySink <kafka-brokers> <topics>" +
+      println("Usage: CSVKafkaSourceExampleWithSnappySink <kafka-brokers> <topics>" +
           " [checkpoint-directory]")
       System.exit(1)
     }
@@ -61,16 +61,17 @@ object JSONKafkaSourceExampleWithSnappySink extends Logging {
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    val checkpointDirectory = if (args.length >= 3) args(2) else getClass.getSimpleName
+    val checkpointDirectory = if (args.length >= 3) args(2) else this.getClass.getSimpleName
     println("Initializing SnappySession ... ")
     val spark: SparkSession = SparkSession
         .builder()
-        .appName(getClass.getSimpleName)
+        .appName(this.getClass.getSimpleName)
         .master("local[*]")
         .getOrCreate()
     val snappy = new SnappySession(spark.sparkContext)
     println("Initializing SnappySession ... Done.")
     try {
+
       snappy.sql("create table people(name string , age int," +
           "city string, state string, country string)")
 
@@ -82,7 +83,6 @@ object JSONKafkaSourceExampleWithSnappySink extends Logging {
         StructField("address", addressSchema, nullable = false)
       ))
 
-
       val df = snappy.readStream.
           format("kafka").
           option("kafka.bootstrap.servers", args(0)).
@@ -91,14 +91,19 @@ object JSONKafkaSourceExampleWithSnappySink extends Logging {
           option("maxOffsetsPerTrigger", 100). // to restrict the batch size
           load()
 
-      import org.apache.spark.sql.functions.from_json
-      val streamingQuery = df.
-          select(from_json(df.col("key").cast("string"), keySchema).alias("key"),
-            from_json(df.col("value").cast("string"), valueSchema).alias("value")).
-          select("value.name", "value.age", "value.address.*", "key.country").
+      import snappy.implicits._
+      val structDF = df.select("key", "value").as[(String, String)].map(s => {
+        // Note: this split won't handle CSV containing comma character as part of quotes values.
+        val fields = s._2.split(",")
+        println(fields)
+        println(s"key: ${s._1}, value: ${s._2}")
+        People(fields(0), fields(1).toInt, fields(2), fields(3), s._1)
+      })
+
+      val streamingQuery = structDF.
           writeStream.
           format("snappysink").
-          queryName(getClass.getSimpleName). // must be unique across the Snappydata cluster
+          queryName(this.getClass.getSimpleName). // must be unique across the Snappydata cluster
           trigger(ProcessingTime("1 seconds")).
           option("tableName", "people").
           option("checkpointLocation", checkpointDirectory).
@@ -118,4 +123,6 @@ object JSONKafkaSourceExampleWithSnappySink extends Logging {
     println("Exiting")
     System.exit(0)
   }
+  case class People(name: String, age : Int, city : String, state : String, country : String)
 }
+

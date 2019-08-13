@@ -18,36 +18,37 @@ package org.apache.spark.examples.snappydata.structuredstreaming
 
 import org.apache.log4j.{Level, Logger}
 
+import org.apache.spark.examples.snappydata.structuredstreaming.SocketSourceExample.DeviceData
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
 
 /**
- * An example of structured streaming depicting JSON file processing with Snappy sink.
+ * An example of structured streaming depicting CSV file processing with Snappy sink.
  *
  * Example input data:
  *
- * {"name":"Yin", "age":31, "address":{"city":"Columbus","state":"Ohio", "district" :"Cincinnati"}}
- * {"name":"Michael", "age":38, "address":{"city":"San Jose", "state":"California", "lane" :"15"}}
+ * Yin,31,Columbus,Ohio
+ * Michael,38,"San Jose",California
  *
- * Usage: JSONFileSourceExampleWithSnappySink [checkpoint-directory] [input-directory]
+ * Usage: CSVFileSourceExampleWithSnappySink [checkpoint-directory] [input-directory]
  *
  *    [checkpoint-directory] Optional argument providing checkpoint directory where the
  *                           state of the steaming query will be stored. Note that this
  *                           directory needs to be deleted manually to reset the state
  *                           of the streaming query.
- *                           Default: `JSONFileSourceExampleWithSnappySink` directory
+ *                           Default: `CSVFileSourceExampleWithSnappySink` directory
  *                           in working directory.
  *    [input-directory] Optional argument pointing to input directory path where incoming
- *                      JSON files should be dumped to get picked up for processing.
- *                      Default: `people.json` directory under resources
+ *                      CSV files should be dumped to get picked up for processing.
+ *                      Default: `people.csv` directory under resources
  *
  * Example:
- *    $ bin/run-example snappydata.structuredstreaming.JSONFileSourceExampleWithSnappySink \
- *    "checkpoint_dir" "JSON_input_dir"
+ *    $ bin/run-example snappydata.structuredstreaming.CSVFileSourceExampleWithSnappySink \
+ *    "checkpoint_dir" "CSV_input_dir"
  */
 // scalastyle:off println
-object JSONFileSourceExampleWithSnappySink extends Logging {
+object CSVFileSourceExampleWithSnappySink extends Logging {
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
@@ -57,7 +58,7 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
     val checkpointDirectory = if (args.length >= 1) args(0)
     else getClass.getSimpleName
     val inputDirectory = if (args.length >= 2) args(1)
-    else "quickstart/src/main/resources/people.json"
+    else "quickstart/src/main/resources/people.csv"
     println("Initializing SnappySession ...")
     val spark: SparkSession = SparkSession
         .builder()
@@ -67,25 +68,23 @@ object JSONFileSourceExampleWithSnappySink extends Logging {
     val snappy = new SnappySession(spark.sparkContext)
     println("Initializing SnappySession ... Done.")
     try {
-      snappy.sql("create table people (name string , age int, lane string," +
-          " city string, district string, state string)")
+      snappy.sql("create table people (name string , age int," +
+          " city string, state string)")
 
-      val schema = snappy.read.json(inputDirectory).schema
-      val jsonDF = snappy.readStream.
-          option("maxFilesPerTrigger", 1). // Controls number of files to be processed per batch
-          schema(schema).
-          json(inputDirectory)
+      val schema = snappy.read.csv(inputDirectory).schema
+      val df = snappy.readStream
+          .option("maxFilesPerTrigger", 1) // Controls number of files to be processed per batch
+          .schema(schema)
+          .csv(inputDirectory)
 
-      val streamingQuery = jsonDF.
-          select("name", "age", "address.lane", "address.city", "address.district",
-            "address.state").
-          writeStream.
-          format("snappysink").
-          queryName(getClass.getSimpleName).  // must be unique across a snappydata cluster
-          trigger(ProcessingTime("1 seconds")).
-          option("tableName", "people").
-          option("checkpointLocation", checkpointDirectory).
-          start()
+      val streamingQuery = df
+          .writeStream
+          .format("snappysink")
+          .queryName(getClass.getSimpleName)  // must be unique across a snappydata cluster
+          .trigger(ProcessingTime("1 seconds"))
+          .option("tableName", "people")
+          .option("checkpointLocation", checkpointDirectory)
+          .start()
 
       println("Streaming started.")
       // Following line will make streaming query terminate after 15 seconds.
