@@ -46,11 +46,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
 
   // Overrides for better exceptions that say "schema" instead of "database"
 
-  protected def schemaNotFoundException(schema: String): AnalysisException =
-    Utils.analysisException(s"Schema '$schema' not found")
-
   override def requireDbExists(schema: String): Unit = {
-    if (!databaseExists(schema)) throw schemaNotFoundException(schema)
+    if (!databaseExists(schema)) throw SnappyExternalCatalog.schemaNotFoundException(schema)
   }
 
   override def requireTableExists(schema: String, table: String): Unit = {
@@ -70,10 +67,6 @@ trait SnappyExternalCatalog extends ExternalCatalog {
     if (functionExists(schema, funcName)) {
       throw Utils.analysisException(s"Function '$funcName' already exists in schema '$schema'")
     }
-  }
-
-  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
-    throw new UnsupportedOperationException("Schema definitions cannot be altered")
   }
 
   override def getTable(schema: String, table: String): CatalogTable = {
@@ -213,11 +206,8 @@ trait SnappyExternalCatalog extends ExternalCatalog {
    * Get all the tables in the catalog skipping given schema names. By default
    * the inbuilt SYS schema is skipped.
    */
-  def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] = {
-    listDatabases().flatMap(schema =>
-      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
-      else listTables(schema).flatMap(table => getTableOption(schema, table)))
-  }
+  def getAllTables(skipSchemas: Seq[String] = SYS_SCHEMA :: Nil): Seq[CatalogTable] =
+    SnappyExternalCatalog.getAllTables(this, skipSchemas)
 
   /**
    * Check for baseTable in both properties and storage.properties (older releases used a mix).
@@ -289,7 +279,7 @@ object SnappyExternalCatalog {
   val INDEXED_TABLE_LOWER: String = Utils.toLowerCase("INDEXED_TABLE")
 
   val EMPTY_SCHEMA: StructType = StructType(Nil)
-  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd).*".r
+  private[sql] val PASSWORD_MATCH = "(?i)(password|passwd|secret).*".r
 
   val currentFunctionIdentifier = new ThreadLocal[FunctionIdentifier]
 
@@ -334,6 +324,28 @@ object SnappyExternalCatalog {
         }
       } else defaultUser
     } else defaultUser
+  }
+
+  /**
+   * Get all the tables in the catalog skipping given schema names. By default
+   * the inbuilt SYS schema is skipped.
+   */
+  def getAllTables(catalog: ExternalCatalog, skipSchemas: Seq[String]): Seq[CatalogTable] = {
+    catalog.listDatabases().flatMap(schema =>
+      if (skipSchemas.nonEmpty && skipSchemas.contains(schema)) Nil
+      else catalog.listTables(schema).flatMap(table => catalog.getTableOption(schema, table)))
+  }
+
+  def schemaNotFoundException(schema: String): AnalysisException = {
+    if (SnappyContext.hasHiveSession) {
+      Utils.analysisException(s"Schema or database '$schema' not found")
+    } else Utils.analysisException(s"Schema '$schema' not found")
+  }
+
+  def objectExistsException(tableIdentifier: TableIdentifier,
+      objectType: CatalogObjectType.Type): AnalysisException = {
+    Utils.analysisException(s"Object with name '${tableIdentifier.table}' (requested type = " +
+        s"$objectType) already exists in schema/database '${tableIdentifier.database}'")
   }
 }
 
@@ -391,5 +403,10 @@ object CatalogObjectType extends Enumeration {
 
   def isPolicy(table: CatalogTable): Boolean = {
     table.properties.contains(PolicyProperties.policyApplyTo)
+  }
+
+  def isTableOrView(tableType: CatalogObjectType.Type): Boolean = tableType match {
+    case Index | Policy => false
+    case _ => true
   }
 }

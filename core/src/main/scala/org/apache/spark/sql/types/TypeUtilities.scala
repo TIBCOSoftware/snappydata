@@ -16,13 +16,17 @@
  */
 package org.apache.spark.sql.types
 
+import java.math.MathContext
 import java.util.Properties
+
+import scala.reflect.runtime.universe._
 
 import com.esotericsoftware.kryo.Kryo
 import com.esotericsoftware.kryo.io.{Input, Output}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql.execution.CodegenSupport
+import org.apache.spark.unsafe.types.UTF8String
 
 
 object TypeUtilities {
@@ -108,4 +112,24 @@ object TypeUtilities {
     }
     props
   }
+
+  def isFixedWidth(dataType: DataType): Boolean = {
+    dataType match {
+      case x: AtomicType => typeOf(x.tag) match {
+        case t if t =:= typeOf[Boolean] => true
+        case t if t =:= typeOf[Byte] => true
+        case t if t =:= typeOf[Short] => true
+        case t if t =:= typeOf[Int] => true
+        case t if t =:= typeOf[Long] => true
+        case t if t =:= typeOf[Float] => true
+        case t if t =:= typeOf[Double] => true
+        case t if t =:= typeOf[Decimal] => true
+        case _ => false
+      }
+      case _ => false
+    }
+  }
+
+  val mathContextCache: Array[MathContext] = Array.tabulate[MathContext](
+    DecimalType.MAX_PRECISION)(i => new MathContext(i + 1))
 }

@@ -18,10 +18,11 @@ package org.apache.spark.sql.row
 
 import java.sql.Connection
 
+import com.gemstone.gemfire.internal.shared.ClientResolverUtils
+
 import scala.collection.JavaConverters._
-
 import io.snappydata.SnappyTableStatsProviderService
-
+import kafka.client.ClientUtils
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, Expression, SortDirection}
@@ -331,57 +332,33 @@ abstract case class JDBCMutableRelation(
     }
   }
 
-  protected def constructSQL(indexName: String,
+  protected def constructCreateIndexSQL(indexName: String,
       baseTable: String,
-      indexColumns: Map[String, Option[SortDirection]],
-      options: Map[String, String]): String = {
-
-    ""
-  }
+      indexColumns: Seq[(String, Option[SortDirection])],
+      options: Map[String, String]): String = ""
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
-    val conn = connFactory()
-    try {
-      val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
-      val fullTableName = session.sessionCatalog.resolveTableIdentifier(tableIdent).unquotedString
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val sql = constructCreateIndexSQL(indexIdent.unquotedString, tableIdent.unquotedString,
+      indexColumns, options)
 
-      val sql = constructSQL(session.sessionCatalog.resolveTableIdentifier(
-        indexIdent).unquotedString, fullTableName, indexColumns, options)
-
-      // Create the Index if the table exists.
-      if (schema.nonEmpty) {
-        JdbcExtendedUtils.executeUpdate(sql, conn)
-      } else {
-        throw new AnalysisException(s"Base table $table does not exist.")
-      }
-    } catch {
-      case se: java.sql.SQLException =>
-        if (se.getMessage.contains("No suitable driver found")) {
-          throw new AnalysisException(s"${se.getMessage}\n" +
-              "Ensure that the 'driver' option is set appropriately and " +
-              "the driver jars available (--jars option in spark-submit).")
-        } else {
-          throw se
-        }
-    } finally {
-      conn.commit()
-      conn.close()
+    // Create the Index if the table exists.
+    if (schema.nonEmpty) {
+      executeUpdate(sql, JdbcExtendedUtils.toUpperCase(session.getCurrentSchema))
+    } else {
+      throw new AnalysisException(s"Base table $table does not exist.")
     }
   }
 
   override def dropIndex(indexIdent: TableIdentifier, tableIdent: TableIdentifier,
       ifExists: Boolean): Unit = {
-    val conn = connFactory()
-    try {
-      val ifExistsStr = if (ifExists) " IF EXISTS" else ""
-      JdbcExtendedUtils.executeUpdate(s"DROP INDEX$ifExistsStr ${tableIdent.unquotedString}", conn)
-    } finally {
-      conn.commit()
-      conn.close()
-    }
+    val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val ifExistsStr = if (ifExists) " IF EXISTS" else ""
+    executeUpdate(s"DROP INDEX$ifExistsStr ${quotedName(tableIdent.unquotedString)}",
+      JdbcExtendedUtils.toUpperCase(session.getCurrentSchema))
   }
 
   private def getDataType(column: StructField): String = {
@@ -398,27 +375,17 @@ abstract case class JDBCMutableRelation(
   }
 
   override def alterTable(tableIdent: TableIdentifier,
-      isAddColumn: Boolean, column: StructField, defaultValue: Option[String]): Unit = {
+      isAddColumn: Boolean, column: StructField, extensions: String): Unit = {
     val conn = connFactory()
     try {
       val columnName = JdbcExtendedUtils.toUpperCase(column.name)
       val sql = if (isAddColumn) {
-        val defaultColumnValue = defaultValue match {
-          case Some(v) =>
-            val defaultString = column.dataType match {
-              case StringType | DateType | TimestampType => s" default '$v'"
-              case _ => s" default $v"
-            }
-            defaultString
-          case None => ""
-        }
-
         val nullable = if (column.nullable) "" else " NOT NULL"
         s"""alter table ${quotedName(table)}
            | add column "$columnName"
-           |  ${getDataType(column)}$nullable$defaultColumnValue""".stripMargin
+           |  ${getDataType(column)}$nullable $extensions""".stripMargin
       } else {
-        s"""alter table ${quotedName(table)} drop column "$columnName""""
+        s"""alter table ${quotedName(table)} drop column "$columnName" $extensions"""
       }
       if (schema.nonEmpty) {
         JdbcExtendedUtils.executeUpdate(sql, conn)
@@ -440,5 +407,26 @@ abstract case class JDBCMutableRelation(
       conn.commit()
       conn.close()
     }
+  }
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case mutable: JDBCMutableRelation => {
+        (this eq mutable) || (
+          hashCode() == mutable.hashCode()
+            && mutable.schemaName.equalsIgnoreCase(schemaName)
+            && mutable.tableName.equalsIgnoreCase(tableName))
+      }
+      case _ => false
+    }
+  }
+
+  override def canEqual(that: Any): Boolean = {
+    that.isInstanceOf[JDBCMutableRelation]
+  }
+
+  override def hashCode(): Int = {
+    ClientResolverUtils.addIntToHash(JdbcExtendedUtils.toUpperCase(schemaName).hashCode,
+      JdbcExtendedUtils.toUpperCase(tableName).hashCode)
   }
 }

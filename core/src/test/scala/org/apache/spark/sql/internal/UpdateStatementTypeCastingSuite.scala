@@ -17,13 +17,13 @@
 package org.apache.spark.sql.internal
 
 import io.snappydata.SnappyFunSuite
+import org.junit.Assert._
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
+import org.apache.spark.sql.catalyst.analysis.Analyzer
+import org.apache.spark.sql.hive.SnappyAnalyzer
 import org.apache.spark.sql.types.{DataType, DecimalType, FloatType, IntegerType, LongType, StringType}
 import org.apache.spark.sql.{AnalysisException, Row}
-import org.junit.Assert._
-
-import org.apache.spark.sql.catalyst.analysis.Analyzer
 
 class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfterAll
     with BeforeAndAfter {
@@ -189,10 +189,10 @@ class UpdateStatementTypeCastingSuite extends SnappyFunSuite with BeforeAndAfter
     val analyzer = new Analyzer(snc.sessionState.catalog, snc.sessionState.conf)
     val snappyAnalyzer = new SnappyAnalyzer(snc.sessionState)
     assertEquals(analyzer.batches.size, snappyAnalyzer.batches.size)
-    for ((expBatch, actBatch) <- analyzer.batches zip snappyAnalyzer.ruleBatches ){
+    for ((expBatch, actBatch) <- analyzer.batches zip snappyAnalyzer.ruleBatches) {
       assertEquals(expBatch.name, actBatch.name)
       assertEquals(expBatch.strategy.toString, actBatch.strategy.toString)
-      for((exp, act) <- expBatch.rules zip actBatch.rules){
+      for ((exp, act) <- expBatch.rules zip actBatch.rules) {
         assertEquals(exp.ruleName, act.ruleName)
       }
     }

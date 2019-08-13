@@ -92,6 +92,7 @@ public class SnappyTest implements Serializable {
   private static String simulateStreamScriptDestinationFolder = TestConfig.tab().stringAt(SnappyPrms.simulateStreamScriptDestinationFolder, dtests);
   public static boolean isLongRunningTest = TestConfig.tab().booleanAt(SnappyPrms.isLongRunningTest, false);  //default to false
   public static boolean isUserConfTest = TestConfig.tab().booleanAt(SnappyPrms.isUserConfTest, false);  //default to false
+  public static boolean isCppTest = TestConfig.tab().booleanAt(SnappyPrms.isCppTest, false);  //default to false
   public static boolean useRowStore = TestConfig.tab().booleanAt(SnappyPrms.useRowStore, false);  //default to false
   public static boolean isRestarted = false;
   public static boolean useSmartConnectorMode = TestConfig.tab().booleanAt(SnappyPrms.useSmartConnectorMode, false);  //default to false
@@ -575,11 +576,19 @@ public class SnappyTest implements Serializable {
     ResultSet rs;
     Connection conn ;
     try {
+<<<<<<< HEAD
       if (isSecurityEnabled)
        conn = getSecuredLocatorConnection("gemfire1","gemfire1");
       else
         conn = getLocatorConnection();
       rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
+||||||| merged common ancestors
+      Connection conn = getLocatorConnection();
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead';");
+=======
+      Connection conn = getLocatorConnection();
+      rs = conn.createStatement().executeQuery("select STATUS, PID, HOST from sys.members where KIND='primary lead'");
+>>>>>>> master
       while (rs.next()) {
         Log.getLogWriter().info("Checking the Lead node status...");
         if (rs.getString("STATUS").equals("RUNNING")) {
@@ -1433,10 +1442,16 @@ public class SnappyTest implements Serializable {
 
   public static void runQuery() throws SQLException {
     Connection conn = getLocatorConnection();
-    String query1 = "SELECT count(*) FROM airline";
-    ResultSet rs = conn.createStatement().executeQuery(query1);
-    while (rs.next()) {
-      Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+    // String query1 = "SELECT count(*) FROM airline";
+    Vector<String> queryVect = SnappyPrms.getQueryList();
+    for (String query : queryVect) {
+      long startTime = System.currentTimeMillis();
+      ResultSet rs = conn.createStatement().executeQuery(query);
+      long endTime = System.currentTimeMillis();
+      while (rs.next()) {
+        // Log.getLogWriter().info("Qyery executed successfully and query result is ::" + rs.getLong(1));
+      }
+      Log.getLogWriter().info("Time to executed the query::  " + ((endTime - startTime) / 1000) + " s");
     }
     closeConnection(conn);
   }
@@ -1825,7 +1840,14 @@ public class SnappyTest implements Serializable {
             RemoteTestModule.getCurrentThread().getThreadId() + ".log";
         logFile = new File(dest);
         String comma_separated_args_list = StringUtils.join(SnappyPrms.getScriptArgs(), " ");
-        String command = filePath + " " + comma_separated_args_list;
+        String command = null;
+        if (isCppTest) {
+
+          String primaryLocatorHost = getPrimaryLocatorHost();
+          String primaryLocatorPort = getPrimaryLocatorPort();
+          Log.getLogWriter().info("inside cpp test: " + primaryLocatorHost + primaryLocatorPort);
+          command = filePath + " " + comma_separated_args_list + " " + primaryLocatorHost + " " + primaryLocatorPort;
+        } else command = filePath + " " + comma_separated_args_list;
         ProcessBuilder pb = new ProcessBuilder("/bin/bash", "-c", command);
         snappyTest.executeProcess(pb, logFile);
       }
@@ -2262,11 +2284,12 @@ public class SnappyTest implements Serializable {
   }
 
   protected String getPrimaryLeadHost() {
-    if (leadHost == null) {
+    leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
+    if (leadHost == null || leadHost.length() == 0) {
       retrievePrimaryLeadHost();
       leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
       Log.getLogWriter().info("primaryLead Host is: " + leadHost);
-    }  else leadHost = (String) SnappyBB.getBB().getSharedMap().get("primaryLeadHost");
+    }
     return leadHost;
   }
 
@@ -2735,7 +2758,7 @@ public class SnappyTest implements Serializable {
           jobIds.add(jobID);
         }
       }
-      if(jobIds==null) {
+      if (jobIds == null) {
         Log.getLogWriter().info("Failed to start the snappy job.");
         return true;
       }
@@ -3232,17 +3255,16 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_cycleLeadVM() {
     if (cycleVms) {
-      leadHost = null;
       int numToKill = TestConfig.tab().intAt(SnappyPrms.numLeadsToStop, 1);
       int stopStartVms = (int) SnappyBB.getBB().getSharedCounters().incrementAndRead(SnappyBB.stopStartLeadVms);
       Long lastCycledTimeForLeadFromBB = (Long) SnappyBB.getBB().getSharedMap().get(LASTCYCLEDTIMEFORLEAD);
+      SnappyBB.getBB().getSharedMap().put("primaryLeadHost", "");
       snappyTest.cycleVM(numToKill, stopStartVms, "leadVmCycled", lastCycledTimeForLeadFromBB,
           lastCycledTimeForLead, "lead", false, false, false);
     }
   }
 
-  protected void
-  cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
+  protected void cycleVM(int numToKill, int stopStartVMs, String cycledVM, Long lastCycledTimeFromBB, long
       lastCycledTime, String vmName, boolean isDmlOp, boolean restart, boolean rebalance) {
     if (!cycleVms) {
       Log.getLogWriter().warning("cycleVms sets to false, no node will be brought down in the test run");
@@ -3482,6 +3504,16 @@ public class SnappyTest implements Serializable {
     File currDir = new File(".");
     boolean checkErrors = new File(currDir, "errors.txt").exists();
     boolean checkHang = new File(currDir, "hang.txt").exists();
+    { // record SparkSubmit processes if left
+      Vector<String> hostNamesList = BasePrms.tab().vecAt(HostPrms.hostNames, null);
+      if (hostNamesList == null || hostNamesList.isEmpty()) {
+        hostNamesList = new Vector<String>();
+        hostNamesList.add("localhost");
+      }
+      for (int i = 0; i < hostNamesList.size(); i++)
+        recordSnappyProcessIDinNukeRun("SparkSubmit", hostNamesList.get(i));
+
+    }
     Set pids = getPidList();
     if (checkErrors || checkHang) {
       int dumpItr = SnappyPrms.getNumOfStackDumpItrs();

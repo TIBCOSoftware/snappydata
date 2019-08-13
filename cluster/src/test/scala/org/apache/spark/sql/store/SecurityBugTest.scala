@@ -33,6 +33,9 @@ class SecurityBugTest extends SnappyFunSuite with BeforeAndAfterAll {
   var serverHostPort: String = _
   override def beforeAll(): Unit = {
     this.stopAll()
+    val session = this.snc.snappySession
+    session.conf.set(Attribute.USERNAME_ATTR, sysUser)
+    session.conf.set(Attribute.PASSWORD_ATTR, sysUser)
     super.beforeAll()
     snc
     serverHostPort = TestUtil.startNetServer()

@@ -44,6 +44,7 @@ import hydra.TestConfig;
 import io.snappydata.hydra.cluster.SnappyBB;
 import io.snappydata.hydra.cluster.SnappyPrms;
 import io.snappydata.hydra.cluster.SnappyTest;
+import io.snappydata.hydra.consistency.SnappyConsistencyTest;
 import org.apache.commons.lang.ArrayUtils;
 import sql.SQLHelper;
 import sql.sqlutil.GFXDStructImpl;
@@ -62,26 +63,32 @@ public class SnappyDMLOpsUtil extends SnappyTest {
   protected static hydra.blackboard.SharedLock bbLock;
 
   protected static SnappyDMLOpsUtil testInstance;
-  public static DerbyTestUtils derbyTestUtils;
+  public static DerbyTestUtils derbyTestUtils = null;
 
   public static void HydraTask_initialize() {
     if (testInstance == null)
       testInstance = new SnappyDMLOpsUtil();
     int dmlTableLength = SnappySchemaPrms.getDMLTables().length;
     ArrayList<Integer> insertCounters = new ArrayList<>();
+    ArrayList<Integer> deleteCounters = new ArrayList<>();
     for (int i = 0; i < dmlTableLength; i++) {
       insertCounters.add(1);
+      deleteCounters.add(0);
     }
     if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("insertCounters"))
       SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", insertCounters);
-    derbyTestUtils = new DerbyTestUtils();
+    if (!SnappyDMLOpsBB.getBB().getSharedMap().containsKey("deleteCounters"))
+      SnappyDMLOpsBB.getBB().getSharedMap().put("deleteCounters", insertCounters);
+    if(derbyTestUtils == null)
+      derbyTestUtils = new DerbyTestUtils();
   }
 
   //ENUM for DML Ops
   public enum DMLOp {
     INSERT("insert"),
     UPDATE("update"),
-    DELETE("delete");
+    DELETE("delete"),
+    PUTINTO("putinto");
 
     String opType;
 
@@ -93,14 +100,16 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       return opType;
     }
 
-    public static SnappyDMLOpsUtil.DMLOp getOperation(String dmlOp) {
+    public static DMLOp getOperation(String dmlOp) {
       if (dmlOp.equals(INSERT.getOpType())) {
         return INSERT;
       } else if (dmlOp.equals(UPDATE.getOpType())) {
         return UPDATE;
       } else if (dmlOp.equals(DELETE.getOpType())) {
         return DELETE;
-      } else return null;
+      } else if(dmlOp.equals(PUTINTO.getOpType())) {
+        return PUTINTO;
+      }else return null;
     }
   }
 
@@ -147,7 +156,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
   }
 
-  public static void HydraTask_initializeDMLThreads() {
+  public static void HydraTask_registerDMLThreads() {
     testInstance.getBBLock();
     ArrayList<Integer> dmlthreads;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
@@ -161,7 +170,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     testInstance.releaseBBLock();
   }
 
-  public static void HydraTask_initializeSelectThreads() {
+  public static void HydraTask_registerSelectThreads() {
     testInstance.getBBLock();
     ArrayList<Integer> selectThreads;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("selectThreads"))
@@ -288,6 +297,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     }
     Log.getLogWriter().info(aStr.toString());
   }
+
 
   public static synchronized void HydraTask_createSnappyTables() {
     testInstance.createSnappyTables();
@@ -490,8 +500,8 @@ public class SnappyDMLOpsUtil extends SnappyTest {
     String[] tableNames = SnappySchemaPrms.getTableNames();
     String[] csvFileNames = SnappySchemaPrms.getCSVFileNames();
     String dataLocation = SnappySchemaPrms.getDataLocations();
-    ArrayList<String> insertList = SnappySchemaPrms.getInsertStmtsForNonDMLTables();
-    insertList.addAll(SnappySchemaPrms.getInsertStmts());
+    List<String> insertList = Arrays.asList(SnappySchemaPrms.getInsertStmtsForNonDMLTables());
+    insertList.addAll(Arrays.asList(SnappySchemaPrms.getInsertStmts()));
     int numDivs = 1;
     boolean loadDataInParts = SnappySchemaPrms.getLoadDataInParts();
     if (loadDataInParts)
@@ -714,7 +724,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           int rand = new Random().nextInt(dmlTable.length);
           String tableName = dmlTable[rand].toUpperCase();
           int numInserts = 100;
-          performInsertUsingBatch(tableName, rand, numInserts, false);
+          performInsertUsingBatch(tableName, rand, numInserts, true);
         }
         else
           performInsert();
@@ -733,66 +743,115 @@ public class SnappyDMLOpsUtil extends SnappyTest {
         else
           performDeleteInSnappy(connType);
         break;
+      /*case PUTINTO:
+        Log.getLogWriter().info("Performing putinto operation...");
+        if (connType.equals(ConnType.JDBC))
+          performPutInto();
+        else
+          performPutIntoInSnappy(connType);
+          */
       default:
         Log.getLogWriter().info("Invalid operation. ");
         throw new TestException("Invalid operation type.");
     }
   }
 
-  public void performInsertUsingBatch(){
-
+  public String addTidToQuery(String sql, int tid){
+    if (sql.toUpperCase().contains("WHERE"))
+      sql = sql + " AND tid=" + tid;
+    else sql = sql + " WHERE tid=" + tid;
+    return sql;
   }
 
   public void performInsertUsingBatch(String tableName, int index, int batchSize,
       boolean isPopulate) {
-    int initCounter;
-    testInstance.getBBLock();
-    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get
-        ("insertCounters");
-    initCounter = counters.get(index);
-    counters.set(index, initCounter + batchSize);
-    SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
-    testInstance.releaseBBLock();
+    Connection conn;
     String stmt;
-    String uniqueKey = SnappySchemaPrms.getUniqueColumnName();
     if (SnappyBB.getBB().getSharedMap().containsKey("schemaChanged") && ((boolean) SnappyBB.getBB().getSharedMap().get("schemaChanged")))
       stmt = SnappySchemaPrms.getInsertStmtAfterReCreateTable().get(index);
-    else
-      stmt = SnappySchemaPrms.getInsertStmts().get(index);
-
-    Log.getLogWriter().info("Statement is : " + stmt);
-    Connection conn, dConn;
-    PreparedStatement snappyPS = null, derbyPS = null;
+    else {
+      if(isPopulate) {
+        String[] insertStmts = SnappySchemaPrms.getInsertStmtsForNonDMLTables();
+        if (insertStmts != null) stmt = insertStmts[index];
+        else stmt = SnappySchemaPrms.getInsertStmts()[index];
+      }
+      else stmt = SnappySchemaPrms.getInsertStmts()[index];
+    }
     try {
       conn = getLocatorConnection();
+      performInsertUsingBatch(conn, tableName, stmt, index, batchSize, getMyTid(), isPopulate);
+      conn.close();
+    } catch (SQLException se) {
+      throw new TestException("Got exception while getting connection", se);
+    }
+  }
+
+  public int getInitialCounter(int index, int batchSize){
+    getBBLock();
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("insertCounters");
+    int initCounter = counters.get(index);
+    counters.set(index, initCounter + batchSize);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("insertCounters", counters);
+    releaseBBLock();
+    return initCounter;
+  }
+
+  public int getDeleteCounter(int index, int batchSize){
+    getBBLock();
+    List<Integer> counters = (List<Integer>)SnappyDMLOpsBB.getBB().getSharedMap().get("deleteCounters");
+    int delCounter = counters.get(index) + batchSize;
+    counters.set(index, delCounter);
+    SnappyDMLOpsBB.getBB().getSharedMap().put("deleteCounters", counters);
+    releaseBBLock();
+    return delCounter;
+  }
+
+  public void performInsertUsingBatch(Connection conn, String tableName,
+      String stmt, int index, int batchSize, int tid, boolean isPopulate){
+    int initCounter = getInitialCounter(index, batchSize);
+    String uniqueKey = SnappySchemaPrms.getUniqueColumnName()[index];
+    Connection dConn = null;
+    Log.getLogWriter().info("Inserting using " + stmt + " with batchSize " + batchSize + " in " +
+        "table " + tableName + " from " + initCounter);
+    PreparedStatement snappyPS = null, derbyPS = null;
+    try {
       snappyPS = conn.prepareStatement(stmt);
       if (hasDerbyServer) {
+        String derbyStmt = stmt;
         dConn = derbyTestUtils.getDerbyConnection();
-        derbyPS = dConn.prepareStatement(stmt);
+        if(derbyStmt.startsWith("put ")) derbyStmt = derbyStmt.replace("put ", "insert ");
+        derbyPS = dConn.prepareStatement(derbyStmt);
       }
     } catch (SQLException se) {
+      Log.getLogWriter().info("Got exception while getting derby connection or preparing " +
+          "statement");
       throw new TestException("Got exception while getting connection", se);
     }
 
     ArrayList<Integer> dmlthreads = null;
     if (SnappyDMLOpsBB.getBB().getSharedMap().containsKey("dmlThreads"))
       dmlthreads = (ArrayList<Integer>) SnappyDMLOpsBB.getBB().getSharedMap().get("dmlThreads");
-
+    
     StructTypeImpl sType = (StructTypeImpl)SnappyDMLOpsBB.getBB().getSharedMap().get
         ("tableMetaData_" + tableName.toUpperCase());
     ObjectType[] oTypes = sType.getFieldTypes();
     String[] fieldNames = sType.getFieldNames();
+
     int batchCnt = 0;
     try {
       String value;
-      for (int j = initCounter + 1; j <= (batchSize + initCounter); j++) {
+      for (int j = initCounter ; j < (batchSize + initCounter); j++) {
         int replaceQuestion = 1;
         for (int i = 0; i < oTypes.length; i++) {
-          if (fieldNames[i].equals(uniqueKey)) value = i + "";
-          else value = "-1";
+          if (fieldNames[i].equalsIgnoreCase(uniqueKey)) value = j + "";
+          else value = "1";
           String clazz = oTypes[i].getSimpleClassName();
           switch (clazz) {
             case "Date":
+              Date dt = new Date(System.currentTimeMillis());
+              snappyPS.setDate(replaceQuestion, dt);
+              if (hasDerbyServer) derbyPS.setDate(replaceQuestion, dt);
+              break;
             case "String":
               snappyPS.setString(replaceQuestion, fieldNames[i] + j);
               if (hasDerbyServer) derbyPS.setString(replaceQuestion, fieldNames[i] + j);
@@ -805,7 +864,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
             case "Integer":
               if (fieldNames[i].equalsIgnoreCase("tid")){
                 if(isPopulate) value = dmlthreads.get(random.nextInt(dmlthreads.size())) + "";
-                    else value = getMyTid() + "";
+                    else value = tid + "";
               }
               snappyPS.setInt(replaceQuestion, Integer.parseInt(value));
               if (hasDerbyServer) derbyPS.setInt(replaceQuestion, Integer.parseInt(value));
@@ -837,12 +896,20 @@ public class SnappyDMLOpsUtil extends SnappyTest {
           snappyPS.executeBatch();
           if (hasDerbyServer) derbyPS.executeBatch();
           batchCnt = 0;
-          Log.getLogWriter().info("Executed batch statement for insert.");
         }
       }
+      Log.getLogWriter().info("Executing the remaining batch...");
+      if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
       snappyPS.executeBatch();
-      if (hasDerbyServer) derbyPS.executeBatch();
-    } catch (SQLException se) {
+      snappyPS.close();
+      if(!isPopulate)  SnappyConsistencyTest.waitForBarrier(tid + "", 2);
+      if (hasDerbyServer) {
+        derbyPS.executeBatch();
+        derbyPS.close();
+        derbyTestUtils.closeDiscConnection(dConn, true);
+      }
+    } catch (Exception se) {
+      Log.getLogWriter().info("Got exception while creating prepared statement" + se.getMessage());
       throw new TestException("Exception while creating PreparedStatement.", se);
     }
   }
@@ -867,7 +934,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
 
       //Log.getLogWriter().info("Selected row is : " + row);
       PreparedStatement snappyPS, derbyPS = null;
-      String insertStmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
+      String insertStmt = (SnappySchemaPrms.getInsertStmts())[rand];
       snappyPS = getPreparedStatement(conn, null, tableName, insertStmt, row);
       Log.getLogWriter().info("Inserting in snappy : " + insertStmt + " with " +
           "values(" + row + ")");
@@ -926,21 +993,18 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) {
-        if (stmt.toUpperCase().contains("WHERE"))
-          stmt = stmt + " AND tid=" + tid;
-        else stmt = stmt + " WHERE tid=" + tid;
-      }
+      if (testUniqueKeys)
+        stmt = addTidToQuery(stmt, tid);
+      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       if (stmt.toUpperCase().contains("SELECT"))
         getAndExecuteSelect(conn, stmt, false);
-      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
       Log.getLogWriter().info("Updated " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
-        if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn, stmt, true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
+        if (stmt.toUpperCase().contains("SELECT"))
+          getAndExecuteSelect(dConn, stmt, true);
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Updated " + derbyRows + " rows in derby.");
         if (numRows != derbyRows) {
@@ -984,21 +1048,17 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) {
-        if (stmt.toUpperCase().contains("WHERE"))
-          stmt = stmt + " AND tid=" + tid;
-        else stmt = stmt + " WHERE tid=" + tid;
-      }
+      if (testUniqueKeys) stmt = addTidToQuery(stmt, tid);
+      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       if (stmt.toUpperCase().contains("SELECT"))
         getAndExecuteSelect(conn, stmt, false);
-      Log.getLogWriter().info("Executing " + stmt + " on snappy.");
       numRows = conn.createStatement().executeUpdate(stmt);
       Log.getLogWriter().info("Deleted " + numRows + " rows in snappy.");
       if (hasDerbyServer) {
         dConn = derbyTestUtils.getDerbyConnection();
-        if (stmt.toUpperCase().contains("SELECT"))
-          getAndExecuteSelect(conn, stmt, true);
         Log.getLogWriter().info("Executing " + stmt + " on derby.");
+        if (stmt.toUpperCase().contains("SELECT"))
+          getAndExecuteSelect(dConn, stmt, true);
         int derbyRows = dConn.createStatement().executeUpdate(stmt);
         Log.getLogWriter().info("Deleted " + derbyRows + " rows in derby.");
         if (numRows != derbyRows) {
@@ -1240,11 +1300,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       else
         conn = getLocatorConnection();
       dConn = derbyTestUtils.getDerbyConnection();
-      if (useTid) {
-        if (selectStmt.toUpperCase().contains("WHERE"))
-          selectStmt = selectStmt + " AND tid=" + getMyTid();
-        else selectStmt = selectStmt + " WHERE tid=" + getMyTid();
-      }
+      if (useTid) selectStmt = addTidToQuery(selectStmt, getMyTid());
       if (orderByClause.length() > 0)
         selectStmt = selectStmt + " " + orderByClause;
       Log.getLogWriter().info("Verifying results for " + table + " using " + selectStmt);
@@ -1579,12 +1635,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) {
-        if (stmt.toUpperCase().contains("WHERE"))
-          stmt = stmt + " AND tid=" + tid;
-        else stmt = stmt + " WHERE tid=" + tid;
-      }
-
+      if (testUniqueKeys) stmt = addTidToQuery(stmt, tid);
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
@@ -1631,12 +1682,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       int tid = getMyTid();
       if (stmt.contains("$tid"))
         stmt = stmt.replace("$tid", "" + tid);
-      if (testUniqueKeys) {
-        if (stmt.toUpperCase().contains("WHERE"))
-          stmt = stmt + " AND tid=" + tid;
-        else stmt = stmt + " WHERE tid=" + tid;
-      }
-
+      if (testUniqueKeys) stmt = addTidToQuery(stmt, tid);
       if (connType.equals(ConnType.SNAPPY)) {
         dynamicAppProps.put(tid, "stmt=\\\"" + stmt + "\\\",tableName=" + tableName + ",tid=" + tid);
         String logFile = "snappyJobResult_thr_" + tid + "_" + System.currentTimeMillis() + ".log";
@@ -1682,7 +1728,7 @@ public class SnappyDMLOpsUtil extends SnappyTest {
       String row = getRowFromCSV(tableName, rand);
       if (testUniqueKeys)
         row = row + "," + getMyTid();
-      String stmt = (SnappySchemaPrms.getInsertStmts()).get(rand);
+      String stmt = (SnappySchemaPrms.getInsertStmts())[rand];
       String insertStmt = getStmt(stmt, row, tableName);
       int tid = getMyTid();
 

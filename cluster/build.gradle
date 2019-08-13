@@ -34,6 +34,48 @@ dependencies {
   compile 'org.slf4j:jcl-over-slf4j:' + slf4jVersion
   compile 'org.slf4j:jul-to-slf4j:' + slf4jVersion
 
+  if (new File(rootDir, 'spark/build.gradle').exists()) {
+    compile project(':snappy-spark:snappy-spark-unsafe_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
+    compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
+    if (rootProject.hasProperty('mesos')) {
+      compile project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion)
+    }
+
+    testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
+        configuration: 'testOutput')
+  } else {
+    compile 'io.snappydata:snappy-spark-unsafe_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
+    compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
+    if (rootProject.hasProperty('mesos')) {
+      compile 'io.snappydata:snappy-spark-mesos_' + scalaBinaryVersion + ':' + snappySparkVersion
+    }
+
+    testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
+                version: snappySparkVersion, classifier: 'tests'
+  }
+
   compile (project(':snappy-core_' + scalaBinaryVersion)) {
     exclude(group: 'org.apache.spark', module: 'spark-unsafe_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-core_' + scalaBinaryVersion)
@@ -57,46 +99,6 @@ dependencies {
     exclude(group: 'org.apache.spark', module: 'spark-sql-kafka-0-10_' + scalaBinaryVersion)
     exclude(group: 'org.apache.spark', module: 'spark-mllib_' + scalaBinaryVersion)
     exclude(group: 'org.eclipse.jetty', module: 'jetty-servlet')
-  }
-
-  if (new File(rootDir, 'spark/build.gradle').exists()) {
-    compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-yarn_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
-    compile project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
-    if (rootProject.hasProperty('mesos')) {
-      compile project(':snappy-spark:snappy-spark-mesos_' + scalaBinaryVersion)
-    }
-
-    testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
-        configuration: 'testOutput')
-  } else {
-    compile 'io.snappydata:snappy-spark-core_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-catalyst_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-sql_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-hive_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-repl_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-streaming_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-mllib_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-yarn_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-graphx_' + scalaBinaryVersion + ':' + snappySparkVersion
-    compile 'io.snappydata:snappy-spark-hive-thriftserver_' + scalaBinaryVersion + ':' + snappySparkVersion
-    if (rootProject.hasProperty('mesos')) {
-      compile 'io.snappydata:snappy-spark-mesos_' + scalaBinaryVersion + ':' + snappySparkVersion
-    }
-
-    testCompile group: 'io.snappydata', name: 'snappy-spark-sql_' + scalaBinaryVersion,
-                version: snappySparkVersion, classifier: 'tests'
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {

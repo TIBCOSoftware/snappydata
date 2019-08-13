@@ -54,3 +54,4 @@ io.snappydata.hydra.testDMLOps.SnappySchemaPrms-recreateTablesStatements =
 io.snappydata.hydra.testDMLOps.SnappySchemaPrms-insertStmtAfterReCreateTable =
 "insert into table1 values (?,?,?,?,?)"
 ;
+
