@@ -18,7 +18,6 @@ package org.apache.spark.examples.snappydata.structuredstreaming
 
 import org.apache.log4j.{Level, Logger}
 
-import org.apache.spark.examples.snappydata.structuredstreaming.SocketSourceExample.DeviceData
 import org.apache.spark.internal.Logging
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
@@ -67,6 +66,7 @@ object CSVFileSourceExampleWithSnappySink extends Logging {
         .getOrCreate()
     val snappy = new SnappySession(spark.sparkContext)
     println("Initializing SnappySession ... Done.")
+
     try {
       snappy.sql("create table people (name string , age int," +
           " city string, state string)")
