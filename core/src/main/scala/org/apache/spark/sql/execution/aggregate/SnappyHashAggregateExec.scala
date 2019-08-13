@@ -809,18 +809,12 @@ case class SnappyHashAggregateExec(
       val keysToProcessSize = this.groupingAttributes.drop(numToDrop)
       val suffixSize = if (numBytesForNullKeyBits == 0) {
         keysToProcessSize.foldLeft(0) {
-          case (size, attrib) => size + attrib.dataType.defaultSize + (attrib.dataType match {
-            case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-            case _ => 0
-          })
+          case (size, attrib) => size + attrib.dataType.defaultSize
         }.toString
       } else {
         keysToProcessSize.zipWithIndex.map {
           case(attrib, i) => {
-            val sizeTerm = attrib.dataType.defaultSize + (attrib.dataType match {
-              case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-              case _ => 0
-            })
+            val sizeTerm = attrib.dataType.defaultSize
             s"""(int)(${SHAMapAccessor.getExpressionForNullEvalFromMask(i + numToDrop,
               numBytesForNullKeyBits, nullKeysBitsetTerm)} ? 0 : $sizeTerm)
             """
