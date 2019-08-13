@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
+ * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,3 +14,11 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
+package com.gemstone.gemfire.internal.shared
+
+class BufferSizeLimitExceededException(message: String) extends RuntimeException(message) {
+  def this(currentUsed: Int, required: Int, maxCapacity: Int) {
+    this(s"The bytes size exceeded max capacity($maxCapacity) by" +
+      s" ${currentUsed + required - maxCapacity}")
+  }
+}

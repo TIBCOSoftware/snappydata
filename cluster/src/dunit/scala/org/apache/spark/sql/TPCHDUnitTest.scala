@@ -59,7 +59,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
-
     // create table randomly either using smart connector or
     // from embedded mode
     if ((System.currentTimeMillis() % 2) == 0) {
