@@ -1850,20 +1850,7 @@ public class SnappyTest implements Serializable {
   }
 
   public synchronized void recordSnappyProcessIDinNukeRun(String pName) {
-    Process pr = null;
-    try {
-      File log = new File(".");
-      String dest = log.getCanonicalPath() + File.separator + "PIDs_" + pName + "_" + HostHelper
-          .getLocalHost() +
-          ".log";
-      File logFile = new File(dest);
-      if (!logFile.exists()) {
-        recordProcessIds(pName, HostHelper.getLocalHost(), logFile);
-      }
-    } catch (IOException e) {
-      String s = "Problem while starting the process : " + pr;
-      throw new TestException(s, e);
-    }
+    recordSnappyProcessIDinNukeRun(pName, HostHelper.getLocalHost());
   }
 
   protected synchronized void recordSnappyProcessIDinNukeRun(String pName, String hostName) {
@@ -1874,18 +1861,10 @@ public class SnappyTest implements Serializable {
       String dest = log.getCanonicalPath() + File.separator + "PIDs_" + pName + "_" + hostName + ".log";
       File logFile = new File(dest);
       if (!logFile.exists()) {
-        String command;
-        command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostName;
-        pb = new ProcessBuilder("/bin/bash", "-c", command);
-        pr = pb.start();
-        pr.waitFor();
         recordProcessIds(pName, hostName, logFile);
       }
     } catch (IOException e) {
       String s = "Problem while starting the process : " + pr;
-      throw new TestException(s, e);
-    } catch (InterruptedException e) {
-      String s = "Exception occurred while waiting for the process execution : " + pr;
       throw new TestException(s, e);
     }
   }
@@ -1895,9 +1874,10 @@ public class SnappyTest implements Serializable {
     ProcessBuilder pb;
     Process pr = null;
     try {
+      command = "ssh -n -x -o PasswordAuthentication=no -o StrictHostKeyChecking=no " + hostName;
       if (pName.equals("Master"))
         command = "ps ax | grep -w " + pName + " | grep -v grep | awk '{print $1}'";
-      else command = "jps | grep " + pName + " | awk '{print $1}'";
+      else command += " jps | grep " + pName + " | awk '{print $1}'";
       hd = TestConfig.getInstance().getMasterDescription()
           .getVmDescription().getHostDescription();
       pb = new ProcessBuilder("/bin/bash", "-c", command);
@@ -2848,6 +2828,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_stopSnappyLeader() {
     File log = null;
+    if(snappyTest==null) snappyTest = new SnappyTest();
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-leads.sh"),
           "stop");
@@ -2870,6 +2851,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_stopSnappyServers() {
     File log = null;
+    if(snappyTest==null) snappyTest = new SnappyTest();
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-servers.sh"), "stop");
       log = new File(".");
@@ -2891,6 +2873,7 @@ public class SnappyTest implements Serializable {
    */
   public static synchronized void HydraTask_stopSnappyLocator() {
     File log = null;
+    if(snappyTest==null) snappyTest = new SnappyTest();
     try {
       ProcessBuilder pb = new ProcessBuilder(snappyTest.getScriptLocation("snappy-locators.sh")
           , "stop");
@@ -3610,13 +3593,16 @@ public class SnappyTest implements Serializable {
         if (!isPrimaryLeadUp) {
           for (int i = 0; i < 3; i++) {
             if (isPrimaryLeadUp) break;
+            sleepForMs(5);
             isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
           }
         }
         if (cycleVms && !isPrimaryLeadUp) {
-          do {
+          for (int i = 0; i < 3; i++) {
+            if (isPrimaryLeadUp) break;
+            sleepForMs(5);
             isPrimaryLeadUp = isPrimaryLeadUpAndRunning();
-          } while (isPrimaryLeadUp);
+          }
         }
         if (!isPrimaryLeadUp) {
           throw new TestException("Primary lead node is not up and running in the cluster.");

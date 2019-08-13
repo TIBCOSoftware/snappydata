@@ -13,9 +13,8 @@ TASK       taskClass   = io.snappydata.hydra.adAnalytics.SnappyAdAnalyticsTest t
            io.snappydata.hydra.cluster.SnappyPrms-userAppName = streamingApp
            io.snappydata.hydra.cluster.SnappyPrms-userAppJar = snappydata-store-scala-tests*tests.jar
            io.snappydata.hydra.cluster.SnappyPrms-sleepTimeSecsBeforeRestart = 60
-           maxThreads = 1
            startInterval = 120
-           threadGroups = leadThread
+           threadGroups = snappyThreads
            maxTimesToRun = 1;
 
 CLOSETASK  taskClass   = io.snappydata.hydra.cluster.SnappyTest taskMethod  = restoreLeadConfigData
