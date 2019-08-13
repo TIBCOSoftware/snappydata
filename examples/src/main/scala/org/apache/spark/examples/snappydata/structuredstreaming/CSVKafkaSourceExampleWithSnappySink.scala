@@ -95,8 +95,6 @@ object CSVKafkaSourceExampleWithSnappySink extends Logging {
       val structDF = df.select("key", "value").as[(String, String)].map(s => {
         // Note: this split won't handle CSV containing comma character as part of quotes values.
         val fields = s._2.split(",")
-        println(fields)
-        println(s"key: ${s._1}, value: ${s._2}")
         People(fields(0), fields(1).toInt, fields(2), fields(3), s._1)
       })
 
