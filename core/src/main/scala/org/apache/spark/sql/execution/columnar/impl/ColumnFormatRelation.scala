@@ -273,10 +273,10 @@ abstract class BaseColumnFormatRelation(
     // use bulk insert directly into column store for large number of rows
 
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(_) => null // Do nothing as putInto will release lock
+      case None if (snc.serializedWrites) => snc.grabLock(table, schemaName, connProperties)
+      case _ => None // Do nothing as putInto will release lock
     }
     try {
       if (numRows > (batchSize * numBuckets)) {
@@ -300,9 +300,12 @@ abstract class BaseColumnFormatRelation(
       }
     }
     finally {
-      if (lock != null) {
-        logDebug(s"Releasing the $lock object in InsertRows")
-        snc.releaseLock(lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Releasing the $lock object in InsertRows")
+          snc.releaseLock(lock)
+        }
+        case None => // do Nothing
       }
     }
   }
@@ -311,19 +314,22 @@ abstract class BaseColumnFormatRelation(
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     logInfo(s"WithTable WriteLock ${SnappySession.executorAssigned}")
 
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(_) => null // Do nothing as putInto will release lock
+      case None if (snc.serializedWrites) => snc.grabLock(table, schemaName, connProperties)
+      case _ => None // Do nothing as putInto will release lock
     }
     try {
       f()
     }
     finally {
-      if (lock != null) {
-        logDebug(s"Added the $lock object to the context for $table")
-        snc.addContextObject(
-          SnappySession.BULKWRITE_LOCK, lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Added the $lock object to the context for $table")
+          snc.addContextObject(
+            SnappySession.BULKWRITE_LOCK, lock)
+        }
+        case None => // do nothing
       }
     }
   }

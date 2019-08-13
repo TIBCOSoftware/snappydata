@@ -188,6 +188,17 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(false))
 
+  val SerializedWrites: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.serializedWrites",
+    "Property to set/unset serialized writes", Some(true))
+
+  val SerializedWriteLockTimeOut: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.serializedWriteLockTimeOut",
+    "Property to specify the lock timeout for write ops. If the write operation" +
+      "doesn't get lock for write within this time period then operation will fail." +
+      "Default value is 300 sec", Some(300))
+
+
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",
     "Property to enable/disable tokenization", Some(true))

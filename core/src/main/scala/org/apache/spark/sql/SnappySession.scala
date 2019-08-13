@@ -306,6 +306,12 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
 
   @transient
+  private[sql] var serializedWrites: Boolean = Property.SerializedWrites.get(sessionState.conf)
+
+  @transient
+  private[sql] var serializedWriteLockTimeOut: Int = Property.SerializedWriteLockTimeOut.get(sessionState.conf)
+
+  @transient
   private[sql] var tokenize: Boolean = Property.Tokenize.get(sessionState.conf)
 
   @transient
@@ -487,7 +493,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     // first acquire the global lock for putInto
     val (schemaName: String, _) =
       JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
-    val lock = grabLock(table, schemaName, defaultConnectionProps)
+    val lockOption = if (sqlContext.snappySession.serializedWrites) {
+      grabLock(table, schemaName, defaultConnectionProps)
+    } else None
+
     var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
       val cachedTable = if (doCache) {
@@ -513,8 +522,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, cachedTable)
       newUpdateSubQuery
     } finally {
-      logDebug(s"Adding the lock object $lock to the context")
-      addContextObject(SnappySession.PUTINTO_LOCK, lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Adding the lock object $lock to the context")
+          addContextObject(SnappySession.PUTINTO_LOCK, lock)
+        }
+        case None => // do nothing
+      }
     }
   }
 
@@ -549,12 +563,19 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def grabLock(table: String, schemaName: String,
-      connProperties: ConnectionProperties): Any = {
+      connProperties: ConnectionProperties): Option[Any] = {
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
         while (!SnappySession.executorAssigned) {
-          Thread.sleep(100)
-          logInfo(s"WithTablein while loop WriteLock ${SnappySession.executorAssigned}")
+          // Don't expect this case usually unless lots of applications are submitted in parallel
+          try {
+            Thread.sleep(100)
+          }
+          catch {
+            case _: InterruptedException => logWarning("Interrupted while waiting for executor.")
+          }
+          logDebug(s"grabLock waiting for resources to be " +
+            s"allocated ${SnappySession.executorAssigned}")
         }
         val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
           connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
@@ -566,8 +587,9 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
                 s" current Thread ${Thread.currentThread().getId} and " +
               s"app ${sqlContext.sparkContext.appName}")
 
-            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
+            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?,?)")
             ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + table)
+            ps.setInt(2, serializedWriteLockTimeOut)
             val rs = ps.executeQuery()
             rs.next()
             locked = rs.getBoolean(1)
@@ -588,15 +610,15 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             // conn.close()
           }
         } while (!locked)
-        (conn, new TableIdentifier(table, Some(schemaName)))
+        Some((conn, new TableIdentifier(table, Some(schemaName))))
       case _ =>
         logDebug(s"Taking lock in " +
             s" ${Thread.currentThread().getId} and " +
           s"app ${sqlContext.sparkContext.appName}")
         val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
-        regionLock.lock()
-        regionLock
+        regionLock.lock(serializedWriteLockTimeOut)
+        Some(regionLock)
     }
   }
 
