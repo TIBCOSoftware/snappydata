@@ -51,6 +51,8 @@ class ColumnUpdateDeleteTest extends ColumnTablesTestBase {
     conf.set("spark.memory.manager", classOf[SnappyUnifiedMemoryManager].getName)
     conf.set("spark.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
     conf.set("spark.closure.serializer", "org.apache.spark.serializer.PooledKryoSerializer")
+    conf.set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true")
+    conf.set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
     conf
   }
 

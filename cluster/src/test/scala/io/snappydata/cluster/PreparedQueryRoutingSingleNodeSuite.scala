@@ -39,7 +39,9 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       * from hidden column in sample table.
       */
     new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
-        .setMaster("local[6]")
+        .setMaster("local[6]").
+      set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
+      set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
         // .set("spark.logConf", "true")
         // .set("mcast-port", "4958")
   }
