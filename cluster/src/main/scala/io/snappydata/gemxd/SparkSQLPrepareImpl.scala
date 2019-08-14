@@ -34,6 +34,7 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.LogicalPlan
+import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.PutIntoValuesColumnTable
 import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
@@ -59,7 +60,7 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema, createIfNotExists = true)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 

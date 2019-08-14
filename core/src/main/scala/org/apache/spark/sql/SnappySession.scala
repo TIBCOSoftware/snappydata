@@ -1499,10 +1499,17 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   /**
    * Set current schema for the session.
    *
+   * @param schema schema name which goes in the catalog
+   */
+  def setCurrentSchema(schema: String): Unit = setCurrentSchema(schema, createIfNotExists = false)
+
+  /**
+   * Set current schema for the session.
+   *
    * @param schema            schema name which goes in the catalog
    * @param createIfNotExists create the schema if it does not exist
    */
-  def setCurrentSchema(schema: String, createIfNotExists: Boolean = false): Unit = {
+  private[sql] def setCurrentSchema(schema: String, createIfNotExists: Boolean): Unit = {
     val schemaName = sessionCatalog.formatDatabaseName(schema)
     if (createIfNotExists) {
       sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
@@ -2096,9 +2103,9 @@ object SnappySession extends Logging {
       context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
+      val rdd = f
       clearExecutionProperties(localProperties)
       propertiesSet = false
-      val rdd = f
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
@@ -2124,7 +2131,7 @@ object SnappySession extends Logging {
 
     val (cachedRDD, execution, origExecutionString, origPlanInfo, executionString, planInfo, rddId,
     noSideEffects, executionId, planStartTime: Long, planEndTime: Long) = executedPlan match {
-      case _: ExecutedCommandExec | _: ExecutePlan =>
+      case _: ExecutedCommandExec | _: ExecutePlan | UnionCommands(_) =>
         // TODO add caching for point updates/deletes; a bit of complication
         // because getPlan will have to do execution with all waits/cleanups
         // normally done in CachedDataFrame.collectWithHandler/withCallback
@@ -2141,7 +2148,7 @@ object SnappySession extends Logging {
         val planInfo = PartitionedPhysicalScan.updatePlanInfo(origPlanInfo,
           paramLiterals, paramsId)
         // don't post separate plan for CTAS since it already has posted one for the insert
-        val (eagerToRDD, postGUIPlans) = executedPlan match {
+        val (eagerToRDD, postGUIPlans) = executedPlan.collectFirst {
           case ExecutedCommandExec(c: CreateTableUsingCommand) if c.query.isDefined =>
             handleCTAS(SnappyContext.getProviderType(c.provider))
           case ExecutedCommandExec(c: CreateDataSourceTableAsSelectCommand) =>
@@ -2150,7 +2157,9 @@ object SnappySession extends Logging {
           // other commands may have their own withNewExecutionId but still post GUI
           // plans to see the command with proper SQL string in the GUI
           case _: ExecutedCommandExec => true -> true
-          case _ => false -> true
+        } match {
+          case None => false -> true
+          case Some(p) => p
         }
         var rdd = if (eagerToRDD) qe.toRdd else null
 
@@ -2484,5 +2493,15 @@ object CachedKey {
       plan.transform(transformExprID)
     } else plan
     new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
+  }
+}
+
+private object UnionCommands {
+  def unapply(plan: SparkPlan): Option[Boolean] = plan match {
+    case union: UnionExec if union.children.nonEmpty && union.children.forall {
+      case _: ExecutedCommandExec | _: ExecutePlan => true
+      case _ => false
+    } => Some(true)
+    case _ => None
   }
 }
