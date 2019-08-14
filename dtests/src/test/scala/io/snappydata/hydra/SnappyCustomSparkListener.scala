@@ -16,11 +16,9 @@
  */
 package io.snappydata.hydra
 
-import org.apache.spark.Logging
 import org.apache.spark.scheduler._
 
-class SnappyCustomSparkListener extends SparkListener with Logging {
-
+class SnappyCustomSparkListener extends SparkListener {
   override def onJobStart(jobStart: SparkListenerJobStart) {
     // scalastyle:off println
     println(s"Job started with ${jobStart.stageInfos.size} stages: $jobStart")
