@@ -559,7 +559,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       case _: ThinClientConnectorMode =>
         if (!sparkContext.isLocal) {
           SnappyContext.resourceLock.synchronized {
-            while (!SnappyContext.executorAssigned) {
+            while (!SnappyContext.executorAssigned && sparkContext.getExecutorIds().isEmpty) {
               if (!SnappyContext.executorAssigned) {
                 try {
                   SnappyContext.resourceLock.wait(100)
