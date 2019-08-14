@@ -488,7 +488,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     // first acquire the global lock for putInto
     val (schemaName: String, _) =
       JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
-    val lock = grabLock(table, schemaName, defaultConnectionProps)
+    val lockOption = if (Property.SerializeWrites.get(sessionState.conf)) {
+      grabLock(table, schemaName, defaultConnectionProps)
+    } else None
+
     var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
       val cachedTable = if (doCache) {
@@ -514,8 +517,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, cachedTable)
       newUpdateSubQuery
     } finally {
-      logDebug(s"Adding the lock object $lock to the context")
-      addContextObject(SnappySession.PUTINTO_LOCK, lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Adding the lock object $lock to the context")
+          addContextObject(SnappySession.PUTINTO_LOCK, lock)
+        }
+        case None => // do nothing
+      }
     }
   }
 
@@ -546,9 +554,28 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def grabLock(table: String, schemaName: String,
-      connProperties: ConnectionProperties): Any = {
+      connProperties: ConnectionProperties): Option[Any] = {
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
+        if (!sparkContext.isLocal) {
+          SnappyContext.resourceLock.synchronized {
+            while (!SnappyContext.executorAssigned && sparkContext.getExecutorIds().isEmpty) {
+              if (!SnappyContext.executorAssigned) {
+                try {
+                  SnappyContext.resourceLock.wait(100)
+                }
+                catch {
+                  case _: InterruptedException =>
+                    logWarning("Interrupted while waiting for executor.")
+                }
+              }
+              // Don't expect this case usually unless lots of
+              // applications are submitted in parallel
+              logDebug(s"grabLock waiting for resources to be " +
+                s"allocated ${SnappyContext.executorAssigned}")
+            }
+          }
+        }
         val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
           connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
         var locked = false
@@ -556,55 +583,80 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         do {
           try {
             logDebug(s" Going to take lock on server for table $table," +
-                s" current Thread ${Thread.currentThread().getId}")
-            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
+                s" current Thread ${Thread.currentThread().getId} and " +
+              s"app ${sqlContext.sparkContext.appName}")
+
+            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?,?)")
             ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + table)
+            ps.setInt(2, Property.SerializedWriteLockTimeOut.get(sessionState.conf) * 1000)
             val rs = ps.executeQuery()
             rs.next()
             locked = rs.getBoolean(1)
             ps.close()
-            logDebug("Took lock on server. ")
+            logDebug(s"Took lock on server. for string " +
+              s"${SnappySession.WRITE_LOCK_PREFIX + table} and " +
+              s"app ${sqlContext.sparkContext.appName}")
           }
           catch {
-            case e: Throwable =>
-              logWarning("Got exception while taking lock", e)
+            case sqle: SQLException => {
+              logDebug("Got exception while taking lock", sqle)
+              if (sqle.getMessage.contains("Couldn't acquire lock")) {
+                throw sqle
+              } else {
+                if (retrycount == 2) {
+                  throw sqle
+                }
+              }
+            }
+            case e: Throwable => {
+              logDebug("Got exception while taking lock", e)
               if (retrycount == 2) {
                 throw e
               }
+            }
           }
           finally {
             retrycount = retrycount + 1
             // conn.close()
           }
         } while (!locked)
-        (conn, new TableIdentifier(table, Some(schemaName)))
+        Some(conn, new TableIdentifier(table, Some(schemaName)))
       case _ =>
         logDebug(s"Taking lock in " +
-            s" ${Thread.currentThread().getId} ")
+            s" ${Thread.currentThread().getId} and " +
+          s"app ${sqlContext.sparkContext.appName}")
         val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
-        regionLock.lock()
-        regionLock
+        regionLock.lock(Property.SerializedWriteLockTimeOut.get(sessionState.conf) * 1000)
+        Some(regionLock)
     }
   }
 
   private[sql] def releaseLock(lock: Any): Unit = {
+    logInfo(s"Releasing the lock : $lock")
     lock match {
       case lock: RegionLock =>
         if (lock != null) {
-          logInfo(s"Going to unlock the lock object bulkOp $lock ")
+          logInfo(s"Going to unlock the lock object bulkOp $lock and " +
+            s"app ${sqlContext.sparkContext.appName}")
           lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
         }
       case (conn: Connection, id: TableIdentifier) =>
         var unlocked = false
         try {
-          logDebug(s"releasing lock on the server. ${id.table}")
+          logDebug(s"Going to unlock the lock on the server. ${id.table} for " +
+            s"app ${sqlContext.sparkContext.appName}")
           val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
           ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + id.table)
           val rs = ps.executeQuery()
           rs.next()
           unlocked = rs.getBoolean(1)
           ps.close()
+        } catch {
+          case t: Throwable => {
+            logWarning(s"Caught exception while unlocking the $lock", t)
+            throw t
+          }
         }
         finally {
           conn.close()
@@ -1994,6 +2046,7 @@ private class FinalizeSession(session: SnappySession)
   override protected def clearThis(): Unit = {
     sessionId = SnappySession.INVALID_ID
   }
+
 }
 
 object SnappySession extends Logging {
@@ -2005,7 +2058,6 @@ object SnappySession extends Logging {
   private[sql] val CACHED_PUTINTO_LOGICAL_PLAN = "cached_putinto_logical_plan"
   private[sql] val BULKWRITE_LOCK = "bulkwrite_lock"
   private[sql] val WRITE_LOCK_PREFIX = "BULKWRITE_"
-
 
   private val unresolvedStarRegex =
     """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r

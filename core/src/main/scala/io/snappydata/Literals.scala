@@ -19,6 +19,7 @@ package io.snappydata
 import scala.reflect.ClassTag
 
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
@@ -187,6 +188,19 @@ object Property extends Enumeration {
   val PlanCaching: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(false))
+
+  val SerializeWrites: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.serializeWrites",
+    "Property to set/unset serialized writes on column table." +
+      "There will be a global lock which will ensure that at a time only" +
+      "one write operation is active on the column table.", Some(true))
+
+  val SerializedWriteLockTimeOut: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.serializedWriteLockTimeOut",
+    "Property to specify the lock timeout for write ops in seconds. If the" +
+      " write operation doesn't get lock for write within this time period" +
+      s" then operation will fail. Default value is ${GfxdConstants.MAX_LOCKWAIT_DEFAULT/1000} sec",
+    Some(GfxdConstants.MAX_LOCKWAIT_DEFAULT/1000))
 
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",
