@@ -16,19 +16,17 @@
  */
 package org.apache.spark.sql
 
-import java.rmi.ServerException
 import java.sql.{Connection, SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
-
-import com.gemstone.gemfire.cache.LockTimeoutException
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.{TypeTag, typeOf}
 import scala.util.control.NonFatal
+
 import com.gemstone.gemfire.internal.GemFireVersion
 import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
 import com.gemstone.gemfire.internal.cache.{GemFireCacheImpl, PartitionedRegion}
@@ -42,10 +40,10 @@ import com.pivotal.gemfirexd.internal.shared.common.{SharedUtils, StoredFormatId
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
 import org.eclipse.collections.impl.map.mutable.UnifiedMap
+
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.{SparkListener, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.{Analyzer, NoSuchTableException, UnresolvedAttribute, UnresolvedRelation, UnresolvedStar}
 import org.apache.spark.sql.catalyst.catalog.{BucketSpec, CatalogTable, CatalogTableType}
 import org.apache.spark.sql.catalyst.encoders._
@@ -654,6 +652,11 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           rs.next()
           unlocked = rs.getBoolean(1)
           ps.close()
+        } catch {
+          case t: Throwable => {
+            logWarning(s"Caught exception while unlocking the $lock", t)
+            throw t
+          }
         }
         finally {
           conn.close()

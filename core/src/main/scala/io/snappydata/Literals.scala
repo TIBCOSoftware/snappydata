@@ -17,8 +17,10 @@
 package io.snappydata
 
 import scala.reflect.ClassTag
+
 import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
 import com.pivotal.gemfirexd.internal.engine.GfxdConstants
+
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
 
@@ -189,7 +191,9 @@ object Property extends Enumeration {
 
   val SerializeWrites: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.serializeWrites",
-    "Property to set/unset serialized writes on column table", Some(true))
+    "Property to set/unset serialized writes on column table." +
+      "There will be a global lock which will ensure that at a time only" +
+      "one write operation is active on the column table.", Some(true))
 
   val SerializedWriteLockTimeOut: SQLValue[Int] = SQLVal[Int](
     s"${Constant.PROPERTY_PREFIX}sql.serializedWriteLockTimeOut",

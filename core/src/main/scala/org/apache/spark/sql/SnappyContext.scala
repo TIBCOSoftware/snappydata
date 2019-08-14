@@ -22,7 +22,6 @@ import java.util.Map.Entry
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.function.Consumer
-
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
@@ -32,6 +31,7 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
+
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.Attribute
@@ -41,6 +41,7 @@ import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
+
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
