@@ -51,7 +51,7 @@ object SocketSourceExampleWithSnappySink extends Logging {
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     println("Initializing SnappySession ... ")
-    val checkpointDirectory = "/tmp/StructuredStreamingWithSnappySink"
+    val checkpointDirectory = this.getClass.getSimpleName
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)

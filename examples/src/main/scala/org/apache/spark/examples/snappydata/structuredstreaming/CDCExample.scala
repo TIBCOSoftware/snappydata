@@ -25,18 +25,17 @@ import scala.language.postfixOps
 import scala.reflect.io.Path
 
 /**
- * An example showing CDC usage with SnappyData streaming sink.<br>
+ * An example showing CDC usage with SnappyData streaming sink.
  *
  * To run this on your local machine, you need to first run a Netcat server <br>
  * `$ nc -lk 9999`
- * <p>
- * Sample input data:
- * <pre>
+ *
+ * Example input data:
+ *
  * 1,user1,23,0
  * 2,user2,45,0
  * 1,user1,23,2
  * 2,user2,46,1
- * </pre>
  *
  * To run the example in local mode go to your SnappyData product distribution
  * directory and execute the following command:
@@ -54,7 +53,7 @@ object CDCExample{
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
     println("Initializing a SnappySession")
-    val checkpointDirectory = "/tmp/StructuredStreamingCDCExample"
+    val checkpointDirectory = this.getClass.getSimpleName
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)
