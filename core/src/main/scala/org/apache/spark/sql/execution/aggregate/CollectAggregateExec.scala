@@ -96,8 +96,8 @@ case class CollectAggregateExec(child: SparkPlan)(
     val bm = sc.env.blockManager
     var success = false
 
+    val partitionBlocks = executeCollectData()
     try {
-      val partitionBlocks = executeCollectData()
       // create an iterator over the blocks and pass to generated iterator
       val numFields = child.schema.length
       val results = partitionBlocks.iterator.flatMap(
