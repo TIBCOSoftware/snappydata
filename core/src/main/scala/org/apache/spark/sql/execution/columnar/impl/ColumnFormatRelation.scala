@@ -275,7 +275,8 @@ abstract class BaseColumnFormatRelation(
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
     val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None if (snc.serializedWrites) => snc.grabLock(table, schemaName, connProperties)
+      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+        snc.grabLock(table, schemaName, connProperties)
       case _ => None // Do nothing as putInto will release lock
     }
     try {
@@ -312,11 +313,12 @@ abstract class BaseColumnFormatRelation(
 
   def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    logInfo(s"WithTable WriteLock ${SnappySession.executorAssigned}")
+    logDebug(s"WithTable WriteLock ${SnappyContext.executorAssigned}")
 
     val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None if (snc.serializedWrites) => snc.grabLock(table, schemaName, connProperties)
+      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+        snc.grabLock(table, schemaName, connProperties)
       case _ => None // Do nothing as putInto will release lock
     }
     try {

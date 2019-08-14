@@ -16,10 +16,13 @@
  */
 package org.apache.spark.sql
 
+import java.rmi.ServerException
 import java.sql.{Connection, SQLException, SQLWarning}
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.{Calendar, Properties}
+
+import com.gemstone.gemfire.cache.LockTimeoutException
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
@@ -306,12 +309,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   private[sql] var planCaching: Boolean = Property.PlanCaching.get(sessionState.conf)
 
   @transient
-  private[sql] var serializedWrites: Boolean = Property.SerializedWrites.get(sessionState.conf)
-
-  @transient
-  private[sql] var serializedWriteLockTimeOut: Int = Property.SerializedWriteLockTimeOut.get(sessionState.conf)
-
-  @transient
   private[sql] var tokenize: Boolean = Property.Tokenize.get(sessionState.conf)
 
   @transient
@@ -493,7 +490,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     // first acquire the global lock for putInto
     val (schemaName: String, _) =
       JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
-    val lockOption = if (sqlContext.snappySession.serializedWrites) {
+    val lockOption = if (Property.SerializeWrites.get(sessionState.conf)) {
       grabLock(table, schemaName, defaultConnectionProps)
     } else None
 
@@ -551,11 +548,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
   }
 
-
-
   private[sql] def clearWriteLockOnTable(): Unit = {
-    logInfo(s"cleanWriteLockOnTable for app ${sqlContext.sparkContext.appName}",
-      new Throwable("ClearWrite"))
     contextObjects.remove(SnappySession.BULKWRITE_LOCK) match {
       case null =>
       case lock => releaseLock(lock)
@@ -566,16 +559,24 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       connProperties: ConnectionProperties): Option[Any] = {
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
-        while (!SnappySession.executorAssigned) {
-          // Don't expect this case usually unless lots of applications are submitted in parallel
-          try {
-            Thread.sleep(100)
+        if (!sparkContext.isLocal) {
+          SnappyContext.resourceLock.synchronized {
+            while (!SnappyContext.executorAssigned) {
+              if (!SnappyContext.executorAssigned) {
+                try {
+                  SnappyContext.resourceLock.wait(100)
+                }
+                catch {
+                  case _: InterruptedException =>
+                    logWarning("Interrupted while waiting for executor.")
+                }
+              }
+              // Don't expect this case usually unless lots of
+              // applications are submitted in parallel
+              logDebug(s"grabLock waiting for resources to be " +
+                s"allocated ${SnappyContext.executorAssigned}")
+            }
           }
-          catch {
-            case _: InterruptedException => logWarning("Interrupted while waiting for executor.")
-          }
-          logDebug(s"grabLock waiting for resources to be " +
-            s"allocated ${SnappySession.executorAssigned}")
         }
         val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
           connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
@@ -589,7 +590,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
 
             val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?,?)")
             ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + table)
-            ps.setInt(2, serializedWriteLockTimeOut)
+            ps.setInt(2, Property.SerializedWriteLockTimeOut.get(sessionState.conf) * 1000)
             val rs = ps.executeQuery()
             rs.next()
             locked = rs.getBoolean(1)
@@ -599,11 +600,22 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
               s"app ${sqlContext.sparkContext.appName}")
           }
           catch {
-            case e: Throwable =>
-              logWarning("Got exception while taking lock", e)
+            case sqle: SQLException => {
+              logDebug("Got exception while taking lock", sqle)
+              if (sqle.getMessage.contains("Couldn't acquire lock")) {
+                throw sqle
+              } else {
+                if (retrycount == 2) {
+                  throw sqle
+                }
+              }
+            }
+            case e: Throwable => {
+              logDebug("Got exception while taking lock", e)
               if (retrycount == 2) {
                 throw e
               }
+            }
           }
           finally {
             retrycount = retrycount + 1
@@ -617,7 +629,7 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
           s"app ${sqlContext.sparkContext.appName}")
         val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
-        regionLock.lock(serializedWriteLockTimeOut * 1000)
+        regionLock.lock(Property.SerializedWriteLockTimeOut.get(sessionState.conf) * 1000)
         Some(regionLock)
     }
   }
@@ -2004,23 +2016,6 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     }
     (scalaTypeVal, SnappySession.getDataType(storeType, storePrecision, storeScale))
   }
-
-
-  SnappyContext.getClusterMode(_sc) match {
-    case ThinClientConnectorMode(_, _) => {
-      _sc.listenerBus.addListener(new AppSparkListener)
-    }
-    case _ => // Nothing to do
-  }
-}
-
-// A listener to let the session know if at least one executor has been
-// added to this application.
-private class AppSparkListener extends SparkListener with Logging {
-  override def onExecutorAdded(execList: SparkListenerExecutorAdded): Unit = {
-    logInfo(s"AppSparkListener: onExecutorAdded: added $execList")
-    SnappySession.executorAssigned = true
-  }
 }
 
 private class FinalizeSession(session: SnappySession)
@@ -2064,8 +2059,6 @@ object SnappySession extends Logging {
     GemFireVersion.getInstance(classOf[GemFireXDVersion], SharedUtils.GFXD_VERSION_PROPERTIES)
     GemFireVersion.isEnterpriseEdition
   }
-
-  var executorAssigned = false
 
   private lazy val aqpSessionStateClass: Option[Class[_]] = {
     if (isEnterpriseEdition) {

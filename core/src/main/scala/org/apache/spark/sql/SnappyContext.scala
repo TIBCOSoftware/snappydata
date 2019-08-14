@@ -22,6 +22,7 @@ import java.util.Map.Entry
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
 import java.util.function.Consumer
+
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
@@ -31,7 +32,6 @@ import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
 import scala.language.implicitConversions
 import scala.reflect.runtime.universe.TypeTag
-
 import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.Attribute
@@ -41,13 +41,12 @@ import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
 import io.snappydata.{Constant, Property, SnappyTableStatsProviderService}
-
 import org.apache.spark._
 import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
@@ -807,8 +806,11 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  @volatile private[sql] var executorAssigned = false
+
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
+  private[sql] val resourceLock = new AnyRef
 
   @GuardedBy("contextLock") private var hiveSession: SparkSession = _
 
@@ -1204,6 +1206,13 @@ object SnappyContext extends Logging {
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()
+    }
+    override def onExecutorAdded(execList: SparkListenerExecutorAdded): Unit = {
+      logDebug(s"SparkContextListener: onExecutorAdded: added $execList")
+      resourceLock.synchronized {
+        executorAssigned = true
+        resourceLock.notifyAll()
+      }
     }
   }
 
