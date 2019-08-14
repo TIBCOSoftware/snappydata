@@ -2106,6 +2106,17 @@ object SnappySession extends Logging {
     }
   }
 
+  private def handleCTAS(tableType: CatalogObjectType.Type): (Boolean, Boolean) = {
+    if (CatalogObjectType.isTableBackedByRegion(tableType)) {
+      if (tableType == CatalogObjectType.Sample) false -> true else true -> false
+    }
+    // most CTAS writers (FileFormatWriter, KafkaWriter) post their own plans for insert
+    // but it does not include SQL string or the top-level plan for ExecuteCommand
+    // so post the GUI plans but evaluate the toRdd outside else it will be nested
+    // withNewExecutionId() that will fail
+    else true -> true
+  }
+
   private def evaluatePlan(qe: QueryExecution, session: SnappySession, sqlShortText: String,
       sqlText: String, paramLiterals: Array[ParamLiteral], paramsId: Int): CachedDataFrame = {
     val (executedPlan, withFallback) = getExecutedPlan(qe.executedPlan)
@@ -2129,18 +2140,20 @@ object SnappySession extends Logging {
         val executionStr = replaceParamLiterals(origExecutionStr, paramLiterals, paramsId)
         val planInfo = PartitionedPhysicalScan.updatePlanInfo(origPlanInfo,
           paramLiterals, paramsId)
-        // different Command types will post their own plans in toRdd evaluation
-        val isCommand = executedPlan.isInstanceOf[ExecutedCommandExec]
-        var rdd = if (isCommand) qe.toRdd else null
         // don't post separate plan for CTAS since it already has posted one for the insert
-        val postGUIPlans = if (isCommand) executedPlan.asInstanceOf[ExecutedCommandExec].cmd match {
-          case c: CreateTableUsingCommand if c.query.isDefined && CatalogObjectType
-              .isTableBackedByRegion(SnappyContext.getProviderType(c.provider)) => false
-          case c: CreateDataSourceTableAsSelectCommand if CatalogObjectType.isTableBackedByRegion(
-            CatalogObjectType.getTableType(c.table)) => false
-          case _: SnappyCacheTableCommand => false
-          case _ => true
-        } else true
+        val (eagerToRDD, postGUIPlans) = executedPlan match {
+          case ExecutedCommandExec(c: CreateTableUsingCommand) if c.query.isDefined =>
+            handleCTAS(SnappyContext.getProviderType(c.provider))
+          case ExecutedCommandExec(c: CreateDataSourceTableAsSelectCommand) =>
+            handleCTAS(CatalogObjectType.getTableType(c.table))
+          case ExecutedCommandExec(c: SnappyCacheTableCommand) if !c.isLazy => true -> false
+          // other commands may have their own withNewExecutionId but still post GUI
+          // plans to see the command with proper SQL string in the GUI
+          case _: ExecutedCommandExec => true -> true
+          case _ => false -> true
+        }
+        var rdd = if (eagerToRDD) qe.toRdd else null
+
         // post final execution immediately (collect for these plans will post nothing)
         CachedDataFrame.withNewExecutionId(session, sqlShortText, sqlText, executionStr, planInfo,
           postGUIPlans = postGUIPlans) {
@@ -2149,7 +2162,7 @@ object SnappySession extends Logging {
           //   around the LogicalPlan and not the executedPlan; it works for plans using
           //   ExecutedCommandExec though because Spark layer has special check for it in
           //   Dataset hasSideEffects)
-          if (!isCommand) rdd = qe.toRdd
+          if (rdd eq null) rdd = qe.toRdd
           val newPlan = LogicalRDD(qe.analyzed.output, rdd)(session)
           val execution = session.sessionState.executePlan(newPlan)
           (null, execution, origExecutionStr, origPlanInfo, executionStr, planInfo,
