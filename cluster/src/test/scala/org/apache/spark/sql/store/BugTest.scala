@@ -1171,11 +1171,11 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   }
 
-  test("SNAP-3123: check for GUI plans") {
+  test("SNAP-3123: check for GUI plans and SNAP-3141: code gen failure") {
     // TODO: new SHA code generation fails for query below
     val session = snc.snappySession.newSession()
-    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = false")
-    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = false")
+    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = true")
+    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = true")
 
     val numRows = 1000000
     val sleepTime = 7000L
@@ -1203,19 +1203,4 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
         SQLMetrics.stringValue(numRowsMetric.metricType, numRows :: Nil))
   }
 
-  test("SNAP-3141: code gen failure") {
-    // TODO: new SHA code generation fails for query below
-    val session = snc.snappySession.newSession()
-    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = true")
-    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = true")
-
-    val numRows = 1000000
-
-    session.sql("create table test1 (id long, data string) using column " +
-      s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
-    val ds = session.sql(
-      "select avg(id) average, id % 10 from test1 group by id % 10 order by average")
-
-    ds.collect()
-  }
 }
