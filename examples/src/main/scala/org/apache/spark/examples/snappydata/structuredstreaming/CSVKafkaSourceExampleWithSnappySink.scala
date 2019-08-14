@@ -83,13 +83,14 @@ object CSVKafkaSourceExampleWithSnappySink extends Logging {
         StructField("address", addressSchema, nullable = false)
       ))
 
-      val df = snappy.readStream.
-          format("kafka").
-          option("kafka.bootstrap.servers", args(0)).
-          option("startingOffsets", "earliest").
-          option("subscribe", args(1)).
-          option("maxOffsetsPerTrigger", 100). // to restrict the batch size
-          load()
+      val df = snappy.readStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", args(0))
+          .option("startingOffsets", "earliest")
+          // more kafka consumer options can be provided here
+          .option("subscribe", args(1))
+          .option("maxOffsetsPerTrigger", 100) // to restrict the streaming batch size
+          .load()
 
       import snappy.implicits._
       val structDF = df.select("key", "value").as[(String, String)].map(s => {
@@ -98,14 +99,14 @@ object CSVKafkaSourceExampleWithSnappySink extends Logging {
         People(fields(0), fields(1).toInt, fields(2), fields(3), s._1)
       })
 
-      val streamingQuery = structDF.
-          writeStream.
-          format("snappysink").
-          queryName(this.getClass.getSimpleName). // must be unique across the Snappydata cluster
-          trigger(ProcessingTime("1 seconds")).
-          option("tableName", "people").
-          option("checkpointLocation", checkpointDirectory).
-          start()
+      val streamingQuery = structDF
+          .writeStream
+          .format("snappysink")
+          .queryName(this.getClass.getSimpleName) // must be unique across the Snappydata cluster
+          .trigger(ProcessingTime("1 seconds")) // streaming query trigger interval
+          .option("tableName", "people")    // name of the target table
+          .option("checkpointLocation", checkpointDirectory)
+          .start()
 
       println("Streaming started.")
       // Following line will make streaming query terminate after 15 seconds.

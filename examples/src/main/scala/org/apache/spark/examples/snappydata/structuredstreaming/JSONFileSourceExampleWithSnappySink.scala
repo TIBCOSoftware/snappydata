@@ -135,22 +135,23 @@ object JSONFileSourceExampleWithSnappySink extends SnappySQLJob with Logging {
   private def startStreaming(snappy: SnappySession, checkpointDirectory: String,
       inputDirectory: String) = {
     val schema = snappy.read.json(inputDirectory).schema
-    // Create DataFrame representing the stream of JSON
-    val jsonDF = snappy.readStream.
-        option("maxFilesPerTrigger", 1). // Controls number of files to be processed per batch
-        schema(schema).
-        json(inputDirectory)
 
-    val streamingQuery = jsonDF.
-        select("name", "age", "address.lane", "address.city", "address.district",
-          "address.state").
-        writeStream.
-        format("snappysink").
-        queryName("query1"). // must be unique across a snappydata cluster
-        trigger(ProcessingTime("1 seconds")).
-        option("tableName", "people").
-        option("checkpointLocation", checkpointDirectory).
-        start()
+    // Create DataFrame representing the stream of JSON
+    val jsonDF = snappy.readStream
+        .option("maxFilesPerTrigger", 1) // Controls number of files to be processed per batch
+        .schema(schema)
+        .json(inputDirectory)
+
+    val streamingQuery = jsonDF
+        .select("name", "age", "address.lane", "address.city", "address.district",
+          "address.state")
+        .writeStream
+        .format("snappysink")
+        .queryName("query1")       // must be unique across a snappydata cluster
+        .trigger(ProcessingTime("1 seconds")) // streaming query trigger interval
+        .option("tableName", "people")        // name of the target table
+        .option("checkpointLocation", checkpointDirectory)
+        .start()
 
     println("Streaming started.")
     streamingQuery

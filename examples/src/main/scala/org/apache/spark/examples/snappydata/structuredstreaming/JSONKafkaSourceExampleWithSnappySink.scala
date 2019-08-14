@@ -83,26 +83,27 @@ object JSONKafkaSourceExampleWithSnappySink extends Logging {
       ))
 
 
-      val df = snappy.readStream.
-          format("kafka").
-          option("kafka.bootstrap.servers", args(0)).
-          option("startingOffsets", "earliest").
-          option("subscribe", args(1)).
-          option("maxOffsetsPerTrigger", 100). // to restrict the batch size
-          load()
+      val df = snappy.readStream
+          .format("kafka")
+          .option("kafka.bootstrap.servers", args(0))
+          .option("startingOffsets", "earliest")
+          // more kafka consumer options can be provided here
+          .option("subscribe", args(1))
+          .option("maxOffsetsPerTrigger", 100) // to restrict the batch size
+          .load()
 
       import org.apache.spark.sql.functions.from_json
-      val streamingQuery = df.
-          select(from_json(df.col("key").cast("string"), keySchema).alias("key"),
-            from_json(df.col("value").cast("string"), valueSchema).alias("value")).
-          select("value.name", "value.age", "value.address.*", "key.country").
-          writeStream.
-          format("snappysink").
-          queryName(getClass.getSimpleName). // must be unique across the Snappydata cluster
-          trigger(ProcessingTime("1 seconds")).
-          option("tableName", "people").
-          option("checkpointLocation", checkpointDirectory).
-          start()
+      val streamingQuery = df
+          .select(from_json(df.col("key").cast("string"), keySchema).alias("key"),
+            from_json(df.col("value").cast("string"), valueSchema).alias("value"))
+          .select("value.name", "value.age", "value.address.*", "key.country")
+          .writeStream
+          .format("snappysink")
+          .queryName(getClass.getSimpleName)    // must be unique across the Snappydata cluster
+          .trigger(ProcessingTime("1 seconds")) // streaming query trigger interval
+          .option("tableName", "people")        // name of the target table
+          .option("checkpointLocation", checkpointDirectory)
+          .start()
 
       println("Streaming started.")
       // Following line will make streaming query terminate after 15 seconds.

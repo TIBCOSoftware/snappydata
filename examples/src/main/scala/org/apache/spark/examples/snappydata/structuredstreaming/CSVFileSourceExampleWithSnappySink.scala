@@ -72,8 +72,9 @@ object CSVFileSourceExampleWithSnappySink extends Logging {
           " city string, state string)")
 
       val schema = snappy.read.csv(inputDirectory).schema
+      // Create DataFrame representing the stream of CSV records
       val df = snappy.readStream
-          .option("maxFilesPerTrigger", 1) // Controls number of files to be processed per batch
+          .option("maxFilesPerTrigger", 1) // controls number of files to be processed per batch
           .schema(schema)
           .csv(inputDirectory)
 
@@ -81,8 +82,8 @@ object CSVFileSourceExampleWithSnappySink extends Logging {
           .writeStream
           .format("snappysink")
           .queryName(getClass.getSimpleName)  // must be unique across a snappydata cluster
-          .trigger(ProcessingTime("1 seconds"))
-          .option("tableName", "people")
+          .trigger(ProcessingTime("1 seconds")) // streaming query trigger interval
+          .option("tableName", "people")      // name of the target table
           .option("checkpointLocation", checkpointDirectory)
           .start()
 
