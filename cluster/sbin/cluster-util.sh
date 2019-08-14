@@ -35,7 +35,7 @@ bold=$(tput bold)
 normal=$(tput sgr0)
 space=
 usage() {
-  echo "${bold}Usage: ${normal}cluster-util.sh --on-locators|--on-servers|--on-leads|--on-all [-y] --copy-conf | --run '<cmd-to-run-on-selected-nodes>'"
+  echo "${bold}Usage: ${normal}cluster-util.sh (--on-locators|--on-servers|--on-leads|--on-all) [-y] (--copy-conf | --run \"<cmd-to-run-on-selected-nodes>\")"
   echo
   echo "${bold}Description${normal}"
   echo
@@ -43,19 +43,19 @@ usage() {
   echo -e ' \t '"The script relies on the entries you specify in locators, servers and leads files in conf directory to identify the members of the cluster."
   echo 
   echo -e ' \t '"--on-locators"   
-  echo -e ' \t ''\t'"Indicates the given command would be executed on locators."
+  echo -e ' \t ''\t'"If specified, the given command would be executed on locators."
   echo
   echo 
   echo -e ' \t '"--on-servers"   
-  echo -e ' \t ''\t'"Indicates the given command would be executed on servers."
+  echo -e ' \t ''\t'"If specified, the given command would be executed on servers."
   echo
   echo 
   echo -e ' \t '"--on-leads"   
-  echo -e ' \t ''\t'"Indicates the given command would be executed on leads."
+  echo -e ' \t ''\t'"If specified, the given command would be executed on leads."
   echo
   echo 
   echo -e ' \t '"--on-all"   
-  echo -e ' \t ''\t'"Indicates the given command would be executed on all members of cluster."
+  echo -e ' \t ''\t'"If specified, the given command would be executed on all member of the cluster."
   echo
   echo -e ' \t '"-y"
   echo -e ' \t ''\t'"If specified, the script doesn't ask for confirmation for execution of the command on each member node."
@@ -66,7 +66,7 @@ usage() {
   echo -e ' \t ''\t'"These files are copied only if a) these are absent in the destination member or b) their content is different. In "
   echo -e ' \t ''\t'"latter case, a backup of the file is taken in conf/backup directory on destination member, before copy."
   echo -e ' \t '"--run '<cmd-to-run-on-selected-nodes>'"
-  echo -e ' \t ''\t'"Will execute the given command on specified member type. Any argument after --run will be consider as command, its not getting validated."
+  echo -e ' \t ''\t'"Will execute the given command(s) on specified members. Command to be executed specified after --run must be in double-quotes."
   echo
   exit 1
 }
@@ -130,6 +130,7 @@ while [ "$1" != "" ]; do
     --on-all)
       MEMBER_LIST="all"
       MEMBER_TYPE="all"
+      rm /tmp/snappy-nodes.txt
       LOCATOR_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/locators | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
       echo $LOCATOR_LIST >> /tmp/snappy-nodes.txt
       SERVER_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/servers | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
@@ -154,7 +155,7 @@ done
 
 if [[ $COPY_CONF == 1 && $RUN == "true" ]]; then
   echo
-  echo "Invalid operation: Either execute --copy-conf or --run '<command>'"
+  echo "Invalid operation: Specify either '--copy-conf' or '--run \"<command>\"'"
   echo 
   usage
   exit
@@ -172,8 +173,6 @@ function copyConf() {
 	else
 	  backupDir="backup_"${START_ALL_TIMESTAMP}
 	  if [[ ! -z $(ssh $node "cat $entry" | diff - "$entry") ]] ; then
-	    #backupFileName=${fileName}_${START_ALL_TIMESTAMP}
-            echo "backup directory name: $backupDir"
 	    ssh "$node" "mkdir -p \"${SPARK_CONF_DIR}/$backupDir\" "
 	    ssh $node "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$fileName"
             echo "INFO:Copying $filename from this host to $node. Moved the original $filename on $node to $backupDir/$fileName."    
