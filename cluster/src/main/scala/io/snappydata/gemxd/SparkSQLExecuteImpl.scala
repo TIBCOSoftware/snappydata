@@ -478,28 +478,29 @@ object SparkSQLExecuteImpl {
 
 object SnappySessionPerConnection {
 
-  private val connectionIdMap =
+  private[this] val connectionIdMap =
     new java.util.concurrent.ConcurrentHashMap[java.lang.Long, SnappySession]()
 
   def getSnappySessionForConnection(connId: Long): SnappySession = {
-    val connectionID = Long.box(connId)
-    val session = connectionIdMap.get(connectionID)
-    if (session != null) session
-    else {
-      val session = SnappyContext.globalSparkContext match {
-        // use a CancelException to force failover by client to another lead if available
-        case null => throw new CacheClosedException("No SparkContext ...")
-        case sc => new SnappySession(sc)
-      }
-      Property.PlanCaching.set(session.sessionState.conf, true)
-      val oldSession = connectionIdMap.putIfAbsent(connectionID, session)
-      if (oldSession == null) session else oldSession
-    }
+    connectionIdMap.computeIfAbsent(Long.box(connId), CreateNewSession)
   }
 
   def getAllSessions: Seq[SnappySession] = connectionIdMap.values().asScala.toSeq
 
   def removeSnappySession(connectionID: java.lang.Long): Unit = {
-    connectionIdMap.remove(connectionID)
+    val session = connectionIdMap.remove(connectionID)
+    if (session ne null) session.clear()
+  }
+}
+
+object CreateNewSession extends java.util.function.Function[java.lang.Long, SnappySession] {
+  override def apply(connId: java.lang.Long): SnappySession = {
+    val session = SnappyContext.globalSparkContext match {
+      // use a CancelException to force failover by client to another lead if available
+      case null => throw new CacheClosedException("No SparkContext ...")
+      case sc => new SnappySession(sc)
+    }
+    Property.PlanCaching.set(session.sessionState.conf, true)
+    session
   }
 }
