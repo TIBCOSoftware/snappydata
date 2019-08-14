@@ -230,11 +230,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
         (1 to 2000).map(i => TestData(i, i.toString)))
 
       snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-
-
     }
 
     val putTasks = Array.fill(10)(doUpdate())
@@ -371,10 +366,6 @@ object ConcurrentOpsTests extends Assertions with Logging {
       val result = snc.sql("SELECT * FROM " + tableName)
       val r2 = result.collect
       assert(r2.length % 2000 == 0)
-
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
-      snc.sql(s"update ${tableName} set value='${Thread.currentThread().getId}'")
     }
 
     val doDelete = () => Future {

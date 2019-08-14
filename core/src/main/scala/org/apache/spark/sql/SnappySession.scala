@@ -610,14 +610,14 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
             // conn.close()
           }
         } while (!locked)
-        Some((conn, new TableIdentifier(table, Some(schemaName))))
+        Some(conn, new TableIdentifier(table, Some(schemaName)))
       case _ =>
         logDebug(s"Taking lock in " +
             s" ${Thread.currentThread().getId} and " +
           s"app ${sqlContext.sparkContext.appName}")
         val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
-        regionLock.lock(serializedWriteLockTimeOut)
+        regionLock.lock(serializedWriteLockTimeOut * 1000)
         Some(regionLock)
     }
   }
@@ -2053,8 +2053,6 @@ object SnappySession extends Logging {
   private[sql] val CACHED_PUTINTO_LOGICAL_PLAN = "cached_putinto_logical_plan"
   private[sql] val BULKWRITE_LOCK = "bulkwrite_lock"
   private[sql] val WRITE_LOCK_PREFIX = "BULKWRITE_"
-
-  private[sql] val DISABLE_TABLE_WRITE_LOCK = "DISABLE_TABLE_WRITE_LOCK"
 
   private val unresolvedStarRegex =
     """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
