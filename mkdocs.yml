@@ -212,6 +212,7 @@ pages:
         - 'REBALANCE_ALL_BUCKETS': 'reference/inbuilt_system_procedures/rebalance-all-buckets.md'
         - 'SET_CRITICAL_HEAP_PERCENTAGE': 'reference/inbuilt_system_procedures/set_critical_heap_percentage.md'
         - 'SET_TRACE_FLAG': 'reference/inbuilt_system_procedures/set-trace-flag.md'
+        - 'SYS.REMOVE_METASTORE_ENTRY': 'reference/inbuilt_system_procedures/sys_remove_metastore_entry.md'
         - 'DSID': 'reference/inbuilt_system_procedures/dsid.md'
     - 'System Tables': 'reference/system_tables/system_tables.md'
     - 'System Tables': 

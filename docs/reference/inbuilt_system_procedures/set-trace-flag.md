@@ -25,4 +25,7 @@ This command traces all JAR installation, update, and removal operations in the 
 snappy> call sys.set_trace_flag ('TraceJars', 'true');
 ```
 
+**Also see:**
+
+*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
 

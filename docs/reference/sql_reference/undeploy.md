@@ -15,9 +15,6 @@ undeploy <unique-alias-name>;
 
 The command removes the jars that are directly installed and the jars that are associated with a package, from the system. 
 
-!!!Note
-	The removal is only captured when you use the **undeploy** command,  the jars are removed only when the system restarts.
-
 
 ## Example 
 
@@ -25,7 +22,6 @@ The command removes the jars that are directly installed and the jars that are a
 ```
 undeploy spark_deep_learning_0_3_0; 
 ```
-
 
 
 **Related Topics**</br>

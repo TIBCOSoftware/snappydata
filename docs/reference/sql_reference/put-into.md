@@ -23,6 +23,8 @@ PUT INTO <schema name>.<table name2> SELECT * from <schema name>.<table name1> W
 
 PUT INTO <schema name>.<table name2> SELECT from <schema name>.<table name1> WHERE <column name>='<Value>'
 
+PUT INTO <schema name>.<table name> VALUES (V1, V2,... ,Vn);
+
 ```
 
 ### Examples
@@ -39,6 +41,10 @@ PUT INTO TRADE.NEWCUSTOMERS SELECT * from CUSTOMERS;
 PUT INTO TRADE.NEWCUSTOMERS SELECT * from CUSTOMERS WHERE C_NAME='User 1';
 
 PUT INTO TRADE.NEWCUSTOMERS SELECT from CUSTOMERS WHERE C_NAME='User 1';
+
+PUT INTO TRADE.CUSTOMERS VALUES (1, 'User 1', '2001-10-12', 'ComputeDB', 1);
+
+PUT INTO TRADE.CUSTOMERS (CID ,CUST_NAME , ADDR ,TID) VALUES (1, 'User 1' , 'ComputeDB', 1);
 
 ```
 !!! Warning

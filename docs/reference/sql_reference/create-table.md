@@ -272,7 +272,13 @@ With this alternate form of the CREATE TABLE statement, you specify the column n
 
 If no column names are specified for the new table, then all the columns in the result of the query expression are used to create same-named columns in the new table, of the corresponding data type(s). If one or more column names are specified for the new table, the same number of columns must be present in the result of the query expression; the data types of those columns are used for the corresponding columns of the new table.
 
-Note that only the column names and data types from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.
+!!!Note
+	Only the column names and data types from the queried table are used when creating the new table. Additional settings in the queried table, such as partitioning, replication, and persistence, are not duplicated. You can optionally specify partitioning, replication, and persistence configuration settings for the new table and those settings need not match the settings of the queried table.
+
+When you are creating a new table in TIBCO ComputeDB from another table, for example an external table, by using `CREATE TABLE ... AS SELECT * FROM ...` query and you find that the query fails with the message: `Syntax error or analysis exception: Table <schemaname.tablename> already exists ...`, it's likely due to insufficient memory on one of the servers and that the server is going down. 
+You may also see an entry for that table created when you run `show tables` command immediately after.
+This happens because some tasks pertaining to the query may be still running on another server(s). As soon as those tasks are completed, the table gets cleaned up as expected because the query failed.
+
 
 ### Example: Create Table using Spark DataFrame API
 
