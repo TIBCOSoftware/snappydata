@@ -1172,10 +1172,10 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
   }
 
   test("SNAP-3123: check for GUI plans") {
-    // TODO: [Asif] new SHA code generation fails for query below
+    // TODO: new SHA code generation fails for query below
     val session = snc.snappySession.newSession()
-    session.sql(s"set ${Property.UseOptimzedHashAggregate} = false")
-    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey} = false")
+    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = false")
+    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = false")
 
     val numRows = 1000000
     val sleepTime = 7000L
