@@ -22,5 +22,7 @@ This command sets the critical threshold for heap memory usage on the local TIBC
 ```pre
 snappy>call sys.set_critical_heap_percentage (99.9);
 ```
+**Also see:**
 
+*	[Built-in System Procedures and Built-in Functions](system-procedures.md)
 
