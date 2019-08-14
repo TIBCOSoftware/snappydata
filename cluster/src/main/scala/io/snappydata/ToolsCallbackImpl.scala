@@ -164,10 +164,22 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   }
 
   override def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit = {
-    if (ExecutorInitiator.snappyExecBackend != null) {
+    if (!jars.isEmpty && "__REMOVE_FILES_ONLY__" != jars.head
+        && ExecutorInitiator.snappyExecBackend != null) {
       val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
       snappyexecutor.removeJarsFromExecutorLoader(jars)
-    }
+    } else removeJarFiles(jars)
+  }
+
+  def removeJarFiles(jars: Array[String]): Unit = {
+    jars.foreach(name => {
+      val localName = name.split("/").last
+      val jarFile = new File(SparkFiles.getRootDirectory(), localName)
+      if (jarFile.exists()) {
+        jarFile.delete()
+        logDebug(s"Deleted jarFile $jarFile")
+      }
+    })
   }
 
   override def getAllGlobalCmnds: Array[String] = {
