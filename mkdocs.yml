@@ -21,21 +21,16 @@ pages:
     - 'Upgrading SnappyData': 'install/upgrade.md'
 - 'Getting Started': 'quickstart.md'
 - 'Getting Started': 
-    - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
     - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
     - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
     - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
+    - 'SnappyData Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
-    - 'SnappyData Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Structured Streaming': 'quickstart/structucture_streamingquickstart.md'
-- 'Configuring Cluster': 'configuration.md'
-- 'Configuring Cluster':
-    - 'Configure and Launch a SnappyData Cluster': 'configuring_cluster/configure_launch_cluster.md'
-    - 'Configure and Launch a Multi-node SnappyData Cluster': 'configuring_cluster/configure_launch_cluster_multinode.md'
-    - 'Configuring Cluster Components': 'configuring_cluster/configuring_cluster.md'
-    - 'List of Properties': 'configuring_cluster/property_description.md'
+- 'Configuring Cluster': 'configuring_cluster/configure_launch_cluster.md'    
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -46,6 +41,25 @@ pages:
 # 1.0 - 'Concepts': 'concepts.md'
 # 1.0 - 'Concepts': 
 # 1.0    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
+- 'Concepts': 'concepts.md'
+- 'Concepts':
+    - 'Core Components': 'architecture/core_components.md'
+    - 'Cluster Components': 'configuring_cluster/configuring_cluster.md'
+    - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'  
+    - 'Distributed Transactions': 'consistency/transactions_about.md'
+    - 'Distributed Transactions':
+        - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
+        - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
+    - 'Affinity Modes': 'deployment.md'
+    - 'Affinity Modes': 
+        - 'Local Mode': 'affinity_modes/local_mode.md'
+        - 'Embedded SnappyData Store Mode': 'affinity_modes/embedded_mode.md'
+        - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
+    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
+    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
+#    - 'List of Properties':    (to be updated later)
+#        - 'Property Details': 'configuring_cluster/property_details.md'
+    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a SnappyData Cluster': 'howto/start_snappy_cluster.md'
@@ -77,15 +91,6 @@ pages:
     - 'How to Connect Tableau to SnappyData': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with SnappyData': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the SnappyData Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
-- 'Architecture': 'architecture.md'
-- 'Architecture': 
-    - 'Core Components': 'architecture/core_components.md'
-    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
-    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'
-    - 'SnappyData Cluster Architecture': 'architecture/cluster_architecture.md'    
-#    - 'List of Properties':    (to be updated later)
-#        - 'Property Details': 'configuring_cluster/property_details.md'
-    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
     - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
@@ -101,15 +106,6 @@ pages:
     - 'Tables in SnappyData': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
-- 'Distributed Transactions': 'consistency/transactions_about.md'
-- 'Distributed Transactions':
-    - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
-    - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
-- 'Affinity Modes': 'deployment.md'
-- 'Affinity Modes': 
-    - 'Local Mode': 'affinity_modes/local_mode.md'
-    - 'Embedded SnappyData Store Mode': 'affinity_modes/embedded_mode.md'
-    - 'SnappyData Smart Connector Mode': 'affinity_modes/connector_mode.md'
 - 'Best Practices': 'best_practices.md'
 - 'Best Practices':
     - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
@@ -248,6 +244,7 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
+    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
