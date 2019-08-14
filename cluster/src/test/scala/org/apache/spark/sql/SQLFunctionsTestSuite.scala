@@ -41,7 +41,18 @@ class SQLFunctionsTestSuite extends SnappyFunSuite
 
   // scalastyle:off println
 
-  val sparkSession = SparkSession.builder().master("local[*]").getOrCreate()
+  /**
+   * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+   * and Property.UseOptimizedHashAggregateForSingleKey.name
+   * They are meant to suppress CodegenFallback Plan so that optimized
+   * byte buffer code path is tested & prevented from false passing.
+   * If your test needs CodegenFallback, then override the newConf function
+   * & clear the flag from the conf of the test locally.
+   */
+  val sparkSession = SparkSession.builder().
+    config(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
+    config(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true").
+    master("local[*]").getOrCreate()
   // snc.sql("set snappydata.sql.tokenize=true")
   // snc.sql("set snappydata.sql.planCaching=true")
 
