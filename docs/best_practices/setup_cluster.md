@@ -16,6 +16,8 @@ So, with multiple concurrent users, it is best to avoid running such Jobs using 
 !!! Note 
 	This above scheduling logic is applicable only when queries are fully managed by SnappyData cluster. When running your application using the smart connector, each task running in the Spark cluster directly accesses the store partitions.
 
+
+<a id="computenoscores"></a>
 ## Computing the Number of Cores for a Job
 
 Executing queries or code in SnappyData results in the creation of one or more Spark jobs. Each Spark job first calculates the number of partitions on the underlying dataset and a task is assigned and scheduled for each partition. 
