@@ -2096,9 +2096,9 @@ object SnappySession extends Logging {
       context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
+      val rdd = f
       clearExecutionProperties(localProperties)
       propertiesSet = false
-      val rdd = f
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
