@@ -26,56 +26,120 @@ sbin="$(dirname "$(absPath "$0")")"
 . "$sbin/snappy-config.sh"
 . "$sbin/spark-config.sh"
 
-SNAPPY_DIR="$SNAPPY_HOME"
+if [[ ! -d ${SNAPPY_HOME} ]]; then
+  echo "${SNAPPY_HOME} does not exist. Exiting ..."
+  exit 1
+fi
+
 bold=$(tput bold)
 normal=$(tput sgr0)
 space=
 usage() {
-  echo "${bold}Usage: ${normal}cluster-util.sh -on-locators|-on-servers|-on-leads|-on-all [-y] --run  -copyconf | <cmd-to-run-on-selected-nodes>"
+  echo "${bold}Usage: ${normal}cluster-util.sh --on-locators|--on-servers|--on-leads|--on-all [-y] --copy-conf | --run '<cmd-to-run-on-selected-nodes>'"
   echo
   echo "${bold}Description${normal}"
   echo
-  echo -e ' \t '"This is an experimental utility to execute a given command on selected members of the cluster."
+  echo -e ' \t '"This is an utility to execute a given command on selected members of the cluster."
   echo -e ' \t '"The script relies on the entries you specify in locators, servers and leads files in conf directory to identify the members of the cluster."
   echo 
-  echo -e ' \t '"-on-locators|-on-servers|-on-leads|-on-all"   
-  echo -e ' \t ''\t'"Indicates which members of the cluster the given command would be executed on."
+  echo -e ' \t '"--on-locators"   
+  echo -e ' \t ''\t'"Indicates the given command would be executed on locators."
+  echo
+  echo 
+  echo -e ' \t '"--on-servers"   
+  echo -e ' \t ''\t'"Indicates the given command would be executed on servers."
+  echo
+  echo 
+  echo -e ' \t '"--on-leads"   
+  echo -e ' \t ''\t'"Indicates the given command would be executed on leads."
+  echo
+  echo 
+  echo -e ' \t '"--on-all"   
+  echo -e ' \t ''\t'"Indicates the given command would be executed on all members of cluster."
   echo
   echo -e ' \t '"-y"
   echo -e ' \t ''\t'"If specified, the script doesn't ask for confirmation for execution of the command on each member node."
   echo
-  echo -e ' \t '"-copyconf"
-  echo -e ' \t ''\t'"This is a shortcut command with --run option which when specified copies log4j.properties, snappy-env.sh and "
+  echo -e ' \t '"--copy-conf"
+  echo -e ' \t ''\t'"This is a shortcut command which when specified copies log4j.properties, snappy-env.sh and "
   echo -e ' \t ''\t'"spark-env.sh configuration files from local machine to all the members."
   echo -e ' \t ''\t'"These files are copied only if a) these are absent in the destination member or b) their content is different. In "
   echo -e ' \t ''\t'"latter case, a backup of the file is taken in conf/backup directory on destination member, before copy."
-  echo -e ' \t '"<cmd-to-run-on-selected-nodes>"
-  echo -e ' \t ''\t'"Command"
+  echo -e ' \t '"--run '<cmd-to-run-on-selected-nodes>'"
+  echo -e ' \t ''\t'"Will execute the given command on specified member type. Any argument after --run will be consider as command, its not getting validated."
   echo
   exit 1
 }
 
-COMPONENT_TYPE=$1
-shift
-
-# Whether to apply the operation forcefully.
 ISFORCE=0
-if [ "$1" = "-y" ]; then
-  ISFORCE=1
-  shift
-fi
+SPARK_CONF_DIR=
+COPY_CONF=0
 
-if [[ "$#" < "2" ]]; then
-  usage
-fi
+MEMBER_LIST=
+MEMBER_TYPE=
 
-while :
-do
+COMMAND=
+
+while [ "$1" != "" ]; do
+
   case $1 in
     --run)
       RUN="true"
+      COMMAND="$2"
       shift
-      break
+      ;;
+    --copy-conf)
+      COPY_CONF=1
+      SPARK_CONF_DIR=$SNAPPY_HOME/conf/
+      shift
+      ;; 
+    -y)
+      ISFORCE=1
+      shift
+      ;;
+    --on-locators)
+      if [[ ! -e $SNAPPY_HOME/conf/locators ]]; then
+        echo "${SNAPPY_HOME}/conf/locators does not exist. Exiting ..."
+        exit 2
+      fi
+      LOCATOR_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/locators | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
+      MEMBER_LIST=$LOCATOR_LIST
+      MEMBER_TYPE="locator"
+      shift
+      ;;
+    --on-servers)
+      if [[ ! -e $SNAPPY_HOME/conf/servers ]]; then
+        echo "${SNAPPY_HOME}/conf/servers does not exist. Exiting ..."
+        exit 3
+      fi
+      SERVER_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/servers | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
+      MEMBER_LIST=$SERVER_LIST
+      MEMBER_TYPE="server"
+      shift
+      ;;
+    --on-leads)
+      if [[ ! -e $SNAPPY_HOME/conf/leads ]]; then
+        echo "${SNAPPY_HOME}/conf/leads does not exist. Exiting ..."
+        exit 4
+      fi
+      LEAD_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/leads | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
+      MEMBER_LIST=$LEAD_LIST
+      MEMBER_TYPE="lead"
+      shift
+      ;;
+    --on-all)
+      MEMBER_LIST="all"
+      MEMBER_TYPE="all"
+      LOCATOR_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/locators | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
+      echo $LOCATOR_LIST >> /tmp/snappy-nodes.txt
+      SERVER_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/servers | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
+      echo $SERVER_LIST >> /tmp/snappy-nodes.txt
+      LEAD_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/leads | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
+      echo $LEAD_LIST >> /tmp/snappy-nodes.txt
+      #cat /tmp/snappy-nodes.txt
+      ALL_MEMBER_LIST=$(awk '!seen[$0]++' /tmp/snappy-nodes.txt) 
+      rm /tmp/snappy-nodes.txt
+      shift
       ;;
     -*)
       echo "ERROR: Unknown option: $1" >&2
@@ -85,67 +149,16 @@ do
     *) # End of options
       break
       ;;
-  esac
+  esac 
 done
 
-#whether user wants to perform copy configuration files operation only
-COPY_CONF=0
-SPARK_CONF_DIR=
-if [ "$1" = "-copyconf" ]; then
-  COPY_CONF=1
-  SPARK_CONF_DIR=$SNAPPY_HOME/conf/
-  shift
+if [[ $COPY_CONF == 1 && $RUN == "true" ]]; then
+  echo
+  echo "Invalid operation: Either execute --copy-conf or --run '<command>'"
+  echo 
+  usage
+  exit
 fi
-
-if [[ ! -d ${SNAPPY_DIR} ]]; then
-  echo "${SNAPPY_DIR} does not exist. Exiting ..."
-  exit 1
-fi
-
-if [[ ! -e $SNAPPY_DIR/conf/servers ]]; then
-  echo "${SNAPPY_DIR}/conf/servers does not exist. Exiting ..."
-  exit 2
-fi
-
-if [[ ! -e $SNAPPY_DIR/conf/leads ]]; then
-  echo "${SNAPPY_DIR}/conf/leads does not exist. Exiting ..."
-  exit 3
-fi
-
-if [[ ! -e $SNAPPY_DIR/conf/locators ]]; then
-  echo "${SNAPPY_DIR}/conf/locators does not exist. Exiting ..."
-  exit 2
-fi
-
-SERVER_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_DIR/conf/servers | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }')
-
-LEAD_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_DIR/conf/leads | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }')
-
-LOCATOR_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_DIR/conf/locators | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }')
-
-MEMBER_LIST=
-MEMBER_TYPE=
-case $COMPONENT_TYPE in
-
-  (-on-locators)
-    MEMBER_LIST=$LOCATOR_LIST
-    MEMBER_TYPE="locator"
-    ;;
-
-  (-on-servers)
-    MEMBER_LIST=$SERVER_LIST
-    MEMBER_TYPE="server"
-    ;;
-  (-on-leads)
-    MEMBER_LIST=$LEAD_LIST
-    MEMBER_TYPE="lead"
-    ;;
-  (-on-all)
-    MEMBER_LIST="all"
-    MEMBER_TYPE="all"
-    ;;
-esac
-
 
 START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
 
@@ -157,12 +170,13 @@ function copyConf() {
 	if ! ssh $node "test -e $entry"; then #"File does not exist."
 	  scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
 	else
-	  backupDir="backup"
+	  backupDir="backup_"${START_ALL_TIMESTAMP}
 	  if [[ ! -z $(ssh $node "cat $entry" | diff - "$entry") ]] ; then
-	    backupFileName=${fileName}_${START_ALL_TIMESTAMP}
-	    (ssh "$node" "mkdir -p \"${SPARK_CONF_DIR}/$backupDir\" ")
-	    ssh $node "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$backupFileName"
-            echo "INFO:Copying $filename from this host to $node. Moved the original $filename on $node to $backupFileName."    
+	    #backupFileName=${fileName}_${START_ALL_TIMESTAMP}
+            echo "backup directory name: $backupDir"
+	    ssh "$node" "mkdir -p \"${SPARK_CONF_DIR}/$backupDir\" "
+	    ssh $node "mv ${SPARK_CONF_DIR}/$fileName ${SPARK_CONF_DIR}/$backupDir/$fileName"
+            echo "INFO:Copying $filename from this host to $node. Moved the original $filename on $node to $backupDir/$fileName."    
 	    scp ${SPARK_CONF_DIR}/$fileName  $node:${SPARK_CONF_DIR}
 	  fi
         fi
@@ -175,43 +189,44 @@ function executeCommand() {
   echo
   echo "--------- Executing $@ on $MEMBER_TYPE $node ----------"
   echo 
-  if [[ $ISFORCE -eq 0 ]];then
+  if [[ $ISFORCE -eq 0 ]]; then
     read -p "Are you sure to run $@ on $MEMBER_TYPE $node (y/n)? " userinput
     echo 
     if [[ $userinput == "y" || $userinput == "yes" || $userinput == "Y" || $userinput == "YES" ]]; then
-      if [[ $COPY_CONF = 1 ]]; then
+      if [[ $COPY_CONF == 1 ]]; then
         copyConf "$@"
+      elif [[ $RUN == "true" ]]; then
+        ssh $node "$COMMAND | column"
       else
-        ssh $node "$@ | column"
+        echo "Invalid operation"
+        echo
+        usage
+        exit
       fi     
     fi
   else
-    if [[ $COPY_CONF = 1 ]]; then
+    if [[ $COPY_CONF == 1 ]]; then
       copyConf "$@"
+    elif [[ $RUN == "true" ]]; then
+      ssh $node "$COMMAND | column"
     else
-      ssh $node "$@ | column"
-    fi  
-  fi
+      echo "Invalid operation"
+      echo
+      usage
+      exit
+    fi   
+  fi #end if ISFORCE
 }
 
-if [[ $RUN = "true" ]]; then
-  if [[ $MEMBER_LIST != "all" ]]; then
-    for node in $MEMBER_LIST; do
-      executeCommand "$@"
-    done
-  else
-    for node in $SERVER_LIST; do
-      MEMBER_TYPE="server"
-      executeCommand "$@"
-    done
-    for node in $LEAD_LIST; do
-      MEMBER_TYPE="lead"
-      executeCommand "$@"
-    done
-    for node in $LOCATOR_LIST; do
-      MEMBER_TYPE="locator"
-      executeCommand "$@"
-    done
-  fi
+
+if [[ $MEMBER_LIST != "all" ]]; then
+  for node in $MEMBER_LIST; do
+    executeCommand "$@"
+  done
+else
+  for node in $ALL_MEMBER_LIST; do
+    executeCommand "$@"
+  done
 fi
+
 
