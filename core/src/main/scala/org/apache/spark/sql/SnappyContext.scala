@@ -609,11 +609,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   /**
    * Set current database/schema.
    *
-   * @param schemaName        schema name which goes in the catalog
-   * @param createIfNotExists create the schema if it does not exist
+   * @param schemaName schema name which goes in the catalog
    */
-  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
-    snappySession.setCurrentSchema(schemaName, createIfNotExists)
+  def setCurrentSchema(schemaName: String): Unit = {
+    snappySession.setCurrentSchema(schemaName)
   }
 
   /**

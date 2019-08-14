@@ -111,6 +111,7 @@ class SnappyConf(@transient val session: SnappySession)
          Property.TestExplodeComplexDataTypeInSHA.name =>
       session.clearPlanCache()
       key
+
     case SQLConf.SHUFFLE_PARTITIONS.key =>
       // stop dynamic determination of shuffle partitions
       if (doSet) {
@@ -121,6 +122,7 @@ class SnappyConf(@transient val session: SnappySession)
       }
       session.clearPlanCache()
       key
+
     case Property.SchedulerPool.name =>
       schedulerPool = value match {
         case None => Property.SchedulerPool.defaultValue.get
@@ -140,10 +142,11 @@ class SnappyConf(@transient val session: SnappySession)
     case Property.PlanCaching.name =>
       value match {
         case Some(boolVal) =>
-          if (boolVal.toString.toBoolean) {
+          val b = boolVal.toString.toBoolean
+          if (b) {
             session.clearPlanCache()
           }
-          session.planCaching = boolVal.toString.toBoolean
+          session.planCaching = b
         case None => session.planCaching = Property.PlanCaching.defaultValue.get
       }
       key

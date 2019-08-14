@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,58 +14,55 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
-package org.apache.spark.examples.snappydata
+package org.apache.spark.examples.snappydata.structuredstreaming
 
 import org.apache.log4j.{Level, Logger}
 
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
-import scala.language.postfixOps
-import scala.reflect.io.Path
 
 /**
- * An example showing CDC usage with SnappyData structured streaming
+ * An example showing usage of structured streaming with console sink.
  *
- * <p></p>
- * To run the example in local mode go to your SnappyData product distribution
- * directory and type following command on the command prompt
- * <pre>
- * bin/run-example snappydata.StructuredStreamingCDCExample
- * </pre>
- * <p></p>
- * To run this on your local machine, you need to first run a Netcat server <br>
+ * To run this example on your local machine, you need to first start a Netcat server: <br>
  * `$ nc -lk 9999`
  * <p>
  * Sample input data:
- * {{{
- * 1,user1,23,0
- * 2,user2,45,0
- * 1,user1,23,2
- * 2,user2,46,1
- * }}}
+ * <pre>
+ * device1,45
+ * device2,67
+ * device3,35
+ * </pre>
+ *
+ * To run the example in local mode go to your SnappyData product distribution
+ * directory and run the following command:
+ * <pre>
+ * bin/run-example snappydata.structuredstreaming.SocketSourceExample
+ * </pre>
+ *
+ * For more details on streaming with SnappyData refer to:
+ * http://snappydatainc.github.io/snappydata/programming_guide
+ * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
-object StructuredStreamingCDCExample{
+// scalastyle:off println
+object SocketSourceExample {
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    println("Initializing a SnappySesion")
-    val checkpointDirectory = "/tmp/StructuredStreamingCDCExample"
+    println("Initializing SnappySession ... ")
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)
         .master("local[*]")
         .getOrCreate()
-
+    println("Initializing SnappySession ... Done.")
     import spark.implicits._
+
     val snappy = new SnappySession(spark.sparkContext)
-
-
-    snappy.sql("create table users (id long , name varchar(40), age int) using column options(key_columns 'id')")
 
     // Create DataFrame representing the stream of input lines from connection to host:port
     val socketDF = snappy
@@ -75,36 +72,26 @@ object StructuredStreamingCDCExample{
         .option("port", 9999)
         .load()
 
-    // Creating a typed User from raw string received on socket.
+    // Creating a typed DeviceData from raw string received on socket.
     val structDF = socketDF.as[String].map(s => {
       val fields = s.split(",")
-      User(fields(0).toLong, fields(1), fields(2).toInt, fields(3).toInt)
+      DeviceData(fields(0), fields(1).toInt)
     })
 
-    // A simple streaming query to filter users by their age and load the data in users table
+    // A simple streaming query to filter signal value and show the output on console.
     val streamingQuery = structDF
-        .filter( _.age >= 12)
+        .filter(_.signal > 10)
         .writeStream
-        .format("snappysink")
+        .format("console")
         .outputMode("append")
-        .queryName("users")       // must be unique across the Snappydata cluster
         .trigger(ProcessingTime("1 seconds"))
-        .option("tableName", "users")
-        .option("checkpointLocation", checkpointDirectory)
         .start()
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
-    snappy.sql("select * from users").show()
-
-    snappy.sql("drop table users")
-
-    // CAUTION: recursively deleting directory
-    Path(checkpointDirectory).deleteRecursively()
+    streamingQuery.awaitTermination(15000)
 
     println("Exiting")
     System.exit(0)
   }
+
+  case class DeviceData(device: String, signal: Int)
 }
-
-case class User(is: Long, name: String, age: Int, _eventType: Int)
-

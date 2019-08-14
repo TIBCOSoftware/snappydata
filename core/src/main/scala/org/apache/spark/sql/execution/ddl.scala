@@ -345,7 +345,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
             // while avoiding creation of any new SparkPlan.
-            (memoryPlan.cachedColumnBuffers.count(), System.nanoTime() - start)
+            val count = memoryPlan.cachedColumnBuffers.count()
+            (count, System.nanoTime() - start)
           }))._1) :: Nil
       } finally {
         if (previousJobDescription ne null) {

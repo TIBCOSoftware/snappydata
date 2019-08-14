@@ -32,6 +32,8 @@ import org.scalatest.BeforeAndAfterAll
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -1167,5 +1169,37 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
       "results of prepared and unprepared statements do not match")
     // scalastyle:on println
 
+  }
+
+  test("SNAP-3123: check for GUI plans") {
+    // TODO: new SHA code generation fails for query below
+    val session = snc.snappySession.newSession()
+    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = false")
+    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = false")
+
+    val numRows = 1000000
+    val sleepTime = 7000L
+    session.sql("create table test1 (id long, data string) using column " +
+        s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
+    val ds = session.sql(
+      "select avg(id) average, id % 10 from test1 group by id % 10 order by average")
+    Thread.sleep(sleepTime)
+    ds.collect()
+
+    // check UI timings and plan details
+    val listener = ExternalStoreUtils.getSQLListener.get
+    // last one should be the query above
+    val queryUIData = listener.getCompletedExecutions.last
+    val duration = queryUIData.completionTime.get - queryUIData.submissionTime
+    // never expect the query above to take more than 7 secs
+    assert(duration > 0L)
+    assert(duration < sleepTime)
+    assert(queryUIData.succeededJobs.length === 2)
+
+    val metrics = listener.getExecutionMetrics(queryUIData.executionId)
+    val scanNode = queryUIData.physicalPlanGraph.allNodes.find(_.name == "ColumnTableScan").get
+    val numRowsMetric = scanNode.metrics.find(_.name == "number of output rows").get
+    assert(metrics(numRowsMetric.accumulatorId) ===
+        SQLMetrics.stringValue(numRowsMetric.metricType, numRows :: Nil))
   }
 }

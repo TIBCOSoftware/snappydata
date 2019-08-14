@@ -21,7 +21,7 @@ import java.sql.{Connection, DriverManager, PreparedStatement, ResultSet, SQLExc
 import com.pivotal.gemfirexd.TestUtil
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import io.snappydata.{SnappyFunSuite, SnappyTableStatsProviderService}
-import org.scalatest.BeforeAndAfterAll
+import org.scalatest.{Assertions, BeforeAndAfterAll}
 
 import org.apache.spark.sql.{SnappyContext, SnappySession}
 import org.apache.spark.{Logging, SparkConf}
@@ -38,8 +38,18 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       * Change of 'n' will influence results if they are dependent on weights - derived
       * from hidden column in sample table.
       */
+    /**
+     * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+     * and Property.UseOptimizedHashAggregateForSingleKey.name
+     * They are meant to suppress CodegenFallback Plan so that optimized
+     * byte buffer code path is tested & prevented from false passing.
+     * If your test needs CodegenFallback, then override the newConf function
+     * & clear the flag from the conf of the test locally.
+     */
     new org.apache.spark.SparkConf().setAppName("PreparedQueryRoutingSingleNodeSuite")
-        .setMaster("local[6]")
+        .setMaster("local[6]").
+      set(io.snappydata.Property.TestDisableCodeGenFlag.name, "true").
+      set(io.snappydata.Property.UseOptimizedHashAggregateForSingleKey.name, "true")
         // .set("spark.logConf", "true")
         // .set("mcast-port", "4958")
   }
@@ -326,13 +336,13 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(2, 300)
       prepStatement.setInt(3, 200)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query2-1", prepStatement.executeQuery,
-        Array(400, 200, 300), 2)
+        Array(400, 200, 300), 1)
 
       prepStatement.setInt(1, 600)
       prepStatement.setInt(2, 800)
       prepStatement.setInt(3, 700)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query2-2", prepStatement.executeQuery,
-        Array(600, 700, 800), 2)
+        Array(600, 700, 800), 1)
 
       // Thread.sleep(1000000)
     } finally {
@@ -362,14 +372,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 400)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query3-1", prepStatement.executeQuery,
-        Array(200, 400), 3)
+        Array(200, 400), 1)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 700)
       prepStatement.setInt(3, 600)
       prepStatement.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query3-2", prepStatement.executeQuery,
-        Array(600, 800), 3)
+        Array(600, 800), 1)
 
       // Thread.sleep(1000000)
     } finally {
@@ -400,14 +410,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 400)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query4-1", prepStatement.executeQuery,
-        Array(100, 200, 300, 400), 4)
+        Array(100, 200, 300, 400), 1)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
       prepStatement.setInt(3, 700)
       prepStatement.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query4-2", prepStatement.executeQuery,
-        Array(900, 600, 700, 800), 4)
+        Array(900, 600, 700, 800), 1)
 
       // Thread.sleep(1000000)
     } finally {
@@ -439,14 +449,14 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
       prepStatement.setInt(3, 200)
       prepStatement.setInt(4, 300)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query5-1", prepStatement.executeQuery,
-        Array(100, 200, 300), 4)
+        Array(100, 200, 300), 0)
 
       prepStatement.setInt(1, 900)
       prepStatement.setInt(2, 600)
       prepStatement.setInt(3, 700)
       prepStatement.setInt(4, 800)
       PreparedQueryRoutingSingleNodeSuite.verifyResults("query5-2", prepStatement.executeQuery,
-        Array(600, 700, 800), 4)
+        Array(600, 700, 800), 0)
 
       // Thread.sleep(1000000)
     } finally {
@@ -1109,7 +1119,7 @@ class PreparedQueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndA
   }
 }
 
-object PreparedQueryRoutingSingleNodeSuite extends Logging {
+object PreparedQueryRoutingSingleNodeSuite extends Assertions with Logging {
 
   def insertRows(tableName: String, numRows: Int, serverHostPort: String): Unit = {
 
@@ -1144,7 +1154,6 @@ object PreparedQueryRoutingSingleNodeSuite extends Logging {
   def verifyResults(qry: String, rs: ResultSet, results: Array[Int],
       cacheMapSize: Int): Unit = {
     val cacheMap = SnappySession.getPlanCache.asMap()
-
     var index = 0
     while (rs.next()) {
       val i = rs.getInt(1)
@@ -1159,8 +1168,12 @@ object PreparedQueryRoutingSingleNodeSuite extends Logging {
     assert(index == results.length)
     rs.close()
 
+    // for dunit tests, connection close will happen in background so need to retry this
+    for (i <- 0 until 100 if cacheMap.size() != cacheMapSize && -1 != cacheMapSize) {
+      Thread.sleep(100)
+    }
     logInfo(s"cachemapsize = $cacheMapSize and .size = ${cacheMap.size()}")
-    assert( cacheMap.size() == cacheMapSize || -1 == cacheMapSize)
+    assert(cacheMap.size() == cacheMapSize || -1 == cacheMapSize)
   }
 
   def update_delete_query1(tableName1: String, cacheMapSize: Int, serverHostPort: String): Unit = {
@@ -1306,9 +1319,9 @@ object PreparedQueryRoutingSingleNodeSuite extends Logging {
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
       update_delete_query1(tableName1, 1, serverHostPort)
-      update_delete_query1(tableName2, 3, serverHostPort)
-      update_delete_query2(tableName1, 5, serverHostPort)
-      update_delete_query2(tableName2, 6, serverHostPort)
+      update_delete_query1(tableName2, 1, serverHostPort)
+      update_delete_query2(tableName1, 1, serverHostPort)
+      update_delete_query2(tableName2, 1, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
@@ -1395,7 +1408,7 @@ object PreparedQueryRoutingSingleNodeSuite extends Logging {
       insertRows(tableName1, 1000, serverHostPort)
       insertRows(tableName2, 1000, serverHostPort)
       equalityOnStringColumn_query1(tableName1, 1, serverHostPort)
-      equalityOnStringColumn_query1(tableName2, 4, serverHostPort)
+      equalityOnStringColumn_query1(tableName2, 1, serverHostPort)
     } finally {
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }
