@@ -63,7 +63,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
-import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
+import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
@@ -2141,7 +2141,7 @@ object SnappySession extends Logging {
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
     setExecutionProperties(localProperties, executionIdStr, sqlText)
-    var propertiesSet = true
+    var success = false
     val start = System.currentTimeMillis()
     try {
       // get below two with original "ParamLiteral(" tokens that will be replaced
@@ -2156,12 +2156,19 @@ object SnappySession extends Logging {
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
       val rdd = f
-      clearExecutionProperties(localProperties)
-      propertiesSet = false
+      success = true
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
-      if (propertiesSet) clearExecutionProperties(localProperties)
+      clearExecutionProperties(localProperties)
+      if (success) {
+        // post the end of "plan" phase which will remove this execution from active list
+        context.listenerBus.post(SparkListenerSQLPlanExecutionEnd(executionId))
+      } else {
+        // post the end of SQL since body of `f` failed
+        context.listenerBus.post(SparkListenerSQLExecutionEnd(
+          executionId, System.currentTimeMillis()))
+      }
     }
   }
 
