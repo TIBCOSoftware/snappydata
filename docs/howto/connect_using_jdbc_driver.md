@@ -87,7 +87,7 @@ preparedStmt1.close()
 !!! Note 
 	If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.
 
-
+<!---
 <a id="jdbcpooldriverconnect"></a>
 ## Connecting with JDBC Client Pool Driver
 
@@ -150,3 +150,4 @@ If you set any of the following properties for a pooled connection, it gets auto
 
 However, if you have set any of the other properties (e.g. spark or snappy AQP related properties), it does not get auto-reset when you obtain a new pooled connection.
 
+--->

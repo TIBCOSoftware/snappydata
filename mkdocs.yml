@@ -1,4 +1,4 @@
-site_name: 1.1.0
+site_name: 1.1.1
 site_url: http://www.snappydata.io
 site_description: Product documentation for TIBCO ComputeDB™
 site_author: TIBCO ComputeDB™ Team
@@ -13,23 +13,24 @@ pages:
 - 'Provisioning TIBCO ComputeDB': 'install.md'
 - 'Provisioning TIBCO ComputeDB':
     - 'System Requirements': 'install/system_requirements.md'
-    - 'On-Premise': 'install/install_on_premise.md'
-    - 'Amazon Web Services (AWS)': 'install/setting_up_cluster_on_amazon_web_services.md'
-    - 'Kubernetes': 'kubernetes.md'
-    - 'Docker': 'quickstart/getting_started_with_docker_image.md'
-    - 'Building from Source': 'install/building_from_source.md'
-    - 'Upgrade Instructions': 'install/upgrade.md'
-- 'Getting Started in 5 minutes or Less': 'quickstart.md'
-- 'Getting Started in 5 minutes or Less': 
-    - 'Getting Started with your Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
-    - 'Getting Started with TIBCO ComputeDB On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
-    - 'Getting Started with TIBCO ComputeDB on Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
-    - 'Getting Started with TIBCO ComputeDB on Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Installing TIBCO ComputeDB On-Premise': 'install/install_on_premise.md'
+    - 'Setup TIBCO ComputeDB Cluster on AWS': 'install/setting_up_cluster_on_amazon_web_services.md'
+    - 'Setup TIBCO ComputeDB Cluster on Kubernetes': 'kubernetes.md'
+    - 'Building a Docker Image with TIBCO ComputeDB Binaries': 'quickstart/getting_started_with_docker_image.md'
+    - 'Building TIBCO ComputeDB from Source files': 'install/building_from_source.md'
+    - 'Upgrading TIBCO ComputeDB': 'install/upgrade.md'
+- 'Getting Started': 'quickstart.md'
+- 'Getting Started': 
+    - 'On-Premise': 'quickstart/getting_started_by_installing_snappydata_on-premise.md'
+    - 'Kubernetes': 'quickstart/getting_started_on_kubernetes.md'
+    - 'Docker Image': 'quickstart/getting_started_with_docker_image.md'
+    - 'Spark Distribution': 'quickstart/getting_started_with_your_spark_distribution.md'
+    - 'TIBCO ComputeDB Quickstart Guide': 'quickstart/snappydataquick_start.md'
     - 'Using Spark Scala APIs': 'quickstart/using_spark_scala_apis.md'
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
-    - 'Create TIBCO ComputeDB Cluster': 'quickstart/snappydataquick_start.md'
     - 'Structured Streaming': 'quickstart/structucture_streamingquickstart.md'
+- 'Configuring Cluster': 'configuring_cluster/configure_launch_cluster.md'    
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -40,6 +41,25 @@ pages:
 # 1.0 - 'Concepts': 'concepts.md'
 # 1.0 - 'Concepts': 
 # 1.0    - 'Detecting and Handling Network Segmentation ("Split Brain")': 'concepts/network_partition.md'
+- 'Concepts': 'install/concepts.md'
+- 'Concepts':
+    - 'Core Components': 'architecture/core_components.md'
+    - 'Cluster Components': 'configuring_cluster/configuring_cluster.md'
+    - 'TIBCO ComputeDB Cluster Architecture': 'architecture/cluster_architecture.md'  
+    - 'Distributed Transactions': 'consistency/transactions_about.md'
+    - 'Distributed Transactions':
+        - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
+        - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
+    - 'Affinity Modes': 'deployment.md'
+    - 'Affinity Modes': 
+        - 'Local Mode': 'affinity_modes/local_mode.md'
+        - 'Embedded TIBCO ComputeDB Store Mode': 'affinity_modes/embedded_mode.md'
+        - 'TIBCO ComputeDB Smart Connector Mode': 'affinity_modes/connector_mode.md'
+    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
+    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'  
+#    - 'List of Properties':    (to be updated later)
+#        - 'Property Details': 'configuring_cluster/property_details.md'
+    - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'How Tos': 'howto.md'
 - 'How Tos': 
     - 'How to Start a TIBCO ComputeDB Cluster': 'howto/start_snappy_cluster.md'
@@ -72,16 +92,6 @@ pages:
     - 'How to Connect Tableau to TIBCO ComputeDB': 'howto/tableauconnect.md' 
     - 'How to Use Apache Zeppelin with TIBCO ComputeDB': 'howto/use_apache_zeppelin_with_snappydata.md'
     - 'How to Configure Apache Zeppelin to Securely and Concurrently access the TIBCO ComputeDB Cluster': 'howto/concurrent_apache_zeppelin_access_to_secure_snappydata.md'
-- 'Architecture': 'architecture.md'
-- 'Architecture': 
-    - 'Core Components': 'architecture/core_components.md'
-    - 'Data Ingestion Pipeline': 'architecture/data_ingestion_pipeline.md'
-    - 'Hybrid Cluster Manager': 'architecture/hybrid_cluster_manager.md'
-    - 'TIBCO ComputeDB Cluster Architecture': 'architecture/cluster_architecture.md'    
-- 'Configuring the Cluster': 'configuration.md'
-- 'Configuring the Cluster':
-    - 'Configuration': 'configuring_cluster/configuring_cluster.md'
-    - 'List of Properties': 'configuring_cluster/property_description.md'
 #    - 'List of Properties':    (to be updated later)
 #        - 'Property Details': 'configuring_cluster/property_details.md'
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
@@ -246,10 +256,12 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
+    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
         - 'ack-wait-threshold': 'reference/configuration_parameters/ack-wait-threshold.md'
+        - 'allow-explicit-commit': 'reference/configuration_parameters/allow-explicit-commit.md'
         - 'archive-disk-space-limit': 'reference/configuration_parameters/archive-disk-space-limit.md'
         - 'archive-file-size-limit': 'reference/configuration_parameters/archive-file-size-limit.md'
         - 'bind-address': 'reference/configuration_parameters/bind-address.md'
@@ -302,6 +314,7 @@ pages:
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
     - 'TIBCO ComputeDB Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
+    - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up TIBCO ComputeDB ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'
