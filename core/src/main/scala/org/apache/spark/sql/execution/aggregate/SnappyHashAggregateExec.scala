@@ -1157,6 +1157,7 @@ case class SnappyHashAggregateExec(
       }
     }
 
+    val evaluatedInputCode = evaluateVariables(input)
     ctx.currentVars = input
     val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
@@ -1174,7 +1175,7 @@ case class SnappyHashAggregateExec(
     // to be materialized explicitly for the dictionary optimization case (AQP-292)
     val updateAttrs = AttributeSet(updateExpr)
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
-    val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, input,
+    val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, evaluatedInputCode,
       keysExpr, keysDataType, aggBuffDataTypes)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
@@ -1234,6 +1235,7 @@ case class SnappyHashAggregateExec(
        |
        |// evaluate aggregate functions
        |${evaluateVariables(updateEvals)}
+       |// generate update
        |${byteBufferAccessor.generateUpdate(updateEvals, aggBuffDataTypes)}
       """.stripMargin
   }

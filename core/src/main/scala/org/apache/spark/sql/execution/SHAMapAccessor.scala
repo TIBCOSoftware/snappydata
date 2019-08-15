@@ -379,12 +379,13 @@ case class SHAMapAccessor(@transient session: SnappySession,
   }.mkString("\n")
 
   def declareNullVarsForAggBuffer(varNames: Seq[String]): String =
-    varNames.map(varName => s"boolean ${varName}${SHAMapAccessor.nullVarSuffix};").mkString("\n")
+    varNames.map(varName => s"boolean ${varName}${SHAMapAccessor.nullVarSuffix} = false;").
+      mkString("\n")
   /**
    * Generate code to lookup the map or insert a new key, value if not found.
    */
   def generateMapGetOrInsert(valueInitVars: Seq[ExprCode],
-    valueInitCode: String, input: Seq[ExprCode], keyVars: Seq[ExprCode],
+    valueInitCode: String, evaluatedInputCode: String, keyVars: Seq[ExprCode],
     keysDataType: Seq[DataType], aggregateDataTypes: Seq[DataType]): String = {
     val hashVar = Array(ctx.freshName("hash"))
     val tempValueData = ctx.freshName("tempValueData")
@@ -396,13 +397,12 @@ case class SHAMapAccessor(@transient session: SnappySession,
     val insertDoneTerm = ctx.freshName("insertDone");
     /* generateUpdate(objVar, Nil,
       valueInitVars, forKey = false, doCopy = false) */
-    val inputEvals = evaluateVariables(input)
 
     s"""|$valueInitCode
         |${SHAMapAccessor.resetNullBitsetCode(nullKeysBitsetTerm, numBytesForNullKeyBits)}
         |${SHAMapAccessor.resetNullBitsetCode(nullAggsBitsetTerm, numBytesForNullAggBits)}
           // evaluate input row vars
-        |$inputEvals
+        |$evaluatedInputCode
            // evaluate key vars
         |${evaluateVariables(keyVars)}
         |${keyVars.zip(keysDataType).filter(_._2 match {
