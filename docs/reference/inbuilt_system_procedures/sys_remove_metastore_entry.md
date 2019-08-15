@@ -18,8 +18,7 @@ call sys.REMOVE_METASTORE_ENTRY('<dbName>.<tableName>', '<forceDrop boolean>');
 
 ## Example
 
-Considering the case when cluster fails to come up, and the log mentions the following pattern: 
-`AnalysisException: Table <dbName>.<tableName> might be inconsistent in hive catalog. Use system procedure SYS.REMOVE_METASTORE_ENTRY to remove inconsistency`, then use the following steps to resolve the issue:
+Considering the case when cluster fails to come up, and the log mentions the pattern: "AnalysisException: Table <dbName>.<tableName> might be inconsistent in hive catalog. Use system procedure SYS.REMOVE_METASTORE_ENTRY to remove inconsistency", then use the following steps to resolve the issue.
 
 1.	Check if the server is running:
 
@@ -35,8 +34,8 @@ Considering the case when cluster fails to come up, and the log mentions the fol
             SELECT * FROM SYS.SYSPOLICIES;
             DROP POLICY <policy name>;
 
-4.	Call the procedure to drop the table from the catalog:
+4) Call the procedure to drop the table from the catalog:
 
 			call sys.REMOVE_METASTORE_ENTRY('<dbName>.<tableName>', 'false');
 
-5.	Restart SnappyData cluster and check the status. The cluster starts successfully.
+5) Restart SnappyData cluster and check the status. The cluster starts successfully.

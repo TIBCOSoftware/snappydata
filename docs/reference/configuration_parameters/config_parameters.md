@@ -69,6 +69,8 @@ Below is the list of all the configuration properties and links for each propert
 
 - [ack-wait-threshold](ack-wait-threshold.md)
 
+- [allow-explicit-commit](allow-explicit-commit.md)
+
 - [archive-disk-space-limit](archive-disk-space-limit.md)
 
 - [archive-file-size-limit](archive-file-size-limit.md)
