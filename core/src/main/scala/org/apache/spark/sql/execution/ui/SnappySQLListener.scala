@@ -35,6 +35,8 @@ case class SparkListenerSQLPlanExecutionStart(
     time: Long)
     extends SparkListenerEvent
 
+case class SparkListenerSQLPlanExecutionEnd(executionId: Long) extends SparkListenerEvent
+
 /**
  * Snappy's SQL Listener.
  *
@@ -133,14 +135,15 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
 
       case SparkListenerSQLExecutionStart(executionId, description, details,
       physicalPlanDescription, sparkPlanInfo, time) => synchronized {
-        baseExecutionIdToData.get(executionId) match {
+        val executionUIData = baseExecutionIdToData.get(executionId) match {
           case None =>
             val executionUIData = newExecutionUIData(executionId, description, details,
               physicalPlanDescription, sparkPlanInfo, time)
             baseExecutionIdToData(executionId) = executionUIData
-            baseActiveExecutions(executionId) = executionUIData
-          case _ =>
+            executionUIData
+          case Some(d) => d
         }
+        baseActiveExecutions(executionId) = executionUIData
       }
 
       case SparkListenerSQLPlanExecutionStart(executionId, description, details,
@@ -151,6 +154,10 @@ class SnappySQLListener(conf: SparkConf) extends SQLListener(conf) {
           baseExecutionIdToData(executionId) = executionUIData
           baseActiveExecutions(executionId) = executionUIData
         }
+
+      case SparkListenerSQLPlanExecutionEnd(executionId) => synchronized {
+        baseActiveExecutions.remove(executionId)
+      }
 
       case _ => super.onOtherEvent(event)
     }
