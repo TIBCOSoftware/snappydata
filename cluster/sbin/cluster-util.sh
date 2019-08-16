@@ -1,6 +1,6 @@
 #!/bin/bash
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -130,7 +130,7 @@ while [ "$1" != "" ]; do
     --on-all)
       MEMBER_LIST="all"
       MEMBER_TYPE="all"
-      rm /tmp/snappy-nodes.txt
+      rm -f /tmp/snappy-nodes.txt
       LOCATOR_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/locators | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')
       echo $LOCATOR_LIST >> /tmp/snappy-nodes.txt
       SERVER_LIST=$(sed ':loop /^[^#].*[^\\]\\$/N; s/\\\n//; t loop' $SNAPPY_HOME/conf/servers | awk '!/^ *#/ && !/^[[:space:]]*$/ { print$1; }' | awk '!seen[$0]++')

@@ -72,7 +72,7 @@ allprojects {
   apply plugin: "build-time-tracker"
 
   group = 'io.snappydata'
-  version = '1.1.0-HF-1'
+  version = '1.1.1'
 
   // apply compiler options
   tasks.withType(JavaCompile) {
@@ -108,7 +108,7 @@ allprojects {
     scalaBinaryVersion = '2.11'
     scalaVersion = scalaBinaryVersion + '.8'
     sparkVersion = '2.1.1'
-    snappySparkVersion = '2.1.1.6'
+    snappySparkVersion = '2.1.1.7'
     sparkDistName = "spark-${sparkVersion}-bin-hadoop2.7"
     sparkCurrentVersion = '2.3.2'
     sparkCurrentDistName = "spark-${sparkCurrentVersion}-bin-hadoop2.7"
@@ -151,10 +151,10 @@ allprojects {
     antlr2Version = '2.7.7'
 
     pegdownVersion = '1.6.0'
-    snappyStoreVersion = '1.6.3'
+    snappyStoreVersion = '1.6.4'
     snappydataVersion = version
     pulseVersion = '1.5.1'
-    zeppelinInterpreterVersion = '0.7.3.5'
+    zeppelinInterpreterVersion = '0.7.3.6'
 
     buildFlags = ''
     createdBy = System.getProperty('user.name')
