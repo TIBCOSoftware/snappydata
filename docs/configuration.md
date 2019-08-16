@@ -10,6 +10,8 @@ Also, each component can be configured individually using configuration files. I
 
 The following topics are covered in this section:
 
+*	[Configuring and Launching a TIBCO ComputeDB  Cluster](configuring_cluster/configure_launch_cluster.md)
+*	[Configuring and Launching a Multi-node TIBCO ComputeDB  Cluster](configuring_cluster/configure_launch_cluster_multinode.md)
 * [Configuration Files](configuring_cluster/configuring_cluster.md#configuration-files)
 
 	- [Configuring Locators](configuring_cluster/configuring_cluster.md#locator)
