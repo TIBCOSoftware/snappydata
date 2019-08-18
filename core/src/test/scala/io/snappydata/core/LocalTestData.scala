@@ -19,6 +19,8 @@ package io.snappydata.core
 import scala.reflect.io.Path
 import scala.util.Random
 
+import io.snappydata.Property
+
 import org.apache.spark.SparkConf
 
 /**
@@ -81,10 +83,20 @@ object LocalSparkConf {
   private val random = new Random()
 
   def newConf(addOn: (SparkConf) => SparkConf = null): SparkConf = {
+    /**
+     * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+     * and Property.UseOptimizedHashAggregateForSingleKey.name
+     * They are meant to suppress CodegenFallback Plan so that optimized
+     * byte buffer code path is tested & prevented from false passing.
+     * If your test needs CodegenFallback, then override the newConf function
+     * & clear the flag from the conf of the test locally.
+     */
     val conf = new SparkConf()
         .setIfMissing("spark.master", "local[4]")
         .setIfMissing("spark.memory.debugFill", "true")
         .set("snappydata.sql.planCaching", random.nextBoolean().toString)
+        .set(Property.TestDisableCodeGenFlag.name , "true")
+        .set(Property.UseOptimizedHashAggregateForSingleKey.name, "true")
         .setAppName(getClass.getName)
     if (addOn != null) {
       addOn(conf)

@@ -30,14 +30,14 @@
 # and peer-discover-port if you want to change port from the default 10334.
 # The peer-discovery-address can be a wildcard like 0.0.0.0 to listen on all interfaces.
 #
-#     locator1 -peer-discovery-port=9988 -locators=locator2:8899
+#     locator1 -peer-discovery-port=9988
 #
 # If there are multiple locators in the cluster, then specify hostname:port of other locators in the
 # -locators option.
-# 
+#
 #     locator1 -peer-discovery-port=9988 -locators=locator2:8899
-#     locator2 -peer-discovery-port=9988 -locators=locator1:8899
-# 
+#     locator2 -peer-discovery-port=8899 -locators=locator1:9988
+#
 # II) Using client bind address:
 #
 # One can specify bind address for clients to allow clients from outside this machine to connect

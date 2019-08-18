@@ -676,7 +676,7 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"select * from $schema.$t1",
       s"delete from $schema.$t1 where id = 10",
       s"select * from $schema.$t1",
-      s"create table $schema.$t1r (id int, name string) using column",
+      s"create table $schema.$t1r (id int, name string)",
       s"CREATE VIEW $schema.${t1}view AS SELECT id, name FROM $schema.$t1",
       s"CREATE TEMPORARY VIEW ${t1}viewtemp AS SELECT id, name FROM $schema.$t1",
       s"CREATE GLOBAL TEMPORARY VIEW ${t1}viewtempg AS SELECT id, name FROM $schema.$t1",
@@ -686,19 +686,37 @@ class SplitClusterDUnitSecurityTest(s: String)
           s"'../../quickstart/src/main/resources/customer.csv')")
         .foreach(executeSQL(user1Stmt, _))
 
+    // check that triggers are neither allowed to be attached to column tables
+    // or have column tables as target
+    try {
+      executeSQL(stmt, s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1 REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t1 WHERE id = OLD.id")
+      assert(assertion = false, "expected exception creating trigger on column table")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "0A000" => // expected
+    }
+    try {
+      executeSQL(stmt, s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t1 WHERE id = OLD.id")
+      assert(assertion = false, "expected exception with trigger targeting column table")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "0A000" => // expected
+    }
+
     // user gemfire2 of same group gemGroup1
     Seq(s"select * from $schema.$t1",
       s"create table $schema.$t2 (id int, name string) using column",
       s"create table $schema.$t2r (id int, name string)",
       s"show tables in $schema",
       s"select * from $schema.$t2",
-      s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1 REFERENCING " +
-          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id",
+      s"CREATE TRIGGER trig AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id",
       s"insert into $schema.$t2 values (1, '1'), (2, '2'), (3, '3')," +
           s" (4, '4'), (5, '5'), (6, '6')",
       s"select * from $schema.$t2",
       s"delete from $schema.$t1 where name like 'two'",
       s"drop table $schema.$t1r",
+      s"create table $schema.$t1r (id int, name string)",
       s"select * from $schema.$t2").foreach(executeSQL(user2Stmt, _))
 
     // user gemfire1
@@ -710,8 +728,8 @@ class SplitClusterDUnitSecurityTest(s: String)
     executeSQL(user4Stmt, s"show tables in $schema")
     Seq(s"select * from $schema.$t1",
       s"create table $schema.gemfour (id int, name string) using column",
-      s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1 REFERENCING " +
-          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id",
+      s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id",
       s"insert into $schema.$t2 values (1, '1'), (2, '2'), (3, '3')," +
           s" (4, '4'), (5, '5'), (6, '6')",
       s"update $schema.$t1 set id = 100 where name like 'four'",
@@ -728,7 +746,7 @@ class SplitClusterDUnitSecurityTest(s: String)
 
     // Grant DML permissions to gemfire4 and ensure it works.
     executeSQL(user1Stmt, s"grant select on $schema.$t1 to ldapgroup:$group2")
-    executeSQL(user1Stmt, s"grant select on $schema.$t2 to ldapgroup:$group2") // due to trigger
+    executeSQL(user1Stmt, s"grant select on $schema.$t2r to ldapgroup:$group2") // due to trigger
     executeSQL(user4Stmt, s"select * from $schema.$t1")
     executeSQL(user1Stmt, s"grant insert on $schema.$t1 to ldapgroup:$group2")
     executeSQL(user4Stmt, s"insert into $schema.$t1 values (111, 'gemfire4 111')," +
@@ -736,12 +754,12 @@ class SplitClusterDUnitSecurityTest(s: String)
     executeSQL(user2Stmt, s"grant update on $schema.$t1 to ldapgroup:$group2")
     executeSQL(user4Stmt, s"update $schema.$t1 set name = 'gemfire4 111 updated' where id = 111")
     executeSQL(user2Stmt, s"grant delete on $schema.$t1 to ldapgroup:$group2")
-    executeSQL(user2Stmt, s"grant delete on $schema.$t2 to ldapgroup:$group2") // due to trigger
+    executeSQL(user2Stmt, s"grant delete on $schema.$t2r to ldapgroup:$group2") // due to trigger
     executeSQL(user4Stmt, s"delete from $schema.$t1 where id = 111")
-    executeSQL(user2Stmt, s"grant trigger on $schema.$t1 to ldapgroup:$group2")
-    executeSQL(user2Stmt, s"grant trigger on $schema.$t2 to ldapgroup:$group2")
-    executeSQL(user4Stmt, s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1 REFERENCING " +
-        s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id")
+    executeSQL(user2Stmt, s"grant trigger on $schema.$t1r to ldapgroup:$group2")
+    executeSQL(user2Stmt, s"grant trigger on $schema.$t2r to ldapgroup:$group2")
+    executeSQL(user4Stmt, s"CREATE TRIGGER trigfour AFTER DELETE ON $schema.$t1r REFERENCING " +
+        s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id")
 
     // Revoke all and ensure it works too.
     Seq(s"revoke select on $schema.$t1 from ldapgroup:$group2",
@@ -749,16 +767,16 @@ class SplitClusterDUnitSecurityTest(s: String)
       s"revoke update on $schema.$t1 from ldapgroup:$group2",
       s"revoke delete on $schema.$t1 from ldapgroup:$group2",
       s"revoke delete on $schema.$t2 from ldapgroup:$group2",
-      s"revoke trigger on $schema.$t1 from ldapgroup:$group2",
-      s"revoke trigger on $schema.$t2 from ldapgroup:$group2")
+      s"revoke trigger on $schema.$t1r from ldapgroup:$group2",
+      s"revoke trigger on $schema.$t2r from ldapgroup:$group2")
         .foreach(executeSQL(user1Stmt, _))
     Seq(s"select * from $schema.$t1",
       s"insert into $schema.$t1 values (111, 'gemfire4 111')," +
           s" (222, 'gemfire4 222')",
       s"update $schema.$t1 set name = 'gemfire4 111 updated' where id = 111",
       s"delete from $schema.$t1 where id = 111",
-      s"CREATE TRIGGER trigfournew AFTER DELETE ON $schema.$t1 REFERENCING " +
-          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2 WHERE id = OLD.id")
+      s"CREATE TRIGGER trigfournew AFTER DELETE ON $schema.$t1r REFERENCING " +
+          s"OLD AS OLD FOR EACH ROW DELETE FROM $schema.$t2r WHERE id = OLD.id")
         .foreach(sql => assertFailures(() => {
           executeSQL(user4Stmt, sql)
         }, sql, Seq("42500", "42502", "42506", "42507")))

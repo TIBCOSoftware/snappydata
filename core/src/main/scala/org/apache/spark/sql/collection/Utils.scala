@@ -567,6 +567,9 @@ object Utils extends Logging {
     }
   }
 
+  def setCurrentSchema(session: SnappySession, schema: String, createIfNotExists: Boolean): Unit =
+    session.setCurrentSchema(schema, createIfNotExists)
+
   def getDriverClassName(url: String): String = DriverManager.getDriver(url) match {
     case wrapper: DriverWrapper => wrapper.wrapped.getClass.getCanonicalName
     case driver => driver.getClass.getCanonicalName

@@ -21,6 +21,7 @@ package org.apache.spark
 import java.io.File
 import java.net.URL
 import java.sql.{Connection, DriverManager}
+
 import _root_.io.snappydata.Constant
 import _root_.io.snappydata.cluster.ClusterManagerTestBase
 import org.joda.time.DateTime

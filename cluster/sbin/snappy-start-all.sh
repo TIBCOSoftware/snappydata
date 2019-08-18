@@ -34,11 +34,25 @@ if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
 
+SERVERS_STATUS_FILE="$SNAPPY_HOME/work/members-status.txt"
+if [ -f "${SERVERS_STATUS_FILE}" ]; then
+  rm $SERVERS_STATUS_FILE
+fi
+
+CAN_START_LEAD=0
+function checkIfOkayToStartLeads() {
+  while  read -r line || [[ -n "$line" ]]; do
+    read exitstatus member <<< $line
+    if [ "x$exitstatus" = "x0" -o "x$exitstatus" = "x10" ]; then
+      CAN_START_LEAD=1
+    fi
+  done < $SERVERS_STATUS_FILE
+}
+
 BACKGROUND=-bg
 clustermode=
 recover=
 CONF_DIR_ARG=
-SKIP_CONF_COPY=0
 
 while (( "$#" )); do
   param="$1"
@@ -64,9 +78,6 @@ while (( "$#" )); do
     rowstore)
       clustermode="rowstore"
     ;;
-    --skipconfcopy)
-      SKIP_CONF_COPY=1
-    ;;
     *)
     ;;
   esac
@@ -78,8 +89,6 @@ if [ ! -z "$clustermode" -a ! -z "$recover" ] ; then
   exit 1
 fi
 
-export START_ALL_TIMESTAMP="$(date +"%Y_%m_%d_%H_%M_%S")"
-export SKIP_CONF_COPY
 
 # TODO: Why is "$@" there. The args are parsed and shifted above making $@ empty. Isn't it?
 # Start Locators
@@ -90,5 +99,14 @@ export SKIP_CONF_COPY
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh $CONF_DIR_ARG start $recover
+  checkIfOkayToStartLeads
+  if [ "$CAN_START_LEAD" = "1" ]; then
+    "$sbin"/snappy-leads.sh $CONF_DIR_ARG start $recover
+  else
+    echo "Cannot start lead components. At least one server should be"
+    echo "in running state."
+    echo "Check work/members-status.txt for server status code and try"
+    echo "running snappy-status-all script ..."
+    echo "Try running lead with snappy-start-all once again"
+  fi
 fi
