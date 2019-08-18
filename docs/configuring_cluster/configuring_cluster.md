@@ -1,4 +1,4 @@
-# Configuration
+# Cluster Components
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the TIBCO ComputeDB home directory with names **locators**, **leads**, and **servers**.
 
@@ -10,7 +10,7 @@ These files should contain the hostnames of the nodes (one per line) where you i
 	Instead of starting the TIBCO ComputeDB cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
 
 <a id="locator"></a>
-## Configuring Locators
+## Locators
 
 Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](/architecture/cluster_architecture.md) section for more information on the core components.
 
@@ -30,6 +30,7 @@ You can refer to the **conf/locators.template** file for some examples.
 
 Refer to the [List of properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
 
+<!---
 |Property|Description|
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
@@ -54,9 +55,9 @@ $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
 ```
-
+--->
 <a id="lead"></a>
-## Configuring Leads
+## Leads
 
 Lead Nodes primarily runs the TIBCO ComputeDB managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples. 
 
@@ -65,6 +66,7 @@ Create the configuration file (**leads**) for leads in the **<_TIBCO ComputeDB_h
 !!! Note
 	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing TIBCO ComputeDB Monitoring Console from outside the network.
 
+<!---
 ### List of Lead Properties
 Refer to the [TIBCO ComputeDB properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
 
@@ -117,6 +119,7 @@ Refer to the [TIBCO ComputeDB properties](property_description.md) for the compl
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
+--->
 
 <a id="confsecondarylead"></a>
 ###Configuring Secondary Lead
@@ -135,11 +138,12 @@ In this example, two leads (one on node-l1 and another on node-l2) are configure
 
 
 <a id="dataserver"></a>
-## Configuring Data Servers
+## Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than the Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 
 
 Create the configuration file (**servers**) for data servers in the **<_TIBCO ComputeDB_home_>/conf** directory. 
 
+<!---
 ### List of Server Properties
 Refer to the [TIBCO ComputeDB properties](property_description.md) for the complete list of TIBCO ComputeDB properties.
 
@@ -175,6 +179,8 @@ $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
+--->
+
 ## Specifying Configuration Properties using Environment Variables
 
 TIBCO ComputeDB configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, and LEAD_STARTUP_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when TIBCO ComputeDB system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
