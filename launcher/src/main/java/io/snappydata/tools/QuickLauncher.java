@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Properties;
+import java.util.regex.Pattern;
 
 import com.gemstone.gemfire.internal.cache.Status;
 import com.gemstone.gemfire.internal.shared.ClientSharedUtils;
@@ -162,9 +163,16 @@ class QuickLauncher extends LauncherBase {
 
     // Complain if a cache server is already running in the specified working directory.
     // See bug 32574.
-    String msg = verifyAndClearStatus();
-    if (msg != null) {
-      System.err.println(msg);
+    int state = verifyAndClearStatus();
+    if (state != Status.SHUTDOWN) {
+      // Returning a status of 10 would indicate the startup scripts to know that an
+      // instance was already running and in healthy state.
+      if (state == Status.RUNNING) {
+        return 10;
+      }
+      // else this will indicate that an instance was there but not in running state.
+      // It can be waiting too ( specially for servers -- for lead it can be standby)
+      // but we can ignore making further differentiation here.
       return 1;
     }
 

@@ -25,7 +25,7 @@ import com.gemstone.gemfire.internal.cache.LocalRegion
 import io.snappydata.sql.catalog.{ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
 import io.snappydata.thrift.{CatalogMetadataDetails, CatalogMetadataRequest, CatalogSchemaObject, snappydataConstants}
 
-import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchPermanentFunctionException}
+import org.apache.spark.sql.catalyst.analysis.{NoSuchPartitionException, NoSuchPermanentFunctionException, NoSuchTableException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogFunction, CatalogTable, CatalogTablePartition}
 import org.apache.spark.sql.catalyst.expressions.{And, AttributeReference, BoundReference, Expression}
@@ -189,7 +189,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     try {
       Some(getTable(schema, table))
     } catch {
-      case _: TableNotFoundException => None
+      case _: NoSuchTableException => None
     }
   }
 
@@ -203,8 +203,7 @@ class SmartConnectorExternalCatalog(override val session: SparkSession)
     } else {
       assert(schema.length > 0)
       ConnectorExternalCatalog.getRelationInfo(schema -> table, catalog = this) match {
-        case None => throw new TableNotFoundException(schema, table, Some(new RuntimeException(
-          "RelationInfo for the table is missing. Its region may have been destroyed.")))
+        case None => throw new TableNotFoundException(schema, s"RealtionInfo for $table")
         case Some(r) => r -> None
       }
     }

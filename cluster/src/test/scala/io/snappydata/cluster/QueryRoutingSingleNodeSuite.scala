@@ -584,12 +584,12 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       insertRows(tableName1, 1000)
       insertRows(tableName2, 1000)
       update_delete_query1(tableName1, 1)
-      update_delete_query2(tableName1, 2)
-      update_delete_query3(tableName1, 3, 2)
+      update_delete_query2(tableName1, 1)
+      update_delete_query3(tableName1, 1, 2)
 
-      update_delete_query1(tableName2, 4)
-      update_delete_query2(tableName2, 5)
-      update_delete_query3(tableName2, 6, 1)
+      update_delete_query1(tableName2, 1)
+      update_delete_query2(tableName2, 1)
+      update_delete_query3(tableName2, 1, 1)
     } finally {
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }

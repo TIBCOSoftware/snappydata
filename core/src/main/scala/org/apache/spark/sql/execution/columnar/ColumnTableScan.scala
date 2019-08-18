@@ -81,7 +81,10 @@ private[sql] final case class ColumnTableScan(
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
 
-  override val nodeName: String = "ColumnTableScan"
+  override val nodeName: String = {
+    if (baseRelation != null && baseRelation.getClass.getName.contains("Sampl")) "SampleTableScan"
+    else "ColumnTableScan"
+  }
 
   override def sameResult(plan: SparkPlan): Boolean = plan match {
     case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&

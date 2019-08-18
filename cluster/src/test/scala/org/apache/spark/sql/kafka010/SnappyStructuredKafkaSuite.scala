@@ -19,11 +19,12 @@ package org.apache.spark.sql.kafka010
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import io.snappydata.SnappyFunSuite
+import io.snappydata.{Property, SnappyFunSuite}
 import org.apache.kafka.common.TopicPartition
 import org.scalatest.concurrent.Eventually
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
 
+import org.apache.spark.SparkConf
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.RowEncoder
 import org.apache.spark.sql.functions.{count, window}
@@ -38,6 +39,12 @@ class SnappyStructuredKafkaSuite extends SnappyFunSuite with Eventually
 
   private var kafkaTestUtils: KafkaTestUtils = _
 
+  protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
+    super.newSparkConf((conf: SparkConf) => {
+      // conf.set(Property.TestDisableCodeGenFlag.name , "false")
+      conf
+    })
+  }
   override def beforeAll() {
     super.beforeAll()
     kafkaTestUtils = new KafkaTestUtils

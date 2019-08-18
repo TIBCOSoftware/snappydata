@@ -390,10 +390,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       }
       withHiveExceptionHandling(super.createTable(catalogTable_, ifExists))
     } catch {
-      case _: TableAlreadyExistsException =>
+      case e: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
-        throw new AnalysisException(s"Object '${tableDefinition.identifier.table}' of type " +
-            s"$objectType already exists in schema '${tableDefinition.database}'")
+        if (CatalogObjectType.isTableOrView(objectType)) throw e
+        else throw objectExistsException(tableDefinition.identifier, objectType)
     }
 
     // refresh cache for required tables
@@ -561,7 +561,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       Some(getTable(schema, table))
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => None
+      case _: NoSuchTableException => None
     }
   }
 
@@ -649,7 +649,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       getTable(schema, table) ne null
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => false
+      case _: NoSuchTableException => false
     }
   }
 

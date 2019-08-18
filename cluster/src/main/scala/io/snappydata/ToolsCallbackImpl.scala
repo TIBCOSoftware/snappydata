@@ -20,14 +20,16 @@ import java.io.{File, RandomAccessFile}
 import java.lang.reflect.InvocationTargetException
 import java.net.{URI, URLClassLoader}
 
-import com.gemstone.gemfire.cache.EntryExistsException
 import scala.collection.JavaConverters._
+
+import com.gemstone.gemfire.cache.EntryExistsException
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.iapi.error.StandardException
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
+
 import org.apache.spark.executor.SnappyExecutor
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
@@ -97,8 +99,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
       try {
         Misc.getMemStore.getGlobalCmdRgn.create(alias, deploySql)
       } catch {
-        case eee: EntryExistsException => throw StandardException.newException(
-          SQLState.LANG_DB2_DUPLICATE_NAMES, alias , "of deploying jars/packages")
+        case _: EntryExistsException => throw StandardException.newException(
+          SQLState.LANG_DB2_DUPLICATE_NAMES, alias, "of deploying jars/packages")
       }
     }
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
@@ -142,9 +144,9 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
           val executor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
           val cachedFileName = s"${url.hashCode}-1_cache"
           val lockFileName = s"${url.hashCode}-1_lock"
-          val localDir = new File(executor.getLocalDir())
+          val localDir = new File(executor.getLocalDir)
           val lockFile = new File(localDir, lockFileName)
-          val lockFileChannel = new RandomAccessFile(lockFile, "rw").getChannel()
+          val lockFileChannel = new RandomAccessFile(lockFile, "rw").getChannel
           val lock = lockFileChannel.lock()
           try {
             val cachedFile = new File(localDir, cachedFileName)
@@ -162,10 +164,22 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
   }
 
   override def removeURIsFromExecutorClassLoader(jars: Array[String]): Unit = {
-    if (ExecutorInitiator.snappyExecBackend != null) {
+    if (!jars.isEmpty && "__REMOVE_FILES_ONLY__" != jars.head
+        && ExecutorInitiator.snappyExecBackend != null) {
       val snappyexecutor = ExecutorInitiator.snappyExecBackend.executor.asInstanceOf[SnappyExecutor]
       snappyexecutor.removeJarsFromExecutorLoader(jars)
-    }
+    } else removeJarFiles(jars)
+  }
+
+  def removeJarFiles(jars: Array[String]): Unit = {
+    jars.foreach(name => {
+      val localName = name.split("/").last
+      val jarFile = new File(SparkFiles.getRootDirectory(), localName)
+      if (jarFile.exists()) {
+        jarFile.delete()
+        logDebug(s"Deleted jarFile $jarFile")
+      }
+    })
   }
 
   override def getAllGlobalCmnds: Array[String] = {

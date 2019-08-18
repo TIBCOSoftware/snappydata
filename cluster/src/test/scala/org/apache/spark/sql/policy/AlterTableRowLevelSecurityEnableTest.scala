@@ -37,6 +37,8 @@ class AlterTableRowLevelSecurityEnableTest extends PolicyTestBase {
 
   var ownerContext: SnappyContext = _
 
+  override protected def systemUser: String = tableOwner
+
   override def beforeAll(): Unit = {
     super.beforeAll()
 

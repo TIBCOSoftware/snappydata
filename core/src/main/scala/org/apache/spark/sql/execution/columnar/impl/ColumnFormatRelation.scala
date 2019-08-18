@@ -18,13 +18,13 @@ package org.apache.spark.sql.execution.columnar.impl
 
 import java.sql.{Connection, PreparedStatement}
 
-import com.gemstone.gemfire.internal.cache.PartitionedRegion.RegionLock
-
 import scala.util.control.NonFatal
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemFireCacheImpl, LocalRegion, PartitionedRegion}
+
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
 import io.snappydata.{Constant, Property}
+
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
@@ -75,9 +75,9 @@ abstract class BaseColumnFormatRelation(
     _relationInfo: (RelationInfo, Option[LocalRegion]))
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
-    with PartitionedDataSourceScan
-    with RowInsertableRelation
-    with MutableRelation {
+        with PartitionedDataSourceScan
+        with RowInsertableRelation
+        with MutableRelation {
 
   override def toString: String = s"${getClass.getSimpleName}[${Utils.toLowerCase(table)}]"
 
@@ -236,7 +236,7 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    withTableWriteLock() {() =>
+    withTableWriteLock() { () =>
       ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
         partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
         updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
@@ -273,10 +273,11 @@ abstract class BaseColumnFormatRelation(
     // use bulk insert directly into column store for large number of rows
 
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(a) => null // Do nothing as putInto will release lock
+      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+        snc.grabLock(table, schemaName, connProperties)
+      case _ => None // Do nothing as putInto will release lock
     }
     try {
       if (numRows > (batchSize * numBuckets)) {
@@ -300,28 +301,37 @@ abstract class BaseColumnFormatRelation(
       }
     }
     finally {
-      if (lock != null) {
-        logDebug(s"Releasing the ${lock} object in InsertRows")
-        snc.releaseLock(lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Releasing the $lock object in InsertRows")
+          snc.releaseLock(lock)
+        }
+        case None => // do Nothing
       }
     }
   }
 
   def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
     val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
-    val lock = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+    logDebug(s"WithTable WriteLock ${SnappyContext.executorAssigned}")
+
+    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
       SnappySession.PUTINTO_LOCK) match {
-      case None => snc.grabLock(table, schemaName, connProperties)
-      case Some(_) => null // Do nothing as putInto will release lock
+      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+        snc.grabLock(table, schemaName, connProperties)
+      case _ => None // Do nothing as putInto will release lock
     }
     try {
       f()
     }
     finally {
-      if (lock != null) {
-        logDebug(s"Added the ${lock} object to the context for $table")
-        snc.addContextObject(
-          SnappySession.BULKWRITE_LOCK, lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Added the $lock object to the context for $table")
+          snc.addContextObject(
+            SnappySession.BULKWRITE_LOCK, lock)
+        }
+        case None => // do nothing
       }
     }
   }
