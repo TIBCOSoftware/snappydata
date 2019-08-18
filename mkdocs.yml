@@ -110,15 +110,6 @@ pages:
     - 'Tables in TIBCO ComputeDB': 'programming_guide/tables_in_snappydata.md'
     - 'Stream Processing using SQL': 'programming_guide/stream_processing_using_sql.md'
     - 'User Defined Functions (UDF) and User Defined Aggregate Functions (UDAF)': 'programming_guide/udf_and_udaf.md' 
-- 'Distributed Transactions': 'consistency/transactions_about.md'
-- 'Distributed Transactions':
-    - 'How Transactions Work for Row Tables': 'consistency/using_transactions_row.md' 
-    - 'Lock-free Queries using MVCC and Snapshot Isolation for Column Tables': 'consistency/using_snapshot_isolation_column.md'
-- 'Affinity Modes': 'deployment.md'
-- 'Affinity Modes': 
-    - 'Local Mode': 'affinity_modes/local_mode.md'
-    - 'Embedded TIBCO ComputeDB Store Mode': 'affinity_modes/embedded_mode.md'
-    - 'TIBCO ComputeDB Smart Connector Mode': 'affinity_modes/connector_mode.md'
 - 'Best Practices': 'best_practices.md'
 - 'Best Practices':
     - 'Tuning for Concurrency and Computation': 'best_practices/setup_cluster.md'
@@ -216,6 +207,7 @@ pages:
         - 'SET SCHEMA': 'reference/sql_reference/set-schema.md'
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
+    - 'SQL General Limitations': 'reference/sql_general_limitations.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
@@ -313,6 +305,7 @@ pages:
 #        - 'tcp-port': 'reference/configuration_parameters/tcp-port.md'
         - 'user': 'reference/configuration_parameters/user.md'
     - 'API Reference': 'apidocsintro.md'
+    - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
     - 'TIBCO ComputeDB Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
     - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
