@@ -1,23 +1,46 @@
 # List of Properties
 
-The following list of commonly used properties can be set to configure the cluster.  These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
+The following list of commonly used configuration properties can be set to configure the cluster.  These properties can be set in the **conf/servers**, **conf/leads** or **conf/locators** configuration files.
+
+*	[Network Configuration](#network)
+*	[Memory Configuration](#memory)
+*	[Disk Configuration](#disk)
+*	[Security Configuration](#security)
+*	[Spark Configuration](#spark)
+*	[Logging, Metrics Configuration](#logging)
+*	[Hadoop, Hive Configuration](#hadoop)
+*	[SQL Properties](#sql-properties)
+*	[AQP Properties](#aqp)
 
 !!! Tip
 	For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. -J is NOT required for -D and -XX options.
 
+<a id="network"></a>
 ## Network Configuration 
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-bind-address|IP address on which the member is bound. The default behavior is to bind to all local addresses.|Server</br>Lead</br>Locator|
+|ack-severe-alert-threshold| See [ack-severe-alert-threshold](/reference/configuration_parameters/ack-severe-alert-threshold.md)|
+|ack-wait-threshold| See [ack-wait-threshold](/reference/configuration_parameters/ack-wait-threshold.md)| |
+|-bind-address|IP address on which the member is bound. The default behavior is to bind to all local addresses. Also see [bind-address](/reference/configuration_parameters/bind-address.md) |Server</br>Lead</br>Locator|
 |-client-port| The port that the network controller listens for client connections in the range of 1 to 65535. The default value is 1527.|Locator</br>Server|
 |-J-Dgemfirexd.hostname-for-clients<a id="host-name"></a>|Set the IP address or host name that this server/locator sends to JDBC/ODBC/thrift clients to use for connection. The default value causes the client-bind-address to be given to clients. This value can be different from client-bind-address for cases where locators, servers are behind a NAT firewall (AWS for example) where client-bind-address needs to be a private one that gets exposed to clients outside the firewall as a different public address specified by this property. In many cases this is handled by hostname translation itself, i.e. hostname used in client-bind-address resolves to internal IP address from inside but to public IP address from outside, but for other cases this property will be required.|Server|
-|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.|Server</br>Lead</br>Locator|
+|enable-network-partition-detection|See [enable-network-partition-detection](/reference/configuration_parameters/enable-network-partition-detection.md)||
+|enforce-unique-host|See [enforce-unique-host](/reference/configuration_parameters/enforce-unique-host.md)||
+|-locators|List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.|ServFer</br>Lead</br>Locator|
 |-member-timeout<a id="member-timeout"></a>|Uses the member-timeout server configuration, specified in milliseconds, to detect the abnormal termination of members. The configuration setting is used in two ways:</br> 1) First, it is used during the UDP heartbeat detection process. When a member detects that a heartbeat datagram is missing from the member that it is monitoring after the time interval of 2 * the value of member-timeout, the detecting member attempts to form a TCP/IP stream-socket connection with the monitored member as described in the next case.</br> 2) The property is then used again during the TCP/IP stream-socket connection. If the suspected process does not respond to the **are you alive** datagram within the time period specified in member-timeout, the membership coordinator sends out a new membership view that notes the member's failure. </br>Valid values are in the range 1000-600000 milliseconds. For more information, refer to [Best Practices](../best_practices/important_settings.md#member-timeout)|Server</br>Lead</br>Locator|
+|membership-port-range|See [membership-port-range](/reference/configuration_parameters/membership-port-range.md)
 |-peer-discovery-address|Use this as value for the port in the "host:port" value of "-locators" property |Locator|
 |-peer-discovery-port|Port on which the locator listens for peer discovery (includes servers as well as other locators).  </br>Valid values are in the range 1-65535, with a default of 10334.|Locator|
+|read-timeout| See [read-timeout](/reference/configuration_parameters/read-timeout.md)| |
 |-spark.ui.port|Port for your SnappyData Monitoring Console, which shows tables, memory and workload data. The default is 5050|Lead|
+|redundancy-zone|See [redundancy-zone](/reference/configuration_parameters/redundancy-zone.md) | |
+|secondary-locators|See [secondary-locators](/reference/configuration_parameters/secondary-locators.md) | |
+|socket-buffer-size| See [socket-buffer-size](/reference/configuration_parameters/socket-buffer-size.md) | |
+|socket-lease-time|See [socket-lease-time](/reference/configuration_parameters/socket-lease-time.md) | |
+|gemfirexd.max-lock-wait|See [gemfirexd.max-lock-wait](/reference/configuration_parameters/snappydata.max-lock-wait.md) | 
 
+<a id="memory"></a>
 ## Memory Configuration
  
 |Property|Description|Components</br>|
@@ -32,14 +55,19 @@ The following list of commonly used properties can be set to configure the clust
 |<a id="sparkdrivermaxresult"></a>-spark.driver.maxResultSize|Limit of the total size of serialized results of all partitions for each action (e.g. collect). The value should be at least 1MB or 0 for unlimited. Jobs will be aborted if the total size of results is above this limit. Having a high limit may cause out-of-memory errors in the lead. The default max size is 1GB. |Lead|
 |spark.sql.files.maxPartitionBytes|Maximum number of bytes to pack into a single partition when reading files. You can modify this setting in **conf/leads** file. This can be used to tune performance and memory requirements for data ingestion tasks when the data is read from a file based source for ingestion into a SnappyData column/row table. In SnappyData, default value for this setting is 33554432 bytes (32 MB).| Lead|
 
-
+<a id="disk"></a>
 ## Disk Configuration
 
 |Property|Description|Components</br>|
 |-|-|-|
+|archive-disk-space-limit|See [archive-disk-space-limit](/reference/configuration_parameters/archive-disk-space-limit.md)|
+|archive-file-size-limit|See [archive-file-size-limit](/reference/configuration_parameters/archive-file-size-limit.md)| 
 |-dir|Working directory of the member that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| Server</br>Lead</br>Locator</br>|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks. For more information, refer to [Best Practices](../best_practices/important_settings.md#spark-local-dir).|Lead</br>Server|
+|sys-disk-dir|See [sys-disk-dir](/reference/configuration_parameters/sys-disk-dir.md)| 
 
+
+<a id="security"></a>
 ## Security Configuration
 
 |Property|Description|Components</br>|
@@ -57,7 +85,8 @@ The following list of commonly used properties can be set to configure the clust
 |-thrift-ssl<a id="thrift-properties"></a>|Specifies if you want to enable or disable SSL. Values are true or false.|Server</br>Lead</br>Locator</br>
 |-thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: Path to key store file </br>`keystore-type`: The type of key-store (default "JKS") </br>`keystore-password`: Password for the key store file</br>`keymanager-type`: The type of key manager factory </br>`truststore`: Path to trust store file</br>`truststore-type`: The type of trust-store (default "JKS")</br>`truststore-password`: Password for the trust store file </br>`trustmanager-type`: The type of trust manager factory </br> |Server|
 
-## Spark SQL configuration
+<a id="spark"></a>
+## Spark Configuration
 
 |Property|Description|Components</br>|
 |-|-|-|
@@ -73,27 +102,34 @@ The following list of commonly used properties can be set to configure the clust
 |-spark.jobserver.port|The port on which to run the jobserver. Default port is 8090.|Lead|
 |-spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
 |-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. The default is 2000. |Lead|
+|spark.eventLog.enabled| Set to True to enable event logging for Spark jobs.| Lead|
+|spark.eventLog.dir| Specify the directory path where the events can be logged for Spark jobs.| Lead|
 
-
+<a id="logging"></a>
 ## Logging, Metrics Configuration
-<!--- ... include use of history server properties--->
 
 |Property|Description|Components</br>|
 |-|-|-|
-|-log-file|Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, **snappylocator.log**, **snappyleader.log**,**snappyserver.log**. In case logging is set via log4j, the default log file is **snappydata.log** for each of the SnappyData member.)|Server</br>Lead</br>Locator|
+|enable-stats| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
+|enable-time-statistics| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
+|enable-timestats| See [enable-timestats](/reference/configuration_parameters/enable-timestats.md) | |
+|-log-file|Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, **snappylocator.log**, **snappyleader.log**,**snappyserver.log**. In case logging is set via log4j, the default log file is **snappydata.log** for each of the TIBCO ComputeDB member.)|Server</br>Lead</br>Locator|
+|log-level|See [log-level](/reference/configuration_parameters/log-level.md) | |
+|snappy.history| See [snappy.history](/reference/configuration_parameters/snappy.history.md) | |
+|statistic-archive-file| See [statistic-archive-file](/reference/configuration_parameters/statistic-archive-file.md) | |
+|statistic-sample-rate| See [statistic-sample-rate](/reference/configuration_parameters/statistic-archive-file.md) | |
+|statistic-sampling-enabled| See [statistic-sampling-enabled](/reference/configuration_parameters/statistic-sampling-enabled.md) | |
 
-
-## Hadoop, Hive Configuration:
+<a id="hive"></a>
+## Hadoop, Hive Configuration
 <!---  ( this info needs to come from Sumedh ... his spec document)--->
 
 |Property|Description|Components</br>|
 |-|-|-|
 |-classpath|Location of user classes required by the SnappyData Server.</br>This path is appended to the current classpath.|Server</br>Lead</br>Locator|
 |jobserver.waitForInitialization|When this property is set to true, the cluster startup waits for the Spark jobserver to be fully initialized before marking the lead node as **RUNNING**. The default is false.|Lead|
-
-
-
-
+|set spark.sql.catalogImplementation=hive|You can specify this to point to an external hive catalog from snappy session. |Lead|
+|set spark.sql.catalogImplementation=in-memory|You can specify this to point to the Snappy internal catalog from snappy session|
 
 Other than the above properties, you can also refer the [Configuration Parameters section](/reference/configuration_parameters/config_parameters.md#property-names) for properties that are used in special cases.
 
@@ -118,6 +154,13 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 
 | Property | Description|
 |--------|--------|
+|allow-explicit-commit|See [allow-explicit-commit](/reference/configuration_parameters/allow-explicit-commit.md) | |
+|init-scripts|See [init-scripts](/reference/configuration_parameters/init-scripts.md)| |
+|skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)| |
+|skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)| |
+|gemfirexd.datadictionary.allow-startup-errors|See [gemfirexd.datadictionary.allow-startup-errors](/reference/configuration_parameters/snappydata.datadictionary.allow-startup-errors.md)| |
+|gemfirexd.query-cancellation-interval|See [gemfirexd.query-cancellation-interval](/reference/configuration_parameters/snappydata.query-cancellation-interval.md)| |
+|gemfirexd.query-timeout| See [gemfirexd.query-timeout](/reference/configuration_parameters/snappydata.query-timeout.md)||
 |-snappydata.column.batchSize |The default size of blocks to use for storage in SnappyData column and store. When inserting data into the column storage this is the unit (in bytes or k/m/g suffixes for unit) that is used to split the data into chunks for efficient storage and retrieval. </br> This property can also be set for each table in the `create table` DDL. Maximum allowed size is 2GB. The default is 24m.|
 |-snappydata.column.maxDeltaRows|The maximum number of rows that can be in the delta buffer of a column table. The size of the delta buffer is already limited by `ColumnBatchSize` property, but this allows a lower limit on the number of rows for better scan performance. So the delta buffer is rolled into the column store whichever of `ColumnBatchSize` and this property is hit first. It can also be set for each table in the `create table` DDL, else this setting is used for the `create table`|
 |-snappydata.hiveServer.enabled|Enables the Hive Thrift server for SnappyData.This is enabled by default when you start the cluster. Thus it adds an additional 10 seconds to the cluster startup time. To avoid this additional time, you can set the property to false.|
@@ -132,9 +175,10 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |snappydata.cache.putIntoInnerJoinResultSize| Use this property with extreme limits such as 1K and 10GB. The default is 100 MB.|
 |-snappydata.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.|
 |-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.|
-|snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
+|-snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
+|sync-commits| See [sync-commits](/reference/configuration_parameters/sync-commits.md)||
 
-<a id="sde-properties"></a>
+<a id="aqp"></a>
 ## AQP Properties
 
 The [AQP](../aqp.md) properties can be set using a Snappy SQL shell (snappy-sql) command or using the configuration properties in the **conf/leads** file. </br>

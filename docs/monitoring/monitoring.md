@@ -3,6 +3,9 @@
 TIBCO ComputeDB Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data. This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.
 
+!!! Note
+	TIBCO ComputeDB Monitoring Console is not yet tested and supported on Internet Explorer.
+
 
 To access TIBCO ComputeDB Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
@@ -255,9 +258,13 @@ The first step in tuning query performance in TIBCO ComputeDB is to understand t
 
 To turn on the History server, do the following:
 
-1.	Ensure to provide a shared disk that can be accessed from all the TIBCO ComputeDB nodes. If you do not have the NFS access, use HDFS. 
-2.	Provide the permissions to access the shared folder when you start TIBCO ComputeDB.  <!--- provide info with examples for how to do this .... (see spark docs). --->
+1.	Ensure to provide a shared disk that can be accessed from all the TIBCO ComputeDB nodes. If you do not have the NFS access, use HDFS. Provide the permissions to access a shared folder when you start TIBCO ComputeDB.
+2.	Enable event logging for the Spark jobs. For example, if the server was configured with a log directory of hdfs://namenode/shared/spark-logs, then configure the following properties in the conf/lead: 
+
+            spark.eventLog.enabled true
+            spark.eventLog.dir hdfs://namenode/shared/spark-logs
+
 3.	Start the History server.
 			./sbin/start-history-server.sh
-	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed applications and attempts. 
+	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
     For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).

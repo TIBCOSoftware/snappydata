@@ -5,21 +5,27 @@ To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIB
 
 You can use any of the following methods to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB:
 
-*	[Native Spotfire® Connector (Recommended)](#nativespotfireconnector)
-*	[Builtin CDB connector in Spotfire®](#builtinspotfireconnector)
-*	[Apache Spark SQL](#apachesparksql)
+*	[CDB Connector using Native ODBC driver](#nativespotfireconnector)
+*	[CDB Connector using Simba ODBC Driver](#builtinspotfireconnector)
 
 <a id= nativespotfireconnector> </a>
-## Native Spotfire® Connector
+## CDB Connector using Native ODBC Driver 
 TIBCO recommends to use the native Spotfire Connector to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB. This connector is based on native ODBC and is a faster connnector. Refer [TIBCO Spotfire® Connectivity to TIBCO ComputeDB™](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb) for detailed instructions to access TIBCO ComputeDB using this connector.
 
 <a id= builtinspotfireconnector> </a>
-## Builtin CDB Connector in Spotfire 10.4
+## CDB Connector using Simba ODBC Driver
+You can use any of the following CDB connectors, that uses Simba ODBC Driver, to connect to TIBCO ComputeDB:
+
+* [TIBCO ComputeDB Builtin CDB Connector in Spotfire 10.4](#apachesparksql)
+* [Apache Spark SQL](#tcdbbuiltincdb)
+
+<a id= tcdbbuiltincdb> </a>
+### TIBCO ComputeDB - Builtin CDB Connector in Spotfire 10.4
 
 Users of Spotfire® 10.4 or later can use the builtin CDB connector in Spotfire® to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB. Refer to [Accessing Data from TIBCO ComputeDB](https://docs.tibco.com/pub/sfire-analyst/10.4.0/doc/html/en-US/TIB_sfire-analyst_UsersGuide/connectors/computedb/computedb_accessing_data.htm) for detailed instructions to access TIBCO ComputeDB using this connector.
 
 <a id= apachesparksql> </a>
-## Apache Spark SQL
+### Apache Spark SQL
 
 Users of Spotfire versions prior to 10.4 can use Apache Spark SQL to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB. Refer the following instructions to connect:
 

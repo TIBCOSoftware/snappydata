@@ -235,7 +235,7 @@ Use the following command to stop the running job:
 
 ## Examples
 
-You can refer to structured streaming examples [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala) 
+For more examples, refer [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming) 
 
 
 

@@ -37,12 +37,14 @@ Once you have installed the TIBCO ComputeDB ODBC Driver, you can connect to TIBC
 
 * Use the TIBCO ComputeDB Driver Connection URL:
 
-		Driver=TIBCO ComputeDB ODBC Driver;server=<locator address>;port=<LocatorPort>;user=<userName>;password=<password>
+		Driver=TIBCO ComputeDB ODBC Driver;server=<locator address>;port=<LocatorPort>;user=<userName>;password=<password>;load-balance=true; 
 
 	In case you want to connect with a specific server:
 
-    		Driver=TIBCO ComputeDB ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>;load-balance=false
-
+    		Driver=TIBCO ComputeDB ODBC Driver;server=<ServerHost>;port=<ServerPort>;user=<userName>;password=<password>;
+	!!! Note
+    	You must specify `load-balance=true` in ODBC properties, if the locator address and port is provided.
+        
 * Create a TIBCO ComputeDB DSN (Data Source Name) using the installed TIBCO ComputeDB ODBC Driver. Refer to the Windows documentation relevant to your operating system for more information on creating a DSN. </br>
 When prompted, select the TIBCO ComputeDB ODBC Driver from the list of drivers and enter a Data Source name, TIBCO ComputeDB Server Host, Port, User Name and Password.
 Refer to the documentation for detailed information on [Setting Up TIBCO ComputeDB ODBC Driver](../setting_up_odbc_driver-tableau_desktop.md).  
