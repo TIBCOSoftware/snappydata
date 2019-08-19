@@ -74,6 +74,7 @@ The following list of commonly used properties can be set to configure the clust
 |-spark.network.timeout|The default timeout for all network interactions while running queries.|Lead|
 |-spark.sql.codegen.cacheSize<a id="codegencache"></a>|Size of the generated code cache. This effectively controls the maximum number of query plans whose generated code (Classes) is cached. The default is 2000. |Lead|
 
+
 ## Logging, Metrics Configuration
 <!--- ... include use of history server properties--->
 
@@ -131,9 +132,9 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 |snappydata.cache.putIntoInnerJoinResultSize| Use this property with extreme limits such as 1K and 10GB. The default is 100 MB.|
 |-snappydata.scheduler.pool|Use this property to define scheduler pool to either default or low latency. You can also assign queries to different pools.|
 |-snappydata.enable-experimental-features|Use this property to enable and disable experimental features. You can call out in case some features are completely broken and need to be removed from the product.|
+|snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
 
 <a id="sde-properties"></a>
-
 ## AQP Properties
 
 The [AQP](../aqp.md) properties can be set using a Snappy SQL shell (snappy-sql) command or using the configuration properties in the **conf/leads** file. </br>
