@@ -134,7 +134,11 @@ The output data source name for TIBCO ComputeDB is `snappysink`.
 
 ### Code Sample
 
-A minimal code example for structured streaming with snappysink is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/StructuredStreamingWithSnappySink.scala).
+A minimal code example for structured streaming with snappysink is available [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/SocketSourceExampleWithSnappySink.scala).
+
+### Examples
+
+You can refer to structured streaming examples [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming/CDCExample.scala) 
 
 ### Using TIBCO ComputeDB Structured Streaming API
 
@@ -264,6 +268,25 @@ A duplicate batch might be picked up for processing in case of failure. In the c
 def process(snappySession: SnappySession, sinkProps: Map[String, String],
       batchId: Long, df: Dataset[Row], possibleDuplicate: Boolean = false): Unit
 ```
+
+## Resetting a Streaming Query
+
+Progress of a streaming query is saved as part of the checkpoint directory by Spark. On top of this **Snappy Sink** also maintains an internal state as part of the state table to ensure idempotency of the sink. 
+
+
+Hence to reset a streaming query, the following actions must be taken to clean the state of the streaming query: 
+
+
+!!! Note
+	When you use the following steps you may permanently lose the state of the streaming query.
+
+
+1.	Delete the checkpoint directory. (or start streaming query with different checkpoint directory.)
+2.	Clear the state from the state table using following sql:</br>
+		delete from [state_table_schema].snappysys_internal____sink_state_table where stream_query_id = <query_name>;
+
+	*	[state_table_schema] is the schema passed as part of “stateTableSchema” option of snappy sink. It should be skipped if “stateTableSchema” option was not provided while defining snappy sink. 
+	*	`<query_name>` is the name of the query provided while defining the sink.
 
 ## Limitations
 Limitations of **Snappy Sink** are as follows:
