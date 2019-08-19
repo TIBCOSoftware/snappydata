@@ -44,7 +44,6 @@ pages:
 - 'Concepts': 'install/concepts.md'
 - 'Concepts':
     - 'Core Components': 'architecture/core_components.md'
-    - 'Cluster Components': 'configuring_cluster/configuring_cluster.md'
     - 'TIBCO ComputeDB Cluster Architecture': 'architecture/cluster_architecture.md'  
     - 'Distributed Transactions': 'consistency/transactions_about.md'
     - 'Distributed Transactions':
@@ -167,6 +166,7 @@ pages:
         - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
+    - 'Cluster Configuration': 'configuring_cluster/configuring_cluster.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
         - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
