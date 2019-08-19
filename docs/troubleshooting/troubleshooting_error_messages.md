@@ -18,6 +18,7 @@ The following topics are covered in this section:
 * [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
 * [Cannot parse config: String: 1: Expecting end of input or a comma, got ':'](#jobsubmitsnap)
 * [java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound slf4j-log4j12.jar on the class path, preempting StackOverflowError](#javalangillegal)
+* [Bad `PutInto` performance even when input dataframe size is small.](#putintoperf)
 
 
 
@@ -246,4 +247,33 @@ build.gradle example that uses **snappydata-store-client jar** and **snappydata-
     exclude group: 'org.slf4j', module: 'slf4j-log4j12'
  }
 ```
+</action>
+
+<!-- --------------------------------------------------------------------------- -->
+<a id="putintoperf"></a>
+<error> **Error Message:** </error> 
+<error-text>
+Bad `PutInto` performance even when input dataframe size is small.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+`PutInto` operation internally performs join. If the input dataframe size is small (less than `spark.sql.autoBroadcastJoinThreshold` which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than short merge join (which will be chose otherwise).
+
+However, some sources doesn't provide size statistics and in that case the size of dataframe results into value of `spark.sql.defaultSizeInBytes` property which defaults to `Long.MaxValue`. In this case even if the actual size of the input dataframe is less than  that of `spark.sql.autoBroadcastJoinThreshold`, the `PutInto` operation will always end up using sort merge join resulting into poor performance.
+</diagnosis>
+
+<action> **Solution:** </br>
+Solution for this issue is to override default value of `spark.sql.defaultSizeInBytes` by setting it as part of session configuration with the value matching the approximate size of the actual input dataframe.
+
+The property can be set using the following SQL command:
+
+`set spark.sql.defaultSizeInBytes = <some long value>`
+
+For example, `set spark.sql.defaultSizeInBytes = 10000`
+
+Using a SnappySession instance this can be set as follows:
+
+`snappySession.sql(“set spark.sql.defaultSizeInBytes = 10000”)`
+
+Note that this is a session level property hence all the operation performed using the same session will end up using same overridden value.
 </action>
