@@ -13,7 +13,7 @@ This guide gives details of Spark extension APIs that are provided by TIBCO Comp
 |    [**dropTable**](#droptableapi) </br>Drop TIBCO ComputeDB Table    |        ||
 |  [**createSampleTable**](#createsampletableapi)</br>Create Stratified Sample Table      |        ||
 |   [**createApproxTSTopK**](#createaproxtstopkapi)</br>Create Structure to Query Top-K     |        ||
-|    [**setSchema**](#setschemaapi)</br>Set Current Database/schema    |        ||
+|    [**setCurrentSchema**](#setschemaapi)</br>Set Current Database/schema    |        ||
 |   [**getCurrentSchema**](#getcurrentschemaapi)</br>Get Current Schema of Session     |        ||
 |    [**insert**](#insertapi)</br>Insert Row into an Existing Table   |        ||
 |   [**put**](#putapi)</br>Upsert Row into an Existing Table    |        ||
@@ -98,7 +98,7 @@ Creates a TIBCO ComputeDB managed table. Any relation providers, that is the row
 createTable(
       tableName: String,
       provider: String,
-      schemaDDL: String,
+      schema: StructType,
       options: Map[String, String],
       allowExisting: Boolean)
 ```
@@ -293,14 +293,14 @@ snappySession.createApproxTSTopK("topktable", Some("hashtagTable"), "hashtag", s
 ```
 
 <a id= setschemaapi> </a>
-### setSchema
+### setCurrentSchema
 
 Sets the current database/schema.
 
 **Syntax**
 
 ```
-setSchema(schemaName: String)
+schema
 
 ```
 
@@ -438,7 +438,7 @@ delete(tableName: String, filterExpr: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName      | Name of the table. |
-|filterExpr|  SSQL WHERE criteria to select rows that will be updated. | 
+|filterExpr|  SQL where criteria to select rows that will be updated. | 
 |Returns|Int|
 
 **Example **
@@ -595,7 +595,7 @@ getKeyColumnsAndPositions(tableName: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName	    |    Name of the table.|
-| Returns     |  Sequence of `scala.Tuple2` containing column name and column's position in the table for each key columns (for column tables) or sequence of primary keys (for row tables).|
+| Returns     |  Sequence of `scala.Tuple2` containing column and column's position in the table for each key columns (for column tables) or sequence of primary keys (for row tables).|
 
 **Example **
 
