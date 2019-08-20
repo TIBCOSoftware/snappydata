@@ -31,6 +31,7 @@ import io.snappydata.cluster.ExecutorInitiator
 import io.snappydata.impl.{ExtendibleURLClassLoader, LeadImpl}
 
 import org.apache.spark.executor.SnappyExecutor
+import org.apache.spark.sql.SnappyContext
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.impl.StoreCallbacksImpl
 import org.apache.spark.sql.execution.ui.SQLTab
@@ -229,6 +230,8 @@ object ToolsCallbackImpl extends ToolsCallback with Logging {
     StoreCallbacksImpl.checkSchemaPermission(schema, currentUser)
 
   override def removeURIs(uris: Array[String], isPackage: Boolean): Unit = {
+    val snc: SparkContext = SnappyContext.globalSparkContext
+    uris.foreach(uri => snc.removeFile(uri))
     val lead = ServiceManager.getLeadInstance.asInstanceOf[LeadImpl]
     val allURLs = lead.urlclassloader.getURLs
     val updatedURLs = allURLs.toBuffer
