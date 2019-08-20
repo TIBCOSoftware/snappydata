@@ -3,6 +3,8 @@
 SnappyData Monitoring Console is a dashboard that provides a real-time view into cluster members, member logs, resource usage, running Jobs, SQL queries along with performance data.  This simple widget based view allows you to navigate easily, visualize, and monitor your cluster. You can monitor the overall status of the cluster as well as the status of each member in the cluster.
 All the usage details are automatically refreshed after every five seconds.
 
+!!! Note
+	TIBCO ComputeDB Monitoring Console is not yet tested and supported on Internet Explorer.
 
 To access SnappyData Monitoring Console, start your cluster and open [http:`<leadhost>`:5050/dashboard/](http:`<leadhost>`:5050/dashboard/) in the web browser.
 
@@ -32,6 +34,9 @@ The following topics are covered in this section:
 
 !!! Note
 	When connecting to a SnappyData cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about SnappyData Smart Connector Mode [here](../affinity_modes/connector_mode.md).
+
+In cases where you cannot access the SnappyData Monitoring Console to analyse Jobs and tasks, you must turn on the [Spark History server](#historyserver).
+
 
 On the top-right side of the SnappyData Monitoring Console page, you can view the version details of SnappyData Snapshot. When you click this, the name and version of the product, the build details, the source revision details and the version number of the underlying spark are displayed.
 
@@ -250,3 +255,21 @@ On this page, you can view the total time required for all the tasks in a job to
 * **Number of parallel tasks**: Due to concurrency, multiple queries may take cores and a specific query can take longer. To fix this, you can create a new scheduler and [assign appropriate cores to it](../best_practices/setup_cluster.md).
 
 * **GC time**: Occasionally, on-heap object creation can slow down a query because of garbage collection. In these cases, it is recommended that you increase the on-heap memory, especially when you have row tables.
+
+## Spark History Server
+The Spark History server is an HTTP server that let you analyze the Spark jobs.
+
+The first step in tuning query performance in SnappyData is to understand the query physical plan that is available through the SQL tab on the SnappyData Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the SnappyData Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
+
+To turn on the History server, do the following:
+
+1.	Ensure to provide a shared disk that can be accessed from all the SnappyData nodes. If you do not have the NFS access, use HDFS. Provide the permissions to access a shared folder when you start SnappyData.
+2.	Enable event logging for the Spark jobs. For example, if the server was configured with a log directory of hdfs://namenode/shared/spark-logs, then configure the following properties in the conf/lead: 
+
+            spark.eventLog.enabled true
+            spark.eventLog.dir hdfs://namenode/shared/spark-logs
+
+3.	Start the History server.
+			./sbin/start-history-server.sh
+	This creates a web interface at http://<server-url>:18080 by default, listing incomplete and completed instances of SQL queries and the associated Spark jobs and tasks.
+    For more details about History server, refer to [Configuring History Server](https://spark.apache.org/docs/latest/monitoring.html#environment-variables).

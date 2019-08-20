@@ -1,5 +1,6 @@
 <a id="howto-startcluster"></a>
 # How to Start a SnappyData Cluster
+
 ## Starting SnappyData Cluster on a Single Machine
 
 If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
@@ -60,3 +61,48 @@ $ ./bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spa
 ```
 !!!Note
 	The path mentioned for `-dir` should exist. Otherwise, the command will fail with **FileNotFoundException**.
+
+## Executing Commands on Selected Cluster Component 
+
+### Syntax
+
+```
+cluster-util.sh (--on-locators|--on-servers|--on-leads|--on-all) [-y] (--copy-conf | --run "<cmd-to-run-on-selected-nodes>")
+```
+
+### Description
+
+You can use the cluster-util.sh utility to execute a given command on selected members of the cluster. The script relies on the entries you specify in locators, servers, and leads files in the **conf** directory to identify the members of the cluster.
+
+ *	`-on-locators` </br>
+	If specified, the given command is executed on locators.
+
+ *	`--on-servers `</br>
+	If specified, the given command is executed on servers.
+
+*	`--on-leads` </br>
+    If specified, the given command is executed on leads.
+
+*	`--on-all `</br>
+	If specified, the given command is executed on all the member in the cluster.
+
+*	`-y`</br>
+ 	If specified, the script does not prompt for the confirmation to execute the command on each member node.
+
+ *	`--copy-conf`</br>
+	This is a shortcut command. When you specify this comand, the  log4j.properties, snappy-env.sh and spark-env.sh configuration files are copied from the local machine to all the members. 	These files are copied only in the following conditions:
+    *	If these are absent in the destination member
+    *	If their content is different.
+    	In latter case, a backup of the file is taken in **conf/backup** directory, on the destination member, before copy.
+
+*	`--run <cmd-to-run-on-selected-nodes>`
+	If specified, the given command(s) is executed on specified members. Command to be executed specified after --run`` must be in double-quotes.
+### Example
+```
+// To copy configuration files on all servers
+
+./sbin/cluster-util.sh -on-servers   --run -copyconf”
+      2.  To run “ls” command on all servers with -y option
+           “./sbin/cluster-util.sh -on-servers -y  --run ls  
+
+```
