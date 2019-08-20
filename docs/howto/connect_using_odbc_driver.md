@@ -19,17 +19,16 @@ To download and install the Visual C++ Redistributable for Visual Studio 2013:
 
 To download and install the ODBC driver:
 
-1. [Download the TIBCO ComputeDB 1.1.0 Enterprise Version](https://edelivery.tibco.com/storefront/index.ep). The downloaded file contains the TIBCO ComputeDB ODBC driver installers.
+1. [Download the TIBCO ComputeDB 1.1.1 Enterprise Version](https://edelivery.tibco.com/storefront/index.ep). The downloaded file contains the TIBCO ComputeDB ODBC driver installers.
 
 2. Depending on your Windows installation, extract the contents of the 32-bit or 64-bit version of the TIBCO ComputeDB ODBC Driver.
 
     | Version | ODBC Driver |
     |--------|--------|
-    |32-bit for 32-bit platform|TIB_compute-odbc_1.1.0_win_x86_32bit.zip|
-    |32-bit for 64-bit platform|TIB_compute-odbc_1.1.0_win_x86_64bit.zip|
-    |64-bit for 64-bit platform|TIB_compute-odbc_1.1.0_win_x64_64bit.zip|
+    |32-bit for 32-bit platform|TIB_compute-odbc_1.1.1_win_x86_32bit.zip|
+    |64-bit for 64-bit platform|TIB_compute-odbc_1.1.1_win_x64_64bit.zip|
 
-4. Double-click on the extracted **TIB_compute-odbc_1.1.0_win.msi** file, and follow the steps to complete the installation.
+4. Double-click on the extracted **TIB_compute-odbc_1.1.1_win.msi** file, and follow the steps to complete the installation.
 
 	!!! Note
 		Ensure that [TIBCO ComputeDB is installed](../install.md) and the [TIBCO ComputeDB cluster is running](start_snappy_cluster.md).
