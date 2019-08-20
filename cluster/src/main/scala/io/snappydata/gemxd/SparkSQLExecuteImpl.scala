@@ -500,6 +500,7 @@ object CreateNewSession extends java.util.function.Function[java.lang.Long, Snap
       case null => throw new CacheClosedException("No SparkContext ...")
       case sc => new SnappySession(sc)
     }
+    Utils.getLocalProperties(session.sparkContext).clear()
     Property.PlanCaching.set(session.sessionState.conf, true)
     session
   }
