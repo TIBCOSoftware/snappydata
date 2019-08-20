@@ -1,5 +1,5 @@
 /*
- * Changes for TIBCO ComputeDB data platform.
+ * Changes for TIBCO Project SnappyData data platform.
  *
  * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
