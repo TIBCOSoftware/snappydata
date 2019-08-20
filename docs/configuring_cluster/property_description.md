@@ -84,6 +84,7 @@ AQP configuration
 |Property|Description|Components</br>|
 |-|-|-|
 |-log-file|Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, **snappylocator.log**, **snappyleader.log**,**snappyserver.log**. In case logging is set via log4j, the default log file is **snappydata.log** for each of the SnappyData member.)|Server</br>Lead</br>Locator|
+|snappydata.sql.planCaching|Use this property to enable/disable plan caching. By default it is disabled. |Lead|
 
 
 ## Hadoop, Hive Configuration:
