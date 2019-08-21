@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -49,7 +49,8 @@ import org.apache.spark.{Logging, SparkConf, SparkContext}
  * Basic tests for non-embedded mode connections to an embedded cluster.
  */
 class SplitSnappyClusterDUnitTest(s: String)
-    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase with Serializable {
+    extends ClusterManagerTestBase(s) with SplitClusterDUnitTestBase
+      with Serializable {
 
   override val locatorNetPort: Int = testObject.locatorNetPort
 
@@ -72,7 +73,7 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   override def afterClass(): Unit = {
-    Array(vm2, vm1, vm0).foreach(_.invoke(getClass, "stopNetworkServers"))
+    Array(vm2, vm1, vm0, vm3).foreach(_.invoke(getClass, "stopNetworkServers"))
     ClusterManagerTestBase.stopNetworkServers()
     vm3.invoke(classOf[ClusterManagerTestBase], "stopSparkCluster", sparkProductDir)
     super.afterClass()
@@ -388,8 +389,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testStaleCatalog(): Unit = {
-
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
 
@@ -419,7 +420,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testStaleCatalogRetryForStreamingSink(): Unit = {
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     import scala.concurrent.ExecutionContext.Implicits.global
     val testTempDirectory = "/tmp/SplitSnappyClusterDUnitTest"
 
@@ -456,7 +458,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testSNAP3024(): Unit = {
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t5 values('1', '1')")
@@ -489,7 +492,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testSmartConnectorAfterBucketRebalance(): Unit = {
-    val snc = SnappyContext(sc)
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'col1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t5 values('1', '1')")
@@ -530,8 +534,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   private def insertDataAfterStaleCatalog(tableType: String) = {
-    val snc = SnappyContext(sc)
-
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     logInfo(s"insertDataAfterStaleCatalog: invoked for $tableType table")
     if (tableType == "COLUMN") {
       snc.sql(s"CREATE TABLE T5(COL1 STRING, COL2 STRING) USING column OPTIONS" +
@@ -576,8 +580,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testDeleteAfterStaleCatalog(): Unit = {
-    val snc = SnappyContext(sc)
-
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T6(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t6 values('1', '1')")
@@ -612,8 +616,8 @@ class SplitSnappyClusterDUnitTest(s: String)
   }
 
   def testUpdateAfterStaleCatalog(): Unit = {
-    val snc = SnappyContext(sc)
-
+    val snc = SnappyContext(sc).newSession()
+    snc.setConf(Property.TestDisableCodeGenFlag.name, "false")
     snc.sql(s"CREATE TABLE T7(COL1 STRING, COL2 STRING) USING column OPTIONS" +
         s" (key_columns 'COL1', PARTITION_BY 'COL1', COLUMN_MAX_DELTA_ROWS '1')")
     snc.sql("insert into t7 values('1', '1')")
@@ -915,14 +919,14 @@ object SplitSnappyClusterDUnitTest
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.cores", TestUtils.defaultCores.toString)
+        .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("spark.testing.reservedMemory", "0")
         .set("spark.sql.autoBroadcastJoinThreshold", "-1")
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
-
+        .set(Property.TestDisableCodeGenFlag.name, "false")
     logInfo("Spark conf:" + conf.getAll.toString)
 
     val sc = SparkContext.getOrCreate(conf)
@@ -1467,3 +1471,4 @@ object SplitSnappyClusterDUnitTest
     }
   }
 }
+

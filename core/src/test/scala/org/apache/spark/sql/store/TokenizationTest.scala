@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -156,9 +156,9 @@ class TokenizationTest
         s"GROUP BY ROLLUP (channel, id) ORDER BY channel, id LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }
@@ -176,9 +176,9 @@ class TokenizationTest
         s"i_class, i_item_id, i_item_desc, revenueratio LIMIT 100"
     try {
       snc.sql(sqlstr)
-      fail(s"this should have given TableNotFoundException")
+      fail("this should have given AnalysisException")
     } catch {
-      case tnfe: TableNotFoundException =>
+      case e: AnalysisException if e.message.contains("Table or view not found") =>
       case t: Throwable => fail(s"unexpected exception $t")
     }
   }

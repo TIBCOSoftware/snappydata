@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,12 +17,20 @@
 package org.apache.spark.sql
 
 
+import com.pivotal.gemfirexd.internal.engine.Misc
 import io.snappydata.Property
 import io.snappydata.cluster.ClusterManagerTestBase
+import io.snappydata.test.dunit.{AvailablePortHelper, SerializableCallable}
+import io.snappydata.util.TestUtils
+import org.scalatest.Assertions
+
+import org.apache.spark.internal.Logging
+import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd, SparkListenerTaskStart}
 
 case class TestRecord(col1: Int, col2: Int, col3: Int)
 
-class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class ColumnBatchAndExternalTableDUnitTest(s: String) extends ClusterManagerTestBase(s)
+    with Assertions with Logging {
 
   def _testColumnBatchSkipping(): Unit = {
 
@@ -277,6 +285,118 @@ class ColumnBatchScanDUnitTest(s: String) extends ClusterManagerTestBase(s) {
 
     snc.sql("DROP TABLE IF EXISTS " + rowTable)
     snc.sql("DROP TABLE IF EXISTS " + colTable)
+  }
+
+  def testSessionConfigForCPUsPerTask(): Unit = {
+    val netPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", netPort)
+    val conn = getANetConnection(netPort)
+    val stmt = conn.createStatement()
+
+    val sparkCores = TestUtils.defaultCores * 3 // three executors
+    val usableHeap = vm1.invoke(new SerializableCallable[AnyRef] {
+      override def call(): AnyRef = {
+        Long.box(Misc.getGemFireCache.getResourceManager.getHeapMonitor
+            .getThresholds.getCriticalThresholdBytes)
+      }
+    }).asInstanceOf[java.lang.Long].longValue()
+    val implicitCpusToTasks = math.max(1, math.ceil(math.max(
+      128.0 * 1024.0 * 1024.0 * TestUtils.defaultCores / usableHeap,
+      TestUtils.defaultCores.toDouble / Runtime.getRuntime.availableProcessors())).toInt)
+    val buckets = math.max(128, sparkCores)
+    val targetDataFile = "airlineParquet"
+
+    // initialize data
+    val srcDataFile = getClass.getResource("/2015-trimmed.parquet").getPath
+    stmt.execute(s"create table airline_staging using parquet options (path '$srcDataFile')")
+    stmt.execute(s"create table airline using column options (buckets '$buckets') " +
+        "as select * from airline_staging")
+    stmt.execute("drop table airline_staging")
+    // create parquet file with large number of partitions though total size is small
+    stmt.execute(s"create table airline_staging using parquet options (path '$targetDataFile') " +
+        s"as select * from airline")
+
+    var maxTasksStarted = 0
+    var activeTasks = 0
+
+    val listener = new SparkListener {
+      override def onTaskStart(taskStart: SparkListenerTaskStart): Unit = synchronized {
+        if (taskStart.taskInfo ne null) {
+          activeTasks += 1
+          if (activeTasks > maxTasksStarted) {
+            maxTasksStarted = activeTasks
+          }
+        }
+      }
+
+      override def onTaskEnd(taskEnd: SparkListenerTaskEnd): Unit = synchronized {
+        if ((taskEnd.taskInfo ne null) && taskEnd.stageAttemptId != -1) {
+          activeTasks -= 1
+        }
+      }
+    }
+    sc.listenerBus.addListener(listener)
+
+    // ---- Check explicit spark.task.cpus setting takes effect in embedded mode -----
+
+    // force linking of buckets to partitions to avoid de-linking complications
+    stmt.execute("set snappydata.linkPartitionsToBuckets = true")
+    // first confirm that number of tasks created at a time are same as sparkCores by default
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline")
+    // should not deviate much though in rare cases few tasks can start/end slightly out of order
+    assert(maxTasksStarted < sparkCores * 2)
+    assert(maxTasksStarted > sparkCores / 2)
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline")
+    assert(maxTasksStarted < sparkCores * 2)
+    assert(maxTasksStarted > sparkCores / 2)
+
+    // now check that max tasks are reduced with the session setting
+    stmt.execute("set spark.task.cpus = 2")
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline")
+    assert(maxTasksStarted < sparkCores)
+    assert(maxTasksStarted > sparkCores / 4)
+
+    // ---- Check implicit spark.task.cpus get set for file scans/inserts ----
+    logInfo(s"Expected implicit spark.task.cpus = $implicitCpusToTasks")
+    stmt.execute("set spark.task.cpus")
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline")
+    assert(maxTasksStarted < sparkCores * 2)
+    assert(maxTasksStarted > sparkCores / 2)
+
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline_staging")
+    assert(maxTasksStarted < sparkCores * 2 / implicitCpusToTasks)
+    assert(maxTasksStarted > sparkCores / (2 * implicitCpusToTasks))
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline_staging")
+    assert(maxTasksStarted < sparkCores * 2 / implicitCpusToTasks)
+    assert(maxTasksStarted > sparkCores / (2 * implicitCpusToTasks))
+
+    // ---- Check explicit spark.task.cpus overrides implicit spark.task.cpus ----
+    stmt.execute("set spark.task.cpus = 1")
+    maxTasksStarted = 0
+    activeTasks = 0
+    stmt.execute("select avg(depDelay) from airline_staging")
+    assert(maxTasksStarted < sparkCores * 2)
+    assert(maxTasksStarted > sparkCores / 2)
+
+    stmt.execute("drop table airline_staging")
+    stmt.execute("drop table airline")
+
+    sc.listenerBus.removeListener(listener)
+
+    stmt.close()
+    conn.close()
   }
 }
 

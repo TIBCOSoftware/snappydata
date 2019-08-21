@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -14,53 +14,52 @@
  * permissions and limitations under the License. See accompanying
  * LICENSE file.
  */
-
-package org.apache.spark.examples.snappydata
+package org.apache.spark.examples.snappydata.structuredstreaming
 
 import org.apache.log4j.{Level, Logger}
+
 import org.apache.spark.sql.streaming.ProcessingTime
 import org.apache.spark.sql.{SnappySession, SparkSession}
 
-import scala.language.postfixOps
-
 /**
- * An example showing usage of structured streaming with SnappyData
+ * An example showing usage of structured streaming with console sink.
  *
- * <p></p>
- * To run the example in local mode go to your SnappyData product distribution
- * directory and type following command on the command prompt
- * <pre>
- * bin/run-example snappydata.StructuredStreamingExample
- * </pre>
- * <p></p>
- * To run this on your local machine, you need to first run a Netcat server <br>
+ * To run this example on your local machine, you need to first start a Netcat server: <br>
  * `$ nc -lk 9999`
  * <p>
  * Sample input data:
- * {{{
+ * <pre>
  * device1,45
  * device2,67
  * device3,35
- * }}}
+ * </pre>
+ *
+ * To run the example in local mode go to your SnappyData product distribution
+ * directory and run the following command:
+ * <pre>
+ * bin/run-example snappydata.structuredstreaming.SocketSourceExample
+ * </pre>
+ *
  * For more details on streaming with SnappyData refer to:
  * http://snappydatainc.github.io/snappydata/programming_guide
  * /stream_processing_using_sql/#stream-processing-using-sql
  *
  */
-object StructuredStreamingExample {
+// scalastyle:off println
+object SocketSourceExample {
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    println("Initializing a SnappySesion")
+    println("Initializing SnappySession ... ")
     val spark: SparkSession = SparkSession
-        .builder
+        .builder()
         .appName(getClass.getSimpleName)
         .master("local[*]")
-        .getOrCreate
-
+        .getOrCreate()
+    println("Initializing SnappySession ... Done.")
     import spark.implicits._
 
     val snappy = new SnappySession(spark.sparkContext)
@@ -86,9 +85,9 @@ object StructuredStreamingExample {
         .format("console")
         .outputMode("append")
         .trigger(ProcessingTime("1 seconds"))
-        .start
+        .start()
 
-    streamingQuery.awaitTermination(timeoutMs = 15000)
+    streamingQuery.awaitTermination(15000)
 
     println("Exiting")
     System.exit(0)
@@ -96,4 +95,3 @@ object StructuredStreamingExample {
 
   case class DeviceData(device: String, signal: Int)
 }
-

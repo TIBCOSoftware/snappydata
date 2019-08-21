@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -34,7 +34,8 @@ import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.impl.ColumnFormatRelation
 import org.apache.spark.sql.{SaveMode, SnappyContext}
 
-class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s) {
+class SnappyTableStatsProviderDUnitTest(s: String) extends ClusterManagerTestBase(s)
+{
 
   val table = "test.test_table"
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ package org.apache.spark
 import java.io.File
 import java.net.URL
 import java.sql.{Connection, DriverManager}
+
 import _root_.io.snappydata.Constant
 import _root_.io.snappydata.cluster.ClusterManagerTestBase
 import org.joda.time.DateTime

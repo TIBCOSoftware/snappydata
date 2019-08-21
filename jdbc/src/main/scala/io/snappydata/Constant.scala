@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -105,6 +105,16 @@ object Constant {
   val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
 
   val LOW_LATENCY_POOL: String = "lowlatency"
+
+  /**
+   * Enable per-session setting for CPUs required per task for the jobs
+   * in the session. Unlike Spark's system-wide setting, this will only
+   * pretend to require those many CPUs for scheduler though backend will
+   * not mark those many CPUs as busy. The net effect is that lesser number
+   * of tasks will be scheduled for the jobs on session and remaining executor
+   * cores will still be available for other tasks.
+   */
+  val CPUS_PER_TASK_PROP: String = "spark.task.cpus"
 
   val CHAR_TYPE_BASE_PROP = "base"
 
