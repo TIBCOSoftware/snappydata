@@ -1,4 +1,4 @@
-# Cluster Components
+# Configuring Cluster Components
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
 
@@ -13,7 +13,7 @@ These files should contain the hostnames of the nodes (one per line) where you i
 <a id="locator"></a>
 ## Locators
 
-Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](../architecture.md) section for more information on the core components.
+Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](/architecture/cluster_architecture.md) section for more information on the core components.
 
 It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_SnappyData_home_>/conf** directory. 
 
@@ -31,7 +31,7 @@ You can refer to the **conf/locators.template** file for some examples.
 
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
-<!---
+
 |Property|Description|
 |-----|-----|
 |-bind-address|IP address on which the locator is bound. The default behavior is to bind to all local addresses.|
@@ -57,7 +57,7 @@ node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locator
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
 
 ```
---->
+
 
 <a id="lead"></a>
 ## Leads
@@ -69,7 +69,7 @@ Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>
 !!! Note
 	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Monitoring Console from outside the network.
 
-<!---
+
 ### List of Lead Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
@@ -115,7 +115,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-spark.ui.port|Port for your SnappyData Monitoring Console, which shows tables, memory and workload data. The default is 5050.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md). </br> These properties need not be added to  the Lead members in case of a client-server connection.|
 
---->
+
 
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
@@ -150,7 +150,7 @@ Create the configuration file (**servers**) for data servers in the **<_SnappyDa
 ### List of Server Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
 
-<!---
+
 |Property|Description</br>|
 |-|-|
 |-bind-address|IP address on which the server is bound. The default behavior is to bind to all local addresses.|
@@ -175,7 +175,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-thrift-ssl<a id="thrift-properties"></a>|Specifies if you want to enable or disable SSL. Values: true or false|
 |-thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: path to key store file </br>`keystore-type`: the type of key-store (default "JKS") </br>`keystore-password`: password for the key store file</br>`keymanager-type`: the type of key manager factory </br>`truststore`: path to trust store file</br>`truststore-type`: the type of trust-store (default "JKS")</br>`truststore-password`: password for the trust store file </br>`trustmanager-type`: the type of trust manager factory </br> |
 
---->
+
 
 **Example**: To start a two servers (node-c and node-c), update the configuration file as follows:
 

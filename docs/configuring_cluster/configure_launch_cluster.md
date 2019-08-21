@@ -162,4 +162,14 @@ node2_hostname -dir=/nfs/opt/snappy-db1/server4 -heap-size=8g -memory-size=42g
 
 ```
 
-#### [Reference to all properties and description](link here)
+## Configuring Cluster Components
+
+Refer to [Configuring Cluster Components](/configuring_cluster/configuring_cluster.md) section for more details. 
+
+##  List of Properties
+
+Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+
+
+
+
