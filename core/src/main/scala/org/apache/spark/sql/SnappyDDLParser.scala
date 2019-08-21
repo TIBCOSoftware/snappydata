@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -571,10 +571,9 @@ abstract class SnappyDDLParser(session: SnappySession)
   }
 
   protected def dropSchema: Rule1[LogicalPlan] = rule {
-    DROP ~ (SCHEMA ~ push(false) | DATABASE ~ push(true)) ~ ifExists ~ identifier ~
-        (RESTRICT ~ push(false) | CASCADE ~ push(true)).? ~> ((isDb: Boolean,
-        exists: Boolean, schemaName: String, cascade: Any) => DropSchemaOrDbCommand(
-      schemaName, exists, cascade.asInstanceOf[Option[Boolean]].contains(true), isDb))
+    DROP ~ SCHEMA ~ ifExists ~ identifier ~ (RESTRICT ~ push(false) | CASCADE ~ push(true)).? ~>
+        ((exists: Boolean, schemaName: String, cascade: Any) => DropSchemaCommand(
+          schemaName, exists, cascade.asInstanceOf[Option[Boolean]].contains(true)))
   }
 
   protected def truncateTable: Rule1[LogicalPlan] = rule {
@@ -785,7 +784,7 @@ abstract class SnappyDDLParser(session: SnappySession)
   protected def delegateToSpark: Rule1[LogicalPlan] = rule {
     (
         ADD | ANALYZE | ALTER ~ (DATABASE | TABLE | VIEW) | CREATE ~ DATABASE |
-        DESCRIBE | DESC | LIST | LOAD | MSCK | REFRESH | SHOW | TRUNCATE
+        DESCRIBE | DESC | DROP ~ DATABASE | LIST | LOAD | MSCK | REFRESH | SHOW | TRUNCATE
     ) ~ ANY.* ~ EOI ~>
         (() => sparkParser.parsePlan(input.sliceString(0, input.length)))
   }

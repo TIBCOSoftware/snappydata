@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -787,7 +787,7 @@ object SplitClusterDUnitTest extends SplitClusterDUnitTestObject {
 
     // stop any existing SparkContext, to make sure cpu core available for this test
     if (vm eq null) stopSpark()
-    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark", Array[AnyRef](null))
+    else vm.invoke(classOf[SplitClusterDUnitTest], "stopSpark")
 
     // perform some operation thru spark-shell
     val jars = Files.newDirectoryStream(Paths.get(s"$productDir/../distributions/"),

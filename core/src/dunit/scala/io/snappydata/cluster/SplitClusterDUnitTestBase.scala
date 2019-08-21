@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -397,11 +397,12 @@ trait SplitClusterDUnitTestObject extends Logging {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.cores", TestUtils.defaultCores.toString)
+        .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)
         .set("snapptdata.sql.planCaching", random.nextBoolean().toString)
+      .set(io.snappydata.Property.TestDisableCodeGenFlag.name, "false")
 
     if (props != null) {
       val user = props.getProperty(Attribute.USERNAME_ATTR, "")

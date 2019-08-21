@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -720,16 +720,6 @@ class SnappyAggregationStrategy(planner: SparkPlanner)
 }
 
 /**
- * Rule to replace Spark's SortExec plans with an optimized SnappySortExec (in SMJ for now).
- */
-object OptimizeSortPlans extends Rule[SparkPlan] {
-  override def apply(plan: SparkPlan): SparkPlan = plan.transformUp {
-    case join@joins.SortMergeJoinExec(_, _, _, _, _, sort@SortExec(_, _, child, _)) =>
-      join.copy(right = SnappySortExec(sort, child))
-  }
-}
-
-/**
  * Rule to collapse the partial and final aggregates if the grouping keys
  * match or are superset of the child distribution. Also introduces exchange
  * when inserting into a partitioned table if number of partitions don't match.
@@ -808,7 +798,11 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
-      case _ => CodegenSparkFallback(plan, session)
+      case _: CollectAggregateExec => CodegenSparkFallback(plan, session)
+      case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) ||
+       session.sessionState.conf.contains("snappydata.connection") =>
+        CodegenSparkFallback(plan, session)
+      case _ => plan
     }
   }
 

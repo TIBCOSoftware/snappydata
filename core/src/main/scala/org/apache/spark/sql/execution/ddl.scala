@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -107,19 +107,16 @@ case class CreateSchemaCommand(ifNotExists: Boolean, schemaName: String,
     val session = sparkSession.asInstanceOf[SnappySession]
     val catalog = session.sessionCatalog
     val schema = catalog.formatDatabaseName(schemaName)
-    catalog.createSchema(schema, ifNotExists, authId, createInExternalHive = true)
+    catalog.createSchema(schema, ifNotExists, authId)
     Nil
   }
 }
 
-case class DropSchemaOrDbCommand(schemaName: String, ifExists: Boolean, cascade: Boolean,
-    isDb: Boolean) extends RunnableCommand {
+case class DropSchemaCommand(schemaName: String, ignoreIfNotExists: Boolean,
+    cascade: Boolean) extends RunnableCommand {
   override def run(sparkSession: SparkSession): Seq[Row] = {
     val session = sparkSession.asInstanceOf[SnappySession]
-    val catalog = session.sessionCatalog
-    val schema = catalog.formatDatabaseName(schemaName)
-    // drop from catalog first to cascade drop all objects if required
-    catalog.dropDatabase(schema, ifExists, cascade)
+    session.sessionCatalog.dropSchema(schemaName, ignoreIfNotExists, cascade)
     Nil
   }
 }
@@ -348,7 +345,8 @@ case class SnappyCacheTableCommand(tableIdent: TableIdentifier, queryString: Str
             // Dummy op to materialize the cache. This does the minimal job of count on
             // the actual cached data (RDD[CachedBatch]) to force materialization of cache
             // while avoiding creation of any new SparkPlan.
-            (memoryPlan.cachedColumnBuffers.count(), System.nanoTime() - start)
+            val count = memoryPlan.cachedColumnBuffers.count()
+            (count, System.nanoTime() - start)
           }))._1) :: Nil
       } finally {
         if (previousJobDescription ne null) {
@@ -517,13 +515,8 @@ case class DeployCommand(
         if (restart) {
           logWarning(s"Following mvn coordinate" +
               s" could not be resolved during restart: $coordinates", ex)
-          if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
-            throw ex
-          }
-          Nil
-        } else {
-          throw ex
         }
+        throw ex
     }
   }
 }
@@ -540,14 +533,11 @@ case class DeployJarCommand(
       if (unavailableUris.nonEmpty) {
         logWarning(s"Following jars are unavailable" +
             s" for deployment during restart: ${unavailableUris.deep.mkString(",")}")
-        if (restart && lang.Boolean.parseBoolean(
-          System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "true"))) {
+        if (restart) {
           throw new IllegalStateException(
             s"Could not find deployed jars: ${unavailableUris.mkString(",")}")
         }
-        if (!restart) {
-          throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
-        }
+        throw new IllegalArgumentException(s"jars not readable: ${unavailableUris.mkString(",")}")
       }
       val sc = sparkSession.sparkContext
       val uris = availableUris.map(j => sc.env.rpcEnv.fileServer.addFile(new File(j)))
