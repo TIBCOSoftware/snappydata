@@ -82,7 +82,7 @@ The fine-grained log settings are applicable for classes other than the SnappyDa
 ## Using Trace Flags for Advanced Logging For SnappyData Store
 
 <a id="trace-flag"></a>
-SnappyData Store provides the following trace flags that you can use with the `snappydata.debug.true` system property to log additional details about specific features:
+SnappyData Store provides the following trace flags that you can use with the `gemfirexd.debug.true` system property to log additional details about specific features:
 
 | Trace flag                 | Enables        |
 |----------------------------|-----------------------------------------------------|
@@ -99,10 +99,10 @@ SnappyData Store provides the following trace flags that you can use with the `s
 | TraceLock\_\*              | Locking and unlocking information for all internal locks.|
 | TraceLock\_DD              | Logging for all DataDictionary and table locks that are acquired or released.|
 
-To enable logging of specific features of SnappyData, set the required trace flag in the `snappydata.debug.true` system property. For example, you can add the following setting inside the configuration file of the SnappyData member to enable logging for query distribution and indexing:
+To enable logging of specific features of SnappyData, set the required trace flag in the `gemfirexd.debug.true` system property. For example, you can add the following setting inside the configuration file of the SnappyData member to enable logging for query distribution and indexing:
 
 ```pre
-localhost -J-Dsnappydata.debug.true=QueryDistribution,TraceIndex
+localhost -J-Dgemfirexd.debug.true=QueryDistribution,TraceIndex
 ```
 
 If you need to set a trace flag in a running system, use the [SYS.SET_TRACE_FLAG](../reference/inbuilt_system_procedures/set-trace-flag.md) system procedure. The procedure sets the trace flag in all members of the distributed system, including locators. You must execute the procedure as a system user. For example:
