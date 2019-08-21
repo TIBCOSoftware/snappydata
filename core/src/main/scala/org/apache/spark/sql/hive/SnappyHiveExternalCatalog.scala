@@ -60,6 +60,7 @@ import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOL
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
 import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
@@ -411,6 +412,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         withHiveExceptionHandling(super.dropTable(schema, table,
           ignoreIfNotExists = true, purge = true))
     }
+
+    SnappySession.clearAllCache(onlyQueryPlanCache = true)
+    CodeGeneration.clearAllCache()
+    invalidate(schema -> table)
   }
 
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,

@@ -170,6 +170,8 @@ object ExternalStoreUtils {
 
     override def get(k: String): Option[T] = baseMap.get(k.toLowerCase)
 
+    override def put(k: String, v: T): Option[T] = baseMap.put(k.toLowerCase, v)
+
     override def remove(k: String): Option[T] = baseMap.remove(k.toLowerCase)
 
     override def iterator: Iterator[(String, T)] = baseMap.iterator
