@@ -3,6 +3,8 @@
 
 This quick start guide provides step-by-step instructions to perform structured streaming in SnappyData by using the Spark shell as well as through a Snappy job.
 
+For detailed information, refer to  [Structured Streaming](/howto/use_stream_processing_with_snappydata.md#structuredstreaming).
+
 ## Structured Streaming using Spark Shell
 
 Following are the steps to perform structured streaming using Spark shell:
@@ -231,3 +233,6 @@ Use the following command to stop the running job:
 
 !!!Note
 	The job-id used for stopping the job is picked from the job submission response.
+
+## Examples
+For more examples, refer [here](https://github.com/SnappyDataInc/snappydata/blob/master/examples/src/main/scala/org/apache/spark/examples/snappydata/structuredstreaming) 

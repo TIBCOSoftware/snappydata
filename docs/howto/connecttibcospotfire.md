@@ -3,14 +3,29 @@
 TIBCO Spotfire® Desktop allows users to easily author and update ad-hoc analytics, applications, and dashboards. 
 To connect TIBCO Spotfire® Desktop to TIBCO ComputeDB, setup and launch the TIBCO ComputeDB cluster. 
 
-!!! Note
-	The Spark SQL connector based on the Simba ODBC driver in Spotfire has some performance issues. We noticed an overhead of about 5 seconds over the query time in TIBCO ComputeDB. You can see the query timings in the ComputeDB dashboard. We expect this issue to be resolved before full GA of this feature. 
+You can use any of the following methods to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB:
 
-### Experimental (but Faster) Spotfire Connector (based on TIBCO ComputeDB Native ODBC)
-An experimental but much faster connnector is also available from TIBCO Engineering and accessible from [here](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb).
+*	[Native Spotfire® Connector (Recommended)](#nativespotfireconnector)
+*	[Builtin CDB connector in Spotfire®](#builtinspotfireconnector)
+
+
+<a id= nativespotfireconnector> </a>
+## CDB Connector using Native ODBC Driver 
+TIBCO recommends to use the native Spotfire Connector to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB. This connector is based on native ODBC and is a faster connnector. Refer [TIBCO Spotfire® Connectivity to TIBCO ComputeDB™](https://community.tibco.com/wiki/tibco-spotfire-connectivity-tibco-computedb) for detailed instructions to access TIBCO ComputeDB using this connector.
+
+<a id= builtinspotfireconnector> </a>
+## CDB Connector using Simba ODBC Driver
+
+Users of Spotfire® 10.4 or later can use the builtin CDB connector in Spotfire® to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB. Refer to [Accessing Data from TIBCO ComputeDB](https://docs.tibco.com/pub/sfire-analyst/10.4.0/doc/html/en-US/TIB_sfire-analyst_UsersGuide/connectors/computedb/computedb_accessing_data.htm) for detailed instructions to access TIBCO ComputeDB using this connector.
+
+<!---
+<a id= apachesparksql> </a>
+## Apache Spark SQL
+
+Users of Spotfire versions prior to 10.4 can use Apache Spark SQL to connect TIBCO Spotfire® Desktop to TIBCO ComputeDB. Refer the following instructions to connect:
 
 <a id= tibcomputsetup> </a>
-## Download and Launch TIBCO ComputeDB
+### Download and Launch TIBCO ComputeDB
 
 Check the [system requirements](/install/system_requirements.md), [download and install](/install.md) TIBCO ComputeDB, and then [start the TIBCO ComputeDB cluster](./start_snappy_cluster.md). Hive Thrift server is enabled by default. If you want to securely access the Hive Thrift server using SSL encryption, you must set these additional properties in the [Lead Node Configuration](/configuring_cluster/configuring_cluster.md#lead):
 
@@ -20,7 +35,7 @@ Check the [system requirements](/install/system_requirements.md), [download and 
    
 <!--- For more details about setting the Hive Thrift server, refer to [placeholder]--->
 
-## Connecting Spotfire® Desktop to TIBCO ComputeDB
+### Connecting Spotfire® Desktop to TIBCO ComputeDB using Apache Spark SQL
 
 Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( https://edelivery.tibco.com/storefront/eval/tibco-spotfire-desktop/prod10954.html). Follow the setup guidelines to install the product. After installation, you can use the following steps to connect Spotfire® Desktop to TIBCO ComputeDB.
 
@@ -44,3 +59,4 @@ Login and download TIBCO Spotfire® Desktop from the [TIBCO eDelivery website]( 
 5.	Go to **General** tab and then click the **Connect** button.
 6.	From the **Database** dropdown, either choose the existing database (schema) **app** or **default** or you can choose a database (schema) that is created in the TIBCO ComputeDB cluster.<br> ![images](../Images/spotfire/generaltabspotfire1.png)  
 7.	Click **OK**. The **View In Connection (VIC)** box is displayed which lists the tables from the selected database.
+--->
