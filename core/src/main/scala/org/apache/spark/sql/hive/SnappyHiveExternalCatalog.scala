@@ -238,7 +238,17 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def databaseExists(schema: String): Boolean = {
-    schema == SYS_SCHEMA || withHiveExceptionHandling(super.databaseExists(schema))
+    if (schema == SYS_SCHEMA) true
+    else {
+      // if cache is small enough then linearly search in it since hive call is expensive
+      if (cachedCatalogTables.size() <= 200) {
+        val itr = cachedCatalogTables.asMap().keySet().iterator()
+        while (itr.hasNext) {
+          if (itr.next()._1 == schema) return true
+        }
+      }
+      withHiveExceptionHandling(super.databaseExists(schema))
+    }
   }
 
   override def listDatabases(): Seq[String] = {
