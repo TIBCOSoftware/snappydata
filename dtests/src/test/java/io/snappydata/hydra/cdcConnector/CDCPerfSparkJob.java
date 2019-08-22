@@ -57,7 +57,7 @@ public class CDCPerfSparkJob {
       if (sqlServer.equals("sqlServer1")) {
         url = "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433";
       } else
-        url = "jdbc:sqlserver://sqlent2.eastus.cloudapp.azure.com:1434";
+        url = "jdbc:sqlserver://sqlserver2-et16.copfedn1qbcz.us-west-2.rds.amazonaws.com:1435";
       String username = "sqldb";
       String password = "snappydata#msft1";
       Properties props = new Properties();

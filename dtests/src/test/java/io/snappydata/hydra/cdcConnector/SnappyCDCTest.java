@@ -513,6 +513,7 @@ public class SnappyCDCTest extends SnappyTest {
     String curlCmd = null;
     ProcessBuilder pb = null;
     String appName = SnappyCDCPrms.getAppName();
+    Boolean isResubmitApp = SnappyCDCPrms.getIsResubmitApp();
     String logFileName = "sparkStreamingStopResult_" + System.currentTimeMillis() + ".log";
     File log = null;
     File logFile = null;
@@ -529,6 +530,11 @@ public class SnappyCDCTest extends SnappyTest {
       String dest = log.getCanonicalPath() + File.separator + logFileName;
       logFile = new File(dest);
       snappyTest.executeProcess(pb, logFile);
+      if(isResubmitApp)
+      {
+        Log.getLogWriter().info("Resubmitting the app " + appName);
+        HydraTask_executeSparkJob();
+      }
     } catch (Exception ex) {
       Log.getLogWriter().info("Exception in HydraTask_closeStreamingJob() " + ex.getMessage());
     }
