@@ -1,12 +1,12 @@
 ## Introduction 
-TIBCO ComputeDB is a distributed, in-memory optimized analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workload. TIBCO ComputeDB is a distributed, in-memory optimized analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources and stream processing all in one unified cluster.
+TIBCO ComputeDB is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
 
-The primary use case of SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, often, there is no need to pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
+The primary use case of SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, often, there is no need to pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code, using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
 
 ![TIBCO ComputeDB Positioning](./Images/Snappy_intro.1.png)
 
 !!!Note
-	TIBCO ComputeDB is not another Enterprise Data Warehouse (EDW) platform, but rather a nimble computational cluster that augments traditional EDWs and data lakes.
+	TIBCO ComputeDB is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.
 
 ### Important Capabilities
 
@@ -17,11 +17,11 @@ The primary use case of SnappyData is to provide analytics at interactive speeds
 
 
 *	**Rich connectivity** </br>
-	TIBCO ComputeDB is built with Apache Spark inside. Therefore, any data store that has a Spark connector can be accessed using SQL or by using the Spark RDD/Dataset API. Virtually all modern data stores do have Spark connector. see [SparkPackages](https://spark-packages.org/)). You can also dynamically deploy connectors to a running TIBCO ComputeDB cluster.</br>
+	TIBCO ComputeDB is built with Apache Spark inside. Therefore, any data store that has a Spark connector can be accessed using SQL or by using the Spark RDD/Dataset API. Virtually all modern data stores provide a Spark connector. see [SparkPackages](https://spark-packages.org/)). You can also dynamically deploy connectors to a running TIBCO ComputeDB cluster.</br>
     
 
 *	**Virtual or in-memory data**</br>
-	You can decide which datasets need to be provisioned into distributed memory or left at the source. When the data is left at source, after being modeled as a virtual/external tables, the analytic query processing is parallelized, and the query fragments are pushed down wherever possible and executed at high speed.
+	You can decide which datasets need to be provisioned into distributed memory or left at the source. When the data is left at source, after being modeled as virtual/external tables, the analytic query processing is parallelized, and the query fragments are pushed down whenever possible and executed at high speed.
 When speed is essential, applications can selectively copy the external data into memory using a single SQL command. </br>
 
 *	**In-memory Columnar + Row store**</br> 
@@ -37,11 +37,11 @@ When speed is essential, applications can selectively copy the external data int
 	External data sets when discovered automatically through schema inference will have the schema of the source. Users can cleanse, blend, reshape data using a SQL function library (Spark SQL+) or even submit Apache Spark jobs and use custom logic. The entire rich Spark API is at your disposal. This logic can be written in SQL, Java, Scala, or even Python.</br>
 
 *	**Prepares data for data science** </br>
-	Through the use of Spark API for statistics and machine learning, raw or curated datasets can be easily prepared for machine learning. You can understand the statistical characteristics such as correlation, independence of different variables and so on. You can generate distributed feature vectors from your data that is by using processes such as one-hot encoder, binarizer, and a range of functions built into the Spark ML library. These features can be stored back into column tables and shared across a group of users with security and avoid dumping copies to disk, which is slow and error-prone.</br>
+	Through the use of Spark API for statistics and machine learning, raw or curated datasets can be easily prepared for machine learning. You can understand the statistical characteristics such as correlation, independence of different variables and so on. You can generate distributed feature vectors from your data. For instance, you can use algorithms such as one-hot encoder, binarizer, and a range of functions built into the Spark ML library. Generated features can be stored back into column tables and shared across a group of users with security and avoid dumping copies to disk, which is slow and error-prone.</br>
  
 *	**Stream ingestion and liveness** </br>
-	While it is common to see query service engines today, most resort to periodic refreshing of data sets from the source as the managed data cannot be mutated — for example query engines such as Presto, HDFS formats like parquet, etc. Moreover, when updates can be applied pre-processing, re-shaping of the data is not necessarily simple. 
-    In TIBCO ComputeDB, operational systems can feed data updates through Kafka to TIBCO ComputeDB. The incoming data can be CDC events (insert, updates, or deletes) and can be easily ingested into respective in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply smart logic to reduce incoming streams, apply transformations, etc. by using APIS for Spark structured streaming.* </br>
+	Popular big data systems today resort to periodic refreshing of data sets from the source as the managed data often cannot be mutated. 
+    In TIBCO ComputeDB, operational systems can feed data updates through Kafka to TIBCO ComputeDB. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and getting the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes* </br>
 
 *	**Approximate Query Processing(AQP)** </br>
 	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In TIBCO ComputeDB, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart.</br>
