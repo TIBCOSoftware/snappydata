@@ -278,12 +278,12 @@ For example, to use **TIBCO ComputeDB Enterprise** build to launch the cluster, 
 https://edelivery.tibco.com to your local machine and give its path as value to above option.
 
 ```pre
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/TIB_compute_1.1.0_linux.tar.gz"
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/TIB_compute_1.1.1_linux.tar.gz"
 ```
 
 Alternatively, you can also put your build tarball file on a public web server and provide its URL to this option.
 ```pre
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/TIB_compute_1.1.0_linux.tar.gz" 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/TIB_compute_1.1.1_linux.tar.gz" 
 ```
 
 The build file should be in **.tar.gz** format.

@@ -21,14 +21,14 @@ You can use the Maven or the SBT dependencies to get the latest released version
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
 **Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
+libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.1"
 ```
 
 !!! Note

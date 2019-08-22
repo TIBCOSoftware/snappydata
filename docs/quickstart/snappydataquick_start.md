@@ -32,15 +32,15 @@ Navigate to the TIBCO ComputeDB product root directory to start the cluster. Run
 $./sbin/snappy-start-all.sh
 
 ```pre
-Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-locator-1/snappylocator.log
+Logs generated in /home/cbhatt/TIB_compute_1.1.1_linux/work/localhost-locator-1/snappylocator.log
 SnappyData Locator pid: 10813 status: running
   Distributed system now has 1 members.
   Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
-Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-server-1/snappyserver.log
+Logs generated in /home/cbhatt/TIB_compute_1.1.1_linux/work/localhost-server-1/snappyserver.log
 SnappyData Server pid: 11018 status: running
   Distributed system now has 2 members.
   Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
-Logs generated in /home/cbhatt/TIB_compute_1.1.0_linux/work/localhost-lead-1/snappyleader.log
+Logs generated in /home/cbhatt/TIB_compute_1.1.1_linux/work/localhost-lead-1/snappyleader.log
 SnappyData Leader pid: 11213 status: running
   Distributed system now has 3 members.
   Starting hive thrift server (session=snappy)

@@ -6,10 +6,10 @@
 3. In the Download page, select the version number and then select **Linux**.
 4. Read and accept the **END USER LICENSE AGREEMENT**.
 5. Choose an installation option and then click **Download**.
-6. After **TIB_compute_1.1.0_linux.tar.gz** is downloaded, run the following commands:
+6. After **TIB_compute_1.1.1_linux.tar.gz** is downloaded, run the following commands:
 
-        $ tar -xzf TIB_compute_1.1.0_linux.tar.gz
-        $ cd TIB_compute_1.1.0_linux/
+        $ tar -xzf TIB_compute_1.1.1_linux.tar.gz
+        $ cd TIB_compute_1.1.1_linux/
         # Create a directory for TIBCO ComputeDB artifacts
         $ mkdir quickstartdatadir
         $./bin/spark-shell --conf spark.snappydata.store.sys-disk-dir=quickstartdatadir --conf spark.snappydata.store.log-file=quickstartdatadir/quickstart.log

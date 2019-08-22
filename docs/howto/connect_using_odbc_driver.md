@@ -23,9 +23,8 @@ To download and install the ODBC driver:
 
     | Version | ODBC Driver |
     |--------|--------|
-    |32-bit for 32-bit platform|TIB_compute-odbc_1.1.0_win_x86_32bit.zip|
-    |32-bit for 64-bit platform|TIB_compute-odbc_1.1.0_win_x86_64bit.zip|
-    |64-bit for 64-bit platform|TIB_compute-odbc_1.1.0_win_x64_64bit.zip|
+    |32-bit for 32-bit platform|TIB_compute-odbc_1.1.1_win_x86_32bit.zip|
+    |64-bit for 64-bit platform|TIB_compute-odbc_1.1.1_win_x64_64bit.zip|
 
 4. Double-click on the **SnappyDataODBCDriverInstaller.msi** file, and follow the steps to complete the installation.
 
