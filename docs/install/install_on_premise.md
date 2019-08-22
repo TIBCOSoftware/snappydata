@@ -13,8 +13,8 @@ This is the simplest form of deployment and can be used for testing and POCs.
 Open the command prompt, go the location of the downloaded TIBCO ComputeDB file, and run the following command to extract the archive file.
 
 ```pre
-$ tar -xzf TIB_compute_1.1.0_linux.tar.gz
-$ cd TIB_compute_1.1.0_linux/
+$ tar -xzf TIB_compute_1.1.1_linux.tar.gz
+$ cd TIB_compute_1.1.1_linux/
 ```
 
 Start a basic cluster with one data node, one lead, and one locator:
@@ -54,8 +54,8 @@ If all the machines in your cluster can share a path over an NFS or similar prot
 
 2. Extract the downloaded archive file and go to TIBCO ComputeDB home directory.
 
-		$ tar -xzf TIB_compute_1.1.0_linux.tar.gz
-		$ cd TIB_compute_1.1.0_linux/
+		$ tar -xzf TIB_compute_1.1.1_linux.tar.gz
+		$ cd TIB_compute_1.1.1_linux/
 
 3. Configure the cluster as described in [Configuring the Cluster](../configuring_cluster/configuring_cluster.md).
 

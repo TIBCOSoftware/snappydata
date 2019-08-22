@@ -7,9 +7,9 @@
 
 ## Step 1: Install the TIBCO ComputeDB ODBC Driver
 
-1. [Download the TIBCO ComputeDB 1.1.0 Enterprise Edition](install.md#download-snappydata).
+1. [Download the TIBCO ComputeDB 1.1.1 Enterprise Edition](install.md#download-snappydata).
 
-2. Click **ODBC INSTALLERS** to download the **TIB_compute-odbc_1.1.0_win.zip** file.
+2. Click **ODBC INSTALLERS** to download the **TIB_compute-odbc_1.1.1_win.zip** file.
 
 3. Follow [steps 1 and 2](howto/connect_using_odbc_driver.md) to install the TIBCO ComputeDB ODBC driver.
 
