@@ -1,6 +1,20 @@
-INSERT INTO [testdatabase20G].[dbo].[ADJUSTMENT] VALUES (912, ?, 9929,2, 506161, 775324, 431703, 28440200.7189, N'iT', N'2016-05-09', 520989, 966723, 592283, 682854, 165363, N'2016-07-02', N'2016-05-30', N'889', N'89');
-INSERT INTO [testdatabase20G].[dbo].[AGREEMENT] VALUES (?, 8093, 2, N'PagOvRDn', N'PYydIsuL', N'2016-05-02', N'2016-07-13', N'2016-06-25', N'2016-07-04', N'4027', N'4065');
-INSERT INTO [testdatabase20G].[dbo].[BANK] VALUES (9989, ?, 2391, 2, N'l', N'NAHJCqkFeaAaqJhG', N'2016-07-14', N'2016-06-26', N'4097', N'9092');
-INSERT INTO [testdatabase20G].[dbo].[BANK_ACCOUNT] VALUES (9989, 49596, ?, 1455, 2, N'whr', N'Dd', 148697, N'2016-08-04', N'2016-05-29', N'3789', N'542');
-INSERT INTO [testdatabase20G].[dbo].[BENEFIT_GROUP_NAME] VALUES (14511, 534885, ?, 4440, 2, N'zUXTmYf', N'zaT', N'2016-07-31', N'2016-05-09', N'2016-05-15', N'2016-07-16', N'2367', N'523');
-INSERT INTO [testdatabase20G].[dbo].[BENEFIT_GROUPS] VALUES (8252, 87633, ?, 187253, 2, N'czK', N'2016-05-14', N'2016-05-20', N'2016-07-13', N'2016-07-15', N'VTC', N'FFvhKp');
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[AGREEMENT2] VALUES (?, 2293, 2, N'PagOvRDn', N'PYydIsuL', N'2016-05-02', N'2016-07-13', N'2016-06-25', N'2016-07-04', N'4027', N'4065');
+INSERT INTO [testdatabase].[dbo].[BANK2] VALUES (9289, ?, 2292, 2, N'l', N'NAHJCqkFeaAaqJhG', N'2016-07-14', N'2016-06-26', N'4097', N'9092');
+DELETE FROM [testdatabase].[dbo].[AGREEMENT2] WHERE AGREE_ID = ?
+UPDATE top(200)  [testdatabase].[dbo].[AGREEMENT2] set ver = ?;
+commit transaction;
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[BENEFIT_GROUP_NAME2] VALUES (14511, 22885, ?, 4220, 2, N'zUXTmYf', N'zaT', N'2016-07-31', N'2016-05-09', N'2016-05-15', N'2016-07-16', N'2367', N'523');
+INSERT INTO [testdatabase].[dbo].[BENEFIT_GROUPS2] VALUES (8222, 2233, ?, 122253, 2, N'czK', N'2016-05-14', N'2016-05-20', N'2016-07-13', N'2016-07-15', N'VTC', N'FFvhKp');
+INSERT INTO [testdatabase].[dbo].[BENEFIT_PACKAGE2] VALUES (?, 2223, 2, N'rI', 266, 14298, N'2016-05-11', N'2016-06-25', N'2016-06-03', N'2016-05-09', N'2344', N'9024');
+commit transaction;
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[PERSON_EVENT2] VALUES (?, 3033, 2, 4222220, 99026, 2227528, 47621151, 14959478, N'LhSu', N'2016-06-27', N'2016-05-01', N'2016-05-01', N'2016-07-05', N'8615', N'1915');
+INSERT INTO [testdatabase].[dbo].[GROUPS2] VALUES (?, 5397, 2, N'N', 3225, 22960, N'2016-06-10', N'2016-07-31', N'2016-06-12', N'2016-06-11', N'3416', N'3558');
+commit transaction;
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[CODE_VALUE2] VALUES (?, 5222, 2, N'QHD', 22055, N'5665', N'3534', N'2016-06-01', N'2016-07-07');
+INSERT INTO [testdatabase].[dbo].[TOPIC_COMMUNICATION2] VALUES (22224, ?,2322,42222, 6233, 2, N'NJeu', N'hKdqx', N'2016-07-29', N'2016-06-18', N'2016-07-30', N'2016-05-05', N'6335', N'7602');
+UPDATE top(200)  [testdatabase].[dbo].[TOPIC_COMMUNICATION2] set ver = ?;
+commit transaction;

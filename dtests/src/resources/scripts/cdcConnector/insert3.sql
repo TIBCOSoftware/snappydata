@@ -1,0 +1,17 @@
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[AGREEMENT3] VALUES (?, 8333, 3, N'PagOvRDn', N'PYydIsuL', N'2016-05-02', N'2016-07-13', N'2016-06-25', N'2016-07-04', N'4027', N'4065');
+INSERT INTO [testdatabase].[dbo].[BANK3] VALUES (9989, ?, 2333, 3, N'l', N'NAHJCqkFeaAaqJhG', N'2016-07-14', N'2016-06-26', N'4097', N'9092');
+commit transaction;
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[BENEFIT_GROUP_NAME3] VALUES (14533, 534335, ?, 3330, 3, N'zUXTmYf', N'zaT', N'2016-07-31', N'2016-05-09', N'2016-05-15', N'2016-07-16', N'2367', N'523');
+INSERT INTO [testdatabase].[dbo].[BENEFIT_GROUPS3] VALUES (8252, 87333, ?, 187333, 3, N'czK', N'2016-05-14', N'2016-05-20', N'2016-07-13', N'2016-07-15', N'VTC', N'FFvhKp');
+INSERT INTO [testdatabase].[dbo].[BENEFIT_PACKAGE3] VALUES (?, 6733, 3, N'rI', 333, 149398, N'2016-05-11', N'2016-06-25', N'2016-06-03', N'2016-05-09', N'2344', N'9024');
+commit transaction;
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[PERSON_EVENT3] VALUES (?, 3033, 3, 3357540, 33026, 57987528, 47621151, 14959478, N'LhSu', N'2016-06-27', N'2016-05-01', N'2016-05-01', N'2016-07-05', N'8615', N'1915');
+INSERT INTO [testdatabase].[dbo].[GROUPS3] VALUES (?, 3397, 3, N'N', 38335, 33360, N'2016-06-10', N'2016-07-31', N'2016-06-12', N'2016-06-11', N'3416', N'3558');
+commit transaction;
+SET XACT_ABORT ON begin transaction;
+INSERT INTO [testdatabase].[dbo].[CODE_VALUE3] VALUES (?, 3309, 3, N'QHD', 233355, N'5665', N'3534', N'2016-06-01', N'2016-07-07');
+INSERT INTO [testdatabase].[dbo].[TOPIC_COMMUNICATION3] VALUES (33334, ?,33344,33111, 6333, 3, N'NJeu', N'hKdqx', N'2016-07-29', N'2016-06-18', N'2016-07-30', N'2016-05-05', N'6335', N'7602');
+commit transaction;

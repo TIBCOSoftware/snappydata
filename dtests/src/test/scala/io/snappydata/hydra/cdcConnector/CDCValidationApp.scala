@@ -39,11 +39,10 @@ object CDCValidationApp {
     Thread.sleep(60000)
     val tableFile = args(0)
     val flag = args(1)
-    val isUpdate = args(2)
-    val dbName = args(3)
-    val sqlServerInstance = args(4)
-    val appName = args(5)
-//    val startRange = args(6).toInt
+    val dbName = args(2)
+    val sqlServerInstance = args(3)
+    val appName = args(4)
+    val endRange = args(5).toInt
     val conf = new SparkConf().setAppName(appName)
     val sc = SparkContext.getOrCreate(conf)
     val pw = new PrintWriter(appName + flag + ".out")
@@ -64,7 +63,7 @@ object CDCValidationApp {
         hostPort = "sqlent.westus.cloudapp.azure.com:1433"
       }
       else{
-        hostPort = "sqlent2.eastus.cloudapp.azure.com:1434"
+        hostPort = "sqlserver2-et16.copfedn1qbcz.us-west-2.rds.amazonaws.com:1435"
       }
       val driver = "com.microsoft.sqlserver.jdbc.SQLServerDriver"
       Class.forName(driver)
@@ -117,14 +116,11 @@ object CDCValidationApp {
         printMapValues(sqlServerTableCnt1Arr)
       }
 
-      if (isUpdate.equals("true")) {
-        checkDataConsistency
-      }
-
-      else {
+     // else {
         for (j <- 0 to tableNameArr.length - 1) {
           //validation in case of inserts and deletes
          // val startRange = SnappyCDCPrms.getInitStartRange()
+
           val tableName = tableNameArr(j)
           var snappyTableCnt: Long = 0l
           var sqlServerTableCnt: Long = 0l
@@ -133,13 +129,15 @@ object CDCValidationApp {
             snappyTableCnt = snappyResultSet(a).getLong(0)
           }
           pw.println("SnappyTable:" + tableName + "=" + snappyTableCnt + ";")
-          val sqlTable = "["+dbName+"].[dbo].["+tableName+"]"
-          val query1 = s"SELECT COUNT(*) FROM $sqlTable"
-          val resultSet = connection.createStatement().executeQuery(query1)
-          while (resultSet.next()) {
-            sqlServerTableCnt = resultSet.getLong(1)
+         for(k <- 1 to 5) {
+           val sqlTable = s"[" + dbName + "].[dbo].[" + tableName + k + "]"
+            val query1 = s"SELECT COUNT(*) FROM $sqlTable"
+            val resultSet = connection.createStatement().executeQuery(query1)
+            while (resultSet.next()) {
+              sqlServerTableCnt = sqlServerTableCnt + resultSet.getLong(1)
+            }
+            pw.println("SqlServerTable:" + tableName + "=" + sqlServerTableCnt + ";")
           }
-          pw.println("SqlServerTable:" + tableName + "=" + sqlServerTableCnt + ";")
 
           if (flag.equals(2.toString)) {
 
@@ -147,8 +145,13 @@ object CDCValidationApp {
             pw.println()
             pw.println("=============================================ResultSet Validation ==================================================")
             val rndNo = new Random()
-            val idVal = rndNo.nextInt(10) //+ startRange
-            val sqlQ = "SELECT * FROM "+ sqlTable +" WHERE "+ idNameArr(j) +" = " + idVal
+            val idVal = rndNo.nextInt(endRange) + 10
+            var num = rndNo.nextInt(5)
+            if(num == 0) {
+              num += 1
+            }
+            val sqlTab = "[testdatabase].[dbo].[" + tableName + num + "]"
+            val sqlQ = "SELECT * FROM "+ sqlTab +" WHERE "+ idNameArr(j) +" = " + idVal
             System.out.println("The sql query is " + sqlQ)
             val snappyQ = "SELECT * FROM "+ tableName +" WHERE "+ idNameArr(j) +" = " + idVal
             System.out.println("The snappy query is "+ snappyQ)
@@ -173,7 +176,7 @@ object CDCValidationApp {
             pw.println()
           }
         }
-      }
+    //  }
 
       //Perform full result set validation
       def fullResultSetValidation(snc: SnappyContext, sqlConn: Connection, sqlString: String, snappyString: String, pw: PrintWriter): Any = {
@@ -194,12 +197,12 @@ object CDCValidationApp {
             snappyVal.map(x => snappyColVal = x.get(0))
             System.out.println("sqlColVal = " + sqlColVal)
             System.out.println("sqlColVal = " + sqlColVal + " snappyColVal = " + snappyColVal)
-          //  if (sqlColVal.equals(snappyColVal)) {
+            if (sqlColVal.equals(snappyColVal)) {
                 pw.println("sqlColVal = " + sqlColVal + " is EQUAL to  snappyColVal = " + snappyColVal)
-          //  }
-         //   else {
-         //     pw.println("FAILURE : sqlColVal = " + sqlColVal + " is NOT EQUAL to  snappyColVal = " + snappyColVal)
-         //   }
+            }
+            else {
+              pw.println("FAILURE : sqlColVal = " + sqlColVal + " is NOT EQUAL to  snappyColVal = " + snappyColVal)
+            }
           }
         }
       }
