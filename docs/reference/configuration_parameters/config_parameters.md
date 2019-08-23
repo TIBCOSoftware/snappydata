@@ -16,6 +16,7 @@ You use JDBC connection properties, connection boot properties, and Java system 
 
 TIBCO ComputeDB configuration properties are divided into the following property types:
 
+<a id="connectpro"></a>
 -   **Connection properties**. Connection properties configure the features of a TIBCO ComputeDB member or a TIBCO ComputeDB client connection when you start or connect to a TIBCO ComputeDB member. You can define connection properties directly in the JDBC connection URL (or in the "connect" command in an interactive TIBCO ComputeDB session). You can also define connection properties in the `gemfirexd.properties` file or as Java system properties. For example, use -J-D*property_name*=*property_value* when you execute a `snappy` utility. Or, use the JAVA_ARGS environment variable to define a Java system property for an interactive Snappy session (JAVA_ARGS="-D*property_name*=*property_value*"). 
    
 	!!! Note
