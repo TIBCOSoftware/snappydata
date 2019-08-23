@@ -396,7 +396,10 @@ private[sql] object JoinStrategy {
   def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
-        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
+        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned && (t match {
+          case _: SamplingRelation => false
+          case _ => true
+        })
         case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
         case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
           allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
