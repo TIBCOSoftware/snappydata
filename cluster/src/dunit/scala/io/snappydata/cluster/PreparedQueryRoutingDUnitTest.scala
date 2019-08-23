@@ -921,6 +921,7 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     // scalastyle:off println
     println(s"testPreparedStatementUnicodeBug: Connected to $serverHostPort")
     val stmt1 = conn.createStatement()
+    // scalastyle:on println
 
     stmt1.execute("create table region (val string, description string) using column")
     stmt1.execute("insert into region values ('粤' , 'unicode')")
