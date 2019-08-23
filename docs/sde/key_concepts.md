@@ -23,7 +23,7 @@ Stratified sampling, on the other hand, allows the user to specify the common di
 To understand these concepts in further detail, refer to the [handbook](https://web.eecs.umich.edu/~mozafari/php/data/uploads/approx_chapter.pdf). It explains different sampling strategies, error estimation mechanisms, and various types of data synopses.
 
 ## Online Sampling
-SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each startum in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
+SDE also supports continuous sampling over streaming data and not just static data sets. For instance, you can use the Spark DataFrame APIs to create a uniform random sample over static RDDs. For online sampling, SDE first does [reservoir sampling](https://en.wikipedia.org/wiki/Reservoir_sampling) for each stratum in a write-optimized store before flushing it into a read-optimized store for stratified samples. 
 There is also explicit support for time series. For instance, if AdImpressions are continuously streaming in, TIBCO ComputeDB can ensure having enough samples over each 5-minute time window, while still ensuring that all GEOs have good representation in the sample.
 
 ## Sketching
