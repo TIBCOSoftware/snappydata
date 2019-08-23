@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -79,28 +79,22 @@ case class SnappyHashAggregateExec(
     hasDistinct: Boolean)
     extends NonRecursivePlans with UnaryExecNode with BatchConsumer {
 
-
   val useByteBufferMapBasedAggregation: Boolean = {
-    val useDictionaryOptimizationForSingleKey = (groupingExpressions.length == 1 &&
-      groupingExpressions.exists(_.dataType match {
-      case StringType => true
-      case _ => false
-    }) && !Property.UseOptimizedHashAggregateForSingleKey.get(
-      sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf))
+    val conf = sqlContext.sparkSession.sessionState.conf
+    val useOldImplementationForSingleKey = groupingExpressions.length == 1 &&
+        !Property.UseOptimizedHashAggregateForSingleKey.get(conf)
 
     aggregateBufferAttributes.forall(attr =>
       TypeUtilities.isFixedWidth(attr.dataType)) &&
-      Property.UseOptimzedHashAggregate.get(
-        sqlContext.sparkSession.asInstanceOf[SnappySession].sessionState.conf) &&
-      !groupingExpressions.isEmpty &&
-      groupingExpressions.forall(_.dataType.
-        existsRecursively(SHAMapAccessor.supportedDataTypes)) &&
-      !useDictionaryOptimizationForSingleKey
+        Property.UseOptimzedHashAggregate.get(conf) &&
+        groupingExpressions.nonEmpty &&
+        groupingExpressions.forall(_.dataType.
+            existsRecursively(SHAMapAccessor.supportedDataTypes)) &&
+        !useOldImplementationForSingleKey
   }
 
-
-
-  override def nodeName: String = "SnappyHashAggregate"
+  override def nodeName: String =
+    if (useByteBufferMapBasedAggregation) "BufferMapHashAggregate" else "SnappyHashAggregate"
 
   @transient def resultExpressions: Seq[NamedExpression] = __resultExpressions
 
@@ -809,18 +803,12 @@ case class SnappyHashAggregateExec(
       val keysToProcessSize = this.groupingAttributes.drop(numToDrop)
       val suffixSize = if (numBytesForNullKeyBits == 0) {
         keysToProcessSize.foldLeft(0) {
-          case (size, attrib) => size + attrib.dataType.defaultSize + (attrib.dataType match {
-            case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-            case _ => 0
-          })
+          case (size, attrib) => size + attrib.dataType.defaultSize
         }.toString
       } else {
         keysToProcessSize.zipWithIndex.map {
           case(attrib, i) => {
-            val sizeTerm = attrib.dataType.defaultSize + (attrib.dataType match {
-              case dec: DecimalType if (dec.precision > Decimal.MAX_LONG_DIGITS) => 1
-              case _ => 0
-            })
+            val sizeTerm = attrib.dataType.defaultSize
             s"""(int)(${SHAMapAccessor.getExpressionForNullEvalFromMask(i + numToDrop,
               numBytesForNullKeyBits, nullKeysBitsetTerm)} ? 0 : $sizeTerm)
             """
@@ -990,8 +978,8 @@ case class SnappyHashAggregateExec(
           // of loop, causing the TPCHD query to crash the server as the string positions
           // referenced in the map are no longer valid. Adding it in the list will
           // prevent single hashmap from being gced
-          $overflowHashMapsTerm = ${classOf[java.util.Collections].getName}.<$hashSetClassName>singletonList(
-          $hashMapTerm);
+          $overflowHashMapsTerm = ${classOf[java.util.Collections].getName}.
+            <$hashSetClassName>singletonList($hashMapTerm);
           $overflowMapIter = $overflowHashMapsTerm.iterator();
           $overflowMapIter.next();
         }
@@ -1163,6 +1151,7 @@ case class SnappyHashAggregateExec(
       }
     }
 
+    val evaluatedInputCode = evaluateVariables(input)
     ctx.currentVars = input
     val keysExpr = ctx.generateExpressions(
       groupingExpressions.map(e => BindReferences.bindReference[Expression](e, child.output)))
@@ -1180,7 +1169,7 @@ case class SnappyHashAggregateExec(
     // to be materialized explicitly for the dictionary optimization case (AQP-292)
     val updateAttrs = AttributeSet(updateExpr)
     // evaluate map lookup code before updateEvals possibly modifies the keyVars
-    val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, input,
+    val mapCode = byteBufferAccessor.generateMapGetOrInsert(initVars, initCode, evaluatedInputCode,
       keysExpr, keysDataType, aggBuffDataTypes)
 
     val bufferVars = byteBufferAccessor.getBufferVars(aggBuffDataTypes,
@@ -1240,6 +1229,7 @@ case class SnappyHashAggregateExec(
        |
        |// evaluate aggregate functions
        |${evaluateVariables(updateEvals)}
+       |// generate update
        |${byteBufferAccessor.generateUpdate(updateEvals, aggBuffDataTypes)}
       """.stripMargin
   }

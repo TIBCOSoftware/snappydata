@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -72,33 +72,52 @@ case class CollectAggregateExec(child: SparkPlan)(
     val numPartitions = childRDD.getNumPartitions
     val partitionBlocks = new Array[Any](numPartitions)
     val rddId = childRDD.id
+    var success = false
 
-    sc.runJob(childRDD, CachedDataFrame, 0 until numPartitions,
-      (index: Int, r: (Array[Byte], Int)) =>
-        // store the partition results in BlockManager for large results
-        partitionBlocks(index) = CachedDataFrame.localBlockStoreResultHandler(
-          rddId, bm)(index, r._1))
+    try {
+      sc.runJob(childRDD, CachedDataFrame, 0 until numPartitions,
+        (index: Int, r: (Array[Byte], Int)) =>
+          // store the partition results in BlockManager for large results
+          partitionBlocks(index) = CachedDataFrame.localBlockStoreResultHandler(
+            rddId, bm)(index, r._1))
+      success = true
 
-    partitionBlocks
+      partitionBlocks
+    } finally {
+      if (!success) {
+        // remove any cached results from block manager
+        bm.removeRdd(rddId)
+      }
+    }
   }
 
   override def executeCollect(): Array[InternalRow] = {
     val sc = sqlContext.sparkContext
     val bm = sc.env.blockManager
+    var success = false
 
     val partitionBlocks = executeCollectData()
-    // create an iterator over the blocks and pass to generated iterator
-    val numFields = child.schema.length
-    val results = partitionBlocks.iterator.flatMap(
-      CachedDataFrame.localBlockStoreDecoder(numFields, bm))
-    val buffer = generatedClass.generate(generatedReferences)
-        .asInstanceOf[BufferedRowIterator]
-    buffer.init(0, Array(results))
-    val processedResults = new ArrayBuffer[InternalRow]
-    while (buffer.hasNext) {
-      processedResults += buffer.next().copy()
+    try {
+      // create an iterator over the blocks and pass to generated iterator
+      val numFields = child.schema.length
+      val results = partitionBlocks.iterator.flatMap(
+        CachedDataFrame.localBlockStoreDecoder(numFields, bm))
+      val buffer = generatedClass.generate(generatedReferences)
+          .asInstanceOf[BufferedRowIterator]
+      buffer.init(0, Array(results))
+      val processedResults = new ArrayBuffer[InternalRow]
+      while (buffer.hasNext) {
+        processedResults += buffer.next().copy()
+      }
+      val result = processedResults.toArray
+      success = true
+      result
+    } finally {
+      if (!success) {
+        // remove any cached results from block manager
+        bm.removeRdd(this.childRDD.id)
+      }
     }
-    processedResults.toArray
   }
 
   override def doExecute(): RDD[InternalRow] = {

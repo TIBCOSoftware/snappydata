@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,7 @@
 package io.snappydata.externalstore
 
 import java.sql.PreparedStatement
+import java.util.concurrent.atomic.AtomicInteger
 
 import io.snappydata.cluster.ClusterManagerTestBase
 import io.snappydata.test.dunit.AvailablePortHelper
@@ -363,12 +364,12 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     }
 
     var thrCount6: Integer = 0
-    var deletedRecords = 0
+    val deletedRecords = new AtomicInteger(0)
     val colThread6 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = deleteRecords(1, 20)
+        val result = deleteRecords(1, 20)
         thrCount6 += result._1
-        deletedRecords += result._2
+        deletedRecords.getAndAdd(result._2)
       })
     }
     })
@@ -377,9 +378,9 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     var thrCount7: Integer = 0
     val colThread7 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = deleteRecords(11, 20)
+        val result = deleteRecords(11, 20)
         thrCount7 += result._1
-        deletedRecords += result._2
+        deletedRecords.getAndAdd(result._2)
       })
     }
     })
@@ -388,9 +389,9 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     var thrCount8: Integer = 0
     val colThread8 = new Thread(new Runnable {def run() {
       (1 to 5) foreach (i => {
-        var result = deleteRecords(21, 30)
+        val result = deleteRecords(21, 30)
         thrCount8 += result._1
-        deletedRecords += result._2
+        deletedRecords.getAndAdd(result._2)
       })
     }
     })
@@ -403,6 +404,6 @@ class JDBCPreparedStatementDUnitTest(s: String) extends ClusterManagerTestBase(s
     rscnt = stmt.executeQuery("select count(*) from t3")
     rscnt.next()
     assertEquals(0, rscnt.getInt(1))
-    assertEquals(100, deletedRecords)
+    assertEquals(100, deletedRecords.get)
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -47,6 +47,14 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
 
   protected override def newSparkConf(addOn: (SparkConf) => SparkConf): SparkConf = {
 
+    /**
+     * Pls do not change the flag values of Property.TestDisableCodeGenFlag.name
+     * and Property.UseOptimizedHashAggregateForSingleKey.name
+     * They are meant to suppress CodegenFallback Plan so that optimized
+     * byte buffer code path is tested & prevented from false passing.
+     * If your test needs CodegenFallback, then override the newConf function
+     * & clear the flag from the conf of the test locally.
+     */
     System.setProperty("spark.testing", "true")
     super.newSparkConf((conf: SparkConf) => {
       conf.set("spark.sql.codegen.maxFields", "110")
@@ -1281,27 +1289,22 @@ class SHAByteBufferTest extends SnappyFunSuite with BeforeAndAfterAll {
   test("SNAP-3132") {
     snc
     snc.sql("drop table if exists test1")
-    snc.sql("drop table if exists test2")
-    snc.sql("drop table if exists test3")
-    snc.sql("create table test1 (col1 int, col2 int, col3 Decimal(7,2)) using column")
+    snc.sql("create table test1 (col1 int, col2 int, col3 Decimal(35,5), name string) using column")
 
     val conn = getSqlConnection
-    val ps1 = conn.prepareStatement("insert into test1 values (?,?, ?)")
-   for(i <- 0 until 500) {
+    val ps1 = conn.prepareStatement("insert into test1 values (?,?, ?, ?)")
+    for (i <- 0 until 500) {
       ps1.setInt(1, i % 5)
       ps1.setInt(2, i % 10)
-      val bd = new BigDecimal(174.576d * i)
+      val bd = new BigDecimal(17456567.576d * i)
       ps1.setBigDecimal(3, bd)
+      ps1.setString(4, (i % 10).toString)
       ps1.addBatch
     }
-
     ps1.executeBatch
-
-
-    snc.sql(s" select 'asif' as name, col1, col2, Cast(sum(col3) as Decimal(15,4)) from test1" +
-      s" group by name, col1, col2 ").collect
+    snc.sql(s" select name, col3, sum(col2) from test1" +
+      s" group by name, col3").collect
     snc.dropTable("test1")
-
   }
 
   ignore("SNAP-3077 test if default max capacity nearing Integer.MAX_VALUE is reached." +
