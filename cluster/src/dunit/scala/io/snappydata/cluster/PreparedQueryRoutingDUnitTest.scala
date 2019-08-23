@@ -912,16 +912,12 @@ class PreparedQueryRoutingDUnitTest(val s: String)
   def testPreparedStatementUnicodeBug(): Unit = {
     serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
     vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
-    // scalastyle:off println
-    println(s"testPreparedStatementUnicodeBug: network server started at $serverHostPort")
-    // scalastyle:on println
+    logInfo(s"testPreparedStatementUnicodeBug: network server started at $serverHostPort")
     val conn = DriverManager.getConnection(
       "jdbc:snappydata://localhost:" + serverHostPort)
 
-    // scalastyle:off println
-    println(s"testPreparedStatementUnicodeBug: Connected to $serverHostPort")
+    logInfo(s"testPreparedStatementUnicodeBug: Connected to $serverHostPort")
     val stmt1 = conn.createStatement()
-    // scalastyle:on println
 
     stmt1.execute("create table region (val string, description string) using column")
     stmt1.execute("insert into region values ('粤' , 'unicode')")
@@ -939,5 +935,10 @@ class PreparedQueryRoutingDUnitTest(val s: String)
     assert(rs1.next())
     assert("粤" == rs1.getString(1) )
 
+    stmt1.execute("insert into region select '\u7ca5', 'unicode2'")
+    pstmt1.setString(1, "\u7ca5")
+    rs1 = pstmt1.executeQuery()
+    assert(rs1.next())
+    assert("粥" == rs1.getString(1) )
   }
 }
