@@ -234,6 +234,7 @@ class CassandraSnappyDUnitTest(val s: String)
     doTestDeployPackageWithSnappyJob()
     doTestPackageViaSnappyJobCommand()
     doTestDeployPackageWithExternalTableInSnappyShell()
+    doTestSNAP_3120()
   }
 
   def doTestPackageViaSnappyJobCommand(): Unit = {
@@ -452,5 +453,45 @@ class CassandraSnappyDUnitTest(val s: String)
       case e: Exception if e.getMessage.contains("Job failed with result:") => // expected
       case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
     }
+  }
+
+  def doTestSNAP_3120(): Unit = {
+    logInfo("Running testSNAP_3120")
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+    stmt1.execute(s"deploy package MSSQL 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar1'")
+    try {
+      stmt1.execute("deploy package MSSQL1 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+          s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
+      assert(assertion = false, s"Expected an exception!")
+    } catch {
+      case sqle: SQLException if sqle.getSQLState == "38000" => // expected
+      case t: Throwable => assert(assertion = false, s"Unexpected exception $t")
+    }
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+    var rs = stmt1.getResultSet
+    rs.next()
+    assert(rs.getString(1) == "mssql")
+
+    stmt1.execute("undeploy MSSQL")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
+
+    stmt1.execute("deploy package MSSQL1 'com.microsoft.sqlserver:sqljdbc4:4.0'" +
+        s" repos 'http://clojars.org/repo/' path '$snappyProductDir/mssqlJar';")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 1)
+    rs = stmt1.getResultSet
+    rs.next()
+    assert(rs.getString(1) == "mssql1")
+
+    stmt1.execute("undeploy MSSQL1")
+
+    stmt1.execute("list packages")
+    assert(getCount(stmt1.getResultSet) == 0)
   }
 }
