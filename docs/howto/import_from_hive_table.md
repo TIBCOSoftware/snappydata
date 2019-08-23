@@ -1,7 +1,7 @@
 # How to Import Data from Hive Table into TIBCO ComputeDB Table
 
 
-Using a Snappy session, you can read an existing Hive table that is defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in SnappyData catalog,  and also define new Hive table/view to be stored in external hive catalog.
+Using a Snappy session, you can read an existing Hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in SnappyData catalog,  and also define new Hive table/view to be stored in external hive catalog. Using a SnappySession, you can also define a new Hive table/view to be stored in an external hive catalog.
 
 When working with Hive, one must instantiate Snappy session with Hive support, including connectivity to a persistent Hive metastore, support for Hive serdes, and Hive user-defined functions.
 
@@ -33,7 +33,7 @@ If you want to setup remote meta store instead of using default database derby, 
 ```
 <property>
     <name>hive.metastore.uris</name>
-    <value>thrift://chbhatt-dell:9083</value>
+    <value>thrift:/hostname:9083</value>
     <description>Thrift URI for the remote metastore. Used by metastore client to connect to remote metastore.</description>
 </property>
 
@@ -73,13 +73,13 @@ Run the following steps to test Snappy with Apache Hadoop:
         snappy-sql> create table if not exists default.t1(id int) row format delimited fields terminated by ',';
         snappy-sql> insert into default.t1 select id, concat(id) from range(100);
 
-
-!!! Note
-	If you have not configure any of the configuration files mentioned above( hive-site.xml, core-site.xml, hdfs-site.xml) and started the Hadoop and Hive daemons, you will see the following error:
+If you have not configure any of the configuration files mentioned above( hive-site.xml, core-site.xml, hdfs-site.xml) and started the Hadoop and Hive daemons, you will see the following error in TIBCO ComputeDB:
 
 ```
 No Datastore found in the Distributed System for 'execution on remote node null'.
 ```
+!!! Note
+	You must configure the configuration files **hive-site.xml** and **core-site.xml** as per your requirements.
 
 If you have connected to Hive and Hadoop and in case the configuration files get removed or deleted, errors or exceptions will not be shown. However, you cannot perform any DDL and DML statements in Hive.
 
