@@ -17,6 +17,8 @@ The following topics are covered in this section:
 * [Node went down or data no longer available while iterating the results](#queryfailiterate)
 * [SmartConnector catalog is not up to date. Please reconstruct the Dataset and retry the operation.](#smartconnectorcatalog)
 * [Cannot parse config: String: 1: Expecting end of input or a comma, got ':'](#jobsubmitsnap)
+* [java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound slf4j-log4j12.jar on the class path, preempting StackOverflowError](#javalangillegal)
+* [Bad `PutInto` performance even when input dataframe size is small.](#putintoperf)
 
 <a id="region0"></a>
 <error> **Error Message:** </error> 
@@ -205,5 +207,78 @@ To avoid this issue enclose the value containing colon `:` with double quotes so
 </action>
 
 <!-- --------------------------------------------------------------------------- -->
+<a id="javalangillegal"></a>
+<error> **Error Message:** </error> 
+<error-text>
+java.lang.IllegalStateException: Detected both log4j-over-slf4j.jar AND bound slf4j-log4j12.jar on the class path, preempting StackOverflowError
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+This error message can be seen if application uses SnappyData JDBC driver shadow jar and the application has a dependency on **log4j-over-slf4j** package/jar. This is because, the SnappyData JDBC driver
+has a dependency on **slf4j-log4j12** which cannot co-exist with  'log4j-over-slf4j' package.
+</diagnosis>
+
+<action> **Solution:** </br>
+
+To avoid getting **log4j** and **slf4j-log4j12** dependencies in the driver, you can link the **non-fat** JDBC client jar (**snappydata-store-client*.jar**) in your application and exclude **log4j** and **slf4j-log4j12** dependencies from it.
+
+Note that the **snappydata-store-client** jar does not contain some of the SnappyData extensions (Scala imiplicits) that are required when SnappyData Spark-JDBC connector is used. That is when accessing SnappyData from another Spark cluster using JDBC dataframes as mentioned [here].(https://snappydatainc.github.io/snappydata/programming_guide/spark_jdbc_connector/#using-sql-dml-to-execute-ad-hoc-sql)). If these SnappyData extensions are to be used, then in addition to above mentioned jar, **snappydata-jdbc*-only.jar** dependency will be required. This is available on maven repo and can be accessed using classifier: 'only' along with snappydata-jdbc cordinates.
+
+Following is an example for adding this dependency using gradle:
+
+build.gradle example that uses **snappydata-store-client jar** and **snappydata-jdbc*only.jar**. The example uses 1.0.2.2 SnappyData version, replace it with the version required by the application.  
+
+**Example**
+
+```
+
+ dependencies {
+
+  compile group: 'io.snappydata', name: 'snappydata-jdbc_2.11', version: '1.0.2.2', classifier: 'only'
+
+  // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client 
+  // SnappyData "no-fat" JDBC jar
+  compile group: 'io.snappydata', name: 'snappydata-store-client', version: '1.6.2.1'
+
+  // If users want to add his own 'log4j-over-slf4j' dependency
+  compile group: 'org.slf4j', name: 'log4j-over-slf4j', version: '1.7.26'
+}
+
+ // exclude the 'log4j' and 'slf4j-log4j12' dependencies
+ configurations.all {
+    exclude group: 'log4j', module: 'log4j'
+    exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+ }
 
 
+```
+</action>
+<!-- --------------------------------------------------------------------------- -->
+
+<a id="putintoperf"></a>
+<error> **Error Message:** </error> 
+<error-text>
+Bad `PutInto` performance even when input dataframe size is small.
+</error-text>
+
+<diagnosis> **Diagnosis:**</br>
+`PutInto` operation internally performs join. If the input dataframe size is small (less than `spark.sql.autoBroadcastJoinThreshold` which defaults to 10 MB) then the join should ideally result into broadcast join giving better performance than short merge join (which will be chose otherwise).
+
+However, some sources doesn't provide size statistics and in that case the size of dataframe results into value of `spark.sql.defaultSizeInBytes` property which defaults to `Long.MaxValue`. In this case even if the actual size of the input dataframe is less than  that of `spark.sql.autoBroadcastJoinThreshold`, the `PutInto` operation will always end up using sort merge join resulting into poor performance.
+</diagnosis>
+
+<action> **Solution:** </br>
+Solution for this issue is to override default value of `spark.sql.defaultSizeInBytes` by setting it as part of session configuration with the value matching the approximate size of the actual input dataframe.
+
+The property can be set using the following SQL command:
+
+`set spark.sql.defaultSizeInBytes = <some long value>`
+
+For example, `set spark.sql.defaultSizeInBytes = 10000`
+
+Using a SnappySession instance this can be set as follows:
+
+`snappySession.sql(“set spark.sql.defaultSizeInBytes = 10000”)`
+
+Note that this is a session level property hence all the operation performed using the same session will end up using same overridden value.
+</action>
