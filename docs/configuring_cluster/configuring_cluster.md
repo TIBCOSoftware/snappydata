@@ -1,4 +1,4 @@
-# Configuration
+# Configuring Cluster Components
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the SnappyData home directory with names **locators**, **leads**, and **servers**.
 
@@ -6,14 +6,14 @@ To do so, you can copy the existing template files **servers.template**, **locat
 These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
 
 !!! Tip
-	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. All other JVM properties need the `-J` prefix.
+	- For system properties (set in the conf/lead, conf/servers and conf/locators file), -D and -XX: can be used. -J is NOT required for -D and -XX options.
 
     - Instead of starting the SnappyData cluster, you can [start](../howto/start_snappy_cluster.md) and [stop](../howto/stop_snappy_cluster.md) individual components on a system locally.
 
 <a id="locator"></a>
-## Configuring Locators
+## Locators
 
-Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](../architecture.md) section for more information on the core components.
+Locators provide discovery service for the cluster. Clients (for example, JDBC) connect to the locator and discover the lead and data servers in the cluster. The clients automatically connect to the data servers upon discovery (upon initial connection). Cluster members (Data servers, Lead nodes) also discover each other using the locator. Refer to the [Architecture](/architecture/cluster_architecture.md) section for more information on the core components.
 
 It is recommended to configure two locators (for HA) in production using the **conf/locators** file located in the **<_SnappyData_home_>/conf** directory. 
 
@@ -30,6 +30,7 @@ You can refer to the **conf/locators.template** file for some examples.
 ### List of Locator Properties
 
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+
 
 |Property|Description|
 |-----|-----|
@@ -54,10 +55,12 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 $ cat conf/locators
 node-a -peer-discovery-port=9999 -dir=/node-a/locator1 -heap-size=1024m -locators=node-b:8888
 node-b -peer-discovery-port=8888 -dir=/node-b/locator2 -heap-size=1024m -locators=node-a:9999
+
 ```
 
+
 <a id="lead"></a>
-## Configuring Leads
+## Leads
 
 Lead Nodes primarily runs the SnappyData managed Spark driver. There is one primary lead node at any given instance, but there can be multiple secondary lead node instances on standby for fault tolerance. Applications can run Jobs using the REST service provided by the Lead node. Most of the SQL queries are automatically routed to the Lead to be planned and executed through a scheduler. You can refer to the **conf/leads.template** file for some examples. 
 
@@ -65,6 +68,7 @@ Create the configuration file (**leads**) for leads in the **<_SnappyData_home_>
 
 !!! Note
 	In the **conf/spark-env.sh** file set the `SPARK_PUBLIC_DNS` property to the public DNS name of the lead node. This enables the Member Logs to be displayed correctly to users accessing SnappyData Monitoring Console from outside the network.
+
 
 ### List of Lead Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
@@ -111,12 +115,15 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-spark.ui.port|Port for your SnappyData Monitoring Console, which shows tables, memory and workload data. The default is 5050.|
 |Properties for SSL Encryption|[ssl-enabled](../reference/configuration_parameters/ssl_enabled.md), [ssl-ciphers](../reference/configuration_parameters/ssl_ciphers.md), [ssl-protocols](../reference/configuration_parameters/ssl_protocols.md), [ssl-require-authentication](../reference/configuration_parameters/ssl_require_auth.md). </br> These properties need not be added to  the Lead members in case of a client-server connection.|
 
+
+
 **Example**: To start a lead (node-l), set `spark.executor.cores` as 10 on all servers, and change the Spark UI port from 5050 to 9090, update the configuration file as follows:
 
 ```pre
 $ cat conf/leads
 node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -spark.executor.cores=10
 ```
+
 
 <a id="confsecondarylead"></a>
 ###Configuring Secondary Lead
@@ -135,13 +142,14 @@ In this example, two leads (one on node-l1 and another on node-l2) are configure
 
 
 <a id="dataserver"></a>
-## Configuring Data Servers
+## Data Servers
 Data Servers hosts data, embeds a Spark executor, and also contains a SQL engine capable of executing certain queries independently and more efficiently than the Spark engine. Data servers use intelligent query routing to either execute the query directly on the node or to pass it to the lead node for execution by Spark SQL. You can refer to the **conf/servers.template** file for some examples. 
 
 Create the configuration file (**servers**) for data servers in the **<_SnappyData_home_>/conf** directory. 
 
 ### List of Server Properties
 Refer to the [SnappyData properties](property_description.md) for the complete list of SnappyData properties.
+
 
 |Property|Description</br>|
 |-|-|
@@ -168,6 +176,7 @@ Refer to the [SnappyData properties](property_description.md) for the complete l
 |-thrift-ssl-properties|Comma-separated SSL properties including:</br>`protocol`: default "TLS",</br>`enabled-protocols`: enabled protocols separated by ":"</br>`cipher-suites`: enabled cipher suites separated by ":"</br>`client-auth`=(true or false): if client also needs to be authenticated </br>`keystore`: path to key store file </br>`keystore-type`: the type of key-store (default "JKS") </br>`keystore-password`: password for the key store file</br>`keymanager-type`: the type of key manager factory </br>`truststore`: path to trust store file</br>`truststore-type`: the type of trust-store (default "JKS")</br>`truststore-password`: password for the trust store file </br>`trustmanager-type`: the type of trust manager factory </br> |
 
 
+
 **Example**: To start a two servers (node-c and node-c), update the configuration file as follows:
 
 ```pre
@@ -175,6 +184,7 @@ $ cat conf/servers
 node-c -dir=/node-c/server1 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 node-c -dir=/node-c/server2 -heap-size=4096m -memory-size=16g -locators=node-b:8888,node-a:9999
 ```
+
 ## Specifying Configuration Properties using Environment Variables
 
 SnappyData configuration properties can be specified using environment variables LOCATOR_STARTUP_OPTIONS, SERVER_STARTUP_OPTIONS, and LEAD_STARTUP_OPTIONS respectively for locators, leads and servers.  These environment variables are useful to specify common properties for locators, servers, and leads.  These startup environment variables can be specified in **conf/spark-env.sh** file. This file is sourced when SnappyData system is started. A template file **conf/spark-env.sh.template** is provided in **conf** directory for reference. You can copy this file and use it to configure properties. 
@@ -212,7 +222,7 @@ Spark applications run as independent sets of processes on a cluster, coordinate
 ```pre
 $ ./bin/spark-submit --deploy-mode cluster --class somePackage.someClass  
 	--master spark://localhost:7077 --conf spark.snappydata.connection=localhost:1527 
-	--packages 'SnappyDataInc:snappydata:1.1.0-s_2.11'
+	--packages 'SnappyDataInc:snappydata:1.1.1-s_2.11'
 ```
 <a id="environment"></a>
 ## Environment Settings

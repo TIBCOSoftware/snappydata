@@ -34,4 +34,5 @@ val df2 = snappySession.read.parquet("hdfs://127.0.0.1:9000/customer")
 df2.write.mode(SaveMode.Append).saveAsTable("APP.CUSTOMER")
 ```
 
-
+!!!Note	
+	Snappydata supports  kerberized Hadoop cluster in Smart connector mode only. You need to set **HADOOP_CONF_DIR** in **spark-env.sh** and **snappy-env.sh**. Currently the Embedded mode(Snappy job and Snappy shell) and Smart Connector with standalone mode are NOT supported. Smart connector with local and YARN mode are supported.

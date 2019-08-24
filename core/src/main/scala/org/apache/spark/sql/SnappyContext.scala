@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,11 +17,15 @@
 package org.apache.spark.sql
 
 import java.io.{Externalizable, ObjectInput, ObjectOutput}
+import java.lang
+import java.util.Map.Entry
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ConcurrentHashMap, TimeUnit}
+import java.util.function.Consumer
 import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, Future}
@@ -32,6 +36,7 @@ import com.gemstone.gemfire.distributed.internal.MembershipListener
 import com.gemstone.gemfire.distributed.internal.membership.InternalDistributedMember
 import com.pivotal.gemfirexd.Attribute
 import com.pivotal.gemfirexd.internal.engine.Misc
+import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.shared.common.SharedUtils
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog}
 import io.snappydata.util.ServiceUtils
@@ -42,15 +47,15 @@ import org.apache.spark.annotation.{DeveloperApi, Experimental}
 import org.apache.spark.api.java.JavaSparkContext
 import org.apache.spark.memory.MemoryManagerCallback
 import org.apache.spark.rdd.RDD
-import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd}
+import org.apache.spark.scheduler.{SparkListener, SparkListenerApplicationEnd, SparkListenerExecutorAdded}
 import org.apache.spark.sql.catalyst.analysis.NoSuchTableException
 import org.apache.spark.sql.catalyst.expressions.SortDirection
 import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.joins.HashedObjectCache
-import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand}
+import org.apache.spark.sql.execution.{ConnectionPool, DeployCommand, DeployJarCommand, RefreshMetadata}
 import org.apache.spark.sql.hive.{HiveExternalCatalog, SnappyHiveExternalCatalog, SnappySessionState}
-import org.apache.spark.sql.internal.{SharedState, SnappySharedState, StaticSQLConf}
+import org.apache.spark.sql.internal.{ContextJarUtils, SharedState, SnappySharedState, StaticSQLConf}
 import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.streaming._
 import org.apache.spark.sql.types.{StructField, StructType}
@@ -604,11 +609,10 @@ class SnappyContext protected[spark](val snappySession: SnappySession)
   /**
    * Set current database/schema.
    *
-   * @param schemaName        schema name which goes in the catalog
-   * @param createIfNotExists create the schema if it does not exist
+   * @param schemaName schema name which goes in the catalog
    */
-  def setCurrentSchema(schemaName: String, createIfNotExists: Boolean = false): Unit = {
-    snappySession.setCurrentSchema(schemaName, createIfNotExists)
+  def setCurrentSchema(schemaName: String): Unit = {
+    snappySession.setCurrentSchema(schemaName)
   }
 
   /**
@@ -802,8 +806,11 @@ object SnappyContext extends Logging {
 
   @volatile private[this] var _globalContextInitialized: Boolean = false
   @volatile private[this] var _globalSNContextInitialized: Boolean = false
+  @volatile private[sql] var executorAssigned = false
+
   private[this] var _globalClear: () => Unit = _
   private[this] val contextLock = new AnyRef
+  private[sql] val resourceLock = new AnyRef
 
   @GuardedBy("contextLock") private var hiveSession: SparkSession = _
 
@@ -1097,30 +1104,65 @@ object SnappyContext extends Logging {
             SnappyContext.getClusterMode(sc) match {
               case _: SnappyEmbeddedMode =>
                 val deployCmds = ToolsCallbackInit.toolsCallback.getAllGlobalCmnds
-                val nonEmpty = deployCmds.length > 0
-                if (nonEmpty) {
-                  logInfo(s"deploycmnds size = ${deployCmds.length}")
-                  deployCmds.foreach(s => logDebug(s"$s"))
+                if (deployCmds.length > 0) {
+                  logInfo(s"Deployed commands size = ${deployCmds.length}")
+                  val commandSet = ToolsCallbackInit.toolsCallback.getGlobalCmndsSet
+                  commandSet.forEach(new Consumer[Entry[String, String]] {
+                    override def accept(t: Entry[String, String]): Unit = {
+                      if (!t.getKey.startsWith(ContextJarUtils.functionKeyPrefix)) {
+                        val d = t.getValue
+                        val cmdFields = d.split('|') // split() removes empty elements
+                        if (d.contains('|')) {
+                          val coordinate = cmdFields(0)
+                          val repos = if (cmdFields.length > 1 && !cmdFields(1).isEmpty) {
+                            Some(cmdFields(1))
+                          } else None
+                          val cache = if (cmdFields.length > 2 && !cmdFields(2).isEmpty) {
+                            Some(cmdFields(2))
+                          } else None
+                          try {
+                            DeployCommand(coordinate, null, repos, cache, restart = true)
+                                .run(session)
+                          } catch {
+                            case e: Throwable => failOnJarUnavailability(t.getKey, Array.empty, e)
+                          }
+                        } else { // Jars we have
+                          try {
+                            DeployJarCommand(null, cmdFields(0), restart = true).run(session)
+                          } catch {
+                            case e: Throwable => failOnJarUnavailability(t.getKey, cmdFields, e)
+                          }
+                        }
+                      }
+                    }
+                  })
                 }
-                if (nonEmpty) deployCmds.foreach(d => {
-                  val cmdFields = d.split('|')
-                  if (cmdFields.length > 1) {
-                    val coordinate = cmdFields(0)
-                    val repos = if (cmdFields(1).isEmpty) None else Some(cmdFields(1))
-                    val cache = if (cmdFields(2).isEmpty) None else Some(cmdFields(2))
-                    DeployCommand(coordinate, null, repos, cache, restart = true).run(session)
-                  }
-                  else {
-                    // Jars we have
-                    DeployJarCommand(null, cmdFields(0), restart = true).run(session)
-                  }
-                })
               case _ => // Nothing
             }
           }
           _globalSNContextInitialized = true
         }
       }
+    }
+  }
+
+  private def failOnJarUnavailability(k: String, jars: Array[String], e: Throwable): Unit = {
+    GemFireXDUtils.waitForNodeInitialization()
+    Misc.getMemStore.getGlobalCmdRgn.remove(k)
+    if (!jars.isEmpty) {
+      val mutable = new ArrayBuffer[String]()
+      mutable += "__REMOVE_FILES_ONLY__"
+      jars.foreach(e => mutable += e)
+      try {
+        RefreshMetadata.executeOnAll(globalSparkContext,
+          RefreshMetadata.REMOVE_URIS_FROM_CLASSLOADER, mutable.toArray)
+      } catch {
+        case e: Throwable => logWarning(s"Could not delete jar files of '$k'. You may need to" +
+            s" delete those manually.", e)
+      }
+    }
+    if (lang.Boolean.parseBoolean(System.getProperty("FAIL_ON_JAR_UNAVAILABILITY", "false"))) {
+      throw e
     }
   }
 
@@ -1164,6 +1206,13 @@ object SnappyContext extends Logging {
   private class SparkContextListener extends SparkListener {
     override def onApplicationEnd(applicationEnd: SparkListenerApplicationEnd): Unit = {
       stopSnappyContext()
+    }
+    override def onExecutorAdded(execList: SparkListenerExecutorAdded): Unit = {
+      logDebug(s"SparkContextListener: onExecutorAdded: added $execList")
+      resourceLock.synchronized {
+        executorAssigned = true
+        resourceLock.notifyAll()
+      }
     }
   }
 

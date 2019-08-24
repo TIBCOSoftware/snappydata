@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -59,7 +59,6 @@ class TPCHDUnitTest(s: String) extends ClusterManagerTestBase(s)
 
   def testSnappy(): Unit = {
     val snc = SnappyContext(sc)
-
     // create table randomly either using smart connector or
     // from embedded mode
     if ((System.currentTimeMillis() % 2) == 0) {

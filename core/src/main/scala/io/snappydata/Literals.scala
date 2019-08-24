@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,6 +17,9 @@
 package io.snappydata
 
 import scala.reflect.ClassTag
+
+import com.gemstone.gemfire.internal.shared.unsafe.DirectBufferAllocator
+import com.pivotal.gemfirexd.internal.engine.GfxdConstants
 
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.internal.{AltName, SQLAltName, SQLConfigEntry}
@@ -186,6 +189,19 @@ object Property extends Enumeration {
     s"${Constant.PROPERTY_PREFIX}sql.planCaching",
     "Property to set/unset plan caching", Some(false))
 
+  val SerializeWrites: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.serializeWrites",
+    "Property to set/unset serialized writes on column table." +
+      "There will be a global lock which will ensure that at a time only" +
+      "one write operation is active on the column table.", Some(true))
+
+  val SerializedWriteLockTimeOut: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.serializedWriteLockTimeOut",
+    "Property to specify the lock timeout for write ops in seconds. If the" +
+      " write operation doesn't get lock for write within this time period" +
+      s" then operation will fail. Default value is ${GfxdConstants.MAX_LOCKWAIT_DEFAULT/1000} sec",
+    Some(GfxdConstants.MAX_LOCKWAIT_DEFAULT/1000))
+
   val Tokenize: SQLValue[Boolean] = SQLVal[Boolean](
     s"${Constant.PROPERTY_PREFIX}sql.tokenize",
     "Property to enable/disable tokenization", Some(true))
@@ -262,6 +278,39 @@ object Property extends Enumeration {
       "The putInto inner join would be cached if the result of " +
           "join with incoming Dataset is of size less " +
           "than PutIntoInnerJoinCacheSize. Default value is 100 MB.", Some("100m"))
+
+  val TestExplodeComplexDataTypeInSHA: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.explodeStructInSHA",
+    "Explodes the Struct or Array Field in Group By Keys even if the struct object is " +
+      "UnsafeRow or UnsafeArrayData", Some(false))
+
+  val UseOptimzedHashAggregate: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.optimizedHashAggregate",
+    "Enables the use of ByteBufferMap based SnappyHashAggregateExec",
+    Some(true))
+
+  val UseOptimizedHashAggregateForSingleKey: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.useOptimizedHashAggregateForSingleKey",
+    "Use the new ByteBufferMap based SnappyHashAggregateExec even for single column group by." +
+        "The default value is false since the older implementation is substantially faster " +
+        "for most of single column group by cases (except if number of groups is very large).",
+    Some(false))
+
+  val ApproxMaxCapacityOfBBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.approxMaxCapacityOfBBMap",
+    s"The max capacity of value byte array in ByteBufferHashMap. " +
+      s"Default value is ${Integer.MAX_VALUE}",
+    Some(((Integer.MAX_VALUE -DirectBufferAllocator.DIRECT_OBJECT_OVERHEAD - 7) >>> 3) << 3))
+
+  val initialCapacityOfSHABBMap: SQLValue[Int] = SQLVal[Int](
+    s"${Constant.PROPERTY_PREFIX}sql.initialCapacityOfSHABBMap",
+    s"The initial capacity of SHAMap. " +
+      s"Default value is 8192", Some(8192))
+
+  val TestDisableCodeGenFlag: SQLValue[Boolean] = SQLVal[Boolean](
+    s"${Constant.PROPERTY_PREFIX}sql.disableCodegenFallback",
+    s"The test flag if set to true will throw Exception instead of creating CodegenSparkFallback " +
+      s"Default value is false", Some(false))
 }
 
 // extractors for properties
