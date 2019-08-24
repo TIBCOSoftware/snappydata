@@ -1,5 +1,7 @@
 #  Table Performance
 
+<ent>This feature is available only in the Enterprise version of SnappyData. </br></ent> 
+
 You can get an idea of the relative performance of inserts, updates, and selects by looking at the underlying statistics.
 
 An example follows the table.

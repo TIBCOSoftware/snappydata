@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -42,6 +42,7 @@ import org.apache.spark.sql.execution.exchange.{EnsureRequirements, Exchange, Sh
 import org.apache.spark.sql.execution.sources.PhysicalScan
 import org.apache.spark.sql.hive.SnappySessionState
 import org.apache.spark.sql.internal.{JoinQueryPlanning, LogicalPlanWithHints, SQLConf}
+import org.apache.spark.sql.sources.SamplingRelation
 import org.apache.spark.sql.streaming._
 
 /**
@@ -366,8 +367,11 @@ private[sql] object JoinStrategy {
    * Matches a plan whose output should be small enough to be used in broadcast join.
    */
   def canBroadcast(plan: LogicalPlan, conf: SQLConf): Boolean = {
+    plan.collectFirst {
+        case LogicalRelation(_: SamplingRelation, _, _) => true
+    }.isEmpty && (
     plan.statistics.isBroadcastable ||
-        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold
+        plan.statistics.sizeInBytes <= conf.autoBroadcastJoinThreshold)
   }
 
   def getMaxHashJoinSize(conf: SQLConf): Long = {
@@ -392,7 +396,10 @@ private[sql] object JoinStrategy {
   def allowsReplicatedJoin(plan: LogicalPlan): Boolean = {
     plan match {
       case PhysicalScan(_, _, child) => child match {
-        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned
+        case LogicalRelation(t: PartitionedDataSourceScan, _, _) => !t.isPartitioned && (t match {
+          case _: SamplingRelation => false
+          case _ => true
+        })
         case _: Filter | _: Project | _: LocalLimit => allowsReplicatedJoin(child.children.head)
         case ExtractEquiJoinKeys(joinType, _, _, _, left, right) =>
           allowsReplicatedJoin(left) && allowsReplicatedJoin(right) &&
@@ -798,7 +805,11 @@ case class InsertCachedPlanFallback(session: SnappySession, topLevel: Boolean)
     else plan match {
       // TODO: disabled for StreamPlans due to issues but can it require fallback?
       case _: StreamPlan => plan
-      case _ => CodegenSparkFallback(plan, session)
+      case _: CollectAggregateExec => CodegenSparkFallback(plan, session)
+      case _ if !Property.TestDisableCodeGenFlag.get(session.sessionState.conf) ||
+       session.sessionState.conf.contains("snappydata.connection") =>
+        CodegenSparkFallback(plan, session)
+      case _ => plan
     }
   }
 

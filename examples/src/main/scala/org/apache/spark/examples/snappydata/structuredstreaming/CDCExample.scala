@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -15,7 +15,7 @@
  * LICENSE file.
  */
 
-package org.apache.spark.examples.snappydata
+package org.apache.spark.examples.snappydata.structuredstreaming
 
 import org.apache.log4j.{Level, Logger}
 
@@ -25,36 +25,48 @@ import scala.language.postfixOps
 import scala.reflect.io.Path
 
 /**
- * An example showing CDC usage with SnappyData structured streaming
+ * An example explaining CDC (change data capture) use case with SnappyData streaming sink.
  *
- * <p></p>
- * To run the example in local mode go to your SnappyData product distribution
- * directory and type following command on the command prompt
- * <pre>
- * bin/run-example snappydata.StructuredStreamingCDCExample
- * </pre>
- * <p></p>
- * To run this on your local machine, you need to first run a Netcat server <br>
+ * For CDC use case following two conditions should match:
+ * 1) The target table must be defined with key columns (for column tables) or primary keys ( for
+ * row table).
+ * 2) The input dataset must have an numeric column with name `_eventType` indicating type of the
+ * event. The value of this column is mapped with event type in the following manner:
+ *
+ *  0 - insert
+ *  1 - putInto
+ *  2 - delete
+ *
+ * Based on the key values in the incoming dataset and the value of `_eventType` column the sink
+ * will decide which operation need to be performed for each record.
+ *
+ * To run this on your local machine, you need to first run a Netcat server:
  * `$ nc -lk 9999`
- * <p>
- * Sample input data:
- * {{{
+ *
+ * Example input data. Note that the last value from CSV record indicates the `_eventType`:
+ *
  * 1,user1,23,0
  * 2,user2,45,0
  * 1,user1,23,2
  * 2,user2,46,1
- * }}}
+ *
+ * To run the example in local mode go to your SnappyData product distribution
+ * directory and execute the following command:
+ * <p>
+ * `bin/run-example snappydata.structuredstreaming.CDCExample`
+ * <br><br>
  *
  */
-object StructuredStreamingCDCExample{
+// scalastyle:off println
+object CDCExample{
 
   def main(args: Array[String]) {
     // reducing the log level to minimize the messages on console
     Logger.getLogger("org").setLevel(Level.ERROR)
     Logger.getLogger("akka").setLevel(Level.ERROR)
 
-    println("Initializing a SnappySesion")
-    val checkpointDirectory = "/tmp/StructuredStreamingCDCExample"
+    println("Initializing a SnappySession")
+    val checkpointDirectory = this.getClass.getSimpleName
     val spark: SparkSession = SparkSession
         .builder()
         .appName(getClass.getSimpleName)
@@ -64,8 +76,9 @@ object StructuredStreamingCDCExample{
     import spark.implicits._
     val snappy = new SnappySession(spark.sparkContext)
 
-
-    snappy.sql("create table users (id long , name varchar(40), age int) using column options(key_columns 'id')")
+    // The target table is created with key columns (for column table) for CDC use case
+    snappy.sql("create table users (id long , name varchar(40), age int) using" +
+        " column options(key_columns 'id')")
 
     // Create DataFrame representing the stream of input lines from connection to host:port
     val socketDF = snappy
@@ -75,9 +88,11 @@ object StructuredStreamingCDCExample{
         .option("port", 9999)
         .load()
 
-    // Creating a typed User from raw string received on socket.
+    // Creating a typed User from raw string received on socket
     val structDF = socketDF.as[String].map(s => {
       val fields = s.split(",")
+      // Note that the fourth field of `User` class is `_eventType`. Value of this field indicates
+      // the type of the DML operation to be performed.
       User(fields(0).toLong, fields(1), fields(2).toInt, fields(3).toInt)
     })
 
@@ -107,4 +122,3 @@ object StructuredStreamingCDCExample{
 }
 
 case class User(is: Long, name: String, age: Int, _eventType: Int)
-

@@ -68,6 +68,7 @@ Below is the list of all the configuration properties and links for each propert
 - [ack-severe-alert-threshold](ack-severe-alert-threshold.md)
 
 - [ack-wait-threshold](ack-wait-threshold.md)
+- [allow-explicit-commit](allow-explicit-commit.md)
 
 - [archive-disk-space-limit](archive-disk-space-limit.md)
 

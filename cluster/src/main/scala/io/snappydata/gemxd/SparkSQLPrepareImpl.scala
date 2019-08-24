@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -34,6 +34,8 @@ import com.pivotal.gemfirexd.internal.snappy.{LeadNodeExecutionContext, SparkSQL
 import org.apache.spark.sql.catalyst.expressions
 import org.apache.spark.sql.catalyst.expressions.{BinaryComparison, CaseWhen, Cast, Exists, Expression, Like, ListQuery, ParamLiteral, PredicateSubquery, ScalarSubquery, SubqueryExpression}
 import org.apache.spark.sql.catalyst.plans.logical.{LocalRelation, LogicalPlan}
+import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.PutIntoValuesColumnTable
 import org.apache.spark.sql.hive.QuestionMark
 import org.apache.spark.sql.types._
 import org.apache.spark.util.SnappyUtils
@@ -58,7 +60,7 @@ class SparkSQLPrepareImpl(val sql: String,
     session.conf.set(Attribute.PASSWORD_ATTR, ctx.getAuthToken)
   }
 
-  session.setCurrentSchema(schema, createIfNotExists = true)
+  Utils.setCurrentSchema(session, schema, createIfNotExists = true)
 
   session.setPreparedQuery(preparePhase = true, None)
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -36,7 +36,7 @@ import org.apache.spark.annotation.DeveloperApi
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.catalyst.analysis.FunctionRegistry.FunctionBuilder
-import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchFunctionException}
+import org.apache.spark.sql.catalyst.analysis.{FunctionRegistry, NoSuchFunctionException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog._
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, ExpressionInfo}
@@ -92,7 +92,7 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     }
     defaultName = formatDatabaseName(IdUtil.getUserAuthorizationId(defaultName).replace('-', '_'))
     createSchema(defaultName, ignoreIfExists = true)
-    setCurrentSchema(defaultName)
+    setCurrentSchema(defaultName, force = true)
     defaultName
   }
 
@@ -497,19 +497,21 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
   }
 
   override def setCurrentDatabase(schema: String): Unit =
-    setCurrentSchema(formatDatabaseName(schema))
+    setCurrentSchema(formatDatabaseName(schema), force = false)
 
   /**
    * Identical to [[setCurrentDatabase]] but assumes that the passed name
    * has already been formatted by a call to [[formatDatabaseName]].
    */
-  private[sql] def setCurrentSchema(schemaName: String): Unit = {
-    validateSchemaName(schemaName, checkForDefault = false)
-    super.setCurrentDatabase(schemaName)
-    externalCatalog.setCurrentDatabase(schemaName)
-    // no need to set the current schema in external hive metastore since the
-    // database may not exist and all calls to it will already ensure fully qualified
-    // table names
+  private[sql] def setCurrentSchema(schemaName: String, force: Boolean): Unit = {
+    if (force || schemaName != getCurrentSchema) {
+      validateSchemaName(schemaName, checkForDefault = false)
+      super.setCurrentDatabase(schemaName)
+      externalCatalog.setCurrentDatabase(schemaName)
+      // no need to set the current schema in external hive metastore since the
+      // database may not exist and all calls to it will already ensure fully qualified
+      // table names
+    }
   }
 
   override def getDatabaseMetadata(schema: String): CatalogDatabase = {
@@ -558,6 +560,17 @@ class SnappySessionCatalog(val externalCatalog: SnappyExternalCatalog,
     table.provider match {
       case Some(DDLUtils.HIVE_PROVIDER) =>
         if (snappySession.enableHiveSupport) {
+
+          // check for existing table else for hive table it could create in both catalogs
+          if (!ignoreIfExists && super.tableExists(table.identifier)) {
+            val objectType = CatalogObjectType.getTableType(table)
+            if (CatalogObjectType.isTableOrView(objectType)) {
+              throw new TableAlreadyExistsException(db = schemaName, table = tableName)
+            } else {
+              throw SnappyExternalCatalog.objectExistsException(table.identifier, objectType)
+            }
+          }
+
           // resolve table fully as per current schema in this session
           hiveSessionCatalog.createTable(resolveCatalogTable(table, schemaName), ignoreIfExists)
         } else {

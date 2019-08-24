@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,12 +16,14 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.lang.reflect.Method
 import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
@@ -44,6 +46,7 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import org.apache.spark
 
 import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
@@ -580,6 +583,21 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       } else userId
     } else userId
+  }
+
+  private lazy val removeSamplerMethod: Method = {
+    val samplerClassName = "org.apache.spark.sql.execution.StratifiedSampler"
+    val samplerClass = spark.util.Utils.classForName(samplerClassName)
+    samplerClass.getMethod("removeSampler", classOf[String], classOf[Boolean])
+  }
+
+  override def removeSampler(sampleTableName: String): Unit = {
+    try {
+      removeSamplerMethod.invoke(null, sampleTableName, Boolean.box(false))
+    }
+    catch {
+      case NonFatal(e) => logWarning("Failure while removing sampler:", e)
+    }
   }
 }
 

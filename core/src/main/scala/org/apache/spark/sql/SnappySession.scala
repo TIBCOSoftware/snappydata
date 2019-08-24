@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -63,7 +63,7 @@ import org.apache.spark.sql.execution.datasources.jdbc.{JDBCOptions, JdbcUtils}
 import org.apache.spark.sql.execution.datasources.{CreateTable, DataSource, LogicalRelation}
 import org.apache.spark.sql.execution.exchange.BroadcastExchangeExec
 import org.apache.spark.sql.execution.joins.{BroadcastHashJoinExec, BroadcastNestedLoopJoinExec}
-import org.apache.spark.sql.execution.ui.SparkListenerSQLPlanExecutionStart
+import org.apache.spark.sql.execution.ui.{SparkListenerSQLExecutionEnd, SparkListenerSQLPlanExecutionEnd, SparkListenerSQLPlanExecutionStart}
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappySessionState}
 import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.internal.{BypassRowLevelSecurity, MarkerForCreateTableAsSelect, SnappySessionCatalog, SnappySharedState, StaticSQLConf}
@@ -495,7 +495,10 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
     // first acquire the global lock for putInto
     val (schemaName: String, _) =
       JdbcExtendedUtils.getTableWithSchema(table, conn = null, Some(sqlContext.sparkSession))
-    val lock = grabLock(table, schemaName, defaultConnectionProps)
+    val lockOption = if (Property.SerializeWrites.get(sessionState.conf)) {
+      grabLock(table, schemaName, defaultConnectionProps)
+    } else None
+
     var newUpdateSubQuery: Option[LogicalPlan] = None
     try {
       val cachedTable = if (doCache) {
@@ -521,8 +524,13 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
       addContextObject(SnappySession.CACHED_PUTINTO_LOGICAL_PLAN, cachedTable)
       newUpdateSubQuery
     } finally {
-      logDebug(s"Adding the lock object $lock to the context")
-      addContextObject(SnappySession.PUTINTO_LOCK, lock)
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Adding the lock object $lock to the context")
+          addContextObject(SnappySession.PUTINTO_LOCK, lock)
+        }
+        case None => // do nothing
+      }
     }
   }
 
@@ -553,9 +561,28 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   }
 
   private[sql] def grabLock(table: String, schemaName: String,
-      connProperties: ConnectionProperties): Any = {
+      connProperties: ConnectionProperties): Option[Any] = {
     SnappyContext.getClusterMode(sparkContext) match {
       case _: ThinClientConnectorMode =>
+        if (!sparkContext.isLocal) {
+          SnappyContext.resourceLock.synchronized {
+            while (!SnappyContext.executorAssigned && sparkContext.getExecutorIds().isEmpty) {
+              if (!SnappyContext.executorAssigned) {
+                try {
+                  SnappyContext.resourceLock.wait(100)
+                }
+                catch {
+                  case _: InterruptedException =>
+                    logWarning("Interrupted while waiting for executor.")
+                }
+              }
+              // Don't expect this case usually unless lots of
+              // applications are submitted in parallel
+              logDebug(s"grabLock waiting for resources to be " +
+                s"allocated ${SnappyContext.executorAssigned}")
+            }
+          }
+        }
         val conn = ConnectionPool.getPoolConnection(table, connProperties.dialect,
           connProperties.poolProps, connProperties.connProps, connProperties.hikariCP)
         var locked = false
@@ -563,55 +590,80 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
         do {
           try {
             logDebug(s" Going to take lock on server for table $table," +
-                s" current Thread ${Thread.currentThread().getId}")
-            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?)")
+                s" current Thread ${Thread.currentThread().getId} and " +
+              s"app ${sqlContext.sparkContext.appName}")
+
+            val ps = conn.prepareCall(s"VALUES sys.ACQUIRE_REGION_LOCK(?,?)")
             ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + table)
+            ps.setInt(2, Property.SerializedWriteLockTimeOut.get(sessionState.conf) * 1000)
             val rs = ps.executeQuery()
             rs.next()
             locked = rs.getBoolean(1)
             ps.close()
-            logDebug("Took lock on server. ")
+            logDebug(s"Took lock on server. for string " +
+              s"${SnappySession.WRITE_LOCK_PREFIX + table} and " +
+              s"app ${sqlContext.sparkContext.appName}")
           }
           catch {
-            case e: Throwable =>
-              logWarning("Got exception while taking lock", e)
+            case sqle: SQLException => {
+              logDebug("Got exception while taking lock", sqle)
+              if (sqle.getMessage.contains("Couldn't acquire lock")) {
+                throw sqle
+              } else {
+                if (retrycount == 2) {
+                  throw sqle
+                }
+              }
+            }
+            case e: Throwable => {
+              logDebug("Got exception while taking lock", e)
               if (retrycount == 2) {
                 throw e
               }
+            }
           }
           finally {
             retrycount = retrycount + 1
             // conn.close()
           }
         } while (!locked)
-        (conn, new TableIdentifier(table, Some(schemaName)))
+        Some(conn, new TableIdentifier(table, Some(schemaName)))
       case _ =>
         logDebug(s"Taking lock in " +
-            s" ${Thread.currentThread().getId} ")
+            s" ${Thread.currentThread().getId} and " +
+          s"app ${sqlContext.sparkContext.appName}")
         val regionLock = PartitionedRegion.getRegionLock(SnappySession.WRITE_LOCK_PREFIX + table,
           GemFireCacheImpl.getExisting)
-        regionLock.lock()
-        regionLock
+        regionLock.lock(Property.SerializedWriteLockTimeOut.get(sessionState.conf) * 1000)
+        Some(regionLock)
     }
   }
 
   private[sql] def releaseLock(lock: Any): Unit = {
+    logInfo(s"Releasing the lock : $lock")
     lock match {
       case lock: RegionLock =>
         if (lock != null) {
-          logInfo(s"Going to unlock the lock object bulkOp $lock ")
+          logInfo(s"Going to unlock the lock object bulkOp $lock and " +
+            s"app ${sqlContext.sparkContext.appName}")
           lock.asInstanceOf[PartitionedRegion.RegionLock].unlock()
         }
       case (conn: Connection, id: TableIdentifier) =>
         var unlocked = false
         try {
-          logDebug(s"releasing lock on the server. ${id.table}")
+          logDebug(s"Going to unlock the lock on the server. ${id.table} for " +
+            s"app ${sqlContext.sparkContext.appName}")
           val ps = conn.prepareStatement(s"VALUES sys.RELEASE_REGION_LOCK(?)")
           ps.setString(1, SnappySession.WRITE_LOCK_PREFIX + id.table)
           val rs = ps.executeQuery()
           rs.next()
           unlocked = rs.getBoolean(1)
           ps.close()
+        } catch {
+          case t: Throwable => {
+            logWarning(s"Caught exception while unlocking the $lock", t)
+            throw t
+          }
         }
         finally {
           conn.close()
@@ -1506,15 +1558,24 @@ class SnappySession(_sc: SparkContext) extends SparkSession(_sc) {
   /**
    * Set current schema for the session.
    *
+   * @param schema schema name which goes in the catalog
+   */
+  def setCurrentSchema(schema: String): Unit = setCurrentSchema(schema, createIfNotExists = false)
+
+  /**
+   * Set current schema for the session.
+   *
    * @param schema            schema name which goes in the catalog
    * @param createIfNotExists create the schema if it does not exist
    */
-  def setCurrentSchema(schema: String, createIfNotExists: Boolean = false): Unit = {
+  private[sql] def setCurrentSchema(schema: String, createIfNotExists: Boolean): Unit = {
     val schemaName = sessionCatalog.formatDatabaseName(schema)
-    if (createIfNotExists) {
-      sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+    if (schemaName != getCurrentSchema) {
+      if (createIfNotExists) {
+        sessionCatalog.createSchema(schemaName, ignoreIfExists = true, createInStore = false)
+      }
+      sessionCatalog.setCurrentSchema(schemaName, force = true)
     }
-    sessionCatalog.setCurrentSchema(schemaName)
   }
 
   def getCurrentSchema: String = sessionCatalog.getCurrentSchema
@@ -1994,6 +2055,7 @@ private class FinalizeSession(session: SnappySession)
   override protected def clearThis(): Unit = {
     sessionId = SnappySession.INVALID_ID
   }
+
 }
 
 object SnappySession extends Logging {
@@ -2005,7 +2067,6 @@ object SnappySession extends Logging {
   private[sql] val CACHED_PUTINTO_LOGICAL_PLAN = "cached_putinto_logical_plan"
   private[sql] val BULKWRITE_LOCK = "bulkwrite_lock"
   private[sql] val WRITE_LOCK_PREFIX = "BULKWRITE_"
-
 
   private val unresolvedStarRegex =
     """(cannot resolve ')(\w+).(\w+).*(' given input columns.*)""".r
@@ -2089,7 +2150,7 @@ object SnappySession extends Logging {
     val context = session.sparkContext
     val localProperties = context.getLocalProperties
     setExecutionProperties(localProperties, executionIdStr, sqlText)
-    var propertiesSet = true
+    var success = false
     val start = System.currentTimeMillis()
     try {
       // get below two with original "ParamLiteral(" tokens that will be replaced
@@ -2103,14 +2164,32 @@ object SnappySession extends Logging {
       context.listenerBus.post(SparkListenerSQLPlanExecutionStart(
         executionId, CachedDataFrame.queryStringShortForm(sqlText),
         sqlText, postQueryExecutionStr, postQueryPlanInfo, start))
-      clearExecutionProperties(localProperties)
-      propertiesSet = false
       val rdd = f
+      success = true
       (rdd, queryExecutionStr, queryPlanInfo, postQueryExecutionStr, postQueryPlanInfo,
           executionId, start, System.currentTimeMillis())
     } finally {
-      if (propertiesSet) clearExecutionProperties(localProperties)
+      clearExecutionProperties(localProperties)
+      if (success) {
+        // post the end of "plan" phase which will remove this execution from active list
+        context.listenerBus.post(SparkListenerSQLPlanExecutionEnd(executionId))
+      } else {
+        // post the end of SQL since body of `f` failed
+        context.listenerBus.post(SparkListenerSQLExecutionEnd(
+          executionId, System.currentTimeMillis()))
+      }
     }
+  }
+
+  private def handleCTAS(tableType: CatalogObjectType.Type): (Boolean, Boolean) = {
+    if (CatalogObjectType.isTableBackedByRegion(tableType)) {
+      if (tableType == CatalogObjectType.Sample) false -> true else true -> false
+    }
+    // most CTAS writers (FileFormatWriter, KafkaWriter) post their own plans for insert
+    // but it does not include SQL string or the top-level plan for ExecuteCommand
+    // so post the GUI plans but evaluate the toRdd outside else it will be nested
+    // withNewExecutionId() that will fail
+    else true -> true
   }
 
   private def evaluatePlan(qe: QueryExecution, session: SnappySession, sqlShortText: String,
@@ -2120,7 +2199,7 @@ object SnappySession extends Logging {
 
     val (cachedRDD, execution, origExecutionString, origPlanInfo, executionString, planInfo, rddId,
     noSideEffects, executionId, planStartTime: Long, planEndTime: Long) = executedPlan match {
-      case _: ExecutedCommandExec | _: ExecutePlan =>
+      case _: ExecutedCommandExec | _: ExecutePlan | UnionCommands(_) =>
         // TODO add caching for point updates/deletes; a bit of complication
         // because getPlan will have to do execution with all waits/cleanups
         // normally done in CachedDataFrame.collectWithHandler/withCallback
@@ -2136,18 +2215,22 @@ object SnappySession extends Logging {
         val executionStr = replaceParamLiterals(origExecutionStr, paramLiterals, paramsId)
         val planInfo = PartitionedPhysicalScan.updatePlanInfo(origPlanInfo,
           paramLiterals, paramsId)
-        // different Command types will post their own plans in toRdd evaluation
-        val isCommand = executedPlan.isInstanceOf[ExecutedCommandExec]
-        var rdd = if (isCommand) qe.toRdd else null
         // don't post separate plan for CTAS since it already has posted one for the insert
-        val postGUIPlans = if (isCommand) executedPlan.asInstanceOf[ExecutedCommandExec].cmd match {
-          case c: CreateTableUsingCommand if c.query.isDefined && CatalogObjectType
-              .isTableBackedByRegion(SnappyContext.getProviderType(c.provider)) => false
-          case c: CreateDataSourceTableAsSelectCommand if CatalogObjectType.isTableBackedByRegion(
-            CatalogObjectType.getTableType(c.table)) => false
-          case _: SnappyCacheTableCommand => false
-          case _ => true
-        } else true
+        val (eagerToRDD, postGUIPlans) = executedPlan.collectFirst {
+          case ExecutedCommandExec(c: CreateTableUsingCommand) if c.query.isDefined =>
+            handleCTAS(SnappyContext.getProviderType(c.provider))
+          case ExecutedCommandExec(c: CreateDataSourceTableAsSelectCommand) =>
+            handleCTAS(CatalogObjectType.getTableType(c.table))
+          case ExecutedCommandExec(c: SnappyCacheTableCommand) if !c.isLazy => true -> false
+          // other commands may have their own withNewExecutionId but still post GUI
+          // plans to see the command with proper SQL string in the GUI
+          case _: ExecutedCommandExec => true -> true
+        } match {
+          case None => false -> true
+          case Some(p) => p
+        }
+        var rdd = if (eagerToRDD) qe.toRdd else null
+
         // post final execution immediately (collect for these plans will post nothing)
         CachedDataFrame.withNewExecutionId(session, sqlShortText, sqlText, executionStr, planInfo,
           postGUIPlans = postGUIPlans) {
@@ -2156,7 +2239,7 @@ object SnappySession extends Logging {
           //   around the LogicalPlan and not the executedPlan; it works for plans using
           //   ExecutedCommandExec though because Spark layer has special check for it in
           //   Dataset hasSideEffects)
-          if (!isCommand) rdd = qe.toRdd
+          if (rdd eq null) rdd = qe.toRdd
           val newPlan = LogicalRDD(qe.analyzed.output, rdd)(session)
           val execution = session.sessionState.executePlan(newPlan)
           (null, execution, origExecutionStr, origPlanInfo, executionStr, planInfo,
@@ -2478,5 +2561,15 @@ object CachedKey {
       plan.transform(transformExprID)
     } else plan
     new CachedKey(session, currschema, normalizedPlan, sqlText, session.queryHints.hashCode())
+  }
+}
+
+private object UnionCommands {
+  def unapply(plan: SparkPlan): Option[Boolean] = plan match {
+    case union: UnionExec if union.children.nonEmpty && union.children.forall {
+      case _: ExecutedCommandExec | _: ExecutePlan => true
+      case _ => false
+    } => Some(true)
+    case _ => None
   }
 }

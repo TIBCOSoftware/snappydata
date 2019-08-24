@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -583,12 +583,12 @@ class QueryRoutingSingleNodeSuite extends SnappyFunSuite with BeforeAndAfterAll 
       insertRows(tableName1, 1000)
       insertRows(tableName2, 1000)
       update_delete_query1(tableName1, 1)
-      update_delete_query2(tableName1, 2)
-      update_delete_query3(tableName1, 3, 2)
+      update_delete_query2(tableName1, 1)
+      update_delete_query3(tableName1, 1, 2)
 
-      update_delete_query1(tableName2, 4)
-      update_delete_query2(tableName2, 5)
-      update_delete_query3(tableName2, 6, 1)
+      update_delete_query1(tableName2, 1)
+      update_delete_query2(tableName2, 1)
+      update_delete_query3(tableName2, 1, 1)
     } finally {
       SnappyTableStatsProviderService.TEST_SUSPEND_CACHE_INVALIDATION = false
     }

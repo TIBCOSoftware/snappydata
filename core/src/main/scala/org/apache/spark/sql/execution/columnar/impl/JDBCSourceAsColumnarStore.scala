@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -234,7 +234,8 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
         connectionType match {
           case ConnectionType.Embedded =>
             val rgn = Misc.getRegionForTable(
-              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+              JdbcExtendedUtils.toUpperCase(tableName), true).
+              asInstanceOf[LocalRegion]
             try {
               Misc.getGemFireCache.getCacheTransactionManager.rollback()
             } finally {
@@ -243,7 +244,6 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
                 ds.releaseDiskStoreReadLock()
               }
             }
-
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
