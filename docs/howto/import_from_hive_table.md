@@ -1,7 +1,7 @@
 # How to Import Data from Hive Table into TIBCO ComputeDB Table
 
 
-Using a Snappy session, you can read an existing Hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in SnappyData catalog,  and also define new Hive table/view to be stored in external hive catalog. Using a SnappySession, you can also define a new Hive table/view to be stored in an external hive catalog.
+Using a Snappy session, you can read an existing hive tables that are defined in an external hive catalog, use hive tables as external tables from SnappySession for queries, including joins with tables defined in SnappyData catalog,  and also define new Hive table or view to be stored in external hive catalog. Using a SnappySession, you can also define a new hive table or view to be stored in an external hive catalog.
 
 When working with Hive, one must instantiate Snappy session with Hive support, including connectivity to a persistent Hive metastore, support for Hive serdes, and Hive user-defined functions.
 
@@ -14,7 +14,7 @@ export SPARK_DIST_CLASSPATH=$(/home/user/hadoop-2.7.3/bin/hadoop classpath)
 
 Snappy has been tested with default hive database i.e. embedded derby database. User can also use and configure the remote metastore as well like SQL.
 
-In **hive-site** xml, user needs to configure the parameters as per the requirement. With derby as database, the following are the ** hive-site.xml** configuration:
+In the **hive-site** xml, you must configure the parameters as per the requirement. With derby as database, the following are the ** hive-site.xml** configuration:
 
 ```
 <property>
@@ -57,7 +57,7 @@ Run the following steps to test Snappy with Apache Hadoop:
 
         # To  access hive tables use below command.
         snappy-sql> show tables in default;
-        Please note that it is mandatory to specify the schema ‘default’.
+        Please note that it is mandatory to specify the schema ‘default’ if any other schema is not created.
         If any other schema is created then it is mandatory to use the created schema name.
 
         For example, if schema / database hiveDB created then use,
@@ -81,8 +81,7 @@ No Datastore found in the Distributed System for 'execution on remote node null'
 !!! Note
 	You must configure the configuration files **hive-site.xml** and **core-site.xml** as per your requirements.
 
-If you have connected to Hive and Hadoop and in case the configuration files get removed or deleted, errors or exceptions will not be shown. However, you cannot perform any DDL and DML statements in Hive.
-
+If you have connected to Hive and Hadoop and in case the configuration files get removed or deleted, errors or exceptions will not be shown. Therefore, you cannot perform any DDL and DML operations in Hive.
 
 For more details, refer the following links:
 

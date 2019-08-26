@@ -1,4 +1,4 @@
-# Cluster Components
+# Cluster Components Configuration
 
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the TIBCO ComputeDB home directory with names **locators**, **leads**, and **servers**.
 
