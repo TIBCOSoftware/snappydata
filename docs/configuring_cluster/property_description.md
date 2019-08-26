@@ -62,6 +62,7 @@ The following list of commonly used configuration properties can be set to confi
 |-archive-disk-space-limit|See [archive-disk-space-limit](/reference/configuration_parameters/archive-disk-space-limit.md)|
 |-archive-file-size-limit|See [archive-file-size-limit](/reference/configuration_parameters/archive-file-size-limit.md)| 
 |-dir|Working directory of the member that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| Server</br>Lead</br>Locator</br>|
+|gemfirexd.default-startup-recovery-delay|See [gemfirexd.default-startup-recovery-delay](/reference/configuration_parameters/gemfirexd.default-startup-recovery-delay.md)|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks. For more information, refer to [Best Practices](../best_practices/important_settings.md#spark-local-dir).|Lead</br>Server|
 |-sys-disk-dir|See [sys-disk-dir](/reference/configuration_parameters/sys-disk-dir.md)| 
 
@@ -126,10 +127,10 @@ The following list of commonly used configuration properties can be set to confi
 |-|-|-|
 |-enable-stats| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
 |-enable-time-statistics| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
-|enable-timestats| See [enable-timestats](/reference/configuration_parameters/enable-timestats.md) | |
-|gemfirexd.debug.true| Use this property to set the required [trace flag](/monitoring/configure_logging.md#trace-flag) which enables the logging of specific features of TIBCO ComputeDB.|Server</br>Lead</br>Locator|
+|-enable-timestats| See [enable-timestats](/reference/configuration_parameters/enable-timestats.md) | |
+|-gemfirexd.debug.true| Use this property to set the required [trace flag](/monitoring/configure_logging.md#trace-flag) which enables the logging of specific features of TIBCO ComputeDB.|Server</br>Lead</br>Locator|
 |-log-file|Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, **snappylocator.log**, **snappyleader.log**,**snappyserver.log**. In case logging is set via log4j, the default log file is **snappydata.log** for each of the TIBCO ComputeDB member.)|Server</br>Lead</br>Locator|
-|log-level|See [log-level](/reference/configuration_parameters/log-level.md) | |
+|-log-level|See [log-level](/reference/configuration_parameters/log-level.md) | |
 |-snappy.history| See [snappy.history](/reference/configuration_parameters/snappy.history.md) | |
 |-statistic-archive-file| See [statistic-archive-file](/reference/configuration_parameters/statistic-archive-file.md) | |
 |-statistic-sample-rate| See [statistic-sample-rate](/reference/configuration_parameters/statistic-archive-file.md) | |
@@ -144,7 +145,7 @@ The following list of commonly used configuration properties can be set to confi
 |-J|JVM option passed to the spawned SnappyData server JVM. </br>For example, use -J-Xmx1GB to set the JVM heap to 1GB.|Server</br>Lead</br>Locator|
 
 
-Other than the above properties, you can also refer the [Configuration Parameters section](/reference/configuration_parameters/config_parameters.md#property-names) for properties that are used in special cases.
+Other than the above properties, you can also refer the [Configuration Parameters section](../reference/configuration_parameters/config_parameters.md#property-names) for properties that are used in special cases.
 
 <a id="sql-properties"></a>
 ## SQL Properties
@@ -225,10 +226,15 @@ Connection properties configure the features of a SnappyData member or a SnappyD
 
 |Property|Description|Components</br>|
 |-|-|-|
-|allow-explicit-commit| See [allow-explicit-commit](/reference/configuration_parameters/allow-explicit-commit.md)||
-|skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)||
-
-
-
-
-
+|-allow-explicit-commit| See [allow-explicit-commit](/reference/configuration_parameters/allow-explicit-commit.md)||
+|-enable-stats|See [enable-stats](/reference/configuration_parameters/enable-stats.md)||
+|-enable-timestats|See [enable-timestats](/reference/configuration_parameters/enable-timestats.md)||
+|-load-balance|See [load-balance](/reference/configuration_parameters/load-balance.md)||
+|-log-file|See [log-file](/reference/configuration_parameters/log-file.md)||
+|-password|See [password](/reference/configuration_parameters/password.md)||
+|-read-timeout|See [read-timeout](/reference/configuration_parameters/read-timeout.md)||
+|-skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)||
+|-skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)||
+|-user|See [user](/reference/configuration_parameters/user.md)||
+|-enable-stats|See [enable-stats](/reference/configuration_parameters/enable-stats.md)||
+|-enable-stats|See [enable-stats](/reference/configuration_parameters/enable-stats.md)||

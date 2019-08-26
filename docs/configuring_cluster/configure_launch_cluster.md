@@ -12,7 +12,7 @@ If you are launching on a single node, for example, on your laptop or on a linux
 ```
 ./sbin/snappy-start-all.sh 
 ```
-This launches a single [locator](should point to concepts), [lead](should point to concepts) and a [data server](should point to concepts). You can go to the following URL on your browser to view the cluster dashboard:
+This launches a single [locator](/configuring_cluster/configuring_cluster#locator.md), [lead](/configuring_cluster/configuring_cluster#lead.md) and a [data server](/configuring_cluster/configuring_cluster#dataserver.md). You can go to the following URL on your browser to view the cluster dashboard:
 
 **http://(localhost or hostname or machineIP):5050** 
 
@@ -95,7 +95,7 @@ More complex the analytical processing, especially large aggregations, greater t
 Configuration files for locator, lead, and server should be created in the **conf** folder located in the TIBCO ComputeDB home directory with names **locators**, **leads**, and **servers**.
 
 To do so, you can copy the existing template files **servers.template**, **locators.template**, **leads.template**, and rename them to **servers**, **locators**, **leads**.
-These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members.
+These files should contain the hostnames of the nodes (one per line) where you intend to start the member. You can modify the properties to configure individual members. For more details refer to [Cluster Components Configuration](configuring_cluster.md) section.
 
 #### Configuring Core Lead properties
 The following core properties must be set in the **conf/leads** file:
@@ -162,7 +162,6 @@ node2_hostname -dir=/nfs/opt/snappy-db1/server4 -heap-size=8g -memory-size=42g
 
 ```
 
-#### TIBCO ComputeDB Properties
+## TIBCO ComputeDB Properties
 
-[Reference to all properties and description](property_description.md)
-
+For the complete list of TIBCO ComputeDB properties, refer to [List of Properties](property_description.md).

@@ -30,7 +30,7 @@ pages:
     - 'Benchmark 16-20x Faster Performance than Apache Spark': 'quickstart/performance_apache_spark.md'
     - 'Using SQL': 'quickstart/using_sql.md'
     - 'Structured Streaming': 'quickstart/structucture_streamingquickstart.md'
-- 'Configuring Cluster': 'configuring_cluster/configure_launch_cluster.md'    
+- 'Configure/Launch TIBCO ComputeDB Cluster': 'configuring_cluster/configure_launch_cluster.md'    
 #- 'Migration Guide': 'migration/migration.md'
 #- 'Migration Guide':
 #    - 'Manually Upgrading from GemFire XD 1.4.x to SnappyData RowStore 1.0': 'migration/upgrade_gemfirexd_standalone.md'
@@ -96,7 +96,7 @@ pages:
     - 'Firewalls and Connections': 'configuring_cluster/firewalls_connections.md'
 - 'Programming Guide': 'programming_guide.md'
 - 'Programming Guide':
-    - 'SparkSession, SnappySession and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
+    - 'SparkSession, SnappySession, and SnappyStreamingContext': 'programming_guide/sparksession_snappysession_and_snappystreamingcontext.md'
     - 'Snappy Jobs': 'programming_guide/snappydata_jobs.md'
     - 'Managing JAR Files': 'programming_guide/managing_jar_files.md'
     - 'Using Snappy Shell': 'programming_guide/using_snappydata_shell.md'
@@ -166,7 +166,8 @@ pages:
         - 'CPU Usage': 'vsd/vsd_cpu.md'
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
-    - 'Cluster Configuration': 'configuring_cluster/configuring_cluster.md'
+    - 'Cluster Components Configuration': 'configuring_cluster/configuring_cluster.md'
+    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
         - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
@@ -208,6 +209,7 @@ pages:
         - 'TRUNCATE TABLE': 'reference/sql_reference/truncate-table.md'
         - 'UPDATE': 'reference/sql_reference/update.md'
     - 'SQL General Limitations': 'reference/sql_general_limitations.md'
+    - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'Built-in System Procedures and Built-in Functions': 'reference/inbuilt_system_procedures/system-procedures.md'
     - 'Built-in System Procedures and Built-in Functions': 
         - 'DUMP_STACKS': 'reference/inbuilt_system_procedures/dump-stacks.md'
@@ -248,7 +250,6 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
-    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
@@ -307,7 +308,6 @@ pages:
     - 'API Reference': 'apidocsintro.md'
     - 'ODBC Supported API': 'reference/API_Reference/odbc_supported_apis.md'
     - 'TIBCO ComputeDB Spark extension API Reference Guide': 'reference/API_Reference/apireference_guide.md'
-    - 'SQL Functions Reference': 'reference/sql_functions/sql_functions.md'
     - 'Supported Data Types': 'reference/misc/supported_datatypes.md'
     - 'Configuring SSH Login without Password': 'reference/misc/passwordless_ssh.md'
     - 'Setting Up TIBCO ComputeDB ODBC Driver': 'setting_up_odbc_driver-tableau_desktop.md'

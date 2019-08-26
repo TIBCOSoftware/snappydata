@@ -36,7 +36,7 @@ The following topics are covered in this section:
 !!! Note
 	When connecting to a TIBCO ComputeDB cluster using Smart Connector, the information related to **SQL**, **Jobs**, and **Stages** are NOT displayed, as the Jobs and queries are primarily executed in your client Spark cluster. You can find this information on the Spark UI console of your client cluster. Read more about Smart Connector Mode [here](../affinity_modes/connector_mode.md).
     
-In cases where you cannot access the TIBCO ComputeDB Monitoring Console to analyse Jobs and tasks, you must turn on the [Spark History server](#historyserver).
+On re-starting a TIBCO ComputeDB cluster, the TIBCO ComputeDB Monitoring Console loses the information about SQL queries, Spark jobs and stages. Therefore, you must turn on the [Spark History server](#historyserver) to enable historical analysis of past queries and their associated jobs, stages, and tasks.
 
 On the top-right side of the TIBCO ComputeDB Monitoring Console page, you can click the help icon to view the details of TIBCO ComputeDB.
 
@@ -252,7 +252,7 @@ On this page, you can view the total time required for all the tasks in a job to
 
 <a id="historyserver"></a>
 ## Spark History Server
-The Spark History server is an HTTP server that let you analyze the Spark jobs.
+The Spark History server is a Spark UI extension. It is a web application that lets you analyze the running as well as completed SQL queries and the associated Spark jobs. The metadata collected in the form of event logs by the Spark History server can be shipped from a TIBCO ComputeDB cluster to another TIBCO ComputeDB cluster for further analsis.
 
 The first step in tuning query performance in TIBCO ComputeDB is to understand the query physical plan that is available through the SQL tab on the TIBCO ComputeDB Monitoring console. The detailed execution plan requires one to understand the jobs and tasks associated with the query. This is available in the Jobs/Tasks tab. However, if the TIBCO ComputeDB Monitoring console is not accessible to the investigator, it becomes a difficult exercise. To overcome this, TIBCO recommends to turn on the History server for production applications.
 
