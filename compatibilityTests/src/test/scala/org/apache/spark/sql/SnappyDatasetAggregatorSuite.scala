@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,11 +20,4 @@ package org.apache.spark.sql
 import org.apache.spark.sql.test.{SharedSnappySessionContext, SnappySparkTestUtil}
 
 class SnappyDatasetAggregatorSuite extends DatasetAggregatorSuite
-    with SharedSnappySessionContext with SnappySparkTestUtil {
-
-  override def ignored: Seq[String] = Seq(
-    "typed aggregation: in project list",
-    "typed aggregation: class input with reordering",
-    "typed aggregation: complex input"
-  )
-}
+    with SharedSnappySessionContext with SnappySparkTestUtil

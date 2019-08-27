@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -55,6 +55,34 @@ public class SnappySecurityPrms extends SnappyPrms{
   public static Long isSecurity;
 
   public static Long passFile;
+ 
+  public static Long isAltTableRLS;
+
+  public static Long isRLS;
+
+  public static Long isDropPolicy;
+
+  public static Long numOfPolicy;
+
+  public static int getPolicyCnt() {
+    Long key = numOfPolicy;
+    return tasktab().intAt(key, tab().intAt(key, 1));
+  }
+
+  public static boolean getIsAltTableRLS() {
+    Long key = isAltTableRLS;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsRLS() {
+    Long key = isRLS;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
+
+  public static boolean getIsDropPolicy() {
+    Long key = isDropPolicy;
+    return tasktab().booleanAt(key, tab().booleanAt(key, false));
+  }
 
   public static Vector getDmlOps() {
     Long key = dmlOperations;

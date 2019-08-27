@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -180,7 +180,7 @@ object snappy extends Serializable {
      *
      * This ignores all SaveMode.
      */
-    def putInto(tableName: String): Unit = {
+    def putInto(tableName: String): Long = {
       val df: DataFrame = dfField.get(writer).asInstanceOf[DataFrame]
       val session = df.sparkSession match {
         case sc: SnappySession => sc
@@ -200,7 +200,8 @@ object snappy extends Serializable {
       }.getOrElse(df.logicalPlan)
 
       df.sparkSession.sessionState.executePlan(PutIntoTable(UnresolvedRelation(
-        session.tableIdentifier(tableName)), input)).executedPlan.executeCollect()
+        session.tableIdentifier(tableName)), input)).executedPlan.
+          executeCollect().foldLeft(0)(_ + _.getInt(0))
     }
 
     def deleteFrom(tableName: String): Unit = {

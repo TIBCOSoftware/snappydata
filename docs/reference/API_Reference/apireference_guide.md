@@ -6,14 +6,14 @@ This guide gives details of Spark extension APIs that are provided by SnappyData
 | SnappySession APIs | DataFrameWriter APIs |SnappySessionCatalog APIs|
 |--------|--------|--------|
 |  [**sql**](#sqlapi)   </br> Query Using Cached Plan   |  [**putInto**](#putintoapi)</br>Put Dataframe Content into Table  | [**getKeyColumns**](#getkeycolumapi) </br>Get Key Columns of SnappyData table|
-|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getTableType**](#gettabletypeapi) </br>Get Table Type |
+|  [**sqlUncached**](#sqluncachedapi)</br>Query Using Fresh Plan   | [**deleteFrom**](#deletefromapi)</br>Delete DataFrame Content from Table |[**getKeyColumnsAndPositions**](#getkeycolumnspos) </br>Gets primary key or key columns with their position in the table. |
 |   [**createTable**](#createtableapi)</br>Create SnappyData Managed Table    |        ||
 |     [**createTable**](#createtable1)</br>Create SnappyData Managed JDBC Table |        ||
 |    [**truncateTable**](#truncateapi)</br> Empty Contents of Table    |        ||
 |    [**dropTable**](#droptableapi) </br>Drop SnappyData Table    |        ||
 |  [**createSampleTable**](#createsampletableapi)</br>Create Stratified Sample Table      |        ||
 |   [**createApproxTSTopK**](#createaproxtstopkapi)</br>Create Structure to Query Top-K     |        ||
-|    [**setSchema**](#setschemaapi)</br>Set Current Database/schema    |        ||
+|    [**setCurrentSchema**](#setschemaapi)</br>Set Current Database/schema    |        ||
 |   [**getCurrentSchema**](#getcurrentschemaapi)</br>Get Current Schema of Session     |        ||
 |    [**insert**](#insertapi)</br>Insert Row into an Existing Table   |        ||
 |   [**put**](#putapi)</br>Upsert Row into an Existing Table    |        ||
@@ -98,7 +98,7 @@ Creates a SnappyData managed table. Any relation providers, that is the row, col
 createTable(
       tableName: String,
       provider: String,
-      schemaDDL: String,
+      schema: StructType,
       options: Map[String, String],
       allowExisting: Boolean)
 ```
@@ -157,7 +157,6 @@ Syntax:
 **Example**
 
 ```
-{{{
    val props = Map(
       "url" -> s"jdbc:derby:$path",
       "driver" -> "org.apache.derby.jdbc.EmbeddedDriver",
@@ -226,7 +225,8 @@ snappySession.dropTable(“t1”, true)
 ### createSampleTable
 
 Creates a stratified sample table.
- 
+
+!!! Note This API is not supported in the Smart Connector mode. 
 
 **Syntax**
 
@@ -261,6 +261,8 @@ snappySession.createSampleTable("airline_sample",   Some("airline"), Map("qcs" -
 
 Creates an approximate structure to query top-K with time series support.
 
+!!! Note This API is not supported in the Smart Connector mode.
+
 **Syntax**
 
 ```
@@ -288,14 +290,14 @@ snappySession.createApproxTSTopK("topktable", Some("hashtagTable"), "hashtag", s
 ```
 
 <a id= setschemaapi> </a>
-### setSchema
+### setCurrentSchema
 
 Sets the current database/schema.
 
 **Syntax**
 
 ```
-setSchema(schemaName: String)
+schema
 
 ```
 
@@ -433,7 +435,7 @@ delete(tableName: String, filterExpr: String)
 |Parameter	 | Description |
 |--------|--------|
 | tableName      | Name of the table. |
-|filterExpr|  SSQL WHERE criteria to select rows that will be updated. | 
+|filterExpr|  SQL WHERE criteria to select rows that will be updated. | 
 |Returns|Int|
 
 **Example **
@@ -446,6 +448,8 @@ snappySession.delete(“t1”, s"col1=$i"))
 ### queryApproxTSTopK
 
 Fetches the topK entries in the** Approx TopK** synopsis for the specified time interval. The time interval specified here should not be less than the minimum time interval used when creating the TopK synopsis.
+
+!!! Note This API is not supported in the Smart Connector mode.
 
 **Syntax**
 
@@ -542,7 +546,7 @@ df.write.deleteFrom(“snappy_table”)
 The following APIs are available for SnappySessionCatalog:
 
 *	[**getKeyColumns**](#getkeycolumapi)
-*	[**getTableType**](#gettabletypeapi) 
+*	[**getKeyColumnsAndPositions**](#getkeycolumnspos) 
 
 !!! Note
 	These are developer APIs and are subject to change in the future.
@@ -570,26 +574,26 @@ getKeyColumns(tableName: String)
 snappySession.sessionCatalog.getKeyColumns("t1")
 ```
 
-<a id= gettabletypeapi> </a>
-### getTableType
-Gets the table type (row, column etc.) of a SnappyData table. 
-
+<a id= getkeycolumnspos> </a>
+### getKeyColumnsAndPositions
+Gets primary key or key columns of a SnappyData table along with their position in the table.
 
 **Syntax**
 
 ```
-getTableType(tableName: String)
+getKeyColumnsAndPositions(tableName: String)
 ```
 
 **Parameters**
 
 |Parameter	 | Description |
 |--------|--------|
-| tableName      |    Name of the table.|
-| Returns     |   Type of the table. Row, Column, Index, Stream, External, None etc. |
+| tableName	    |    Name of the table.|
+| Returns     |   Sequence of `scala.Tuple2` containing column and column's position in the table for each key columns (for column tables) or sequence of primary keys (for row tables).|
 
 **Example **
 
 ```pre
-snappySession.sessionCatalog.getTableType("t1")
+snappySession.sessionCatalog.getKeyColumnsAndPositions("t1")
+
 ```

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -22,11 +22,10 @@ import com.pivotal.gemfirexd.TestUtil
 import io.snappydata.SnappyFunSuite
 import io.snappydata.core.Data
 import org.scalatest.{BeforeAndAfter, BeforeAndAfterAll}
-
 import org.apache.spark.Logging
 import org.apache.spark.sql.snappy._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{AnalysisException, Row, SnappyContext, SnappySession}
+import org.apache.spark.sql._
 
 case class DataWithMultipleKeys(pk1: Int, col1: Int, pk2: String, col2: Long)
 case class DataDiffCol(column1: Int, column2: Int, column3: Int)
@@ -83,6 +82,41 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     TestUtil.stopNetServer()
   }
 
+  test("test the overwrite table after reading itself") {
+    val tableName = "ColumnTable"
+    snc.sql(s"DROP TABLE IF EXISTS $tableName")
+    val df = snc.sql(s"CREATE TABLE $tableName(Col1 INT ,Col2 INT, Col3 INT) " +
+      "USING column " +
+      "options " +
+      "(" +
+      "PARTITION_BY 'Col1'," +
+      "BUCKETS '1')")
+    val data = Seq(Seq(1, 2, 3), Seq(7, 8, 9), Seq(9, 2, 3), Seq(4, 2, 3), Seq(5, 6, 7))
+    val rdd = sc.parallelize(data, data.length).map(s => new Data(s(0), s(1), s(2)))
+    val dataDF = snc.createDataFrame(rdd)
+
+    dataDF.write.insertInto(tableName)
+
+    val result = snc.sql("SELECT * FROM " + tableName)
+
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+    try {
+      result.write.format("column").mode(SaveMode.Overwrite).saveAsTable(tableName)
+      fail("Expected AnalysisException while overwriting table which is also being read from")
+    }
+    catch {
+      case ae: AnalysisException => assert(ae.getMessage().contains("Cannot overwrite table"))
+      case t: Throwable => fail("Unexpected Exception ", t)
+    }
+
+  }
   test("PutInto with sql") {
     val snc = new SnappySession(sc)
     val rdd = sc.parallelize(data1, 2).map(s => Data(s(0), s(1), s(2)))
@@ -786,7 +820,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
     val message = intercept[AnalysisException] {
       df2.write.deleteFrom("col_table")
     }.getMessage
-    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
+    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation."))
   }
 
   test("Bug - SNAP-2157") {
@@ -892,7 +926,7 @@ class SnappyTableMutableAPISuite extends SnappyFunSuite with Logging with Before
       df2.write.deleteFrom("row_table")
     }.getMessage
 
-    assert(message.contains("column `PK3` cannot be resolved on the right side of the operation."))
+    assert(message.contains("column `pk3` cannot be resolved on the right side of the operation."))
   }
 
   test("Delete From SQL using JDBC: row tables") {

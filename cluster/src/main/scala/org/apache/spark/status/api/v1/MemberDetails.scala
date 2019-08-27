@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -63,8 +63,8 @@ object MemberDetails {
     val logFile = memberDetails.getLogFile
     val processId = memberDetails.getProcessId
 
-    // val distStoreUUID = memberDetails.getDiskStoreUUID
-    // val distStoreName = memberDetails.getDiskStoreName
+    val distStoreUUID = memberDetails.getDiskStoreUUID
+    val distStoreName = memberDetails.getDiskStoreName
 
     val isLead: Boolean = memberDetails.isLead
     val isActiveLead: Boolean = memberDetails.isLeadActive
@@ -127,7 +127,8 @@ object MemberDetails {
       MemberStatistics.TREND_DISKSTORE_DISKSPACE_USAGE);
 
     new MemberSummary(memberId, nameOrId.toString, host, shortDirName, fullDirName,
-      logFile, processId, status, memberType, isLocator, isDataServer, isLead, isActiveLead, cores,
+      logFile, processId, distStoreUUID, distStoreName, status, memberType, isLocator,
+      isDataServer, isLead, isActiveLead, cores,
       cpuActive, clients, jvmHeapMax, jvmHeapUsed, jvmHeapTotal, jvmHeapFree, heapStoragePoolUsed,
       heapStoragePoolSize, heapExecutionPoolUsed, heapExecutionPoolSize, heapMemorySize,
       heapMemoryUsed, offHeapStoragePoolUsed, offHeapStoragePoolSize, offHeapExecutionPoolUsed,

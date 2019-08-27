@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,7 +16,6 @@
  */
 package org.apache.spark.sql.store
 
-import java.sql.SQLException
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.collection.mutable.ListBuffer
@@ -191,13 +190,13 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql("drop index test1")
 
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> None)), Map("colocate_with" -> tableName))
+      Seq("col1" -> None), Map("colocate_with" -> tableName))
     snContext.dropIndex("test1", false)
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
+    snContext.createIndex("test1", tableName, Seq("col1" -> None),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
-    snContext.createIndex("test1", tableName, Map(("col1" -> Some(Ascending))),
+    snContext.createIndex("test1", tableName, Seq("col1" -> Some(Ascending)),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
@@ -220,13 +219,9 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql(
       s"""create table $tableName("version" BIGINT NOT NULL,
         "value" VARCHAR(20), PRIMARY KEY ("version"))""")
-    // fail index creation with incorrect case
-    try {
-      snContext.sql(s"CREATE UNIQUE INDEX $indexName ON $tableName (version)")
-      fail("expected exception with unquoted identifier")
-    } catch {
-      case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
-    }
+    // index creation should succeed with unquoted or quoted name (case-insensitive)
+    snContext.sql(s"CREATE UNIQUE INDEX $indexName ON $tableName (version)")
+    snContext.sql(s"DROP INDEX $indexName")
     snContext.sql(s"""CREATE UNIQUE INDEX $indexName ON $tableName ("version")""")
     val schema = snContext.table(tableName).schema
 
@@ -248,15 +243,11 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
       """("version" BIGINT NOT NULL,
         "value" VARCHAR(20), PRIMARY KEY ("version"))""",
       Map.empty[String, String], allowExisting = false)
-    // fail index creation with incorrect case
-    try {
-      snContext.createIndex(indexName, tableName, Map("Version" -> None),
-        Map("INDEX_TYPE" -> "UNIQUE"))
-      fail("expected exception with incorrect case")
-    } catch {
-      case sqle: SQLException if sqle.getSQLState == "42X14" => // expected
-    }
-    snContext.createIndex(indexName, tableName, Map("version" -> None),
+    // index creation should succeed with unquoted or quoted name (case-insensitive)
+    snContext.createIndex(indexName, tableName, Seq("version" -> None),
+      Map("INDEX_TYPE" -> "UNIQUE"))
+    snContext.dropIndex(indexName, ifExists = false)
+    snContext.createIndex(indexName, tableName, Seq("Version" -> None),
       Map("INDEX_TYPE" -> "UNIQUE"))
 
     ds.write.insertInto(tableName)
@@ -745,17 +736,17 @@ class CreateIndexTest extends SnappyFunSuite with BeforeAndAfterEach {
     snContext.sql("drop index test1")
 
 
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)), Map("index_type" -> "unique"))
+    snContext.createIndex("test1", tableName, Seq("col1" -> None), Map("index_type" -> "unique"))
     snContext.dropIndex("test1", false)
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> None)), Map("index_type" -> "global hash"))
+      Seq("col1" -> None), Map("index_type" -> "global hash"))
     snContext.dropIndex("test1", false)
-    snContext.createIndex("test1", tableName, Map(("col1" -> None)),
+    snContext.createIndex("test1", tableName, Seq("col1" -> None),
       Map.empty[String, String])
     snContext.dropIndex("test1", false)
 
     snContext.createIndex("test1", tableName,
-      Map(("col1" -> Some(Descending))), Map("index_type" -> "unique"))
+      Seq("col1" -> Some(Descending)), Map("index_type" -> "unique"))
     snContext.dropIndex("test1", false)
 
     // drop non-existent indexes with if exist clause

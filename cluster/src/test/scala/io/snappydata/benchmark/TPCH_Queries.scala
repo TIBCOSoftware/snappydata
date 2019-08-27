@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -235,6 +235,51 @@ object TPCH_Queries extends Logging {
         " limit 100"
   }
 
+  def getQuery2ForPrepStatement: String = {
+    " select" +
+        "     S_ACCTBAL," +
+        "     S_NAME," +
+        "     N_NAME," +
+        "     P_PARTKEY," +
+        "     P_MFGR," +
+        "     S_ADDRESS," +
+        "     S_PHONE," +
+        "     S_COMMENT" +
+        " from" +
+        "     SUPPLIER," +
+        "     NATION," +
+        "     REGION," +
+        "     PART," +
+        "     PARTSUPP" +
+        " where" +
+        "     S_NATIONKEY = N_NATIONKEY" +
+        "     and N_REGIONKEY = R_REGIONKEY" +
+        "     and R_NAME = ?" +
+        "     and S_SUPPKEY = PS_SUPPKEY" +
+        "     and P_PARTKEY = PS_PARTKEY" +
+        "     and P_SIZE = ?" +
+        "     and P_TYPE like ?" +
+        "     and PS_SUPPLYCOST = (" +
+        "         select" +
+        "             min(PS_SUPPLYCOST)" +
+        "         from" +
+        "             SUPPLIER, NATION," +
+        "             REGION, PARTSUPP" +
+        "         where" +
+        "             S_NATIONKEY = N_NATIONKEY" +
+        "             and N_REGIONKEY = R_REGIONKEY" +
+        "             and R_NAME = ?" +
+        "             and S_SUPPKEY = PS_SUPPKEY" +
+        "             and P_PARTKEY = PS_PARTKEY" +
+        "            )" +
+        " order by" +
+        "     S_ACCTBAL desc," +
+        "     N_NAME," +
+        "     S_NAME," +
+        "     P_PARTKEY" +
+        " limit 100"
+  }
+
 
   def getQ2Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
@@ -286,6 +331,31 @@ object TPCH_Queries extends Logging {
         " limit 10"
   }
 
+  def getQuery3ForPrepStatement: String = {
+    " select" +
+        "     l_orderkey," +
+        "     sum(l_extendedprice*(1-l_discount)) as revenue," +
+        "     o_orderdate," +
+        "     o_shippriority" +
+        " from" +
+        "    ORDERS," +
+        "    LINEITEM," +
+        "    CUSTOMER " +
+        " where" +
+        "     C_MKTSEGMENT = ?" +
+        "     and C_CUSTKEY = o_custkey" +
+        "     and l_orderkey = o_orderkey" +
+        "      and o_orderdate < ?" +
+        "     and l_shipdate > ? " +
+        " group by" +
+        "     l_orderkey," +
+        "     o_orderdate," +
+        "     o_shippriority" +
+        " order by" +
+        "     l_orderkey" +
+        " limit 10"
+  }
+
   def getQ3Parameter(isDynamic: Boolean): Array[String] = {
     // segment AUTOMOBILE BUILDING FURNITURE MACHINERY HOUSEHOLD
     // date1  randomly selected day within [1995-03-01 .. 1995-03-31]
@@ -320,6 +390,31 @@ object TPCH_Queries extends Logging {
         " where" +
         "     o_orderdate >= '?'" +
         "     and o_orderdate < add_months('?',3)" +
+        "     and exists (" +
+        "         select" +
+        "             l_orderkey" +
+        "         from" +
+        "             LINEITEM" +
+        "         where" +
+        "             l_orderkey = o_orderkey" +
+        "             and l_commitdate < l_receiptdate" +
+        "         )" +
+        " group by" +
+        "     o_orderpriority" +
+        " order by" +
+        "     o_orderpriority"
+  }
+
+  def getQuery4ForPrepStatement: String = {
+    // 1.DATE = 1993-07-01.
+    " select" +
+        "     o_orderpriority," +
+        "     count(*) as order_count" +
+        " from" +
+        "     ORDERS" +
+        " where" +
+        "     o_orderdate >= ?" +
+        "     and o_orderdate < add_months(?, 3)" +
         "     and exists (" +
         "         select" +
         "             l_orderkey" +
@@ -416,6 +511,35 @@ object TPCH_Queries extends Logging {
         "        revenue desc"
   }
 
+  def getQuery5ForPrepStatement: String = {
+    // 1. REGION = ASIA;
+    // 2. DATE = 1994-01-01.
+    " select" +
+        "        n_name," +
+        "        sum(l_extendedprice * (1 - l_discount)) as revenue" +
+        " from" +
+        "        SUPPLIER," +
+        "        NATION," +
+        "        REGION," +
+        "        ORDERS," +
+        "        LINEITEM," +
+        "        CUSTOMER" +
+        " where" +
+        "        s_nationkey = n_nationkey" +
+        "        and n_regionkey = r_regionkey" +
+        "        and r_name = ?" +
+        "        and C_CUSTKEY = o_custkey" +
+        "        and l_orderkey = o_orderkey" +
+        "        and l_suppkey = s_suppkey" +
+        "        and C_NATIONKEY = s_nationkey" +
+        "        and o_orderdate >= ?" +
+        "        and o_orderdate < add_months(?, 12)" +
+        " group by" +
+        "        n_name" +
+        " order by" +
+        "        revenue desc"
+  }
+
   def getQuery5_Memsql: String = {
     // 1. REGION = ASIA;
     // 2. DATE = 1994-01-01.
@@ -484,6 +608,21 @@ object TPCH_Queries extends Logging {
         " where" +
         "        l_shipdate >= '?'" +
         "        and l_shipdate < add_months('?', 12)" +
+        "        and l_discount between ? - 0.01 and ? + 0.01" +
+        "        and l_quantity < ?"
+  }
+
+  def getQuery6ForPrepStatement: String = {
+    // 1. DATE = 1994-01-01;
+    // 2. DISCOUNT = 0.06;
+    // 3. QUANTITY = 24.
+    " select" +
+        "        sum(l_extendedprice*l_discount) as revenue" +
+        " from" +
+        "        LINEITEM" +
+        " where" +
+        "        l_shipdate >= ?" +
+        "        and l_shipdate < add_months(?, 12)" +
         "        and l_discount between ? - 0.01 and ? + 0.01" +
         "        and l_quantity < ?"
   }
@@ -578,6 +717,50 @@ object TPCH_Queries extends Logging {
         "         l_year"
   }
 
+  def getQuery7ForPrepStatement: String = {
+    //    1. NATION1 = FRANCE;
+    //    2. NATION2 = GERMANY.
+    "select" +
+        "         supp_nation," +
+        "         cust_nation," +
+        "         l_year, " +
+        "         sum(volume) as revenue" +
+        " from (" +
+        "         select" +
+        "                 n1.n_name as supp_nation," +
+        "                 n2.n_name as cust_nation," +
+        //        "                 extract m(year from l_shipdate) as l_year," +
+        "                 year(l_shipdate) as l_year," +
+        "                 l_extendedprice * (1 - l_discount) as volume" +
+        "         from" +
+        "                 SUPPLIER," +
+        "                 LINEITEM," +
+        "                 ORDERS," +
+        "                 CUSTOMER," +
+        "                 NATION n1," +
+        "                 NATION n2" +
+        "         where" +
+        "                 s_suppkey = l_suppkey" +
+        "                 and o_orderkey = l_orderkey" +
+        "                 and C_CUSTKEY = o_custkey" +
+        "                 and s_nationkey = n1.n_nationkey" +
+        "                 and C_NATIONKEY = n2.n_nationkey" +
+        "                 and (" +
+        "                         (n1.n_name = ? and n2.n_name = ?)" +
+        "                      or (n1.n_name = ? and n2.n_name = ?)" +
+        "                 )" +
+        "                 and l_shipdate between '1995-01-01' and '1996-12-31'" +
+        "         ) as shipping" +
+        " group by" +
+        "         supp_nation," +
+        "         cust_nation," +
+        "         l_year" +
+        " order by" +
+        "         supp_nation," +
+        "         cust_nation," +
+        "         l_year"
+  }
+
   def getQ7Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. NATION1 is randomly selected within the list of values defined for N_NAME in Clause
@@ -641,6 +824,50 @@ object TPCH_Queries extends Logging {
         "                         and r_name = '?'" +
         "                         and o_orderdate between '1995-01-01' and '1996-12-31'" +
         "                         and p_type = '?'" +
+        "                         and s_suppkey = l_suppkey" +
+        "                         and s_nationkey = n2.n_nationkey" +
+        "         ) as all_nations" +
+        " group by" +
+        "         o_year" +
+        " order by" +
+        "         o_year"
+
+  }
+
+  def getQuery8ForPrepStatement: String = {
+    //    1. NATION = BRAZIL;
+    //    2. REGION = AMERICA;
+    //    3. TYPE = ECONOMY ANODIZED STEEL.
+    "select" +
+        "         o_year," +
+        "         sum(case" +
+        "                 when nation = ?" +
+        "                 then volume" +
+        "                 else 0" +
+        "                 end) / sum(volume) as mkt_share" +
+        "         from (" +
+        "                 select" +
+        "                         year(o_orderdate) as o_year," +
+        "                         l_extendedprice * (1-l_discount) as volume," +
+        "                         n2.n_name as nation" +
+        "                 from" +
+        "                         LINEITEM," +
+        "                         PART," +
+        "                         ORDERS," +
+        "                         CUSTOMER," +
+        "                         NATION n1," +
+        "                         REGION," +
+        "                         NATION n2," +
+        "                         SUPPLIER" +
+        "                 where" +
+        "                         p_partkey = l_partkey" +
+        "                         and l_orderkey = o_orderkey" +
+        "                         and o_custkey = C_CUSTKEY" +
+        "                         and C_NATIONKEY = n1.n_nationkey" +
+        "                         and n1.n_regionkey = r_regionkey" +
+        "                         and r_name = ?" +
+        "                         and o_orderdate between '1995-01-01' and '1996-12-31'" +
+        "                         and p_type = ?" +
         "                         and s_suppkey = l_suppkey" +
         "                         and s_nationkey = n2.n_nationkey" +
         "         ) as all_nations" +
@@ -737,6 +964,43 @@ object TPCH_Queries extends Logging {
 
   }
 
+  def getQuery9ForPrepStatement: String = {
+    // 1. COLOR = green.
+    "select" +
+        "         nation," +
+        "         o_year," +
+        "         sum(amount) as sum_profit" +
+        " from (" +
+        "         select" +
+        "                 n_name as nation," +
+        "                 year(o_orderdate) as o_year," +
+        "                 l_extendedprice * (1 - l_discount) - ps_supplycost * l_quantity as " +
+        "amount" +
+        "         from" +
+        "                 LINEITEM," +
+        "                 PART," +
+        "                 ORDERS," +
+        "                 SUPPLIER," +
+        "                 NATION," +
+        "                 PARTSUPP" +
+        "         where" +
+        "                 s_suppkey = l_suppkey" +
+        "                 and ps_suppkey = l_suppkey" +
+        "                 and ps_partkey = l_partkey" +
+        "                 and p_partkey = l_partkey" +
+        "                 and o_orderkey = l_orderkey" +
+        "                 and s_nationkey = n_nationkey" +
+        "                 and p_name like ? " +
+        "         ) as profit" +
+        " group by" +
+        "         nation," +
+        "         o_year" +
+        " order by" +
+        "         nation," +
+        "         o_year desc"
+
+  }
+
   def getQ9Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* COLOR is randomly selected within the list of values defined for the generation
@@ -788,6 +1052,42 @@ object TPCH_Queries extends Logging {
         "         and l_orderkey = o_orderkey" +
         "         and o_orderdate >= '?'" +
         "         and o_orderdate < add_months('?', 3)" +
+        "         and l_returnflag = 'R'" +
+        "         and C_NATIONKEY = n_nationkey" +
+        " group by" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         C_ACCTBAL," +
+        "         C_PHONE," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_COMMENT" +
+        " order by" +
+        "         revenue desc" +
+        " limit 20"
+  }
+
+  def getQuery10ForPrepStatement: String = {
+    // 1.DATE = 1993-10-01.
+    "select" +
+        "         C_CUSTKEY," +
+        "         C_NAME," +
+        "         sum(l_extendedprice * (1 - l_discount)) as revenue," +
+        "         C_ACCTBAL," +
+        "         n_name," +
+        "         C_ADDRESS," +
+        "         C_PHONE," +
+        "         C_COMMENT" +
+        " from" +
+        "         ORDERS," +
+        "         LINEITEM," +
+        "         CUSTOMER," +
+        "         NATION" +
+        " where" +
+        "         C_CUSTKEY = o_custkey" +
+        "         and l_orderkey = o_orderkey" +
+        "         and o_orderdate >= ?" +
+        "         and o_orderdate < add_months(?, 3)" +
         "         and l_returnflag = 'R'" +
         "         and C_NATIONKEY = n_nationkey" +
         " group by" +
@@ -932,6 +1232,38 @@ object TPCH_Queries extends Logging {
         "         value desc"
   }
 
+  def getQuery11ForPrepStatement: String = {
+    //    1. NATION = GERMANY;
+    //    2. FRACTION = 0.0001.
+    "select" +
+        "         PS_PARTKEY," +
+        "         sum(PS_SUPPLYCOST * PS_AVAILQTY) as value" +
+        " from" +
+        "         SUPPLIER," +
+        "         NATION," +
+        "         PARTSUPP" +
+        " where" +
+        "         PS_SUPPKEY = S_SUPPKEY" +
+        "         and S_NATIONKEY = N_NATIONKEY" +
+        "         and N_NAME = ?" +
+        " group by" +
+        "         PS_PARTKEY having" +
+        "         sum(PS_SUPPLYCOST * PS_AVAILQTY) > (" +
+        "                 select" +
+        "                         sum(PS_SUPPLYCOST * PS_AVAILQTY) * 0.0000001" +
+        "                 from" +
+        "                         SUPPLIER," +
+        "                         NATION," +
+        "                         PARTSUPP" +
+        "                 where" +
+        "                         PS_SUPPKEY = S_SUPPKEY" +
+        "                         and S_NATIONKEY = N_NATIONKEY" +
+        "                         and N_NAME = ?" +
+        "         )" +
+        " order by" +
+        "         value desc"
+  }
+
   def getQ11Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. NATION is randomly selected within the list of values defined for N_NAME
@@ -986,6 +1318,42 @@ object TPCH_Queries extends Logging {
         "         and l_shipdate < l_commitdate" +
         "         and l_receiptdate >= '?'" +
         "         and l_receiptdate < add_months('?',12)" +
+        " group by" +
+        "         l_shipmode" +
+        " order by" +
+        "         l_shipmode"
+  }
+
+  def getQuery12ForPrepStatement: String = {
+    //    1.SHIPMODE1 = MAIL;
+    //    2. SHIPMODE2 = SHIP;
+    //    3. DATE = 1994-01-01.
+    "select" +
+        "         l_shipmode," +
+        "         sum(case" +
+        "                 when o_orderpriority ='1-URGENT'" +
+        "                 or o_orderpriority ='2-HIGH'" +
+        "                 then 1" +
+        "                 else 0" +
+        "                 end" +
+        "         ) as high_line_count," +
+        "         sum(case" +
+        "                 when o_orderpriority <> '1-URGENT'" +
+        "                 and o_orderpriority <> '2-HIGH'" +
+        "                 then 1" +
+        "                 else 0" +
+        "                 end" +
+        "         ) as low_line_count" +
+        " from" +
+        "         ORDERS," +
+        "         LINEITEM" +
+        " where" +
+        "         o_orderkey = l_orderkey" +
+        "         and l_shipmode in (?, ?)" +
+        "         and l_commitdate < l_receiptdate" +
+        "         and l_shipdate < l_commitdate" +
+        "         and l_receiptdate >= ?" +
+        "         and l_receiptdate < add_months(?,12)" +
         " group by" +
         "         l_shipmode" +
         " order by" +
@@ -1088,6 +1456,30 @@ object TPCH_Queries extends Logging {
         "         c_count desc"
   }
 
+  def getQuery13ForPrepStatement: String = {
+    //    1. WORD1 = special.
+    //    2. WORD2 = requests.
+    "select" +
+        "         c_count, " +
+        "         count(*) as custdist" +
+        " from (" +
+        "         select" +
+        "                 C_CUSTKEY," +
+        "                 count(o_orderkey) as c_count" +
+        "         from" +
+        "                 CUSTOMER left outer join ORDERS on" +
+        "                 C_CUSTKEY = o_custkey" +
+        "                 and o_comment not like ?" +
+        "         group by" +
+        "                 C_CUSTKEY" +
+        "         ) as c_orders" +
+        " group by" +
+        "         c_count" +
+        " order by" +
+        "         custdist desc," +
+        "         c_count desc"
+  }
+
   def getQ13Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. WORD1 is randomly selected from 4 possible values: special, pending, unusual, express.
@@ -1130,6 +1522,24 @@ object TPCH_Queries extends Logging {
         "         l_partkey = p_partkey" +
         "         and l_shipdate >= '?'" +
         "         and l_shipdate < add_months ('?', 1)"
+  }
+
+  def getQuery14ForPrepStatement: String = {
+    // 1.DATE = 1995-09-01.
+    "select" +
+        "         100.00 * sum(case" +
+        "                 when p_type like 'PROMO%'" +
+        "                 then l_extendedprice*(1-l_discount)" +
+        "                 else 0" +
+        "                 end" +
+        "         ) / sum(l_extendedprice * (1 - l_discount)) as promo_revenue" +
+        " from" +
+        "         LINEITEM," +
+        "         PART" +
+        " where" +
+        "         l_partkey = p_partkey" +
+        "         and l_shipdate >= ?" +
+        "         and l_shipdate < add_months (?, 1)"
   }
 
   def getQuery14_Memsql: String = {
@@ -1331,6 +1741,50 @@ object TPCH_Queries extends Logging {
         "         p_size"
   }
 
+  def getQuery16ForPrepStatement: String = {
+    //    1. BRAND = Brand#45.
+    //    2. TYPE = MEDIUM POLISHED .
+    //    3. SIZE1 = 49
+    //    4. SIZE2 = 14
+    //    5. SIZE3 = 23
+    //    6. SIZE4 = 45
+    //    7. SIZE5 = 19
+    //    8. SIZE6 = 3
+    //    9. SIZE7 = 36
+    //    10. SIZE8 = 9.
+    "select" +
+        "         p_brand," +
+        "         p_type," +
+        "         p_size," +
+        "         count(distinct ps_suppkey) as supplier_cnt" +
+        " from" +
+        "         PARTSUPP," +
+        "         PART" +
+        " where" +
+        "         p_partkey = ps_partkey" +
+        "         and p_brand <> ?" +
+        "         and p_type not like ?" +
+        "         and p_size in (?, ?, ?, ?, ?, ?, ?, ?)" +
+        "         and not exists (" +
+        "                 select" +
+        "                         s_suppkey" +
+        "                 from" +
+        "                         SUPPLIER" +
+        "                 where" +
+        "                         s_suppkey = ps_suppkey and" +
+        "                         s_comment like '%Customer%Complaints%'" +
+        "         )" +
+        " group by" +
+        "         p_brand," +
+        "         p_type," +
+        "         p_size" +
+        " order by" +
+        "         supplier_cnt desc," +
+        "         p_brand," +
+        "         p_type," +
+        "         p_size"
+  }
+
   def getQ16Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* 1. BRAND = Brand#MN where M and N are two single character strings representing
@@ -1393,6 +1847,28 @@ object TPCH_Queries extends Logging {
         "         P_PARTKEY = l_partkey" +
         "         and P_BRAND = 'Brand#??'" +
         "         and P_CONTAINER = '?'" +
+        "         and l_quantity < (" +
+        "                 select" +
+        "                         0.2 * avg(l_quantity)" +
+        "                 from" +
+        "                         LINEITEM" +
+        "                 where" +
+        "                         l_partkey = P_PARTKEY" +
+        "         )"
+  }
+
+  def getQuery17ForPrepStatement: String = {
+    //    1. BRAND = Brand#23;
+    //    2. CONTAINER = MED BOX.
+    "select" +
+        "         sum(l_extendedprice) / 7.0 as avg_yearly" +
+        " from" +
+        "         LINEITEM," +
+        "         PART" +
+        " where" +
+        "         P_PARTKEY = l_partkey" +
+        "         and P_BRAND = ?" +
+        "         and P_CONTAINER = ?" +
         "         and l_quantity < (" +
         "                 select" +
         "                         0.2 * avg(l_quantity)" +
@@ -1506,6 +1982,43 @@ object TPCH_Queries extends Logging {
         " limit 100"
   }
 
+  def getQuery18ForPrepStatement: String = {
+    // 1.QUANTITY = 300
+    "select" +
+        "         C_NAME," +
+        "         C_CUSTKEY," +
+        "         o_orderkey," +
+        "         o_orderdate," +
+        "         o_totalprice," +
+        "         sum(l_quantity)" +
+        " from" +
+        "         CUSTOMER," +
+        "         ORDERS," +
+        "         LINEITEM" +
+        " where" +
+        "         o_orderkey in (" +
+        "                 select" +
+        "                         l_orderkey" +
+        "                 from" +
+        "                         LINEITEM" +
+        "                 group by" +
+        "                         l_orderkey having" +
+        "                         sum(l_quantity) > ?" +
+        "         )" +
+        "         and C_CUSTKEY = o_custkey" +
+        "         and o_orderkey = l_orderkey" +
+        " group by" +
+        "         C_NAME," +
+        "         C_CUSTKEY," +
+        "         o_orderkey," +
+        "         o_orderdate," +
+        "         o_totalprice" +
+        " order by" +
+        "         o_totalprice desc," +
+        "         o_orderdate" +
+        " limit 100"
+  }
+
   def getQ18Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* QUANTITY is randomly selected within [312..315] */
@@ -1559,6 +2072,51 @@ object TPCH_Queries extends Logging {
         "         (" +
         "                 p_partkey = l_partkey" +
         "                 and p_brand = 'Brand#?'" +
+        "                 and p_container in ( 'LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')" +
+        "                 and l_quantity >= ? and l_quantity <= ? + 10" +
+        "                 and p_size between 1 and 15" +
+        "                 and l_shipmode in ('AIR', 'AIR REG')" +
+        "                 and l_shipinstruct = 'DELIVER IN PERSON'" +
+        "         )"
+
+  }
+
+  def getQuery19ForPrepStatement: String = {
+    //    1. QUANTITY1 = 1.
+    //    2. QUANTITY2 = 10.
+    //    3. QUANTITY3 = 20.
+    //    4. BRAND1 = Brand#12.
+    //    5. BRAND2 = Brand#23.
+    //    6. BRAND3 = Brand#34.
+    "select" +
+        "         sum(l_extendedprice * (1 - l_discount) ) as revenue" +
+        " from" +
+        "         LINEITEM," +
+        "         PART" +
+        " where" +
+        "         (" +
+        "                 p_partkey = l_partkey" +
+        "                 and p_brand = ?" +
+        "                 and p_container in ('SM CASE', 'SM BOX', 'SM PACK', 'SM PKG')" +
+        "                 and l_quantity >= ? and l_quantity <= ? + 10" +
+        "                 and p_size between 1 and 5" +
+        "                 and l_shipmode in ('AIR', 'AIR REG')" +
+        "                 and l_shipinstruct = 'DELIVER IN PERSON'" +
+        "         )" +
+        "         or" +
+        "         (" +
+        "                 p_partkey = l_partkey" +
+        "                 and p_brand = ?" +
+        "                 and p_container in ('MED BAG', 'MED BOX', 'MED PKG', 'MED PACK')" +
+        "                 and l_quantity >= ? and l_quantity <= ? + 10" +
+        "                 and p_size between 1 and 10" +
+        "                 and l_shipmode in ('AIR', 'AIR REG')" +
+        "                 and l_shipinstruct = 'DELIVER IN PERSON'" +
+        "         )" +
+        "         or" +
+        "         (" +
+        "                 p_partkey = l_partkey" +
+        "                 and p_brand = ?" +
         "                 and p_container in ( 'LG CASE', 'LG BOX', 'LG PACK', 'LG PKG')" +
         "                 and l_quantity >= ? and l_quantity <= ? + 10" +
         "                 and p_size between 1 and 15" +
@@ -1655,6 +2213,48 @@ object TPCH_Queries extends Logging {
         "         )" +
         "         and S_NATIONKEY = N_NATIONKEY" +
         "         and N_NAME = '?'" +
+        " order by" +
+        "         S_NAME"
+  }
+
+  def getQuery20ForPrepStatement: String = {
+    //    1. COLOR = forest.
+    //    2. DATE = 1994-01-01.
+    //    3. NATION = CANADA.
+    "select" +
+        "         S_NAME," +
+        "         S_ADDRESS" +
+        " from" +
+        "         SUPPLIER, NATION" +
+        " where" +
+        "         S_SUPPKEY in (" +
+        "                 select" +
+        "                         PS_SUPPKEY" +
+        "                 from" +
+        "                         PARTSUPP" +
+        "                 where" +
+        "                         PS_PARTKEY in (" +
+        "                                 select" +
+        "                                         P_PARTKEY" +
+        "                                 from" +
+        "                                         PART" +
+        "                                 where" +
+        "                                         P_NAME like ?" +
+        "                         )" +
+        "                         and PS_AVAILQTY > (" +
+        "                                 select" +
+        "                                         0.5 * sum(l_quantity)" +
+        "                                 from" +
+        "                                         LINEITEM" +
+        "                                 where" +
+        "                                         l_partkey = PS_PARTKEY" +
+        "                                         and l_suppkey = PS_SUPPKEY" +
+        "                                         and l_shipdate >= ?" +
+        "                                         and l_shipdate < add_months(?, 12)" +
+        "                         )" +
+        "         )" +
+        "         and S_NATIONKEY = N_NATIONKEY" +
+        "         and N_NAME = ?" +
         " order by" +
         "         S_NAME"
   }
@@ -1791,6 +2391,49 @@ object TPCH_Queries extends Logging {
         "         s_name limit 100"
   }
 
+  def getQuery21ForPrepStatement: String = {
+    // NATION = SAUDI ARABIA.
+    "select" +
+        "         s_name," +
+        "         count(*) as numwait" +
+        " from" +
+        "         SUPPLIER," +
+        "         LINEITEM l1," +
+        "         ORDERS," +
+        "         NATION" +
+        " where" +
+        "         s_suppkey = l1.l_suppkey" +
+        "         and o_orderkey = l1.l_orderkey" +
+        "         and o_orderstatus = 'F'" +
+        "         and l1.l_receiptdate > l1.l_commitdate" +
+        "         and not exists (" +
+        "                 select" +
+        "                         l3.l_orderkey" +
+        "                 from" +
+        "                         LINEITEM l3" +
+        "                 where" +
+        "                         l3.l_orderkey = l1.l_orderkey" +
+        "                         and l3.l_suppkey <> l1.l_suppkey" +
+        "                         and l3.l_receiptdate > l3.l_commitdate" +
+        "         )" +
+        "         and exists (" +
+        "                 select" +
+        "                         l2.l_orderkey" +
+        "                 from" +
+        "                         LINEITEM l2" +
+        "                 where" +
+        "                         l2.l_orderkey = l1.l_orderkey" +
+        "                         and l2.l_suppkey <> l1.l_suppkey" +
+        "         )" +
+        "         and s_nationkey = n_nationkey" +
+        "         and n_name = ?" +
+        " group by" +
+        "         s_name" +
+        " order by" +
+        "         numwait desc," +
+        "         s_name limit 100"
+  }
+
   def getQ21Parameter(isDynamic: Boolean): Array[String] = {
     if (isDynamic) {
       /* NATION is randomly selected within the list of values defined for N_NAME in Clause 4.2.3 */
@@ -1904,6 +2547,52 @@ object TPCH_Queries extends Logging {
         "                                 C_ACCTBAL > 0.00" +
         "                                 and SUBSTR(C_PHONE,1,2) in" +
         "                                         ('?','?','?','?','?','?','?')" +
+        "                 )" +
+        "                 and not exists (" +
+        "                         select" +
+        "                                 o_custkey" +
+        "                         from" +
+        "                                 ORDERS" +
+        "                         where" +
+        "                                 o_custkey = C_CUSTKEY" +
+        "                 )" +
+        "         ) as custsale" +
+        " group by" +
+        "         cntrycode" +
+        " order by" +
+        "         cntrycode"
+  }
+
+  def getQuery22ForPrepStatement: String = {
+    //    1. I1 = 13.
+    //    2. I2 = 31.
+    //    3. I3 = 23.
+    //    4. I4 = 29.
+    //    5. I5 = 30.
+    //    6. I6 = 18.
+    //    7. I7 = 17.
+    "select" +
+        "         cntrycode," +
+        "         count(*) as numcust," +
+        "         sum(C_ACCTBAL) as totacctbal" +
+        " from (" +
+        "         select" +
+        "                 SUBSTR(C_PHONE,1,2) as cntrycode," +
+        "                 C_ACCTBAL" +
+        "         from" +
+        "                 CUSTOMER        " +
+        "         where" +
+        "                 SUBSTR(C_PHONE,1,2) in" +
+        "                         (?,?,?,?,?,?,?)" +
+        "                 and C_ACCTBAL > (" +
+        "                         select" +
+        "                                 avg(C_ACCTBAL)" +
+        "                         from" +
+        "                                 CUSTOMER" +
+        "                         where" +
+        "                                 C_ACCTBAL > 0.00" +
+        "                                 and SUBSTR(C_PHONE,1,2) in" +
+        "                                         (?,?,?,?,?,?,?)" +
         "                 )" +
         "                 and not exists (" +
         "                         select" +

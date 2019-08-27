@@ -106,9 +106,14 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void performRebalance() {
     try {
-      Connection conn = SnappyTest.getLocatorConnection();
+      Connection con = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if (isSecurityEnabled)
+        con = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        con = SnappyTest.getLocatorConnection();
       Long startTime = System.currentTimeMillis();
-      conn.createStatement().execute("call sys.rebalance_all_buckets();");
+      con.createStatement().execute("call sys.rebalance_all_buckets();");
       Long endTime = System.currentTimeMillis();
       Long totalTime = endTime - startTime;
       Log.getLogWriter().info("The rebalance procedure took  " + totalTime + " ms");
@@ -126,6 +131,7 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void addNewNode() {
     String snappyPath = SnappyCDCPrms.getSnappyFileLoc();
+    if(snappyPath.isEmpty()) snappyPath = productConfDirPath;
     Boolean isNewNodeFirst = SnappyCDCPrms.getIsNewNodeFirst();
     String nodeType = SnappyCDCPrms.getNodeType();
     String dirPath = SnappyCDCPrms.getDataLocation();
@@ -138,7 +144,8 @@ public class SnappyCDCTest extends SnappyTest {
     String nodeName = String.valueOf(hostList.get(0));
 
     if (nodeType.equalsIgnoreCase("servers"))
-      nodeInfo = nodeName + " -dir=" + dirPath + "/" + nodeName + " -heap-size=5g -memory-size=5g ";
+      nodeInfo = nodeName + " -dir=" + dirPath + File.separator + nodeName + " -heap-size=5g " +
+          "-memory-size=5g ";
     else
       nodeInfo = nodeName + " -dir=" + dirPath + "/lead";
 
@@ -286,7 +293,12 @@ public class SnappyCDCTest extends SnappyTest {
     Boolean isBeforeRestart = SnappyCDCPrms.getIsBeforeRestart();
     String fileName = SnappyCDCPrms.getDataLocation();
     try {
-      Connection con = SnappyTest.getLocatorConnection();
+      Connection con = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if (isSecurityEnabled)
+        con = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        con = SnappyTest.getLocatorConnection();
       String tableCntQry = "SELECT COUNT(*) FROM SYS.SYSTABLES WHERE TABLESCHEMANAME='APP' AND TABLENAME NOT LIKE 'SNAPPYSYS_INTERNA%'";
       ResultSet rs = con.createStatement().executeQuery(tableCntQry);
       while (rs.next())
@@ -334,7 +346,12 @@ public class SnappyCDCTest extends SnappyTest {
     Map<String, Integer> tableCntMap = (Map<String, Integer>) SnappyBB.getBB().getSharedMap().get("tableCntMap");
     Log.getLogWriter().info("tableCntMap size = " + tableCntMap.size());
     try {
-      Connection con = SnappyTest.getLocatorConnection();
+      Connection con = null;
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      if (isSecurityEnabled)
+        con = getSecuredLocatorConnection("gemfire1","gemfire1");
+      else
+        con = SnappyTest.getLocatorConnection();
       for (Map.Entry<String, Integer> val : tableCntMap.entrySet()) {
         int snappyCnt = 0;
         String tableName = val.getKey();
@@ -358,7 +375,7 @@ public class SnappyCDCTest extends SnappyTest {
     }
   }
 
-  public void getResultSet(Connection conn, Boolean isBeforeRestart, String fileName) {
+  public void getResultSet(Connection con, Boolean isBeforeRestart, String fileName) {
     SnappyDMLOpsUtil testInstance = new SnappyDMLOpsUtil();
     String logFile = getCurrentDirPath();
     String outputFile;
@@ -370,7 +387,7 @@ public class SnappyCDCTest extends SnappyTest {
         } else
           outputFile = logFile + File.separator + "afterRestartResultSet_query_" + i + ".out";
         String qStr = queryList.get(i);
-        ResultSet snappyRS = conn.createStatement().executeQuery(qStr);
+        ResultSet snappyRS = con.createStatement().executeQuery(qStr);
         StructTypeImpl snappySti = ResultSetHelper.getStructType(snappyRS);
         List<Struct> snappyList = ResultSetHelper.asList(snappyRS, snappySti, false);
         snappyRS.close();
@@ -383,7 +400,6 @@ public class SnappyCDCTest extends SnappyTest {
     } catch (SQLException ex) {
       Log.getLogWriter().info("Caught sqlException in getResultSet method " + ex.getMessage());
     }
-
   }
 
   public ArrayList getQueryList(String fileName) {
@@ -495,14 +511,14 @@ public class SnappyCDCTest extends SnappyTest {
 
   public void runIngestionApp() {
     try {
-    //  CDCIngestionApp app = new CDCIngestionApp();
       Integer threadCnt = SnappyCDCPrms.getThreadCnt();
       Integer sRange = SnappyCDCPrms.getInitStartRange();
       Integer eRange = SnappyCDCPrms.getInitEndRange();
       String queryPath = SnappyCDCPrms.getDataLocation();
       String sqlServer = SnappyCDCPrms.getSqlServerInstance();
       List<String> endpoints = validateLocatorEndpointData();
-      CDCIngestionApp.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0));
+      boolean isSecurityEnabled = (Boolean)SnappyBB.getBB().getSharedMap().get("SECURITY_ENABLED");
+      CDCIngestionApp.runIngestionApp(sRange, eRange, threadCnt, queryPath, sqlServer, endpoints.get(0), isSecurityEnabled);
     } catch (Exception ex) {
       Log.getLogWriter().info("Caught Exception" + ex.getMessage() + " in runIngestionApp() method");
     }
@@ -688,6 +704,7 @@ public class SnappyCDCTest extends SnappyTest {
     Log.getLogWriter().info("the dirPath is " + dirPath);
     removeDiskStoreFiles(dirPath);
   }
+
 
   public void stopCluster(String snappyPath, File logFile) {
     ProcessBuilder pbClustStop = new ProcessBuilder(snappyPath + "/sbin/snappy-stop-all.sh");

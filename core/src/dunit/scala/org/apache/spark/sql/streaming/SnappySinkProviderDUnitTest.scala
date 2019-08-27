@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -129,7 +129,7 @@ class SnappySinkProviderDUnitTest(s: String)
           s" AUTHORIZATION ldapgroup:${ldapGroup};")
       statement.close()
     } finally {
-      connection.close()
+      if (connection ne null) connection.close()
     }
   }
 
@@ -149,6 +149,8 @@ class SnappySinkProviderDUnitTest(s: String)
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "locators"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "leads"))
     Files.deleteIfExists(Paths.get(snappyProductDir, "conf", "servers"))
+    Files.move(Paths.get(snappyProductDir, "work"), Paths.get(snappyProductDir,
+      "work-SnappySinkProviderDUnitTest"))
   }
 
   private val snappyProductDir = getEnvironmentVariable("SNAPPY_HOME")
@@ -267,7 +269,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestStructuredStreaming(locatorClientPort: Int): Unit = {
     try {
-      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
       setup(locatorClientPort)
 
       kafkaTestUtils.createTopic(testId, partitions = 3)
@@ -292,7 +294,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestIdempotency(locatorClientPort: Int): Unit = {
     try {
-      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
       setup(locatorClientPort)
       kafkaTestUtils.createTopic(testId, partitions = 3)
 
@@ -327,7 +329,7 @@ object SnappySinkProviderDUnitTest extends Logging {
 
   def doTestCustomCallback(locatorClientPort: Int): Unit = {
     try {
-      val testId = s"TEST_${testIdGenerator.getAndIncrement()}"
+      val testId = s"test_${testIdGenerator.getAndIncrement()}"
       setup(locatorClientPort)
       kafkaTestUtils.createTopic(testId, partitions = 3)
 
@@ -466,7 +468,7 @@ object SnappySinkProviderDUnitTest extends Logging {
     val conf = new SparkConf()
         .setAppName("test Application")
         .setMaster(s"spark://$hostName:7077")
-        .set("spark.executor.cores", TestUtils.defaultCores.toString)
+        .set("spark.executor.cores", TestUtils.defaultCoresForSmartConnector)
         .set("spark.executor.extraClassPath",
           getEnvironmentVariable("SNAPPY_DIST_CLASSPATH"))
         .set("snappydata.connection", connectionURL)

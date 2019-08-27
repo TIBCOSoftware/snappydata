@@ -27,14 +27,16 @@ public class CDCIngestionApp implements Runnable {
   private int startRange;
   private int endRange;
   private String endPoint;
+  private boolean isSecurityEnabled;
 
-  public CDCIngestionApp(int sRange, int eRange, int i, String path, String sqlServerInst, String hostName){
+  public CDCIngestionApp(int sRange, int eRange, int i, String path, String sqlServerInst, String hostName, boolean isSecurity){
     threadName = "Thread-" + i;
     startRange = sRange;
     endRange = eRange;
     filePath = path + "/insert" + i + ".sql";
     sqlServer = sqlServerInst;
     endPoint = hostName;
+    isSecurityEnabled = isSecurity;
   }
 
   public void run() {
@@ -57,9 +59,14 @@ public class CDCIngestionApp implements Runnable {
     Connection conn = null;
     String url = "jdbc:snappydata://" + endPoint;
     String driver = "io.snappydata.jdbc.ClientDriver";
-    try {
+    Properties props = new Properties();
+    if(isSecurityEnabled){
+      props.setProperty("user","gemfire");
+      props.setProperty("password","gemfire");
+    }
+   try {
       Class.forName(driver);
-      conn = DriverManager.getConnection(url);
+      conn = DriverManager.getConnection(url,props);
     } catch (Exception ex) {
       System.out.println("Caught exception in getSnappyConnection() method" + ex.getMessage());
     }
@@ -74,9 +81,9 @@ public class CDCIngestionApp implements Runnable {
       Class.forName(driver);
       String url;
       if (sqlServer.equals("sqlServer1")) {
-        url = "jdbc:sqlserver://sqlent.westus.cloudapp.azure.com:1433";
+        url = "jdbc:sqlserver://sqlserver-ent16.copfedn1qbcz.us-west-2.rds.amazonaws.com:1433";
       } else
-        url = "jdbc:sqlserver://sqlent2.eastus.cloudapp.azure.com:1434";
+        url = "jdbc:sqlserver://sqlserver2-et16.copfedn1qbcz.us-west-2.rds.amazonaws.com:1435";
       String username = "sqldb";
       String password = "snappydata#msft1";
       Properties props = new Properties();
@@ -95,52 +102,65 @@ public class CDCIngestionApp implements Runnable {
 
   public void insertData(ArrayList<String> queryArray, Connection conn) {
     PreparedStatement ps = null;
-    try {
-      final int batchSize = 1000;
-      int count = 0;
-      for (int i = 0; i < queryArray.size(); i++) {
-        String qStr = queryArray.get(i);
-        System.out.println("Query = " + qStr);
-        System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
-        if (qStr.contains("PUT INTO")) {
-          for (int j = startRange; j <= endRange; j++) {
-            String newStr;
-            if (qStr.contains("?"))
-              newStr = qStr.replace("?", Integer.toString(j));
-            else
-              newStr = qStr;
-            System.out.println("The new query String is " + newStr);
-            conn.createStatement().execute(newStr);
-            updateData(queryArray,conn);
-          }
-        } else {
-          ps = conn.prepareStatement(qStr);
-          for (int j = startRange; j <= endRange; j++) {
-            int KEY_ID = j;
-            ps.setInt(1, KEY_ID);
-            ps.setInt(1, j);
-            ps.addBatch();
-            if (++count % batchSize == 0) {
-              ps.executeBatch();
-            }
-          }
-          System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
+  try {
+    final int batchSize = 1000;
+    int count = 0;
+    for (int i = 0; i < queryArray.size(); i++) {
+      String qStr = queryArray.get(i);
+      System.out.println("Query = " + qStr);
+      System.out.println("The startRange = " + startRange + " the endRange = " + endRange);
+      if (qStr.contains("PUT INTO")) {
+        for (int j = startRange; j <= endRange; j++) {
+          String newStr;
+          if (qStr.contains("?"))
+            newStr = qStr.replace("?", Integer.toString(j));
+          else
+            newStr = qStr;
+          System.out.println("The new query String is " + newStr);
+          conn.createStatement().execute(newStr);
+          updateData(queryArray,conn);
         }
       }
-      System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
-    } catch (Exception e) {
-      System.out.println("Caught exception " + e.getMessage());
-    } finally {
-      if (ps != null) try {
-        ps.close();
-      } catch (SQLException ex) {
+      else if(qStr.contains("UPDATE"))
+      {
+        Random rnd = new Random();
+        ps = conn.prepareStatement(qStr);
+        int updateKEY_ID = rnd.nextInt(endRange);
+        ps.setInt(1, updateKEY_ID);
+        ps.execute();
+        System.out.println("Update complete");
       }
-      if (conn != null) try {
-        conn.close();
-      } catch (SQLException ex) {
+      else if(qStr.contains("INSERT INTO")){
+        ps = conn.prepareStatement(qStr);
+        for (int j = startRange; j <= endRange; j++) {
+          int KEY_ID = j;
+          ps.setInt(1, KEY_ID);
+          ps.addBatch();
+          if (++count % batchSize == 0) {
+            ps.executeBatch();
+          }
+        }
+        System.out.println("Thread " + threadName + " finished  ingesting " + (endRange - startRange) + " rows in a table");
       }
+     else
+       conn.createStatement().execute(qStr);
     }
+    System.out.println("FINISHED: Thread " + threadName + " finished ingestion in all the tables");
+  } catch (Exception e) {
+    System.out.println("Caught exception " + e.getMessage());
+  } finally {
+    if (ps != null) try {
+      ps.close();
+    } catch (SQLException ex) {
+    }
+    if (conn != null) try {
+      conn.close();
+    } catch (SQLException ex) {
+    }
+
   }
+}
+
 
   public void updateData(ArrayList<String> queryArray, Connection conn) {
     try {
@@ -196,12 +216,12 @@ public class CDCIngestionApp implements Runnable {
     }
   }
 
-  public static void runIngestionApp(int sRange, int eRange, int thnCnt, String path, String sqlServerInst, String hostName) {
+  public static void runIngestionApp(int sRange, int eRange, int thnCnt, String path, String sqlServerInst, String hostName, boolean isSecurity) {
     ExecutorService executor = Executors.newFixedThreadPool(thnCnt);
     for (int i = 1; i <= thnCnt; i++) {
       String threadName = "Thread-" + i;
       System.out.println("Creating " + threadName);
-      executor.execute(new CDCIngestionApp(sRange, eRange, i,path, sqlServerInst, hostName));
+      executor.execute(new CDCIngestionApp(sRange, eRange, i,path, sqlServerInst, hostName, isSecurity));
     }
     executor.shutdown();
     try {
@@ -221,7 +241,7 @@ public class CDCIngestionApp implements Runnable {
       String sqlServerInstance = args[4];
       String hostname = args[5];
       System.out.println("The startRange is " + sRange + " and the endRange is " + eRange);
-      runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname);
+      runIngestionApp(sRange, eRange, threadCnt, insertQPAth, sqlServerInstance, hostname, false);
     } catch (Exception e) {
       System.out.println("Caught exception in main " + e.getMessage());
     } finally {

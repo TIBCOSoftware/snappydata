@@ -1,44 +1,32 @@
 # Provisioning SnappyData
 
-SnappyData offers two editions of the product, SnappyData Community Edition, and SnappyData Enterprise Edition.
+SnappyData offers two editions of the product:
 
-The SnappyData Community Edition is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
-The Enterprise Edition includes several additional capabilities that are closed source and only available as part of a licensed subscription.
+*	**Community Edition**
+*	**Enterprise Edition**
 
-For more information on the capabilities of the Community and Enterprise editions see [Community Edition (Open Source)/Enterprise Edition Components](additional_files/open_source_components.md).
+The SnappyData **Community Edition** is Apache 2.0 licensed. It is a free, open-source version of the product that can be downloaded by anyone.
+The **Enterprise Edition** of the product, which is sold by TIBCO Software under the name **TIBCO ComputeDB™**, includes everything that is offered in the Community Edition along with additional capabilities that are closed source and only available as part of a licensed subscription.
+
+For more information on the capabilities of the Community Edition and Enterprise Edition, see [Community Edition (Open Source)/Enterprise Edition components](additional_files/open_source_components.md).
 
 <a id= download> </a>
-<heading2> Download SnappyData Community Edition</heading2>
-
-[Download the SnappyData 1.0.2.1 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
-
-* [**SnappyData 1.0.2.1 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2.1/snappydata-1.0.2.1-bin.tar.gz)
-
-* [**SnappyData 1.0.2.1 Release (user-provided Hadoop) download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.0.2.1/snappydata-1.0.2.1-without-hadoop-bin.tar.gz) 
+<heading2>Download SnappyData Community Edition</heading2>
 
 
-<heading2> Download SnappyData Enterprise Edition</heading2> 
+Download the [SnappyData 1.1.1 Community Edition (Open Source)](https://github.com/SnappyDataInc/snappydata/releases/) from the release page, which lists the latest and previous releases of SnappyData. The packages are available in compressed files (.tar format).
 
-1. Go to the [SnappyData website](http://www.snappydata.io/download).
+* [**SnappyData 1.1.1 Release download link**](https://github.com/SnappyDataInc/snappydata/releases/download/v1.1.1/snappydata-1.1.1-bin.tar.gz)
 
-2. On this page, enter your email address.
 
-3. Read the END USER LICENSE AGREEMENT and click the **Agree to terms of service** option to accept it.
+<heading2>Download SnappyData Enterprise Edition</heading2> 
 
-4. Click **Download** to download the installer (**snappydata-1.0.2.1-bin.tar.gz**).
 
-5. You can also download the following additional files by clicking on the links:
-
-	* DEBIAN INSTALLER
-
-	* REDHAT INSTALLER
-
-	* JDBC JAR FILE
-
-	* ODBC INSTALLERS
+You can download the Enterprise Edition from [TIBCO eDelivery website](https://edelivery.tibco.com).
 
 <a id= provisioningsnappy> </a>
 <heading2>SnappyData Provisioning Options</heading2>
+
 
 <heading3>Prerequisites</heading3>
 

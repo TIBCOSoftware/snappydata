@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -20,16 +20,15 @@ import java.sql.{Connection, PreparedStatement}
 
 import scala.util.control.NonFatal
 
-import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion}
+import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, LocalRegion, PartitionedRegion}
 import com.pivotal.gemfirexd.internal.engine.Misc
-import com.pivotal.gemfirexd.internal.engine.store.GemFireContainer
-import io.snappydata.{Constant, Property}
 import io.snappydata.sql.catalog.{RelationInfo, SnappyExternalCatalog}
+import io.snappydata.{Constant, Property}
 
 import org.apache.spark.rdd.RDD
 import org.apache.spark.sql._
-import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, EqualNullSafe, EqualTo, Expression, SortDirection, SpecificInternalRow, TokenLiteral, UnsafeProjection}
-import org.apache.spark.sql.catalyst.plans.physical.HashPartitioning
+import org.apache.spark.sql.catalyst.expressions.{Attribute, AttributeReference, Descending, Expression, SortDirection}
+import org.apache.spark.sql.catalyst.util.CaseInsensitiveMap
 import org.apache.spark.sql.catalyst.{InternalRow, TableIdentifier, analysis}
 import org.apache.spark.sql.collection.Utils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
@@ -69,18 +68,18 @@ abstract class BaseColumnFormatRelation(
     _userSchema: StructType,
     val schemaExtensions: String,
     val ddlExtensionForShadowTable: String,
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _externalStore: ExternalStore,
     val partitioningColumns: Seq[String],
     _context: SQLContext,
     _relationInfo: (RelationInfo, Option[LocalRegion]))
     extends JDBCAppendableRelation(_table, _provider, _mode, _userSchema,
       _origOptions, _externalStore, _context)
-    with PartitionedDataSourceScan
-    with RowInsertableRelation
-    with MutableRelation {
+        with PartitionedDataSourceScan
+        with RowInsertableRelation
+        with MutableRelation {
 
-  override def toString: String = s"${getClass.getSimpleName}[$table]"
+  override def toString: String = s"${getClass.getSimpleName}[${Utils.toLowerCase(table)}]"
 
   override val connectionType: ConnectionType.Value =
     ExternalStoreUtils.getConnectionType(dialect)
@@ -118,42 +117,11 @@ abstract class BaseColumnFormatRelation(
   override def scanTable(tableName: String, requiredColumns: Array[String],
       filters: Array[Expression], _ignore: () => Int): (RDD[Any], Array[Int]) = {
 
-    // this will yield partitioning column ordered Array of Expression (Literals/ParamLiterals).
-    // RDDs needn't have to care for orderless hashing scheme at invocation point.
-    val (pruningExpressions, fields) = partitionColumns.map { pc =>
-      filters.collectFirst {
-        case EqualTo(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualTo(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualNullSafe(a: Attribute, v) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-        case EqualNullSafe(v, a: Attribute) if TokenLiteral.isConstant(v) &&
-            pc.equalsIgnoreCase(a.name) => (v, schema(a.name))
-      }
-    }.filter(_.nonEmpty).map(_.get).unzip
-
-    def prunePartitions(): Int = {
-      val pcFields = StructType(fields).toAttributes
-      val mutableRow = new SpecificInternalRow(pcFields.map(_.dataType))
-      val bucketIdGeneration = UnsafeProjection.create(
-        HashPartitioning(pcFields, numBuckets)
-            .partitionIdExpression :: Nil, pcFields)
-      if (pruningExpressions.nonEmpty &&
-          // verify all the partition columns are provided as filters
-          pruningExpressions.length == partitioningColumns.length) {
-        pruningExpressions.zipWithIndex.foreach { case (e, i) =>
-          mutableRow(i) = e.eval(null)
-        }
-        bucketIdGeneration(mutableRow).getInt(0)
-      } else {
-        -1
-      }
-    }
-
     // note: filters is expected to be already split by CNF.
     // see PhysicalScan#unapply
-    super.scanTable(externalColumnTableName, requiredColumns, filters, prunePartitions)
+    super.scanTable(externalColumnTableName, requiredColumns, filters,
+      () => Utils.getPrunedPartition(partitionColumns, filters, schema,
+        numBuckets, partitioningColumns.length))
   }
 
   override def unhandledFilters(filters: Seq[Expression]): Seq[Expression] = filters
@@ -209,8 +177,10 @@ abstract class BaseColumnFormatRelation(
           connProperties,
           Array.empty[Expression],
           // use same partitions as the column store (SNAP-1083)
-          partitionEvaluator,
-          commitTx = false, delayRollover, projection, Some(region))
+          partitionEvaluator = partitionEvaluator,
+          partitionPruner = () => -1,
+          commitTx = false, delayRollover = delayRollover,
+          projection = projection, region = Some(region))
       case _ =>
         new SmartConnectorRowRDD(
           session,
@@ -221,6 +191,7 @@ abstract class BaseColumnFormatRelation(
           filters,
           // use same partitions as the column store (SNAP-1083)
           partitionEvaluator,
+          _partitionPruner = () => -1,
           relationInfo.catalogSchemaVersion,
           _commitTx = false, delayRollover)
     }
@@ -237,8 +208,10 @@ abstract class BaseColumnFormatRelation(
 
   override def getInsertPlan(relation: LogicalRelation,
       child: SparkPlan): SparkPlan = {
-    new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
-      this, externalColumnTableName)
+    withTableWriteLock() { () =>
+      new ColumnInsertExec(child, partitionColumns, partitionExpressions(relation),
+        this, externalColumnTableName)
+    }
   }
 
   override def getKeyColumns: Seq[String] = {
@@ -247,11 +220,13 @@ abstract class BaseColumnFormatRelation(
   }
 
   /** Get key columns of the column table */
-  override def getPrimaryKeyColumns: Seq[String] = {
-    val keyColsOptions = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
-    if (keyColsOptions.isDefined) {
-      keyColsOptions.get.split(",")
-    } else Nil
+  override def getPrimaryKeyColumns(session: SnappySession): Seq[String] = {
+    origOptions.get(ExternalStoreUtils.KEY_COLUMNS) match {
+      case None => Nil
+      case Some(keyCols) =>
+        val parser = session.snappyParser
+        parser.parseSQLOnly(keyCols, parser.parseIdentifiers.run())
+    }
   }
 
   /**
@@ -261,9 +236,11 @@ abstract class BaseColumnFormatRelation(
   override def getUpdatePlan(relation: LogicalRelation, child: SparkPlan,
       updateColumns: Seq[Attribute], updateExpressions: Seq[Expression],
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
-      updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    withTableWriteLock() { () =>
+      ColumnUpdateExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore, this,
+        updateColumns, updateExpressions, keyColumns, connProperties, onExecutor = false)
+    }
   }
 
   /**
@@ -272,9 +249,11 @@ abstract class BaseColumnFormatRelation(
    */
   override def getDeletePlan(relation: LogicalRelation, child: SparkPlan,
       keyColumns: Seq[Attribute]): SparkPlan = {
-    ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
-      partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
-      this, keyColumns, connProperties, onExecutor = false)
+    withTableWriteLock() { () =>
+      ColumnDeleteExec(child, externalColumnTableName, partitionColumns,
+        partitionExpressions(relation), numBuckets, isPartitioned, schema, externalStore,
+        this, keyColumns, connProperties, onExecutor = false)
+    }
   }
 
   /**
@@ -292,22 +271,67 @@ abstract class BaseColumnFormatRelation(
     val connProps = connProperties.connProps
     val batchSize = connProps.getProperty("batchsize", "1000").toInt
     // use bulk insert directly into column store for large number of rows
-    if (numRows > (batchSize * numBuckets)) {
-      ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
-        resolvedName, putInto = false)
-    } else {
-      // insert into the row buffer
-      val connection = ConnectionPool.getPoolConnection(table, dialect,
-        connProperties.poolProps, connProps, connProperties.hikariCP)
-      try {
-        val stmt = connection.prepareStatement(rowInsertStr)
-        val result = CodeGeneration.executeUpdate(table, stmt,
-          rows, numRows > 1, batchSize, schema.fields, dialect)
-        stmt.close()
-        result
-      } finally {
-        connection.commit()
-        connection.close()
+
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+      SnappySession.PUTINTO_LOCK) match {
+      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+        snc.grabLock(table, schemaName, connProperties)
+      case _ => None // Do nothing as putInto will release lock
+    }
+    try {
+      if (numRows > (batchSize * numBuckets)) {
+        ColumnTableBulkOps.bulkInsertOrPut(rows, sqlContext.sparkSession, schema,
+          resolvedName, putInto = false)
+      } else {
+        // insert into the row buffer
+        val connection = ConnectionPool.getPoolConnection(table, dialect,
+          connProperties.poolProps, connProps, connProperties.hikariCP)
+        try {
+          val stmt = connection.prepareStatement(rowInsertStr)
+
+          val result = CodeGeneration.executeUpdate(table, stmt,
+            rows, numRows > 1, batchSize, schema.fields, dialect)
+          stmt.close()
+          result
+        } finally {
+          connection.commit()
+          connection.close()
+        }
+      }
+    }
+    finally {
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Releasing the $lock object in InsertRows")
+          snc.releaseLock(lock)
+        }
+        case None => // do Nothing
+      }
+    }
+  }
+
+  def withTableWriteLock()(f: () => SparkPlan): SparkPlan = {
+    val snc = sqlContext.sparkSession.asInstanceOf[SnappySession]
+    logDebug(s"WithTable WriteLock ${SnappyContext.executorAssigned}")
+
+    val lockOption = snc.getContextObject[(Option[TableIdentifier], PartitionedRegion.RegionLock)](
+      SnappySession.PUTINTO_LOCK) match {
+      case None if (Property.SerializeWrites.get(snc.sessionState.conf)) =>
+        snc.grabLock(table, schemaName, connProperties)
+      case _ => None // Do nothing as putInto will release lock
+    }
+    try {
+      f()
+    }
+    finally {
+      lockOption match {
+        case Some(lock) => {
+          logDebug(s"Added the $lock object to the context for $table")
+          snc.addContextObject(
+            SnappySession.BULKWRITE_LOCK, lock)
+        }
+        case None => // do nothing
       }
     }
   }
@@ -384,17 +408,16 @@ abstract class BaseColumnFormatRelation(
   }
 
   override protected def createActualTables(conn: Connection): Unit = {
-    val sql =
-      s"CREATE TABLE ${quotedName(resolvedName)} $schemaExtensions ENABLE CONCURRENCY CHECKS"
+    val fullName = quotedName(resolvedName)
+    val sql = s"CREATE TABLE $fullName $schemaExtensions ENABLE CONCURRENCY CHECKS"
     val pass = connProperties.connProps.remove(com.pivotal.gemfirexd.Attribute.PASSWORD_ATTR)
     if (isInfoEnabled) {
       val schemaString = JdbcExtendedUtils.schemaString(userSchema, connProperties.dialect)
       val optsString = if (origOptions.nonEmpty) {
-        origOptions.filter(p => !Utils.toUpperCase(p._1).startsWith(
-          SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
+        origOptions.filter(p => !p._1.startsWith(SnappyExternalCatalog.SCHEMADDL_PROPERTY)).map(
           p => s"${p._1} '${p._2}'").mkString(" OPTIONS (", ", ", ")")
       } else ""
-      logInfo(s"Executing DDL: CREATE TABLE ${quotedName(resolvedName)} " +
+      logInfo(s"Executing DDL: CREATE TABLE $fullName " +
           s"$schemaString USING $provider$optsString ; (url=${connProperties.url}; " +
           s"props=${connProperties.connProps})")
     }
@@ -459,7 +482,7 @@ class ColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -515,7 +538,7 @@ class ColumnFormatRelation(
   private def createIndexTable(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
       tableRelation: BaseColumnFormatRelation,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): DataFrame = {
 
     val session = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -525,8 +548,21 @@ class ColumnFormatRelation(
         "CREATE INDEX on column tables is an experimental unsupported feature")
     }
     val parameters = new CaseInsensitiveMutableHashMap(options)
+    // no index_type support for column indexes
+    parameters.get(ExternalStoreUtils.INDEX_TYPE) match {
+      case None =>
+      case Some(t) => throw new UnsupportedOperationException(
+        s"CREATE INDEX of type '$t' is not supported for column tables")
+    }
     val parser = session.snappyParser
-    val indexCols = indexColumns.keys.map(parser.parseSQLOnly(_, parser.parseIdentifier.run()))
+    val indexCols = indexColumns.map { p =>
+      p._2 match {
+        case Some(Descending) => throw new UnsupportedOperationException(s"Cannot create index " +
+            s"'${indexIdent.unquotedString}' with DESC sort specification for column ${p._1}")
+        case _ =>
+      }
+      parser.parseSQLOnly(p._1, parser.parseIdentifier.run())
+    }
     val catalog = session.sessionCatalog
     val baseTable = catalog.resolveTableIdentifier(tableIdent).unquotedString
     val indexTblName = session.getIndexTable(indexIdent).unquotedString
@@ -569,7 +605,7 @@ class ColumnFormatRelation(
 
   override def createIndex(indexIdent: TableIdentifier,
       tableIdent: TableIdentifier,
-      indexColumns: Map[String, Option[SortDirection]],
+      indexColumns: Seq[(String, Option[SortDirection])],
       options: Map[String, String]): Unit = {
 
     val snappySession = sqlContext.sparkSession.asInstanceOf[SnappySession]
@@ -604,10 +640,12 @@ class ColumnFormatRelation(
     ColumnPutIntoExec(insertPlan, updatePlan)
   }
 
-  override def getPutKeys: Option[Seq[String]] = {
+  override def getPutKeys(session: SnappySession): Option[Seq[String]] = {
     val keys = origOptions.get(ExternalStoreUtils.KEY_COLUMNS)
     keys match {
-      case Some(x) => Some(x.split(",").toSeq)
+      case Some(x) =>
+        val parser = session.snappyParser
+        Some(parser.parseSQLOnly(x, parser.parseIdentifiers.run()))
       case None => None
     }
   }
@@ -624,7 +662,7 @@ class IndexColumnFormatRelation(
     _userSchema: StructType,
     _schemaExtensions: String,
     _ddlExtensionForShadowTable: String,
-    _origOptions: Map[String, String],
+    _origOptions: CaseInsensitiveMap,
     _externalStore: ExternalStore,
     _partitioningColumns: Seq[String],
     _context: SQLContext,
@@ -676,13 +714,11 @@ object ColumnFormatRelation extends Logging with StoreCallback {
 
   final def columnBatchTableName(table: String,
       session: Option[SparkSession] = None): String = {
-    val (schema, tableName) = JdbcExtendedUtils.getTableWithSchema(table, null, session)
+    val (schema, tableName) = JdbcExtendedUtils.getTableWithSchema(
+      table, null, session, forSpark = false)
     schema + '.' + Constant.SHADOW_SCHEMA_NAME_WITH_SEPARATOR +
         tableName + Constant.SHADOW_TABLE_SUFFIX
   }
-
-  final def getTableName(columnBatchTableName: String): String =
-    GemFireContainer.getRowBufferTableName(columnBatchTableName)
 
   final def isColumnTable(tableName: String): Boolean = {
     tableName.contains(Constant.SHADOW_SCHEMA_NAME_WITH_PREFIX) &&

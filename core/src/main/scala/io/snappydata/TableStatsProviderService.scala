@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -193,19 +193,21 @@ trait TableStatsProviderService extends Logging {
     if (!doRun) return (Map.empty, Map.empty, Map.empty)
     // val samples = getSampleTableList(snc)
     tableStats.foreach { stat =>
-      aggregatedStats.get(stat.getTableName) match {
-        case Some(oldRecord) =>
-          aggregatedStats.put(stat.getTableName, oldRecord.getCombinedStats(stat))
-        case None =>
-          aggregatedStats.put(stat.getTableName, stat)
-      }
+        if (!stat.getTableName.contains("SNAPPYSYS_INTERNAL____SINK_STATE_TABLE")) {
+          aggregatedStats.get(stat.getTableName) match {
+            case Some(oldRecord) =>
+              aggregatedStats.put(stat.getTableName, oldRecord.getCombinedStats(stat))
+            case None =>
+              aggregatedStats.put(stat.getTableName, stat)
+          }
+        }
     }
 
     indexStats.foreach { stat =>
       aggregatedStatsIndex.put(stat.getIndexName, stat)
     }
     externalTableStats.foreach { stat =>
-      aggregatedExtTableStats.put(stat.getTableName, stat)
+      aggregatedExtTableStats.put(stat.getTableFullyQualifiedName, stat)
     }
     (Utils.immutableMap(aggregatedStats),
         Utils.immutableMap(aggregatedStatsIndex),
