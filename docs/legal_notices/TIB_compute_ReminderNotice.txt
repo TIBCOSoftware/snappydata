@@ -8,10 +8,4 @@ Bill of Materials Change History
 
 Supported Platforms Change History
 
-     Product Version: 1.1.1
-          Red Hat Enterprise Linux Server 6.x 64-bit on x86-64 - Added: 2019-05-07
-          CentOS 6.x 64-bit on x86-64 - Added: 2019-05-07
-          Red Hat Enterprise Linux Server 7.x 64-bit on x86-64 - Added: 2019-05-07
-          CentOS 7.x 64-bit on x86-64 - Added: 2019-05-07
-          Amazon Linux 2 64-bit on x86-64 - Added: 2019-05-07
-          Ubuntu Server 14.04 64-bit on x86-64 - Added: 2019-05-07
+     No Change
