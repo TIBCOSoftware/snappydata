@@ -126,7 +126,7 @@ The following list of commonly used configuration properties can be set to confi
 |Property|Description|Components</br>|
 |-|-|-|
 |-enable-stats| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
-|-enable-time-statistics| See [enable-stats](/reference/configuration_parameters/enable-stats.md) | |
+|-enable-time-statistics| See [enable-time-statisticss](/reference/configuration_parameters/enable-time-statistics.md) | |
 |-enable-timestats| See [enable-timestats](/reference/configuration_parameters/enable-timestats.md) | |
 |-gemfirexd.debug.true| Use this property to set the required [trace flag](/monitoring/configure_logging.md#trace-flag) which enables the logging of specific features of TIBCO ComputeDB.|Server</br>Lead</br>Locator|
 |-log-file|Path of the file to which this member writes log messages (default is snappy[member].log in the working directory. For example, **snappylocator.log**, **snappyleader.log**,**snappyserver.log**. In case logging is set via log4j, the default log file is **snappydata.log** for each of the TIBCO ComputeDB member.)|Server</br>Lead</br>Locator|
