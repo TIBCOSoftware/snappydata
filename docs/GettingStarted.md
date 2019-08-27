@@ -1,12 +1,14 @@
 ## Introduction 
-TIBCO ComputeDB is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
+TIBCO ComputeDB(aka SnappyData) is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.
 
-The primary use case of SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, often, there is no need to pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code, using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
+One common use case for TIBCO ComputeDB is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, often, there is no need to pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code, using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
+
+TIBCO ComputeDB is based on the [open source community project called SnappyData](https://github.com/SnappyDataInc/snappydata)
 
 ![TIBCO ComputeDB Positioning](./Images/Snappy_intro.1.png)
 
 !!!Note
-	TIBCO ComputeDB is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.
+	*TIBCO ComputeDB is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.*
 
 ### Important Capabilities
 
@@ -40,7 +42,7 @@ When speed is essential, applications can selectively copy the external data int
  
 *	**Stream ingestion and liveness** </br>
 	Popular big data systems today resort to periodic refreshing of data sets from the source as the managed data often cannot be mutated. 
-    In TIBCO ComputeDB, operational systems can feed data updates through Kafka to TIBCO ComputeDB. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and getting the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes. </br> 
+    In TIBCO ComputeDB, operational systems can feed data updates through Kafka to TIBCO ComputeDB. The incoming data can be CDC(Change-data-capture) events (insert, updates, or deletes) and can be easily ingested into in-memory tables with ease, consistency, and exactly-once semantics. The Application can apply custom logic to do sophisticated transformations and get the data ready for analytics. This incremental and continuous process is far more efficient than batch refreshes. </br> 
 
 *	**Approximate Query Processing(AQP)** </br>
 	When dealing with huge data sets, for example, IoT sensor streaming time-series data, it may not be possible to provision the data in-memory, and if left at the source (say Hadoop or S3) your analytic query processing can take too long. In TIBCO ComputeDB, you can create one or more stratified data samples on the full data set. The query engine automatically uses these samples for aggregation queries, and a nearly accurate answer returned to clients. This can be immensely valuable when visualizing a trend, plotting a graph or bar chart.</br>
@@ -53,7 +55,7 @@ When speed is essential, applications can selectively copy the external data int
 You can download and install the latest version of TIBCO ComputeDB from [here](https://edelivery.tibco.com/storefront/index.ep). Refer to the [documentation](/install.md) for installation steps.
 
 ## Getting Started
-Multiple options are provided to get started with TIBCO ComputeDB. You can run TIBCO ComputeDB on your laptop using any of the following options:
+Multiple options are provided to get started with TIBCO ComputeDB. Easiest way to get going with ComputeDB is on your laptop. You can also use any of the following options:
 
 *	On-premise clusters
 
@@ -138,7 +140,7 @@ For more details, refer [https://github.com/sbt/sbt/issues/3618](https://github.
 If you would like to build TIBCO ComputeDB from source, refer to the [documentation on building from source](/install/building_from_source.md).
 
 
-## What is the Delta between TIBCO ComputeDB and Apache Spark? <!---Can we use another word instead of Delta.--->
+## How is TIBCO ComputeDB different than Apache Spark? 
 
 Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While this provides rich unified access to data, this can also be quite inefficient and expensive. Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance.
 For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Spark to do the aggregation. Caching within Spark is immutable and results in stale insight.
@@ -149,9 +151,9 @@ For instance, each time an aggregation is run on a large Cassandra table, it nec
 
 ![TIBCO ComputeDB Architecture](./Images/SnappyArchitecture.png)
 
-At TIBCO ComputeDB, there is a different approach. TIBCO ComputeDB fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data in the highly available in-memory store is laid out using the same columnar format as Spark (Tungsten). All query engine operators are significantly more optimized through better vectorization and code generation. </br>
-The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better Spark performance when working with external data sources.
-Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries or it is an in-memory scale out Hybrid Database that can execute Spark code, SQL, or even Objects.
+TIBCO ComputeDB takes a different approach. TIBCO ComputeDB fuses a low latency, highly available in-memory transactional database (GemFireXD) into Spark with shared memory management and optimizations. Data can be managed in columnar form (similar to Spark caching) or in a row oriented manner(commonly used in popular relational databases like postgres). But, many query engine operators are significantly more optimized through better vectorization, code generation and indexing. </br>
+The net effect is, an order of magnitude performance improvement when compared to native Spark caching, and more than two orders of magnitude better performance when Spark is used in conjunction with external data sources.
+Spark is turned into an in-memory operational database capable of transactions, point reads, writes, working with Streams (Spark) and running analytic SQL queries without losing the computational richness in Spark.
 
 
 ## Streaming Example - Ad Analytics
