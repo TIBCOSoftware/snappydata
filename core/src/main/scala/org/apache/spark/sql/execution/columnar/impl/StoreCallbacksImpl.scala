@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -16,12 +16,14 @@
  */
 package org.apache.spark.sql.execution.columnar.impl
 
+import java.lang.reflect.Method
 import java.net.URLClassLoader
 import java.sql.SQLException
 import java.util.Collections
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.ArrayBuffer
+import scala.util.control.NonFatal
 
 import com.gemstone.gemfire.cache.{EntryDestroyedException, RegionDestroyedException}
 import com.gemstone.gemfire.internal.cache.lru.LRUEntry
@@ -44,6 +46,7 @@ import com.pivotal.gemfirexd.internal.impl.sql.execute.PrivilegeInfo
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.SnappyTableStatsProviderService
 import io.snappydata.sql.catalog.{CatalogObjectType, SnappyExternalCatalog}
+import org.apache.spark
 
 import org.apache.spark.Logging
 import org.apache.spark.memory.{MemoryManagerCallback, MemoryMode}
@@ -52,7 +55,7 @@ import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodeAndComment, CodeFormatter, CodeGenerator, CodegenContext}
 import org.apache.spark.sql.catalyst.expressions.{AttributeReference, Expression, Literal, TokenLiteral, UnsafeRow}
 import org.apache.spark.sql.catalyst.{CatalystTypeConverters, expressions}
-import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
+import org.apache.spark.sql.collection.{SharedUtils, ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.ConnectionPool
 import org.apache.spark.sql.execution.columnar.encoding.ColumnStatsSchema
 import org.apache.spark.sql.execution.columnar.{ColumnBatchCreator, ColumnBatchIterator, ColumnTableScan, ExternalStore, ExternalStoreUtils}
@@ -129,7 +132,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           // add weightage column for sample tables if required
           var schema = catalogEntry.schema.asInstanceOf[StructType]
           if (catalogEntry.tableType == CatalogObjectType.Sample.toString &&
-              schema(schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+              !schema(schema.length - 1).name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
             schema = schema.add(Utils.WEIGHTAGE_COLUMN_NAME,
               LongType, nullable = false)
           }
@@ -288,8 +291,8 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           if (batchIterator.currentVal.remaining() == 0) batchIterator.moveNext()
           else if (filterPredicate ne null) {
             // first check the full stats
-            val statsRow = Utils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
-            val deltaStatsRow = Utils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
+            val statsRow = SharedUtils.toUnsafeRow(batchIterator.currentVal, numColumnsInStatBlob)
+            val deltaStatsRow = SharedUtils.toUnsafeRow(batchIterator.getCurrentDeltaStats,
               numColumnsInStatBlob)
             // check the delta stats after full stats (null columns will be treated as failure
             // which is what is required since it means that only full stats check should be done)
@@ -546,7 +549,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
     SnappyHiveExternalCatalog.getExistingInstance.refreshPolicies(ldapGroup)
   }
 
-  override def checkSchemaPermission(schema: String, currentUser: String): String = {
+  override def checkSchemaPermission(schemaName: String, currentUser: String): String = {
     val ms = Misc.getMemStoreBootingNoThrow
     val userId = IdUtil.getUserAuthorizationId(currentUser)
     if (ms ne null) {
@@ -558,6 +561,7 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
           conn = GemFireXDUtils.getTSSConnection(false, true, false)
           conn.getTR.setupContextStack()
           contextSet = true
+          val schema = Utils.toUpperCase(schemaName)
           val sd = dd.getSchemaDescriptor(
             schema, conn.getLanguageConnection.getTransactionExecute, false)
           if (sd eq null) {
@@ -579,6 +583,21 @@ object StoreCallbacksImpl extends StoreCallbacks with Logging with Serializable 
         }
       } else userId
     } else userId
+  }
+
+  private lazy val removeSamplerMethod: Method = {
+    val samplerClassName = "org.apache.spark.sql.execution.StratifiedSampler"
+    val samplerClass = spark.util.Utils.classForName(samplerClassName)
+    samplerClass.getMethod("removeSampler", classOf[String], classOf[Boolean])
+  }
+
+  override def removeSampler(sampleTableName: String): Unit = {
+    try {
+      removeSamplerMethod.invoke(null, sampleTableName, Boolean.box(false))
+    }
+    catch {
+      case NonFatal(e) => logWarning("Failure while removing sampler:", e)
+    }
   }
 }
 

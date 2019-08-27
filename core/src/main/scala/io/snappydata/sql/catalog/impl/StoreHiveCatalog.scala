@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,8 +17,8 @@
 package io.snappydata.sql.catalog.impl
 
 import java.sql.SQLException
-import java.util.Collections
 import java.util.concurrent.{Callable, ExecutionException, ExecutorService, Executors, Future, TimeUnit}
+import java.util.{Collections, List => JList}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -28,6 +28,7 @@ import com.gemstone.gemfire.cache.RegionDestroyedException
 import com.gemstone.gemfire.internal.LogWriterImpl
 import com.gemstone.gemfire.internal.cache.{ExternalTableMetaData, GemfireCacheHelper, LocalRegion, PolicyTableData}
 import com.gemstone.gemfire.internal.shared.SystemProperties
+import com.pivotal.gemfirexd.Attribute.{PASSWORD_ATTR, USERNAME_ATTR}
 import com.pivotal.gemfirexd.internal.catalog.ExternalCatalog
 import com.pivotal.gemfirexd.internal.engine.Misc
 import com.pivotal.gemfirexd.internal.engine.locks.GfxdLockSet
@@ -35,21 +36,25 @@ import com.pivotal.gemfirexd.internal.engine.store.GemFireStore
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import io.snappydata.Constant
+import io.snappydata.Constant.{SPARK_STORE_PREFIX, STORE_PROPERTY_PREFIX}
 import io.snappydata.sql.catalog.SnappyExternalCatalog.checkSchemaPermission
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, SnappyExternalCatalog}
 import io.snappydata.thrift._
 import org.apache.log4j.{Level, LogManager}
 
-import org.apache.spark.sql.AnalysisException
+import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
 import org.apache.spark.sql.catalyst.catalog.{CatalogDatabase, CatalogStorageFormat, CatalogTable}
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils.CaseInsensitiveMutableHashMap
 import org.apache.spark.sql.execution.datasources.DataSource
 import org.apache.spark.sql.hive.{HiveClientUtil, SnappyHiveExternalCatalog}
+import org.apache.spark.sql.internal.ContextJarUtils
 import org.apache.spark.sql.policy.PolicyProperties
+import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
 import org.apache.spark.sql.sources.{DataSourceRegister, JdbcExtendedUtils}
-import org.apache.spark.{Logging, SparkConf}
+import org.apache.spark.sql.{AnalysisException, SnappyContext}
+import org.apache.spark.{Logging, SparkConf, SparkEnv}
 
 class StoreHiveCatalog extends ExternalCatalog with Logging {
 
@@ -59,7 +64,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private val COLUMN_TABLE_SCHEMA = 1
   // all hive tables that are expected to be in DataDictionary
   // this will exclude external tables like parquet tables, stream tables
-  private val GET_ALL_TABLES_MANAGED_IN_DD = 2
+  private val GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE = 2
   private val REMOVE_TABLE = 3
   private val GET_COL_TABLE = 4
   private val GET_TABLE = 5
@@ -68,6 +73,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private val GET_METADATA = 8
   private val UPDATE_METADATA = 9
   private val CLOSE_HMC = 10
+  private val REMOVE_TABLE_UNSAFE = 11
 
   private val catalogQueriesExecutorService: ExecutorService = {
     val hmsThreadGroup = LogWriterImpl.createThreadGroup(THREAD_GROUP_NAME, Misc.getI18NLogWriter)
@@ -97,13 +103,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     (table ne null) && CatalogObjectType.isColumnTable(CatalogObjectType.getTableType(table))
   }
 
-  override def isRowTable(table: CatalogTableObject): Boolean = {
-    CatalogObjectType.getTableType(table.getTableType,
-      table.getProperties.asScala.toMap, table.getStorage.getProperties.asScala.toMap,
-      Option(table.getProvider)) == CatalogObjectType.Row
-  }
-
-  override def getCatalogTables: java.util.List[ExternalTableMetaData] = {
+  override def getCatalogTables: JList[ExternalTableMetaData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
     if (GfxdDataDictionary.SKIP_CATALOG_OPS.get().skipHiveCatalogCalls) {
@@ -119,7 +119,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
-  override def getPolicies: java.util.List[PolicyTableData] = {
+  override def getPolicies: JList[PolicyTableData] = {
     // skip if this is already the catalog lookup thread (Hive dropTable
     //   invokes getTables again)
     if (GfxdDataDictionary.SKIP_CATALOG_OPS.get().skipHiveCatalogCalls) {
@@ -152,8 +152,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   override def getCatalogSchemaVersion: Long = externalCatalog.getCatalogSchemaVersion
 
-  override def getAllStoreTablesInCatalog: java.util.Map[String, java.util.List[String]] = {
-    val q = new CatalogQuery[Seq[(String, String)]](GET_ALL_TABLES_MANAGED_IN_DD,
+  override def getAllStoreTablesInCatalogUppercase: java.util.Map[String, JList[String]] = {
+    val q = new CatalogQuery[Seq[(String, String)]](GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE,
       tableName = null, schemaName = null)
     handleFutureResult(catalogQueriesExecutorService.submit(q)).groupBy(p => p._1)
         .mapValues(_.map(_._2).asJava).asJava
@@ -161,6 +161,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   override def removeTableIfExists(schema: String, table: String, skipLocks: Boolean): Unit = {
     val q = new CatalogQuery[Unit](REMOVE_TABLE, table, schema)
+    handleFutureResult(catalogQueriesExecutorService.submit(q))
+  }
+
+  override def removeTableUnsafeIfExists(schema: String, table: String,
+      forceDrop: Boolean): Unit = {
+    val q = new CatalogQuery[Unit](
+      REMOVE_TABLE_UNSAFE, table, schema, forceDrop = forceDrop)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
@@ -192,8 +199,11 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
 
   private final class CatalogQuery[R](qType: Int, tableName: String, schemaName: String,
       catalogOperation: Int = 0, getRequest: CatalogMetadataRequest = null,
-      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null)
-      extends Callable[R] {
+      updateRequestOrResult: CatalogMetadataDetails = null, user: String = null,
+      forceDrop: Boolean = false) extends Callable[R] {
+
+    private lazy val formattedTable = toLowerCase(tableName)
+    private lazy val formattedSchema = toLowerCase(schemaName)
 
     override def call(): R = qType match {
       case INIT =>
@@ -241,12 +251,13 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           }
         }
 
-      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOption(schemaName, tableName) match {
+      case COLUMN_TABLE_SCHEMA => externalCatalog.getTableOption(
+        formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.schema.json.asInstanceOf[R]
       }
 
-      case GET_TABLE => externalCatalog.getTableOption(schemaName, tableName) match {
+      case GET_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(t) => t.asInstanceOf[R]
       }
@@ -254,7 +265,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       case GET_HIVE_TABLES =>
         // exclude row tables and policies from the list of hive tables
         val hiveTables = new mutable.ArrayBuffer[ExternalTableMetaData]
-        for (table <- externalCatalog.getAllTables()) {
+        var allCatalogTables = externalCatalog.getAllTables()
+        // add hive external catalog tables if initialized in any of the sessions
+        SnappyContext.getHiveSharedState match {
+          case None =>
+          case Some(hiveState) =>
+            allCatalogTables ++= SnappyExternalCatalog.getAllTables(hiveState.externalCatalog, Nil)
+                .map(t => t.copy(identifier = new TableIdentifier(t.identifier.table,
+                  t.identifier.database)))
+        }
+        for (table <- allCatalogTables) {
           val tableType = CatalogObjectType.getTableType(table)
           if (tableType != CatalogObjectType.Row && tableType != CatalogObjectType.Policy) {
             val parameters = new CaseInsensitiveMutableHashMap[String](table.storage.properties)
@@ -310,15 +330,22 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           metaData
       }.asInstanceOf[R]
 
-      case GET_ALL_TABLES_MANAGED_IN_DD => externalCatalog.getAllTables().collect {
+      case GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE => externalCatalog.getAllTables().collect {
         case table if CatalogObjectType.isTableBackedByRegion(
-          CatalogObjectType.getTableType(table)) => table.database -> table.identifier.table
+          CatalogObjectType.getTableType(table)) =>
+          toUpperCase(table.database) -> toUpperCase(table.identifier.table)
       }.asInstanceOf[R]
 
-      case REMOVE_TABLE => externalCatalog.dropTable(schemaName, tableName,
+      case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
         ignoreIfNotExists = true, purge = false).asInstanceOf[R]
 
-      case GET_COL_TABLE => externalCatalog.getTableOption(schemaName, tableName) match {
+      // this will only remove table from catalog but any policies, base tables related to table
+      // and other catalog info related to it will remain and may cause issues
+      case REMOVE_TABLE_UNSAFE =>
+        externalCatalog.dropTableUnsafe(formattedSchema, formattedTable,
+          forceDrop).asInstanceOf[R]
+
+      case GET_COL_TABLE => externalCatalog.getTableOption(formattedSchema, formattedTable) match {
         case None => null.asInstanceOf[R]
         case Some(table) =>
           val qualifiedName = table.identifier.unquotedString
@@ -327,14 +354,14 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           val partitions = parameters.get(ExternalStoreUtils.BUCKETS) match {
             case None =>
               // get the partitions from the actual table if not in catalog
-              val pattrs = Misc.getRegionForTableByPath(qualifiedName, true)
+              val pattrs = Misc.getRegionForTableByPath(toUpperCase(qualifiedName), true)
                   .getAttributes.getPartitionAttributes
               if (pattrs ne null) pattrs.getTotalNumBuckets else 1
             case Some(buckets) => buckets.toInt
           }
           val baseTable = parameters.get(SnappyExternalCatalog.BASETABLE_PROPERTY) match {
             case None => ""
-            case Some(b) => b
+            case Some(b) => toLowerCase(b)
           }
           val dmls = JdbcExtendedUtils.
               getInsertOrPutString(qualifiedName, schema, putInto = false)
@@ -395,7 +422,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       var done = false
       while (!done) {
         try {
-          val conf = new SparkConf
+          val conf = SparkEnv.get match {
+            case null => new SparkConf
+            case env =>
+              val sparkConf = env.conf.clone()
+              sparkConf.remove(SPARK_STORE_PREFIX + USERNAME_ATTR)
+              sparkConf.remove(STORE_PROPERTY_PREFIX + USERNAME_ATTR)
+              sparkConf.remove(SPARK_STORE_PREFIX + PASSWORD_ATTR)
+              sparkConf.remove(STORE_PROPERTY_PREFIX + PASSWORD_ATTR)
+              sparkConf
+          }
           for ((k, v) <- Misc.getMemStoreBooting.getBootProperties.asScala) {
             val key = k.toString
             if ((v ne null) && (key.startsWith(Constant.SPARK_PREFIX) ||
@@ -434,16 +470,33 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       }
     }
 
+    private def maskPassword(s: String): String = {
+      SnappyExternalCatalog.PASSWORD_MATCH.replaceAllIn(s, "xxx")
+    }
+
+    // Mask access key and secret access key in case of S3 URI
+    private def maskLocationURI(locURI: String): String = {
+      val uri = toLowerCase(locURI)
+      val maskedSrcPath = if (uri.startsWith("s3a://") ||
+          uri.startsWith("s3://") ||
+          uri.startsWith("s3n://")) {
+        locURI.replace(locURI.slice(locURI.indexOf("//") + 2,
+          locURI.indexOf("@")), "****:****")
+      } else maskPassword(locURI)
+      maskedSrcPath
+    }
+
+    // latest change is here - mask it here - include s3 masking here too
     private def getDataSourcePath(properties: scala.collection.Map[String, String],
         storage: CatalogStorageFormat): String = {
       properties.get("path") match {
-        case Some(p) if !p.isEmpty => p
+        case Some(p) if !p.isEmpty => maskLocationURI(p)
         case _ => properties.get("region.path") match { // for external GemFire connector
-          case Some(p) if !p.isEmpty => p
+          case Some(p) if !p.isEmpty => maskLocationURI(p)
           case _ => properties.get("url") match { // jdbc
             case Some(p) if !p.isEmpty =>
               // mask the password if present
-              val url = SnappyExternalCatalog.PASSWORD_MATCH.replaceAllIn(p, "xxx")
+              val url = maskLocationURI(p)
               // add dbtable if present
               properties.get(SnappyExternalCatalog.DBTABLE_PROPERTY) match {
                 case Some(d) if !d.isEmpty => s"$url; ${SnappyExternalCatalog.DBTABLE_PROPERTY}=$d"
@@ -451,7 +504,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
               }
             case _ => storage.locationUri match { // fallback to locationUri
               case None => ""
-              case Some(l) => l
+              case Some(l) => maskLocationURI(l)
             }
           }
         }
@@ -468,7 +521,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   private def pattern(request: CatalogMetadataRequest): String =
     if (request.isSetNameOrPattern) request.getNameOrPattern else "*"
 
-  private def columnList(columns: Array[String]): java.util.List[String] = {
+  private def columnList(columns: Array[String]): JList[String] = {
     if (columns.length == 0) Collections.emptyList() else java.util.Arrays.asList(columns: _*)
   }
 
@@ -628,14 +681,16 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val functionObj = request.getCatalogFunction
       val schema = functionObj.getSchemaName
       checkSchemaPermission(schema, functionObj.getFunctionName, user)
-      externalCatalog.createFunction(schema,
-        ConnectorExternalCatalog.convertToCatalogFunction(functionObj))
+      val catalogFunction = ConnectorExternalCatalog.convertToCatalogFunction(functionObj)
+      externalCatalog.createFunction(schema, catalogFunction)
+      ContextJarUtils.addFunctionArtifacts(catalogFunction, schema)
 
     case snappydataConstants.CATALOG_DROP_FUNCTION =>
       assert(request.getNamesSize == 2, "DROP FUNCTION: unexpected names = " + request.getNames)
       val schema = request.getNames.get(0)
       val function = request.getNames.get(1)
       checkSchemaPermission(schema, function, user)
+      ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema, function, true)
       externalCatalog.dropFunction(schema, function)
 
     case snappydataConstants.CATALOG_RENAME_FUNCTION =>

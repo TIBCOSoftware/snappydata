@@ -28,6 +28,8 @@ The following prerequisites must be met to deploy SnappyData on Kubernetes:
 *	**Kubernetes cluster**</br> A running Kubernetes cluster of version 1.9 or higher. SnappyData has been tested on Google Container Engine(GKE) as well as on Pivotal Container Service (PKS). If Kubernetes cluster is not available, you can set it up as mentioned [here](#pksaccess).
 
 *	**Helm tool**</br> Helm tool must be deployed in the Kubernetes environment. Helm comprises of two parts, that is a client and a Tiller (Server portion of Helm) inside the kube-system namespace. Tiller runs inside the Kubernetes cluster and manages the deployment of charts or packages. You can follow the instructions [here](https://docs.pivotal.io/runtimes/pks/1-1/configure-tiller-helm.html) to deploy Helm in your Kubernetes enviroment.
+*	**Docker image**</br> Helm charts use the Docker images to launch the container on Kubernetes. [You can refer to these steps](quickstart/getting_started_with_docker_image.md#build-your-docker) to build your Docker image for SnappyData, provided you have its tarball with you. TIBCO does not provide a Docker image for SnappyData.
+
 
 <a id= pksaccess> </a>
 ## Getting Access to Kubernetes Cluster
@@ -80,12 +82,12 @@ To find the IP addresses and port numbers of the SnappyData processes, use comma
 In the [output](#output), three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are seen which expose the endpoints for locator, lead, and server respectively. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
 
-**snappydata-leader-public** service exposes port **5050** for SnappyData Pulse and port **8090** to accept [SnappyData jobs](#jobkubernetes).</br>
+**snappydata-leader-public** service exposes port **5050** for SnappyData Monitoring Console and port **8090** to accept [SnappyData jobs](#jobkubernetes).</br>
 **snappydata-locator-public** service exposes port **1527** to accept [JDBC/ODBC connections](#jdbckubernetes).
 
 You can do the following on the SnappyData cluster that is deployed on Kubernetes:
 
-- [Access SnappyData Pulse](#accesskubernetes)
+- [Access SnappyData Monitoring Console](#accesskubernetes)
 
 - [Connect SnappyData using JDBC Driver](#jdbckubernetes)
 
@@ -96,12 +98,12 @@ You can do the following on the SnappyData cluster that is deployed on Kubernete
 - [Stop SnappyData Cluster on Kubernetes](#deletehelm)
 
 <a id= accesskubernetes> </a>
-### Accessing SnappyData Pulse
+### Accessing SnappyData Monitoring Console
 
-The dashboards on the SnappyData Pulse can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
+The dashboards on the SnappyData Monitoring Console can be accessed using **snappydata-leader-public** service. To view the dashboard, type the URL in the web browser in the format: [externalIp:5050]().
 Replace *externalip* with the external IP address of the **snappydata-leader-public **service.
 
-**To access SnappyData Pulse in Kubernetes:**
+**To access SnappyData Monitoring Console in Kubernetes:**
 
 1. Check the SnappyData services running in the Kubernetes cluster.</br>
 `kubectl get svc --namespace=snappy`</br> The output displays the external IP address of the **snappydata-leader-public** service as shown in the following image: ![Snappy-Leader-Service](./Images/services_Leader_Public.png)
@@ -245,7 +247,7 @@ SnappyData Helm chart deploys statefulsets for servers, leaders, and locators. B
 ### Services that Expose External Endpoints
 
 SnappyData Helm chart creates services to allow you to make JDBC connections, execute Spark jobs, and access
-SnappyData Pulse etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
+SnappyData Monitoring Console etc.  Services of the type LoadBalancer have external IP address assigned and can be used to connect from outside of Kubernetes cluster.
 To check the service created for SnappyData deployment, use command `kubectl get svc --namespace=snappy`. The following output is displayed:
 
 <a id= output> </a>
@@ -262,7 +264,7 @@ snappydata-server-public    LoadBalancer   10.51.248.27    35.232.16.4      1527
 In the above output, three services namely **snappydata-leader-public**, **snappydata-locator-public** and 
 **snappydata-server-public**  of type **LoadBalancer** are created. These services have external IP addresses assigned and therefore can be accessed from outside Kubernetes. The remaining services that do not have external IP addresses are those that are created for internal use.
  
-**snappydata-leader-public** service exposes port **5050** for SnappyData Pulse and port **8090** to accept SnappyData jobs.
+**snappydata-leader-public** service exposes port **5050** for SnappyData Monitoring Console and port **8090** to accept SnappyData jobs.
 **snappydata-locator-public** service exposes port **1527** to accept JDBC connections.
 
 <a id= persistentvolumes> </a>

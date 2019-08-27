@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -77,7 +77,7 @@ object CompressionUtils {
   }
 
   def codecCompress(codecId: Int, input: ByteBuffer, len: Int,
-      result: ByteBuffer): ByteBuffer = {
+      result: ByteBuffer, allocator: BufferAllocator): ByteBuffer = {
     val position = input.position()
     val resultLen = try codecId match {
       case CompressionCodecId.LZ4_ID =>
@@ -104,6 +104,7 @@ object CompressionUtils {
       result.limit(resultLen + COMPRESSION_HEADER_SIZE)
       result
     } else {
+      allocator.release(result)
       input
     }
   }

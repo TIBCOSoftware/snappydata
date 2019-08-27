@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 #
-# Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+# Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you
 # may not use this file except in compliance with the License. You
@@ -33,6 +33,21 @@ MEMBERS_FILE="$SNAPPY_HOME/work/members.txt"
 if [ -f "${MEMBERS_FILE}" ]; then
   rm $MEMBERS_FILE
 fi
+
+SERVERS_STATUS_FILE="$SNAPPY_HOME/work/members-status.txt"
+if [ -f "${SERVERS_STATUS_FILE}" ]; then
+  rm $SERVERS_STATUS_FILE
+fi
+
+CAN_START_LEAD=0
+function checkIfOkayToStartLeads() {
+  while  read -r line || [[ -n "$line" ]]; do
+    read exitstatus member <<< $line
+    if [ "x$exitstatus" = "x0" -o "x$exitstatus" = "x10" ]; then
+      CAN_START_LEAD=1
+    fi
+  done < $SERVERS_STATUS_FILE
+}
 
 BACKGROUND=-bg
 clustermode=
@@ -74,5 +89,14 @@ done
 
 # Start Leads
 if [ "$clustermode" != "rowstore" ]; then
-  "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
+  checkIfOkayToStartLeads
+  if [ "$CAN_START_LEAD" = "1" ]; then
+    "$sbin"/snappy-leads.sh $CONF_DIR_ARG start
+  else
+    echo "Cannot start lead components. At least one server should be"
+    echo "in running state."
+    echo "Check work/members-status.txt for server status code and try"
+    echo "running snappy-status-all script ..."
+    echo "Try running lead with snappy-start-all once again"
+  fi
 fi

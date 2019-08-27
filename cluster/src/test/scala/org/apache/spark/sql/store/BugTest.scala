@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,16 +17,23 @@
 package org.apache.spark.sql.store
 
 import java.io.{BufferedReader, FileReader}
-import java.sql.{DriverManager, SQLException}
+import java.lang
+import java.sql.{Connection, DriverManager, SQLException, Statement}
 import java.util.Properties
 
+import scala.collection.mutable.ArrayBuffer
+
 import com.pivotal.gemfirexd.TestUtil
+import io.snappydata.SnappyFunSuite.resultSetToDataset
 import io.snappydata.{Property, SnappyFunSuite}
 import org.junit.Assert._
 import org.scalatest.BeforeAndAfterAll
 
 import org.apache.spark.scheduler.{SparkListener, SparkListenerTaskEnd}
+import org.apache.spark.sql.catalog.Column
 import org.apache.spark.sql.collection.Utils
+import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
+import org.apache.spark.sql.execution.metric.SQLMetrics
 import org.apache.spark.sql.types.{StringType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode, SparkSession}
 
@@ -354,7 +361,6 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     snc.createTable("airline", "column", stagingDF.schema,
       Map.empty[String, String])
 
-
     // create a big view on it
     val viewFile = getClass.getResource("/bigviewcase.sql")
     val br = new BufferedReader(new FileReader(viewFile.getFile))
@@ -389,7 +395,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     // meta-data lookup should not fail now
     cstmt.execute()
     assert(cstmt.getString(3).contains(
-      "CASE WHEN (YEARI > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
+      "CASE WHEN (yeari > 0) THEN CAST(1 AS DECIMAL(11,1)) ELSE CAST(1.1 AS DECIMAL(11,1)) END"))
 
     // query on view
     session.sql(s"select count(*) from $viewname").collect()
@@ -398,7 +404,7 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     var foundValidColumnName = false
     while(rs.next() && !foundValidColumnName) {
       val colName = rs.getString("COLUMN_NAME")
-      if  (colName == "YEARI") {
+      if  (colName == "yeari") {
         foundValidColumnName = true
       }
     }
@@ -769,5 +775,430 @@ class BugTest extends SnappyFunSuite with BeforeAndAfterAll {
     conn.close()
     snappy.sql("drop table testLimit")
     TestUtil.stopNetServer()
+  }
+
+  test("support for 'default' schema without explicit quotes") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    session.sql("create table default.t1(id bigint primary key, name varchar(10))")
+    var keys = session.sessionCatalog.getKeyColumns("default.t1")
+    assert(keys.length === 1)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
+
+    // also test from JDBC
+    val stmt = conn.createStatement()
+    stmt.execute("create table default.t2(id bigint not null primary key, name varchar(10))")
+    keys = session.sessionCatalog.getKeyColumns("default.t2")
+    assert(keys.length === 1)
+    assert(keys.head.toString === new Column("id", null, "bigint", false, false, false).toString)
+
+    session.sql("insert into default.t1 values (1, 'name1'), (2, 'name2')")
+    var res = session.sql("select * from default.t1 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
+    res = session.sql("select * from default.t1 where id = 1").collect()
+    assert(res === Array(Row(1L, "name1")))
+    res = session.sql("select * from `DEFAULT`.t1 where id = 2").collect()
+    assert(res === Array(Row(2L, "name2")))
+    session.sql("insert into `default`.`t1` values (3, 'name3'), (4, 'name4')")
+    res = session.sql("select * from `default`.`t1` order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2"), Row(3L, "name3"), Row(4L, "name4")))
+    res = session.sql("select * from default.t1 where id = 3").collect()
+    assert(res === Array(Row(3L, "name3")))
+    res = session.sql("select * from `DEFAULT`.t1 where id = 4").collect()
+    assert(res === Array(Row(4L, "name4")))
+
+    stmt.execute("insert into default.t2 values (1, 'name1'), (2, 'name2')")
+    res = resultSetToDataset(session, stmt)("select * from default.t2 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2")))
+    res = resultSetToDataset(session, stmt)("select * from default.t2 where id = 1").collect()
+    assert(res === Array(Row(1L, "name1")))
+    res = resultSetToDataset(session, stmt)("select * from `default`.t2 where id = 2").collect()
+    assert(res === Array(Row(2L, "name2")))
+    stmt.execute("insert into `DEFAULT`.`T2` values (3, 'name3'), (4, 'name4')")
+    res = resultSetToDataset(session, stmt)("select * from default.t2 order by id").collect()
+    assert(res === Array(Row(1L, "name1"), Row(2L, "name2"), Row(3L, "name3"), Row(4L, "name4")))
+    res = resultSetToDataset(session, stmt)("select * from default.t2 where id = 3").collect()
+    assert(res === Array(Row(3L, "name3")))
+    res = resultSetToDataset(session, stmt)("select * from `DEFAULT`.`t2` where id = 4").collect()
+    assert(res === Array(Row(4L, "name4")))
+
+    // check ALTER TABLE
+    session.sql("alter table default.t1 set eviction maxsize 1000")
+    session.sql("alter table `DEFAULT`.t2 set eviction maxsize 1000")
+    stmt.execute("alter table default.t1 set eviction maxsize 500")
+    stmt.execute("alter table \"default\".\"t2\" set eviction maxsize 500")
+
+    stmt.close()
+    conn.close()
+
+    TestUtil.stopNetServer()
+  }
+
+  test("SNAP3007") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"testSNAP3007: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    stmt.execute("CREATE TABLE app.application(application VARCHAR(64), " +
+        "content CLOB, active BOOLEAN, configuration CLOB)")
+    var ps = null
+
+    val sql = "INSERT INTO app.application VALUES (?, ?, ?, ?)"
+    val pstmt1 = conn.prepareStatement(sql)
+    pstmt1.setString(1, "a")
+    pstmt1.setString(2, "b")
+    pstmt1.setBoolean(3, true)
+    pstmt1.setString(4, "c")
+    pstmt1.addBatch()
+    pstmt1.executeBatch
+    pstmt1.close()
+
+    val sql2 = "DELETE FROM app.application"
+    val pstmt2 = conn.prepareStatement(sql2)
+    pstmt2.addBatch()
+    val rows = pstmt2.executeBatch
+    pstmt2.close()
+
+    val sql3 = "select count(*) from app.application"
+    val rs = conn.createStatement().executeQuery(sql3)
+    assert(rs.next())
+    assert(rs.getInt(1) == 0, "Table should not contain any data after delete statement")
+    rs.close()
+
+  }
+
+  test("SNAP-2730 - support NAN values") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+    val stmt = conn.createStatement()
+    val result = stmt.executeQuery("select acos(30)")
+    assert(result.next(), "result set should have 1 record")
+    assert(result.getDouble(1).isNaN, "result is not NaN value")
+    stmt.close()
+  }
+
+  test("SNAP2765") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+    // scalastyle:off println
+    println(s"testSNAP2765: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    stmt.execute("create table t1(col1 int, col2 int, col3 int, col4 int) using row")
+    val ps1 = conn.prepareStatement("insert into t1(col1, col2, col3, col4) values(?, ?, ?, ?)")
+    ps1.setInt(1, 1)
+    ps1.setInt(2, 1)
+    ps1.setInt(3, 1)
+    ps1.setInt(4, 1)
+    ps1.execute()
+
+    val ps2 = conn.prepareStatement("select * from t1 where col4=?")
+    ps2.setInt(1, 1)
+    val rs2 = ps2.executeQuery()
+    assert(rs2.next())
+    assert(rs2.getInt(1) == 1)
+    rs2.close()
+
+    stmt.execute("alter table t1 drop col2 restrict")
+    val se0 = intercept[SQLException] {
+      conn.prepareStatement("insert into t1(col1, col2, col3, col4) values(?, ?, ?, ?)")
+    }
+    assert(se0.getSQLState.equals("42X14"))
+
+    val se1 = intercept[SQLException] {
+      conn.prepareStatement("insert into t1 values(?, ?, ?, ?)")
+    }
+    assert(se1.getSQLState.equals("42802"))
+
+    val ps3 = conn.prepareStatement("insert into t1(col1, col3, col4) values(?, ?, ?)")
+    ps3.setInt(1, 1)
+    ps3.setInt(2, 1)
+    ps3.setInt(3, 1)
+    ps3.execute()
+
+    val ps4 = conn.prepareStatement("select count(*) from t1 where col4=?")
+    ps4.setInt(1, 1)
+    val rs4 = ps4.executeQuery()
+    assert(rs4.next())
+    assert(rs4.getInt(1) == 2)
+    rs4.close()
+
+    val se2 = intercept[SQLException] {
+      conn.prepareStatement("update t1 set col2 = ?")
+    }
+    assert(se2.getSQLState.equals("42X14"))
+
+    val se3 = intercept[SQLException] {
+      conn.prepareStatement("insert into t1(col1, col1, col4) values(?, ?, ?)")
+    }
+    assert(se3.getSQLState.equals("42X13"))
+
+    val se4 = intercept[SQLException] {
+      conn.prepareStatement("delete from t1 where col2 = ?")
+    }
+    assert(se4.getSQLState.equals("42X04"))
+  }
+
+  test("SNAP-3045. Incorrect Hashjoin results - 1") {
+    snc
+    snc.sql("create table dm_base (c1 STRING, tenant_id STRING, shop_id STRING, olet_id STRING)" +
+      " using column options(BUCKETS '40', PARTITION_BY 'TENANT_ID',REDUNDANCY '1'," +
+      "PERSISTENCE 'ASYNCHRONOUS')")
+    snc.sql("create table hierarchy_tag_dimension (c2 clob, tenant_id clob, shop_id clob," +
+      " outlet_id clob)")
+    snc.sql("insert into dm_base values('abc1', '1', '1', null)")
+
+    snc.sql("insert into hierarchy_tag_dimension values('xyz1', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc2', '1', '1', '1')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz2', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc3', '1', '1', null)")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz3', '1', '1', '1')")
+    snc.sql("insert into dm_base values('abc4', '1', '1', '1')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz4', '1', '1', '1')")
+    snc.sql("insert into dm_base values('abc5', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz5', '1', '1', null)")
+    snc.sql("insert into dm_base values('abc6', '1', '1', null)")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz6', '1', '1', '2')")
+    snc.sql("insert into dm_base values('abc7', '1', '1', '2')")
+    snc.sql("insert into hierarchy_tag_dimension values('xyz7', '1', '1', '2')")
+
+
+    val rs = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+
+    val rs1 = snc.sql("SELECT * FROM dm_base t1 LEFT JOIN (SELECT * " +
+      "FROM hierarchy_tag_dimension ORDER BY outlet_id) t4 ON t1.tenant_id = t4.tenant_id" +
+      " AND t1.shop_id = t4.shop_id AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id);").collect
+
+    val snc1 = snc.newSession()
+    snc1.setConf("snappydata.sql.disableHashJoin", "true")
+    val rs2 = snc1.sql("SELECT * FROM dm_base t1 LEFT JOIN " +
+      "(SELECT * FROM hierarchy_tag_dimension)" +
+      " t4 ON t1.tenant_id = t4.tenant_id AND t1.shop_id = t4.shop_id " +
+      "AND t1.olet_id = COALESCE (t4.outlet_id, t1.olet_id)").collect
+
+    checkResultsMatch(rs, rs1)
+    checkResultsMatch(rs, rs2)
+
+    def checkResultsMatch(arr1: Array[Row], arr2: Array[Row]): Unit = {
+      assertEquals(arr1.length, arr2.length)
+      val list = ArrayBuffer(arr2: _*)
+      arr1.foreach(row => {
+        val indx = list.indexOf(row)
+        assertTrue(indx >= 0)
+        list.remove(indx)
+      })
+      assertTrue(list.isEmpty)
+    }
+  }
+
+
+  test("SNAP-3045. Incorrect Hashjoin result-2") {
+    snc
+
+    def checkResultsMatch(arr: Array[Row],
+      expectedResults: ArrayBuffer[(Int, Int, Int, Int)]): Unit = {
+      assertEquals(arr.length, expectedResults.length)
+
+      arr.foreach(row => {
+        val first = if (row.isNullAt(0)) -1 else row.getInt(0)
+        val sec = if (row.isNullAt(1)) -1 else row.getInt(1)
+        val th = if (row.isNullAt(2)) -1 else row.getInt(2)
+        val fth = if (row.isNullAt(3)) -1 else row.getInt(3)
+        val tup = (first, sec, th, fth)
+        val indx = expectedResults.indexOf(tup)
+        assertTrue(indx >= 0)
+        expectedResults.remove(indx)
+      })
+      assertTrue(expectedResults.isEmpty)
+    }
+    snc.dropTable("t1", true)
+    snc.dropTable("t2", true)
+    snc.sql("create table t1 (c1 int, c2 int) using column ")
+    snc.sql("create table t2 (c1 int, c2 int) using column ")
+
+    snc.sql("insert into t1 values (1, 1), (1, 2), (2,1), (2,2), (3, 1)," +
+      " (3,2), (4, 1), (4,2), (5, 1), (5,2)")
+    snc.sql("insert into t2 values(1, 1), (2,2), (3,3)")
+
+    val rs1 = snc.sql("select * from t1 left outer join t2 on t1.c1 = t2.c1").collect()
+    val expectedResults1 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
+      (3, 1, 3, 3), (3, 2, 3, 3), (4, 1, -1, -1), (4, 2, -1, -1), (5, 1, -1, -1), (5, 2, -1, -1))
+    checkResultsMatch(rs1, expectedResults1)
+
+    val rs2 = snc.sql("select * from t1 left outer join t2 " +
+      "on t1.c1 = t2.c1 where t1.c2 <> 1").collect()
+    val expectedResults2 = ArrayBuffer((1, 2, 1, 1), (2, 2, 2, 2),
+      (3, 2, 3, 3), (4, 2, -1, -1), (5, 2, -1, -1))
+    checkResultsMatch(rs2, expectedResults2)
+
+    val rs3 = snc.sql("select * from t1 left outer join t2 on t1.c1 = t2.c1 " +
+      "where t2.c1 is not null").collect()
+    val expectedResults3 = ArrayBuffer((1, 1, 1, 1), (1, 2, 1, 1), (2, 1, 2, 2), (2, 2, 2, 2),
+      (3, 1, 3, 3), (3, 2, 3, 3))
+    checkResultsMatch(rs3, expectedResults3)
+    snc.dropTable("t1", true)
+    snc.dropTable("t2", true)
+  }
+
+  test("SNAP3082") {
+    val session = snc.snappySession
+    val serverHostPort = TestUtil.startNetServer()
+    val conn = DriverManager.getConnection(
+      "jdbc:snappydata://" + serverHostPort)
+
+
+    // scalastyle:off println
+    println(s"SNAP3082: Connected to $serverHostPort")
+    val stmt = conn.createStatement()
+    insertDataAndTestSNAP3082(conn, stmt, "DOUBLE")
+    insertDataAndTestSNAP3082(conn, stmt, "STRING")
+    insertDataAndTestSNAP3082(conn, stmt, "FLOAT")
+    insertDataAndTestSNAP3082(conn, stmt, "DECIMAL")
+    // scalastyle:on println
+
+  }
+
+  private def insertDataAndTestSNAP3082(conn: Connection, stmt: Statement,
+      dataTypeForSetParams: String): Unit = {
+    // scalastyle:off println
+    println(s"Setting prepared statement parameters as $dataTypeForSetParams")
+    stmt.execute("drop table if exists column_table")
+    stmt.execute("create table column_table (col1 int, col2 decimal," +
+        " col3 decimal(10, 5)) using column")
+    val ps1 = conn.prepareStatement("insert into column_table values (?, ?, ?)")
+    val numRows = 10
+    for (i <- 0 until numRows) {
+      ps1.setInt(1, i)
+      dataTypeForSetParams match {
+        case "DOUBLE" =>
+          ps1.setDouble(2, java.lang.Double.valueOf(i * 0.1))
+          ps1.setDouble(3, java.lang.Double.valueOf(i * 0.1))
+        case "STRING" =>
+          ps1.setString(2, s"$i" + 0.1)
+          ps1.setString(3, s"$i" + 0.1)
+        case "FLOAT" =>
+          ps1.setFloat(2, java.lang.Float.valueOf(new lang.Float(i*0.1)))
+          ps1.setFloat(3, java.lang.Float.valueOf(new lang.Float(i*0.1)))
+        case "DECIMAL" =>
+          ps1.setBigDecimal(2, new java.math.BigDecimal(s"$i" + 0.1))
+          ps1.setBigDecimal(3, new java.math.BigDecimal(s"$i" + 0.1))
+      }
+      ps1.executeUpdate()
+    }
+
+    println("executing prepared select statement")
+    var result1: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
+    val ps2 = conn.prepareStatement("select * from column_table where col2 = ? order by col1")
+    for (j <- 0 until numRows) {
+      dataTypeForSetParams match {
+        case "DOUBLE" =>
+          ps2.setDouble(1, java.lang.Double.valueOf(j * 0.1))
+        case "STRING" =>
+          ps2.setString(1, s"$j" + 0.1)
+        case "FLOAT" =>
+          ps2.setFloat(1, java.lang.Float.valueOf(new lang.Float(j * 0.1)))
+        case "DECIMAL" =>
+          ps2.setBigDecimal(1, new java.math.BigDecimal(s"$j" + 0.1))
+      }
+
+      val rs2 = ps2.executeQuery()
+
+      while (rs2.next()) {
+        val columnValue1 = rs2.getBigDecimal(2)
+        val columnValue2 = rs2.getBigDecimal(3)
+        result1(j) = (columnValue1, columnValue2)
+        // debug statement
+//        println(s"rowNumber = $j (columnVale1, columnVale2) = ($columnValue1, $columnValue2) " +
+//            s" columnVale1 precision = ${columnValue1.precision()} " +
+//            s" columnVale1 scale =  ${columnValue1.scale ()} " +
+//            s" columnVale2 precision = ${columnValue2.precision()} " +
+//            s" columnVale2 scale =  ${columnValue2.scale ()}")
+      }
+    }
+
+    println("executing unprepared select statement")
+    var result2: Array[(java.math.BigDecimal, java.math.BigDecimal)] = new Array(numRows)
+    for (j <- 0 until numRows) {
+      var rs3: java.sql.ResultSet = null
+      dataTypeForSetParams match {
+        case "DOUBLE" =>
+          val v = j * 0.1
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as double) order by col1")
+        case "STRING" =>
+          val v = s"$j" + 0.1
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as string) order by col1")
+        case "FLOAT" =>
+          val v = j * 0.1
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as float) order by col1")
+        case "DECIMAL" =>
+          val v = new java.math.BigDecimal(s"$j" + 0.1)
+          rs3 = stmt.executeQuery(s"select * from column_table" +
+              s" where col2 = cast($v as decimal) order by col1")
+      }
+      while (rs3.next()) {
+        val columnValue1 = rs3.getBigDecimal(2)
+        val columnValue2 = rs3.getBigDecimal(3)
+        result2(j) = (columnValue1, columnValue2)
+        // debug statement
+//        println(s"rowNumber = $j (columnVale1, columnVale2) = ($columnValue1, $columnValue2) " +
+//            s" columnVale1 precision = ${columnValue1.precision()} " +
+//            s" columnVale1 scale =  ${columnValue1.scale ()} " +
+//            s" columnVale2 precision = ${columnValue2.precision()} " +
+//            s" columnVale2 scale =  ${columnValue2.scale ()}")
+      }
+    }
+
+    assert(result1.sameElements(result2),
+      "results of prepared and unprepared statements do not match")
+    // scalastyle:on println
+
+  }
+
+  test("SNAP-3123: check for GUI plans and SNAP-3141: code gen failure") {
+    val session = snc.snappySession.newSession()
+    session.sql(s"set ${Property.UseOptimzedHashAggregate.name} = true")
+    session.sql(s"set ${Property.UseOptimizedHashAggregateForSingleKey.name} = true")
+
+    val numRows = 1000000
+    val sleepTime = 7000L
+    session.sql("create table test1 (id long, data string) using column " +
+        s"options (buckets '8') as select id, 'data_' || id from range($numRows)")
+    val ds = session.sql(
+      "select avg(id) average, id % 10 from test1 group by id % 10 order by average")
+    Thread.sleep(sleepTime)
+    ds.collect()
+
+    // check UI timings and plan details
+    val listener = ExternalStoreUtils.getSQLListener.get
+    // last one should be the query above
+    val queryUIData = listener.getCompletedExecutions.last
+    val duration = queryUIData.completionTime.get - queryUIData.submissionTime
+    // never expect the query above to take more than 7 secs
+    assert(duration > 0L)
+    assert(duration < sleepTime)
+    assert(queryUIData.succeededJobs.length === 2)
+
+    val metrics = listener.getExecutionMetrics(queryUIData.executionId)
+    val scanNode = queryUIData.physicalPlanGraph.allNodes.find(_.name == "ColumnTableScan").get
+    val numRowsMetric = scanNode.metrics.find(_.name == "number of output rows").get
+    assert(metrics(numRowsMetric.accumulatorId) ===
+        SQLMetrics.stringValue(numRowsMetric.metricType, numRows :: Nil))
   }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -643,7 +643,7 @@ class ColumnFormatValue extends SerializedDiskBuffer
       synchronized {
         // check if another thread already compressed and changed the underlying buffer
         if (this.decompressionState <= 0) {
-          BufferAllocator.releaseBuffer(compressed)
+          allocator.release(compressed)
           return this
         }
 
@@ -651,7 +651,8 @@ class ColumnFormatValue extends SerializedDiskBuffer
         state = this.decompressionState
         val bufferLen = buffer.remaining()
         val startCompression = perfStats.startCompression()
-        compressed = CompressionUtils.codecCompress(codecId, buffer, bufferLen, compressed)
+        compressed = CompressionUtils.codecCompress(codecId, buffer, bufferLen,
+          compressed, allocator)
         // update compression stats
         perfStats.endCompression(startCompression, bufferLen, compressed.limit())
         if (compressed ne buffer) {

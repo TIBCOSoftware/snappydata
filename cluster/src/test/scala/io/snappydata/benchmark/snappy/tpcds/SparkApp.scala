@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,6 +31,10 @@ object SparkApp {
       .builder
       .appName("TPCDS_Spark")
       .getOrCreate()
+
+    for(arg <- args){
+      println(arg)
+    }
 
     val sparkSqlProps = args(0).split(",")
     val dataLocation = args(1)
@@ -143,7 +147,7 @@ object SparkApp {
         var totalTime: Long = 0
 
         // scalastyle:off println
-        //println("Query : " + queryString)
+        println(s"Running Query $name now.")
 
         for (i <- 1 to (warmUp + runsForAverage)) {
           // queryPrintStream.println(queryToBeExecuted)

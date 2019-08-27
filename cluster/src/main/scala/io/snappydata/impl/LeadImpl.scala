@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -54,12 +54,17 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.SecurityUtils
 import org.apache.spark.sql.hive.thriftserver.SnappyHiveThriftServer2
 import org.apache.spark.sql.{SnappyContext, SnappySession}
+import org.apache.spark.util.LocalDirectoryCleanupUtil
 import org.apache.spark.{Logging, SparkCallbacks, SparkConf, SparkContext, SparkException}
 
 class LeadImpl extends ServerImpl with Lead
     with ProtocolOverrides with Logging {
 
   self =>
+
+  val DEFAULT_LEADER_MEMBER_WEIGHT_NAME = "gemfire.member-weight"
+
+  val DEFAULT_LEADER_MEMBER_WEIGHT = "17"
 
   private val LOCK_SERVICE_NAME = "__PRIMARY_LEADER_LS"
 
@@ -91,6 +96,8 @@ class LeadImpl extends ServerImpl with Lead
     bootProperties.remove("isTest")
     val authSpecified = Misc.checkLDAPAuthProvider(bootProperties)
 
+    ServiceUtils.setCommonBootDefaults(bootProperties, forLocator = false)
+
     // prefix all store properties with "snappydata.store" for SparkConf
 
     // first the passed in bootProperties
@@ -107,7 +114,9 @@ class LeadImpl extends ServerImpl with Lead
       } else if (!propName.startsWith(SNAPPY_PREFIX) &&
           !propName.startsWith(JOBSERVER_PREFIX) &&
           !propName.startsWith("zeppelin.") &&
-          !propName.startsWith("hive.")) {
+          !propName.startsWith("hive.") &&
+          !propName.startsWith("hadoop.") &&
+          !propName.startsWith("javax.jdo.")) {
         bootProperties.setProperty(STORE_PREFIX + propName, bootProperties.getProperty(propName))
         bootProperties.remove(propName)
       }
@@ -115,6 +124,11 @@ class LeadImpl extends ServerImpl with Lead
     // next the system properties that cannot override above
     val sysProps = System.getProperties
     val sysPropNames = sysProps.stringPropertyNames().iterator()
+    // check if user has set gemfire.member-weight property
+    if (System.getProperty(DEFAULT_LEADER_MEMBER_WEIGHT_NAME) eq null) {
+      System.setProperty(DEFAULT_LEADER_MEMBER_WEIGHT_NAME, DEFAULT_LEADER_MEMBER_WEIGHT)
+    }
+
     while (sysPropNames.hasNext) {
       val sysPropName = sysPropNames.next()
       if (sysPropName.startsWith(SPARK_PREFIX)) {
@@ -128,7 +142,9 @@ class LeadImpl extends ServerImpl with Lead
       } else if (sysPropName.startsWith(SNAPPY_PREFIX) ||
           sysPropName.startsWith(JOBSERVER_PREFIX) ||
           sysPropName.startsWith("zeppelin.") ||
-          sysPropName.startsWith("hive.")) {
+          sysPropName.startsWith("hive.") ||
+          sysPropName.startsWith("hadoop.") ||
+          sysPropName.startsWith("javax.jdo.")) {
         setPropertyIfAbsent(bootProperties, sysPropName, sysProps.getProperty(sysPropName))
       }
     }
@@ -148,13 +164,21 @@ class LeadImpl extends ServerImpl with Lead
     val storeProperties = ServiceUtils.getStoreProperties(bootProperties.stringPropertyNames()
         .iterator().asScala.map(k => k -> bootProperties.getProperty(k)).toSeq)
 
+    val productName = {
+      if (SnappySession.isEnterpriseEdition) {
+        "TIBCO ComputeDB"
+      } else {
+        "SnappyData"
+      }
+    }
+
     // initialize store and Spark in parallel (Spark will wait in
     // cluster manager start on internalStart)
     val initServices = Future {
       val locator = bootProperties.getProperty(Property.Locators.name)
       val conf = new SparkConf(false) // system properties already in bootProperties
       conf.setMaster(s"${Constant.SNAPPY_URL_PREFIX}$locator").
-          setAppName("SnappyData").
+          setAppName(productName).
           set(Property.JobServerEnabled.name, "true").
           set("spark.scheduler.mode", "FAIR").
           setIfMissing("spark.memory.manager",
@@ -164,8 +188,7 @@ class LeadImpl extends ServerImpl with Lead
 
       conf.setAll(bootProperties.asScala)
       // set spark ui port to 5050 that is snappy's default
-      conf.set("spark.ui.port",
-        bootProperties.getProperty("spark.ui.port", LeadImpl.SPARKUI_PORT.toString))
+      conf.setIfMissing("spark.ui.port", LeadImpl.SPARKUI_PORT.toString)
 
       // wait for log service to initialize so that Spark also uses the same
       while (!ClientSharedUtils.isLoggerInitialized && status() != State.RUNNING) {
@@ -231,12 +254,18 @@ class LeadImpl extends ServerImpl with Lead
       ServerGroupUtils.sendUpdateProfile()
 
       val startHiveServer = Property.HiveServerEnabled.get(conf)
+      val startHiveServerDefault = Property.HiveServerEnabled.defaultValue.get &&
+          !conf.contains(Property.HiveServerEnabled.name)
+      val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
+      val hiveSessionKind = if (useHiveSession) "session=hive" else "session=snappy"
+
       var jobServerWait = false
       var confFile: Array[String] = null
       var jobServerConfig: Config = null
       var startupString: String = null
       if (Property.JobServerEnabled.get(conf)) {
-        jobServerWait = startHiveServer || Property.JobServerWaitForInit.get(conf)
+        jobServerWait = (!startHiveServerDefault && startHiveServer) ||
+            Property.JobServerWaitForInit.get(conf)
         confFile = conf.getOption("jobserver.configFile") match {
           case None => Array[String]()
           case Some(c) => Array(c)
@@ -245,6 +274,10 @@ class LeadImpl extends ServerImpl with Lead
         val bindAddress = jobServerConfig.getString("spark.jobserver.bind-address")
         val port = jobServerConfig.getInt("spark.jobserver.port")
         startupString = s"job server on: $bindAddress[$port]"
+      }
+      // add default startup message for hive-thriftserver
+      if (startHiveServerDefault) {
+        addStartupMessage(s"Starting hive thrift server ($hiveSessionKind)")
       }
       if (!jobServerWait) {
         // mark RUNNING (job server and zeppelin will continue to start in background)
@@ -273,13 +306,11 @@ class LeadImpl extends ServerImpl with Lead
       SnappyTableStatsProviderService.start(sc, url = null)
 
       if (startHiveServer) {
-        val useHiveSession = Property.HiveServerUseHiveSession.get(conf)
         val hiveService = SnappyHiveThriftServer2.start(useHiveSession)
-        val sessionKind = if (useHiveSession) "session=hive" else "session=snappy"
-        SnappyHiveThriftServer2.getHostPort(hiveService) match {
-          case None => addStartupMessage(s"Started hive thrift server ($sessionKind)")
+        if (jobServerWait) SnappyHiveThriftServer2.getHostPort(hiveService) match {
+          case None => addStartupMessage(s"Started hive thrift server ($hiveSessionKind)")
           case Some((host, port)) =>
-            addStartupMessage(s"Started hive thrift server ($sessionKind) on: $host[$port]")
+            addStartupMessage(s"Started hive thrift server ($hiveSessionKind) on: $host[$port]")
         }
       }
 
@@ -332,6 +363,7 @@ class LeadImpl extends ServerImpl with Lead
 
     status() match {
       case State.RUNNING =>
+        LocalDirectoryCleanupUtil.clean()
         bootProperties.putAll(storeProps)
         logInfo("ds connected. About to check for primary lead lock.")
         // check for leader's primary election
@@ -347,6 +379,8 @@ class LeadImpl extends ServerImpl with Lead
         startStatus match {
           case true =>
             logInfo("Primary lead lock acquired.")
+
+            LocalDirectoryCleanupUtil.save()
           // let go.
           case false =>
             if (!_directApiInvoked) {

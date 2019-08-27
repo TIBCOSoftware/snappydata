@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -52,7 +52,13 @@ dependencies {
     compile project(':snappy-spark:snappy-spark-streaming-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion)
     compile project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
+
     compileOnly "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+    testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+
+    testCompile project(path: ':snappy-spark:snappy-spark-core_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion, configuration: 'testOutput')
+    testCompile project(path: ':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion, configuration: 'testOutput')
   } else {
     compileOnly("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}")
     compileOnly("org.apache.spark:spark-catalyst_${scalaBinaryVersion}:${sparkVersion}")
@@ -75,6 +81,12 @@ dependencies {
     testCompile("org.apache.spark:spark-mllib_${scalaBinaryVersion}:${sparkVersion}")
 
     testCompile "org.eclipse.jetty:jetty-servlet:${jettyVersion}"
+
+    testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
+    testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
+    testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
+    testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
+    testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
   }
 
   if (new File(rootDir, 'store/build.gradle').exists()) {
@@ -111,14 +123,13 @@ dependencies {
   testCompile 'org.scala-lang:scala-actors:' + scalaVersion
   testCompile "org.scalatest:scalatest_${scalaBinaryVersion}:${scalatestVersion}"
 
-  testCompile("org.apache.spark:spark-core_${scalaBinaryVersion}:${sparkVersion}:tests")
-  testCompile("org.apache.spark:spark-streaming_${scalaBinaryVersion}:${sparkVersion}:tests")
-  testCompile("org.apache.spark:spark-streaming-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
-  testCompile("org.apache.spark:spark-sql-kafka-0-10_${scalaBinaryVersion}:${sparkVersion}:tests")
-  testCompile("org.apache.spark:spark-sql_${scalaBinaryVersion}:${sparkVersion}:tests")
-
   testRuntime files("${projectDir}/../tests/common/src/main/resources")
   testRuntime "org.pegdown:pegdown:${pegdownVersion}"
+  testCompile(project(path: ':snappy-examples_' + scalaBinaryVersion, configuration: 'testOutput')) {
+    exclude(group: 'io.snappydata', module: 'snappy-cluster_' + scalaBinaryVersion)
+    exclude(group: 'io.snappydata', module: 'snappy-aqp_' + scalaBinaryVersion)
+    exclude(group: 'io.snappydata', module: 'gemfire-core')
+  }
 }
 
 task packageScalaDocs(type: Jar, dependsOn: scaladoc) {

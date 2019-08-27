@@ -1,7 +1,7 @@
 /*
  * Changes for SnappyData data platform.
  *
- * Portions Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Portions Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -39,8 +39,8 @@ class MemberSummary private[spark](
     val userDirFullPath: String,
     val logFile: String,
     val processId: String,
-    // val diskStoreUUID: UUID,
-    // val diskStoreName: String,
+    val diskStoreUUID: UUID,
+    val diskStoreName: String,
     val status: String,
     val memberType: String,
     val isLocator: Boolean,
@@ -90,7 +90,10 @@ class TableSummary private[spark](
     val sizeInMemory: Long,
     val sizeSpillToDisk: Long,
     val totalSize: Long,
-    val bucketCount: Int
+    val bucketCount: Int,
+    val redundancy: Int,
+    val redundancyImpaired: Boolean,
+    val isAnyBucketLost: Boolean
 )
 
 class ExternalTableSummary private[spark](

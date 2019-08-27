@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -94,16 +94,16 @@ class QueryRoutingDUnitSecurityTest(val s: String)
     stmt.execute("create table testTable100 (id int)")
     var rs = stmt.executeQuery("show tables")
     assert(rs.next())
-    assert(rs.getString(1) == jdbcUser1.toUpperCase())
-    assert(rs.getString(2) == "TESTTABLE100")
+    assert(rs.getString(1) == jdbcUser1)
+    assert(rs.getString(2) == "testtable100")
     assert(!rs.getBoolean(3)) // isTemporary
     assert(!rs.next())
     rs.close()
 
     rs = stmt.executeQuery(s"show tables in $jdbcUser1")
     assert(rs.next())
-    assert(rs.getString(1) == jdbcUser1.toUpperCase())
-    assert(rs.getString(2) == "TESTTABLE100")
+    assert(rs.getString(1) == jdbcUser1)
+    assert(rs.getString(2) == "testtable100")
     assert(!rs.getBoolean(3)) // isTemporary
     assert(!rs.next())
     rs.close()
@@ -127,6 +127,20 @@ class QueryRoutingDUnitSecurityTest(val s: String)
 
     stmt.close()
     conn.close()
+  }
+
+  // Test if SNAPPY_HIVE_METASTORE tables can be accessed by admin user only.
+  def testMetastoreAccessAdminOnly(): Unit = {
+    val adminUser = ClusterManagerLDAPTestBase.admin
+    val jdbcUser4 = "gemfire3"
+
+    val serverHostPort = AvailablePortHelper.getRandomAvailableTCPPort
+    vm2.invoke(classOf[ClusterManagerTestBase], "startNetServer", serverHostPort)
+    // scalastyle:off println
+    println(s"QueryRoutingDUnitSecureTest.testMetastoreAccessAdminOnly:" +
+        s" network server started at $serverHostPort")
+    // scalastyle:on println
+    QueryRoutingDUnitSecurityTest.checkMetastoreAccess(adminUser, jdbcUser4, serverHostPort)
   }
 }
 
@@ -254,10 +268,113 @@ object QueryRoutingDUnitSecurityTest {
       tableName, jdbcUser1, jdbcUser1)
   }
 
-  def netConnection(netPort: Int, user: String, pass: String): Connection = {
+  def checkMetastoreAccess(adminUser: String, nonAdminUser: String, netPort: Int): Unit = {
+    val schema = "SNAPPY_HIVE_METASTORE"
+    val adminConn = netConnection(netPort, adminUser, adminUser, routeQuery = false)
+    val adminStmt = adminConn.createStatement()
+    import org.scalatest.Assertions._
+    try {
+      adminStmt.execute(s"insert into $schema.version values (2, '1.2.1', 'dummy comment v2')")
+      adminStmt.execute(s"update $schema.version set version_comment =" +
+          s" 'comment changed' where ver_id = 2")
+      var res = adminStmt.executeQuery(s"select * from $schema.version order by ver_id")
+      res.next()
+      assert(res.getInt(1) === 1)
+      res.next()
+      assert(res.getInt(1) === 2 && res.getString(3) === "comment changed")
+
+      adminStmt.execute(s"delete from $schema.version where ver_id = 2")
+      res = adminStmt.executeQuery(s"select * from $schema.version")
+      while (res.next()) {
+        assert(res.getInt(1) === 1)
+      }
+    }
+    finally {
+      adminStmt.close()
+      adminConn.close()
+    }
+
+    val conn = netConnection(netPort, nonAdminUser, nonAdminUser, routeQuery = false)
+    val stmt = conn.createStatement()
+
+    try {
+      var thrown = intercept[SQLException] {
+        stmt.executeQuery(s"select * from $schema.version")
+      }
+      assert(thrown.getMessage.contains("User 'GEMFIRE3' does not have SELECT permission on" +
+          " column 'VER_ID' of table 'SNAPPY_HIVE_METASTORE'.'VERSION'"))
+
+      thrown = intercept[SQLException] {
+        stmt.execute(s"insert into $schema.version values (2, '1.2.1', 'dummy comm v2')")
+      }
+      assert(thrown.getMessage.contains("User 'GEMFIRE3' does not have INSERT permission on" +
+          " table 'SNAPPY_HIVE_METASTORE'.'VERSION'"))
+
+      val thrown2 = intercept[SQLException] {
+        stmt.execute(s"update $schema.version set version_comment =" +
+            s" 'comment changed ' where ver_id = 2")
+      }
+      assert(thrown2.getMessage.matches(".*User 'GEMFIRE3' does not have (UPDATE|SELECT) " +
+          "permission on column '(VERSION_COMMENT|VER_ID)' of table " +
+          "'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+
+      thrown = intercept[SQLException] {
+        stmt.execute(s"delete from $schema.version where ver_id = 2")
+      }
+      assert(thrown.getMessage.matches(".*User 'GEMFIRE3' does not have (DELETE|SELECT) " +
+          "permission on( column 'VER_ID' of)? table 'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+    }
+    finally {
+      stmt.close()
+      conn.close()
+    }
+
+    val conn2 = netConnection(netPort, nonAdminUser, nonAdminUser)
+    val stmt2 = conn2.createStatement()
+    try {
+      var thrown = intercept[SQLException] {
+        stmt2.executeQuery(s"select * from $schema.version")
+      }
+      assert(thrown.getMessage.contains("Invalid input \"SNAPPY_HIVE_METASTORE.v\"," +
+          " expected ws, test or relations"))
+
+      thrown = intercept[SQLException] {
+        stmt2.execute(s"insert into $schema.version values (2, '1.2.1', 'dummy comm v2')")
+      }
+      assert(thrown.getMessage.contains("User 'GEMFIRE3' does not have INSERT permission on" +
+          " table 'SNAPPY_HIVE_METASTORE'.'VERSION'"))
+
+      thrown = intercept[SQLException] {
+        stmt2.execute(s"update $schema.version set version_comment =" +
+            s" 'comment changed ' where ver_id = 2")
+      }
+      assert(thrown.getMessage.matches(".*User 'GEMFIRE3' does not have (UPDATE|SELECT) " +
+          "permission on column '(VERSION_COMMENT|VER_ID)' of table " +
+          "'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+
+      thrown = intercept[SQLException] {
+        stmt2.execute(s"delete from $schema.version where ver_id = 2")
+      }
+      assert(thrown.getMessage.matches(".*User 'GEMFIRE3' does not have (DELETE|SELECT) " +
+          "permission on( column 'VER_ID' of)? table 'SNAPPY_HIVE_METASTORE'.'VERSION'."))
+    }
+    finally {
+      stmt2.close()
+      conn2.close()
+    }
+  }
+
+  def netConnection(netPort: Int, user: String, pass: String,
+      routeQuery: Boolean = true): Connection = {
     val driver = "io.snappydata.jdbc.ClientDriver"
     Utils.classForName(driver).newInstance
-    val url: String = "jdbc:snappydata://localhost:" + netPort + "/"
+    var url: String = null
+    if (routeQuery) {
+      url = "jdbc:snappydata://localhost:" + netPort + "/"
+    }
+    else {
+      url = "jdbc:snappydata://localhost:" + netPort + "/route-query=false"
+    }
     DriverManager.getConnection(url, user, pass)
   }
 

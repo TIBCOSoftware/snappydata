@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -91,7 +91,7 @@ object Constant {
   final val SHADOW_SCHEMA_NAME_WITH_SEPARATOR =
     SystemProperties.SHADOW_SCHEMA_NAME_WITH_SEPARATOR
 
-  final val COLUMN_TABLE_INDEX_PREFIX = "SNAPPYSYS_INDEX____"
+  final val COLUMN_TABLE_INDEX_PREFIX = "snappysys_index____"
 
   // Property to Specify whether zeppelin interpreter should be started
   // with leadnode
@@ -105,6 +105,16 @@ object Constant {
   val COMPRESSION_MIN_SIZE: String = PROPERTY_PREFIX + "compression.minSize"
 
   val LOW_LATENCY_POOL: String = "lowlatency"
+
+  /**
+   * Enable per-session setting for CPUs required per task for the jobs
+   * in the session. Unlike Spark's system-wide setting, this will only
+   * pretend to require those many CPUs for scheduler though backend will
+   * not mark those many CPUs as busy. The net effect is that lesser number
+   * of tasks will be scheduled for the jobs on session and remaining executor
+   * cores will still be available for other tasks.
+   */
+  val CPUS_PER_TASK_PROP: String = "spark.task.cpus"
 
   val CHAR_TYPE_BASE_PROP = "base"
 
@@ -140,6 +150,8 @@ object Constant {
   val STRING_AS_CLOB_PROP = "spark.sql.stringAsClob"
 
   val CHANGEABLE_JAR_NAME = "SNAPPY_CHANGEABLE_JAR_NAME"
+
+  val SNAPPY_JOB_URL = "__SNAPPY_JOB_URL_"
 
   val RESERVOIR_AS_REGION = "spark.sql.aqp.reservoirAsRegion"
 

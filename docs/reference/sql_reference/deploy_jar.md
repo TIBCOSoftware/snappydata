@@ -18,7 +18,7 @@ SnappyData provides a method to deploy a jar in a running system through SQL. Yo
 ## Example 
 
 ```
-deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
+deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar
 ```
 
 

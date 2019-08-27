@@ -1,35 +1,34 @@
 <a id="howto-startcluster"></a>
 # How to Start a SnappyData Cluster
+
 ## Starting SnappyData Cluster on a Single Machine
 
 If you have [downloaded and extracted](../install.md) the SnappyData product distribution, navigate to the SnappyData product root directory.
 
-**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server.
+**Start the Cluster**: Run the `./sbin/snappy-start-all.sh` script to start the SnappyData cluster on your single machine using default settings. This starts a lead node, a locator, and a data server. The Hive Thrift server also starts by default. 
 
 ```pre
 $ ./sbin/snappy-start-all.sh
 ```
 
-It may take 30 seconds or more to bootstrap the entire cluster on your local machine.
+It may take 30 seconds or more to bootstrap the entire cluster on your local machine. An additional 10 seconds is required to start the Hive Thrift server. To avoid this additional 10 seconds, you can set the `snappydata.hiveServer.enabled` to false.
 
 **Sample Output**: The sample output for `snappy-start-all.sh` is displayed as:
 
 ```pre
-Starting SnappyData Locator using peer discovery on: localhost[10334]
-Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/user/snappyData/work/localhost-locator-1/snappylocator.log
-SnappyData Locator pid: 9368 status: running
-Starting SnappyData Server using locators for peer discovery: user1-laptop[10334]
-Starting DRDA server for SnappyData at address localhost/127.0.0.1[1527]
-Logs generated in /home/user1/snappyData/work/localhost-server-1/snappyserver.log
-SnappyData Server pid: 9519 status: running
+Logs generated in /home/cbhatt/snappydata-1.1.1-bin/work/localhost-locator-1/snappylocator.log
+SnappyData Locator pid: 10813 status: running
+  Distributed system now has 1 members.
+  Started Thrift locator (Compact Protocol) on: localhost/127.0.0.1[1527]
+Logs generated in /home/cbhatt/snappydata-1.1.1-bin/work/localhost-server-1/snappyserver.log
+SnappyData Server pid: 11018 status: running
   Distributed system now has 2 members.
-  Other members: localhost(9368:locator)<v0>:16944
-Starting SnappyData Leader using locators for peer discovery: user1-laptop[10334]
-Logs generated in /home/user1/snappyData/work/localhost-lead-1/snappyleader.log
-SnappyData Leader pid: 9699 status: running
+  Started Thrift server (Compact Protocol) on: localhost/127.0.0.1[1528]
+Logs generated in /home/cbhatt/snappydata-1.1.1-bin/work/localhost-lead-1/snappyleader.log
+SnappyData Leader pid: 11213 status: running
   Distributed system now has 3 members.
-  Other members: localhost(9368:locator)<v0>:16944, 192.168.63.1(9519:datastore)<v1>:46966
+  Starting hive thrift server (session=snappy)
+  Starting job server on: 0.0.0.0[8090]
 ```
 
 ## Starting the SnappyData Cluster on Multiple Hosts
@@ -62,3 +61,48 @@ $ ./bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spa
 ```
 !!!Note
 	The path mentioned for `-dir` should exist. Otherwise, the command will fail with **FileNotFoundException**.
+
+## Executing Commands on Selected Cluster Component 
+
+### Syntax
+
+```
+cluster-util.sh (--on-locators|--on-servers|--on-leads|--on-all) [-y] (--copy-conf | --run "<cmd-to-run-on-selected-nodes>")
+```
+
+### Description
+
+You can use the cluster-util.sh utility to execute a given command on selected members of the cluster. The script relies on the entries you specify in locators, servers, and leads files in the **conf** directory to identify the members of the cluster.
+
+ *	`-on-locators` </br>
+	If specified, the given command is executed on locators.
+
+ *	`--on-servers `</br>
+	If specified, the given command is executed on servers.
+
+*	`--on-leads` </br>
+    If specified, the given command is executed on leads.
+
+*	`--on-all `</br>
+	If specified, the given command is executed on all the member in the cluster.
+
+*	`-y`</br>
+ 	If specified, the script does not prompt for the confirmation to execute the command on each member node.
+
+ *	`--copy-conf`</br>
+	This is a shortcut command. When you specify this comand, the  log4j.properties, snappy-env.sh and spark-env.sh configuration files are copied from the local machine to all the members. 	These files are copied only in the following conditions:
+    *	If these are absent in the destination member
+    *	If their content is different.
+    	In latter case, a backup of the file is taken in **conf/backup** directory, on the destination member, before copy.
+
+*	`--run <cmd-to-run-on-selected-nodes>`
+	If specified, the given command(s) is executed on specified members. Command to be executed specified after --run`` must be in double-quotes.
+### Example
+```
+// To copy configuration files on all servers
+
+./sbin/cluster-util.sh -on-servers   --run -copyconf”
+      2.  To run “ls” command on all servers with -y option
+           “./sbin/cluster-util.sh -on-servers -y  --run ls  
+
+```

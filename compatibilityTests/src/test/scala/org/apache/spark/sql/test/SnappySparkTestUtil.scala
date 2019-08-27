@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -31,8 +31,8 @@ trait SnappySparkTestUtil extends SparkFunSuite {
     new File(dirName).mkdir()
   }
 
-  def excluded: Seq[String] = Seq.empty[String]
-  def ignored: Seq[String] = Seq.empty[String]
+  def excluded: Seq[String] = Nil
+  def ignored: Seq[String] = Nil
 
   override protected def test(testName: String, testTags: Tag*)(testFun: => Unit) = {
     if (!excluded.contains(testName)) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -221,8 +221,8 @@ class JDBCConnectionPoolTestSuite extends SnappyFunSuite with BeforeAndAfterAll 
       properties.setProperty("pool.minIdle", "1")
       properties.setProperty("pool.maxActive", "3")
       properties.setProperty("pool.initialSize", "1")
-      properties.setProperty("pool.user", "app")
-      properties.setProperty("pool.password", "app")
+      properties.setProperty("user", "app")
+      properties.setProperty("password", "app")
 
       val url = s"jdbc:snappydata:pool://$serverHostPort"
       // scalastyle:off
