@@ -68,6 +68,7 @@ $ ./bin/snappy leader start  -dir=/node-c/lead1  -locators=localhost[10334] -spa
 
 ```
 cluster-util.sh (--on-locators|--on-servers|--on-leads|--on-all) [-y] (--copy-conf | --run "<cmd-to-run-on-selected-nodes>")
+
 ```
 
 ### Description
@@ -97,12 +98,14 @@ You can use the cluster-util.sh utility to execute a given command on selected m
 
 *	`--run <cmd-to-run-on-selected-nodes>`
 	If specified, the given command(s) is executed on specified members. Command to be executed specified after --run`` must be in double-quotes.
-### Example
-```
-// To copy configuration files on all servers
 
-./sbin/cluster-util.sh -on-servers   --run -copyconf”
-      2.  To run “ls” command on all servers with -y option
-           “./sbin/cluster-util.sh -on-servers -y  --run ls  
+### Example
+
+```
+1.To copy configuration files on all servers
+“./sbin/cluster-util.sh --on-servers --copy-conf
+
+2.To run “ls” command on all servers with -y option
+“./sbin/cluster-util.sh --on-servers -y --run “ls”
 
 ```

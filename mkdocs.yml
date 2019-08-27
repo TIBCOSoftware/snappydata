@@ -163,6 +163,7 @@ pages:
 - 'Reference Guides': 'reference.md'
 - 'Reference Guides': 
     - 'Configure Cluster': 'configuring_cluster/configuring_cluster.md'
+    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'SQL Reference Guide': 'sql_reference.md'
     - 'SQL Reference Guide':
         - 'ALTER TABLE': 'reference/sql_reference/alter-table.md'    
@@ -244,7 +245,6 @@ pages:
         - 'run': 'reference/interactive_commands/run.md'
         - 'set connection': 'reference/interactive_commands/set_connection.md'
         - 'show': 'reference/interactive_commands/show.md'
-    - 'List of Properties': 'configuring_cluster/property_description.md'
     - 'Configuration Parameters': 'reference/configuration_parameters/config_parameters.md'
     - 'Configuration Parameters':         
         - 'ack-severe-alert-threshold': 'reference/configuration_parameters/ack-severe-alert-threshold.md'
@@ -327,6 +327,7 @@ pages:
 - 'Doc Archives': prev_doc_ver.md
 - 'Contact and Support': techsupport.md
 - 'License': LICENSE.md
+- 'Important Information': 'imp_info.md'
 
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
