@@ -1,4 +1,4 @@
 # Important Information 
 
 
-[Important Information](/impt_info/Important Information_CE.pdf)
+[Important Information](impt_info/Important_Information_CE.pdf)

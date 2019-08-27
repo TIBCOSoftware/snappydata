@@ -327,7 +327,7 @@ pages:
 - 'Doc Archives': prev_doc_ver.md
 - 'Contact and Support': techsupport.md
 - 'License': LICENSE.md
-- 'Important Information': 'impt_info/Important_Information_CE.pdf'
+- 'Important Information': imp_info.md
 
 theme: readthedocs
 theme_dir: 'docs/custom_theme'
