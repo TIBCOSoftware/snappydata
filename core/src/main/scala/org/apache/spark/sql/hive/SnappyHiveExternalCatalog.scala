@@ -435,7 +435,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
       case Some(t) => t
     }
-    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists = false, purge))
+    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists, purge))
 
     // drop all policies for the table
     if (Misc.getMemStoreBooting.isRLSEnabled) {

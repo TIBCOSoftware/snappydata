@@ -65,7 +65,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   // all hive tables that are expected to be in DataDictionary
   // this will exclude external tables like parquet tables, stream tables
   private val GET_ALL_TABLES_MANAGED_IN_DD_UPPERCASE = 2
-  private val REMOVE_TABLE = 3
+  private val REMOVE_TABLE_IF_EXISTS = 3
   private val GET_COL_TABLE = 4
   private val GET_TABLE = 5
   private val GET_HIVE_TABLES = 6
@@ -160,7 +160,7 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
   }
 
   override def removeTableIfExists(schema: String, table: String, skipLocks: Boolean): Unit = {
-    val q = new CatalogQuery[Unit](REMOVE_TABLE, table, schema)
+    val q = new CatalogQuery[Unit](REMOVE_TABLE_IF_EXISTS, table, schema)
     handleFutureResult(catalogQueriesExecutorService.submit(q))
   }
 
@@ -336,8 +336,15 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
           toUpperCase(table.database) -> toUpperCase(table.identifier.table)
       }.asInstanceOf[R]
 
-      case REMOVE_TABLE => externalCatalog.dropTable(formattedSchema, formattedTable,
-        ignoreIfNotExists = true, purge = false).asInstanceOf[R]
+      case REMOVE_TABLE_IF_EXISTS => try {
+        externalCatalog.dropTable(formattedSchema, formattedTable,
+          ignoreIfNotExists = true, purge = false).asInstanceOf[R]
+      } catch {
+        case e: Exception =>
+          logError("Failure in DROP TABLE IF EXISTS " +
+              s"$formattedSchema.$formattedTable: ${e.getMessage}", e)
+          null.asInstanceOf[R]
+      }
 
       // this will only remove table from catalog but any policies, base tables related to table
       // and other catalog info related to it will remain and may cause issues
@@ -690,7 +697,8 @@ class StoreHiveCatalog extends ExternalCatalog with Logging {
       val schema = request.getNames.get(0)
       val function = request.getNames.get(1)
       checkSchemaPermission(schema, function, user)
-      ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema, function, true)
+      ContextJarUtils.removeFunctionArtifacts(externalCatalog, None, schema,
+        function, isEmbeddedMode = true)
       externalCatalog.dropFunction(schema, function)
 
     case snappydataConstants.CATALOG_RENAME_FUNCTION =>
