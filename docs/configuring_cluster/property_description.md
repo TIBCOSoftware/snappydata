@@ -62,7 +62,7 @@ The following list of commonly used configuration properties can be set to confi
 |-archive-disk-space-limit|See [archive-disk-space-limit](/reference/configuration_parameters/archive-disk-space-limit.md)|
 |-archive-file-size-limit|See [archive-file-size-limit](/reference/configuration_parameters/archive-file-size-limit.md)| 
 |-dir|Working directory of the member that contains the SnappyData Server status file and the default location for the log file, persistent files, data dictionary, and so forth (defaults to the current directory).| Server</br>Lead</br>Locator</br>|
-|gemfirexd.default-startup-recovery-delay|See [gemfirexd.default-startup-recovery-delay](/reference/configuration_parameters/gemfirexd.default-startup-recovery-delay.md)|
+|gemfirexd.default-startup-recovery-delay|See [gemfirexd.default-startup-recovery-delay](/reference/configuration_parameters/snappydata.default-startup-recovery-delay.md)|
 |-spark.local.dir|Directory to use for "scratch" space in SnappyData, including map output files and RDDs that get stored on disk. This should be on a fast, local disk in your system. It can also be a comma-separated list of multiple directories on different disks. For more information, refer to [Best Practices](../best_practices/important_settings.md#spark-local-dir).|Lead</br>Server|
 |-sys-disk-dir|See [sys-disk-dir](/reference/configuration_parameters/sys-disk-dir.md)| 
 
@@ -222,7 +222,7 @@ This sets the property for the snappy SQL shell's session.
 <a id="connectionpro"></a>
 ## Connection Properties
 
-Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. For more details refer [Connection properties](reference/configuration_parameters/config_parameters.md#connectpro)
+Connection properties configure the features of a SnappyData member or a SnappyData client connection when you start or connect to a SnappyData member. For more details refer [Connection properties](../reference/configuration_parameters/config_parameters.md#connectpro)
 
 |Property|Description|Components</br>|
 |-|-|-|
@@ -236,5 +236,3 @@ Connection properties configure the features of a SnappyData member or a SnappyD
 |-skip-constraint-checks|See [skip-constraint-checks](/reference/configuration_parameters/skip-constraint-checks.md)||
 |-skip-locks|See [skip-locks](/reference/configuration_parameters/skip-locks.md)||
 |-user|See [user](/reference/configuration_parameters/user.md)||
-|-enable-stats|See [enable-stats](/reference/configuration_parameters/enable-stats.md)||
-|-enable-stats|See [enable-stats](/reference/configuration_parameters/enable-stats.md)||

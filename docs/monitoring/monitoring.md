@@ -85,7 +85,7 @@ In the **Cluster** section, you can view the following graphs which are automati
 In the **Members** section,  you can view, in a tabular format, the details of each locator, data server, and lead member within a cluster. The details are automatically refreshed after every five seconds.
 ![Members](../Images/Dashboard-MembersList.png)
 
-This table provides member details in the following columns:
+This table provides member details in the following columns:s
 
 
 | Column | Description |
@@ -181,7 +181,7 @@ The following details are included:
 
 | Item | Description |
 |--------|--------|
-|   **Log File Location**     |    Displays the absolute path of the member's primary log file, which is on the host where the current member's processes are running.    |
+|   **Log File Location**     | Displays the absolute path of the member's primary log file, which is on the host where the current member's processes are running.    |
 |     **Log Details **  |     Displays details of the loaded logs such as  Loaded Bytes, Start and End Indexes of Loaded Bytes, and Total Bytes of logs content.   |
 |  **Logs**      | Displays the actual log entries from the log files. </br> It also displays the following buttons: </br> <ul><li>**Load New** - Loads the latest log entries from the log file, if generated, after logs were last loaded or updated.</li><li>**Load More** - Loads older log entries from log files, if available.</li></ul>  |
 
@@ -192,7 +192,7 @@ The SQL section shows all the queries and their corresponding details along with
 
 | Item  | Description |
 |--------|--------|
-|  **Colocated**         |     When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
+|  **Colocated**    | When colocated tables are joined on the partitioning columns, the join happens locally on the node where data is present, without the need of shuffling the data. This improves the performance of the query significantly instead of broadcasting the data across all the data partitions.   |
 |**Whole-Stage Code Generation** |  A whole stage code generation node compiles a sub-tree of plans that support code generation together into a single Java function, which helps improve execution performance.      |
 |    **Per node execution timing**    |   Displays the time required for the execution of each node. If there are too many rows that are not getting filtered or exchanged.     |
 |   **Pool Name**     | Default/Low Latency. Applications can explicitly configure the use of this pool using a SQL command `set snappydata.scheduler.pool=lowlatency`.       |
