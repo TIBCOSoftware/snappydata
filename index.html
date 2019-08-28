@@ -73,40 +73,27 @@
                 
                     <li><a class="toctree-l4" href="#important-capabilities">Important Capabilities</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#downloading-and-installing-snappydata">Downloading and Installing SnappyData</a></li>
+                    <li><a class="toctree-l4" href="#downloading-and-installing-snappydata">Downloading and Installing SnappyData</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#getting-started">Getting Started</a></li>
+                    <li><a class="toctree-l4" href="#getting-started">Getting Started</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#quick-test-to-measure-performance-of-snappydata-vs-apache-spark">Quick Test to Measure Performance of SnappyData vs Apache Spark</a></li>
+                    <li><a class="toctree-l4" href="#quick-test-to-measure-performance-of-snappydata-vs-apache-spark">Quick Test to Measure Performance of SnappyData vs Apache Spark</a></li>
                 
                     <li><a class="toctree-l4" href="#other-relevant-content">Other Relevant content</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#community-support">Community Support</a></li>
+                    <li><a class="toctree-l4" href="#community-support">Community Support</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#link-with-snappydata-distribution">Link with SnappyData Distribution</a></li>
+                    <li><a class="toctree-l4" href="#link-with-snappydata-distribution">Link with SnappyData Distribution</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-maven-dependency">Using Maven Dependency</a></li>
+                    <li><a class="toctree-l4" href="#building-from-source">Building from Source</a></li>
                 
-                    <li><a class="toctree-l4" href="#using-sbt-dependency">Using SBT Dependency</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#building-from-source">Building from Source</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#how-is-snappydata-different-than-apache-spark">How is SnappyData Different than Apache Spark?</a></li>
+                    <li><a class="toctree-l4" href="#how-is-snappydata-different-than-apache-spark">How is SnappyData Different than Apache Spark?</a></li>
                 
                     <li><a class="toctree-l4" href="#the-snappydata-approach">The SnappyData Approach</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#streaming-example-ad-analytics">Streaming Example - Ad Analytics</a></li>
+                    <li><a class="toctree-l4" href="#streaming-example-ad-analytics">Streaming Example - Ad Analytics</a></li>
                 
-            
-                <li class="toctree-l3"><a href="#contributing-to-snappydata">Contributing to SnappyData</a></li>
+                    <li><a class="toctree-l4" href="#contributing-to-snappydata">Contributing to SnappyData</a></li>
                 
             
             </ul>
@@ -2192,7 +2179,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="introduction">Introduction</h2>
+                <h1 id="introduction">Introduction</h1>
 <p>SnappyData (aka TIBCO ComputeDB) is a distributed, in-memory optimized, analytics database. TIBCO ComputeDB delivers high throughput, low latency, and high concurrency for unified analytics workloads. By fusing an in-memory hybrid database inside Apache Spark, it provides analytic query processing, mutability/transactions, access to virtually all big data sources/formats and stream processing all in one unified cluster.</p>
 <p>One common use case for SnappyData is to provide analytics at interactive speeds over large volumes of data with minimal or no pre-processing of the dataset. For instance, there is no need to often pre-aggregate/reduce or generate cubes over your large data sets for ad-hoc visual analytics. This is made possible by smartly managing data in-memory, dynamically generating code using vectorization optimizations and maximizing the potential of modern multi-core CPUs.
 SnappyData enables complex processing on large data sets in sub-second timeframes. </p>
@@ -2201,7 +2188,7 @@ SnappyData enables complex processing on large data sets in sub-second timeframe
 <p class="admonition-title">Note</p>
 <p><em>SnappyData is not another Enterprise Data Warehouse (EDW) platform, but rather a high performance computational and caching cluster that augments traditional EDWs and data lakes.</em></p>
 </div>
-<h3 id="important-capabilities">Important Capabilities</h3>
+<h2 id="important-capabilities">Important Capabilities</h2>
 <ul>
 <li>
 <p><strong>Easily discover and catalog big data sets</strong></br>
@@ -2271,7 +2258,7 @@ Refer to the <a href="install/">documentation</a> for installation steps.</p>
 <p>You can find more information on options for running SnappyData <a href="quickstart/">here</a>.</p>
 <h2 id="quick-test-to-measure-performance-of-snappydata-vs-apache-spark">Quick Test to Measure Performance of SnappyData vs Apache Spark</h2>
 <p>If you are already using Apache Spark, you can experience upto 20x speedup for your query performance with SnappyData. Try this <a href="https://github.com/SnappyDataInc/snappydata/blob/master/examples/quickstart/scripts/Quickstart.scala">test</a> using the Spark Shell.</p>
-<h3 id="other-relevant-content">Other Relevant content</h3>
+<h2 id="other-relevant-content">Other Relevant content</h2>
 <ul>
 <li><a href="http://cidrdb.org/cidr2017/papers/p28-mozafari-cidr17.pdf">Paper</a> on Snappydata (Community Edition of TIBCO ComputeDB) at Conference on Innovative Data Systems Research (CIDR) - Info on key concepts and motivating problems.</li>
 <li><a href="https://www.snappydata.io/snappy-industrial">Another early Paper</a> that focuses on overall architecture, use cases, and benchmarks. ACM Sigmod 2016.</li>
@@ -2335,7 +2322,7 @@ version: 1.1.1
 <h2 id="how-is-snappydata-different-than-apache-spark">How is SnappyData Different than Apache Spark?</h2>
 <p>Apache Spark is a general purpose parallel computational engine for analytics at scale. At its core, it has a batch design center and is capable of working with disparate data sources. While this provides rich unified access to data, this can also be quite inefficient and expensive. Analytic processing requires massive data sets to be repeatedly copied and data to be reformatted to suit Apache Spark. In many cases, it ultimately fails to deliver the promise of interactive analytic performance.
 For instance, each time an aggregation is run on a large Cassandra table, it necessitates streaming the entire table into Apache Spark to do the aggregation. Caching within Apache Spark is immutable and results in stale insight.</p>
-<h3 id="the-snappydata-approach">The SnappyData Approach</h3>
+<h2 id="the-snappydata-approach">The SnappyData Approach</h2>
 <h5 id="snappy-architecture">Snappy Architecture</h5>
 <p><img alt="SnappyData Architecture" src="./Images/SnappyArchitecture.png" /></p>
 <p>SnappyData takes a different approach. SnappyData fuses a low latency, highly available in-memory transactional database ((Pivotal GemFire/Apache Geode) into Apache Spark with shared memory management and optimizations. Data can be managed in columnar form similar to Apache Spark caching or in a row oriented manner commonly used in popular relational databases like postgres). But, many query engine operators are significantly more optimized through better vectorization, code generation and indexing. </br>
@@ -2390,5 +2377,5 @@ Apache Spark is turned into an in-memory operational database capable of transac
 
 <!--
 MkDocs version : 0.15.3
-Build Date UTC : 2019-08-28 12:12:28.149472
+Build Date UTC : 2019-08-28 13:45:40.198959
 -->

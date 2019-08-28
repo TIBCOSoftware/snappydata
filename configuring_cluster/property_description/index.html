@@ -2242,7 +2242,7 @@
 <tr>
 <td>-locators</td>
 <td>List of locators as comma-separated host:port values used to communicate with running locators in the system and thus discover other peers of the distributed system. </br>The list must include all locators in use and must be configured consistently for every member of the distributed system. This property should be configured for all the nodes in the respective configuration files, if there are multiple locators.</td>
-<td>ServFer</br>Lead</br>Locator</td>
+<td>Server</br>Lead</br>Locator</td>
 </tr>
 <tr>
 <td>-member-timeout<a id="member-timeout"></a></td>
@@ -2577,7 +2577,7 @@
 <td></td>
 </tr>
 <tr>
-<td>-sparksql.aqp.behavior</td>
+<td>-spark.sql.aqp.behavior</td>
 <td>The action to be taken if the error computed goes outside the error tolerance limit. The default value is<code>DO_NOTHING</code>. </br>This property can be set as connection property in the Snappy SQL shell.</td>
 <td></td>
 </tr>
@@ -2866,7 +2866,7 @@ node-l -heap-size=4096m -spark.ui.port=9090 -locators=node-b:8888,node-a:9999 -s
 <td>Confidence with which the error bounds are calculated for the approximate value. It should be a fractional value not exceeding 1. </br> The default value is0.95. </br>This property can be set as connection property in the Snappy SQL shell.</td>
 </tr>
 <tr>
-<td>-sparksql.aqp.behavior</td>
+<td>-spark.sql.aqp.behavior</td>
 <td>The action to be taken if the error computed goes outside the error tolerance limit. The default value is<code>DO_NOTHING</code>. </br>This property can be set as connection property in the Snappy SQL shell.</td>
 </tr>
 </tbody>
