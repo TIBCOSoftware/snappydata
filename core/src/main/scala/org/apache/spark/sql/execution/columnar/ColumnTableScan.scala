@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -81,7 +81,10 @@ private[sql] final case class ColumnTableScan(
       partitionColumns, partitionColumnAliases,
       baseRelation.asInstanceOf[BaseRelation]) with CodegenSupport {
 
-  override val nodeName: String = "ColumnTableScan"
+  override val nodeName: String = {
+    if (baseRelation != null && baseRelation.getClass.getName.contains("Sampl")) "SampleTableScan"
+    else "ColumnTableScan"
+  }
 
   override def sameResult(plan: SparkPlan): Boolean = plan match {
     case r: ColumnTableScan => r.baseRelation.table == baseRelation.table &&
@@ -212,8 +215,8 @@ private[sql] final case class ColumnTableScan(
     // (or an extension of it if some special treatment is required)?
     val wrappedRow = if (isForSampleReservoirAsRegion) ctx.freshName("wrappedRow")
     else null
-    val (weightVarName, weightAssignCode) = if (output.exists(_.name ==
-        Utils.WEIGHTAGE_COLUMN_NAME)) {
+    val (weightVarName, weightAssignCode) = if (output.exists(_.name.equalsIgnoreCase(
+        Utils.WEIGHTAGE_COLUMN_NAME))) {
       val varName = ctx.freshName("weightage")
       ctx.addMutableState("long", varName, s"$varName = 0;")
       (varName, s"$varName = $wrappedRow.weight();")
@@ -787,7 +790,7 @@ private[sql] final case class ColumnTableScan(
            |if ($unchangedCode) $colAssign
            |else $updatedAssign
         """.stripMargin
-      if (weightVar != null && attr.name == Utils.WEIGHTAGE_COLUMN_NAME) {
+      if (weightVar != null && attr.name.equalsIgnoreCase(Utils.WEIGHTAGE_COLUMN_NAME)) {
         code += s"if ($col == 1) $col = $weightVar;\n"
       }
       ExprCode(code, "false", col)

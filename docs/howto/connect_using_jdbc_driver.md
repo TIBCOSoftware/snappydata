@@ -21,14 +21,14 @@ You can use the Maven or the SBT dependencies to get the latest released version
 <dependency>
     <groupId>io.snappydata</groupId>
     <artifactId>snappydata-jdbc_2.11</artifactId>
-    <version>1.1.0</version>
+    <version>1.1.1</version>
 </dependency>
 ```
 
 **Example: SBT dependency**
 ```pre
 // https://mvnrepository.com/artifact/io.snappydata/snappydata-store-client
-libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.0"
+libraryDependencies += "io.snappydata" % "snappydata-jdbc_2.11" % "1.1.1"
 ```
 
 !!! Note
@@ -86,67 +86,3 @@ preparedStmt1.close()
 
 !!! Note 
 	If the tool does not automatically select a driver class, you may have the option of selecting a class from within the JAR file. In this case, select the **io.snappydata.jdbc.ClientDriver** class.
-
-
-<a id="jdbcpooldriverconnect"></a>
-## Connecting with JDBC Client Pool Driver
-
-JDBC client pool driver provides built-in connection pooling and relies on the non-pooled [JDBC driver](/howto/connect_using_jdbc_driver.md). The driver initializes the pool when the first connection is created using this driver. Thereafter, for every request, the connection is returned from the pool instead of establishing a new connection with the server. 
-We recommend using the pooled driver for low latency operations such as point lookups and when using the Spark JDBC data source API (see example below). When you access SnappyData from Java frameworks such as Spring, we recommend using pooling provided in the framework and switch to using the non-pooled driver. 
-
-!!! Important
-	The underlying pool is uniquely associated with the set of properties that are passed while creating the connection. If any of the properties change, a new pool is created.
-
-**To connect to SnappyData Cluster using JDBC client pool driver**, use the url of the form: </br> `jdbc:snappydata:pool://<host>:<port>`</br>
-Where `<host>` is the hostname of the node on which the locator is started and `<port>` is the port on which the locator accepts client connections (default 1527).
-
-The client pool driver class name is **io.snappydata.jdbc.ClientPoolDriver**.
-
-The following pool related properties can be used to tune the JDBC client pool driver:
-
-| Property | Description |
-|--------|--------|
-|    pool.user    |   The username to be passed to the JDBC client pool driver to establish a connection.   |
-|pool.password|The password to be passed to the JDBC  client pool driver to establish a connection.|
-|pool.initialSize|The initial number of connections that are created when the pool is started. Default value is `max(256, availableProcessors * 8)`.|
-|pool.maxActive| The maximum number of active connections that can be allocated from this pool at a time. The default value is `max(256, availableProcessors * 8)`. |
-|pool.minIdle| The minimum number of established connections that should be maintained in the client pool. Default value is **1**.|
-|pool.maxIdle| The maximum number of connections that should be maintained in the client pool. Default value is **maxActive:**`max(256, availableProcessors * 8)`. Idle connections are checked periodically, if enabled, and the connections that are idle for more than the time set in **minEvictableIdleTimeMillis** are released.|
-|pool.maxWait|(int) The maximum waiting period, in milliseconds, for establishing a connection after which an exception is thrown. Default value is 30000 (30 seconds).|
-|pool.removeAbandoned| Flag to remove the abandoned connections, in case they exceed the settings for **removeAbandonedTimeout**. If set to true a connection is considered abandoned and eligible for removal, if its no longer in use than the settings for **removeAbandonedTimeout**. Setting this to **true** can recover db connections from applications that fail to close a connection. The default value is **false**.|
-|pool.removeAbandonedTimeout| Timeout in seconds before an abandoned connection, that was in use, can be removed. The default value is 60 seconds. The value should be set to the time required for the longest running query in your applications.|
-|pool.timeBetweenEvictionRunsMillis| Time period required to sleep between runs of the idle connection validation/cleaner thread. You should always set this value above one second. This time period determines how often we check for idle and abandoned connections and how often to validate the idle connections. The default value is 5000 (5 seconds).|
-|pool.minEvictableIdleTimeMillis|The minimum time period, in milliseconds, for which an object can be idle in the pool before it qualifies for eviction. The default value is 60000 (60 seconds).|
-|driver|`io.snappydata.jdbc.ClientPoolDriver`</br>This should be passed through Spark JDBC API for loading and using the driver.|
-|pool.testOnBorrow|Indicates if the objects are validated before being borrowed from the pool. If the object fails to validate, it will be dropped from the pool, and will attempt to borrow another. In order to have a more efficient validation, see `pool.validationInterval`. Default value is **true**.|
-|pool.validationInterval|Avoid excess validation, only run validation at most at this frequency - time in milliseconds. If a connection is due for validation, but has been validated previously within this interval, it will not be validated again. The default value is 10000 (10 seconds).|
-
-**Example Code Snippet:**
-
-```pre
-val properties = new Properties()
-properties.setProperty("pool.user", "user")
-properties.setProperty("pool.password", "pass")
-properties.setProperty("driver", ““io.snappydata.jdbc.ClientPoolDriver””)
-
-val builder = SparkSession
-.builder.
-appName("app")
-.master("local[*]")
-
-val spark: SparkSession = builder.getOrCreate
-
-val df = spark.read.jdbc(“jdbc:snappydata:pool://localhost:1527”, "Table_X", properties)
-
-```
-
-## Limitations
-
-If you set any of the following properties for a pooled connection, it gets auto-reset to the default values whenever you obtain a new pooled connection.
-
-*	**setAutoCommit**
-*	**setTransactionIsolation**
-*	**setReadOnly**
-
-However, if you have set any of the other properties (e.g. spark or snappy AQP related properties), it does not get auto-reset when you obtain a new pooled connection.
-

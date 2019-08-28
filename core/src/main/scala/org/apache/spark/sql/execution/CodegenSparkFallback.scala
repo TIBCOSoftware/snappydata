@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -17,10 +17,7 @@
 
 package org.apache.spark.sql.execution
 
-import java.sql.SQLException
-
 import com.gemstone.gemfire.SystemFailure
-import com.pivotal.gemfirexd.internal.shared.common.reference.SQLState
 import org.codehaus.commons.compiler.CompileException
 
 import org.apache.spark.rdd.RDD
@@ -28,8 +25,9 @@ import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.catalyst.expressions.{Attribute, SortOrder}
 import org.apache.spark.sql.catalyst.plans.physical.Partitioning
 import org.apache.spark.sql.execution.command.ExecutedCommandExec
+import org.apache.spark.sql.execution.metric.SQLMetric
 import org.apache.spark.sql.internal.CodeGenerationException
-import org.apache.spark.sql.{SnappyContext, SnappySession, ThinClientConnectorMode}
+import org.apache.spark.sql.{CachedDataFrame, SnappySession}
 
 /**
  * Catch exceptions in code generation of SnappyData plans and fallback
@@ -71,43 +69,6 @@ case class CodegenSparkFallback(var child: SparkPlan,
     false
   }
 
-  protected def isConnectorCatalogStaleException(t: Throwable, session: SnappySession): Boolean = {
-
-    // error check needed in SmartConnector mode only
-    val isSmartConnectorMode = SnappyContext.getClusterMode(session.sparkContext) match {
-      case ThinClientConnectorMode(_, _) => true
-      case _ => false
-    }
-    if (!isSmartConnectorMode) return false
-
-    var cause = t
-    do {
-      cause match {
-        case sqle: SQLException
-          if SQLState.SNAPPY_CATALOG_SCHEMA_VERSION_MISMATCH.equals(sqle.getSQLState) =>
-          return true
-        case e: Error =>
-          if (SystemFailure.isJVMFailureError(e)) {
-            SystemFailure.initiateFailure(e)
-            // If this ever returns, rethrow the error. We're poisoned
-            // now, so don't let this thread continue.
-            throw e
-          }
-        case _ =>
-      }
-      cause = cause.getCause
-    } while (cause ne null)
-    false
-  }
-
-  private def catalogStaleFailure(cause: Throwable, session: SnappySession): Exception = {
-    logWarning(s"SmartConnector catalog is not up to date. " +
-        s"Please reconstruct the Dataset and retry the operation")
-    new CatalogStaleException("Smart connector catalog is out of date due to " +
-        "table schema change (DROP/CREATE/ALTER operation). " +
-        "Please reconstruct the Dataset and retry the operation", cause)
-  }
-
   private def executeWithFallback[T](f: SparkPlan => T, plan: SparkPlan): T = {
     try {
       f(plan)
@@ -120,18 +81,10 @@ case class CodegenSparkFallback(var child: SparkPlan,
         // is still usable:
         SystemFailure.checkFailure()
 
-        val isCatalogStale = isConnectorCatalogStaleException(t, session)
+        val isCatalogStale = CachedDataFrame.isConnectorCatalogStaleException(t, session)
         if (isCatalogStale) {
-          session.externalCatalog.invalidateAll()
-          SnappySession.clearAllCache()
-          // fail immediate for insert/update/delete, else retry entire query
-          val action = plan.find {
-            case _: ExecutePlan | _: ExecutedCommandExec => true
-            case _ => false
-          }
-          if (action.isDefined) throw catalogStaleFailure(t, session)
-        }
-        if (isCatalogStale || isCodeGenerationException(t)) {
+          handleStaleCatalogException(f, plan, t)
+        } else if (isCodeGenerationException(t)) {
           // fallback to Spark plan for code-generation exception
           execution match {
             case Some(exec) =>
@@ -156,11 +109,11 @@ case class CodegenSparkFallback(var child: SparkPlan,
                 child = plan
                 result
               } catch {
-                case t: Throwable if isConnectorCatalogStaleException(t, session) =>
+                case t: Throwable if CachedDataFrame.isConnectorCatalogStaleException(t, session) =>
                   session.externalCatalog.invalidateAll()
                   SnappySession.clearAllCache()
-                  throw catalogStaleFailure(t, session)
-              } finally if (!isCatalogStale) {
+                  throw CachedDataFrame.catalogStaleFailure(t, session)
+              } finally {
                 session.sessionState.disableStoreOptimizations = false
               }
             case _ => throw t
@@ -168,6 +121,28 @@ case class CodegenSparkFallback(var child: SparkPlan,
         } else {
           throw t
         }
+    }
+  }
+
+  private def handleStaleCatalogException[T](f: SparkPlan => T, plan: SparkPlan, t: Throwable) = {
+    session.externalCatalog.invalidateAll()
+    SnappySession.clearAllCache()
+    // fail immediate for insert/update/delete, else retry entire query
+    val action = plan.find {
+      case _: ExecutePlan | _: ExecutedCommandExec => true
+      case _ => false
+    }
+    if (action.isDefined) throw CachedDataFrame.catalogStaleFailure(t, session)
+
+    execution match {
+      case Some(exec) =>
+        CachedDataFrame.retryOnStaleCatalogException(snappySession = session) {
+          val plan = exec().executedPlan
+          // update child for future executions
+          child = plan
+          f(plan)
+        }
+      case _ => throw t
     }
   }
 
@@ -192,8 +167,6 @@ case class CodegenSparkFallback(var child: SparkPlan,
 
   // override def children: Seq[SparkPlan] = child.children
 
-  // override private[sql] def metrics = child.metrics
-
   // override private[sql] def metadata = child.metadata
 
   // override def subqueries: Seq[SparkPlan] = child.subqueries
@@ -201,4 +174,9 @@ case class CodegenSparkFallback(var child: SparkPlan,
   override def nodeName: String = "CollectResults"
 
   override def simpleString: String = "CollectResults"
+
+  override def longMetric(name: String): SQLMetric = child match {
+    case w: WholeStageCodegenExec => w.child.longMetric(name)
+    case o => o.longMetric(name)
+  }
 }

@@ -229,6 +229,25 @@ The cluster is launched in the **N. California (us-west-1)** region on AWS and h
 
 The example assumes that you have the key file (my-ec2-key.pem) in your home directory for EC2 Key Pair named 'my-ec2-key'.
 
+#### Assuming IAM role in the AWS EC2 Scripts
+
+An IAM user in AWS can gain additional (or different) permissions, or get permissions to perform actions in a different AWS account through EC2 scripts. You can configure the AWS EC2 scripts to use an IAM role by passing the following properties:
+
+*	**assume-role-arn**:
+	The Amazon Resource Name (ARN) of the IAM role to be assumed. This IAM role's credentials are used to launch the cluster. If you are using the switch role functionality, this property is mandatory.
+    
+*	**assume-role-timeout**: 
+	Timeout in seconds for the temporary credentials of the assumed IAM role, min is 900 seconds and max is 3600 seconds.
+    
+*	**assume-role-session-name**:
+	Name of this session in which this IAM role is assumed by the user.
+
+**Example**
+
+```
+-./snappy-ec2 -k <your-key-name> -i <your-keyfile-path> stop snap_ec2_cluster --with-zeppelin --authorized-address=<Authorized IP Address> --assume-role-arn=<role-arn> --assume-role-timeout=<timeout> --assume-role-session-name=<name-for-session>
+```
+
 !!! Note
 	By default, the cluster is launched in the **N. Virginia (us-east-1)** region on AWS. To launch the cluster in a specific region use option `--region`.
 
@@ -262,12 +281,12 @@ For example, to use **SnappyData Enterprise** build to launch the cluster, downl
 www.snappydata.io/download on your local machine and give its path as value to above option.
 
 ```pre
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.1.0-bin.tar.gz" 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="/home/ec2-user/snappydata/distributions/snappydata-1.1.1-bin.tar.gz" 
 ```
 
 Alternatively, you can also put your build file on a public web server and provide its URL to this option.
 ```pre
-./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.1.0-bin.tar.gz" 
+./snappy-ec2 -k my-ec2-key -i ~/my-ec2-key.pem launch my-cluster --snappydata-tarball="https://s3-us-east-2.amazonaws.com/mybucket/distributions/snappydata-1.1.1-bin.tar.gz" 
 ```
 
 The build file should be in **.tar.gz** format.
@@ -484,6 +503,14 @@ Options:
                         just stop
   --instance-profile-name=INSTANCE_PROFILE_NAME
                         IAM profile name to launch instances under
+  --assume-role-arn=The Amazon Resource Name (ARN) of the IAM role to be assumed. 
+  						This IAM role's credentials are used to launch the cluster. 
+                        If you are using the switch role functionality, this property is mandatory.
+ --assume-role-timeout=Timeout in seconds for the temporary credentials of the 
+ 						assumed IAM role, min is 900 seconds and max is 
+                        3600 seconds.
+--assume-role-session-name=Name of this session in which this IAM role is 
+							assumed by the user.                        
 ```
 <a id="ec2knownlimit"></a>
 ### Known Limitations
@@ -497,7 +524,7 @@ Options:
 ## AWS Management Console
 
 !!! Attention
-	The AMI of latest SnappyData release 1.1.0 is not available on AWS.
+	The AMIs of SnappyData release 1.1.0 onwards are not available on AWS.
 
 You can launch a SnappyData cluster on Amazon EC2 instance(s) using the AMI provided by SnappyData. For more information
 on launching an EC2 instance, refer to the [AWS documentation](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/launching-instance.html).

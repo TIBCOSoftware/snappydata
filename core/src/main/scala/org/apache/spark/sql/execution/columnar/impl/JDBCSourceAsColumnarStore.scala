@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -21,6 +21,7 @@ import java.sql.{Connection, PreparedStatement, ResultSet, Statement}
 import java.util.Collections
 
 import scala.annotation.meta.param
+import scala.collection.mutable.ArrayBuffer
 import scala.util.Random
 import scala.util.control.NonFatal
 
@@ -66,6 +67,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
   self =>
 
   override final def tableName: String = _tableName
+
+  override def withTable(tableName: String, numPartitions: Int): ExternalStore =
+    new JDBCSourceAsColumnarStore(connProperties, numPartitions, tableName, schema)
 
   override final def connProperties: ConnectionProperties = _connProperties
 
@@ -114,6 +118,13 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }
   }
 
+  def beginTxSmartConnector(delayRollover: Boolean, catalogVersion: Long): Array[_ <: Object] = {
+    val txIdConnArray = beginTx(delayRollover)
+    val conn: Connection = txIdConnArray(0).asInstanceOf[Connection]
+    ExternalStoreUtils.setSchemaVersionOnConnection(catalogVersion, conn)
+    txIdConnArray
+  }
+
   // begin should decide the connection which will be used by insert/commit/rollback
   def beginTx(delayRollover: Boolean): Array[_ <: Object] = {
     val conn = self.getConnection(tableName, onExecutor = true)
@@ -123,6 +134,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
+            val rgn = Misc.getRegionForTable(
+              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+            val ds = rgn.getDiskStore
+            if (ds != null) {
+              ds.acquireDiskStoreReadLock()
+            }
             val context = TXManagerImpl.currentTXContext()
             if (context == null ||
                 (context.getSnapshotTXState == null && context.getTXState == null)) {
@@ -172,7 +189,16 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
             if (delayRollover) {
               GfxdSystemProcedures.flushLocalBuckets(tableName, false)
             }
-            Misc.getGemFireCache.getCacheTransactionManager.commit()
+            val rgn = Misc.getRegionForTable(
+              JdbcExtendedUtils.toUpperCase(tableName), true).asInstanceOf[LocalRegion]
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.commit()
+            } finally {
+              val ds = rgn.getDiskStore
+              if (ds != null) {
+                ds.releaseDiskStoreReadLock()
+              }
+            }
           case _ =>
             logDebug(s"Going to commit $txId the transaction on server conn is $conn")
             val ps = conn.prepareStatement(s"call sys.COMMIT_SNAPSHOT_TXID(?,?)")
@@ -207,7 +233,17 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       conn: Connection => {
         connectionType match {
           case ConnectionType.Embedded =>
-            Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            val rgn = Misc.getRegionForTable(
+              JdbcExtendedUtils.toUpperCase(tableName), true).
+              asInstanceOf[LocalRegion]
+            try {
+              Misc.getGemFireCache.getCacheTransactionManager.rollback()
+            } finally {
+              val ds = rgn.getDiskStore
+              if (ds != null) {
+                ds.releaseDiskStoreReadLock()
+              }
+            }
           case _ =>
             logDebug(s"Going to rollback transaction $txId on server using $conn")
             var ps: PreparedStatement = null
@@ -486,8 +522,12 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       onExecutor: Boolean): ConnectedExternalStore =
     new JDBCSourceAsColumnarStore(connProperties, numPartitions, tableName, schema)
         with ConnectedExternalStore {
+
       @transient protected[this] override val connectedInstance: Connection =
         self.getConnection(table, onExecutor)
+
+      override def withTable(tableName: String, numPartitions: Int): ExternalStore =
+        throw new UnsupportedOperationException(s"withTable unexpected for ConnectedExternalStore")
     }
 
   override def getColumnBatchRDD(tableName: String,
@@ -555,7 +595,7 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       partitionId: Int): Connection => Unit = {
     connection: Connection => {
       val gen = CodeGeneration.compileCode(
-        tableName + ".COLUMN_TABLE.DECOMPRESS", schema.fields, () => {
+        tableName + ".columnTable.decompress", schema.fields, () => {
           val schemaAttrs = schema.toAttributes
           val tableScan = ColumnTableScan(schemaAttrs, dataRDD = null,
             otherRDDs = Nil, numBuckets = -1,
@@ -595,8 +635,9 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
     }
   }
 
-  private def getInProgressBucketSize(br: BucketRegion, shift: Int): Long =
-    (br.getTotalBytes + br.getInProgressSize) >> shift
+  // round off to nearest 8k to avoid tiny size changes from effecting the minimum selection
+  private def getInProgressBucketSize(br: BucketRegion): Long =
+    (br.getTotalBytes + br.getInProgressSize) >> 13L
 
   // use the same saved connection for all operation
   private def getPartitionID(columnTableName: String,
@@ -614,24 +655,24 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
               } else {
                 // select the bucket with smallest size at this point
                 val iterator = primaryBuckets.iterator()
-                // for heap buffer, round off to nearest 8k to avoid tiny
-                // size changes from effecting the minimum selection else
-                // round off to 32 for off-heap where memory bytes has only
-                // the entry+key overhead (but overflow bytes have data too)
-                val shift = if (GemFireCacheImpl.hasNewOffHeap) 5 else 13
                 assert(iterator.hasNext)
-                var smallestBucket = iterator.next()
-                var minBucketSize = getInProgressBucketSize(smallestBucket, shift)
+                val smallestBuckets = new ArrayBuffer[BucketRegion](4)
+                smallestBuckets += iterator.next()
+                var minBucketSize = getInProgressBucketSize(smallestBuckets(0))
                 while (iterator.hasNext) {
                   val bucket = iterator.next()
-                  val bucketSize = getInProgressBucketSize(bucket, shift)
-                  if (bucketSize < minBucketSize ||
-                      (bucketSize == minBucketSize && Random.nextBoolean())) {
-                    smallestBucket = bucket
+                  val bucketSize = getInProgressBucketSize(bucket)
+                  if (bucketSize < minBucketSize) {
+                    smallestBuckets.clear()
+                    smallestBuckets += bucket
                     minBucketSize = bucketSize
+                  } else if (bucketSize == minBucketSize) {
+                    smallestBuckets += bucket
                   }
                 }
                 val batchSize = getBatchSizeInBytes()
+                // choose a random bucket among all the smallest ones
+                val smallestBucket = smallestBuckets(Random.nextInt(smallestBuckets.length))
                 // update the in-progress size of the chosen bucket
                 smallestBucket.updateInProgressSize(batchSize)
                 (smallestBucket.getId, Some(smallestBucket), batchSize)
@@ -644,8 +685,10 @@ class JDBCSourceAsColumnarStore(private var _connProperties: ConnectionPropertie
       case _ => (Random.nextInt(numPartitions), None, 0L)
     }
   }
-}
 
+  override def toString: String = s"ColumnarStore[$tableName, partitions=$numPartitions, " +
+      s"connectionProperties=$connProperties, schema=$schema]"
+}
 
 final class ColumnarStorePartitionedRDD(
     @transient private val session: SnappySession,
@@ -904,9 +947,16 @@ class SmartConnectorRowRDD(_session: SnappySession,
     val (conn, txId) = helper.getConnectionAndTXId(connProperties,
       thePart.asInstanceOf[SmartExecutorBucketPartition], preferHostName)
     if (context ne null) {
-      val partitionId = context.partitionId()
       context.addTaskCompletionListener { _ =>
-        logDebug(s"closed connection for task from listener $partitionId")
+        try {
+          val statement = conn.createStatement()
+          statement match {
+            case stmt: ClientStatement => stmt.getConnection.setCommonStatementAttributes(null)
+          }
+          statement.close()
+        } catch {
+          case NonFatal(e) => logWarning("Exception resetting commonStatementAttributes", e)
+        }
         try {
           conn.close()
           logDebug("closed connection for task " + context.partitionId())
@@ -977,9 +1027,6 @@ class SmartConnectorRowRDD(_session: SnappySession,
       getTXIdAndHostUrl.close()
       SmartConnectorHelper.snapshotTxIdForRead.set(txIdAndHostUrl)
       logDebug(s"The snapshot tx id is $txIdAndHostUrl and tablename is $tableName")
-    }
-    if (thriftConn ne null) {
-      thriftConn.setCommonStatementAttributes(null)
     }
     logDebug(s"The previous snapshot tx id is $txId and tablename is $tableName")
     (conn, stmt, rs)

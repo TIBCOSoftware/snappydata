@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -18,6 +18,7 @@
 package org.apache.spark.sql.hive
 
 import java.lang.reflect.InvocationTargetException
+import javax.annotation.concurrent.GuardedBy
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -36,13 +37,14 @@ import com.pivotal.gemfirexd.internal.engine.distributed.utils.GemFireXDUtils
 import com.pivotal.gemfirexd.internal.impl.sql.catalog.GfxdDataDictionary
 import io.snappydata.sql.catalog.SnappyExternalCatalog._
 import io.snappydata.sql.catalog.{CatalogObjectType, ConnectorExternalCatalog, RelationInfo, SnappyExternalCatalog}
-import org.apache.commons.io.FileUtils
 import org.apache.hadoop.conf.Configuration
+import org.apache.hadoop.hive.metastore.api.NoSuchObjectException
 import org.apache.hadoop.hive.ql.metadata.Hive
-import org.apache.http.annotation.GuardedBy
 import org.apache.log4j.{Level, LogManager}
 
+import org.apache.spark.SparkConf
 import org.apache.spark.jdbc.{ConnectionConf, ConnectionUtil}
+import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.TableIdentifier
 import org.apache.spark.sql.catalyst.analysis.{NoSuchDatabaseException, NoSuchTableException, TableAlreadyExistsException}
 import org.apache.spark.sql.catalyst.catalog.CatalogTypes.TablePartitionSpec
@@ -54,13 +56,12 @@ import org.apache.spark.sql.collection.{ToolsCallbackInit, Utils}
 import org.apache.spark.sql.execution.RefreshMetadata
 import org.apache.spark.sql.execution.columnar.ExternalStoreUtils
 import org.apache.spark.sql.hive.client.HiveClientImpl
-import org.apache.spark.sql.internal.StaticSQLConf.{GLOBAL_TEMP_DATABASE, SCHEMA_STRING_LENGTH_THRESHOLD, WAREHOUSE_PATH}
+import org.apache.spark.sql.internal.StaticSQLConf.SCHEMA_STRING_LENGTH_THRESHOLD
 import org.apache.spark.sql.policy.PolicyProperties
 import org.apache.spark.sql.sources.JdbcExtendedUtils
-import org.apache.spark.sql.sources.JdbcExtendedUtils.{toLowerCase, toUpperCase}
+import org.apache.spark.sql.sources.JdbcExtendedUtils.normalizeSchema
+import org.apache.spark.sql.store.CodeGeneration
 import org.apache.spark.sql.types.LongType
-import org.apache.spark.sql.{AnalysisException, _}
-import org.apache.spark.{SparkConf, SparkException}
 
 class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val hadoopConf: Configuration, val createTime: Long)
@@ -69,27 +70,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   {
     // fire dummy queries to initialize more components of hive meta-store
     withHiveExceptionHandling {
-      assert(!client.tableExists(SYS_SCHEMA, "DBS"))
-      assert(!client.functionExists(SYS_SCHEMA, "FUNCS"))
-    }
-
-    // Check that global temp view schema should be absent
-    val globalSchemaName = Utils.toUpperCase(conf.get(GLOBAL_TEMP_DATABASE))
-    if (databaseExists(globalSchemaName)) {
-      throw new SparkException(globalSchemaName + " is a system reserved schema. " +
-          "Please drop your existing schema to resolve the name conflict, " +
-          "or set a different value for " + GLOBAL_TEMP_DATABASE.key +
-          ", and start the cluster again.")
-    }
-
-    // create the default database as in Spark
-    val defaultSchemaDefinition = CatalogDatabase(SPARK_DEFAULT_SCHEMA,
-      s"$SPARK_DEFAULT_SCHEMA database", conf.get(WAREHOUSE_PATH), Map.empty)
-    // Initialize default database if it doesn't exist
-    if (!databaseExists(SPARK_DEFAULT_SCHEMA)) {
-      // There may be another Spark application creating default database at the same time,
-      // here we set `ignoreIfExists = true` to avoid `DatabaseAlreadyExists` exception.
-      createDatabase(defaultSchemaDefinition, ignoreIfExists = true)
+      assert(!client.tableExists(SYS_SCHEMA, "dbs"))
+      assert(!client.functionExists(SYS_SCHEMA, "funcs"))
     }
   }
 
@@ -98,12 +80,21 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val cacheLoader = new CacheLoader[(String, String), CatalogTable]() {
       override def load(name: (String, String)): CatalogTable = {
         logDebug(s"Looking up data source for ${name._1}.${name._2}")
-        withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
-          name._1, name._2)) match {
-          case None =>
-            nonExistentTables.put(name, java.lang.Boolean.TRUE)
-            throw new TableNotFoundException(name._1, name._2)
-          case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+        try {
+          withHiveExceptionHandling(SnappyHiveExternalCatalog.super.getTableOption(
+            name._1, name._2)) match {
+            case None =>
+              nonExistentTables.put(name, java.lang.Boolean.TRUE)
+              throw new TableNotFoundException(name._1, name._2)
+            case Some(catalogTable) => finalizeCatalogTable(catalogTable)
+          }
+        } catch {
+          case _: NullPointerException =>
+            // dropTableUnsafe() searches for below exception message. check before changing.
+            throw new AnalysisException(
+              s"Table ${name._1}.${name._2} might be inconsistent in hive catalog. " +
+                  "Use system procedure SYS.REMOVE_METASTORE_ENTRY to remove inconsistency. " +
+                  "Refer to troubleshooting section of documentation for more details")
         }
       }
     }
@@ -116,9 +107,11 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   private def isDisconnectException(t: Throwable): Boolean = {
-    if (t != null) {
+    if (t ne null) {
       val tClass = t.getClass.getName
       tClass.contains("DisconnectedException") ||
+          // NPE can be seen if catalog object is being dropped concurrently
+          t.isInstanceOf[NullPointerException] ||
           tClass.contains("DisconnectException") ||
           (tClass.contains("MetaException") && t.getMessage.contains("retries")) ||
           isDisconnectException(t.getCause)
@@ -147,8 +140,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
           hiveClient = hiveClient.newSession()
         }
         function
-      case e: InvocationTargetException => throw e.getCause
-      case e: ExecutionException => throw e.getCause
+      case e: InvocationTargetException =>
+        if (e.getCause ne null) throw e.getCause else throw e
+      case e: ExecutionException =>
+        if (e.getCause ne null) throw e.getCause else throw e
     } finally {
       skipFlags.skipDDLocks = oldSkipLocks
       skipFlags.skipHiveCatalogCalls = oldSkipCatalogCalls
@@ -177,7 +172,8 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     nonExistentTables.invalidate(name)
     // also clear "isRowBuffer" since it may have been cached incorrectly
     // when column store was still being created
-    Misc.getRegion(Misc.getRegionPath(name._1, name._2, null), false, true)
+    Misc.getRegion(Misc.getRegionPath(JdbcExtendedUtils.toUpperCase(name._1),
+      JdbcExtendedUtils.toUpperCase(name._2), null), false, true)
         .asInstanceOf[LocalRegion] match {
       case pr: PartitionedRegion => pr.clearIsRowBuffer()
       case _ =>
@@ -217,8 +213,15 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
   }
 
   override def dropDatabase(schema: String, ignoreIfNotExists: Boolean, cascade: Boolean): Unit = {
-    if (schema == SYS_SCHEMA) throw new AnalysisException(s"$schema is a system reserved schema")
-    withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    if (schema == SYS_SCHEMA) {
+      throw new AnalysisException(s"$schema is a system preserved database/schema")
+    }
+    try {
+      withHiveExceptionHandling(super.dropDatabase(schema, ignoreIfNotExists, cascade))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
   }
 
   // Special in-built SYS schema does not have hive catalog entry so the methods below
@@ -229,29 +232,50 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       if (schema == SYS_SCHEMA) systemSchemaDefinition
       else withHiveExceptionHandling(super.getDatabase(schema).copy(name = schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
     }
   }
 
   override def databaseExists(schema: String): Boolean = {
-    schema == SYS_SCHEMA || withHiveExceptionHandling(super.databaseExists(schema))
+    if (schema == SYS_SCHEMA) true
+    else {
+      // if cache is small enough then linearly search in it since hive call is expensive
+      if (cachedCatalogTables.size() <= 200) {
+        val itr = cachedCatalogTables.asMap().keySet().iterator()
+        while (itr.hasNext) {
+          if (itr.next()._1 == schema) return true
+        }
+      }
+      withHiveExceptionHandling(super.databaseExists(schema))
+    }
   }
 
   override def listDatabases(): Seq[String] = {
-    (withHiveExceptionHandling(super.listDatabases().toSet) + toLowerCase(SYS_SCHEMA))
+    (withHiveExceptionHandling(super.listDatabases().toSet) + SYS_SCHEMA)
         .toSeq.sorted
   }
 
   override def listDatabases(pattern: String): Seq[String] = {
     (withHiveExceptionHandling(super.listDatabases(pattern).toSet) ++
-        StringUtils.filterPattern(Seq(toLowerCase(SYS_SCHEMA)), pattern)).toSeq.sorted
+        StringUtils.filterPattern(Seq(SYS_SCHEMA), pattern)).toSeq.sorted
   }
 
   override def setCurrentDatabase(schema: String): Unit = {
     try {
       withHiveExceptionHandling(super.setCurrentDatabase(schema))
     } catch {
-      case _: NoSuchDatabaseException => throw schemaNotFoundException(schema)
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schema)
+    }
+  }
+
+  override def alterDatabase(schemaDefinition: CatalogDatabase): Unit = {
+    try {
+      withHiveExceptionHandling(super.alterDatabase(schemaDefinition))
+    } catch {
+      case _: NoSuchDatabaseException | _: NoSuchObjectException =>
+        throw SnappyExternalCatalog.schemaNotFoundException(schemaDefinition.name)
     }
   }
 
@@ -263,15 +287,16 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     withHiveExceptionHandling(client.getTableOption(name._1, name._2)) match {
       case None => // ignore, can be a temporary table
       case Some(baseTable) =>
-        val dependents = baseTable.properties.get(DEPENDENT_RELATIONS) match {
+        val dependents = SnappyExternalCatalog.getDependentsValue(baseTable.properties) match {
           case None => dependent
           case Some(deps) =>
             // add only if it doesn't exist
-            if (deps.split(",").contains(dependent)) return
-            else deps + "," + dependent
+            if (deps.split(',').contains(dependent)) return else deps + "," + dependent
         }
+        val newProps = baseTable.properties.filterNot(
+          _._1.equalsIgnoreCase(DEPENDENT_RELATIONS))
         withHiveExceptionHandling(client.alterTable(baseTable.copy(properties =
-            baseTable.properties + (DEPENDENT_RELATIONS -> dependents))))
+            newProps + (DEPENDENT_RELATIONS -> dependents))))
     }
   }
 
@@ -310,21 +335,22 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     withHiveExceptionHandling(client.getTableOption(name._1, name._2)) match {
       case None => // ignore, can be a temporary table
       case Some(baseTable) =>
-        baseTable.properties.get(DEPENDENT_RELATIONS) match {
-          case None =>
-          case Some(deps) =>
+        SnappyExternalCatalog.getDependents(baseTable.properties) match {
+          case deps if deps.length > 0 =>
             // remove all instances in case there are multiple coming from older releases
-            val dependents = deps.split(",").toSet
+            val dependents = deps.toSet
             if (dependents.contains(dependent)) withHiveExceptionHandling {
+              val newProps = baseTable.properties.filterNot(
+                _._1.equalsIgnoreCase(DEPENDENT_RELATIONS))
               if (dependents.size == 1) {
-                client.alterTable(baseTable.copy(properties = baseTable.properties -
-                    DEPENDENT_RELATIONS))
+                client.alterTable(baseTable.copy(properties = newProps))
               } else {
                 val newDependents = (dependents - dependent).mkString(",")
-                client.alterTable(baseTable.copy(properties = baseTable.properties +
+                client.alterTable(baseTable.copy(properties = newProps +
                     (DEPENDENT_RELATIONS -> newDependents)))
               }
             }
+          case _ =>
         }
     }
   }
@@ -338,7 +364,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     // the dependents not present during reads in getDependents.
     val refreshRelations = getTableWithBaseTable(catalogTable)
     if (refreshRelations.length > 1) {
-      val dependent = toUpperCase(catalogTable.identifier.unquotedString)
+      val dependent = catalogTable.identifier.unquotedString
       addDependentToBase(refreshRelations.head, dependent)
     }
 
@@ -366,14 +392,40 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       withHiveExceptionHandling(super.createTable(catalogTable, ifExists))
     } catch {
-      case _: TableAlreadyExistsException =>
+      case e: TableAlreadyExistsException =>
         val objectType = CatalogObjectType.getTableType(tableDefinition)
-        throw new AnalysisException(s"Object '${tableDefinition.identifier.table}' of type " +
-            s"$objectType already exists in schema '${tableDefinition.database}'")
+        if (CatalogObjectType.isTableOrView(objectType)) throw e
+        else throw objectExistsException(tableDefinition.identifier, objectType)
     }
 
     // refresh cache for required tables
     registerCatalogSchemaChange(refreshRelations)
+  }
+
+  def dropTableUnsafe(schema: String, table: String, forceDrop: Boolean): Unit = {
+    try {
+      super.getTable(schema, table)
+      // no exception raised while getting catalogTable
+      if (forceDrop) {
+        // parameter to force drop entry from metastore is set
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
+      } else {
+        // AnalysisException not thrown while getting table. suspecting that wrong table
+        // name is passed. throwing exception as a precaution.
+        throw new AnalysisException("Table retrieved successfully. To " +
+            "continue to drop this table change FORCE_DROP argument in procedure to true")
+      }
+    } catch {
+      case a: AnalysisException if a.message.contains("might be inconsistent in hive catalog") =>
+        // exception is expected as table might be inconsistent. continuing to drop
+        withHiveExceptionHandling(super.dropTable(schema, table,
+          ignoreIfNotExists = true, purge = true))
+    }
+
+    SnappySession.clearAllCache(onlyQueryPlanCache = true)
+    CodeGeneration.clearAllCache()
+    invalidate(schema -> table)
   }
 
   override def dropTable(schema: String, table: String, ignoreIfNotExists: Boolean,
@@ -383,7 +435,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         if (ignoreIfNotExists) return else throw new TableNotFoundException(schema, table)
       case Some(t) => t
     }
-    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists = false, purge))
+    withHiveExceptionHandling(super.dropTable(schema, table, ignoreIfNotExists, purge))
 
     // drop all policies for the table
     if (Misc.getMemStoreBooting.isRLSEnabled) {
@@ -442,8 +494,10 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     registerCatalogSchemaChange(schemaName -> tableName :: Nil)
   }
 
-  override def renameTable(schema: String, oldName: String, newName: String): Unit = {
-    withHiveExceptionHandling(super.renameTable(schema, oldName, newName))
+  override def renameTable(schemaName: String, oldName: String, newName: String): Unit = {
+    withHiveExceptionHandling(super.renameTable(schemaName, oldName, newName))
+
+    registerCatalogSchemaChange(schemaName -> oldName :: schemaName -> newName :: Nil)
   }
 
   /**
@@ -451,9 +505,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
    * using the properties if required.
    */
   protected def finalizeCatalogTable(table: CatalogTable): CatalogTable = {
-    // hive table names are always case-insensitive and our convention is to use upper-case
-    val tableIdent = new TableIdentifier(toUpperCase(table.identifier.table),
-      Some(toUpperCase(table.identifier.database.get)))
+    val tableIdent = table.identifier
     // VIEW text is stored as split text for large view strings,
     // so restore its full text and schema from properties if present
     val newTable = if (table.tableType == CatalogTableType.VIEW) {
@@ -468,18 +520,32 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
         case None => table.copy(identifier = tableIdent, viewText = viewText,
           viewOriginalText = viewOriginalText)
       }
+    } else if (CatalogObjectType.isPolicy(table)) {
+      // explicitly change table name in policy properties to lower-case
+      // to deal with older releases that store the name in upper-case
+      table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+        properties = table.properties.updated(PolicyProperties.targetTable,
+          JdbcExtendedUtils.toLowerCase(table.properties(PolicyProperties.targetTable))))
     } else table.provider match {
-      // add dbtable property which is not present in old releases
-      case Some(provider) if (SnappyContext.isBuiltInProvider(provider) ||
-          CatalogObjectType.isGemFireProvider(provider)) &&
-          !table.storage.properties.contains(DBTABLE_PROPERTY) =>
-        table.copy(identifier = tableIdent, storage = table.storage.copy(properties =
-            table.storage.properties + (DBTABLE_PROPERTY -> tableIdent.unquotedString)))
+      case Some(provider) if SnappyContext.isBuiltInProvider(provider) ||
+          CatalogObjectType.isGemFireProvider(provider) =>
+        // add dbtable property which is not present in old releases
+        val storageFormat =
+          if (table.storage.properties.contains(DBTABLE_PROPERTY)) table.storage
+          else {
+            table.storage.copy(properties = table.storage.properties +
+                (DBTABLE_PROPERTY -> tableIdent.unquotedString))
+          }
+        // schema is "normalized" to deal with upgrade from previous
+        // releases that store column names in upper-case (SNAP-3090)
+        table.copy(identifier = tableIdent, schema = normalizeSchema(table.schema),
+          storage = storageFormat)
       case _ => table.copy(identifier = tableIdent)
     }
     // explicitly add weightage column to sample tables for old catalog data
     if (CatalogObjectType.getTableType(newTable) == CatalogObjectType.Sample &&
-        newTable.schema(table.schema.length - 1).name != Utils.WEIGHTAGE_COLUMN_NAME) {
+        !newTable.schema(table.schema.length - 1).name.equalsIgnoreCase(
+          Utils.WEIGHTAGE_COLUMN_NAME)) {
       newTable.copy(schema = newTable.schema.add(Utils.WEIGHTAGE_COLUMN_NAME, LongType,
         nullable = false))
     } else newTable
@@ -501,8 +567,16 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       Some(getTable(schema, table))
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => None
+      case _: NoSuchTableException => None
     }
+  }
+
+  private def toLowerCase(s: Array[String]): Array[String] = {
+    val r = new Array[String](s.length)
+    for (i <- s.indices) {
+      r(i) = JdbcExtendedUtils.toLowerCase(s(i))
+    }
+    r
   }
 
   override def getRelationInfo(schema: String, table: String,
@@ -510,18 +584,19 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     if (SYS_SCHEMA.equalsIgnoreCase(schema)) {
       RelationInfo(1, isPartitioned = false) -> None
     } else {
-      val r = Misc.getRegion(Misc.getRegionPath(schema, table, null),
+      val r = Misc.getRegion(Misc.getRegionPath(JdbcExtendedUtils.toUpperCase(schema),
+        JdbcExtendedUtils.toUpperCase(table), null),
         true, false).asInstanceOf[LocalRegion]
       val indexCols = if (rowTable) {
-        GfxdSystemProcedures.getIndexColumns(r).asScala.toArray
+        toLowerCase(GfxdSystemProcedures.getIndexColumns(r).asScala.toArray)
       } else EMPTY_STRING_ARRAY
       val pkCols = if (rowTable) {
-        GfxdSystemProcedures.getPKColumns(r).asScala.toArray
+        toLowerCase(GfxdSystemProcedures.getPKColumns(r).asScala.toArray)
       } else EMPTY_STRING_ARRAY
       r match {
         case pr: PartitionedRegion =>
           val resolver = pr.getPartitionResolver.asInstanceOf[GfxdPartitionByExpressionResolver]
-          val partCols = resolver.getColumnNames
+          val partCols = toLowerCase(resolver.getColumnNames)
           RelationInfo(pr.getTotalNumberOfBuckets, isPartitioned = true, partCols,
             indexCols, pkCols) -> Some(pr)
         case _ => RelationInfo(1, isPartitioned = false, EMPTY_STRING_ARRAY,
@@ -545,7 +620,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     val tableDefinition = CatalogTable(
       identifier = TableIdentifier(policyName, Some(schemaName)),
       tableType = CatalogTableType.EXTERNAL,
-      schema = EMPTY_SCHEMA,
+      schema = JdbcExtendedUtils.EMPTY_SCHEMA,
       provider = Some("policy"),
       storage = CatalogStorageFormat(
         locationUri = None,
@@ -565,7 +640,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     getAllTables().filter(_.provider.exists(_.equalsIgnoreCase("policy"))).foreach { table =>
       val applyToStr = table.properties(PolicyProperties.policyApplyTo)
       if (applyToStr.nonEmpty) {
-        val applyTo = applyToStr.split(",")
+        val applyTo = applyToStr.split(',')
         if (applyTo.contains(qualifiedLdapGroup)) {
           val expandedApplyTo = ExternalStoreUtils.getExpandedGranteesIterator(applyTo).toSeq
           val newProperties = table.properties +
@@ -580,7 +655,7 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
     try {
       getTable(schema, table) ne null
     } catch {
-      case _: TableNotFoundException | _: NoSuchTableException => false
+      case _: NoSuchTableException => false
     }
   }
 
@@ -594,19 +669,19 @@ class SnappyHiveExternalCatalog private[hive](val conf: SparkConf,
       // check for a system table/VTI in store
       val session = SparkSession.getActiveSession
       val conn = ConnectionUtil.getPooledConnection(schema, new ConnectionConf(
-        ExternalStoreUtils.validateAndGetAllProps(session, mutable.Map.empty)))
+        ExternalStoreUtils.validateAndGetAllProps(session, ExternalStoreUtils.emptyCIMutableMap)))
       try {
         // hive compatible filter patterns are different from JDBC ones
         // so get all tables in the schema and apply filter separately
-        val rs = conn.getMetaData.getTables(null, schema, "%", null)
+        val rs = conn.getMetaData.getTables(null, JdbcExtendedUtils.toUpperCase(schema), "%", null)
         val buffer = new mutable.ArrayBuffer[String]()
-        // add special case SYS.MEMBERS which is a distributed VTI but used by
+        // add special case sys.members which is a distributed VTI but used by
         // SnappyData layer as a replicated one
-        buffer += toLowerCase(MEMBERS_VTI)
+        buffer += MEMBERS_VTI
         while (rs.next()) {
           // skip distributed VTIs
           if (rs.getString(4) != SysVTIs.LOCAL_VTI) {
-            buffer += toLowerCase(rs.getString(3))
+            buffer += JdbcExtendedUtils.toLowerCase(rs.getString(3))
           }
         }
         rs.close()
@@ -791,8 +866,6 @@ object SnappyHiveExternalCatalog {
       log4jLogger.setLevel(Level.ERROR)
     }
     try {
-      // delete the hive scratch directory if it exists
-      FileUtils.deleteDirectory(new java.io.File("./hive"))
       instance = new SnappyHiveExternalCatalog(sparkConf, hadoopConf, createTime)
     } finally {
       logger.setLevel(previousLevel)

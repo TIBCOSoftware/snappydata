@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -37,7 +37,7 @@ dependencies {
   compile project(':snappy-spark:snappy-spark-core_' + scalaBinaryVersion)
   compile project(':snappy-spark:snappy-spark-catalyst_' + scalaBinaryVersion)
   compile project(':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion)
-  compileOnly project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
+  compile project(':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-repl_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-streaming_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-mllib_' + scalaBinaryVersion)
@@ -45,7 +45,13 @@ dependencies {
   compileOnly project(':snappy-spark:snappy-spark-graphx_' + scalaBinaryVersion)
   compileOnly project(':snappy-spark:snappy-spark-hive-thriftserver_' + scalaBinaryVersion)
 
+  // some tests expect resource files as having file: URI and not jar:file:
+  testRuntime files("${projectDir}/../spark/sql/core/src/test/resources")
+  testRuntime files("${projectDir}/../spark/sql/hive/src/test/resources")
+  testRuntime files("${projectDir}/../spark/external/kafka-0-10-sql/src/test/resources")
   testCompile project(path: ':snappy-spark:snappy-spark-sql_' + scalaBinaryVersion,
+      configuration: 'testOutput')
+  testCompile project(path: ':snappy-spark:snappy-spark-hive_' + scalaBinaryVersion,
       configuration: 'testOutput')
   testCompile project(path: ':snappy-spark:snappy-spark-sql-kafka-0.10_' + scalaBinaryVersion,
       configuration: 'testOutput')

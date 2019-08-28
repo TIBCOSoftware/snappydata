@@ -12,7 +12,7 @@ SnappyData offers the following SQL commands:
 *	**deploy package** - to deploy maven packages
 *	**deploy jar** - to deploy your application or library Jars
 
-Besides these SQL extensions, support is provided in SnappyData 1.1.0 version to deploy packages as part of SnappyData Job submission. This is similar to [Spark’s support](https://spark.apache.org/docs/latest/submitting-applications.html) for **--packages** when submitting Spark jobs.
+Besides these SQL extensions, support is provided in SnappyData 1.1.1 version to deploy packages as part of SnappyData Job submission. This is similar to [Spark’s support](https://spark.apache.org/docs/latest/submitting-applications.html) for **--packages** when submitting Spark jobs.
 
 The following sections are included in this topic:
 
@@ -83,7 +83,7 @@ deploy jar <unique-alias-name> ‘jars’
 **Deploying jars:**
 
 ```
-deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar  ‘jars’
+deploy jar SparkDaria spark-daria_2.11.8-2.2.0_0.10.0.jar
 ```
 
 All the deployed commands are stored in the SnappyData cluster. In cases where the artifacts of the dependencies are not available in the provided cache path, then during restart, it automatically resolves all the packages and jars again and installs them in the system.

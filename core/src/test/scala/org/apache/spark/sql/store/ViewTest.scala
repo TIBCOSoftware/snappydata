@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018 SnappyData, Inc. All rights reserved.
+ * Copyright (c) 2017-2019 TIBCO Software Inc. All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you
  * may not use this file except in compliance with the License. You
@@ -78,8 +78,8 @@ object ViewTest extends Assertions {
   private val rowTable = "viewRowTable"
   private val numRows = 10
   private val viewQuery = "select id, addr, rank() over (order by id) as rank"
-  private val viewTempMeta = Seq(Row("ID", "int", null), Row("ADDR", "string", null),
-    Row("RANK", "int", null))
+  private val viewTempMeta = Seq(Row("id", "int", null), Row("addr", "string", null),
+    Row("rank", "int", null))
 
   private def getExpectedResult: Seq[Row] = {
     (0 until numRows).map(i => Row(i, "address_" + (i + 1), i + 1))
@@ -112,7 +112,7 @@ object ViewTest extends Assertions {
 
   def testTemporaryView(executeSQL: String => Dataset[Row],
       newExecution: () => String => Dataset[Row]): Unit = {
-    val tableMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null))
+    val tableMeta = Seq(Row("id", "int", null), Row("addr", "varchar(20)", null))
 
     checkAnswer(executeSQL(s"describe $columnTable"), tableMeta)
     checkAnswer(executeSQL(s"describe $rowTable"), tableMeta)
@@ -273,8 +273,8 @@ object ViewTest extends Assertions {
       expectedResult: Seq[Row], restartSpark: () => Unit): Unit = {
     executeSQL(s"create view viewOnTable as $viewQuery from $table")
 
-    val viewMeta = Seq(Row("ID", "int", null), Row("ADDR", "varchar(20)", null),
-      Row("RANK", "int", null))
+    val viewMeta = Seq(Row("id", "int", null), Row("addr", "varchar(20)", null),
+      Row("rank", "int", null))
     val showResult = Seq(Row("app", "viewontable", false, false))
 
     assert(tableExists(executeSQL, "viewOnTable") === true)
