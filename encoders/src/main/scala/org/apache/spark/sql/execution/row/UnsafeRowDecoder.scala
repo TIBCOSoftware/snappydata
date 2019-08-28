@@ -43,14 +43,8 @@ final class UnsafeRowDecoder(holder: UnsafeRowHolder, columnIndex: Int)
   override def getNextNullPosition: Int =
     if (holder.row.isNullAt(columnIndex)) 0 else 1 /* 1 will never match */
 
-  override def findNextNullPosition(columnBytes: AnyRef, nextNullPosition: Int, num: Int): Int =
-    1 /* batch size is always 1 */
-
-  override def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int =
+  override def moveToNextNull(columnBytes: AnyRef, ordinal: Int, numNulls: Int): Int =
     if (holder.row.isNullAt(columnIndex)) 1 else 0
-
-  override def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
-    holder.row.isNullAt(columnIndex)
 
   override def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
     holder.row.getBoolean(columnIndex)

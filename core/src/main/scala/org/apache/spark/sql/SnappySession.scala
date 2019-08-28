@@ -2185,10 +2185,8 @@ object SnappySession extends Logging {
     else true -> true
   }
 
-  private def evaluatePlan(lp: LogicalPlan, session: SnappySession, sqlShortText: String,
+  private def evaluatePlan(qe: QueryExecution, session: SnappySession, sqlShortText: String,
       sqlText: String, paramLiterals: Array[ParamLiteral], paramsId: Int): CachedDataFrame = {
-    var exec = () => session.executePlan(lp)
-    val qe = exec()
     val (executedPlan, withFallback) = getExecutedPlan(qe.executedPlan)
     var planCaching = session.planCaching
 
@@ -2236,8 +2234,7 @@ object SnappySession extends Logging {
           //   Dataset hasSideEffects)
           if (rdd eq null) rdd = qe.toRdd
           val newPlan = LogicalRDD(qe.analyzed.output, rdd)(session)
-          exec = () => session.sessionState.executePlan(newPlan)
-          val execution = exec()
+          val execution = session.sessionState.executePlan(newPlan)
           (null, execution, origExecutionStr, origPlanInfo, executionStr, planInfo,
               rdd.id, false, -1L, 0L, -1L)
         }._1
@@ -2298,7 +2295,7 @@ object SnappySession extends Logging {
       val cleanups = new Array[Future[Unit]](shuffleDeps.length)
       (cachedRDD, shuffleDeps, cleanups)
     } else (null, Array.emptyIntArray, Array.empty[Future[Unit]])
-    new CachedDataFrame(session, exec, execution, origExecutionString, origPlanInfo,
+    new CachedDataFrame(session, execution, origExecutionString, origPlanInfo,
       executionString, planInfo, rdd, shuffleDependencies, RowEncoder(qe.analyzed.schema),
       shuffleCleanups, rddId, noSideEffects, queryHints,
       executionId, planStartTime, planEndTime, session.hasLinkPartitionsToBuckets)
@@ -2330,7 +2327,8 @@ object SnappySession extends Logging {
       key.currentParamsId = paramsId
       session.currentKey = key
       try {
-        cachedDF = evaluatePlan(plan, session, sqlShortText, sqlText, paramLiterals, paramsId)
+        val execution = session.executePlan(plan)
+        cachedDF = evaluatePlan(execution, session, sqlShortText, sqlText, paramLiterals, paramsId)
         // put in cache if the DF has to be cached
         if (planCaching && cachedDF.isCached) {
           if (isTraceEnabled) {

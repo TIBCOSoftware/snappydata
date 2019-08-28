@@ -1284,14 +1284,13 @@ trait NullableEncoder extends NotNullEncoder {
   override protected[sql] def writeNulls(columnBytes: AnyRef, cursor: Long,
       numWords: Int, numNulls: Int): Long = {
     var writeCursor = cursor
-    val nullWords = this.nullWords
     if (numWords >= 0) {
       ColumnEncoding.writeInt(columnBytes, writeCursor, numWords << 3)
       writeCursor += 4
       // write the null words
       var index = 0
       while (index < numWords) {
-        ColumnEncoding.writeLong(columnBytes, writeCursor, nullWords(index))
+        ColumnEncoding.writeLong(columnBytes, writeCursor, nullWordAt(index))
         writeCursor += 8
         index += 1
       }
@@ -1304,7 +1303,7 @@ trait NullableEncoder extends NotNullEncoder {
       var index = 0
       val numNullWords = trimmedNumNullWords
       while (index < numNullWords) {
-        var word = nullWords(index)
+        var word = nullWordAt(index)
         if (word != 0L) {
           // keep finding the next set bit in current word
           var absoluteIndex = index << 6

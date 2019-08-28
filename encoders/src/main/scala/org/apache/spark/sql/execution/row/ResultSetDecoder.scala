@@ -50,14 +50,8 @@ final class ResultSetDecoder(rs: ResultSetWithNull, columnPosition: Int)
   override def getNextNullPosition: Int =
     if (rs.isNull(columnPosition)) 0 else 1 /* 1 will never match */
 
-  override def findNextNullPosition(columnBytes: AnyRef, nextNullPosition: Int, num: Int): Int =
-    1 /* batch size is always 1 */
-
-  override def numNulls(columnBytes: AnyRef, ordinal: Int, num: Int): Int =
+  override def moveToNextNull(columnBytes: AnyRef, ordinal: Int, numNulls: Int): Int =
     if (rs.isNull(columnPosition)) 1 else 0
-
-  override def isNullAt(columnBytes: AnyRef, position: Int): Boolean =
-    rs.isNull(columnPosition)
 
   override def readBoolean(columnBytes: AnyRef, nonNullPosition: Int): Boolean =
     rs.getBoolean(columnPosition)
